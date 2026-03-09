@@ -131,7 +131,7 @@ class InternalPlayerFrame(wx.Frame):
         self._min_network_cache_seconds = 0.0
         self._max_network_cache_seconds = 0.0
         self._ts_network_bias = 0.0
-        self._xtream_buffer_refresh_seconds = 0.0
+        self._xtream_buffer_refresh_seconds = 5.0
         self._detected_content_ts = False  # True if stream detected as TS via Content-Type
         self._refresh_ts_floor()
         self._update_cache_bounds()
@@ -173,9 +173,6 @@ class InternalPlayerFrame(wx.Frame):
             "--quiet",
             "--no-video-title-show",
             "--intf=dummy",
-            "--clock-synchro=0",
-            "--no-drop-late-frames",
-            "--no-skip-frames",
         ]
         try:
             self.instance = vlc.Instance(instance_opts)
@@ -447,10 +444,19 @@ class InternalPlayerFrame(wx.Frame):
     def _apply_cache_options(self, media: "vlc.Media", profile: dict) -> None:
         media.add_option(":http-reconnect=true")
         media.add_option(":rtsp-tcp")
-        media.add_option(":clock-jitter=0")
-        media.add_option(":clock-synchro=0")
-        media.add_option(":drop-late-frames=0")
-        media.add_option(":skip-frames=0")
+
+        is_live = self._current_stream_kind == "live"
+        if is_live:
+            # Live: allow VLC to drop/skip late frames so playback stays
+            # in sync with real-time instead of accumulating a growing delay.
+            # Tolerate reasonable clock jitter from internet delivery.
+            media.add_option(":clock-jitter=1500")
+        else:
+            # VOD / catch-up: preserve every frame for smooth playback.
+            media.add_option(":clock-jitter=0")
+            media.add_option(":clock-synchro=0")
+            media.add_option(":drop-late-frames=0")
+            media.add_option(":skip-frames=0")
 
         proxy_url = _detect_system_http_proxy()
         if proxy_url:
@@ -909,20 +915,20 @@ class InternalPlayerFrame(wx.Frame):
         # Fast startup: use minimal initial buffer, rely on reconnect logic for stability
         # User can increase base_buffer_seconds in config if they have slow internet
         if is_audio:
-            # Audio streams: very fast start
-            raw_target = max(base, 1.5)
-        elif bitrate is None:
-            # Unknown bitrate: use minimal buffer for fast startup
-            raw_target = max(base, 1.5)
-        elif bitrate <= 3.0:
-            # Low bitrate (SD): quick start
-            raw_target = max(base, 1.5)
-        elif bitrate <= 8.0:
-            # Medium bitrate (720p-1080p): slightly more buffer
+            # Audio streams: fast start
             raw_target = max(base, 2.0)
-        else:
-            # High bitrate (HD/4K): a bit more to absorb startup jitter
+        elif bitrate is None:
+            # Unknown bitrate: moderate buffer for stability
             raw_target = max(base, 2.5)
+        elif bitrate <= 3.0:
+            # Low bitrate (SD)
+            raw_target = max(base, 2.5)
+        elif bitrate <= 8.0:
+            # Medium bitrate (720p-1080p)
+            raw_target = max(base, 3.0)
+        else:
+            # High bitrate (HD/4K): absorb startup jitter
+            raw_target = max(base, 3.5)
             
         if is_linear_ts:
             raw_target = max(raw_target, self._ts_buffer_floor)
@@ -1367,11 +1373,11 @@ class InternalPlayerFrame(wx.Frame):
                 and not self._pending_restart
                 and not self._early_buffer_fix_applied
                 and since_start <= 45.0
-                and buffer_duration >= 3.0
+                and buffer_duration >= 6.0
             ):
                 self._early_buffer_fix_applied = True
                 self._schedule_restart("early buffering detected", adjust_buffer=True)
-            elif allow_recovery and not handled_xtream_refresh and not self._pending_restart and buffer_duration >= 6.0:
+            elif allow_recovery and not handled_xtream_refresh and not self._pending_restart and buffer_duration >= 10.0:
                 self._schedule_restart("prolonged buffering", adjust_buffer=True)
         else:
             if self._buffer_start_ts is not None:
