@@ -116,3 +116,6 @@ Prerequisites:
 2. Create a new release with `build.bat release`.
 3. Launch the older build and use Options -> Check for Updates.
 4. Accept the update, then confirm the app restarts at the new version and a backup folder remains next to the install folder.
+
+##Submit bugs in issues, or join my Telegram group!
+(https://t.me/SerrebiProjects)
