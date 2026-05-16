@@ -59,6 +59,6 @@ if "%RELEASE_TAG%"=="" (
 )
 gh release edit "%RELEASE_TAG%" --draft=false --latest
 if errorlevel 1 exit /b 1
-powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $drafts = gh release list --limit 100 --json tagName,isDraft ^| ConvertFrom-Json ^| Where-Object { $_.isDraft }; foreach ($draft in $drafts) { Write-Host ('Deleting draft release ' + $draft.tagName + '...'); gh release delete $draft.tagName --yes }"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $items = gh release list --limit 100 --json tagName,isDraft | ConvertFrom-Json; $drafts = $items | Where-Object { $_.isDraft -eq $true }; foreach ($draft in $drafts) { Write-Host ('Deleting draft release ' + $draft.tagName + '...'); gh release delete $draft.tagName --yes }"
 if errorlevel 1 exit /b 1
 exit /b 0

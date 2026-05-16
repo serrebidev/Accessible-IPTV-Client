@@ -135,3 +135,7 @@ wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory 
 **Update 2026-05-16**: PyInstaller now warns when run from an elevated Windows token and PyInstaller 7 will block it. Running PyInstaller through a Task Scheduler `/RL LIMITED` task avoids the warning, but the wrapper files must live in a repo-local directory with inherited user ACLs; Python's elevated temp directories can be admin-only and fail before the limited task starts.
 
 **Update 2026-05-16**: Batch `for /f` command strings must escape equals signs in Git options. `git describe --tags --abbrev=0` becomes `--abbrev 0` inside the `for /f` child command unless written as `--abbrev^=0`, causing `fatal: Not a valid object name 0` after an otherwise successful release.
+
+**Update 2026-05-16**: Do not caret-escape PowerShell pipelines that are already inside a quoted `powershell -Command` argument in a batch file. `^|` is preserved into PowerShell there and can be passed to commands such as `gh release list`, causing `unknown command "^"` after publication.
+
+**Update 2026-05-16**: In Windows PowerShell 5.1, `ConvertFrom-Json` array output can be treated as one pipeline object when immediately piped into `Where-Object`, so a boolean property array like `False, True` is truthy and selects every release. Store the decoded items first and filter with `Where-Object { $_.isDraft -eq $true }` before deleting drafts.
