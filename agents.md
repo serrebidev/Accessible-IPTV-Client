@@ -25,10 +25,19 @@ Project=Accessible IPTV Client (wxPython GUI) focused on playlists+EPG; main.py 
 - Cross-platform: Windows and Linux
 
 ## Config File (iptvclient.conf)
-Key settings: playlists, epgs, media_player, custom_player_path, internal_player_buffer_seconds, internal_player_max_buffer_seconds, internal_player_variant_max_mbps, epg_enabled, minimize_to_tray.
+Key settings: playlists, epgs, media_player, custom_player_path, internal_player_buffer_seconds, internal_player_max_buffer_seconds, internal_player_variant_max_mbps, epg_enabled, minimize_to_tray. This file is user-local and must never be bundled into release assets.
 
 ## Dependencies
 wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory telemetry; stdlib otherwise.
+
+## Current Release Build Rules
+- Use `build.bat release` from current `main` for public releases. The release script builds, signs, creates the update zip/manifest, commits `app_meta.py`, pushes the branch/tag, creates a non-draft latest GitHub release, and deletes only releases whose GitHub `isDraft` value is true.
+- `main.spec` currently bundles `init.mp4`, `ffmpeg.exe`, and the update helper files. It must not bundle `iptvclient.conf`; that file can contain provider URLs, credentials, local player paths, and cast targets.
+- `tools/release.py` validates the source `ffmpeg.exe` before building and validates `dist\iptvclient\_internal\ffmpeg.exe` after PyInstaller. It rejects Git LFS pointers, unexpectedly small files, and binaries that do not run `ffmpeg -version`.
+- `tools/release.py` validates `dist\iptvclient` after PyInstaller and aborts if any `iptvclient.conf` is present.
+- PyInstaller is run through a Task Scheduler `/RL LIMITED` task when the current Windows token is elevated, avoiding the PyInstaller admin deprecation that PyInstaller 7 will block.
+- `main.spec` includes explicit chardet mypyc hidden imports and adds the chardet pipeline path so PyInstaller does not emit missing `*_mypyc` hidden-import warnings.
+- Before shipping, check build output for real warnings, errors, and dependency mismatches. PyInstaller's generated `warn-main.txt` can include platform/optional imports, but actionable `WARNING`, `ERROR`, `CRITICAL`, `DEPRECATION`, hidden-import misses, or release-script validation failures must be fixed.
 
 ## Learnings
 
@@ -60,7 +69,7 @@ wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory 
 
 **Update 2025-12-17**: Added AAC re-encode (160 kbps, 48 kHz, stereo) to the cast transcode path so segment audio PTS/ADTS stay clean; previously we copied AAC which could create bad splits and 1s-and-stop behaviour on some sinks.
 
-**Update 2025-12-19**: Updated `main.spec` to fully support the standalone build. Added hidden imports for `pychromecast`, `pyatv`, and `async_upnp_client` (plus their dependencies like `zeroconf`, `aiohttp`, `miniaudio`). Bundled `iptvclient.conf` and `init.mp4` in the data files. This ensures the executable works correctly with all casting features and default configurations.
+**Update 2025-12-19**: Updated `main.spec` to fully support the standalone build. Added hidden imports for `pychromecast`, `pyatv`, and `async_upnp_client` (plus their dependencies like `zeroconf`, `aiohttp`, `miniaudio`). Current release assets bundle runtime data/binaries such as `init.mp4`, `ffmpeg.exe`, and update helpers, but never bundle `iptvclient.conf`.
 
 **Update 2025-12-19**: Implemented a threaded producer-consumer buffer (16MB) in `stream_proxy.py` to decouple upstream reads from downstream writes. This allows the proxy to absorb a server "burst" on connect even if the client (e.g., Chromecast) requests data slowly at first, preventing stalls when the burst ends and the stream settles into real-time bitrate.
 
@@ -78,11 +87,11 @@ wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory 
 
 **Update 2025-12-20**: Stream proxy now honors `mode=audio` and pipes radio transcoding through Python -> FFmpeg so auth headers/cookies are preserved; internal player buffer defaults align with README (2s base / 18s max) and treat 0 as unset to avoid zero-buffer playback.
 
-**Update 2025-12-20**: PyInstaller spec now explicitly bundles PyATV/UPnP dependencies (pydantic, srptools, tinytag, tabulate, defusedxml, didl_lite, voluptuous, chacha20poly1305_reuseable, requests deps) plus `iptvclient.conf` so frozen builds include all dynamic imports and default config.
+**Update 2025-12-20**: PyInstaller spec now explicitly bundles PyATV/UPnP dependencies (pydantic, srptools, tinytag, tabulate, defusedxml, didl_lite, voluptuous, chacha20poly1305_reuseable, requests deps) so frozen builds include the dynamic imports needed by casting/networking features. `iptvclient.conf` remains user-local and is not bundled.
 
 **Update 2025-12-22**: Switched the PyInstaller build strategy from `--onefile` to `--onedir`. Users reported that the single-executable version failed to run on some systems. Distributing the app as a directory (folder) improves reliability, reduces startup time (no extraction needed), and makes debugging dependency issues easier. Updated `main.spec` and `README.md` to reflect this change.
 
-**Update 2025-12-22**: Aligned all build artifacts (`main.spec`, `README.md`, `build.bat`, `build_exe.bat`) to consistently use the `--onedir` strategy with the output folder `dist\iptvclient`. Verified that all necessary binaries (`ffmpeg.exe`, `init.mp4`) and configuration files are correctly collected into the distribution folder alongside the DLLs.
+**Update 2025-12-22**: Aligned all build artifacts (`main.spec`, `README.md`, `build.bat`, `build_exe.bat`) to consistently use the `--onedir` strategy with the output folder `dist\iptvclient`. Verified that necessary runtime binaries/data files (`ffmpeg.exe`, `init.mp4`, update helpers, DLLs) are collected into the distribution folder; user config files are not collected.
 
 **Update 2025-12-23**: Added a Windows auto-updater that pulls a GitHub release manifest, validates SHA-256 + Authenticode signatures, stages updates with rollback, and restarts via a helper script.
 
