@@ -60,7 +60,6 @@ a = Analysis(
     pathex=[chardet_pipeline_path],
     binaries=[],
     datas=[
-        ('iptvclient.conf', '.'),
         ('init.mp4', '.'),
         ('ffmpeg.exe', '.'),
         ('update_helper.bat', '.'),

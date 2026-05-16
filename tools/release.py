@@ -18,6 +18,7 @@ import updater  # noqa: E402
 
 DEFAULT_SIGNTOOL = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
 FFMPEG_NAME = "ffmpeg.exe"
+BUNDLED_CONFIG_NAME = "iptvclient.conf"
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 
 
@@ -355,6 +356,22 @@ def validate_ffmpeg_binary(path=None):
         raise RuntimeError(f"{label} did not report an FFmpeg version.")
 
 
+def validate_no_bundled_config(dist_dir=None):
+    dist_dir = dist_dir or os.path.join(REPO_ROOT, "dist", "iptvclient")
+    if not os.path.isdir(dist_dir):
+        return
+    matches = []
+    for root, _, files in os.walk(dist_dir):
+        for filename in files:
+            if filename.lower() == BUNDLED_CONFIG_NAME:
+                matches.append(os.path.relpath(os.path.join(root, filename), REPO_ROOT))
+    if matches:
+        raise RuntimeError(
+            "Refusing to ship a bundled iptvclient.conf. Remove it from PyInstaller datas: "
+            + ", ".join(matches)
+        )
+
+
 def sign_executable(exe_path):
     signtool = os.environ.get("SIGNTOOL_PATH", DEFAULT_SIGNTOOL)
     if not os.path.exists(signtool):
@@ -565,6 +582,7 @@ def main():
         run_pyinstaller()
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
         validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
+        validate_no_bundled_config()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         assets = build_assets(next_version, release_notes, signing_thumbprint)
@@ -580,6 +598,7 @@ def main():
         run_pyinstaller()
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
         validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
+        validate_no_bundled_config()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         build_assets(app_meta.APP_VERSION, release_notes, signing_thumbprint)

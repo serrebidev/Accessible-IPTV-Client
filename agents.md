@@ -139,3 +139,7 @@ wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory 
 **Update 2026-05-16**: Do not caret-escape PowerShell pipelines that are already inside a quoted `powershell -Command` argument in a batch file. `^|` is preserved into PowerShell there and can be passed to commands such as `gh release list`, causing `unknown command "^"` after publication.
 
 **Update 2026-05-16**: In Windows PowerShell 5.1, `ConvertFrom-Json` array output can be treated as one pipeline object when immediately piped into `Where-Object`, so a boolean property array like `False, True` is truthy and selects every release. Store the decoded items first and filter with `Where-Object { $_.isDraft -eq $true }` before deleting drafts.
+
+**Update 2026-05-16**: Never bundle a local `iptvclient.conf` into PyInstaller release assets. The working-tree config can contain real provider URLs, credentials, local player paths, and cast targets; releases should let `options.py` create/load the user's own config instead of shipping a config file.
+
+**Update 2026-05-16**: The release script now validates `dist\iptvclient` after PyInstaller and aborts if any `iptvclient.conf` file is present, so future release builds cannot accidentally include local provider credentials even if a config file exists in the working tree.
