@@ -133,3 +133,5 @@ wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory 
 **Update 2026-05-16**: Release builds must verify that bundled `ffmpeg.exe` is the real Git LFS binary before packaging. A working tree with only the 133-byte LFS pointer can still satisfy PyInstaller's data-file check, but the frozen app ships `_internal\ffmpeg.exe` as a non-executable text pointer and Windows reports it as incompatible with 64-bit Windows.
 
 **Update 2026-05-16**: PyInstaller now warns when run from an elevated Windows token and PyInstaller 7 will block it. Running PyInstaller through a Task Scheduler `/RL LIMITED` task avoids the warning, but the wrapper files must live in a repo-local directory with inherited user ACLs; Python's elevated temp directories can be admin-only and fail before the limited task starts.
+
+**Update 2026-05-16**: Batch `for /f` command strings must escape equals signs in Git options. `git describe --tags --abbrev=0` becomes `--abbrev 0` inside the `for /f` child command unless written as `--abbrev^=0`, causing `fatal: Not a valid object name 0` after an otherwise successful release.
