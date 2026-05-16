@@ -1,154 +1,85 @@
-﻿﻿You are a professional windows python developer with a decade of IPTV app experience. Always fully investigate things before applying a fix. If you learn anything new, write it in this file.
-You are root and you can install and use whatever you need to on windows with winget, powershell, chocolatey, whatever you need, or with pip3. You can use any package manager, like winget, pip3, or anything you need.
-Make sure the spec file has all requirements and submodules included in the build.
-When building, always check for warnings, errors, and dependency mismatches in the build output. If any are found, fix them before proceeding (e.g., install missing packages, pin mismatched dependency versions, resolve hidden import issues). Never ship a build that had unresolved warnings or errors.
+You are a professional Windows Python developer with a decade of IPTV app experience. Always fully investigate things before applying a fix. If you learn anything new that affects future work on this repo, write it in this file.
+
+You are root on this Windows machine and can install and use whatever is needed with winget, PowerShell, Chocolatey, pip, or other package managers.
+
+Make sure the PyInstaller spec file includes all runtime requirements, dynamic imports, binary assets, and needed submodules for the build.
+
+When building, always check for warnings, errors, and dependency mismatches in the build output. If any are found, fix them before proceeding. Never ship a build that had unresolved warnings or errors.
+
 ## Project Overview
-Project=Accessible IPTV Client (wxPython GUI) focused on playlists+EPG; main.py spins wx frame, tray icon, playlist/EPG managers, background threads (playlist load, EPG import) and uses options.py for config persistence + cache dirs.
+
+Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EPG import/search/matching, accessible channel browsing, internal/external playback, casting, and Windows self-updates.
+
+`main.py` creates the main frame, tray icon, playlist/EPG managers, channel/group/search UI, background playlist and EPG work, player launching, casting actions, and update checks. `options.py` owns config persistence, cache paths, database paths, and config normalization.
 
 ## Architecture
-- **main.py**: Main GUI frame (IPTVClient), tray icon, playlist/EPG managers, channel list, group filtering, search, external/internal player launching, catch-up dialog.
-- **internal_player.py**: Built-in VLC-based player with adaptive buffering, volume slider (0-100, 5% steps via Ctrl+Up/Down), fullscreen (F11), play/pause/stop controls, and automatic reconnection for choppy streams.
-- **sitecustomize.py**: Runtime patches for the internal player.
-- **playlist.py**: SQLite3 WAL database (/tmp/epg.db) with channels/programmes tables, busy_timeout=20s, BEGIN IMMEDIATE + reopen-on-lock retry, commits in 10k batches, trims old rows, logs to /tmp/iptvclient_epg_debug.log, downloads XMLTV/GZip sources with resume+HTTP416 fallback.
-- **providers.py**: XtreamCodesClient + StalkerPortalClient to build playlist+EPG URLs, handle auth tokens, and surface ProviderError.
-- **options.py**: JSON config (portable fallback + wx StandardPaths), exposes save/load, cache path hashing, canonical naming helpers via options.load_config.
+
+- **main.py**: Main wx frame (`IPTVClient`), tray restore behavior, playlist and EPG managers, channel list population, group filtering, search including EPG search, catch-up dialog, internal/external player launch, casting menu actions, and update prompts.
+- **internal_player.py**: Built-in libVLC player with adaptive buffering, stream preflight checks, live/catch-up option handling, automatic reconnect logic, fullscreen (F11), play/pause/stop controls, accessible control names, and volume slider. Volume uses 2% normal steps and 5% Ctrl+Up/Down steps.
+- **sitecustomize.py**: Compatibility shim only. It re-exports the canonical `InternalPlayerFrame` from `internal_player.py` and must not grow separate player logic.
+- **playlist.py**: Playlist parsing plus XMLTV import/search/matching. The EPG database is SQLite in `tempfile.gettempdir()` via `options.get_db_path()`, uses WAL and busy timeouts, logs debug details to `iptvclient_epg_debug.log` in the temp directory, and handles XML/GZip downloads with resume plus HTTP 416 fallback.
+- **providers.py**: Xtream Codes and Stalker Portal clients for building playlist/EPG URLs, handling auth/session state, and surfacing `ProviderError`.
+- **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, config clamping, and canonical naming helpers.
+- **casting.py**: Persistent background asyncio loop for cast operations. Supports Chromecast, DLNA/UPnP, and AirPlay when optional libraries are installed.
+- **stream_proxy.py**: Local stream proxy for casting. Handles direct byte proxying, HLS remux/transcode, Chromecast-safe HLS output, radio/audio mode, Python-to-FFmpeg piping for provider auth headers, bootstrap HLS startup, and best-effort Windows Firewall rules.
+- **updater.py**, **update_helper.bat**, **update_helper.ps1**, **update_helper_launcher.vbs**: Windows packaged-app updater. Uses a GitHub release manifest, SHA-256 validation, Authenticode verification with pinned thumbprints, hidden helper launch, backup, rollback, and local config preservation.
+- **main.spec**, **tools/release.py**, **build.bat**, **build_exe.bat**: Build and release pipeline. `build.bat` delegates to `build_exe.bat`; `build_exe.bat` delegates core work to `tools/release.py`.
 
 ## Key Features
-- Screen reader accessible (NVDA, JAWS, Narrator, Orca)
-- M3U/M3U Plus playlists, Stalker Portal, XtreamCodes providers
-- Built-in VLC player with adaptive buffering and auto-reconnect
-- External player support (VLC, MPV, MPC-HC, custom)
-- XMLTV EPG support (.xml and .xml.gz)
-- Catch-up/timeshift playback for supported channels
-- Channel grouping and search (including EPG search)
-- System tray minimize option
-- Cross-platform: Windows and Linux
 
-## Config File (iptvclient.conf)
-Key settings: playlists, epgs, media_player, custom_player_path, internal_player_buffer_seconds, internal_player_max_buffer_seconds, internal_player_variant_max_mbps, epg_enabled, minimize_to_tray. This file is user-local and must never be bundled into release assets.
+- Screen reader accessible UI for NVDA, JAWS, Narrator, and Orca-oriented workflows.
+- M3U/M3U Plus playlists, Stalker Portal providers, and Xtream Codes providers.
+- XMLTV EPG support from `.xml` and `.xml.gz` sources.
+- EPG matching tuned for Australia, Canada, Ireland, UK, and US channel naming patterns.
+- Built-in VLC player with adaptive buffering, preflight errors, live stream reconnect handling, and accessible controls.
+- External player support for VLC, MPV, MPC-HC, and custom player paths.
+- Chromecast, DLNA/UPnP, and AirPlay casting when dependencies and devices are available.
+- Catch-up/timeshift playback for supported channels.
+- Channel grouping, channel search, and EPG search.
+- System tray minimize/restore support.
+- Windows packaged auto-update support.
+- Cross-platform source app support for Windows and Linux, with the release pipeline focused on Windows.
+
+## Config File (`iptvclient.conf`)
+
+Important keys include `playlists`, `epgs`, `media_player`, `custom_player_path`, `internal_player_buffer_seconds`, `internal_player_max_buffer_seconds`, `internal_player_variant_max_mbps`, `epg_enabled`, `epg_auto_import_interval_hours`, `minimize_to_tray`, `show_player_on_enter`, and `auto_check_updates`.
+
+`iptvclient.conf` is user-local runtime configuration. Do not bundle a local repo `iptvclient.conf` into public releases.
 
 ## Dependencies
-wxPython>=4.2.1 (GUI), python-vlc (built-in player), psutil optional for memory telemetry; stdlib otherwise.
+
+Runtime requirements are defined in `requirements.txt`: `wxPython`, `python-vlc`, `pychromecast`, `async-upnp-client`, and `pyatv`. `pytest` is listed for development/testing.
+
+The standalone Windows build also explicitly collects dynamic modules and metadata in `main.spec`, including casting/network stacks, VLC, updater/signing dependencies, `psutil`, and chardet mypyc modules. Keep `main.spec` in sync whenever imports or optional runtime features change.
 
 ## Current Release Build Rules
-- Use `build.bat release` from current `main` for public releases. The release script builds, signs, creates the update zip/manifest, commits `app_meta.py`, pushes the branch/tag, creates a non-draft latest GitHub release, and deletes only releases whose GitHub `isDraft` value is true.
-- `main.spec` currently bundles `init.mp4`, `ffmpeg.exe`, and the update helper files. It must not bundle `iptvclient.conf`; that file can contain provider URLs, credentials, local player paths, and cast targets.
-- `tools/release.py` validates the source `ffmpeg.exe` before building and validates `dist\iptvclient\_internal\ffmpeg.exe` after PyInstaller. It rejects Git LFS pointers, unexpectedly small files, and binaries that do not run `ffmpeg -version`.
-- `tools/release.py` validates `dist\iptvclient` after PyInstaller and aborts if any `iptvclient.conf` is present.
-- PyInstaller is run through a Task Scheduler `/RL LIMITED` task when the current Windows token is elevated, avoiding the PyInstaller admin deprecation that PyInstaller 7 will block.
-- `main.spec` includes explicit chardet mypyc hidden imports and adds the chardet pipeline path so PyInstaller does not emit missing `*_mypyc` hidden-import warnings.
-- Before shipping, check build output for real warnings, errors, and dependency mismatches. PyInstaller's generated `warn-main.txt` can include platform/optional imports, but actionable `WARNING`, `ERROR`, `CRITICAL`, `DEPRECATION`, hidden-import misses, or release-script validation failures must be fixed.
 
-## Learnings
+- Use `build.bat release` for public releases. `build.bat` calls `build_exe.bat`, which calls `tools/release.py`; running `build.bat` with no argument performs a local build only.
+- Releases must be non-draft and marked latest.
+- Never delete old non-draft releases unless the user explicitly asks. It is okay to delete leftover draft releases.
+- Never ship a release when PyInstaller reports unresolved warnings, missing imports, dependency mismatches, failed validation, or build errors.
+- Do not bundle local `iptvclient.conf`. `main.spec` excludes it, and `tools/release.py` must fail the build if any packaged `iptvclient.conf` is found.
+- `ffmpeg.exe` is tracked through Git LFS. Before releasing, ensure it is the real executable, not a small LFS pointer file. `tools/release.py` validates both the source and packaged `ffmpeg.exe` by size, pointer detection, and `ffmpeg -version`.
+- `tools/release.py` runs PyInstaller through a limited Task Scheduler task when the current process is elevated, avoiding PyInstaller's elevated-token deprecation warning.
+- `tools/release.py` creates the update manifest asset required by the auto-updater. Required manifest fields include `version`, `asset_filename`, `download_url`, `sha256`, and `release_notes_summary`.
+- PowerShell/Batch release quoting matters on Windows. In batch files, `git describe --tags --abbrev=0` must be written as `--abbrev^=0` inside `for /f`. Inside a quoted `powershell -Command`, use a normal pipeline character (`|`), not `^|`.
+- When cleaning GitHub draft releases from PowerShell, decode JSON first and filter explicit draft booleans with `Where-Object { $_.isDraft -eq $true }`; do not pipe raw JSON array output directly into a truthy object filter.
 
-**Update 2025-11-12**: wx.LogError uses printf-style formatting, so any literal % signs must be escaped (message.replace("%", "%%")) before calling it to avoid mangled output.
+## Current Learnings
 
-**Update 2025-11-12**: Built-in VLC player was flipping into restart/Stream Lost loops because we counted every buffering blip as "choppy" and the retry counter never decayed; now only buffering events >=1.25s count and reconnect attempts reset after ~2 minutes without retries so channels stop dropping for minor hiccups.
-
-**Update 2025-11-12**: Xtream-style `.ts` channels now request a much deeper network/file cache (>=18s) so steady buffers soak up server jitter without extra restarts; live caching stays high but capped by the `internal_player_max_buffer_seconds` config value.
-
-**Update 2025-11-12**: Noticed Xtream `.ts` live channels actually terminate the HTTP response every ~60 MB even though they should be endless, so libVLC reported a clean "Ended" state and stopped playback; we now tag built-in player launches as live vs catch-up and force automatic restarts for Xtream-style `.ts` live URLs so they reopen immediately after each server-side EOF or long buffering stall instead of disconnecting the viewer, and those refreshes no longer burn reconnect-attempt budget.
-
-**Update 2025-11-23**: Volume now mirrors the Plex client: fixed 5% steps (Ctrl+Up/Down or hold) with a 0-100 slider in the control bar/tab order. Added libVLC path priming for typical 32/64-bit installs and fixed wx alignment flags so the control bar no longer asserts when the slider is added.
-
-**Update 2025-12-01**: Volume control refined to 2% steps for finer precision (5% with Ctrl modifier) and now supports mouse wheel input with rate-limiting to prevent UI lag. Internal player buffering logic updated to remove artificial caps on high-bitrate streams, better utilizing high-speed (gigabit) connections with buffers up to 300s. Playlist loading refactored to use parallel threads for both fetching and parsing, significantly reducing startup time with multiple sources.
-
-**Update 2025-12-01**: Refactored `CastingManager` to run a persistent background thread with its own `asyncio` loop. Previous implementation spun up ephemeral loops for each action, which caused `RuntimeError` with libraries like `pyatv` and `aiohttp` that bind objects to the loop they were created in. All cast operations now dispatch synchronously to this background loop.
-
-**Update 2025-12-10**: Internal player buffering retuned for low-latency startup. Network caching now targets roughly 6–8 seconds for live streams (including Xtream `.ts`), so channels join faster while still maintaining at least ~6 seconds of buffered content once playback has started to avoid constant rebuffering.
-
-**Update 2025-12-12**: Removed the `sitecustomize.py` monkey-patch that re-implemented the internal player. `sitecustomize` now just re-exports the canonical `InternalPlayerFrame` from `internal_player.py` to avoid drift and duplicated buffering logic.
-
-**Update 2025-12-17**: Stream proxy now attempts to punch a Windows Firewall hole for its dynamic port via `netsh advfirewall` (private/domain only). If `netsh` is missing or the call fails (e.g., no admin rights), it logs a warning and keeps running so casting isn’t blocked by the new code path.
-
-**Update 2025-12-17**: Chromecast casting now treats `application/octet-stream` (and variants) as MPEG-TS when sniffing unknown streams, forcing an HLS remux via the proxy. Many Xtream-style URLs omit `.ts` and return octet-stream, which previously left the Chromecast trying (and failing) to play raw TS.
-
-**Update 2025-12-17**: Chromecast TS casts now force a low-latency H.264 transcode (libx264 ultrafast, 2s HLS parts, audio copy) when the proxy is used, so sinks that can’t decode HEVC still render video. Session IDs include the transcode mode so non-transcode sessions stay separate.
-
-**Update 2025-12-17**: HLS transcoder now makes segments Chromecast-safe: yuv420p, profile high level 4.1, independent HLS segments, 2s parts, start_number=0. This should prevent “audio-only then stop” failures from mid-GOP cuts or 10-bit surfaces.
-
-**Update 2025-12-17**: Added AAC re-encode (160 kbps, 48 kHz, stereo) to the cast transcode path so segment audio PTS/ADTS stay clean; previously we copied AAC which could create bad splits and 1s-and-stop behaviour on some sinks.
-
-**Update 2025-12-19**: Updated `main.spec` to fully support the standalone build. Added hidden imports for `pychromecast`, `pyatv`, and `async_upnp_client` (plus their dependencies like `zeroconf`, `aiohttp`, `miniaudio`). Current release assets bundle runtime data/binaries such as `init.mp4`, `ffmpeg.exe`, and update helpers, but never bundle `iptvclient.conf`.
-
-**Update 2025-12-19**: Implemented a threaded producer-consumer buffer (16MB) in `stream_proxy.py` to decouple upstream reads from downstream writes. This allows the proxy to absorb a server "burst" on connect even if the client (e.g., Chromecast) requests data slowly at first, preventing stalls when the burst ends and the stream settles into real-time bitrate.
-
-**Update 2025-12-19**: Resolved PyInstaller build warning "Hidden import 'netifaces' not found" by explicitly installing the `netifaces` package. This dependency is often used by `zeroconf` (via `pychromecast`) for network interface enumeration and is critical for reliable casting discovery.
-
-**Update 2025-12-19**: Implemented "Bootstrap HLS" in `stream_proxy.py` to satisfy strict connection timeouts on modern hardware like Hisense U7K. The proxy now serves an instant 1-second warming segment (`bootstrap.ts`) while FFmpeg probes the upstream provider in the background. A `#EXT-X-DISCONTINUITY` tag is used to safely hand off the TV's decoder to the real IPTV segments once ready.
-
-**Update 2025-12-19**: Developed a "Smart Audio Proxy" for radio streams. Standard 320 KBPS MP3 streams (like SerrebiRadio) use a zero-latency direct byte proxy, while formats like Opus or low-bitrate AAC (CJSR) are automatically transcoded to high-fidelity 320 KBPS MP3. This triggers the TV's native audio player UI for superior stability over the video player.
-
-**Update 2025-12-19**: Switched to a "Python-to-FFmpeg" piped engine for HLS and Radio transcoding. By using Python's `urllib` to handle the initial handshake and piping raw data into FFmpeg's `stdin`, we bypass FFmpeg-specific SSL/TLS handshake failures and ensure all authentication headers (User-Agent, Cookies) are correctly applied to the provider.
-
-**Update 2025-12-19**: Enhanced player accessibility for NVDA and JAWS users. Added explicit `SetName` metadata to all media controls and volume sliders. Replaced manual Tab key overrides with standard `wx.TAB_TRAVERSAL` to ensure predictable screen reader navigation. Fixed a bug where the player remained in a disabled state when shown from the system tray.
-
-**Update 2025-12-19**: Implemented a "Total Collection" strategy in `main.spec`. The build now recursively collects all submodules, metadata, and binaries for complex networking stacks (`pychromecast`, `aiohttp`, `pyatv`, `zeroconf`, `protobuf`). Combined with a multi-stage local IP detection method (DNS route fallback to interface scan), this ensures 100% feature parity between the source code and the standalone EXE.
-
-**Update 2025-12-20**: Stream proxy now honors `mode=audio` and pipes radio transcoding through Python -> FFmpeg so auth headers/cookies are preserved; internal player buffer defaults align with README (2s base / 18s max) and treat 0 as unset to avoid zero-buffer playback.
-
-**Update 2025-12-20**: PyInstaller spec now explicitly bundles PyATV/UPnP dependencies (pydantic, srptools, tinytag, tabulate, defusedxml, didl_lite, voluptuous, chacha20poly1305_reuseable, requests deps) so frozen builds include the dynamic imports needed by casting/networking features. `iptvclient.conf` remains user-local and is not bundled.
-
-**Update 2025-12-22**: Switched the PyInstaller build strategy from `--onefile` to `--onedir`. Users reported that the single-executable version failed to run on some systems. Distributing the app as a directory (folder) improves reliability, reduces startup time (no extraction needed), and makes debugging dependency issues easier. Updated `main.spec` and `README.md` to reflect this change.
-
-**Update 2025-12-22**: Aligned all build artifacts (`main.spec`, `README.md`, `build.bat`, `build_exe.bat`) to consistently use the `--onedir` strategy with the output folder `dist\iptvclient`. Verified that necessary runtime binaries/data files (`ffmpeg.exe`, `init.mp4`, update helpers, DLLs) are collected into the distribution folder; user config files are not collected.
-
-**Update 2025-12-23**: Added a Windows auto-updater that pulls a GitHub release manifest, validates SHA-256 + Authenticode signatures, stages updates with rollback, and restarts via a helper script.
-
-**Update 2025-12-28**: Updater now accepts a pinned Authenticode thumbprint from the release manifest (`signing_thumbprint`) so self-signed certs can pass verification when Windows reports UnknownError.
-
-**Update 2026-01-04**: Auto-update installs were failing because `main.py` launched `update_helper.bat` with GNU-style flags (`--pid`, `--install-dir`, etc.), but `update_helper.ps1` expects PowerShell parameter names (`-ParentPid`, `-InstallDir`, `-StagingDir`, `-BackupDir`, `-ExeName`). Updated the launcher args so the helper receives the correct parameters and updates apply successfully.
-
-**Update 2026-01-29**: Build/runtime telemetry depends on `psutil` (optional import + PyInstaller hidden import). It was missing locally, so I installed it to keep memory telemetry and frozen builds consistent.
-
-**Update 2026-01-29**: Startup CPU spike mitigated by capping playlist fetch/parse worker threads (max 4, based on CPU count) and deferring auto EPG import until the channel list finishes populating. Auto-import now skips when the EPG DB is fresh (default 6h) unless forced; new config key `epg_auto_import_interval_hours`.
-
-**Update 2026-01-29**: PyInstaller flagged missing hidden import `netifaces`; installed it so casting discovery dependencies bundle cleanly.
-
-**Update 2026-01-30**: Auto-updater now launches invisibly using VBScript to suppress the cmd window flash. PowerShell runs with `-WindowStyle Hidden` via `cscript`. Backup directories are automatically cleaned up after successful updates to avoid clutter in the parent folder.
-
-**Update 2026-01-30**: Internal player buffering retuned for stable HLS/M3U+/Xtream connections. Initial buffer targets increased to 8-12s (based on bitrate) to prevent quick connect/disconnect cycles. Audio streams use 3.5s for fast startup. This prevents the "connect, quick buffer, disconnect" pattern users were experiencing with provider streams.
-
-**Update 2026-01-30**: Fixed updater Authenticode verification logic. When status is not "Valid", the code now checks if the `allowed` thumbprints set is non-empty before checking membership, preventing false negatives. Enhanced error messages to include expected thumbprints for easier debugging of signing issues. The fix ensures self-signed certificates with pinned thumbprints are properly accepted even when Windows reports UnknownError due to untrusted root certificates.
-
-**Update 2026-02-01**: VLC starts muted when using `--intf=dummy` (hidden/audio-only mode); fixed by calling `player.audio_set_mute(False)` in `_schedule_volume_apply()` so streams play audio when "Show Player on Enter" is unchecked.
-
-**Update 2026-02-01**: Reduced initial stream buffer from 8s to 3s for faster channel startup (~1s vs ~5s). Users with slow connections can increase `internal_player_buffer_seconds` in config.
-
-**Update 2026-02-01**: Added HTTP preflight check in `internal_player.py` to detect dead streams (404, 403, etc.) before VLC tries to connect, showing user-friendly error messages instead of silent failures.
-
-**Update 2026-02-01**: GitHub releases require an `AccessibleIPTVClient-update.json` manifest file alongside the zip. The manifest must contain: `version`, `asset_filename`, `download_url`, `sha256`, and `release_notes_summary`. Without it, the auto-updater fails with "Update manifest was not found".
-
-**Update 2026-02-01**: PowerShell's `Get-AuthenticodeSignature` cmdlet fails to load from Python subprocess when PSMODULEPATH contains PowerShell Core (pwsh 7) paths. Fixed by: (1) writing the script to a temp .ps1 file, (2) launching via `cmd /c powershell.exe` with the full Windows PowerShell 5.1 path, (3) stripping PSMODULEPATH and POWERSHELL environment variables. This ensures Authenticode verification works in all environments.
-
-**Update 2026-02-01**: System tray now restores on single left-click, double-click, and Enter key for NVDA/JAWS accessibility. Previous implementation only handled double-click which wasn't reliable with screen readers. The `on_taskbar_activate` handler now unconditionally calls `on_restore()` for both `EVT_TASKBAR_LEFT_DCLICK` and `EVT_TASKBAR_LEFT_UP` events.
-
-**Update 2026-02-01**: Fixed system tray restore not announcing in NVDA. Added Windows API calls (`SetForegroundWindow`, `AttachThreadInput`, `keybd_event` Alt key trick) to properly transfer focus, plus `NotifyWinEvent` with `EVENT_OBJECT_FOCUS` and `EVENT_OBJECT_SELECTION` to notify screen readers of the focus change. Users experiencing persistent issues should run NVDA's "Fix COM registrations" tool from Tools menu.
-
-**Update 2026-02-01**: Improved Xtream-style TS stream detection. URLs that redirect to TS streams (with `video/mp2t` Content-Type) but don't have `.ts` extension are now properly detected as MPEG-TS live streams. This enables the Xtream refresh logic (auto-reconnect without consuming retry budget) for streams like `gohyperspeed.com` that use `/auth/` token URLs.
-
-**Update 2026-02-01**: Fixed live TS stream position tracking. VLC's `get_time()` can return decreasing values during timestamp discontinuities in live streams. The playback monitor now detects backwards jumps (>1s) and resets position tracking instead of counting them as stalls.
-
-**Update 2026-02-01**: Reduced stream startup delay from 3-5s to 1-2s. Buffer targets lowered to 1.5-2.5s (based on bitrate), removed network-based bitrate probing (use URL hints only), and reduced HLS manifest fetch timeout from 4s to 2s. Rely on reconnect logic for stability instead of large initial buffers.
-
-**Update 2026-02-01**: Fixed focus-stealing when app is minimized to tray. `_populate_channel_list_chunked()` was calling `SetFocus()` unconditionally during playlist refresh and EPG updates, causing the app to steal focus even when hidden. Added guard `if self.IsShown() and not self.IsIconized()` before `SetFocus()` calls.
-
-**Update 2026-03-08**: Fixed laggy playback on live streams (especially HTTPS/non-.ts URLs like gohyperspeed). Root causes: (1) `--no-drop-late-frames` and `--no-skip-frames` were set globally, preventing VLC from catching up to real-time after buffering hiccups — caused ever-growing delay. (2) `_xtream_buffer_refresh_seconds=0.0` triggered immediate full stream restarts on any buffering blip for xtream-like streams. (3) `--clock-synchro=0` (VLC value 0 = disable) turned off PTS-based A/V sync. (4) `:clock-jitter=0` was too strict for internet delivery. Fix: frame dropping/skipping now only disabled for VOD/catch-up; live streams use VLC defaults (drop late frames to stay real-time) with 1500ms jitter tolerance. Xtream refresh threshold raised to 5s. Buffer targets raised to 2.0–3.5s. Early/prolonged buffering restart thresholds raised to 6s/10s.
-
-**Update 2026-05-16**: EPG auto-import freshness must validate real joined `channels`/`programmes` rows with future guide data, not just `epg.db` mtime. Startup DB tuning can create/touch an empty temp SQLite file, and using only mtime caused auto-import to skip, leaving "No program currently airing" everywhere.
-
-**Update 2026-05-16**: AU/CA/IE/UK/US EPG matching improved for IPTV-org and provider playlists. IPTV-org ids like `9Gem.au@Sydney` and `TG4.ie@SD` need `@` suffix expansion/base-region parsing; US local names containing state `CA` must not be classified as Canada when the tvg-id says `.us`; numbered siblings such as TSN 1/2 and RTE 1/2 need significant-number scoring so stale exact ids fall back to the correct HD/current EPG row instead of a sibling.
-
-**Update 2026-05-16**: Release builds must verify that bundled `ffmpeg.exe` is the real Git LFS binary before packaging. A working tree with only the 133-byte LFS pointer can still satisfy PyInstaller's data-file check, but the frozen app ships `_internal\ffmpeg.exe` as a non-executable text pointer and Windows reports it as incompatible with 64-bit Windows.
-
-**Update 2026-05-16**: PyInstaller now warns when run from an elevated Windows token and PyInstaller 7 will block it. Running PyInstaller through a Task Scheduler `/RL LIMITED` task avoids the warning, but the wrapper files must live in a repo-local directory with inherited user ACLs; Python's elevated temp directories can be admin-only and fail before the limited task starts.
-
-**Update 2026-05-16**: Batch `for /f` command strings must escape equals signs in Git options. `git describe --tags --abbrev=0` becomes `--abbrev 0` inside the `for /f` child command unless written as `--abbrev^=0`, causing `fatal: Not a valid object name 0` after an otherwise successful release.
-
-**Update 2026-05-16**: Do not caret-escape PowerShell pipelines that are already inside a quoted `powershell -Command` argument in a batch file. `^|` is preserved into PowerShell there and can be passed to commands such as `gh release list`, causing `unknown command "^"` after publication.
-
-**Update 2026-05-16**: In Windows PowerShell 5.1, `ConvertFrom-Json` array output can be treated as one pipeline object when immediately piped into `Where-Object`, so a boolean property array like `False, True` is truthy and selects every release. Store the decoded items first and filter with `Where-Object { $_.isDraft -eq $true }` before deleting drafts.
-
-**Update 2026-05-16**: Never bundle a local `iptvclient.conf` into PyInstaller release assets. The working-tree config can contain real provider URLs, credentials, local player paths, and cast targets; releases should let `options.py` create/load the user's own config instead of shipping a config file.
-
-**Update 2026-05-16**: The release script now validates `dist\iptvclient` after PyInstaller and aborts if any `iptvclient.conf` file is present, so future release builds cannot accidentally include local provider credentials even if a config file exists in the working tree.
+- `wx.LogError` uses printf-style formatting. Escape literal percent signs before passing user/provider text into it.
+- `sitecustomize.py` must remain a shim. The internal player implementation belongs in `internal_player.py` only.
+- EPG auto-import should be based on usable joined EPG data and source freshness, not just the presence or mtime of `epg.db`. `_ensure_db_tuned()` must not create an empty placeholder database.
+- EPG matching must account for country-specific channel aliases and suffixes, especially AU/CA/IE/UK/US sources. IPTV-org style XMLTV IDs with `@` suffixes need expansion for better channel matching.
+- XMLTV downloads can resume, but HTTP 416 means the local partial file is already complete or invalid for that source; the downloader has fallback logic for this and should keep it.
+- Live stream VLC options should allow late-frame dropping/skipping so playback can catch up to real time. Catch-up/VOD can use stricter frame options.
+- Current internal-player live buffering targets are intentionally low-latency: roughly 2.0-3.5 seconds depending on stream hints, bounded by user config. Xtream-style refresh should wait for sustained buffering instead of restarting on tiny blips.
+- Some Xtream-style live TS servers end the HTTP response periodically. Live `.ts`/MPEG-TS handling should reopen cleanly without consuming normal reconnect-attempt budget.
+- VLC can start muted with dummy/hidden interfaces. `_schedule_volume_apply()` explicitly unmutes before applying volume.
+- `CastingManager` needs one persistent background asyncio loop. Do not return to per-action event loops for libraries like `pyatv` and `aiohttp`.
+- Chromecast compatibility depends on the proxy paths in `stream_proxy.py`: MPEG-TS detection, HLS remux/transcode, bootstrap HLS, clean segment settings, and audio transcode/direct-proxy choices.
+- The stream proxy's Windows Firewall rule is best effort. Failure to run `netsh` should log a warning and not block casting.
+- Auto-update is for packaged Windows builds. The helper script uses PowerShell parameter names (`-ParentPid`, `-InstallDir`, `-StagingDir`, `-BackupDir`, `-ExeName`), not GNU-style flags.
+- Authenticode verification must use Windows PowerShell 5.1 with a clean environment because PowerShell Core module paths can break `Get-AuthenticodeSignature` from Python subprocesses.
+- Update installs preserve a user's existing `iptvclient.conf` from backup when present. This is different from bundling a repo config file in a release, which must not happen.
+- PyInstaller hidden imports for chardet mypyc modules are required for clean builds in the current environment.
