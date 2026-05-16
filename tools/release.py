@@ -7,6 +7,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 import zipfile
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -16,6 +17,8 @@ import app_meta  # noqa: E402
 import updater  # noqa: E402
 
 DEFAULT_SIGNTOOL = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
+FFMPEG_NAME = "ffmpeg.exe"
+LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 
 
 def run(cmd, cwd=REPO_ROOT, check=True, capture_output=False):
@@ -191,8 +194,165 @@ def clean_build_artifacts():
         _remove_tree(path)
 
 
+def _is_elevated_windows_token():
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+
+        advapi32 = ctypes.CDLL("Advapi32.dll")
+        kernel32 = ctypes.CDLL("kernel32.dll")
+        kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+        token = ctypes.c_void_p()
+        TOKEN_QUERY = 8
+        process = ctypes.c_void_p(kernel32.GetCurrentProcess())
+        if not advapi32.OpenProcessToken(process, TOKEN_QUERY, ctypes.byref(token)):
+            return False
+        try:
+            elevation_type = ctypes.c_int()
+            TokenElevationType = 18
+            ok = advapi32.GetTokenInformation(
+                token,
+                TokenElevationType,
+                ctypes.byref(elevation_type),
+                ctypes.sizeof(elevation_type),
+                ctypes.byref(ctypes.c_int()),
+            )
+            return bool(ok and elevation_type.value == 2)
+        finally:
+            kernel32.CloseHandle(token)
+    except Exception:
+        return False
+
+
+def _run_pyinstaller_limited():
+    task_name = f"AccessibleIPTVClientPyInstaller_{os.getpid()}"
+    temp_root = os.path.join(REPO_ROOT, ".build-tasks")
+    temp_dir = os.path.join(temp_root, f"pyinstaller-{os.getpid()}-{int(time.time())}")
+    os.makedirs(temp_dir, exist_ok=False)
+    try:
+        stdout_path = os.path.join(temp_dir, "pyinstaller.stdout.log")
+        stderr_path = os.path.join(temp_dir, "pyinstaller.stderr.log")
+        code_path = os.path.join(temp_dir, "pyinstaller.exitcode")
+        batch_path = os.path.join(temp_dir, "run_pyinstaller.bat")
+        with open(batch_path, "w", encoding="utf-8", newline="\r\n") as handle:
+            handle.write("@echo off\n")
+            handle.write(f'cd /d "{REPO_ROOT}"\n')
+            handle.write("if errorlevel 1 exit /b %errorlevel%\n")
+            handle.write(
+                f'"{sys.executable}" -m PyInstaller --noconfirm main.spec '
+                f'> "{stdout_path}" 2> "{stderr_path}"\n'
+            )
+            handle.write("set \"RC=%ERRORLEVEL%\"\n")
+            handle.write(f'> "{code_path}" echo %RC%\n')
+            handle.write("exit /b %RC%\n")
+
+        task_command = f'"{batch_path}"'
+        start_time = time.strftime("%H:%M", time.localtime(time.time() + 60))
+        run(
+            [
+                "schtasks",
+                "/Create",
+                "/TN",
+                task_name,
+                "/SC",
+                "ONCE",
+                "/ST",
+                start_time,
+                "/TR",
+                task_command,
+                "/RL",
+                "LIMITED",
+                "/F",
+            ],
+            capture_output=True,
+        )
+        try:
+            run(["schtasks", "/Run", "/TN", task_name], capture_output=True)
+            deadline = time.time() + 1200
+            while not os.path.exists(code_path):
+                if time.time() > deadline:
+                    raise RuntimeError("Timed out waiting for limited PyInstaller task to finish.")
+                time.sleep(1)
+
+            stdout = _read_text_file(stdout_path)
+            stderr = _read_text_file(stderr_path)
+            if stdout:
+                sys.stdout.write(stdout)
+                sys.stdout.flush()
+            if stderr:
+                sys.stderr.write(stderr)
+                sys.stderr.flush()
+
+            with open(code_path, "r", encoding="utf-8", errors="replace") as handle:
+                returncode = int((handle.read() or "1").strip())
+            if returncode != 0:
+                raise subprocess.CalledProcessError(returncode, [sys.executable, "-m", "PyInstaller", "--noconfirm", "main.spec"])
+        finally:
+            run(["schtasks", "/Delete", "/TN", task_name, "/F"], check=False, capture_output=True)
+    finally:
+        _remove_tree(temp_dir)
+        try:
+            os.rmdir(temp_root)
+        except OSError:
+            pass
+
+
+def _read_text_file(path):
+    if not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8", errors="replace") as handle:
+        return handle.read()
+
+
 def run_pyinstaller():
-    run(["pyinstaller", "--noconfirm", "main.spec"])
+    if _is_elevated_windows_token():
+        _run_pyinstaller_limited()
+        return
+    run([sys.executable, "-m", "PyInstaller", "--noconfirm", "main.spec"])
+
+
+def is_git_lfs_pointer(path):
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(len(LFS_POINTER_PREFIX)) == LFS_POINTER_PREFIX
+    except OSError:
+        return False
+
+
+def validate_ffmpeg_binary(path=None):
+    path = path or os.path.join(REPO_ROOT, FFMPEG_NAME)
+    label = os.path.relpath(path, REPO_ROOT)
+    if not os.path.isfile(path):
+        raise RuntimeError(f"{label} was not found; the build cannot include FFmpeg.")
+
+    size = os.path.getsize(path)
+    if is_git_lfs_pointer(path):
+        raise RuntimeError(
+            f"{label} is a Git LFS pointer, not a runnable FFmpeg binary. "
+            "Run: git lfs pull --include=ffmpeg.exe"
+        )
+    if size < 1024 * 1024:
+        raise RuntimeError(
+            f"{label} is unexpectedly small ({size} bytes); refusing to ship a broken FFmpeg binary."
+        )
+
+    kwargs = {
+        "cwd": REPO_ROOT,
+        "check": False,
+        "capture_output": True,
+        "text": True,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    result = subprocess.run([path, "-version"], **kwargs)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(f"{label} failed to execute as FFmpeg: {detail}")
+
+    first_line = (result.stdout or result.stderr or "").splitlines()
+    if not first_line or "ffmpeg version" not in first_line[0].lower():
+        raise RuntimeError(f"{label} did not report an FFmpeg version.")
 
 
 def sign_executable(exe_path):
@@ -400,9 +560,11 @@ def main():
         tag, next_version, commits, bump = compute_next_version()
         release_notes = build_release_notes(commits)
         update_version_file(next_version)
+        validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
+        validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         assets = build_assets(next_version, release_notes, signing_thumbprint)
@@ -413,9 +575,11 @@ def main():
 
     if args.mode == "build":
         release_notes = "## Other\n- Local build."
+        validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
+        validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         build_assets(app_meta.APP_VERSION, release_notes, signing_thumbprint)

@@ -3,7 +3,10 @@
 import os
 import sys
 
+import chardet.pipeline
+
 block_cipher = None
+chardet_pipeline_path = os.path.dirname(chardet.pipeline.__file__)
 
 # Hidden imports for networking and casting stacks
 hidden_imports = [
@@ -26,6 +29,16 @@ hidden_imports = [
     'vlc',
     'psutil',
     'cryptography',
+    'chardet.pipeline.ascii__mypyc',
+    'chardet.pipeline.confusion__mypyc',
+    'chardet.pipeline.escape__mypyc',
+    'chardet.pipeline.magic__mypyc',
+    'chardet.pipeline.orchestrator__mypyc',
+    'chardet.pipeline.statistical__mypyc',
+    'chardet.pipeline.structural__mypyc',
+    'chardet.pipeline.utf1632__mypyc',
+    'chardet.pipeline.utf8__mypyc',
+    'chardet.pipeline.validity__mypyc',
 ]
 
 # Explicitly add some submodules that PyInstaller might miss
@@ -44,7 +57,7 @@ hidden_imports += [
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[chardet_pipeline_path],
     binaries=[],
     datas=[
         ('iptvclient.conf', '.'),
