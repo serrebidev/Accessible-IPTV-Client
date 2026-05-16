@@ -332,8 +332,36 @@ def gh_release_create(version, assets):
         f"v{version}",
         "--notes-file",
         assets["notes_path"],
+        "--latest",
     ]
     run(cmd)
+    ensure_release_published_latest(version)
+    delete_draft_releases()
+
+
+def ensure_release_published_latest(version):
+    tag = f"v{version}"
+    run(["gh", "release", "edit", tag, "--draft=false", "--latest"])
+
+
+def delete_draft_releases():
+    result = run(
+        ["gh", "release", "list", "--limit", "100", "--json", "tagName,isDraft"],
+        capture_output=True,
+    )
+    try:
+        releases = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Failed to parse GitHub release list JSON.") from exc
+
+    draft_tags = [
+        release.get("tagName")
+        for release in releases
+        if release.get("isDraft") and release.get("tagName")
+    ]
+    for tag in draft_tags:
+        print(f"Deleting draft release {tag}...")
+        run(["gh", "release", "delete", tag, "--yes"])
 
 
 def print_dry_run(version, tag, bump, assets):

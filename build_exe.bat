@@ -54,7 +54,7 @@ exit /b 0
 echo Ensuring the GitHub release is published, latest, and draft-free...
 for /f "delims=" %%T in ('git describe --tags --abbrev=0') do set "RELEASE_TAG=%%T"
 if "%RELEASE_TAG%"=="" (
-    echo Failed to determine release tag.
+    echo Failed to determine release tag from app_meta.py.
     exit /b 1
 )
 gh release edit "%RELEASE_TAG%" --draft=false --latest
