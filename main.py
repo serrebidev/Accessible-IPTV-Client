@@ -31,7 +31,7 @@ import app_meta
 import updater
 from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
-    strip_noise_words
+    strip_noise_words, epg_database_has_usable_data
 )
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
@@ -404,9 +404,23 @@ class IPTVClient(wx.Frame):
         conn = None
         try:
             path = get_db_path()
+            if not os.path.exists(path):
+                return
             uri = f"file:{path}?cache=shared"
             conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
             cur = conn.cursor()
+            tables = {
+                row[0]
+                for row in cur.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name IN ('channels', 'programmes')
+                    """
+                ).fetchall()
+            }
+            if {"channels", "programmes"} - tables:
+                return
             cur.execute("PRAGMA journal_mode=WAL;")
             cur.execute("PRAGMA synchronous=NORMAL;")
             cur.execute("PRAGMA temp_store=MEMORY;")
@@ -1698,11 +1712,16 @@ class IPTVClient(wx.Frame):
         if current_hash and current_hash != last_hash:
             return True
         db_path = get_db_path()
-        try:
-            age_sec = time.time() - os.path.getmtime(db_path)
-        except Exception:
+        if not epg_database_has_usable_data(db_path):
             return True
-        return age_sec >= interval
+        try:
+            last_import = float(self.config.get("epg_last_import_epoch", 0) or 0)
+        except Exception:
+            last_import = 0.0
+        now = time.time()
+        if last_import <= 0 or last_import > now + 300:
+            return True
+        return (now - last_import) >= interval
 
     def _cancel_epg_autostart_timer(self):
         if self._epg_autostart_timer:

@@ -386,20 +386,122 @@ def extract_group(title: str) -> str:
     return ''
 
 def tokenize_channel_name(name: str) -> set:
-    if not name:
-        return set()
-    paren = re.findall(r'\(([^)]*)\)', name)
-    outside = re.sub(r'\(.*?\)', '', name)
-    words = re.findall(r'\w+', outside)
-    paren_words = []
-    for p in paren:
-        paren_words.extend(re.findall(r'\w+', p))
-    all_words = [w.lower() for w in words + paren_words if len(w) > 1]
+    return set(_ordered_channel_tokens(name))
+
+
+def _ordered_channel_tokens(*names: str) -> List[str]:
+    """Return stable, useful channel-name tokens for DB candidate lookups."""
     bad = set(STRIP_TAGS + NOISE_WORDS + [
-        'channel', 'tv', 'the', 'and', 'for', 'with', 'on', 'in', 'f'
+        'channel', 'tv', 'the', 'and', 'for', 'with', 'on', 'in', 'f',
+        'geo', 'geoblocked', 'blocked', 'not', 'only'
     ])
-    tokens = set([w for w in all_words if w not in bad and not w.isdigit()])
-    return tokens
+    out: List[str] = []
+    seen: Set[str] = set()
+    for name in names:
+        if not name:
+            continue
+        paren = re.findall(r'\(([^)]*)\)', name)
+        outside = re.sub(r'\(.*?\)', ' ', name)
+        words = re.findall(r'\w+', outside)
+        paren_words: List[str] = []
+        for p in paren:
+            paren_words.extend(re.findall(r'\w+', p))
+        for raw in words + paren_words:
+            w = raw.lower()
+            if len(w) <= 1 or w in bad or w.isdigit():
+                continue
+            if re.fullmatch(r'\d{3,4}p', w) or re.fullmatch(r'\d+k', w):
+                continue
+            if w not in seen:
+                seen.add(w)
+                out.append(w)
+    return out
+
+
+def _significant_channel_numbers(*texts: str) -> Set[str]:
+    numbers: Set[str] = set()
+    word_numbers = {
+        "one": "1",
+        "two": "2",
+        "three": "3",
+        "four": "4",
+        "five": "5",
+        "six": "6",
+        "seven": "7",
+        "eight": "8",
+        "nine": "9",
+        "ten": "10",
+    }
+    ignored = {
+        "240", "360", "480", "540", "576", "720", "1080", "1440", "2160", "4320",
+        "50", "60",
+    }
+    for text in texts:
+        s = (text or "").lower()
+        if not s:
+            continue
+        s = re.sub(r'\b(?:au|ca|ie|uk|gb|us)\d+\b', ' ', s)
+        for raw in re.findall(r'\d+', s):
+            normalized = raw.lstrip("0") or "0"
+            if normalized in ignored:
+                continue
+            if len(normalized) > 3:
+                continue
+            numbers.add(normalized)
+        for word, value in word_numbers.items():
+            if re.search(r'\b' + re.escape(word) + r'\b', s):
+                numbers.add(value)
+    return numbers
+
+
+def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
+    """Expand common XMLTV id variants such as IPTV-org channel.au@City."""
+    raw = (tvg_id or "").strip()
+    if not raw:
+        return []
+    candidates: List[str] = []
+    seen: Set[str] = set()
+
+    def add(value: str):
+        value = (value or "").strip()
+        key = value.lower()
+        if value and key not in seen:
+            seen.add(key)
+            candidates.append(value)
+
+    add(raw)
+    base, sep, suffix = raw.partition("@")
+    base_for_variants = base or raw
+
+    def add_base_variants(value: str):
+        m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', value or "")
+        if not m:
+            return
+        name_part, region_part = m.groups()
+        lowered_name = name_part.lower()
+        for quality in ("fhd", "uhd", "hd", "sd", "4k", "8k"):
+            if lowered_name.endswith(quality) and len(name_part) > len(quality):
+                add(f"{name_part[:-len(quality)]}.{region_part}")
+                break
+        if lowered_name.endswith("sport"):
+            add(f"{name_part}s.{region_part}")
+
+    add_base_variants(base_for_variants)
+    if sep and base:
+        add(base)
+        add_base_variants(base)
+        suffix_clean = re.sub(r'[^A-Za-z0-9]+', '', suffix or "")
+        if suffix_clean and suffix_clean.lower() not in {"sd", "hd", "fhd", "uhd", "4k", "8k"}:
+            m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', base)
+            if m:
+                name_part, region_part = m.groups()
+                add(f"{name_part}{suffix_clean}.{region_part}")
+    return candidates
+
+
+def _tvg_id_has_region_hint(tvg_id: str) -> bool:
+    return bool(_detect_region_from_id(tvg_id or ""))
+
 
 def strip_backup_terms(name: str) -> str:
     return strip_noise_words(name)
@@ -517,7 +619,7 @@ def _detect_region_from_id(ch_id: str) -> str:
     if not ch_id:
         return ''
     s = ch_id.lower()
-    parts = re.split(r'[.\-_:|/]+', s)
+    base = s.split('@', 1)[0]
 
     def _token_variants(token: str):
         token = token.strip()
@@ -536,6 +638,14 @@ def _detect_region_from_id(ch_id: str) -> str:
             out.append(trimmed)
         return out
 
+    base_parts = re.split(r'[.\-_:|/]+', base)
+    for token in reversed(base_parts):
+        for candidate in _token_variants(token):
+            code = _norm_country(candidate)
+            if code:
+                return code
+
+    parts = re.split(r'[.\-_:|/@]+', s)
     for token in (list(reversed(parts)) + parts):
         for candidate in _token_variants(token):
             code = _norm_country(candidate)
@@ -843,6 +953,61 @@ PRAGMA_READONLY = [
     "PRAGMA read_uncommitted=1;",    # let readers proceed during writer txn
 ]
 
+
+def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.datetime] = None) -> bool:
+    """Return True when the EPG DB has current/future joined channel data."""
+    if not db_path or not os.path.exists(db_path):
+        return False
+
+    conn = None
+    try:
+        uri = f"file:{db_path}?mode=ro&cache=shared"
+        conn = sqlite3.connect(uri, uri=True, timeout=2.0)
+        cur = conn.cursor()
+        tables = {
+            row[0]
+            for row in cur.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table' AND name IN ('channels', 'programmes')
+                """
+            ).fetchall()
+        }
+        if {"channels", "programmes"} - tables:
+            return False
+
+        if now_utc is None:
+            try:
+                now_utc = datetime.datetime.now(datetime.UTC)
+            except AttributeError:
+                now_utc = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        elif now_utc.tzinfo is None:
+            now_utc = now_utc.replace(tzinfo=datetime.timezone.utc)
+        else:
+            now_utc = now_utc.astimezone(datetime.timezone.utc)
+
+        now_str = now_utc.strftime("%Y%m%d%H%M%S")
+        row = cur.execute(
+            """
+            SELECT 1
+            FROM programmes p
+            JOIN channels c ON c.id = p.channel_id
+            WHERE p.end > ?
+            LIMIT 1
+            """,
+            (now_str,),
+        ).fetchone()
+        return bool(row)
+    except Exception:
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 # =========================
 # EPG Database
 # =========================
@@ -1034,7 +1199,7 @@ class EPGDatabase:
         norm_name = canonicalize_name(strip_noise_words(name))
         norm_tvg = canonicalize_name(strip_noise_words(tvg_name))
         brand = _brand_key(name)
-        tokens = list(tokenize_channel_name(name))[:3]
+        tokens = _ordered_channel_tokens(name, tvg_name)[:5]
 
         # NOTE: region_clause and params_region were removed during refactoring.
         # We now rely on the scoring phase to penalize region mismatches rather than hiding candidates.
@@ -1100,27 +1265,47 @@ class EPGDatabase:
     def _collect_candidates_by_id_and_name(self, c, tvg_id: str, tvg_name: str, name: str):
         candidates = {}
 
-        if tvg_id:
+        tvg_id_candidates = _expand_tvg_id_candidates(tvg_id)
+        tvg_id_candidate_keys = {candidate.strip().lower() for candidate in tvg_id_candidates}
+
+        for candidate_id in tvg_id_candidates:
             row = c.execute(
                 "SELECT id, group_tag, display_name FROM channels WHERE id = ? COLLATE NOCASE",
-                (tvg_id,)
+                (candidate_id,)
             ).fetchone()
             if row:
+                why = 'exact-id' if candidate_id == tvg_id else 'expanded-tvg-id'
                 candidates[row[0]] = {
                     'id': row[0],
                     'group_tag': row[1],
                     'score': 100,
                     'display_name': row[2],
-                    'why': 'exact-id',
+                    'why': why,
                     'ts_offset': 0
                 }
 
         if tvg_name:
             norm_tvg_name = canonicalize_name(strip_noise_words(tvg_name))
             rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm_tvg_name,)).fetchall()
+            playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
             for r in rows:
+                candidate_numbers = _significant_channel_numbers(r[0], r[2])
                 existing = candidates.get(r[0])
                 score = 96
+                why = 'exact-tvg-name'
+                if playlist_numbers:
+                    if candidate_numbers & playlist_numbers:
+                        score += 12
+                        why += ' +number'
+                    elif candidate_numbers:
+                        score = 20
+                        why += ' -number-mismatch'
+                    else:
+                        score -= 30
+                        why += ' -number-missing'
+                elif candidate_numbers:
+                    score -= 15
+                    why += ' -extra-number'
                 if existing and existing.get('score', 0) >= score:
                     # Keep the stronger match (usually an exact-id hit).
                     continue
@@ -1129,14 +1314,13 @@ class EPGDatabase:
                     'group_tag': r[1],
                     'score': score,
                     'display_name': r[2],
-                    'why': 'exact-tvg-name',
+                    'why': why,
                     'ts_offset': 0
                 }
 
-        if tvg_id:
-            wanted = tvg_id.strip().lower()
+        if tvg_id and _tvg_id_has_region_hint(tvg_id):
             for k, v in list(candidates.items()):
-                if (k or '').strip().lower() == wanted:
+                if (k or '').strip().lower() in tvg_id_candidate_keys:
                     continue
                 adj = max(1, v.get('score', 0) - 60)
                 if adj == v.get('score'):
@@ -1168,6 +1352,7 @@ class EPGDatabase:
         playlist_zone = _detect_zone(" ".join([channel.get("group",""), tvg_name, name]))
         playlist_brand_key = _brand_key(name)
         playlist_ts = _detect_timeshift(" ".join([tvg_name, name]))
+        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
         brand_text = canonicalize_name(strip_noise_words(name)).lower()
         playlist_brand_family = _reverse_brand_lookup(brand_text)
         pl_calls = extract_callsigns(" ".join([tvg_name, name, channel.get("group",""), tvg_id]))
@@ -1297,6 +1482,18 @@ class EPGDatabase:
                     # Playlist base matched to a +N channel; mild penalty
                     score -= 8
                     why.append('-timeshift-extra-epg')
+
+            if playlist_numbers:
+                epg_numbers = _significant_channel_numbers(ch_id, disp)
+                if epg_numbers & playlist_numbers:
+                    score += 16
+                    why.append('+number')
+                elif epg_numbers:
+                    score -= 30
+                    why.append('-number-mismatch')
+                else:
+                    score -= 6
+                    why.append('-number-missing')
 
             # ---- HBO variant-aware boosting ----
             if playlist_brand_family == "hbo" and epg_brand_family == "hbo":
@@ -2614,9 +2811,12 @@ def _derive_playlist_region(channel: Dict[str, str]) -> str:
         _votes_from_prefix(g, 5)
 
     tid = (channel.get("tvg-id") or "").lower()
-    for tok in re.findall(r'[.\-_:|/]([a-z]{2,3})', tid):
+    id_region = _detect_region_from_id(tid)
+    if id_region:
+        _add_vote(id_region, 8)
+    for tok in re.findall(r'[.\-_:|/@]([a-z]{2,3})', tid):
         if tok in group_synonyms():
-            _add_vote(tok, 6)
+            _add_vote(tok, 4)
 
     _votes_from_text(channel.get("tvg-name", ""), 6)
     _votes_from_text(channel.get("name", ""), 7)
