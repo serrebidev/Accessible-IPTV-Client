@@ -1,8 +1,16 @@
 
 import time
 import logging
+import os
+
+import pytest
 import pychromecast
 from stream_proxy import get_proxy
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("IPTV_RUN_LIVE_CAST_TESTS") != "1",
+    reason="live Chromecast integration test; set IPTV_RUN_LIVE_CAST_TESTS=1 to run",
+)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)

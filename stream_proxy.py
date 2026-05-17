@@ -20,6 +20,322 @@ import sys
 
 LOG = logging.getLogger(__name__)
 
+_DEFAULT_UPSTREAM_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+)
+_REAL_HLS_PLAYLIST_WAIT_SECONDS = 12
+_HLS_UPSTREAM_READ_TIMEOUT_SECONDS = 30
+_HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS = 3
+_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS = 1.0
+_HLS_SEGMENT_SECONDS = 2
+_HLS_PLAYLIST_SEGMENT_COUNT = 8
+_HLS_RETAINED_SEGMENT_COUNT = 180
+_HLS_SEGMENT_CLEANUP_INTERVAL_SECONDS = 15
+_HLS_MIN_READY_SEGMENTS = 3
+_HLS_MIN_READY_DURATION_SECONDS = 5.0
+_HLS_MIN_STABLE_START_SEGMENT_BYTES = 128 * 1024
+_HLS_STARTUP_SEGMENTS_TO_DROP = 3
+
+_HEADER_NAME_MAP = {
+    "user-agent": "User-Agent",
+    "ua": "User-Agent",
+    "http-user-agent": "User-Agent",
+    "referer": "Referer",
+    "referrer": "Referer",
+    "http-referrer": "Referer",
+    "http-referer": "Referer",
+    "origin": "Origin",
+    "http-origin": "Origin",
+    "cookie": "Cookie",
+    "http-cookie": "Cookie",
+    "authorization": "Authorization",
+    "auth": "Authorization",
+    "http-authorization": "Authorization",
+    "accept": "Accept",
+    "http-accept": "Accept",
+    "range": "Range",
+    "http-range": "Range",
+    "host": "Host",
+    "http-host": "Host",
+    "x-forwarded-for": "X-Forwarded-For",
+    "xff": "X-Forwarded-For",
+}
+
+
+def _normalize_header_name(name):
+    mapped = _HEADER_NAME_MAP.get(str(name).strip().lower())
+    if mapped:
+        return mapped
+    return "-".join(part.capitalize() for part in str(name).strip().split("-") if part)
+
+
+def _header_value_to_str(value):
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            text = _header_value_to_str(item)
+            if text:
+                return text
+        return ""
+    return str(value).strip()
+
+
+def _set_header(headers, name, value, *, overwrite=True):
+    value_text = _header_value_to_str(value)
+    if not name or not value_text:
+        return
+    lower_name = name.lower()
+    existing = {key.lower() for key in headers}
+    if overwrite or lower_name not in existing:
+        headers[name] = value_text
+
+
+def _iter_extra_headers(value):
+    if not value:
+        return
+    if isinstance(value, str):
+        values = [value]
+    elif isinstance(value, (list, tuple, set)):
+        values = value
+    else:
+        values = [value]
+
+    for header in values:
+        text = str(header).strip()
+        if ":" not in text:
+            continue
+        name, val = text.split(":", 1)
+        name = _normalize_header_name(name)
+        val = val.strip()
+        if name and val:
+            yield name, val
+
+
+def normalize_request_headers(headers=None, *, add_default_user_agent=True):
+    """Convert channel metadata headers into urllib-safe string headers."""
+    normalized = {}
+    if isinstance(headers, dict):
+        for key, value in headers.items():
+            if str(key).strip().lower() == "_extra":
+                continue
+            name = _normalize_header_name(key)
+            if not name:
+                continue
+            _set_header(normalized, name, value)
+
+        for name, value in _iter_extra_headers(headers.get("_extra")) or ():
+            _set_header(normalized, name, value, overwrite=False)
+
+    if add_default_user_agent and not any(k.lower() == "user-agent" for k in normalized):
+        normalized["User-Agent"] = _DEFAULT_UPSTREAM_USER_AGENT
+    return normalized
+
+
+def _segment_number_from_name(filename):
+    if not filename.startswith("seg_") or not filename.endswith(".ts"):
+        return None
+    try:
+        return int(filename[4:-3])
+    except ValueError:
+        return None
+
+
+def _segment_number_from_uri(uri):
+    return _segment_number_from_name(os.path.basename(urllib.parse.urlparse(uri).path))
+
+
+def _segment_file_size(segment_dir, uri):
+    if not segment_dir:
+        return None
+    filename = os.path.basename(urllib.parse.urlparse(uri).path)
+    path = os.path.join(segment_dir, filename)
+    try:
+        return os.path.getsize(path)
+    except OSError:
+        return None
+
+
+def filter_unstable_hls_start(lines, segment_dir, min_segment_bytes=_HLS_MIN_STABLE_START_SEGMENT_BYTES):
+    """Drop tiny FFmpeg startup segments that can have incomplete audio metadata."""
+    if not segment_dir:
+        return list(lines)
+
+    filtered = []
+    pending_segment_tags = []
+    media_sequence_index = None
+    original_media_sequence = None
+    current_sequence = None
+    stable_sequence = None
+    dropping = True
+    saw_segment = False
+
+    for raw_line in lines:
+        line = str(raw_line).strip()
+        if not line:
+            continue
+
+        if line.startswith("#EXT-X-MEDIA-SEQUENCE:"):
+            media_sequence_index = len(filtered)
+            filtered.append(line)
+            try:
+                original_media_sequence = int(line.split(":", 1)[1])
+                current_sequence = original_media_sequence
+            except ValueError:
+                original_media_sequence = None
+                current_sequence = None
+            continue
+
+        if line.startswith("#EXTINF:"):
+            pending_segment_tags.append(line)
+            continue
+
+        if line.startswith("#"):
+            if pending_segment_tags:
+                pending_segment_tags.append(line)
+            else:
+                filtered.append(line)
+            continue
+
+        size = _segment_file_size(segment_dir, line)
+        saw_segment = True
+        sequence_offset = (
+            current_sequence - original_media_sequence
+            if current_sequence is not None and original_media_sequence is not None
+            else None
+        )
+        segment_number = _segment_number_from_uri(line)
+        in_startup_window = (
+            segment_number is not None
+            and segment_number <= _HLS_STARTUP_SEGMENTS_TO_DROP
+        ) or (
+            segment_number is None
+            and original_media_sequence == 1
+            and sequence_offset is not None
+            and sequence_offset < _HLS_STARTUP_SEGMENTS_TO_DROP
+        )
+        below_stable_size = size is not None and size < min_segment_bytes
+        if dropping and (in_startup_window or below_stable_size):
+            pending_segment_tags.clear()
+            if current_sequence is not None:
+                current_sequence += 1
+            continue
+
+        if dropping:
+            dropping = False
+            stable_sequence = current_sequence or _segment_number_from_uri(line)
+        filtered.extend(pending_segment_tags)
+        filtered.append(line)
+        pending_segment_tags.clear()
+        if current_sequence is not None:
+            current_sequence += 1
+
+    if dropping:
+        if saw_segment:
+            if media_sequence_index is not None and current_sequence is not None:
+                filtered[media_sequence_index] = f"#EXT-X-MEDIA-SEQUENCE:{current_sequence}"
+            return filtered
+        return list(lines)
+
+    if stable_sequence is not None:
+        if media_sequence_index is not None:
+            filtered[media_sequence_index] = f"#EXT-X-MEDIA-SEQUENCE:{stable_sequence}"
+        elif original_media_sequence is not None:
+            filtered.insert(1, f"#EXT-X-MEDIA-SEQUENCE:{stable_sequence}")
+
+    return filtered
+
+
+def rewrite_hls_playlist(lines, base_url, segment_dir=None, drop_unstable_start=False):
+    """Rewrite FFmpeg HLS segment paths without changing playlist semantics."""
+    if drop_unstable_start:
+        lines = filter_unstable_hls_start(lines, segment_dir)
+
+    rewritten = []
+    saw_header = False
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("#EXTM3U"):
+            if not saw_header:
+                rewritten.append("#EXTM3U")
+                saw_header = True
+            continue
+        if line.startswith("#"):
+            rewritten.append(line)
+            continue
+        rewritten.append(urllib.parse.urljoin(base_url, line))
+
+    if not saw_header:
+        rewritten.insert(0, "#EXTM3U")
+    return "\n".join(rewritten) + "\n"
+
+
+def hls_playlist_stats(lines):
+    media_sequence = None
+    first_segment = None
+    segment_count = 0
+    duration = 0.0
+    has_endlist = False
+    pending_duration = None
+
+    for raw_line in lines:
+        line = str(raw_line).strip()
+        if not line:
+            continue
+        if line.startswith("#EXT-X-MEDIA-SEQUENCE:"):
+            try:
+                media_sequence = int(line.split(":", 1)[1])
+            except ValueError:
+                media_sequence = None
+            continue
+        if line.startswith("#EXTINF:"):
+            try:
+                pending_duration = float(line.split(":", 1)[1].split(",", 1)[0])
+            except ValueError:
+                pending_duration = None
+            continue
+        if line == "#EXT-X-ENDLIST":
+            has_endlist = True
+            continue
+        if line.startswith("#"):
+            continue
+
+        if first_segment is None:
+            first_segment = line
+        segment_count += 1
+        if pending_duration is not None:
+            duration += pending_duration
+        pending_duration = None
+
+    return {
+        "media_sequence": media_sequence,
+        "first_segment": first_segment,
+        "segment_count": segment_count,
+        "duration": duration,
+        "has_endlist": has_endlist,
+    }
+
+
+def hls_playlist_is_ready(lines, segment_dir=None, require_stable_start=False):
+    if require_stable_start:
+        lines = filter_unstable_hls_start(lines, segment_dir)
+    stats = hls_playlist_stats(lines)
+    if stats["has_endlist"] and stats["segment_count"] > 0:
+        return True, stats
+    ready = (
+        stats["segment_count"] >= _HLS_MIN_READY_SEGMENTS
+        and stats["duration"] >= _HLS_MIN_READY_DURATION_SECONDS
+    )
+    return ready, stats
+
+
+def is_fresh_transcode_profile(profile):
+    return str(profile or "").startswith("chromecast")
+
+
 def get_ffmpeg_path():
     """Resolve ffmpeg path, prioritizing bundled executable in frozen mode."""
     # PyInstaller onefile
@@ -48,21 +364,23 @@ def get_ffmpeg_path():
 class HLSConverter:
     def __init__(self, source_url, headers=None, transcode_profile: str = "auto"):
         self.source_url = source_url
-        self.headers = headers or {}
+        self.headers = normalize_request_headers(headers)
         self.profile = transcode_profile
-        self.user_agent = (
-            self.headers.get("User-Agent")
-            or self.headers.get("user-agent")
-            or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        )
+        self.user_agent = self.headers.get("User-Agent") or _DEFAULT_UPSTREAM_USER_AGENT
         self.temp_dir = tempfile.mkdtemp(prefix="iptv_remux_")
         self.process = None
         self.playlist_path = os.path.join(self.temp_dir, "stream.m3u8")
         self.last_access = time.time()
+        self._bytes_pumped = 0
+        self._startup_error = None
+        self._ffmpeg_stderr_tail = []
+        self._state_lock = threading.Lock()
         self.start()
 
-    def start(self):
-        # Video HLS engine (piped)
+    def _uses_h264_transcode(self):
+        return self.profile in {"chromecast_h264", "h264", "transcode"}
+
+    def _build_ffmpeg_command(self):
         cmd = [
             get_ffmpeg_path(), "-hide_banner", "-loglevel", "error",
             "-analyzeduration", "5000000", "-probesize", "5000000",
@@ -70,43 +388,192 @@ class HLSConverter:
             "-flags", "low_delay",
             "-i", "pipe:0",
             "-map", "0:v?", "-map", "0:a?",
-            "-c:v", "copy",
-            "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "320k", "-ac", "2", "-ar", "44100"
         ]
 
-        hls_flags = "delete_segments+split_by_time+independent_segments+append_list+discont_start"
+        if self._uses_h264_transcode():
+            cmd.extend([
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-tune", "zerolatency",
+                "-pix_fmt", "yuv420p",
+                "-profile:v", "high",
+                "-level", "4.1",
+                "-crf", "23",
+                "-maxrate", "6000k",
+                "-bufsize", "12000k",
+                "-force_key_frames", f"expr:gte(t,n_forced*{_HLS_SEGMENT_SECONDS})",
+            ])
+            hls_flags = None
+        else:
+            cmd.extend(["-c:v", "copy"])
+            hls_flags = "split_by_time"
+
         cmd.extend([
-            "-f", "hls", "-hls_time", "2", "-hls_list_size", "5",
-            "-hls_flags", hls_flags, "-hls_segment_type", "mpegts",
-            "-hls_version", "3", "-hls_init_time", "0", "-flush_packets", "1",
+            "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "320k", "-ac", "2", "-ar", "44100"
+        ])
+
+        cmd.extend([
+            "-f", "hls", "-hls_time", str(_HLS_SEGMENT_SECONDS),
+            "-hls_list_size", str(_HLS_PLAYLIST_SEGMENT_COUNT),
+        ])
+        if hls_flags:
+            cmd.extend(["-hls_flags", hls_flags])
+        cmd.extend([
+            "-hls_segment_type", "mpegts", "-flush_packets", "1",
             "-start_number", "1", "-hls_segment_filename", os.path.join(self.temp_dir, "seg_%d.ts"),
             "-mpegts_flags", "pat_pmt_at_beginning",
             self.playlist_path
         ])
+        return cmd
 
+    def start(self):
+        # Video HLS engine (piped)
+        cmd = self._build_ffmpeg_command()
         LOG.info(f"Starting HLS engine for Video ({self.profile})")
         
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
         try:
-            self.process = subprocess.Popen(cmd, stdin=subprocess.PIPE, creationflags=creation_flags)
-            def _pump():
+            self.process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                creationflags=creation_flags
+            )
+
+            def _drain_stderr():
+                if not self.process or not self.process.stderr:
+                    return
                 try:
-                    req = urllib.request.Request(self.source_url, headers=self.headers)
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        while self.process and self.process.poll() is None:
-                            chunk = resp.read(32768)
-                            if not chunk: break
-                            try:
-                                self.process.stdin.write(chunk)
-                                self.process.stdin.flush()
-                            except: break
-                except Exception as e: LOG.error(f"HLS pump error: {e}")
+                    for raw_line in self.process.stderr:
+                        line = raw_line.decode("utf-8", errors="replace").strip()
+                        if line:
+                            with self._state_lock:
+                                self._ffmpeg_stderr_tail.append(line)
+                                self._ffmpeg_stderr_tail = self._ffmpeg_stderr_tail[-8:]
+                except Exception:
+                    pass
+
+            threading.Thread(target=_drain_stderr, daemon=True).start()
+
+            def _pump():
+                last_error = None
+                got_any_data = False
+                startup_attempts = 0
+                try:
+                    while self.process and self.process.poll() is None:
+                        if self.process and self.process.poll() is not None:
+                            break
+                        try:
+                            req = urllib.request.Request(self.source_url, headers=self.headers)
+                            with urllib.request.urlopen(
+                                req,
+                                timeout=_HLS_UPSTREAM_READ_TIMEOUT_SECONDS
+                            ) as resp:
+                                response_had_data = False
+                                while self.process and self.process.poll() is None:
+                                    chunk = resp.read(32768)
+                                    if not chunk:
+                                        break
+                                    response_had_data = True
+                                    got_any_data = True
+                                    with self._state_lock:
+                                        self._bytes_pumped += len(chunk)
+                                    try:
+                                        self.process.stdin.write(chunk)
+                                        self.process.stdin.flush()
+                                    except Exception:
+                                        return
+                            if not got_any_data:
+                                startup_attempts += 1
+                                if startup_attempts >= _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS:
+                                    break
+                                LOG.info(
+                                    "HLS upstream did not provide data on startup attempt %s/%s; retrying",
+                                    startup_attempts,
+                                    _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS
+                                )
+                                time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)
+                                continue
+                            if response_had_data and self.process and self.process.poll() is None:
+                                LOG.info("HLS upstream response ended; reopening live stream")
+                                time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)
+                                continue
+                            break
+                        except Exception as e:
+                            last_error = e
+                            if got_any_data:
+                                LOG.info("HLS upstream read ended; reopening live stream: %s", e)
+                                time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)
+                                continue
+
+                            startup_attempts += 1
+                            if startup_attempts >= _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS:
+                                break
+                            LOG.info(
+                                "HLS upstream did not provide data on startup attempt %s/%s; retrying",
+                                startup_attempts,
+                                _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS
+                            )
+                            time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)
+
+                    if not got_any_data and not last_error:
+                        with self._state_lock:
+                            self._startup_error = "HLS upstream closed before media data was received"
+                        LOG.info("HLS upstream closed before media data was received")
+                    elif last_error and not got_any_data:
+                        with self._state_lock:
+                            self._startup_error = str(last_error)
+                        LOG.info("HLS upstream startup failed before media data was received: %s", last_error)
+                    elif last_error:
+                        LOG.info("HLS upstream ended after media data was received: %s", last_error)
                 finally:
                     if self.process and self.process.stdin:
                         try: self.process.stdin.close()
                         except: pass
             threading.Thread(target=_pump, daemon=True).start()
-        except Exception as e: LOG.error(f"FFmpeg HLS start failed: {e}")
+            threading.Thread(target=self._cleanup_old_segments, daemon=True).start()
+        except Exception as e:
+            with self._state_lock:
+                self._startup_error = str(e)
+            LOG.info("FFmpeg HLS start failed: %s", e)
+
+    def _segment_number(self, filename):
+        if not filename.startswith("seg_") or not filename.endswith(".ts"):
+            return None
+        try:
+            return int(filename[4:-3])
+        except ValueError:
+            return None
+
+    def _cleanup_old_segments_once(self):
+        if not os.path.isdir(self.temp_dir):
+            return
+        segments = []
+        try:
+            with os.scandir(self.temp_dir) as entries:
+                for entry in entries:
+                    if not entry.is_file():
+                        continue
+                    number = self._segment_number(entry.name)
+                    if number is not None:
+                        segments.append((number, entry.path))
+        except OSError:
+            return
+
+        if len(segments) <= _HLS_RETAINED_SEGMENT_COUNT:
+            return
+        segments.sort()
+        stale = segments[:-_HLS_RETAINED_SEGMENT_COUNT]
+        for _number, path in stale:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    def _cleanup_old_segments(self):
+        while self.is_alive():
+            time.sleep(_HLS_SEGMENT_CLEANUP_INTERVAL_SECONDS)
+            self._cleanup_old_segments_once()
 
     def stop(self):
         if self.process:
@@ -119,14 +586,38 @@ class HLSConverter:
 
     def is_alive(self): return self.process and self.process.poll() is None
     def touch(self): self.last_access = time.time()
+    def has_upstream_data(self):
+        with self._state_lock:
+            return self._bytes_pumped > 0
+    def startup_error(self):
+        with self._state_lock:
+            return self._startup_error
 
     def wait_for_playlist(self, timeout=10):
         start = time.time()
         while time.time() - start < timeout:
-            if os.path.exists(self.playlist_path) and os.path.getsize(self.playlist_path) > 100: return True
-            if not self.is_alive(): return False
+            if os.path.exists(self.playlist_path) and os.path.getsize(self.playlist_path) > 100:
+                try:
+                    with open(self.playlist_path, "r", encoding="utf-8") as f:
+                        ready, _stats = hls_playlist_is_ready(
+                            f.readlines(),
+                            segment_dir=self.temp_dir,
+                            require_stable_start=is_fresh_transcode_profile(self.profile),
+                        )
+                    if ready:
+                        return True
+                except OSError:
+                    pass
+            if not self.is_alive():
+                with self._state_lock:
+                    if not self._startup_error:
+                        self._startup_error = "FFmpeg exited before producing an HLS playlist"
+                return False
             time.sleep(0.2)
         return False
+
+    def can_serve_bootstrap(self):
+        return self.is_alive() and self.has_upstream_data()
 
 
 class StreamBuffer:
@@ -184,7 +675,16 @@ class StreamBuffer:
             self.not_empty.notify_all()
             self.not_full.notify_all()
 
+    def is_closed(self):
+        with self.lock:
+            return self.closed
+
 class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
+    def _send_no_cache_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -207,11 +707,8 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             if headers_json:
                 try: req_headers = json.loads(base64.b64decode(headers_json).decode())
                 except: pass
+            req_headers = normalize_request_headers(req_headers)
             
-            # Default UA for radio compatibility
-            if 'User-Agent' not in req_headers and 'user-agent' not in req_headers:
-                req_headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
-
             # --- RADIO Path ---
             target_lower = target_url.lower()
             force_audio = mode == "audio"
@@ -231,6 +728,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                 stream_buffer = StreamBuffer(max_size=16 * 1024 * 1024, initial_fill=128 * 1024)
 
                 def _upstream_worker():
+                    proc = None
                     try:
                         if needs_transcode:
                             cmd = [
@@ -254,7 +752,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                                 try:
                                     req = urllib.request.Request(target_url, headers=req_headers)
                                     with urllib.request.urlopen(req, timeout=15) as resp:
-                                        while proc and proc.poll() is None:
+                                        while proc and proc.poll() is None and not stream_buffer.is_closed():
                                             # Use smaller chunks (8KB) for smoother flow
                                             chunk = resp.read(8192)
                                             if not chunk: break
@@ -271,25 +769,44 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                             threading.Thread(target=_feeder, daemon=True).start()
 
                             # Read ffmpeg stdout -> buffer
-                            while True:
+                            while not stream_buffer.is_closed():
                                 chunk = proc.stdout.read(8192)
                                 if not chunk: break
                                 stream_buffer.write(chunk)
                             
-                            proc.wait()
+                            if proc.poll() is None:
+                                proc.terminate()
+                            try:
+                                proc.wait(timeout=3)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                                proc.wait()
                         else:
                             # Direct download -> buffer
                             req = urllib.request.Request(target_url, headers=req_headers)
                             with urllib.request.urlopen(req, timeout=15) as resp:
-                                while True:
+                                while not stream_buffer.is_closed():
                                     chunk = resp.read(8192)
                                     if not chunk: break
                                     stream_buffer.write(chunk)
                         
                         stream_buffer.close()
                     except Exception as e:
-                        LOG.error(f"Upstream worker error: {e}")
-                        stream_buffer.close(error=e)
+                        if stream_buffer.is_closed():
+                            stream_buffer.close()
+                        else:
+                            LOG.info("Audio upstream worker ended: %s", e)
+                            stream_buffer.close(error=e)
+                    finally:
+                        if proc and proc.poll() is None:
+                            try:
+                                proc.terminate()
+                                proc.wait(timeout=3)
+                            except Exception:
+                                try:
+                                    proc.kill()
+                                except Exception:
+                                    pass
 
                 # Start the producer thread
                 threading.Thread(target=_upstream_worker, daemon=True).start()
@@ -323,8 +840,23 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                 converter.touch()
 
                 if filename == "stream.m3u8":
-                    # Instant response with bootstrap if real segments aren't ready
-                    if not converter.wait_for_playlist(timeout=3):
+                    # Serve real FFmpeg output when available. Only use bootstrap after
+                    # upstream media starts flowing; otherwise Chromecast can appear to
+                    # play a dead stream and never request real segments.
+                    if not converter.wait_for_playlist(timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS):
+                        if is_fresh_transcode_profile(converter.profile) or not converter.can_serve_bootstrap():
+                            detail = converter.startup_error() or "HLS converter is waiting for upstream media"
+                            LOG.info("HLS playlist unavailable for session %s: %s", session_id, detail)
+                            data = detail.encode("utf-8", errors="replace")
+                            self.send_response(503)
+                            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self._send_no_cache_headers()
+                            self.send_header('Content-Length', str(len(data)))
+                            self.end_headers()
+                            self.wfile.write(data)
+                            return
+
                         data = (
                             "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n"
                             "#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-DISCONTINUITY\n"
@@ -334,6 +866,8 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
                         self.send_header('Access-Control-Allow-Origin', '*')
+                        self._send_no_cache_headers()
+                        self.send_header('Content-Length', str(len(data)))
                         self.end_headers()
                         self.wfile.write(data)
                         return
@@ -342,17 +876,27 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                     try:
                         with open(converter.playlist_path, 'r', encoding='utf-8') as f:
                             lines = f.readlines()
+                        drop_unstable_start = is_fresh_transcode_profile(converter.profile)
+                        effective_lines = (
+                            filter_unstable_hls_start(lines, converter.temp_dir)
+                            if drop_unstable_start else lines
+                        )
+                        stats = hls_playlist_stats(effective_lines)
                         base = f"http://{get_proxy().host}:{get_proxy().port}/transcode/{session_id}/"
-                        rewritten = ["#EXTM3U", "#EXT-X-VERSION:3", "#EXT-X-TARGETDURATION:2", "#EXT-X-DISCONTINUITY"]
-                        for line in lines:
-                            line = line.strip()
-                            if not line or line.startswith("#EXTM3U") or line.startswith("#EXT-X-VERSION"): continue
-                            if not line.startswith("#"): rewritten.append(base + line)
-                            else: rewritten.append(line)
-                        data = "\n".join(rewritten).encode("utf-8")
+                        data = rewrite_hls_playlist(effective_lines, base).encode("utf-8")
+                        LOG.debug(
+                            "Serving HLS playlist for session %s: media_sequence=%s segments=%s duration=%.2fs first=%s",
+                            session_id,
+                            stats["media_sequence"],
+                            stats["segment_count"],
+                            stats["duration"],
+                            stats["first_segment"],
+                        )
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
                         self.send_header('Access-Control-Allow-Origin', '*')
+                        self._send_no_cache_headers()
+                        self.send_header('Content-Length', str(len(data)))
                         self.end_headers()
                         self.wfile.write(data)
                     except: self.send_error(500)
@@ -361,9 +905,15 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                 # Serve segments
                 file_path = os.path.join(converter.temp_dir, filename)
                 if not os.path.exists(file_path): return self.send_error(404)
+                try:
+                    file_size = os.path.getsize(file_path)
+                except OSError:
+                    return self.send_error(404)
                 self.send_response(200)
                 self.send_header('Content-Type', 'video/mp2t')
                 self.send_header('Access-Control-Allow-Origin', '*')
+                self._send_no_cache_headers()
+                self.send_header('Content-Length', str(file_size))
                 self.end_headers()
                 try:
                     with open(file_path, 'rb') as f: shutil.copyfileobj(f, self.wfile)
@@ -404,6 +954,7 @@ class StreamProxy:
         self.port = 0
         self.host = self._get_local_ip()
         self.converters = {}
+        self.converter_sources = {}
         self.lock = threading.Lock()
         self._cleanup_thread = None
         self._running = False
@@ -453,12 +1004,13 @@ class StreamProxy:
         with self.lock:
             for c in self.converters.values(): c.stop()
             self.converters.clear()
+            self.converter_sources.clear()
 
     def get_stream_url(self, target_url, headers=None, mode="auto"):
         params = {'url': target_url, 'mode': mode}
         if headers:
             if isinstance(headers, dict):
-                clean = {k: str(v) for k, v in headers.items() if v is not None and k != '_extra'}
+                clean = normalize_request_headers(headers, add_default_user_agent=False)
                 params['headers'] = base64.b64encode(json.dumps(clean).encode()).decode()
             else: params['headers'] = headers
         return f"http://{self.host}:{self.port}/stream?{urllib.parse.urlencode(params)}"
@@ -468,9 +1020,24 @@ class StreamProxy:
 
     def get_transcoded_url(self, target_url, headers=None, transcode_profile="auto"):
         tag = transcode_profile
-        session_id = hashlib.md5(f"{target_url}|{tag}".encode()).hexdigest()
+        source_key = hashlib.md5(f"{target_url}|{tag}".encode()).hexdigest()
+        fresh_session = is_fresh_transcode_profile(tag)
+        if fresh_session:
+            session_id = hashlib.md5(f"{target_url}|{tag}|{time.time_ns()}".encode()).hexdigest()
+        else:
+            session_id = source_key
+
         with self.lock:
-            if session_id not in self.converters:
+            if fresh_session:
+                old_sessions = list(self.converter_sources.values())
+                self.converter_sources.clear()
+                for old_session in old_sessions:
+                    old_converter = self.converters.pop(old_session, None)
+                    if old_converter:
+                        old_converter.stop()
+                self.converters[session_id] = HLSConverter(target_url, headers, transcode_profile)
+                self.converter_sources[source_key] = session_id
+            elif session_id not in self.converters:
                 self.converters[session_id] = HLSConverter(target_url, headers, transcode_profile)
             else: self.converters[session_id].touch()
         return f"http://{self.host}:{self.port}/transcode/{session_id}/stream.m3u8"
@@ -487,6 +1054,13 @@ class StreamProxy:
                 for sid in dead:
                     self.converters[sid].stop()
                     del self.converters[sid]
+                if dead:
+                    dead_set = set(dead)
+                    self.converter_sources = {
+                        key: sid
+                        for key, sid in self.converter_sources.items()
+                        if sid not in dead_set
+                    }
 
     def _ensure_firewall_rule(self):
         if os.name != "nt" or not self.port: return

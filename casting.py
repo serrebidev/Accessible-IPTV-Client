@@ -245,17 +245,21 @@ class ChromecastCaster(BaseCaster):
             # 1. Best-effort MIME detection (probes if URL is opaque)
             content_type_actual = _detect_mime_type(url, content_type)
             
-            # 2. Selection of optimal proxy path (High-speed direct TS proxy)
-            # This provides instant start and 320k AAC audio while keeping original video.
+            # 2. Selection of optimal proxy path.
+            # Video uses the local HLS converter; radio uses the buffered audio proxy.
             if content_type_actual.startswith("audio/"):
                 proxied_url = get_proxy().get_audio_url(url, headers)
-                LOG.info(f"Casting Radio to Chromecast via DIRECT proxy (TS): {proxied_url} -> {url}")
+                content_type_cast = "audio/mpeg"
+                LOG.info(f"Casting Radio to Chromecast via audio proxy: {proxied_url} -> {url}")
             else:
-                proxied_url = get_proxy().get_transcoded_url(url, headers)
-                LOG.info(f"Casting Video to Chromecast via DIRECT proxy (TS): {proxied_url} -> {url}")
+                proxied_url = get_proxy().get_transcoded_url(
+                    url,
+                    headers,
+                    transcode_profile="chromecast_h264",
+                )
+                content_type_cast = "application/vnd.apple.mpegurl"
+                LOG.info(f"Casting Video to Chromecast via HLS proxy: {proxied_url} -> {url}")
             
-            # MPEG-TS is the most reliable format for both audio and video on modern TVs.
-            content_type_cast = "video/mp2t"
             stream_type = "LIVE" 
             
             mc.play_media(
@@ -559,28 +563,37 @@ except ImportError:
 
 class AirPlayCaster(BaseCaster):
     """AirPlay protocol implementation using pyatv."""
-    
+
     def __init__(self):
         if not _HAS_AIRPLAY:
             raise CastError("pyatv is not installed. Run: pip install pyatv")
         self._atv = None
+        self._audio_task: Optional[asyncio.Task] = None
+        self._has_video_protocol = False
+        # Ensure proxy is ready so we can hand off proxied URLs to pyatv.
+        get_proxy().start()
         
     async def discover(self, timeout: float = 5.0) -> List[CastDevice]:
         """Discover AirPlay devices."""
         devices = []
         try:
             atvs = await pyatv.scan(loop=asyncio.get_event_loop(), timeout=int(timeout))
-            
+
             for atv in atvs:
-                # Prefer AirPlay protocol
-                service = atv.get_service(conf.Protocol.AirPlay)
+                # Accept devices that have either AirPlay (video) or RAOP (audio-only).
+                airplay_service = atv.get_service(conf.Protocol.AirPlay)
+                raop_service = atv.get_service(conf.Protocol.RAOP)
+                service = airplay_service or raop_service
                 if not service:
                     continue
-                
-                # atv is a BaseConfig which has address (IPv4/IPv6)
-                # service is BaseService (or MutableService) which has port
+
+                has_companion = atv.get_service(conf.Protocol.Companion) is not None
+                # Companion + AirPlay strongly implies an Apple TV (video-capable).
+                # AirPlay/RAOP only is typically HomePod/audio-receiver.
+                video_capable = bool(airplay_service and has_companion)
+
                 host = str(atv.address) if atv.address else ""
-                
+
                 device = CastDevice(
                     name=atv.name,
                     protocol=CastProtocol.AIRPLAY,
@@ -588,33 +601,38 @@ class AirPlayCaster(BaseCaster):
                     host=host,
                     port=service.port,
                     metadata={
-                        "conf": atv
+                        "conf": atv,
+                        "video_capable": video_capable,
+                        "has_companion": has_companion,
+                        "has_airplay": airplay_service is not None,
+                        "has_raop": raop_service is not None,
                     }
                 )
                 devices.append(device)
         except Exception as e:
             LOG.warning("AirPlay discovery error: %s", e)
-            
+
         return devices
     
     async def connect(self, device: CastDevice, credentials: Optional[str] = None) -> None:
         """Connect to an AirPlay device."""
         config = device.metadata.get("conf")
-        
+
         # Try to connect with cached config first
         try:
             if not config:
                 raise ConnectionError("Missing AirPlay configuration")
-            
+
             if credentials:
                 config.set_credentials(conf.Protocol.AirPlay, credentials)
 
             self._atv = await pyatv.connect(config, loop=asyncio.get_event_loop())
+            self._has_video_protocol = bool(device.metadata.get("video_capable"))
             return
         except Exception:
             # Fallback: re-scan and retry once
             pass
-            
+
         try:
             # Re-scan to get fresh config (handles IP changes, ephemeral ports, loop affinity)
             LOG.info(f"Re-scanning for {device.identifier}...")
@@ -623,15 +641,16 @@ class AirPlayCaster(BaseCaster):
                 config = atvs[0]
                 # Update metadata reference for future use
                 device.metadata["conf"] = config
-            
+
             if not config:
                  raise ConnectionError("Device not found during re-scan")
 
             if credentials:
                 config.set_credentials(conf.Protocol.AirPlay, credentials)
-            
+
             self._atv = await pyatv.connect(config, loop=asyncio.get_event_loop())
-            
+            self._has_video_protocol = bool(device.metadata.get("video_capable"))
+
         except Exception as e:
             raise ConnectionError(f"Failed to connect to {device.name}: {e}")
 
@@ -658,46 +677,136 @@ class AirPlayCaster(BaseCaster):
     
     async def play(self, url: str, title: str = "IPTV Stream",
                    content_type: str = "video/mp2t", headers: Optional[Dict[str, str]] = None) -> None:
-        """Play a stream on AirPlay."""
+        """Play a stream on AirPlay.
+
+        Routes streams through the local stream proxy so:
+          - Provider auth headers are forwarded.
+          - Live MPEG-TS is remuxed to HLS (Apple TV requires HLS for live).
+          - Audio-only AirPlay receivers (HomePod, etc.) can fall back to RAOP.
+        """
         if not self._atv:
             raise ConnectionError("Not connected to an AirPlay device")
-        
+
+        # Stop any previous audio task before starting a new stream.
+        await self._cancel_audio_task()
+
+        content_type_actual = _detect_mime_type(url, content_type)
+        is_audio = content_type_actual.startswith("audio/")
+
+        # Audio content (radio) goes straight to RAOP — receivers without a
+        # video AirPlay service can still play it.
+        if is_audio:
+            audio_url = get_proxy().get_audio_url(url, headers)
+            LOG.info("Casting Audio to AirPlay via RAOP: %s -> %s", audio_url, url)
+            await self._start_audio_stream(audio_url, title)
+            return
+
+        # Video content: remux to a Chromecast-safe HLS profile that Apple TV also accepts.
+        proxied_url = get_proxy().get_transcoded_url(
+            url, headers, transcode_profile="chromecast_h264"
+        )
+        LOG.info("Casting Video to AirPlay via HLS proxy: %s -> %s", proxied_url, url)
+
         try:
-            stream = self._atv.stream
-            # pyatv's play_url doesn't directly support custom HTTP headers
-            # However, some headers might be embedded in the URL itself if needed
-            # For most AirPlay devices, this is not a common requirement as they
-            # often fetch content directly without needing custom headers from the client.
-            # If a stream requires custom headers, a proxy might be needed or
-            # pyatv's capabilities extended.
-            await stream.play_url(url, position=0)
+            await self._atv.stream.play_url(proxied_url)
+            return
         except Exception as e:
-            # pyatv 0.14+ raises NotSupportedError if the connected protocol doesn't support streaming (e.g. RAOP only)
-            if _HAS_AIRPLAY and isinstance(e, pyatv.exceptions.NotSupportedError):
-                 raise PlaybackError("This AirPlay device does not support video streaming (play_url). It might be an audio-only device or connected via limited protocol.")
-            raise PlaybackError(f"Failed to start playback: {e}")
+            not_supported = (
+                _HAS_AIRPLAY
+                and isinstance(e, pyatv.exceptions.NotSupportedError)
+            )
+            if not not_supported:
+                raise PlaybackError(f"Failed to start playback: {e}")
+
+        # Video isn't supported (audio-only AirPlay receiver). Try RAOP with
+        # the audio path so the user at least hears the channel.
+        LOG.info(
+            "AirPlay receiver does not support video; falling back to RAOP audio"
+        )
+        try:
+            audio_url = get_proxy().get_audio_url(url, headers)
+            await self._start_audio_stream(audio_url, title)
+        except Exception as audio_err:
+            raise PlaybackError(
+                "This AirPlay device does not support video (likely a HomePod "
+                "or similar audio-only receiver) and audio fallback failed: "
+                f"{audio_err}"
+            )
+
+    async def _start_audio_stream(self, audio_url: str, title: str) -> None:
+        """Kick off RAOP audio streaming as a background task on the manager loop."""
+        if not self._atv:
+            raise ConnectionError("Not connected to an AirPlay device")
+
+        await self._cancel_audio_task()
+
+        stream = self._atv.stream
+        metadata = None
+        if _HAS_AIRPLAY:
+            try:
+                from pyatv.interface import MediaMetadata
+                metadata = MediaMetadata(title=title)
+            except Exception:
+                metadata = None
+
+        async def run_stream():
+            try:
+                if metadata is not None:
+                    await stream.stream_file(audio_url, metadata=metadata)
+                else:
+                    await stream.stream_file(audio_url)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                LOG.info("AirPlay RAOP audio stream ended: %s", exc)
+
+        self._audio_task = asyncio.create_task(run_stream())
+
+        # Give pyatv a moment to bind RTSP; if it errors immediately, surface it.
+        try:
+            await asyncio.wait_for(asyncio.shield(self._audio_task), timeout=1.5)
+        except asyncio.TimeoutError:
+            # Still running — expected for a live stream.
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            self._audio_task = None
+            raise PlaybackError(f"AirPlay audio failed to start: {exc}")
+
+    async def _cancel_audio_task(self) -> None:
+        task = self._audio_task
+        self._audio_task = None
+        if not task or task.done():
+            return
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
     
     async def stop(self) -> None:
+        await self._cancel_audio_task()
         if self._atv:
             try:
                 await self._atv.remote_control.stop()
             except Exception:
                 pass
-    
+
     async def pause(self) -> None:
         if self._atv:
             try:
                 await self._atv.remote_control.pause()
             except Exception:
                 pass
-    
+
     async def resume(self) -> None:
         if self._atv:
             try:
                 await self._atv.remote_control.play()
             except Exception:
                 pass
-    
+
     async def set_volume(self, level: float) -> None:
         if self._atv:
             try:
@@ -705,15 +814,17 @@ class AirPlayCaster(BaseCaster):
                 await self._atv.audio.set_volume(level * 100)
             except Exception:
                 pass
-    
+
     async def disconnect(self) -> None:
+        await self._cancel_audio_task()
         if self._atv:
             try:
                 self._atv.close()
             except Exception:
                 pass
             self._atv = None
-    
+        self._has_video_protocol = False
+
     def is_connected(self) -> bool:
         return self._atv is not None
 

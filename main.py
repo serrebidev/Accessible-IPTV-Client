@@ -2921,17 +2921,31 @@ class IPTVClient(wx.Frame):
         # Check if casting
         if self.caster.is_connected():
             try:
+                device_name = self.caster.active_device.display_name
+
                 # Run async cast play in background thread
                 def do_cast():
                     try:
                         self.caster.play(url, title or "IPTV Stream", channel=channel)
                     except Exception as e:
                         err_msg = str(e)
-                        wx.CallAfter(lambda: wx.MessageBox(f"Casting error: {err_msg}", "Error", wx.OK | wx.ICON_ERROR))
-                
+                        # The current cast device is incompatible or unreachable
+                        # for this stream. Drop the session so the user is not
+                        # stuck re-trying the same dead device on every channel
+                        # change — they can re-select from the cast menu.
+                        try:
+                            self.caster.disconnect()
+                        except Exception:
+                            pass
+                        wx.CallAfter(lambda: wx.MessageBox(
+                            f"Casting failed: {err_msg}\n\n"
+                            "Disconnected from the cast device. "
+                            "Open the cast menu to pick another device.",
+                            "Casting Error", wx.OK | wx.ICON_ERROR))
+
                 threading.Thread(target=do_cast, daemon=True).start()
-                
-                wx.MessageBox(f"Casting to {self.caster.active_device.display_name}...", "Casting", wx.OK | wx.ICON_INFORMATION)
+
+                wx.MessageBox(f"Casting to {device_name}...", "Casting", wx.OK | wx.ICON_INFORMATION)
                 return
             except Exception as e:
                 wx.MessageBox(f"Failed to cast: {e}", "Casting Error", wx.OK | wx.ICON_ERROR)
