@@ -231,6 +231,24 @@ def test_wait_for_playlist_extends_while_upstream_still_flowing(tmp_path, monkey
     assert converter.wait_for_playlist(timeout=10, extended_timeout=30)
 
 
+def test_handler_log_message_does_not_touch_stderr(monkeypatch):
+    """In PyInstaller --noconsole builds sys.stderr is None. BaseHTTPRequestHandler's
+    default log_message writes to it, which raises on the first line of every
+    handler (send_response → log_request → log_message) and the receiver sees an
+    empty reply. Our override must route through LOG and never raise.
+    """
+    from stream_proxy import StreamProxyHandler
+
+    monkeypatch.setattr(stream_proxy_module.sys, "stderr", None)
+
+    handler = object.__new__(StreamProxyHandler)
+    handler.client_address = ("192.0.2.1", 9999)
+
+    # Must not raise even though sys.stderr is None.
+    handler.log_message("GET %s HTTP/1.1", "/transcode/abc/stream.m3u8")
+    handler.log_error("simulated error %d", 500)
+
+
 def test_wait_for_playlist_gives_up_when_upstream_stalls(tmp_path, monkeypatch):
     """If no upstream bytes arrive at all, we still bail at the base timeout."""
     class RunningProcess:

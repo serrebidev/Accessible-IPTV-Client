@@ -705,6 +705,24 @@ class StreamBuffer:
             return self.closed
 
 class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # BaseHTTPRequestHandler.log_message writes to sys.stderr, which is None
+        # in PyInstaller --noconsole / windowed builds. Touching it raises
+        # AttributeError on the FIRST line of every response (send_response →
+        # log_request → log_message), the handler dies, and the receiver sees an
+        # empty reply. Route through our own LOG instead so the bundled exe can
+        # actually serve responses.
+        try:
+            LOG.debug("proxy %s - %s", self.address_string(), format % args)
+        except Exception:
+            pass
+
+    def log_error(self, format, *args):
+        try:
+            LOG.info("proxy %s - %s", self.address_string(), format % args)
+        except Exception:
+            pass
+
     def _send_no_cache_headers(self):
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         self.send_header('Pragma', 'no-cache')
