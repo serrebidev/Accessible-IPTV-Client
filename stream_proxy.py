@@ -24,8 +24,8 @@ _DEFAULT_UPSTREAM_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 )
-_REAL_HLS_PLAYLIST_WAIT_SECONDS = 25
-_HLS_PLAYLIST_EXTENDED_WAIT_SECONDS = 20
+_REAL_HLS_PLAYLIST_WAIT_SECONDS = 8
+_HLS_PLAYLIST_EXTENDED_WAIT_SECONDS = 4
 _HLS_UPSTREAM_READ_TIMEOUT_SECONDS = 30
 _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS = 3
 _HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS = 1.0
@@ -868,11 +868,16 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                     # Serve real FFmpeg output when available. Only use bootstrap after
                     # upstream media starts flowing; otherwise Chromecast can appear to
                     # play a dead stream and never request real segments.
+                    # Cap playlist hold time below Chromecast's internal manifest-fetch
+                    # timeout (~8-10s). If FFmpeg isn't ready in that window but upstream
+                    # bytes are arriving, serve the 1s bootstrap segment so the receiver
+                    # gets a valid playlist immediately and re-polls — beats 503 →
+                    # MEDIA_LOAD_FAILED, even for fresh-session profiles.
                     if not converter.wait_for_playlist(
                         timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS,
                         extended_timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS + _HLS_PLAYLIST_EXTENDED_WAIT_SECONDS,
                     ):
-                        if is_fresh_transcode_profile(converter.profile) or not converter.can_serve_bootstrap():
+                        if not converter.can_serve_bootstrap():
                             detail = converter.startup_error() or "HLS converter is waiting for upstream media"
                             LOG.info("HLS playlist unavailable for session %s: %s", session_id, detail)
                             data = detail.encode("utf-8", errors="replace")
@@ -885,6 +890,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                             self.wfile.write(data)
                             return
 
+                        LOG.info("Serving bootstrap playlist for session %s while FFmpeg warms up", session_id)
                         data = (
                             "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n"
                             "#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-DISCONTINUITY\n"
