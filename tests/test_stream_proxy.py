@@ -185,6 +185,78 @@ def test_hls_converter_bootstrap_requires_upstream_data():
     assert converter.can_serve_bootstrap()
 
 
+def test_wait_for_playlist_extends_while_upstream_still_flowing(tmp_path, monkeypatch):
+    """Slow CDNs (signed redirects, etc.) may take >base timeout to hand over
+    the first segment. As long as upstream bytes are still arriving, the wait
+    must continue up to the extended deadline instead of returning False at
+    the base timeout — otherwise the proxy 503s and Chromecast idles to ERROR.
+    """
+    class RunningProcess:
+        def poll(self):
+            return None
+
+    converter = object.__new__(HLSConverter)
+    converter.temp_dir = str(tmp_path)
+    converter.playlist_path = os.path.join(converter.temp_dir, "stream.m3u8")
+    converter.profile = "chromecast_h264"
+    converter.process = RunningProcess()
+    converter._bytes_pumped = 0
+    converter._startup_error = None
+    converter._state_lock = threading.Lock()
+
+    # Pretend upstream is steadily delivering bytes throughout the wait.
+    clock = {"t": 1000.0}
+    tick = {"sleeps": 0}
+
+    def fake_sleep(secs):
+        clock["t"] += secs if secs > 0 else 0.2
+        tick["sleeps"] += 1
+        converter._bytes_pumped += 8192
+        # Simulate first segments landing well after the base timeout fires.
+        if tick["sleeps"] == 75:
+            for i in range(1, 8):
+                (tmp_path / f"seg_{i}.ts").write_bytes(b"x" * (160 * 1024))
+            playlist_lines = ["#EXTM3U\n", "#EXT-X-VERSION:3\n",
+                              "#EXT-X-TARGETDURATION:2\n",
+                              "#EXT-X-MEDIA-SEQUENCE:1\n"]
+            for i in range(1, 8):
+                playlist_lines.append("#EXTINF:2.0,\n")
+                playlist_lines.append(f"seg_{i}.ts\n")
+            (tmp_path / "stream.m3u8").write_text("".join(playlist_lines), encoding="utf-8")
+
+    monkeypatch.setattr(stream_proxy_module.time, "sleep", fake_sleep)
+    monkeypatch.setattr(stream_proxy_module.time, "time", lambda: clock["t"])
+
+    # 75 sleeps × 0.2s = 15s — past the base 10s timeout but inside extended 30s.
+    assert converter.wait_for_playlist(timeout=10, extended_timeout=30)
+
+
+def test_wait_for_playlist_gives_up_when_upstream_stalls(tmp_path, monkeypatch):
+    """If no upstream bytes arrive at all, we still bail at the base timeout."""
+    class RunningProcess:
+        def poll(self):
+            return None
+
+    converter = object.__new__(HLSConverter)
+    converter.temp_dir = str(tmp_path)
+    converter.playlist_path = os.path.join(converter.temp_dir, "stream.m3u8")
+    converter.profile = "chromecast_h264"
+    converter.process = RunningProcess()
+    converter._bytes_pumped = 0
+    converter._startup_error = None
+    converter._state_lock = threading.Lock()
+
+    clock = {"t": 1000.0}
+
+    def fake_sleep(secs):
+        clock["t"] += secs if secs > 0 else 0.2
+
+    monkeypatch.setattr(stream_proxy_module.time, "sleep", fake_sleep)
+    monkeypatch.setattr(stream_proxy_module.time, "time", lambda: clock["t"])
+
+    assert not converter.wait_for_playlist(timeout=5, extended_timeout=30)
+
+
 def test_rewrite_hls_playlist_preserves_ffmpeg_media_tags():
     rewritten = rewrite_hls_playlist(
         [

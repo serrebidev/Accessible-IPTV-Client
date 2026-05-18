@@ -268,8 +268,42 @@ class ChromecastCaster(BaseCaster):
                 title=title,
                 stream_type=stream_type
             )
-            mc.block_until_active(timeout=10)
-        
+            mc.block_until_active(timeout=15)
+
+            # block_until_active returns when the receiver accepts the launch,
+            # but it does not guarantee playback actually started — slow HLS
+            # warm-ups can leave the receiver idling on ERROR. Poll briefly so
+            # the caller (and the UI auto-disconnect path) sees the real state.
+            import time as _time
+            deadline = _time.time() + 20
+            saw_playing = False
+            last_state = None
+            last_idle_reason = None
+            while _time.time() < deadline:
+                try:
+                    mc.update_status()
+                except Exception:
+                    break
+                status = mc.status
+                last_state = getattr(status, "player_state", None)
+                last_idle_reason = getattr(status, "idle_reason", None)
+                if last_state in ("PLAYING", "BUFFERING"):
+                    saw_playing = True
+                    break
+                if last_state == "IDLE" and last_idle_reason == "ERROR":
+                    raise PlaybackError(
+                        f"Chromecast rejected the stream (idle reason ERROR). "
+                        f"This usually means the upstream took too long to start "
+                        f"or the receiver couldn't decode the segments."
+                    )
+                _time.sleep(0.5)
+            if not saw_playing:
+                raise PlaybackError(
+                    f"Chromecast never started playback "
+                    f"(state={last_state}, idle_reason={last_idle_reason}). "
+                    f"The upstream stream may be unreachable or too slow."
+                )
+
         await loop.run_in_executor(None, do_play)
     
     async def stop(self) -> None:

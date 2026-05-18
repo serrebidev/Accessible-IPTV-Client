@@ -24,7 +24,8 @@ _DEFAULT_UPSTREAM_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 )
-_REAL_HLS_PLAYLIST_WAIT_SECONDS = 12
+_REAL_HLS_PLAYLIST_WAIT_SECONDS = 25
+_HLS_PLAYLIST_EXTENDED_WAIT_SECONDS = 20
 _HLS_UPSTREAM_READ_TIMEOUT_SECONDS = 30
 _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS = 3
 _HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS = 1.0
@@ -593,9 +594,29 @@ class HLSConverter:
         with self._state_lock:
             return self._startup_error
 
-    def wait_for_playlist(self, timeout=10):
+    def wait_for_playlist(self, timeout=10, extended_timeout=None):
+        """Wait for the FFmpeg HLS playlist to become ready.
+
+        Some upstreams (signed redirects, slow CDNs) take longer than the
+        base timeout to finish their TLS handshake and emit segments. As
+        long as upstream bytes are *still arriving* we extend the deadline
+        up to ``extended_timeout`` instead of giving up. This avoids the
+        Chromecast-idles-to-ERROR failure mode that happens when the proxy
+        returns 503 mid-handshake on a fresh-session profile.
+        """
+        if extended_timeout is None:
+            extended_timeout = max(timeout, _HLS_PLAYLIST_EXTENDED_WAIT_SECONDS)
         start = time.time()
-        while time.time() - start < timeout:
+        last_bytes = 0
+        last_progress = start
+        while True:
+            elapsed = time.time() - start
+            with self._state_lock:
+                pumped = self._bytes_pumped
+            if pumped > last_bytes:
+                last_bytes = pumped
+                last_progress = time.time()
+
             if os.path.exists(self.playlist_path) and os.path.getsize(self.playlist_path) > 100:
                 try:
                     with open(self.playlist_path, "r", encoding="utf-8") as f:
@@ -613,8 +634,12 @@ class HLSConverter:
                     if not self._startup_error:
                         self._startup_error = "FFmpeg exited before producing an HLS playlist"
                 return False
+
+            if elapsed >= timeout:
+                stalled = (time.time() - last_progress) > 3.0
+                if elapsed >= extended_timeout or stalled or last_bytes == 0:
+                    return False
             time.sleep(0.2)
-        return False
 
     def can_serve_bootstrap(self):
         return self.is_alive() and self.has_upstream_data()
@@ -843,7 +868,10 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                     # Serve real FFmpeg output when available. Only use bootstrap after
                     # upstream media starts flowing; otherwise Chromecast can appear to
                     # play a dead stream and never request real segments.
-                    if not converter.wait_for_playlist(timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS):
+                    if not converter.wait_for_playlist(
+                        timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS,
+                        extended_timeout=_REAL_HLS_PLAYLIST_WAIT_SECONDS + _HLS_PLAYLIST_EXTENDED_WAIT_SECONDS,
+                    ):
                         if is_fresh_transcode_profile(converter.profile) or not converter.can_serve_bootstrap():
                             detail = converter.startup_error() or "HLS converter is waiting for upstream media"
                             LOG.info("HLS playlist unavailable for session %s: %s", session_id, detail)
