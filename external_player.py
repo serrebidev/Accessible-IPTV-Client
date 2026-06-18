@@ -8,6 +8,9 @@ import time
 import tempfile
 from typing import Tuple
 
+from i18n import gettext as _
+
+
 class ExternalPlayerLauncher:
     def __init__(self):
         self._launch_guard_lock = threading.Lock()
@@ -79,7 +82,7 @@ class ExternalPlayerLauncher:
                         argv = self._argv_for(player_name, exe, True, url)
                         ok, err = self._spawn_windows(argv)
                         if ok: break
-                if not ok: err = err or f"Could not locate {player_name} executable."
+                if not ok: err = err or _("Could not locate {player} executable.").format(player=player_name)
             elif system == "Darwin":
                 choices = mac_paths.get(player_name, [])
                 for exe in choices:
@@ -87,13 +90,13 @@ class ExternalPlayerLauncher:
                         argv = self._argv_for(player_name, exe, False, url)
                         ok, err = self._spawn_posix(argv)
                         if ok: break
-                if not ok: err = err or f"Could not locate {player_name} app."
+                if not ok: err = err or _("Could not locate {player} app.").format(player=player_name)
             else:
                 cmd = linux_players.get(player_name)
                 if cmd:
                     argv = self._argv_for(player_name, cmd, False, url)
                     ok, err = self._spawn_posix(argv)
-                else: err = f"{player_name} is not configured for Linux."
+                else: err = _("{player} is not configured for Linux.").format(player=player_name)
         
         return ok, err
 
@@ -125,7 +128,7 @@ class ExternalPlayerLauncher:
             subprocess.Popen(argv, close_fds=True)
             return True, ""
         except FileNotFoundError:
-            return False, f"Executable not found: {argv[0]}"
+            return False, _("Executable not found: {path}").format(path=argv[0])
         except Exception as e:
             return False, str(e)
 
@@ -135,7 +138,7 @@ class ExternalPlayerLauncher:
             subprocess.Popen(argv)
             return True, ""
         except FileNotFoundError:
-            return False, f"Executable not found: {argv[0]}"
+            return False, _("Executable not found: {path}").format(path=argv[0])
         except Exception as e:
             return False, str(e)
 

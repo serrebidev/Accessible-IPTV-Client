@@ -52,6 +52,23 @@ Runtime requirements are defined in `requirements.txt`: `wxPython`, `python-vlc`
 
 The standalone Windows build also explicitly collects dynamic modules and metadata in `main.spec`, including casting/network stacks, VLC, updater/signing dependencies, `psutil`, and chardet mypyc modules. Keep `main.spec` in sync whenever imports or optional runtime features change.
 
+## Internationalization (i18n)
+
+- **i18n.py** is a self-contained, standard-library-only (gettext) translation layer. It installs `_()` and `ngettext()` as Python builtins (the documented `gettext.install` idiom) so any module can call `_("text")`. Modules that use it also do `from i18n import gettext as _` at the top, both to keep static analysis happy and because the function consults the *currently active* catalogue on every call (so switching language at startup works without re-importing).
+- User-facing strings throughout `main.py`, `internal_player.py`, `playlist.py`, `options.py`, `providers.py`, `updater.py`, and `external_player.py` are wrapped in `_()`. Dynamic text uses translatable templates with `.format()` (e.g. `_("Casting to {device}...").format(device=name)`) — never f-strings, because gettext/xgettext cannot extract an f-string.
+- **`_` is also a throwaway/`lambda _:` parameter name all over this codebase.** That is fine in scopes that never call `_()`. Where a handler both takes a `_` parameter (or unpacks `url, _ = ...`) *and* needs to translate, the local was renamed (`_event`, `_unused`). If you add a `_()` call inside a function whose event/throwaway is named `_`, rename that local or you will call a non-callable.
+- Strings that double as internal keys are NOT translated as keys: the `"All Channels"` group sentinel and the `media_player` config values (`"Built-in Player"`, `"Custom"`, brand names in `PLAYER_KEYS`) stay English internally; only their *display* is wrapped (`_(label)` in the menu, `_("All Channels")` in the group list, with `on_group_select` matching both the translated and English forms).
+- **No `wx.Locale`.** It flips the process `LC_NUMERIC`, which would break the `2.5`-style floats fed to libVLC options and config. Translate via gettext only; wx stock button labels (OK/Cancel) stay in wx's own language.
+- Language preference lives in `iptvclient.conf` under `language` ("auto"/"en"/"hu"...), defaulted in `options.load_config`. `IPTVClient.__init__` calls `i18n.init_from_config(self.config)` *before* building the UI. The **Options > Language** submenu (built in both the Windows/macOS menubar and the Linux button-menu) writes the setting and prompts for a restart (existing menus/labels are not rebuilt live).
+- Catalogues live under `locale/<lang>/LC_MESSAGES/iptvclient.{po,mo}` plus the `locale/iptvclient.pot` template. English is the source language (no catalogue needed — gettext returns the msgid). Hungarian (`hu`) ships translated.
+- **`tools/i18n_tools.py`** is dependency-free tooling (pure-Python AST extractor + pure-Python `.mo` compiler — no GNU gettext/Babel/polib needed):
+  - `python tools/i18n_tools.py extract` — rebuild `locale/iptvclient.pot` from `_()`/`ngettext()` calls.
+  - `python tools/i18n_tools.py update` — fold new POT strings into each existing `.po`, keeping translations.
+  - `python tools/i18n_tools.py compile` — compile every `.po` → `.mo`.
+  - `all` — extract + update + compile. After editing any `.po`, recompile; `tests/test_i18n.py::test_committed_mo_matches_po` fails if the committed `.mo` is stale, and `test_translation_placeholders_match_source` fails if a translation drops a `{token}`.
+- **`main.spec` recompiles every `.po` → `.mo` at build time** (via `i18n_tools.cmd_compile()`) and bundles `locale/<lang>/LC_MESSAGES/*.mo` as datas, so a release can never ship a stale or missing catalogue. `i18n.locale_dir()` resolves to `sys._MEIPASS/locale` when frozen.
+- To add a language: `python tools/i18n_tools.py update` to create/seed `locale/<code>/LC_MESSAGES/iptvclient.po` (or copy the `.pot`), translate the msgstrs, `compile`, then add `(code, "Native name")` to `i18n._LANGUAGE_LABELS` and `code` to `SHIPPED_CATALOGS`.
+
 ## Current Release Build Rules
 
 - Use `build.bat release` for public releases. `build.bat` calls `build_exe.bat`, which calls `tools/release.py`; running `build.bat` with no argument performs a local build only.

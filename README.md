@@ -12,6 +12,7 @@ Accessible IPTV Client is an accessible, keyboard-first IPTV player that works w
 - Catch-up/timeshift playback for supported channels
 - Optional system tray minimize
 - Casting support
+- Multilingual interface (English and Hungarian) with automatic OS-language detection and a manual selector under **Options > Language**
 
 ## Quick Start (Recommended)
 
@@ -70,6 +71,33 @@ The internal player sizes its network buffer dynamically. You can tune it in `ip
 - `internal_player_variant_max_mbps` (HLS quality cap in Mbps, 0 = no cap)
 
 Lower values start faster; higher values are more tolerant of jitter.
+
+## Languages & Translations
+
+The interface is translatable with GNU gettext. By default the app follows your
+operating-system language and falls back to English; you can override this under
+**Options > Language** (Automatic / English / Hungarian). The choice is saved to
+`iptvclient.conf` (`language`) and applies fully after a restart.
+
+Translations live in `locale/<lang>/LC_MESSAGES/iptvclient.po`. The tooling is
+pure Python — no GNU gettext, Babel, or polib required:
+
+```bash
+python tools/i18n_tools.py extract   # refresh locale/iptvclient.pot from the source
+python tools/i18n_tools.py update    # merge new strings into every .po (keeps translations)
+python tools/i18n_tools.py compile   # compile every .po -> .mo
+```
+
+To contribute a new language:
+
+1. Run `python tools/i18n_tools.py update` (or copy `locale/iptvclient.pot`) to create
+   `locale/<code>/LC_MESSAGES/iptvclient.po`, then translate the `msgstr` lines.
+2. Run `python tools/i18n_tools.py compile`.
+3. Add `(code, "Native name")` to `_LANGUAGE_LABELS` in `i18n.py` so it appears in the menu.
+4. Open a pull request. Keep every `{placeholder}` exactly as it appears in the English source.
+
+Hungarian translation and screen-reader testing contributed by the community
+(see issue [#2](https://github.com/serrebidev/Accessible-IPTV-Client/issues/2)).
 
 ## Build a Standalone App
 

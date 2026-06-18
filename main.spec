@@ -8,6 +8,24 @@ import chardet.pipeline
 block_cipher = None
 chardet_pipeline_path = os.path.dirname(chardet.pipeline.__file__)
 
+# Always (re)compile translations from the .po sources so a release can never ship a
+# stale .mo. Pure standard library (no GNU gettext / Babel needed).
+try:
+    _spec_dir = SPECPATH  # PyInstaller-injected: directory containing this spec
+except NameError:
+    _spec_dir = os.getcwd()
+sys.path.insert(0, os.path.join(_spec_dir, 'tools'))
+import i18n_tools
+i18n_tools.cmd_compile()
+
+# Ship every locale/<lang>/LC_MESSAGES/*.mo preserving the directory layout so
+# i18n.locale_dir() (sys._MEIPASS/locale) finds them at runtime.
+locale_datas = []
+for _root, _dirs, _files in os.walk('locale'):
+    for _fn in _files:
+        if _fn.endswith('.mo'):
+            locale_datas.append((os.path.join(_root, _fn), _root))
+
 # Hidden imports for networking and casting stacks
 hidden_imports = [
     'pychromecast',
@@ -65,7 +83,7 @@ a = Analysis(
         ('update_helper.bat', '.'),
         ('update_helper.ps1', '.'),
         ('update_helper_launcher.vbs', '.'),
-    ],
+    ] + locale_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},

@@ -6,6 +6,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
+from i18n import gettext as _
+
 
 DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
@@ -150,7 +152,7 @@ class StalkerPortalClient:
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            raise ProviderError(f"Invalid response from portal: {text!r}")
+            raise ProviderError(_("Invalid response from portal: {response}").format(response=repr(text)))
 
     def _ensure_token(self):
         now = time.time()
@@ -166,7 +168,7 @@ class StalkerPortalClient:
         }, include_token=False)
         token = data.get("token") or data.get("js", {}).get("token")
         if not token:
-            raise ProviderError("Portal handshake failed: no token returned")
+            raise ProviderError(_("Portal handshake failed: no token returned"))
         self._token = token
         self._token_issued = now
         # Step 2: authenticate with credentials to obtain session token
@@ -234,7 +236,7 @@ class StalkerPortalClient:
         self._ensure_token()
         cmd = provider_data.get("cmd")
         if not cmd:
-            raise ProviderError("Channel missing command reference")
+            raise ProviderError(_("Channel missing command reference"))
         params = {
             "type": "itv",
             "action": "create_link",
@@ -244,7 +246,7 @@ class StalkerPortalClient:
         payload = self._portal_call(params, timeout=timeout)
         link = payload.get("js", {}).get("cmd") or payload.get("cmd")
         if not link:
-            raise ProviderError("Portal did not return stream URL")
+            raise ProviderError(_("Portal did not return stream URL"))
         # Responses are usually prefixed with ffmpeg/auto tokens. Strip them while keeping the actual URL.
         for prefix in ("ffmpeg ", "auto "):
             if link.startswith(prefix):
@@ -255,7 +257,7 @@ class StalkerPortalClient:
         self._ensure_token()
         cmd = provider_data.get("cmd")
         if not cmd:
-            raise ProviderError("Channel missing command reference")
+            raise ProviderError(_("Channel missing command reference"))
         params = {
             "type": "itv",
             "action": "create_link",
@@ -271,7 +273,7 @@ class StalkerPortalClient:
         payload = self._portal_call(params)
         link = payload.get("js", {}).get("cmd") or payload.get("cmd")
         if not link:
-            raise ProviderError("Portal did not provide catch-up link")
+            raise ProviderError(_("Portal did not provide catch-up link"))
         for prefix in ("ffmpeg ", "auto "):
             if link.startswith(prefix):
                 link = link[len(prefix):]

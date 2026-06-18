@@ -18,6 +18,8 @@ except ModuleNotFoundError:  # wxPython optional for headless helpers
 from typing import Dict
 import tempfile
 
+from i18n import gettext as _
+
 CONFIG_FILE = "iptvclient.conf"
 _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = platform.system() == "Windows"
@@ -276,6 +278,7 @@ def load_config() -> Dict:
         "epg_enabled": True,
         "epg_auto_import_interval_hours": 6.0,
         "show_player_on_enter": True,
+        "language": "auto",
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():
@@ -562,21 +565,21 @@ def utc_to_local(dt):
 if _HAS_WX:
     class CustomPlayerDialog(wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, initial_path):
-            super().__init__(parent, title="Select Custom Player")
+            super().__init__(parent, title=_("Select Custom Player"))
             self.path = initial_path or ""
             sizer = wx.BoxSizer(wx.VERTICAL)
             self.txt = wx.TextCtrl(self, value=self.path)
-            browse = wx.Button(self, label="Browse...")
+            browse = wx.Button(self, label=_("Browse..."))
             btns = self.CreateButtonSizer(wx.OK | wx.CANCEL)
-            sizer.Add(wx.StaticText(self, label="Enter player executable or path:"), 0, wx.ALL, 5)
+            sizer.Add(wx.StaticText(self, label=_("Enter player executable or path:")), 0, wx.ALL, 5)
             sizer.Add(self.txt, 0, wx.EXPAND | wx.ALL, 5)
             sizer.Add(browse, 0, wx.ALL, 5)
             sizer.Add(btns, 0, wx.ALL | wx.ALIGN_RIGHT, 5)
             self.SetSizerAndFit(sizer)
             browse.Bind(wx.EVT_BUTTON, self.on_browse)
 
-        def on_browse(self, _):
-            with wx.FileDialog(self, "Select Player Executable", style=wx.FD_OPEN) as dlg:
+        def on_browse(self, _event):
+            with wx.FileDialog(self, _("Select Player Executable"), style=wx.FD_OPEN) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     self.txt.SetValue(dlg.GetPath())
 

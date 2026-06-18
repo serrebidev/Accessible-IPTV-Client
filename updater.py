@@ -11,6 +11,8 @@ import zipfile
 from dataclasses import dataclass
 from typing import Iterable, Optional, Tuple
 
+from i18n import gettext as _
+
 LOG = logging.getLogger(__name__)
 
 _VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$")
@@ -107,10 +109,10 @@ def fetch_latest_release(owner: str, repo: str) -> dict:
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
         if exc.code == 403 and exc.headers.get("X-RateLimit-Remaining") == "0":
-            raise UpdateError("GitHub API rate limit exceeded. Please try again later.") from exc
-        raise UpdateError(f"Failed to fetch release info ({exc.code}).") from exc
+            raise UpdateError(_("GitHub API rate limit exceeded. Please try again later.")) from exc
+        raise UpdateError(_("Failed to fetch release info ({code}).").format(code=exc.code)) from exc
     except urllib.error.URLError as exc:
-        raise UpdateError("Unable to reach GitHub. Please check your connection.") from exc
+        raise UpdateError(_("Unable to reach GitHub. Please check your connection.")) from exc
 
 
 def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
@@ -122,11 +124,11 @@ def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
             manifest_asset = asset
             break
     if not manifest_asset:
-        raise UpdateError("Update manifest was not found in the latest release.")
+        raise UpdateError(_("Update manifest was not found in the latest release."))
 
     url = manifest_asset.get("browser_download_url") or ""
     if not url:
-        raise UpdateError("Update manifest download URL is missing.")
+        raise UpdateError(_("Update manifest download URL is missing."))
 
     data = download_json(url)
     LOG.debug("fetch_update_manifest: raw data=%s", data)
@@ -151,7 +153,7 @@ def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
         LOG.debug("fetch_update_manifest: created manifest with signing_thumbprints=%s", manifest.signing_thumbprints)
         return manifest
     except KeyError as exc:
-        raise UpdateError("Update manifest is missing required fields.") from exc
+        raise UpdateError(_("Update manifest is missing required fields.")) from exc
 
 
 def download_json(url: str) -> dict:
@@ -161,9 +163,9 @@ def download_json(url: str) -> dict:
             payload = resp.read().decode("utf-8")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
-        raise UpdateError(f"Failed to download manifest ({exc.code}).") from exc
+        raise UpdateError(_("Failed to download manifest ({code}).").format(code=exc.code)) from exc
     except urllib.error.URLError as exc:
-        raise UpdateError("Unable to download manifest. Please check your connection.") from exc
+        raise UpdateError(_("Unable to download manifest. Please check your connection.")) from exc
 
 
 def download_file_with_sha256(url: str, dest_path: str) -> str:
@@ -178,9 +180,9 @@ def download_file_with_sha256(url: str, dest_path: str) -> str:
                 handle.write(chunk)
                 digest.update(chunk)
     except urllib.error.HTTPError as exc:
-        raise UpdateError(f"Failed to download update ({exc.code}).") from exc
+        raise UpdateError(_("Failed to download update ({code}).").format(code=exc.code)) from exc
     except urllib.error.URLError as exc:
-        raise UpdateError("Unable to download update. Please check your connection.") from exc
+        raise UpdateError(_("Unable to download update. Please check your connection.")) from exc
     return digest.hexdigest()
 
 
@@ -191,7 +193,7 @@ def safe_extract_zip(zip_path: str, dest_dir: str) -> None:
         for member in zf.infolist():
             target_path = os.path.abspath(os.path.join(dest_dir, member.filename))
             if not target_path.startswith(base_path + os.sep) and target_path != base_path:
-                raise UpdateError("Update package contains an unsafe file path.")
+                raise UpdateError(_("Update package contains an unsafe file path."))
         zf.extractall(dest_dir)
 
 
@@ -261,11 +263,12 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
             pass
     
     if result.returncode != 0:
-        raise UpdateError(f"Authenticode verification failed: {result.stderr.strip() or result.stdout.strip()}")
+        raise UpdateError(_("Authenticode verification failed: {detail}").format(
+            detail=result.stderr.strip() or result.stdout.strip()))
     try:
         data = json.loads(result.stdout.strip() or "{}")
     except json.JSONDecodeError as exc:
-        raise UpdateError("Authenticode verification returned invalid data.") from exc
+        raise UpdateError(_("Authenticode verification returned invalid data.")) from exc
 
     status = str(data.get("Status") or "").strip()
     status_msg = str(data.get("StatusMessage") or "").strip()
@@ -291,13 +294,14 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
         return
     
     # Verification failed - build detailed error message
-    detail = f"Authenticode status was {status or 'Unknown'}."
+    detail = _("Authenticode status was {status}.").format(status=status or _("Unknown"))
     if status_msg:
         detail = f"{detail} {status_msg}"
     if thumbprint:
-        detail = f"{detail} (thumbprint {thumbprint})."
+        detail = detail + " " + _("(thumbprint {thumbprint}).").format(thumbprint=thumbprint)
     if allowed:
-        detail = f"{detail} Expected thumbprints: {', '.join(sorted(allowed))}."
+        detail = detail + " " + _("Expected thumbprints: {thumbprints}.").format(
+            thumbprints=", ".join(sorted(allowed)))
     raise UpdateError(detail)
 
 

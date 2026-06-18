@@ -22,6 +22,9 @@ LOG = logging.getLogger(__name__)
 
 import wx.adv
 
+import i18n
+from i18n import gettext as _
+
 from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
     get_db_path, canonicalize_name, extract_group, utc_to_local,
@@ -230,16 +233,16 @@ class TrayIcon(wx.adv.TaskBarIcon):
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
-        menu.Append(self.TBMENU_RESTORE, "Restore")
+        menu.Append(self.TBMENU_RESTORE, _("Restore"))
         player_menu = wx.Menu()
-        player_menu.Append(self.TBMENU_PLAYER_SHOW, "Show Player")
-        player_menu.Append(self.TBMENU_PLAYER_TOGGLE, "Play/Pause")
-        player_menu.Append(self.TBMENU_PLAYER_STOP, "Stop")
+        player_menu.Append(self.TBMENU_PLAYER_SHOW, _("Show Player"))
+        player_menu.Append(self.TBMENU_PLAYER_TOGGLE, _("Play/Pause"))
+        player_menu.Append(self.TBMENU_PLAYER_STOP, _("Stop"))
         player_menu.AppendSeparator()
-        player_menu.Append(self.TBMENU_CAST, "Cast / Connect...")
-        menu.AppendSubMenu(player_menu, "Player Controls")
+        player_menu.Append(self.TBMENU_CAST, _("Cast / Connect..."))
+        menu.AppendSubMenu(player_menu, _("Player Controls"))
         menu.AppendSeparator()
-        menu.Append(self.TBMENU_EXIT, "Exit")
+        menu.Append(self.TBMENU_EXIT, _("Exit"))
         return menu
 
     def on_taskbar_activate(self, event):
@@ -306,6 +309,8 @@ class IPTVClient(wx.Frame):
     def __init__(self):
         super().__init__(None, title="Accessible IPTV Client", size=(800, 600))
         self.config = load_config()
+        # Activate the user's language preference before any UI strings are built.
+        i18n.init_from_config(self.config)
         self.playlist_sources = self.config.get("playlists", [])
         self.epg_sources = self.config.get("epgs", [])
         self.channels_by_group: Dict[str, List[Dict[str, str]]] = {}
@@ -358,7 +363,7 @@ class IPTVClient(wx.Frame):
         self._build_ui()
         self.Centre()
 
-        self.group_list.Append("Loading playlists...")
+        self.group_list.Append(_("Loading playlists..."))
         self.Show()
 
         # Defer all loading. This call starts ONLY the playlist loading thread.
@@ -780,20 +785,20 @@ class IPTVClient(wx.Frame):
         hs.Add(vs_r, 2, wx.EXPAND)
 
         if platform.system() == "Linux":
-            self.menu_button = wx.Button(p, label="Menu")
+            self.menu_button = wx.Button(p, label=_("Menu"))
             self._player_radio_items = {}
             def on_menu_btn(evt):
                 menu = wx.Menu()
-                menu.Append(1001, "Playlist Manager\tCtrl+M")
-                menu.Append(1002, "EPG Manager\tCtrl+E")
-                menu.Append(1003, "Import EPG to DB\tCtrl+I")
+                menu.Append(1001, _("Playlist Manager") + "\tCtrl+M")
+                menu.Append(1002, _("EPG Manager") + "\tCtrl+E")
+                menu.Append(1003, _("Import EPG to DB") + "\tCtrl+I")
                 menu.AppendSeparator()
                 player_ctrl_menu = wx.Menu()
-                player_ctrl_menu.Append(1201, "Show Built-in Player")
-                player_ctrl_menu.Append(1202, "Play/Pause")
-                player_ctrl_menu.Append(1203, "Stop")
-                player_ctrl_menu.Append(1204, "Cast / Connect...")
-                menu.AppendSubMenu(player_ctrl_menu, "Player")
+                player_ctrl_menu.Append(1201, _("Show Built-in Player"))
+                player_ctrl_menu.Append(1202, _("Play/Pause"))
+                player_ctrl_menu.Append(1203, _("Stop"))
+                player_ctrl_menu.Append(1204, _("Cast / Connect..."))
+                menu.AppendSubMenu(player_ctrl_menu, _("Player"))
                 self.Bind(wx.EVT_MENU, self._menu_show_player, id=1201)
                 self.Bind(wx.EVT_MENU, self._menu_toggle_player, id=1202)
                 self.Bind(wx.EVT_MENU, self._menu_stop_player, id=1203)
@@ -802,41 +807,52 @@ class IPTVClient(wx.Frame):
                 player_menu = wx.Menu()
                 for idx, (label, attr) in enumerate(self.PLAYER_KEYS):
                     itemid = 2000 + idx
-                    item = player_menu.AppendRadioItem(itemid, label)
+                    item = player_menu.AppendRadioItem(itemid, _(label))
                     self._player_radio_items[label] = item
                     self.Bind(wx.EVT_MENU, lambda evt, pl=label: self._select_player(pl), id=itemid)
                     if self.default_player == label:
                         item.Check(True)
                 customid = 2999
-                customitem = player_menu.AppendRadioItem(customid, "Custom Player...")
+                customitem = player_menu.AppendRadioItem(customid, _("Custom Player..."))
                 self.Bind(wx.EVT_MENU, self._select_custom_player, id=customid)
                 if self.default_player == "Custom":
                     customitem.Check(True)
-                menu.AppendSubMenu(player_menu, "Media Player to Use")
+                menu.AppendSubMenu(player_menu, _("Media Player to Use"))
+                # Language submenu (Linux)
+                lang_menu = wx.Menu()
+                self._lang_menu_items = {}
+                for code, label in i18n.available_languages():
+                    disp = _("Automatic") if code == "auto" else label
+                    li = lang_menu.AppendRadioItem(wx.ID_ANY, disp)
+                    if i18n.get_language() == code:
+                        li.Check(True)
+                    self._lang_menu_items[li.GetId()] = code
+                    self.Bind(wx.EVT_MENU, lambda evt, c=code: self._on_select_language(c), li)
+                menu.AppendSubMenu(lang_menu, _("Language"))
                 min_to_tray_id = 1101
-                min_item = menu.AppendCheckItem(min_to_tray_id, "Minimize to System Tray")
+                min_item = menu.AppendCheckItem(min_to_tray_id, _("Minimize to System Tray"))
                 min_item.Check(self.minimize_to_tray)
                 self.Bind(wx.EVT_MENU, self.on_toggle_min_to_tray, id=min_to_tray_id)
                 menu.AppendSeparator()
                 show_enter_id = 1102
-                show_enter_item = menu.AppendCheckItem(show_enter_id, "Show Player on Enter")
+                show_enter_item = menu.AppendCheckItem(show_enter_id, _("Show Player on Enter"))
                 show_enter_item.Check(self.show_player_on_enter)
                 self.Bind(wx.EVT_MENU, self.on_toggle_show_player_on_enter, id=show_enter_id)
                 menu.AppendSeparator()
 
                 auto_update_id = 1103
-                auto_update_item = menu.AppendCheckItem(auto_update_id, "Auto-check for Updates")
+                auto_update_item = menu.AppendCheckItem(auto_update_id, _("Auto-check for Updates"))
                 auto_update_item.Check(self.auto_check_updates)
                 self.Bind(wx.EVT_MENU, self.on_toggle_auto_check_updates, id=auto_update_id)
-                menu.Append(1006, "Check for Updates")
+                menu.Append(1006, _("Check for Updates"))
                 self.Bind(wx.EVT_MENU, self.on_check_updates, id=1006)
                 menu.AppendSeparator()
-                
+
                 # Casting Menu Item (Linux)
-                menu.Append(1005, "Cast To...")
+                menu.Append(1005, _("Cast To..."))
                 self.Bind(wx.EVT_MENU, self.show_cast_dialog, id=1005)
-                
-                menu.Append(1004, "Exit\tCtrl+Q")
+
+                menu.Append(1004, _("Exit") + "\tCtrl+Q")
                 self.Bind(wx.EVT_MENU, self.show_manager, id=1001)
                 self.Bind(wx.EVT_MENU, self.show_epg_manager, id=1002)
                 self.Bind(wx.EVT_MENU, self.import_epg, id=1003)
@@ -851,41 +867,52 @@ class IPTVClient(wx.Frame):
             p.SetSizerAndFit(hs)
             mb = wx.MenuBar()
             fm = wx.Menu()
-            m_mgr = fm.Append(wx.ID_ANY, "Playlist Manager\tCtrl+M")
-            m_epg = fm.Append(wx.ID_ANY, "EPG Manager\tCtrl+E")
-            m_imp = fm.Append(wx.ID_ANY, "Import EPG to DB\tCtrl+I")
-            m_now = fm.Append(wx.ID_ANY, "What's on Now\tCtrl+W")
+            m_mgr = fm.Append(wx.ID_ANY, _("Playlist Manager") + "\tCtrl+M")
+            m_epg = fm.Append(wx.ID_ANY, _("EPG Manager") + "\tCtrl+E")
+            m_imp = fm.Append(wx.ID_ANY, _("Import EPG to DB") + "\tCtrl+I")
+            m_now = fm.Append(wx.ID_ANY, _("What's on Now") + "\tCtrl+W")
             fm.AppendSeparator()
             # Casting Menu Item (Windows/Mac)
-            m_cast = fm.Append(wx.ID_ANY, "Cast To...")
+            m_cast = fm.Append(wx.ID_ANY, _("Cast To..."))
             fm.AppendSeparator()
-            m_exit = fm.Append(wx.ID_EXIT, "Exit\tCtrl+Q")
-            mb.Append(fm, "File")
+            m_exit = fm.Append(wx.ID_EXIT, _("Exit") + "\tCtrl+Q")
+            mb.Append(fm, _("File"))
             pm = wx.Menu()
-            pm_show = pm.Append(wx.ID_ANY, "Show Built-in Player\tCtrl+Shift+J")
-            pm_toggle = pm.Append(wx.ID_ANY, "Play/Pause\tCtrl+Shift+P")
-            pm_stop = pm.Append(wx.ID_ANY, "Stop\tCtrl+Shift+S")
-            pm_cast = pm.Append(wx.ID_ANY, "Cast / Connect...\tCtrl+Shift+C")
-            mb.Append(pm, "Player")
+            pm_show = pm.Append(wx.ID_ANY, _("Show Built-in Player") + "\tCtrl+Shift+J")
+            pm_toggle = pm.Append(wx.ID_ANY, _("Play/Pause") + "\tCtrl+Shift+P")
+            pm_stop = pm.Append(wx.ID_ANY, _("Stop") + "\tCtrl+Shift+S")
+            pm_cast = pm.Append(wx.ID_ANY, _("Cast / Connect...") + "\tCtrl+Shift+C")
+            mb.Append(pm, _("Player"))
             om = wx.Menu()
             player_menu = wx.Menu()
             self.player_menu_items = []
             for label, attr in self.PLAYER_KEYS:
-                item = player_menu.AppendRadioItem(wx.ID_ANY, label)
+                item = player_menu.AppendRadioItem(wx.ID_ANY, _(label))
                 setattr(self, attr, item)
                 self.player_menu_items.append((item, label))
-            self.player_Custom = player_menu.AppendRadioItem(wx.ID_ANY, "Custom Player...")
-            om.AppendSubMenu(player_menu, "Media Player to Use")
-            self.min_to_tray_item = om.AppendCheckItem(wx.ID_ANY, "Minimize to System Tray")
-            self.show_player_on_enter_item = om.AppendCheckItem(wx.ID_ANY, "Show Player on Enter")
-            self.auto_check_updates_item = om.AppendCheckItem(wx.ID_ANY, "Auto-check for Updates")
-            mb.Append(om, "Options")
+            self.player_Custom = player_menu.AppendRadioItem(wx.ID_ANY, _("Custom Player..."))
+            om.AppendSubMenu(player_menu, _("Media Player to Use"))
+            # Language submenu (Windows/macOS)
+            lang_menu = wx.Menu()
+            self._lang_menu_items = {}
+            for code, lbl in i18n.available_languages():
+                disp = _("Automatic") if code == "auto" else lbl
+                li = lang_menu.AppendRadioItem(wx.ID_ANY, disp)
+                if i18n.get_language() == code:
+                    li.Check(True)
+                self._lang_menu_items[li.GetId()] = code
+                self.Bind(wx.EVT_MENU, lambda evt, c=code: self._on_select_language(c), li)
+            om.AppendSubMenu(lang_menu, _("Language"))
+            self.min_to_tray_item = om.AppendCheckItem(wx.ID_ANY, _("Minimize to System Tray"))
+            self.show_player_on_enter_item = om.AppendCheckItem(wx.ID_ANY, _("Show Player on Enter"))
+            self.auto_check_updates_item = om.AppendCheckItem(wx.ID_ANY, _("Auto-check for Updates"))
+            mb.Append(om, _("Options"))
             # Help menu
             hm = wx.Menu()
-            self.check_updates_item = hm.Append(wx.ID_ANY, "Check for Updates...")
+            self.check_updates_item = hm.Append(wx.ID_ANY, _("Check for Updates..."))
             hm.AppendSeparator()
-            m_about = hm.Append(wx.ID_ABOUT, "About...")
-            mb.Append(hm, "Help")
+            m_about = hm.Append(wx.ID_ABOUT, _("About..."))
+            mb.Append(hm, _("Help"))
             self.SetMenuBar(mb)
             self.Bind(wx.EVT_MENU, self.show_manager, m_mgr)
             self.Bind(wx.EVT_MENU, self.show_epg_manager, m_epg)
@@ -983,15 +1010,15 @@ class IPTVClient(wx.Frame):
         if not channel:
             return
         menu = wx.Menu()
-        play_item = menu.Append(wx.ID_ANY, "Play")
+        play_item = menu.Append(wx.ID_ANY, _("Play"))
         menu.Bind(wx.EVT_MENU, lambda evt: self.play_selected(), play_item)
-        
+
         if not self._channel_is_epg_exempt(channel):
-            epg_item = menu.Append(wx.ID_ANY, "View EPG...")
+            epg_item = menu.Append(wx.ID_ANY, _("View EPG..."))
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._view_channel_epg(ch), epg_item)
 
         if self._channel_has_catchup(channel):
-            catch_item = menu.Append(wx.ID_ANY, "Play Catch-up…")
+            catch_item = menu.Append(wx.ID_ANY, _("Play Catch-up…"))
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._open_catchup_dialog(ch), catch_item)
         try:
             self.channel_list.PopupMenu(menu)
@@ -1010,7 +1037,7 @@ class IPTVClient(wx.Frame):
                 
                 wx.CallAfter(lambda: self._show_epg_dialog(channel.get("name", ""), programmes))
             except Exception as e:
-                wx.CallAfter(lambda err=e: wx.MessageBox(f"Error fetching EPG: {err}", "Error", wx.OK | wx.ICON_ERROR))
+                wx.CallAfter(lambda err=e: wx.MessageBox(_("Error fetching EPG: {error}").format(error=err), _("Error"), wx.OK | wx.ICON_ERROR))
 
         threading.Thread(target=fetch_and_show, daemon=True).start()
 
@@ -1021,19 +1048,19 @@ class IPTVClient(wx.Frame):
         info = wx.adv.AboutDialogInfo()
         info.SetName(APP_DISPLAY_NAME)
         info.SetVersion(APP_VERSION)
-        info.SetDescription("A screen reader accessible IPTV client for Windows and Linux.\n\n"
+        info.SetDescription(_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
                            "Supports M3U/M3U Plus playlists, Stalker Portal, XtreamCodes,\n"
-                           "built-in VLC player, casting, and XMLTV EPG.")
+                           "built-in VLC player, casting, and XMLTV EPG."))
         info.SetCopyright("© 2025-2026 Serrebi and contributors")
-        info.SetWebSite(f"https://github.com/{GITHUB_OWNER}", "GitHub Profile")
+        info.SetWebSite(f"https://github.com/{GITHUB_OWNER}", _("GitHub Profile"))
         info.AddDeveloper("Serrebi")
-        info.SetLicense("MIT License\n\nSee LICENSE file for details.")
+        info.SetLicense(_("MIT License\n\nSee LICENSE file for details."))
         
         wx.adv.AboutBox(info)
 
     def _show_epg_dialog(self, channel_name, programmes):
         if not programmes:
-            wx.MessageBox("No upcoming schedule found for this channel.", "EPG", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(_("No upcoming schedule found for this channel."), _("EPG"), wx.OK | wx.ICON_INFORMATION)
             return
         dlg = ChannelEPGDialog(self, channel_name, programmes)
         dlg.ShowModal()
@@ -1056,6 +1083,21 @@ class IPTVClient(wx.Frame):
             if frame and frame.IsShown():
                 frame.Hide()
 
+    def _on_select_language(self, code: str):
+        """Persist the chosen UI language and prompt for a restart to fully apply it."""
+        if code == i18n.get_language():
+            return
+        self.config["language"] = code
+        save_config(self.config)
+        # Activate immediately so the confirmation (and any new dialogs) use the new language.
+        i18n.set_language(code)
+        wx.MessageBox(
+            _("The language has been changed. Please restart Accessible IPTV Client "
+              "for the change to take full effect."),
+            _("Language"),
+            wx.OK | wx.ICON_INFORMATION,
+        )
+
     def on_toggle_auto_check_updates(self, event):
         self.auto_check_updates = event.IsChecked()
         self.config["auto_check_updates"] = self.auto_check_updates
@@ -1067,7 +1109,7 @@ class IPTVClient(wx.Frame):
     def _start_update_check(self, interactive: bool):
         if self._update_check_inflight:
             if interactive:
-                wx.MessageBox("Update check is already running.", "Updates", wx.OK | wx.ICON_INFORMATION)
+                wx.MessageBox(_("Update check is already running."), _("Updates"), wx.OK | wx.ICON_INFORMATION)
             return
         self._update_check_inflight = True
         threading.Thread(target=self._check_updates_worker, args=(interactive,), daemon=True).start()
@@ -1075,23 +1117,24 @@ class IPTVClient(wx.Frame):
     def _check_updates_worker(self, interactive: bool):
         try:
             if platform.system() != "Windows":
-                raise updater.UpdateError("Updates are only supported on Windows builds.")
+                raise updater.UpdateError(_("Updates are only supported on Windows builds."))
             if not getattr(sys, "frozen", False):
-                raise updater.UpdateError("Updates are only available in the packaged build.")
+                raise updater.UpdateError(_("Updates are only available in the packaged build."))
 
             release = updater.fetch_latest_release(app_meta.GITHUB_OWNER, app_meta.GITHUB_REPO)
             tag = release.get("tag_name") or ""
             latest_version = updater.normalize_version_tag(tag)
             if not latest_version:
-                raise updater.UpdateError("Latest release tag is missing or invalid.")
+                raise updater.UpdateError(_("Latest release tag is missing or invalid."))
 
             current_version = app_meta.APP_VERSION
             if not updater.is_newer_version(current_version, latest_version):
                 if interactive:
                     wx.CallAfter(
                         wx.MessageBox,
-                        f"{app_meta.APP_DISPLAY_NAME} is up to date (v{current_version}).",
-                        "Updates",
+                        _("{app} is up to date (v{version}).").format(
+                            app=app_meta.APP_DISPLAY_NAME, version=current_version),
+                        _("Updates"),
                         wx.OK | wx.ICON_INFORMATION,
                     )
                 return
@@ -1102,8 +1145,8 @@ class IPTVClient(wx.Frame):
             if interactive:
                 wx.CallAfter(
                     wx.MessageBox,
-                    f"Update check failed: {exc}",
-                    "Updates",
+                    _("Update check failed: {error}").format(error=exc),
+                    _("Updates"),
                     wx.OK | wx.ICON_ERROR,
                 )
         finally:
@@ -1112,11 +1155,12 @@ class IPTVClient(wx.Frame):
     def _prompt_update(self, latest_version: str, current_version: str, notes: str, release: Dict):
         summary = updater.summarize_release_notes(notes)
         message = (
-            f"Update available: v{latest_version} (current v{current_version}).\n\n"
-            f"{summary}\n\n"
-            "Download and install now? The app will restart after the update."
+            _("Update available: v{latest} (current v{current}).").format(
+                latest=latest_version, current=current_version)
+            + "\n\n" + f"{summary}" + "\n\n"
+            + _("Download and install now? The app will restart after the update.")
         )
-        dlg = wx.MessageDialog(self, message, "Update Available", wx.YES_NO | wx.ICON_INFORMATION)
+        dlg = wx.MessageDialog(self, message, _("Update Available"), wx.YES_NO | wx.ICON_INFORMATION)
         try:
             if dlg.ShowModal() == wx.ID_YES:
                 self._start_update_download(release)
@@ -1134,13 +1178,13 @@ class IPTVClient(wx.Frame):
                 app_meta.UPDATE_MANIFEST_NAME,
             )
             if not updater.is_newer_version(app_meta.APP_VERSION, manifest.version):
-                raise updater.UpdateError("Update manifest version is not newer than the current app.")
+                raise updater.UpdateError(_("Update manifest version is not newer than the current app."))
 
             temp_root = tempfile.mkdtemp(prefix="iptvclient_update_")
             zip_path = os.path.join(temp_root, manifest.asset_filename)
             digest = updater.download_file_with_sha256(manifest.download_url, zip_path)
             if digest.lower() != manifest.sha256.lower():
-                raise updater.UpdateError("Downloaded update failed SHA-256 verification.")
+                raise updater.UpdateError(_("Downloaded update failed SHA-256 verification."))
 
             extract_root = os.path.join(temp_root, "extracted")
             updater.safe_extract_zip(zip_path, extract_root)
@@ -1148,7 +1192,7 @@ class IPTVClient(wx.Frame):
             exe_name = os.path.basename(sys.executable)
             new_exe = updater.find_executable(extract_root, exe_name)
             if not new_exe:
-                raise updater.UpdateError(f"Updated executable '{exe_name}' not found in the package.")
+                raise updater.UpdateError(_("Updated executable '{name}' not found in the package.").format(name=exe_name))
 
             updater.verify_authenticode(new_exe, manifest.signing_thumbprints)
 
@@ -1169,7 +1213,7 @@ class IPTVClient(wx.Frame):
                 helper_vbs_source = os.path.join(get_app_dir(), "_internal", "update_helper_launcher.vbs")
 
             if not os.path.exists(helper_source) or not os.path.exists(helper_ps1_source) or not os.path.exists(helper_vbs_source):
-                raise updater.UpdateError("Update helper is missing from this build.")
+                raise updater.UpdateError(_("Update helper is missing from this build."))
 
             helper_dir = os.path.join(temp_root, "helper")
             os.makedirs(helper_dir, exist_ok=True)
@@ -1191,8 +1235,8 @@ class IPTVClient(wx.Frame):
         except updater.UpdateError as exc:
             wx.CallAfter(
                 wx.MessageBox,
-                f"Update failed: {exc}",
-                "Update Error",
+                _("Update failed: {error}").format(error=exc),
+                _("Update Error"),
                 wx.OK | wx.ICON_ERROR,
             )
             if temp_root:
@@ -1210,8 +1254,8 @@ class IPTVClient(wx.Frame):
         exe_name: str,
     ):
         wx.MessageBox(
-            "Update verified. The app will now close to install the update, then restart automatically.",
-            "Installing Update",
+            _("Update verified. The app will now close to install the update, then restart automatically."),
+            _("Installing Update"),
             wx.OK | wx.ICON_INFORMATION,
         )
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
@@ -1643,11 +1687,11 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
 
             if not self.all_channels:
-                self.group_list.Append("No channels found.")
+                self.group_list.Append(_("No channels found."))
                 self._maybe_autostart_epg_import()
                 return
 
-            self.group_list.Append(f"All Channels ({len(self.all_channels)})")
+            self.group_list.Append(_("All Channels") + f" ({len(self.all_channels)})")
             for grp in sorted(self.channels_by_group):
                 self.group_list.Append(f"{grp} ({len(self.channels_by_group[grp])})")
             
@@ -1819,34 +1863,34 @@ class IPTVClient(wx.Frame):
             wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
         dlg.Destroy()
 
-    def import_epg(self, _):
+    def import_epg(self, _event):
         if self.epg_importing:
-            wx.MessageBox("EPG import is already in progress.", "In Progress", wx.OK | wx.ICON_INFORMATION)
-            return
-        
-        if not self.epg_sources:
-            wx.MessageBox("No EPG sources configured. Please add one in File > EPG Manager.", "No Sources", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(_("EPG import is already in progress."), _("In Progress"), wx.OK | wx.ICON_INFORMATION)
             return
 
-        wx.MessageBox("EPG import will start in the background.", "Import Started", wx.OK | wx.ICON_INFORMATION)
+        if not self.epg_sources:
+            wx.MessageBox(_("No EPG sources configured. Please add one in File > EPG Manager."), _("No Sources"), wx.OK | wx.ICON_WARNING)
+            return
+
+        wx.MessageBox(_("EPG import will start in the background."), _("Import Started"), wx.OK | wx.ICON_INFORMATION)
         self.start_epg_import_background(force=True)
 
-    def show_whats_on_now(self, _):
+    def show_whats_on_now(self, _event):
         """Show dialog with all currently airing programs."""
         if not self.config.get("epg_enabled", True):
-            wx.MessageBox("EPG is not enabled.", "EPG Not Available", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(_("EPG is not enabled."), _("EPG Not Available"), wx.OK | wx.ICON_WARNING)
             return
-        
+
         try:
             db = EPGDatabase(get_db_path(), readonly=True)
             programs = db.get_all_now_playing()
             db.close()
         except Exception as e:
-            wx.MessageBox(f"Failed to fetch EPG data: {e}", "Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Failed to fetch EPG data: {error}").format(error=e), _("Error"), wx.OK | wx.ICON_ERROR)
             return
-        
+
         if not programs:
-            wx.MessageBox("No programs are currently airing, or EPG data has not been imported yet.", "No Data", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(_("No programs are currently airing, or EPG data has not been imported yet."), _("No Data"), wx.OK | wx.ICON_INFORMATION)
             return
         
         dlg = WhatsOnNowDialog(self, programs)
@@ -1862,7 +1906,7 @@ class IPTVClient(wx.Frame):
         channel_id = program.get("channel_id", "")
         
         if not channel_name and not channel_id:
-            wx.MessageBox("Could not identify the channel.", "Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Could not identify the channel."), _("Error"), wx.OK | wx.ICON_ERROR)
             return
         
         # Try to find the channel in our playlist
@@ -1937,7 +1981,7 @@ class IPTVClient(wx.Frame):
                 matching_channel = ch
         
         if not matching_channel or best_score < 30:
-            wx.MessageBox(f"Could not find channel '{channel_name}' in your playlist.", "Channel Not Found", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(_("Could not find channel '{channel}' in your playlist.").format(channel=channel_name), _("Channel Not Found"), wx.OK | wx.ICON_WARNING)
             return
         
         # Find and select the channel in the currently displayed list
@@ -2292,8 +2336,11 @@ class IPTVClient(wx.Frame):
 
     def on_group_select(self):
         sel = self.group_list.GetSelection()
-        label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else "All Channels"
-        if label.startswith("All Channels"):
+        all_label = _("All Channels")
+        label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
+        # "All Channels" is the internal sentinel; match either the translated label
+        # (current UI language) or the English source (e.g. config from another locale).
+        if label.startswith(all_label) or label.startswith("All Channels"):
             grp = "All Channels"
         else:
             grp = label.split(" (", 1)[0]
@@ -2826,22 +2873,22 @@ class IPTVClient(wx.Frame):
             show = item["data"]
             channel = self._find_channel_for_epg(show)
             if not channel:
-                wx.MessageBox("Could not match this programme to a playlist channel.",
-                              "Not Found", wx.OK | wx.ICON_WARNING)
+                wx.MessageBox(_("Could not match this programme to a playlist channel."),
+                              _("Not Found"), wx.OK | wx.ICON_WARNING)
                 return
         else:
             return
 
         try:
             if show:
-                url, _ = self._resolve_show_url(channel, show)
+                url, _unused = self._resolve_show_url(channel, show)
             else:
                 url = self._resolve_live_url(channel)
         except ProviderError as err:
-            wx.MessageBox(f"Provider error: {err}", "Playback Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Provider error: {error}").format(error=err), _("Playback Error"), wx.OK | wx.ICON_ERROR)
             return
         except Exception as err:
-            wx.MessageBox(f"Could not resolve stream URL:\n{err}", "Playback Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Could not resolve stream URL:\n{error}").format(error=err), _("Playback Error"), wx.OK | wx.ICON_ERROR)
             return
 
         display_name = None
@@ -2860,7 +2907,7 @@ class IPTVClient(wx.Frame):
                 else:
                     display_name = show_title
         if not display_name:
-            display_name = "IPTV Stream"
+            display_name = _("IPTV Stream")
         if show_internal_player is None:
             show_internal_player = self.show_player_on_enter
 
@@ -2877,7 +2924,7 @@ class IPTVClient(wx.Frame):
 
     def _ensure_internal_player(self) -> InternalPlayerFrame:
         if InternalPlayerFrame is None:
-            detail = _VLC_IMPORT_ERROR or "Built-in player is unavailable."
+            detail = _VLC_IMPORT_ERROR or _("Built-in player is unavailable.")
             raise InternalPlayerUnavailableError(str(detail))
         frame = getattr(self, "_internal_player_frame", None)
         if frame:
@@ -2912,7 +2959,7 @@ class IPTVClient(wx.Frame):
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
             LOG.warning("_launch_stream: No URL provided")
-            wx.MessageBox("Could not find stream URL for this selection.", "Not Found",
+            wx.MessageBox(_("Could not find stream URL for this selection."), _("Not Found"),
                           wx.OK | wx.ICON_WARNING)
             return
         if show_internal_player is None:
@@ -2926,7 +2973,7 @@ class IPTVClient(wx.Frame):
                 # Run async cast play in background thread
                 def do_cast():
                     try:
-                        self.caster.play(url, title or "IPTV Stream", channel=channel)
+                        self.caster.play(url, title or _("IPTV Stream"), channel=channel)
                     except Exception as e:
                         err_msg = str(e)
                         # The current cast device is incompatible or unreachable
@@ -2938,17 +2985,17 @@ class IPTVClient(wx.Frame):
                         except Exception:
                             pass
                         wx.CallAfter(lambda: wx.MessageBox(
-                            f"Casting failed: {err_msg}\n\n"
-                            "Disconnected from the cast device. "
-                            "Open the cast menu to pick another device.",
-                            "Casting Error", wx.OK | wx.ICON_ERROR))
+                            _("Casting failed: {error}").format(error=err_msg) + "\n\n"
+                            + _("Disconnected from the cast device. "
+                                "Open the cast menu to pick another device."),
+                            _("Casting Error"), wx.OK | wx.ICON_ERROR))
 
                 threading.Thread(target=do_cast, daemon=True).start()
 
-                wx.MessageBox(f"Casting to {device_name}...", "Casting", wx.OK | wx.ICON_INFORMATION)
+                wx.MessageBox(_("Casting to {device}...").format(device=device_name), _("Casting"), wx.OK | wx.ICON_INFORMATION)
                 return
             except Exception as e:
-                wx.MessageBox(f"Failed to cast: {e}", "Casting Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(_("Failed to cast: {error}").format(error=e), _("Casting Error"), wx.OK | wx.ICON_ERROR)
                 # Fallback to local player? No, user expects cast.
                 return
 
@@ -2962,9 +3009,9 @@ class IPTVClient(wx.Frame):
                 frame = self._ensure_internal_player()
             except InternalPlayerUnavailableError as err:
                 detail = str(err)
-                wx.MessageBox(f"Built-in player unavailable:\n{detail}", "Launch Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(_("Built-in player unavailable:\n{detail}").format(detail=detail), _("Launch Error"), wx.OK | wx.ICON_ERROR)
                 return
-            display_title = title or "IPTV Stream"
+            display_title = title or _("IPTV Stream")
             try:
                 if show_internal_player:
                     frame.Enable(True)
@@ -2985,13 +3032,13 @@ class IPTVClient(wx.Frame):
                 if not show_internal_player:
                     wx.CallAfter(self._restore_main_focus)
             except Exception as err:
-                wx.MessageBox(f"Failed to start built-in player:\n{err}", "Launch Error", wx.OK | wx.ICON_ERROR)
+                wx.MessageBox(_("Failed to start built-in player:\n{error}").format(error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
             return
 
         # External player launch
         ok, err = self.player_launcher.launch(player, url, custom_path)
         if not ok:
-            wx.MessageBox(f"Failed to launch {player}:\n{err}", "Launch Error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(_("Failed to launch {player}:\n{error}").format(player=player, error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
 
     def _restore_main_focus(self) -> None:
         """Restore focus to channel list only if this window is active."""
@@ -3003,7 +3050,7 @@ class IPTVClient(wx.Frame):
 
     def _cast_from_internal_player(self, url: str, title: str, headers: Dict[str, object]) -> None:
         if not url:
-            wx.MessageBox("No active stream to cast.", "Casting", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(_("No active stream to cast."), _("Casting"), wx.OK | wx.ICON_WARNING)
             return
 
         def do_cast(device: CastDevice):
@@ -3016,9 +3063,9 @@ class IPTVClient(wx.Frame):
                 else:
                     raise RuntimeError("Caster not connected.")
                 wx.CallAfter(self._handoff_internal_player_after_cast, url, title)
-                wx.CallAfter(lambda: wx.MessageBox(f"Casting to {device.display_name}...", "Casting", wx.OK | wx.ICON_INFORMATION))
+                wx.CallAfter(lambda: wx.MessageBox(_("Casting to {device}...").format(device=device.display_name), _("Casting"), wx.OK | wx.ICON_INFORMATION))
             except Exception as e:
-                wx.CallAfter(lambda err=e: wx.MessageBox(f"Failed to cast: {err}", "Casting Error", wx.OK | wx.ICON_ERROR))
+                wx.CallAfter(lambda err=e: wx.MessageBox(_("Failed to cast: {error}").format(error=err), _("Casting Error"), wx.OK | wx.ICON_ERROR))
 
         if self.caster.is_connected() and self.caster.active_device:
             threading.Thread(target=lambda: do_cast(self.caster.active_device), daemon=True).start()
@@ -3078,8 +3125,8 @@ class IPTVClient(wx.Frame):
     def _open_catchup_dialog(self, channel: Dict[str, str]):
         programmes = self._get_catchup_programmes(channel)
         if not programmes:
-            wx.MessageBox("No catch-up programmes are available for this channel.",
-                          "Catch-up", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(_("No catch-up programmes are available for this channel."),
+                          _("Catch-up"), wx.OK | wx.ICON_INFORMATION)
             return
         dlg = CatchupDialog(self, channel.get("name", ""), programmes)
         try:
@@ -3095,22 +3142,23 @@ class IPTVClient(wx.Frame):
                     "end": selected.get("end", "")
                 }
                 try:
-                    url, _ = self._resolve_show_url(channel, show)
+                    url, _unused = self._resolve_show_url(channel, show)
                 except ProviderError as err:
-                    wx.MessageBox(f"Provider error: {err}", "Catch-up", wx.OK | wx.ICON_ERROR)
+                    wx.MessageBox(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
                     return
                 except Exception as err:
-                    wx.MessageBox(f"Unable to prepare catch-up stream:\n{err}", "Catch-up", wx.OK | wx.ICON_ERROR)
+                    wx.MessageBox(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
                     return
                 display = (selected.get("title") or channel.get("name", "IPTV Stream"))
                 self._launch_stream(url, display, stream_kind="catchup", channel=channel)
         finally:
             dlg.Destroy()
 
-    def show_cast_dialog(self, _):
+    def show_cast_dialog(self, _event):
         if self.caster.is_connected():
-            msg = f"Currently connected to: {self.caster.active_device.display_name}\n\nDisconnect?"
-            if wx.MessageBox(msg, "Casting", wx.YES_NO | wx.ICON_QUESTION) == wx.YES:
+            msg = _("Currently connected to: {device}\n\nDisconnect?").format(
+                device=self.caster.active_device.display_name)
+            if wx.MessageBox(msg, _("Casting"), wx.YES_NO | wx.ICON_QUESTION) == wx.YES:
                 # Disconnect in background
                 threading.Thread(target=self.caster.disconnect, daemon=True).start()
             return
@@ -3124,10 +3172,10 @@ class IPTVClient(wx.Frame):
                     try:
                         creds = self.config.get("cast_credentials", {}).get(device.identifier)
                         self.caster.connect(device, credentials=creds)
-                        wx.CallAfter(lambda: wx.MessageBox(f"Connected to {device.display_name}", "Connected", wx.OK))
+                        wx.CallAfter(lambda: wx.MessageBox(_("Connected to {device}").format(device=device.display_name), _("Connected"), wx.OK))
                     except Exception as e:
                         err_msg = str(e)
-                        wx.CallAfter(lambda: wx.MessageBox(f"Failed to connect: {err_msg}", "Error", wx.OK | wx.ICON_ERROR))
+                        wx.CallAfter(lambda: wx.MessageBox(_("Failed to connect: {error}").format(error=err_msg), _("Error"), wx.OK | wx.ICON_ERROR))
                 
                 threading.Thread(target=do_connect, daemon=True).start()
         dlg.Destroy()
@@ -3147,23 +3195,23 @@ class IPTVClient(wx.Frame):
 
 class CastDiscoveryDialog(wx.Dialog):
     def __init__(self, parent, caster: CastingManager):
-        super().__init__(parent, title="Select Device to Cast", size=(450, 350))
+        super().__init__(parent, title=_("Select Device to Cast"), size=(450, 350))
         self.parent_frame = parent
         self.caster = caster
         self.devices: List[CastDevice] = []
-        
+
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        self.status_lbl = wx.StaticText(panel, label="Searching for devices...")
+
+        self.status_lbl = wx.StaticText(panel, label=_("Searching for devices..."))
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
-        
+
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        self.pair_btn = wx.Button(panel, label="Pair...")
+
+        self.pair_btn = wx.Button(panel, label=_("Pair..."))
         self.pair_btn.Disable()
-        
-        self.ok_btn = wx.Button(panel, id=wx.ID_OK, label="Connect")
+
+        self.ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Connect"))
         self.ok_btn.Disable()
         cancel_btn = wx.Button(panel, id=wx.ID_CANCEL)
         
@@ -3194,18 +3242,18 @@ class CastDiscoveryDialog(wx.Dialog):
                 devices = self.caster.discover_all()
                 wx.CallAfter(self._update_list, devices)
             except Exception as e:
-                wx.CallAfter(self.status_lbl.SetLabel, f"Error: {e}")
-        
+                wx.CallAfter(self.status_lbl.SetLabel, _("Error: {error}").format(error=e))
+
         threading.Thread(target=do_scan, daemon=True).start()
 
     def _update_list(self, devices: List[CastDevice]):
         self.devices = devices
         self.listbox.Clear()
         if not devices:
-            self.status_lbl.SetLabel("No devices found.")
+            self.status_lbl.SetLabel(_("No devices found."))
             return
-            
-        self.status_lbl.SetLabel(f"Found {len(devices)} devices:")
+
+        self.status_lbl.SetLabel(_("Found {count} devices:").format(count=len(devices)))
         for dev in devices:
             self.listbox.Append(dev.display_name)
         
@@ -3234,7 +3282,7 @@ class CastDiscoveryDialog(wx.Dialog):
         # Disable UI
         self.pair_btn.Disable()
         self.ok_btn.Disable()
-        self.status_lbl.SetLabel(f"Starting pairing with {device.name}...")
+        self.status_lbl.SetLabel(_("Starting pairing with {device}...").format(device=device.name))
         
         def do_pair_flow():
             handler = None
@@ -3245,7 +3293,7 @@ class CastDiscoveryDialog(wx.Dialog):
                 
                 # Step 2: Ask User for PIN
                 def ask_pin():
-                    dlg = wx.TextEntryDialog(self, f"Enter PIN displayed on {device.name}:", "Pairing")
+                    dlg = wx.TextEntryDialog(self, _("Enter PIN displayed on {device}:").format(device=device.name), _("Pairing"))
                     if dlg.ShowModal() == wx.ID_OK:
                         return dlg.GetValue().strip()
                     return None
@@ -3264,7 +3312,7 @@ class CastDiscoveryDialog(wx.Dialog):
                 if not pin:
                     # User cancelled
                     self.caster.dispatch(handler.close())
-                    wx.CallAfter(self.status_lbl.SetLabel, "Pairing cancelled.")
+                    wx.CallAfter(self.status_lbl.SetLabel, _("Pairing cancelled."))
                     return
 
                 # Step 3: Submit PIN
@@ -3278,12 +3326,12 @@ class CastDiscoveryDialog(wx.Dialog):
                 if creds:
                     wx.CallAfter(self._save_creds_and_notify, device, creds)
                 else:
-                    wx.CallAfter(lambda: wx.MessageBox("Pairing finished but no credentials returned.", "Pairing Failed", wx.OK | wx.ICON_ERROR))
-                    
+                    wx.CallAfter(lambda: wx.MessageBox(_("Pairing finished but no credentials returned."), _("Pairing Failed"), wx.OK | wx.ICON_ERROR))
+
             except Exception as e:
                 err_msg = str(e)
-                wx.CallAfter(lambda: wx.MessageBox(f"Pairing error: {err_msg}", "Error", wx.OK | wx.ICON_ERROR))
-                wx.CallAfter(self.status_lbl.SetLabel, f"Pairing failed: {err_msg}")
+                wx.CallAfter(lambda: wx.MessageBox(_("Pairing error: {error}").format(error=err_msg), _("Error"), wx.OK | wx.ICON_ERROR))
+                wx.CallAfter(self.status_lbl.SetLabel, _("Pairing failed: {error}").format(error=err_msg))
                 if handler:
                     try:
                         self.caster.dispatch(handler.close())
@@ -3303,8 +3351,8 @@ class CastDiscoveryDialog(wx.Dialog):
         cfg["cast_credentials"][device.identifier] = creds
         save_config(cfg)
         
-        wx.MessageBox(f"Successfully paired with {device.name}!", "Pairing Complete", wx.OK)
-        self.status_lbl.SetLabel(f"Paired with {device.name}. Ready to connect.")
+        wx.MessageBox(_("Successfully paired with {device}!").format(device=device.name), _("Pairing Complete"), wx.OK)
+        self.status_lbl.SetLabel(_("Paired with {device}. Ready to connect.").format(device=device.name))
 
     def get_selected_device(self) -> Optional[CastDevice]:
         sel = self.listbox.GetSelection()
@@ -3315,19 +3363,19 @@ class CastDiscoveryDialog(wx.Dialog):
 
 class CatchupDialog(wx.Dialog):
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
-        title = channel_name or "Catch-up"
-        super().__init__(parent, title=f"Catch-up: {title}", size=(520, 360))
+        title = channel_name or _("Catch-up")
+        super().__init__(parent, title=_("Catch-up: {name}").format(name=title), size=(520, 360))
         self.programmes = programmes
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        intro = wx.StaticText(panel, label="Select a programme to play from catch-up:")
+        intro = wx.StaticText(panel, label=_("Select a programme to play from catch-up:"))
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
         for prog in programmes:
             self.listbox.Append(self._format_programme(prog))
         if programmes:
             self.listbox.SetSelection(0)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        ok_btn = wx.Button(panel, id=wx.ID_OK, label="Play")
+        ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
         cancel_btn = wx.Button(panel, id=wx.ID_CANCEL)
         btn_sizer.Add(ok_btn, 0, wx.ALL, 5)
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
@@ -3350,7 +3398,7 @@ class CatchupDialog(wx.Dialog):
             window = f"{start_local.strftime('%Y-%m-%d %H:%M')} – {end_local.strftime('%H:%M')}"
         except Exception:
             window = prog.get("start", "")
-        title = prog.get("title", "") or "(No title)"
+        title = prog.get("title", "") or _("(No title)")
         return f"{window}  |  {title}"
 
     def _on_listbox_activate(self, _):
@@ -3375,7 +3423,7 @@ class WhatsOnNowDialog(wx.Dialog):
     """Dialog showing all currently airing programs across all channels."""
     
     def __init__(self, parent, programs: List[Dict[str, str]]):
-        super().__init__(parent, title="What's on Now", size=(700, 500))
+        super().__init__(parent, title=_("What's on Now"), size=(700, 500))
         self.programs = programs
         self.filtered_programs = programs[:]
         self._type_ahead_buffer = ""
@@ -3386,27 +3434,27 @@ class WhatsOnNowDialog(wx.Dialog):
         
         # Search box (for filtering, Tab to access)
         search_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        search_label = wx.StaticText(panel, label="Filter (Tab):")
+        search_label = wx.StaticText(panel, label=_("Filter (Tab):"))
         self.search_box = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER)
-        self.search_box.SetName("Filter programs")
+        self.search_box.SetName(_("Filter programs"))
         search_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         search_sizer.Add(self.search_box, 1, wx.EXPAND)
         sizer.Add(search_sizer, 0, wx.EXPAND | wx.ALL, 10)
         
         # Info label
-        self.count_label = wx.StaticText(panel, label=f"{len(programs)} programs")
+        self.count_label = wx.StaticText(panel, label=_("{count} programs").format(count=len(programs)))
         sizer.Add(self.count_label, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        
+
         # Use virtual ListCtrl for fast loading with many items
         self.listbox = _VirtualWhatsOnList(panel, self)
-        self.listbox.SetName("Currently airing programs")
-        self.listbox.InsertColumn(0, "Program - Channel", width=650)
+        self.listbox.SetName(_("Currently airing programs"))
+        self.listbox.InsertColumn(0, _("Program - Channel"), width=650)
         self.listbox.SetItemCount(len(self.filtered_programs))
-        
+
         # Buttons
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        play_btn = wx.Button(panel, id=wx.ID_OK, label="Play")
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label="Close")
+        play_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
+        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         btn_sizer.Add(play_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         
@@ -3512,11 +3560,11 @@ class WhatsOnNowDialog(wx.Dialog):
             ]
         self.listbox.SetItemCount(len(self.filtered_programs))
         self.listbox.Refresh()
-        self.count_label.SetLabel(f"{len(self.filtered_programs)} programs")
+        self.count_label.SetLabel(_("{count} programs").format(count=len(self.filtered_programs)))
         if self.filtered_programs:
             self.listbox.Select(0)
             self.listbox.Focus(0)
-    
+
     def _on_search_enter(self, event):
         """Move focus to list when Enter is pressed in search box."""
         if self.filtered_programs:
@@ -3553,26 +3601,26 @@ class _VirtualWhatsOnList(wx.ListCtrl):
     def OnGetItemText(self, item, column):
         if 0 <= item < len(self.dialog.filtered_programs):
             prog = self.dialog.filtered_programs[item]
-            title = prog.get("title", "(No title)")
-            channel = prog.get("channel_name", "Unknown")
+            title = prog.get("title") or _("(No title)")
+            channel = prog.get("channel_name") or _("Unknown")
             return f"{title} - {channel}"
         return ""
 
 
 class ChannelEPGDialog(wx.Dialog):
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
-        super().__init__(parent, title=f"EPG: {channel_name}", size=(600, 450))
-        
+        super().__init__(parent, title=_("EPG: {channel}").format(channel=channel_name), size=(600, 450))
+
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         self.list_ctrl = wx.ListCtrl(panel, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
-        self.list_ctrl.InsertColumn(0, "Time", width=140)
-        self.list_ctrl.InsertColumn(1, "Title", width=400)
-        
+        self.list_ctrl.InsertColumn(0, _("Time"), width=140)
+        self.list_ctrl.InsertColumn(1, _("Title"), width=400)
+
         self._populate_list(programmes)
-        
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label="Close")
+
+        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
         sizer.Add(close_btn, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
@@ -3609,6 +3657,11 @@ class ChannelEPGDialog(wx.Dialog):
 
 if __name__ == "__main__":
     set_linux_env()
+    # Best-effort early language activation from saved config (the frame re-applies it too).
+    try:
+        i18n.init_from_config(load_config())
+    except Exception:
+        pass
     app = wx.App()
     app.SetAppName("IPTVClient")
     IPTVClient()

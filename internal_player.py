@@ -12,6 +12,9 @@ from typing import Callable, Deque, Dict, List, Optional, Tuple
 
 import wx
 
+from i18n import gettext as _
+
+
 def _prime_vlc_search_path() -> None:
     """Make sure libvlc.dll is discoverable before importing python-vlc."""
     candidates = [
@@ -94,8 +97,8 @@ class InternalPlayerFrame(wx.Frame):
     ) -> None:
         _prepare_vlc_runtime()
         if vlc is None:
-            raise InternalPlayerUnavailableError("python-vlc (libVLC) is not available.")
-        super().__init__(parent, title="Built-in IPTV Player", size=(960, 540))
+            raise InternalPlayerUnavailableError(_("python-vlc (libVLC) is not available."))
+        super().__init__(parent, title=_("Built-in IPTV Player"), size=(960, 540))
         self._on_close_cb = on_close
         self._on_cast_cb = on_cast
         self._allow_close = False
@@ -180,15 +183,15 @@ class InternalPlayerFrame(wx.Frame):
             LOG.warning("libVLC rejected tuning flags (%s); retrying with defaults.", err)
             self.instance = vlc.Instance()
         if not self.instance:
-            raise InternalPlayerUnavailableError("Failed to initialise libVLC instance.")
+            raise InternalPlayerUnavailableError(_("Failed to initialise libVLC instance."))
         try:
             self.player = self.instance.media_player_new()
         except Exception as err:
             self.instance.release()
-            raise InternalPlayerUnavailableError(f"Failed to initialise media player: {err}") from err
+            raise InternalPlayerUnavailableError(_("Failed to initialise media player: {error}").format(error=err)) from err
         if not self.player:
             self.instance.release()
-            raise InternalPlayerUnavailableError("Could not create libVLC media player object.")
+            raise InternalPlayerUnavailableError(_("Could not create libVLC media player object."))
 
         try:
             current = self.player.audio_get_volume()
@@ -216,26 +219,26 @@ class InternalPlayerFrame(wx.Frame):
         self.controls_panel.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
         controls = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.play_pause_btn = wx.Button(self.controls_panel, label="Pause")
-        self.play_pause_btn.SetName("Play or Pause")
+        self.play_pause_btn = wx.Button(self.controls_panel, label=_("Pause"))
+        self.play_pause_btn.SetName(_("Play or Pause"))
         self.play_pause_btn.Bind(wx.EVT_BUTTON, self._on_toggle_pause)
         self.play_pause_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.play_pause_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
 
-        self.stop_btn = wx.Button(self.controls_panel, label="Stop")
-        self.stop_btn.SetName("Stop Playback")
+        self.stop_btn = wx.Button(self.controls_panel, label=_("Stop"))
+        self.stop_btn.SetName(_("Stop Playback"))
         self.stop_btn.Bind(wx.EVT_BUTTON, lambda evt: self.stop(evt, manual=True))
         self.stop_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.stop_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
 
-        self.cast_btn = wx.Button(self.controls_panel, label="Cast")
-        self.cast_btn.SetName("Cast to Device")
+        self.cast_btn = wx.Button(self.controls_panel, label=_("Cast"))
+        self.cast_btn.SetName(_("Cast to Device"))
         self.cast_btn.Bind(wx.EVT_BUTTON, self._on_cast)
         self.cast_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.cast_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
 
-        self.fullscreen_btn = wx.Button(self.controls_panel, label="Full Screen")
-        self.fullscreen_btn.SetName("Toggle Full Screen")
+        self.fullscreen_btn = wx.Button(self.controls_panel, label=_("Full Screen"))
+        self.fullscreen_btn.SetName(_("Toggle Full Screen"))
         self.fullscreen_btn.Bind(wx.EVT_BUTTON, self._on_toggle_fullscreen)
         self.fullscreen_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.fullscreen_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
@@ -247,7 +250,7 @@ class InternalPlayerFrame(wx.Frame):
             maxValue=100,
             style=wx.SL_HORIZONTAL,
         )
-        self.volume_slider.SetName("Volume Control")
+        self.volume_slider.SetName(_("Volume Control"))
         self.volume_slider.Bind(wx.EVT_SLIDER, self._on_volume_slider)
 
         controls.Add(self.play_pause_btn, 0, wx.ALL, 5)
@@ -257,7 +260,7 @@ class InternalPlayerFrame(wx.Frame):
         # Expand horizontally; avoid mixing ALIGN_* with EXPAND to prevent wx assertions.
         controls.Add(self.volume_slider, 1, wx.ALL | wx.EXPAND, 5)
         controls.AddStretchSpacer(1)
-        self.status_label = wx.StaticText(self.controls_panel, label="Idle")
+        self.status_label = wx.StaticText(self.controls_panel, label=_("Idle"))
         controls.Add(self.status_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         self.controls_panel.SetSizer(controls)
         self.controls_panel.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
@@ -283,20 +286,20 @@ class InternalPlayerFrame(wx.Frame):
 
         wx.CallAfter(self._ensure_player_window)
         wx.CallAfter(self.play_pause_btn.SetFocus)
-        self._update_status_label("Idle")
+        self._update_status_label(_("Idle"))
 
     def _build_menu_bar(self) -> None:
         menu_bar = wx.MenuBar()
 
         playback_menu = wx.Menu()
-        m_play_pause = playback_menu.Append(wx.ID_ANY, "Play/Pause\tCtrl+P")
-        m_stop = playback_menu.Append(wx.ID_ANY, "Stop\tCtrl+S")
+        m_play_pause = playback_menu.Append(wx.ID_ANY, _("Play/Pause") + "\tCtrl+P")
+        m_stop = playback_menu.Append(wx.ID_ANY, _("Stop") + "\tCtrl+S")
         playback_menu.AppendSeparator()
-        m_cast = playback_menu.Append(wx.ID_ANY, "Cast...\tCtrl+C")
-        m_full = playback_menu.Append(wx.ID_ANY, "Toggle Full Screen\tF11")
+        m_cast = playback_menu.Append(wx.ID_ANY, _("Cast...") + "\tCtrl+C")
+        m_full = playback_menu.Append(wx.ID_ANY, _("Toggle Full Screen") + "\tF11")
         playback_menu.AppendSeparator()
-        m_hide = playback_menu.Append(wx.ID_ANY, "Hide Window\tCtrl+W")
-        m_exit = playback_menu.Append(wx.ID_EXIT, "Exit Player\tCtrl+Q")
+        m_hide = playback_menu.Append(wx.ID_ANY, _("Hide Window") + "\tCtrl+W")
+        m_exit = playback_menu.Append(wx.ID_EXIT, _("Exit Player") + "\tCtrl+Q")
 
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_pause(), m_play_pause)
         self.Bind(wx.EVT_MENU, lambda _evt: self.stop(manual=True), m_stop)
@@ -305,7 +308,7 @@ class InternalPlayerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _evt: self._hide_player(), m_hide)
         self.Bind(wx.EVT_MENU, lambda _evt: self._exit_player(), m_exit)
 
-        menu_bar.Append(playback_menu, "&Playback")
+        menu_bar.Append(playback_menu, _("&Playback"))
         self.SetMenuBar(menu_bar)
 
     # ------------------------------------------------------------------ public
@@ -321,9 +324,9 @@ class InternalPlayerFrame(wx.Frame):
     ) -> None:
         """Start playback of the given URL with buffering and recovery hooks."""
         if self._destroyed:
-            raise InternalPlayerUnavailableError("Player window has been destroyed.")
+            raise InternalPlayerUnavailableError(_("Player window has been destroyed."))
         if not url:
-            raise InternalPlayerUnavailableError("No stream URL provided.")
+            raise InternalPlayerUnavailableError(_("No stream URL provided."))
 
         if _retry:
             self._manual_stop = False
@@ -354,7 +357,7 @@ class InternalPlayerFrame(wx.Frame):
         self._detected_content_ts = False  # Reset content type detection
 
         LOG.info("Playing URL: %s (title=%s, retry=%s)", base_url, title, _retry)
-        self.SetTitle(f"{self._current_title} - Built-in Player")
+        self.SetTitle(_("{title} - Built-in Player").format(title=self._current_title))
         playback_url, variant_bitrate = self._resolve_stream_url(base_url, headers=merged_headers)
         self._last_resolved_url = playback_url
         LOG.debug("Resolved playback URL: %s (variant_bitrate=%s)", playback_url, variant_bitrate)
@@ -402,10 +405,10 @@ class InternalPlayerFrame(wx.Frame):
         LOG.debug("Calling player.play()...")
         self.player.play()
         self._is_paused = False
-        self.play_pause_btn.SetLabel("Pause")
+        self.play_pause_btn.SetLabel(_("Pause"))
         self._schedule_volume_apply()
         self._status_timer.Start(500)
-        self._update_status_label("Buffering...")
+        self._update_status_label(_("Buffering..."))
         LOG.debug("Playback initiated, timer started")
         
         # Ensure focus returns to the controls for screen readers
@@ -427,8 +430,8 @@ class InternalPlayerFrame(wx.Frame):
             pass
         self._is_paused = True
         self._has_seen_playing = False
-        self.play_pause_btn.SetLabel("Play")
-        self._update_status_label("Stopped")
+        self.play_pause_btn.SetLabel(_("Play"))
+        self._update_status_label(_("Stopped"))
 
     def update_base_buffer(self, seconds: float) -> None:
         """Update default buffer target for future plays."""
@@ -731,7 +734,7 @@ class InternalPlayerFrame(wx.Frame):
         self._last_restart_reason = "xtream segment rollover"
         self._last_restart_ts = time.monotonic()
         LOG.info("Xtream TS segment ended; refreshing stream without consuming retries.")
-        self._update_status_label("Refreshing stream...")
+        self._update_status_label(_("Refreshing stream..."))
 
         def _do_restart() -> None:
             self._pending_restart = False
@@ -996,7 +999,7 @@ class InternalPlayerFrame(wx.Frame):
             status = resp.status
             resp.close()
             if status >= 400:
-                return f"HTTP error {status}"
+                return _("HTTP error {code}").format(code=status)
             return None  # Success - got 2xx/3xx response (3xx means redirect, let VLC handle it)
         except urllib.error.HTTPError as e:
             # 3xx redirects are fine - VLC will follow them
@@ -1004,30 +1007,30 @@ class InternalPlayerFrame(wx.Frame):
                 return None  # Redirect is OK
             LOG.warning("Stream preflight failed: HTTP %d %s for %s", e.code, e.reason, url)
             if e.code == 404:
-                return f"Stream not found (HTTP 404). The channel may be offline or the URL may have expired."
+                return _("Stream not found (HTTP 404). The channel may be offline or the URL may have expired.")
             elif e.code == 403:
-                return f"Access denied (HTTP 403). Authentication may have expired."
+                return _("Access denied (HTTP 403). Authentication may have expired.")
             elif e.code == 401:
-                return f"Authentication required (HTTP 401). Please check your credentials."
+                return _("Authentication required (HTTP 401). Please check your credentials.")
             elif e.code == 502:
-                return f"Bad gateway (HTTP 502). The provider's server may be having issues."
+                return _("Bad gateway (HTTP 502). The provider's server may be having issues.")
             elif e.code == 503:
-                return f"Service unavailable (HTTP 503). The provider may be overloaded."
+                return _("Service unavailable (HTTP 503). The provider may be overloaded.")
             elif e.code >= 500:
-                return f"Server error (HTTP {e.code}). Try again later."
+                return _("Server error (HTTP {code}). Try again later.").format(code=e.code)
             else:
-                return f"HTTP error {e.code}: {e.reason}"
+                return _("HTTP error {code}: {reason}").format(code=e.code, reason=e.reason)
         except urllib.error.URLError as e:
-            reason = str(e.reason) if e.reason else "Unknown error"
+            reason = str(e.reason) if e.reason else _("Unknown error")
             LOG.warning("Stream preflight failed: %s for %s", reason, url)
             if "ssl" in reason.lower() or "certificate" in reason.lower():
-                return f"SSL/TLS error: {reason}"
+                return _("SSL/TLS error: {reason}").format(reason=reason)
             elif "timeout" in reason.lower() or "timed out" in reason.lower():
                 return None  # Timeouts are OK - let VLC try with its own buffering
             elif "refused" in reason.lower():
-                return f"Connection refused. The server may be down."
+                return _("Connection refused. The server may be down.")
             else:
-                return f"Connection error: {reason}"
+                return _("Connection error: {reason}").format(reason=reason)
         except Exception as e:
             LOG.debug("Preflight check exception (non-fatal): %s", e)
             return None  # Let VLC try anyway for unknown errors
@@ -1116,16 +1119,18 @@ class InternalPlayerFrame(wx.Frame):
                 # Build informative error message
                 reason_hint = ""
                 if self._last_restart_reason:
-                    reason_hint = f"\n\nLast error: {self._last_restart_reason}"
+                    reason_hint = "\n\n" + _("Last error: {reason}").format(reason=self._last_restart_reason)
                 wx.CallAfter(
                     wx.MessageBox,
-                    f"Stream disconnected after {self._max_reconnect_attempts} retries. "
-                    f"The stream may be offline or experiencing issues.{reason_hint}\n\n"
-                    "Please try another channel or try again later.",
-                    "Stream Lost",
+                    _("Stream disconnected after {count} retries. "
+                      "The stream may be offline or experiencing issues.").format(
+                        count=self._max_reconnect_attempts)
+                    + reason_hint + "\n\n"
+                    + _("Please try another channel or try again later."),
+                    _("Stream Lost"),
                     wx.OK | wx.ICON_WARNING,
                 )
-                self._update_status_label("Stream lost")
+                self._update_status_label(_("Stream lost"))
             return
 
         self._pending_restart = True
@@ -1138,7 +1143,7 @@ class InternalPlayerFrame(wx.Frame):
             self._reconnect_attempts,
             self._max_reconnect_attempts,
         )
-        self._update_status_label("Reconnecting...")
+        self._update_status_label(_("Reconnecting..."))
 
         def _do_restart() -> None:
             self._pending_restart = False
@@ -1274,8 +1279,8 @@ class InternalPlayerFrame(wx.Frame):
             try:
                 self.player.play()
                 self._is_paused = False
-                self.play_pause_btn.SetLabel("Pause")
-                self._update_status_label("Buffering...")
+                self.play_pause_btn.SetLabel(_("Pause"))
+                self._update_status_label(_("Buffering..."))
             except Exception:
                 pass
             return
@@ -1285,9 +1290,9 @@ class InternalPlayerFrame(wx.Frame):
             try:
                 self.player.play()
                 self._is_paused = False
-                self.play_pause_btn.SetLabel("Pause")
+                self.play_pause_btn.SetLabel(_("Pause"))
                 self._status_timer.Start(500)
-                self._update_status_label("Buffering...")
+                self._update_status_label(_("Buffering..."))
             except Exception:
                 pass
             return
@@ -1295,31 +1300,46 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.pause()
             self._is_paused = not self._is_paused
-            self.play_pause_btn.SetLabel("Resume" if self._is_paused else "Pause")
+            self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
         except Exception:
             pass
 
     def _on_cast(self, _event: Optional[wx.Event] = None) -> None:
         if not self._on_cast_cb:
-            wx.MessageBox("Casting is unavailable because the caster is not initialised.", "Casting", wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox(_("Casting is unavailable because the caster is not initialised."), _("Casting"), wx.OK | wx.ICON_INFORMATION)
             return
         url = self._current_url or self._last_resolved_url or ""
         if not url:
-            wx.MessageBox("No active stream to cast.", "Casting", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(_("No active stream to cast."), _("Casting"), wx.OK | wx.ICON_WARNING)
             return
         try:
             self._on_cast_cb(url, self._current_title or "IPTV Stream", self._current_headers)
         except Exception as exc:
             LOG.error("Cast callback failed: %s", exc)
 
+    @staticmethod
+    def _localized_state(state_name: str) -> str:
+        """Translate a libVLC state name for the status label, with a graceful fallback."""
+        labels = {
+            "Nothingspecial": _("Idle"),
+            "Opening": _("Opening"),
+            "Buffering": _("Buffering..."),
+            "Playing": _("Playing"),
+            "Paused": _("Paused"),
+            "Stopped": _("Stopped"),
+            "Ended": _("Ended"),
+            "Error": _("Error"),
+        }
+        return labels.get(state_name.capitalize(), state_name.capitalize())
+
     def _update_status_label(self, prefix: str = "", volume_override: Optional[int] = None) -> None:
         bitrate_txt = ""
         if self._last_bitrate_mbps:
-            bitrate_txt = f" | ~{self._last_bitrate_mbps:.1f} Mbps"
-        buf_txt = f"{self._last_buffer_seconds:.1f}s buffer"
-        
+            bitrate_txt = " | " + _("~{value} Mbps").format(value=f"{self._last_bitrate_mbps:.1f}")
+        buf_txt = _("{value}s buffer").format(value=f"{self._last_buffer_seconds:.1f}")
+
         vol = int(self._volume_value) if volume_override is None else volume_override
-        vol_txt = f" | Vol {vol}%"
+        vol_txt = " | " + _("Vol {value}%").format(value=vol)
         
         real_prefix = prefix if prefix else self._last_status_prefix
         if prefix:
@@ -1384,37 +1404,37 @@ class InternalPlayerFrame(wx.Frame):
                 self._record_buffer_event(now)
             self._buffer_start_ts = None
 
-        prefix = "Paused" if self._is_paused else state_name.capitalize()
+        prefix = _("Paused") if self._is_paused else self._localized_state(state_name)
 
         if state_key == "error":
             if not self._restart_expected_xtream_live():
                 self._schedule_restart("playback error", adjust_buffer=True)
-                prefix = "Reconnecting..."
+                prefix = _("Reconnecting...")
             else:
-                prefix = "Refreshing stream..."
+                prefix = _("Refreshing stream...")
         elif state_key == "stopped":
             if not self._manual_stop:
                 if not self._restart_expected_xtream_live():
                     self._schedule_restart("stream stopped unexpectedly")
-                    prefix = "Reconnecting..."
+                    prefix = _("Reconnecting...")
                 else:
-                    prefix = "Refreshing stream..."
+                    prefix = _("Refreshing stream...")
         elif state_key == "ended":
             if self._restart_expected_xtream_live():
-                prefix = "Refreshing stream..."
+                prefix = _("Refreshing stream...")
             elif self._should_auto_recover_on_end():
                 self._schedule_restart("stream ended unexpectedly")
-                prefix = "Reconnecting..."
+                prefix = _("Reconnecting...")
             else:
                 self.stop(manual=False)
-                prefix = "Ended"
+                prefix = _("Ended")
         elif state_key == "buffering":
-            prefix = "Buffering..."
+            prefix = _("Buffering...")
 
         if self._pending_restart:
-            prefix = "Refreshing stream..." if self._pending_xtream_refresh else "Reconnecting..."
+            prefix = _("Refreshing stream...") if self._pending_xtream_refresh else _("Reconnecting...")
         elif self._gave_up:
-            prefix = "Stream lost"
+            prefix = _("Stream lost")
 
         self._update_status_label(prefix)
 
@@ -1518,7 +1538,7 @@ class InternalPlayerFrame(wx.Frame):
         self._fullscreen = enable
         self.ShowFullScreen(enable, style=wx.FULLSCREEN_ALL)
         self.controls_panel.Show(not enable)
-        self.fullscreen_btn.SetLabel("Exit Full Screen" if enable else "Full Screen")
+        self.fullscreen_btn.SetLabel(_("Exit Full Screen") if enable else _("Full Screen"))
         self.Layout()
         wx.CallAfter(self.video_panel.SetFocus)
 
