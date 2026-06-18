@@ -26,6 +26,8 @@ _IS_WINDOWS = platform.system() == "Windows"
 DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
+DEFAULT_RECORDING_PRE_PADDING_MINUTES = 0
+DEFAULT_RECORDING_POST_PADDING_MINUTES = 2
 
 _WINDOWS_TZ_RESETTER = None
 _WINDOWS_TZ_LOCK = threading.Lock()
@@ -282,6 +284,8 @@ def load_config() -> Dict:
         "language": "auto",
         "recordings_dir": "",
         "recording_format": DEFAULT_RECORDING_FORMAT,
+        "recording_pre_padding_minutes": DEFAULT_RECORDING_PRE_PADDING_MINUTES,
+        "recording_post_padding_minutes": DEFAULT_RECORDING_POST_PADDING_MINUTES,
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():
@@ -296,6 +300,7 @@ def load_config() -> Dict:
                     if data.get("internal_player_buffer_seconds") == 12.0:
                         data["internal_player_buffer_seconds"] = DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
                     data["recording_format"] = normalize_recording_format(data.get("recording_format"))
+                    normalize_recording_padding(data)
                     resolve_internal_player_settings(data)
                     _CONFIG_PATH = p
                     return data
@@ -309,11 +314,13 @@ def load_config() -> Dict:
             _CONFIG_PATH = os.path.join(app_dir, CONFIG_FILE)
     except Exception:
         _CONFIG_PATH = None
+    normalize_recording_padding(default)
     return default
 
 def save_config(cfg: Dict):
     global _CONFIG_PATH
     cfg["recording_format"] = normalize_recording_format(cfg.get("recording_format"))
+    normalize_recording_padding(cfg)
     resolve_internal_player_settings(cfg)
     path = get_config_write_target()
     try:
@@ -362,6 +369,22 @@ def normalize_recording_format(value) -> str:
         return value
     return DEFAULT_RECORDING_FORMAT
 
+def _coerce_padding_minutes(value, default: int) -> int:
+    try:
+        minutes = int(float(value))
+    except Exception:
+        minutes = default
+    return max(0, min(minutes, 180))
+
+def normalize_recording_padding(cfg: Dict) -> None:
+    """Clamp DVR padding settings in minutes."""
+    if cfg is None:
+        return
+    cfg["recording_pre_padding_minutes"] = _coerce_padding_minutes(
+        cfg.get("recording_pre_padding_minutes"), DEFAULT_RECORDING_PRE_PADDING_MINUTES)
+    cfg["recording_post_padding_minutes"] = _coerce_padding_minutes(
+        cfg.get("recording_post_padding_minutes"), DEFAULT_RECORDING_POST_PADDING_MINUTES)
+
 def _windows_videos_dir():
     """Resolve the Windows 'Videos' known folder, falling back to ~/Videos."""
     try:
@@ -399,6 +422,10 @@ def get_recordings_dir(cfg: Dict) -> str:
     except Exception:
         pass
     return target
+
+def get_dvr_schedule_path() -> str:
+    """Path to the persistent scheduled-recordings store."""
+    return os.path.join(get_user_config_dir(), "scheduled_recordings.json")
 
 def get_db_path():
     return os.path.join(tempfile.gettempdir(), "epg.db")

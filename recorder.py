@@ -149,7 +149,7 @@ class Recording:
     """A single in-progress (or finished) recording."""
 
     def __init__(self, rec_id: int, key: str, url: str, title: str, fmt: str, out_path: str,
-                 process: "subprocess.Popen"):
+                 process: "subprocess.Popen", metadata: Optional[Dict[str, object]] = None):
         self.id = rec_id
         self.key = key  # stable channel identity (resolved URL can change per resolve)
         self.url = url
@@ -161,6 +161,7 @@ class Recording:
         self.stderr_tail: List[str] = []
         self.stopped_by_user = False
         self.stopping = False
+        self.metadata = metadata or {}
 
 
 class RecordingManager:
@@ -194,6 +195,7 @@ class RecordingManager:
         out_dir: str,
         *,
         key: Optional[str] = None,
+        metadata: Optional[Dict[str, object]] = None,
         on_finish: Optional[Callable[[Recording, int], None]] = None,
         duration: Optional[float] = None,
     ) -> Recording:
@@ -219,7 +221,7 @@ class RecordingManager:
         with self._lock:
             rec_id = self._next_id
             self._next_id += 1
-            rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process)
+            rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process, metadata)
             self._recordings[rec_id] = rec
 
         threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()

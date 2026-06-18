@@ -29,7 +29,7 @@ from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
     get_db_path, canonicalize_name, extract_group, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
-    get_recordings_dir, normalize_recording_format
+    get_recordings_dir, get_dvr_schedule_path, normalize_recording_format
 )
 import app_meta
 import updater
@@ -48,6 +48,7 @@ from external_player import ExternalPlayerLauncher
 from stream_proxy import get_ffmpeg_path
 import recorder
 from recorder import RECORDING_FORMATS
+import dvr
 
 try:
     from internal_player import (
@@ -357,6 +358,15 @@ class IPTVClient(wx.Frame):
         # Recording Manager
         self.recorder = recorder.RecordingManager()
         self._suppress_recording_notifications = False
+        self._dvr_dialog = None
+        self.dvr_scheduler = dvr.DVRScheduler(
+            get_dvr_schedule_path(),
+            on_start=self._start_scheduled_recording,
+            on_stop=self._stop_scheduled_recording,
+            on_update=self._on_dvr_schedule_updated,
+            poll_seconds=10,
+        )
+        self.dvr_scheduler.start()
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -1042,6 +1052,14 @@ class IPTVClient(wx.Frame):
             rec_item = menu.Append(wx.ID_ANY, _("Record"))
         menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._record_channel(ch), rec_item)
 
+        if item.get("type") == "epg":
+            sched_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
+            menu.Bind(
+                wx.EVT_MENU,
+                lambda evt, ch=channel, prog=item.get("data", {}): self._schedule_program_recording(ch, prog),
+                sched_item,
+            )
+
         if not self._channel_is_epg_exempt(channel):
             epg_item = menu.Append(wx.ID_ANY, _("View EPG..."))
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._view_channel_epg(ch), epg_item)
@@ -1064,7 +1082,7 @@ class IPTVClient(wx.Frame):
                 programmes = db.get_schedule(channel, start_dt, end_dt)
                 db.close()
                 
-                wx.CallAfter(lambda: self._show_epg_dialog(channel.get("name", ""), programmes))
+                wx.CallAfter(lambda: self._show_epg_dialog(channel, channel.get("name", ""), programmes))
             except Exception as e:
                 wx.CallAfter(lambda err=e: wx.MessageBox(_("Error fetching EPG: {error}").format(error=err), _("Error"), wx.OK | wx.ICON_ERROR))
 
@@ -1111,6 +1129,79 @@ class IPTVClient(wx.Frame):
                 or channel.get("tvg_id")
                 or _("IPTV Stream"))
 
+    def _find_matching_channel_for_program(self, program: Dict[str, str]) -> Optional[Dict[str, str]]:
+        """Find the playlist channel that best matches an EPG/search program row."""
+        channel_name = program.get("channel_name", "")
+        channel_id = program.get("channel_id", "")
+        if not channel_name and not channel_id:
+            return None
+
+        matching_channel = None
+        best_score = 0
+        channel_name_lower = channel_name.lower() if channel_name else ""
+        channel_name_norm = canonicalize_name(strip_noise_words(channel_name)) if channel_name else ""
+        base_patterns = ["hd", "sd", "fhd", "uhd", "4k", "hevc", "h264", "h.264"]
+        channel_base = channel_name_lower
+        for pat in base_patterns:
+            channel_base = channel_base.replace(" {pat}".format(pat=pat), "")
+            channel_base = channel_base.replace("({pat})".format(pat=pat), "")
+            channel_base = channel_base.replace("[{pat}]".format(pat=pat), "")
+        channel_base = channel_base.strip()
+
+        for ch in self.all_channels:
+            ch_name = ch.get("name", "")
+            ch_tvg_name = ch.get("tvg-name", "")
+            ch_tvg_id = ch.get("tvg-id", "")
+            ch_name_lower = ch_name.lower()
+            score = 0
+
+            if channel_id and ch_tvg_id:
+                if channel_id.lower() == ch_tvg_id.lower():
+                    score = 100
+                elif channel_id.lower() in ch_tvg_id.lower() or ch_tvg_id.lower() in channel_id.lower():
+                    score = max(score, 80)
+            if ch_name_lower == channel_name_lower:
+                score = max(score, 90)
+            if ch_tvg_name and ch_tvg_name.lower() == channel_name_lower:
+                score = max(score, 90)
+
+            ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
+            ch_tvg_norm = canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else ""
+            if channel_name_norm and (ch_name_norm == channel_name_norm or ch_tvg_norm == channel_name_norm):
+                score = max(score, 70)
+
+            ch_base = ch_name_lower
+            for pat in base_patterns:
+                ch_base = ch_base.replace(" {pat}".format(pat=pat), "")
+                ch_base = ch_base.replace("({pat})".format(pat=pat), "")
+                ch_base = ch_base.replace("[{pat}]".format(pat=pat), "")
+            ch_base = ch_base.strip()
+            if channel_base and ch_base and channel_base == ch_base:
+                score = max(score, 60)
+
+            if channel_name_lower and (channel_name_lower in ch_name_lower or ch_name_lower in channel_name_lower):
+                score = max(score, 40)
+            if ch_tvg_name and channel_name_lower and (
+                    channel_name_lower in ch_tvg_name.lower() or ch_tvg_name.lower() in channel_name_lower):
+                score = max(score, 40)
+
+            if channel_name_norm and ch_name_norm:
+                words_epg = set(channel_name_norm.split())
+                words_ch = set(ch_name_norm.split())
+                if words_epg and words_ch:
+                    overlap = len(words_epg & words_ch)
+                    total = max(len(words_epg), len(words_ch))
+                    if overlap > 0:
+                        score = max(score, int(30 * overlap / total))
+
+            if score > best_score:
+                best_score = score
+                matching_channel = ch
+
+        if best_score < 30:
+            return None
+        return matching_channel
+
     def _recording_format_label(self, key: str) -> str:
         labels = {
             "provider_mkv": _("Provider quality (copy, MKV)"),
@@ -1124,6 +1215,148 @@ class IPTVClient(wx.Frame):
             "audio_opus": _("Audio only (Opus)"),
         }
         return labels.get(key, labels[recorder.DEFAULT_RECORDING_FORMAT])
+
+    def _schedule_window_label(self, job: Dict[str, object]) -> str:
+        try:
+            start_dt = datetime.datetime.fromtimestamp(float(job.get("start_ts") or 0), datetime.timezone.utc)
+            stop_dt = datetime.datetime.fromtimestamp(float(job.get("stop_ts") or 0), datetime.timezone.utc)
+            start_local = utc_to_local(start_dt)
+            stop_local = utc_to_local(stop_dt)
+            return "{start} - {end}".format(
+                start=start_local.strftime("%Y-%m-%d %H:%M"),
+                end=stop_local.strftime("%Y-%m-%d %H:%M"),
+            )
+        except Exception:
+            return _("Unknown time")
+
+    def _schedule_program_recording(self, channel: Dict[str, str], program: Dict[str, str]):
+        if not channel:
+            wx.MessageBox(_("Could not identify the channel."), _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
+            return
+        try:
+            fmt = normalize_recording_format(self.config.get("recording_format"))
+            job = dvr.build_job(
+                channel,
+                program,
+                fmt,
+                pre_padding_minutes=self.config.get("recording_pre_padding_minutes", 0),
+                post_padding_minutes=self.config.get("recording_post_padding_minutes", 2),
+            )
+        except Exception as err:
+            wx.MessageBox(_("Could not schedule recording:\n{error}").format(error=err),
+                          _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
+            return
+
+        if float(job.get("stop_ts") or 0) <= time.time():
+            wx.MessageBox(_("This programme has already ended."), _("Schedule Recording"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+
+        duplicate = self._find_duplicate_scheduled_job(job)
+        if duplicate:
+            wx.MessageBox(_("This programme is already scheduled to record."),
+                          _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
+            return
+
+        self.dvr_scheduler.add_job(job)
+        wx.MessageBox(
+            _("Scheduled recording:\n{title}\n{time}").format(
+                title=job.get("display_title") or job.get("title") or "",
+                time=self._schedule_window_label(job),
+            ),
+            _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _schedule_epg_program_recording(self, program: Dict[str, str]):
+        channel = self._find_matching_channel_for_program(program)
+        if not channel:
+            wx.MessageBox(
+                _("Could not find channel '{channel}' in your playlist.").format(
+                    channel=program.get("channel_name", "")),
+                _("Channel Not Found"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            return
+        self._schedule_program_recording(channel, program)
+
+    def _find_duplicate_scheduled_job(self, new_job: Dict[str, object]) -> Optional[Dict[str, object]]:
+        new_channel = new_job.get("channel") if isinstance(new_job.get("channel"), dict) else {}
+        new_key = self._channel_record_key(new_channel) if isinstance(new_channel, dict) else ""
+        for job in self.dvr_scheduler.list_jobs(include_done=False):
+            channel = job.get("channel") if isinstance(job.get("channel"), dict) else {}
+            key = self._channel_record_key(channel) if isinstance(channel, dict) else ""
+            if (key and key == new_key
+                    and job.get("start_at") == new_job.get("start_at")
+                    and job.get("end_at") == new_job.get("end_at")):
+                return job
+        return None
+
+    def _show_scheduled_recordings(self, *_args):
+        if self._dvr_dialog:
+            try:
+                self._dvr_dialog.refresh()
+                self._dvr_dialog.Show()
+                self._dvr_dialog.Raise()
+                return
+            except Exception:
+                self._dvr_dialog = None
+        self._dvr_dialog = ScheduledRecordingsDialog(self, self.dvr_scheduler)
+        self._dvr_dialog.Show()
+
+    def _on_dvr_schedule_updated(self):
+        def refresh():
+            dlg = getattr(self, "_dvr_dialog", None)
+            if dlg:
+                try:
+                    dlg.refresh()
+                except Exception:
+                    pass
+        wx.CallAfter(refresh)
+
+    def _start_scheduled_recording(self, job: Dict[str, object]):
+        channel = job.get("channel") if isinstance(job.get("channel"), dict) else {}
+        if not channel:
+            raise RuntimeError(_("Scheduled recording is missing channel data."))
+        url = self._resolve_live_url(channel)
+        if not url:
+            raise RuntimeError(_("Could not find a stream URL for this channel."))
+        fmt = normalize_recording_format(job.get("format"))
+        out_dir = get_recordings_dir(self.config)
+        rec = self.recorder.start(
+            url,
+            str(job.get("display_title") or job.get("title") or self._channel_display_name(channel)),
+            fmt,
+            channel_http_headers(channel),
+            out_dir,
+            key="dvr:{id}".format(id=job.get("id")),
+            metadata={"dvr_job_id": job.get("id")},
+            on_finish=self._on_recording_finished,
+        )
+        wx.CallAfter(
+            wx.MessageBox,
+            _("Scheduled recording started:\n{title}").format(
+                title=job.get("display_title") or job.get("title") or ""),
+            _("Scheduled Recording"),
+            wx.OK | wx.ICON_INFORMATION,
+        )
+        return rec
+
+    def _stop_scheduled_recording(self, job: Dict[str, object]):
+        rec_id = job.get("recording_id")
+        if rec_id:
+            try:
+                self.recorder.stop(int(rec_id))
+                return
+            except Exception:
+                pass
+        self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
+
+    def _cancel_scheduled_recording(self, job_id: str) -> bool:
+        job = self.dvr_scheduler.get_job(job_id)
+        if not job:
+            return False
+        if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
+            self._stop_scheduled_recording(job)
+        return self.dvr_scheduler.cancel_job(job_id)
 
     def _record_selected(self, *_args):
         channel = self._selected_channel()
@@ -1208,6 +1441,20 @@ class IPTVClient(wx.Frame):
                           _("Recording"), wx.OK | wx.ICON_INFORMATION)
 
     def _on_recording_finished(self, rec, rc):
+        job_id = None
+        try:
+            job_id = rec.metadata.get("dvr_job_id")
+        except Exception:
+            job_id = None
+        if job_id:
+            detail = "\n".join(rec.stderr_tail[-6:])
+            suppressed = getattr(self, "_suppress_recording_notifications", False)
+            self.dvr_scheduler.mark_finished(
+                str(job_id),
+                success=(rc == 0 and not suppressed),
+                output_path=rec.out_path,
+                message=("Stopped because the app exited." if suppressed else (detail if rc else "")),
+            )
         if getattr(self, "_suppress_recording_notifications", False):
             return
         def report():
@@ -1275,6 +1522,9 @@ class IPTVClient(wx.Frame):
         stop_all_item = menu.Append(wx.ID_ANY, _("Stop All Recordings"))
         menu.Bind(wx.EVT_MENU, self._stop_all_recordings, stop_all_item)
         menu.AppendSeparator()
+        schedule_item = menu.Append(wx.ID_ANY, _("Scheduled Recordings..."))
+        menu.Bind(wx.EVT_MENU, self._show_scheduled_recordings, schedule_item)
+        menu.AppendSeparator()
         menu.AppendSubMenu(self._build_recording_format_menu(), _("Recording Format"))
         menu.AppendSeparator()
         open_item = menu.Append(wx.ID_ANY, _("Open Recordings Folder"))
@@ -1299,11 +1549,11 @@ class IPTVClient(wx.Frame):
         
         wx.adv.AboutBox(info)
 
-    def _show_epg_dialog(self, channel_name, programmes):
+    def _show_epg_dialog(self, channel, channel_name, programmes):
         if not programmes:
             wx.MessageBox(_("No upcoming schedule found for this channel."), _("EPG"), wx.OK | wx.ICON_INFORMATION)
             return
-        dlg = ChannelEPGDialog(self, channel_name, programmes)
+        dlg = ChannelEPGDialog(self, channel_name, programmes, schedule_callback=self._schedule_program_recording, channel=channel)
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -1735,6 +1985,10 @@ class IPTVClient(wx.Frame):
             self.tray_icon.Destroy()
             self.tray_icon = None
         try:
+            self.dvr_scheduler.stop(wait=True)
+        except Exception:
+            pass
+        try:
             self._suppress_recording_notifications = True
             self.recorder.stop_all(wait=True)
         except Exception:
@@ -1777,6 +2031,10 @@ class IPTVClient(wx.Frame):
                 pass
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
+            try:
+                self.dvr_scheduler.stop(wait=True)
+            except Exception:
+                pass
             try:
                 self._suppress_recording_notifications = True
                 self.recorder.stop_all(wait=True)
@@ -2145,7 +2403,7 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("No programs are currently airing, or EPG data has not been imported yet."), _("No Data"), wx.OK | wx.ICON_INFORMATION)
             return
         
-        dlg = WhatsOnNowDialog(self, programs)
+        dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording)
         if dlg.ShowModal() == wx.ID_OK:
             selection = dlg.get_selection()
             if selection:
@@ -2980,14 +3238,7 @@ class IPTVClient(wx.Frame):
             pass
 
     def _find_channel_for_epg(self, show: Dict[str, str]) -> Optional[Dict[str, str]]:
-        cname = show.get("channel_name", "")
-        if not cname:
-            return None
-        canonical = canonicalize_name(cname)
-        for ch in self.all_channels:
-            if canonicalize_name(ch.get("name", "")) == canonical:
-                return ch
-        return None
+        return self._find_matching_channel_for_program(show)
 
     def _channel_has_catchup(self, channel: Dict[str, str]) -> bool:
         if channel.get("catchup-source") or channel.get("catchup"):
@@ -3671,13 +3922,127 @@ class CatchupDialog(wx.Dialog):
         return self.programmes[idx]
 
 
+class ScheduledRecordingsDialog(wx.Dialog):
+    """Dialog showing all DVR schedule entries."""
+
+    def __init__(self, parent, scheduler: dvr.DVRScheduler):
+        super().__init__(parent, title=_("Scheduled Recordings"), size=(850, 430))
+        self.parent_frame = parent
+        self.scheduler = scheduler
+        self.jobs: List[Dict[str, object]] = []
+
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.list_ctrl = wx.ListCtrl(panel, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        self.list_ctrl.SetName(_("Scheduled recordings"))
+        self.list_ctrl.InsertColumn(0, _("Time"), width=210)
+        self.list_ctrl.InsertColumn(1, _("Title"), width=230)
+        self.list_ctrl.InsertColumn(2, _("Channel"), width=180)
+        self.list_ctrl.InsertColumn(3, _("Status"), width=110)
+        self.list_ctrl.InsertColumn(4, _("Format"), width=120)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        refresh_btn = wx.Button(panel, label=_("Refresh"))
+        cancel_btn = wx.Button(panel, label=_("Cancel Selected"))
+        delete_btn = wx.Button(panel, label=_("Delete Selected"))
+        close_btn = wx.Button(panel, id=wx.ID_CLOSE, label=_("Close"))
+        btn_sizer.Add(refresh_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(cancel_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(delete_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(close_btn, 0)
+
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        panel.SetSizer(sizer)
+
+        refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
+        cancel_btn.Bind(wx.EVT_BUTTON, self._on_cancel_selected)
+        delete_btn.Bind(wx.EVT_BUTTON, self._on_delete_selected)
+        close_btn.Bind(wx.EVT_BUTTON, lambda _event: self.Close())
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+        self.refresh()
+        self.CenterOnParent()
+
+    def _status_label(self, status: str) -> str:
+        labels = {
+            dvr.STATUS_SCHEDULED: _("Scheduled"),
+            dvr.STATUS_RECORDING: _("Recording"),
+            dvr.STATUS_STOPPING: _("Stopping"),
+            dvr.STATUS_COMPLETED: _("Completed"),
+            dvr.STATUS_FAILED: _("Failed"),
+            dvr.STATUS_MISSED: _("Missed"),
+            dvr.STATUS_CANCELED: _("Canceled"),
+        }
+        return labels.get(status, status or "")
+
+    def refresh(self):
+        self.jobs = self.scheduler.list_jobs(include_done=True)
+        self.list_ctrl.DeleteAllItems()
+        for job in self.jobs:
+            idx = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), self.parent_frame._schedule_window_label(job))
+            self.list_ctrl.SetItem(idx, 1, str(job.get("title") or ""))
+            self.list_ctrl.SetItem(idx, 2, str(job.get("channel_name") or ""))
+            self.list_ctrl.SetItem(idx, 3, self._status_label(str(job.get("status") or "")))
+            self.list_ctrl.SetItem(idx, 4, self.parent_frame._recording_format_label(str(job.get("format") or "")))
+            if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
+                font = self.list_ctrl.GetItemFont(idx)
+                font.SetWeight(wx.FONTWEIGHT_BOLD)
+                self.list_ctrl.SetItemFont(idx, font)
+        if self.jobs:
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
+
+    def _selected_job(self) -> Optional[Dict[str, object]]:
+        idx = self.list_ctrl.GetFirstSelected()
+        if idx == -1 or idx >= len(self.jobs):
+            return None
+        return self.jobs[idx]
+
+    def _on_cancel_selected(self, _event):
+        job = self._selected_job()
+        if not job:
+            wx.MessageBox(_("Select a scheduled recording first."), _("Scheduled Recordings"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+        if self.parent_frame._cancel_scheduled_recording(str(job.get("id") or "")):
+            self.refresh()
+
+    def _on_delete_selected(self, _event):
+        job = self._selected_job()
+        if not job:
+            wx.MessageBox(_("Select a scheduled recording first."), _("Scheduled Recordings"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+        if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
+            answer = wx.MessageBox(
+                _("This recording is active. Stop and delete it?"),
+                _("Scheduled Recordings"),
+                wx.YES_NO | wx.ICON_WARNING,
+            )
+            if answer != wx.YES:
+                return
+            self.parent_frame._cancel_scheduled_recording(str(job.get("id") or ""))
+        self.scheduler.delete_job(str(job.get("id") or ""))
+        self.refresh()
+
+    def _on_close(self, event):
+        try:
+            self.parent_frame._dvr_dialog = None
+        except Exception:
+            pass
+        self.Destroy()
+
+
 class WhatsOnNowDialog(wx.Dialog):
     """Dialog showing all currently airing programs across all channels."""
     
-    def __init__(self, parent, programs: List[Dict[str, str]]):
+    def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None):
         super().__init__(parent, title=_("What's on Now"), size=(700, 500))
         self.programs = programs
         self.filtered_programs = programs[:]
+        self.schedule_callback = schedule_callback
         self._type_ahead_buffer = ""
         self._type_ahead_timer = None
         
@@ -3706,8 +4071,10 @@ class WhatsOnNowDialog(wx.Dialog):
         # Buttons
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         play_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
+        schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
         close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         btn_sizer.Add(play_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
@@ -3722,6 +4089,7 @@ class WhatsOnNowDialog(wx.Dialog):
         self.listbox.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.listbox.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_activate)
         play_btn.Bind(wx.EVT_BUTTON, self._on_play)
+        schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
         self.search_box.Bind(wx.EVT_TEXT, self._on_search)
         self.search_box.Bind(wx.EVT_TEXT_ENTER, self._on_search_enter)
         
@@ -3834,6 +4202,13 @@ class WhatsOnNowDialog(wx.Dialog):
         if self.listbox.GetSelectedItemCount() > 0:
             self.EndModal(wx.ID_OK)
         event.Skip()
+
+    def _on_schedule(self, _event):
+        if not self.schedule_callback:
+            return
+        selection = self.get_selection()
+        if selection:
+            self.schedule_callback(selection)
     
     def get_selection(self) -> Optional[Dict[str, str]]:
         """Get the selected program dict."""
@@ -3860,8 +4235,12 @@ class _VirtualWhatsOnList(wx.ListCtrl):
 
 
 class ChannelEPGDialog(wx.Dialog):
-    def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
+    def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
+                 schedule_callback=None, channel: Optional[Dict[str, str]] = None):
         super().__init__(parent, title=_("EPG: {channel}").format(channel=channel_name), size=(600, 450))
+        self.programmes = programmes
+        self.schedule_callback = schedule_callback
+        self.channel = channel or {}
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -3871,13 +4250,21 @@ class ChannelEPGDialog(wx.Dialog):
         self.list_ctrl.InsertColumn(1, _("Title"), width=400)
 
         self._populate_list(programmes)
+        if programmes:
+            self.list_ctrl.Select(0)
+            self.list_ctrl.Focus(0)
 
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
         close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
+        btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(close_btn, 0)
         
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
-        sizer.Add(close_btn, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
+        sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
         
         panel.SetSizer(sizer)
+        schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
         
         self.Layout()
         self.CenterOnParent()
@@ -3906,6 +4293,22 @@ class ChannelEPGDialog(wx.Dialog):
                     self.list_ctrl.EnsureVisible(idx)
             except Exception:
                 pass
+
+    def _selected_programme(self) -> Optional[Dict[str, str]]:
+        idx = self.list_ctrl.GetFirstSelected()
+        if idx == -1 or idx >= len(self.programmes):
+            return None
+        return self.programmes[idx]
+
+    def _on_schedule(self, _event):
+        if not self.schedule_callback:
+            return
+        prog = self._selected_programme()
+        if not prog:
+            wx.MessageBox(_("Select a programme first."), _("Schedule Recording"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+        self.schedule_callback(self.channel, prog)
 
 if __name__ == "__main__":
     set_linux_env()
