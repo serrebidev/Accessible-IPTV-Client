@@ -1,23 +1,13 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\n"
-"Report-Msgid-Bugs-To: https://github.com/serrebidev/Accessible-IPTV-Client/issues\n"
-"PO-Revision-Date: 2026-06-18 00:00+0000\n"
-"Last-Translator: Accessible IPTV Client contributors\n"
-"Language-Team: Hungarian <https://github.com/serrebidev/Accessible-IPTV-Client/issues>\n"
-"Language: hu\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: tools/i18n_tools.py\n"
+"Project-Id-Version: Accessible IPTV Client\nReport-Msgid-Bugs-To: https://github.com/serrebidev/Accessible-IPTV-Client/issues\nPO-Revision-Date: 2026-06-18 00:00+0000\nLast-Translator: Accessible IPTV Client contributors\nLanguage-Team: Hungarian <https://github.com/serrebidev/Accessible-IPTV-Client/issues>\nLanguage: hu\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: tools/i18n_tools.py\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
 msgstr "&Lejátszás"
 
-#: main.py:3401
-#: main.py:3604
+#: main.py:3653
+#: main.py:3856
 msgid "(No title)"
 msgstr "(Nincs cím)"
 
@@ -25,11 +15,11 @@ msgstr "(Nincs cím)"
 msgid "(thumbprint {thumbprint})."
 msgstr "(ujjlenyomat: {thumbprint})."
 
-#: main.py:1051
+#: main.py:1292
 msgid "A screen reader accessible IPTV client for Windows and Linux.\n\nSupports M3U/M3U Plus playlists, Stalker Portal, XtreamCodes,\nbuilt-in VLC player, casting, and XMLTV EPG."
 msgstr "Képernyőolvasóval használható, akadálymentes IPTV-kliens Windowshoz és Linuxhoz.\n\nTámogatja az M3U/M3U Plus lejátszási listákat, a Stalker Portalt, az XtreamCodes-t,\na beépített VLC-lejátszót, az átküldést és az XMLTV EPG-t."
 
-#: main.py:914
+#: main.py:935
 msgid "About..."
 msgstr "Névjegy…"
 
@@ -68,8 +58,8 @@ msgstr "Xtream Codes hozzáadása"
 msgid "Add Xtream Codes Account"
 msgstr "Xtream Codes fiók hozzáadása"
 
-#: main.py:1694
-#: main.py:2339
+#: main.py:1946
+#: main.py:2591
 msgid "All Channels"
 msgstr "Minden csatorna"
 
@@ -83,6 +73,26 @@ msgstr "Minden fájl"
 #: playlist.py:2648
 msgid "Attempt to add provider XMLTV"
 msgstr "Kísérlet a szolgáltató XMLTV felvételére"
+
+#: main.py:1123
+msgid "Audio only (AAC, M4A)"
+msgstr "Csak hang (AAC, M4A)"
+
+#: main.py:1121
+msgid "Audio only (FLAC)"
+msgstr "Csak hang (FLAC)"
+
+#: main.py:1120
+msgid "Audio only (MP3 V0)"
+msgstr "Csak hang (MP3 V0)"
+
+#: main.py:1124
+msgid "Audio only (Opus)"
+msgstr "Csak hang (Opus)"
+
+#: main.py:1122
+msgid "Audio only (WAV)"
+msgstr "Csak hang (WAV)"
 
 #: internal_player.py:1014
 msgid "Authentication required (HTTP 401). Please check your credentials."
@@ -100,13 +110,13 @@ msgstr "Az Authenticode-ellenőrzés sikertelen: {detail}"
 msgid "Authenticode verification returned invalid data."
 msgstr "Az Authenticode-ellenőrzés érvénytelen adatokat adott vissza."
 
-#: main.py:844
-#: main.py:908
+#: main.py:861
+#: main.py:925
 msgid "Auto-check for Updates"
 msgstr "Frissítések automatikus keresése"
 
-#: main.py:825
-#: main.py:899
+#: main.py:842
+#: main.py:916
 msgid "Automatic"
 msgstr "Automatikus"
 
@@ -128,7 +138,7 @@ msgstr "A Stalker/Ministra portál alap-webcíme"
 msgid "Base URL of the Xtream Codes server"
 msgstr "Az Xtream Codes kiszolgáló alap-webcíme"
 
-#: options.py:572
+#: options.py:625
 msgid "Browse..."
 msgstr "Tallózás…"
 
@@ -144,11 +154,11 @@ msgstr "Pufferelés…"
 msgid "Built-in IPTV Player"
 msgstr "Beépített IPTV-lejátszó"
 
-#: main.py:2927
+#: main.py:3179
 msgid "Built-in player is unavailable."
 msgstr "A beépített lejátszó nem érhető el."
 
-#: main.py:3012
+#: main.py:3264
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "A beépített lejátszó nem érhető el:\n{detail}"
 
@@ -156,14 +166,14 @@ msgstr "A beépített lejátszó nem érhető el:\n{detail}"
 msgid "Cast"
 msgstr "Átküldés"
 
-#: main.py:242
-#: main.py:800
-#: main.py:884
+#: main.py:247
+#: main.py:813
+#: main.py:901
 msgid "Cast / Connect..."
 msgstr "Átküldés / Csatlakozás…"
 
-#: main.py:852
-#: main.py:876
+#: main.py:869
+#: main.py:893
 msgid "Cast To..."
 msgstr "Átküldés ide…"
 
@@ -177,20 +187,20 @@ msgstr "Átküldés…"
 
 #: internal_player.py:1309
 #: internal_player.py:1313
-#: main.py:2995
-#: main.py:3053
-#: main.py:3066
-#: main.py:3161
+#: main.py:3247
+#: main.py:3305
+#: main.py:3318
+#: main.py:3413
 msgid "Casting"
 msgstr "Átküldés"
 
-#: main.py:2991
-#: main.py:2998
-#: main.py:3068
+#: main.py:3243
+#: main.py:3250
+#: main.py:3320
 msgid "Casting Error"
 msgstr "Átküldési hiba"
 
-#: main.py:2988
+#: main.py:3240
 msgid "Casting failed: {error}"
 msgstr "Az átküldés sikertelen: {error}"
 
@@ -198,23 +208,23 @@ msgstr "Az átküldés sikertelen: {error}"
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "Az átküldés nem érhető el, mert az átküldő nincs előkészítve."
 
-#: main.py:2995
-#: main.py:3066
+#: main.py:3247
+#: main.py:3318
 msgid "Casting to {device}..."
 msgstr "Átküldés ide: {device}…"
 
-#: main.py:3129
-#: main.py:3147
-#: main.py:3150
-#: main.py:3366
+#: main.py:3381
+#: main.py:3399
+#: main.py:3402
+#: main.py:3618
 msgid "Catch-up"
 msgstr "Visszanézés"
 
-#: main.py:3367
+#: main.py:3619
 msgid "Catch-up: {name}"
 msgstr "Visszanézés: {name}"
 
-#: main.py:1984
+#: main.py:2236
 msgid "Channel Not Found"
 msgstr "Csatorna nem található"
 
@@ -223,11 +233,11 @@ msgstr "Csatorna nem található"
 msgid "Channel missing command reference"
 msgstr "A csatornából hiányzik a parancshivatkozás"
 
-#: main.py:847
+#: main.py:864
 msgid "Check for Updates"
 msgstr "Frissítések keresése"
 
-#: main.py:912
+#: main.py:933
 msgid "Check for Updates..."
 msgstr "Frissítések keresése…"
 
@@ -239,20 +249,24 @@ msgstr "Válasszon EPG XML-fájlt"
 msgid "Choose M3U file"
 msgstr "Válasszon M3U-fájlt"
 
-#: main.py:3457
-#: main.py:3623
+#: main.py:1250
+msgid "Choose recordings folder"
+msgstr "Felvételek mappájának kiválasztása"
+
+#: main.py:3709
+#: main.py:3875
 msgid "Close"
 msgstr "Bezárás"
 
-#: main.py:3214
+#: main.py:3466
 msgid "Connect"
 msgstr "Csatlakozás"
 
-#: main.py:3175
+#: main.py:3427
 msgid "Connected"
 msgstr "Csatlakozva"
 
-#: main.py:3175
+#: main.py:3427
 msgid "Connected to {device}"
 msgstr "Csatlakozva ide: {device}"
 
@@ -268,15 +282,19 @@ msgstr "A kapcsolat elutasítva. A kiszolgáló nem üzemelhet."
 msgid "Could not create libVLC media player object."
 msgstr "Nem sikerült létrehozni a libVLC médialejátszó objektumot."
 
-#: main.py:1984
+#: main.py:1153
+msgid "Could not find a stream URL for this channel."
+msgstr "Nem található stream URL ehhez a csatornához."
+
+#: main.py:2236
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "A(z) „{channel}” csatorna nem található a lejátszási listájában."
 
-#: main.py:2962
+#: main.py:3214
 msgid "Could not find stream URL for this selection."
 msgstr "Nem található adás-webcím a kijelöléshez."
 
-#: main.py:1909
+#: main.py:2161
 msgid "Could not identify the channel."
 msgstr "Nem sikerült azonosítani a csatornát."
 
@@ -288,28 +306,37 @@ msgstr "Nem található a(z) {player} alkalmazás."
 msgid "Could not locate {player} executable."
 msgstr "Nem található a(z) {player} futtatható fájlja."
 
-#: main.py:2876
+#: main.py:3128
 msgid "Could not match this programme to a playlist channel."
 msgstr "Nem sikerült összepárosítani ezt a műsort egy lejátszásilista-csatornával."
 
-#: main.py:2891
+#: main.py:1245
+msgid "Could not open folder:\n{error}"
+msgstr "Nem sikerült megnyitni a mappát:\n{error}"
+
+#: main.py:1149
+#: main.py:3143
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Nem sikerült feloldani az adás webcímét:\n{error}"
 
-#: main.py:3450
+#: main.py:1167
+msgid "Could not start recording:\n{error}"
+msgstr "Nem sikerült elindítani a felvételt:\n{error}"
+
+#: main.py:3702
 msgid "Currently airing programs"
 msgstr "Jelenleg műsoron lévő műsorok"
 
-#: main.py:3159
+#: main.py:3411
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "Jelenleg csatlakozva: {device}\n\nLekapcsolódik?"
 
-#: main.py:816
-#: main.py:893
+#: main.py:829
+#: main.py:910
 msgid "Custom Player..."
 msgstr "Egyéni lejátszó…"
 
-#: main.py:2989
+#: main.py:3241
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "Lekapcsolódott az átküldési eszközről. Nyissa meg az átküldés menüt másik eszköz választásához."
 
@@ -318,41 +345,41 @@ msgstr "Lekapcsolódott az átküldési eszközről. Nyissa meg az átküldés m
 msgid "Display name"
 msgstr "Megjelenítendő név"
 
-#: main.py:1161
+#: main.py:1402
 msgid "Download and install now? The app will restart after the update."
 msgstr "Letölti és telepíti most? Az alkalmazás a frissítés után újraindul."
 
-#: main.py:1187
+#: main.py:1428
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "A letöltött frissítés nem ment át az SHA-256 ellenőrzésen."
 
-#: main.py:1063
+#: main.py:1304
 msgid "EPG"
 msgstr "EPG"
 
-#: main.py:793
-#: main.py:871
+#: main.py:806
+#: main.py:888
 #: playlist.py:2307
 msgid "EPG Manager"
 msgstr "EPG-kezelő"
 
-#: main.py:1881
+#: main.py:2133
 msgid "EPG Not Available"
 msgstr "Az EPG nem érhető el"
 
-#: main.py:1868
+#: main.py:2120
 msgid "EPG import is already in progress."
 msgstr "Az EPG-importálás már folyamatban van."
 
-#: main.py:1875
+#: main.py:2127
 msgid "EPG import will start in the background."
 msgstr "Az EPG-importálás a háttérben elindul."
 
-#: main.py:1881
+#: main.py:2133
 msgid "EPG is not enabled."
 msgstr "Az EPG nincs engedélyezve."
 
-#: main.py:3612
+#: main.py:3864
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
@@ -369,28 +396,28 @@ msgstr "Adja meg az EPG XML webcímét"
 msgid "Enter M3U URL"
 msgstr "Adja meg az M3U webcímét"
 
-#: main.py:3296
+#: main.py:3548
 msgid "Enter PIN displayed on {device}:"
 msgstr "Adja meg a(z) {device} eszközön megjelenő PIN-kódot:"
 
-#: options.py:574
+#: options.py:627
 msgid "Enter player executable or path:"
 msgstr "Adja meg a lejátszó futtatható fájlját vagy útvonalát:"
 
 #: internal_player.py:1331
-#: main.py:1040
-#: main.py:1889
-#: main.py:1909
-#: main.py:3178
-#: main.py:3333
+#: main.py:1069
+#: main.py:2141
+#: main.py:2161
+#: main.py:3430
+#: main.py:3585
 msgid "Error"
 msgstr "Hiba"
 
-#: main.py:1040
+#: main.py:1069
 msgid "Error fetching EPG: {error}"
 msgstr "Hiba az EPG lekérésekor: {error}"
 
-#: main.py:3245
+#: main.py:3497
 msgid "Error: {error}"
 msgstr "Hiba: {error}"
 
@@ -399,9 +426,9 @@ msgstr "Hiba: {error}"
 msgid "Executable not found: {path}"
 msgstr "A futtatható fájl nem található: {path}"
 
-#: main.py:245
-#: main.py:855
-#: main.py:878
+#: main.py:252
+#: main.py:872
+#: main.py:895
 msgid "Exit"
 msgstr "Kilépés"
 
@@ -417,12 +444,12 @@ msgstr "Kilépés a lejátszóból"
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "Várt ujjlenyomatok: {thumbprints}."
 
-#: main.py:2998
-#: main.py:3068
+#: main.py:3250
+#: main.py:3320
 msgid "Failed to cast: {error}"
 msgstr "Az átküldés sikertelen: {error}"
 
-#: main.py:3178
+#: main.py:3430
 msgid "Failed to connect: {error}"
 msgstr "A csatlakozás sikertelen: {error}"
 
@@ -434,7 +461,7 @@ msgstr "A jegyzék letöltése sikertelen ({code})."
 msgid "Failed to download update ({code})."
 msgstr "A frissítés letöltése sikertelen ({code})."
 
-#: main.py:1889
+#: main.py:2141
 msgid "Failed to fetch EPG data: {error}"
 msgstr "Az EPG-adatok lekérése sikertelen: {error}"
 
@@ -450,27 +477,27 @@ msgstr "A libVLC példány előkészítése sikertelen."
 msgid "Failed to initialise media player: {error}"
 msgstr "A médialejátszó előkészítése sikertelen: {error}"
 
-#: main.py:3041
+#: main.py:3293
 msgid "Failed to launch {player}:\n{error}"
 msgstr "A(z) {player} indítása sikertelen:\n{error}"
 
-#: main.py:3035
+#: main.py:3287
 msgid "Failed to start built-in player:\n{error}"
 msgstr "A beépített lejátszó indítása sikertelen:\n{error}"
 
-#: main.py:879
+#: main.py:896
 msgid "File"
 msgstr "Fájl"
 
-#: main.py:3437
+#: main.py:3689
 msgid "Filter (Tab):"
 msgstr "Szűrő (Tab):"
 
-#: main.py:3439
+#: main.py:3691
 msgid "Filter programs"
 msgstr "Műsorok szűrése"
 
-#: main.py:3256
+#: main.py:3508
 msgid "Found {count} devices:"
 msgstr "{count} eszköz található:"
 
@@ -487,7 +514,7 @@ msgstr "GZip XML"
 msgid "GitHub API rate limit exceeded. Please try again later."
 msgstr "A GitHub API kéréskorlátja túllépve. Próbálja újra később."
 
-#: main.py:1055
+#: main.py:1296
 msgid "GitHub Profile"
 msgstr "GitHub-profil"
 
@@ -499,7 +526,7 @@ msgstr "HTTP-hiba {code}"
 msgid "HTTP error {code}: {reason}"
 msgstr "HTTP-hiba {code}: {reason}"
 
-#: main.py:915
+#: main.py:936
 msgid "Help"
 msgstr "Súgó"
 
@@ -507,9 +534,10 @@ msgstr "Súgó"
 msgid "Hide Window"
 msgstr "Ablak elrejtése"
 
-#: main.py:2910
-#: main.py:2976
-#: main.py:3014
+#: main.py:1112
+#: main.py:3162
+#: main.py:3228
+#: main.py:3266
 msgid "IPTV Stream"
 msgstr "IPTV-adás"
 
@@ -519,12 +547,12 @@ msgstr "IPTV-adás"
 msgid "Idle"
 msgstr "Tétlen"
 
-#: main.py:794
-#: main.py:872
+#: main.py:807
+#: main.py:889
 msgid "Import EPG to DB"
 msgstr "EPG importálása az adatbázisba"
 
-#: main.py:1875
+#: main.py:2127
 msgid "Import Started"
 msgstr "Importálás elindítva"
 
@@ -536,7 +564,7 @@ msgstr "EPG importálása"
 msgid "Importing EPG data…"
 msgstr "EPG-adatok importálása…"
 
-#: main.py:1868
+#: main.py:2120
 msgid "In Progress"
 msgstr "Folyamatban"
 
@@ -544,7 +572,7 @@ msgstr "Folyamatban"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "A szolgáltató XMLTV-műsorújságjának automatikus felvétele"
 
-#: main.py:1258
+#: main.py:1499
 msgid "Installing Update"
 msgstr "Frissítés telepítése"
 
@@ -552,9 +580,9 @@ msgstr "Frissítés telepítése"
 msgid "Invalid response from portal: {response}"
 msgstr "Érvénytelen válasz a portáltól: {response}"
 
-#: main.py:831
-#: main.py:905
-#: main.py:1097
+#: main.py:848
+#: main.py:922
+#: main.py:1338
 msgid "Language"
 msgstr "Nyelv"
 
@@ -562,17 +590,17 @@ msgstr "Nyelv"
 msgid "Last error: {reason}"
 msgstr "Utolsó hiba: {reason}"
 
-#: main.py:1128
+#: main.py:1369
 msgid "Latest release tag is missing or invalid."
 msgstr "A legújabb kiadás címkéje hiányzik vagy érvénytelen."
 
-#: main.py:3012
-#: main.py:3035
-#: main.py:3041
+#: main.py:3264
+#: main.py:3287
+#: main.py:3293
 msgid "Launch Error"
 msgstr "Indítási hiba"
 
-#: main.py:366
+#: main.py:379
 msgid "Loading playlists..."
 msgstr "Lejátszási listák betöltése…"
 
@@ -592,69 +620,83 @@ msgstr "A MAC-címnek hat oktettet kell tartalmaznia (pl. 00:1A:79:12:34:56)."
 msgid "MAC address presented to the portal"
 msgstr "A portálnak bemutatott MAC-cím"
 
-#: main.py:1057
+#: main.py:1298
 msgid "MIT License\n\nSee LICENSE file for details."
 msgstr "MIT licenc\n\nRészletekért lásd a LICENSE fájlt."
 
-#: main.py:820
-#: main.py:894
+#: main.py:833
+#: main.py:911
 msgid "Media Player to Use"
 msgstr "Használandó médialejátszó"
 
-#: main.py:788
+#: main.py:801
 msgid "Menu"
 msgstr "Menü"
 
-#: main.py:833
-#: main.py:906
+#: main.py:850
+#: main.py:923
 msgid "Minimize to System Tray"
 msgstr "Kicsinyítés a tálcára"
 
-#: main.py:1893
+#: main.py:2145
 msgid "No Data"
 msgstr "Nincs adat"
 
-#: main.py:1872
+#: main.py:2124
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "Nincs beállítva EPG-forrás. Adjon hozzá egyet a Fájl > EPG-kezelő menüben."
 
-#: main.py:1872
+#: main.py:2124
 msgid "No Sources"
 msgstr "Nincs forrás"
 
 #: internal_player.py:1313
-#: main.py:3053
+#: main.py:3305
 msgid "No active stream to cast."
 msgstr "Nincs átküldhető aktív adás."
 
-#: main.py:3128
+#: main.py:3380
 msgid "No catch-up programmes are available for this channel."
 msgstr "Nincs elérhető visszanézési műsor ehhez a csatornához."
 
-#: main.py:1690
+#: main.py:1942
 msgid "No channels found."
 msgstr "Nem található csatorna."
 
-#: main.py:3253
+#: main.py:3505
 msgid "No devices found."
 msgstr "Nem található eszköz."
 
-#: main.py:1893
+#: main.py:1218
+#: main.py:1224
+msgid "No ffmpeg details were reported."
+msgstr "Az ffmpeg nem adott meg részleteket."
+
+#: main.py:2145
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "Jelenleg nincs műsoron adás, vagy az EPG-adatok még nincsenek importálva."
+
+#: main.py:1196
+#: main.py:1207
+msgid "No recordings are currently active."
+msgstr "Jelenleg nincs aktív felvétel."
 
 #: internal_player.py:329
 msgid "No stream URL provided."
 msgstr "Nincs megadva adás-webcím."
 
-#: main.py:1063
+#: main.py:1304
 msgid "No upcoming schedule found for this channel."
 msgstr "Nem található közelgő műsor ehhez a csatornához."
 
-#: main.py:2877
-#: main.py:2962
+#: main.py:3129
+#: main.py:3214
 msgid "Not Found"
 msgstr "Nem található"
+
+#: main.py:1280
+msgid "Open Recordings Folder"
+msgstr "Felvételek mappájának megnyitása"
 
 #: internal_player.py:1325
 msgid "Opening"
@@ -668,43 +710,43 @@ msgstr "Tetszőleges becenév ehhez az Xtream Codes fiókhoz"
 msgid "Optional nickname for this portal account"
 msgstr "Tetszőleges becenév ehhez a portálfiókhoz"
 
-#: main.py:909
+#: main.py:926
 msgid "Options"
 msgstr "Beállítások"
 
-#: main.py:3211
+#: main.py:3463
 msgid "Pair..."
 msgstr "Párosítás…"
 
-#: main.py:3355
+#: main.py:3607
 msgid "Paired with {device}. Ready to connect."
 msgstr "Párosítva ezzel: {device}. Készen áll a csatlakozásra."
 
-#: main.py:3296
+#: main.py:3548
 msgid "Pairing"
 msgstr "Párosítás"
 
-#: main.py:3354
+#: main.py:3606
 msgid "Pairing Complete"
 msgstr "Párosítás kész"
 
-#: main.py:3329
+#: main.py:3581
 msgid "Pairing Failed"
 msgstr "Párosítás sikertelen"
 
-#: main.py:3315
+#: main.py:3567
 msgid "Pairing cancelled."
 msgstr "Párosítás megszakítva."
 
-#: main.py:3333
+#: main.py:3585
 msgid "Pairing error: {error}"
 msgstr "Párosítási hiba: {error}"
 
-#: main.py:3334
+#: main.py:3586
 msgid "Pairing failed: {error}"
 msgstr "A párosítás sikertelen: {error}"
 
-#: main.py:3329
+#: main.py:3581
 msgid "Pairing finished but no credentials returned."
 msgstr "A párosítás befejeződött, de nem érkeztek hitelesítő adatok."
 
@@ -727,13 +769,13 @@ msgid "Paused"
 msgstr "Szüneteltetve"
 
 #: internal_player.py:433
-#: main.py:1013
-#: main.py:3378
-#: main.py:3456
+#: main.py:1036
+#: main.py:3630
+#: main.py:3708
 msgid "Play"
 msgstr "Lejátszás"
 
-#: main.py:1021
+#: main.py:1050
 msgid "Play Catch-up…"
 msgstr "Visszanézés lejátszása…"
 
@@ -742,23 +784,23 @@ msgid "Play or Pause"
 msgstr "Lejátszás vagy szünet"
 
 #: internal_player.py:295
-#: main.py:239
-#: main.py:798
-#: main.py:882
+#: main.py:244
+#: main.py:811
+#: main.py:899
 msgid "Play/Pause"
 msgstr "Lejátszás/Szünet"
 
-#: main.py:2888
-#: main.py:2891
+#: main.py:3140
+#: main.py:3143
 msgid "Playback Error"
 msgstr "Lejátszási hiba"
 
-#: main.py:801
-#: main.py:885
+#: main.py:814
+#: main.py:902
 msgid "Player"
 msgstr "Lejátszó"
 
-#: main.py:243
+#: main.py:248
 msgid "Player Controls"
 msgstr "Lejátszóvezérlők"
 
@@ -770,8 +812,8 @@ msgstr "A lejátszóablak megsemmisült."
 msgid "Playing"
 msgstr "Lejátszás"
 
-#: main.py:792
-#: main.py:870
+#: main.py:805
+#: main.py:887
 #: playlist.py:2379
 msgid "Playlist Manager"
 msgstr "Lejátszásilista-kezelő"
@@ -817,7 +859,7 @@ msgstr "A portál kézfogása sikertelen: nem érkezett token"
 msgid "Preferred stream container format"
 msgstr "Előnyben részesített adáskonténer-formátum"
 
-#: main.py:3451
+#: main.py:3703
 msgid "Program - Channel"
 msgstr "Műsor – Csatorna"
 
@@ -825,10 +867,19 @@ msgstr "Műsor – Csatorna"
 msgid "Provider"
 msgstr "Szolgáltató"
 
-#: main.py:2888
-#: main.py:3147
+#: main.py:1145
+#: main.py:3140
+#: main.py:3399
 msgid "Provider error: {error}"
 msgstr "Szolgáltatóhiba: {error}"
+
+#: main.py:1116
+msgid "Provider quality (copy, MKV)"
+msgstr "Szolgáltatói minőség (másolás, MKV)"
+
+#: main.py:1117
+msgid "Provider quality (copy, MP4)"
+msgstr "Szolgáltatói minőség (másolás, MP4)"
 
 #: playlist.py:2469
 msgid "Provider – {name}"
@@ -846,6 +897,67 @@ msgstr "Véletlenszerű MAC"
 msgid "Reconnecting..."
 msgstr "Újracsatlakozás…"
 
+#: main.py:1042
+#: main.py:1131
+msgid "Record"
+msgstr "Felvétel"
+
+#: main.py:1173
+#: main.py:1180
+#: main.py:1183
+#: main.py:1194
+#: main.py:1197
+#: main.py:1205
+#: main.py:1208
+msgid "Recording"
+msgstr "Felvétel"
+
+#: main.py:1216
+msgid "Recording Complete"
+msgstr "Felvétel kész"
+
+#: main.py:1146
+#: main.py:1150
+#: main.py:1154
+#: main.py:1168
+#: main.py:1228
+msgid "Recording Error"
+msgstr "Felvételi hiba"
+
+#: main.py:1278
+msgid "Recording Format"
+msgstr "Felvételi formátum"
+
+#: main.py:1222
+msgid "Recording Warning"
+msgstr "Felvételi figyelmeztetés"
+
+#: main.py:1226
+msgid "Recording of {name} ended unexpectedly (code {code}).\n\n{detail}"
+msgstr "{name} felvétele váratlanul leállt (kód: {code}).\n\n{detail}"
+
+#: main.py:1215
+msgid "Recording saved:\n{path}"
+msgstr "Felvétel mentve:\n{path}"
+
+#: main.py:1171
+msgid "Recording started ({fmt}):\n{path}"
+msgstr "Felvétel elindítva ({fmt}):\n{path}"
+
+#: main.py:1220
+msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
+msgstr "A felvétel leállt, de az ffmpeg a(z) {code} kódot jelentette.\n\n{detail}\n\nFájl:\n{path}"
+
+#: main.py:837
+#: main.py:930
+#: main.py:1246
+msgid "Recordings"
+msgstr "Felvételek"
+
+#: main.py:1282
+msgid "Recordings Folder..."
+msgstr "Felvételek mappája..."
+
 #: internal_player.py:737
 #: internal_player.py:1414
 #: internal_player.py:1421
@@ -859,7 +971,7 @@ msgstr "Adás frissítése…"
 msgid "Remove Selected"
 msgstr "Kijelölt eltávolítása"
 
-#: main.py:236
+#: main.py:241
 msgid "Restore"
 msgstr "Visszaállítás"
 
@@ -871,23 +983,27 @@ msgstr "Folytatás"
 msgid "SSL/TLS error: {reason}"
 msgstr "SSL/TLS-hiba: {reason}"
 
-#: main.py:3206
+#: main.py:3458
 msgid "Searching for devices..."
 msgstr "Eszközök keresése…"
 
-#: options.py:568
+#: options.py:621
 msgid "Select Custom Player"
 msgstr "Egyéni lejátszó kiválasztása"
 
-#: main.py:3198
+#: main.py:3450
 msgid "Select Device to Cast"
 msgstr "Válasszon átküldési eszközt"
 
-#: options.py:582
+#: options.py:635
 msgid "Select Player Executable"
 msgstr "Válassza ki a lejátszó futtatható fájlját"
 
-#: main.py:3371
+#: main.py:1131
+msgid "Select a channel to record first."
+msgstr "Először válasszon ki egy rögzítendő csatornát."
+
+#: main.py:3623
 msgid "Select a programme to play from catch-up:"
 msgstr "Válasszon visszanézésből lejátszandó műsort:"
 
@@ -903,17 +1019,17 @@ msgstr "Kiszolgálóhiba (HTTP {code}). Próbálja újra később."
 msgid "Service unavailable (HTTP 503). The provider may be overloaded."
 msgstr "A szolgáltatás nem elérhető (HTTP 503). A szolgáltató túlterhelt lehet."
 
-#: main.py:797
-#: main.py:881
+#: main.py:810
+#: main.py:898
 msgid "Show Built-in Player"
 msgstr "Beépített lejátszó megjelenítése"
 
-#: main.py:238
+#: main.py:243
 msgid "Show Player"
 msgstr "Lejátszó megjelenítése"
 
-#: main.py:838
-#: main.py:907
+#: main.py:855
+#: main.py:924
 msgid "Show Player on Enter"
 msgstr "Lejátszó megjelenítése Enterre"
 
@@ -921,26 +1037,55 @@ msgstr "Lejátszó megjelenítése Enterre"
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: main.py:3285
+#: main.py:1271
+msgid "Start Recording"
+msgstr "Felvétel indítása"
+
+#: main.py:3537
 msgid "Starting pairing with {device}..."
 msgstr "Párosítás indítása ezzel: {device}…"
 
 #: internal_player.py:228
 #: internal_player.py:296
-#: main.py:240
-#: main.py:799
-#: main.py:883
+#: main.py:245
+#: main.py:812
+#: main.py:900
 msgid "Stop"
 msgstr "Leállítás"
+
+#: main.py:1275
+msgid "Stop All Recordings"
+msgstr "Összes felvétel leállítása"
 
 #: internal_player.py:229
 msgid "Stop Playback"
 msgstr "Lejátszás leállítása"
 
+#: main.py:1040
+#: main.py:1273
+msgid "Stop Recording"
+msgstr "Felvétel leállítása"
+
+#: main.py:250
+msgid "Stop Recording(s)"
+msgstr "Felvétel(ek) leállítása"
+
 #: internal_player.py:434
 #: internal_player.py:1329
 msgid "Stopped"
 msgstr "Leállítva"
+
+#: main.py:1178
+msgid "Stopping recording for {name}..."
+msgstr "{name} felvételének leállítása..."
+
+#: main.py:1194
+msgid "Stopping recording..."
+msgstr "Felvétel leállítása..."
+
+#: main.py:1204
+msgid "Stopping {count} recording(s)..."
+msgstr "{count} felvétel leállítása..."
 
 #: internal_player.py:1130
 msgid "Stream Lost"
@@ -963,19 +1108,23 @@ msgstr "Az adás nem található (HTTP 404). A csatorna offline lehet, vagy a we
 msgid "Stream output"
 msgstr "Adáskimenet"
 
-#: main.py:3354
+#: main.py:3606
 msgid "Successfully paired with {device}!"
 msgstr "Sikeres párosítás ezzel: {device}!"
 
-#: main.py:1095
+#: main.py:1336
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "A nyelv megváltozott. A változás teljes érvénybe lépéséhez indítsa újra az Accessible IPTV Clientet."
 
-#: main.py:3618
+#: main.py:1182
+msgid "This channel is not currently recording."
+msgstr "Ez a csatorna jelenleg nincs felvétel alatt."
+
+#: main.py:3870
 msgid "Time"
 msgstr "Idő"
 
-#: main.py:3619
+#: main.py:3871
 msgid "Title"
 msgstr "Cím"
 
@@ -996,7 +1145,7 @@ msgstr "A jegyzék nem tölthető le. Ellenőrizze a kapcsolatát."
 msgid "Unable to download update. Please check your connection."
 msgstr "A frissítés nem tölthető le. Ellenőrizze a kapcsolatát."
 
-#: main.py:3150
+#: main.py:3402
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Nem sikerült előkészíteni a visszanézési adást:\n{error}"
 
@@ -1004,7 +1153,7 @@ msgstr "Nem sikerült előkészíteni a visszanézési adást:\n{error}"
 msgid "Unable to reach GitHub. Please check your connection."
 msgstr "A GitHub nem érhető el. Ellenőrizze a kapcsolatát."
 
-#: main.py:3605
+#: main.py:3857
 #: updater.py:297
 msgid "Unknown"
 msgstr "Ismeretlen"
@@ -1013,31 +1162,31 @@ msgstr "Ismeretlen"
 msgid "Unknown error"
 msgstr "Ismeretlen hiba"
 
-#: main.py:1163
+#: main.py:1404
 msgid "Update Available"
 msgstr "Elérhető frissítés"
 
-#: main.py:1239
+#: main.py:1480
 msgid "Update Error"
 msgstr "Frissítési hiba"
 
-#: main.py:1158
+#: main.py:1399
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Elérhető frissítés: v{latest} (jelenlegi: v{current})."
 
-#: main.py:1148
+#: main.py:1389
 msgid "Update check failed: {error}"
 msgstr "A frissítéskeresés sikertelen: {error}"
 
-#: main.py:1112
+#: main.py:1353
 msgid "Update check is already running."
 msgstr "A frissítéskeresés már fut."
 
-#: main.py:1238
+#: main.py:1479
 msgid "Update failed: {error}"
 msgstr "A frissítés sikertelen: {error}"
 
-#: main.py:1216
+#: main.py:1457
 msgid "Update helper is missing from this build."
 msgstr "A frissítési segéd hiányzik ebből a változatból."
 
@@ -1049,7 +1198,7 @@ msgstr "A frissítési jegyzék letöltési webcíme hiányzik."
 msgid "Update manifest is missing required fields."
 msgstr "A frissítési jegyzékből hiányoznak a kötelező mezők."
 
-#: main.py:1181
+#: main.py:1422
 msgid "Update manifest version is not newer than the current app."
 msgstr "A frissítési jegyzék verziója nem újabb a jelenlegi alkalmazásnál."
 
@@ -1061,25 +1210,25 @@ msgstr "A frissítési jegyzék nem található a legújabb kiadásban."
 msgid "Update package contains an unsafe file path."
 msgstr "A frissítési csomag nem biztonságos fájlútvonalat tartalmaz."
 
-#: main.py:1257
+#: main.py:1498
 msgid "Update verified. The app will now close to install the update, then restart automatically."
 msgstr "A frissítés ellenőrizve. Az alkalmazás most bezárul a frissítés telepítéséhez, majd automatikusan újraindul."
 
-#: main.py:1195
+#: main.py:1436
 msgid "Updated executable '{name}' not found in the package."
 msgstr "A frissített futtatható fájl („{name}”) nem található a csomagban."
 
-#: main.py:1112
-#: main.py:1137
-#: main.py:1149
+#: main.py:1353
+#: main.py:1378
+#: main.py:1390
 msgid "Updates"
 msgstr "Frissítések"
 
-#: main.py:1122
+#: main.py:1363
 msgid "Updates are only available in the packaged build."
 msgstr "A frissítések csak a csomagolt változatban érhetők el."
 
-#: main.py:1120
+#: main.py:1361
 msgid "Updates are only supported on Windows builds."
 msgstr "A frissítések csak a Windows-változatban támogatottak."
 
@@ -1098,7 +1247,7 @@ msgstr "A felhasználónév, a jelszó és a webcím megadása kötelező."
 msgid "Validation"
 msgstr "Ellenőrzés"
 
-#: main.py:1017
+#: main.py:1046
 msgid "View EPG..."
 msgstr "EPG megtekintése…"
 
@@ -1110,8 +1259,8 @@ msgstr "Hang {value}%"
 msgid "Volume Control"
 msgstr "Hangerőszabályzó"
 
-#: main.py:873
-#: main.py:3426
+#: main.py:890
+#: main.py:3678
 msgid "What's on Now"
 msgstr "Most a műsoron"
 
@@ -1135,12 +1284,20 @@ msgstr "Xtream Codes – {name}"
 msgid "python-vlc (libVLC) is not available."
 msgstr "A python-vlc (libVLC) nem érhető el."
 
-#: main.py:1135
+#: main.py:1118
+msgid "x264 re-encode (MKV)"
+msgstr "x264 újrakódolás (MKV)"
+
+#: main.py:1119
+msgid "x264 re-encode (MP4)"
+msgstr "x264 újrakódolás (MP4)"
+
+#: main.py:1376
 msgid "{app} is up to date (v{version})."
 msgstr "A(z) {app} naprakész (v{version})."
 
-#: main.py:3445
-#: main.py:3563
+#: main.py:3697
+#: main.py:3815
 msgid "{count} programs"
 msgstr "{count} műsor"
 
@@ -1171,4 +1328,3 @@ msgstr "{value} mp puffer"
 #: internal_player.py:1338
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
-

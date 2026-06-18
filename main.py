@@ -28,7 +28,8 @@ from i18n import gettext as _
 from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
     get_db_path, canonicalize_name, extract_group, utc_to_local,
-    CustomPlayerDialog, resolve_internal_player_settings, get_app_dir
+    CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
+    get_recordings_dir, normalize_recording_format
 )
 import app_meta
 import updater
@@ -45,6 +46,8 @@ from casting import CastingManager, CastDevice
 from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
 from stream_proxy import get_ffmpeg_path
+import recorder
+from recorder import RECORDING_FORMATS
 
 try:
     from internal_player import (
@@ -212,8 +215,9 @@ class TrayIcon(wx.adv.TaskBarIcon):
     TBMENU_PLAYER_TOGGLE = wx.NewIdRef()
     TBMENU_PLAYER_STOP = wx.NewIdRef()
     TBMENU_CAST = wx.NewIdRef()
+    TBMENU_RECORD_STOP = wx.NewIdRef()
 
-    def __init__(self, parent, on_restore, on_exit, *, on_player_show=None, on_player_toggle=None, on_player_stop=None, on_cast=None):
+    def __init__(self, parent, on_restore, on_exit, *, on_player_show=None, on_player_toggle=None, on_player_stop=None, on_cast=None, on_record_stop=None):
         super().__init__()
         self.parent = parent
         self.on_restore = on_restore
@@ -222,6 +226,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         self.on_player_toggle = on_player_toggle
         self.on_player_stop = on_player_stop
         self.on_cast = on_cast
+        self.on_record_stop = on_record_stop
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DCLICK, self.on_taskbar_activate)
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_UP, self.on_taskbar_activate)
         self.Bind(wx.EVT_MENU, self.on_menu_select)
@@ -241,6 +246,8 @@ class TrayIcon(wx.adv.TaskBarIcon):
         player_menu.AppendSeparator()
         player_menu.Append(self.TBMENU_CAST, _("Cast / Connect..."))
         menu.AppendSubMenu(player_menu, _("Player Controls"))
+        if self.on_record_stop is not None and self.parent and self.parent.recorder.has_active():
+            menu.Append(self.TBMENU_RECORD_STOP, _("Stop Recording(s)"))
         menu.AppendSeparator()
         menu.Append(self.TBMENU_EXIT, _("Exit"))
         return menu
@@ -263,6 +270,8 @@ class TrayIcon(wx.adv.TaskBarIcon):
             self.on_player_stop()
         elif eid == self.TBMENU_CAST and self.on_cast:
             self.on_cast()
+        elif eid == self.TBMENU_RECORD_STOP and self.on_record_stop:
+            self.on_record_stop()
         elif eid == self.TBMENU_EXIT:
             self.on_exit()
 
@@ -344,6 +353,10 @@ class IPTVClient(wx.Frame):
         self.caster.start()
 
         self.player_launcher = ExternalPlayerLauncher()
+
+        # Recording Manager
+        self.recorder = recorder.RecordingManager()
+        self._suppress_recording_notifications = False
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -818,6 +831,10 @@ class IPTVClient(wx.Frame):
                 if self.default_player == "Custom":
                     customitem.Check(True)
                 menu.AppendSubMenu(player_menu, _("Media Player to Use"))
+                # Recordings submenu (Linux)
+                rec_menu = wx.Menu()
+                self._populate_recordings_menu(rec_menu)
+                menu.AppendSubMenu(rec_menu, _("Recordings"))
                 # Language submenu (Linux)
                 lang_menu = wx.Menu()
                 self._lang_menu_items = {}
@@ -907,6 +924,10 @@ class IPTVClient(wx.Frame):
             self.show_player_on_enter_item = om.AppendCheckItem(wx.ID_ANY, _("Show Player on Enter"))
             self.auto_check_updates_item = om.AppendCheckItem(wx.ID_ANY, _("Auto-check for Updates"))
             mb.Append(om, _("Options"))
+            # Recordings menu
+            rm = wx.Menu()
+            self._populate_recordings_menu(rm)
+            mb.Append(rm, _("Recordings"))
             # Help menu
             hm = wx.Menu()
             self.check_updates_item = hm.Append(wx.ID_ANY, _("Check for Updates..."))
@@ -953,6 +974,7 @@ class IPTVClient(wx.Frame):
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('J'), 4014),  # Volume down
             (wx.ACCEL_CTRL, wx.WXK_UP, 4015),   # Volume up (Ctrl+Up)
             (wx.ACCEL_CTRL, wx.WXK_DOWN, 4016), # Volume down (Ctrl+Down)
+            (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('R'), 4017),  # Start/stop recording
         ]
         atable = wx.AcceleratorTable(entries)
         self.SetAcceleratorTable(atable)
@@ -967,6 +989,7 @@ class IPTVClient(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4014)
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(+2), id=4015)
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4016)
+        self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
 
     def _on_lb_activate(self, event):
         # Called on generic left double click to ensure activation on GTK/mac too
@@ -1013,6 +1036,12 @@ class IPTVClient(wx.Frame):
         play_item = menu.Append(wx.ID_ANY, _("Play"))
         menu.Bind(wx.EVT_MENU, lambda evt: self.play_selected(), play_item)
 
+        if self.recorder.is_recording(self._channel_record_key(channel)):
+            rec_item = menu.Append(wx.ID_ANY, _("Stop Recording"))
+        else:
+            rec_item = menu.Append(wx.ID_ANY, _("Record"))
+        menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._record_channel(ch), rec_item)
+
         if not self._channel_is_epg_exempt(channel):
             epg_item = menu.Append(wx.ID_ANY, _("View EPG..."))
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._view_channel_epg(ch), epg_item)
@@ -1040,6 +1069,218 @@ class IPTVClient(wx.Frame):
                 wx.CallAfter(lambda err=e: wx.MessageBox(_("Error fetching EPG: {error}").format(error=err), _("Error"), wx.OK | wx.ICON_ERROR))
 
         threading.Thread(target=fetch_and_show, daemon=True).start()
+
+    # ------------------------------------------------------------------ #
+    # Recording                                                          #
+    # ------------------------------------------------------------------ #
+    def _selected_channel(self) -> Optional[Dict[str, str]]:
+        """Return the channel for the current list selection, or None."""
+        i = self.channel_list.GetSelection()
+        if not (0 <= i < len(self.displayed)):
+            return None
+        item = self.displayed[i]
+        if item.get("type") == "channel":
+            return item.get("data")
+        if item.get("type") == "epg":
+            return self._find_channel_for_epg(item.get("data", {}))
+        return None
+
+    def _channel_record_key(self, channel: Dict[str, str]) -> str:
+        """Stable identity for a channel (the resolved stream URL can change per resolve)."""
+        provider_data = channel.get("provider-data") or ""
+        if isinstance(provider_data, dict):
+            try:
+                provider_data = json.dumps(provider_data, sort_keys=True, default=str)
+            except Exception:
+                provider_data = str(provider_data)
+        parts = [
+            channel.get("provider-type") or "",
+            channel.get("provider-id") or "",
+            channel.get("stream-id") or channel.get("stream_id") or "",
+            channel.get("url") or "",
+            provider_data or "",
+            channel.get("name") or channel.get("tvg-name") or channel.get("tvg_name") or "",
+        ]
+        return "|".join(str(part) for part in parts if part)
+
+    def _channel_display_name(self, channel: Dict[str, str]) -> str:
+        return (channel.get("name")
+                or channel.get("tvg-name")
+                or channel.get("tvg_name")
+                or channel.get("tvg-id")
+                or channel.get("tvg_id")
+                or _("IPTV Stream"))
+
+    def _recording_format_label(self, key: str) -> str:
+        labels = {
+            "provider_mkv": _("Provider quality (copy, MKV)"),
+            "provider_mp4": _("Provider quality (copy, MP4)"),
+            "x264_mkv": _("x264 re-encode (MKV)"),
+            "x264_mp4": _("x264 re-encode (MP4)"),
+            "audio_mp3_v0": _("Audio only (MP3 V0)"),
+            "audio_flac": _("Audio only (FLAC)"),
+            "audio_wav": _("Audio only (WAV)"),
+            "audio_aac_m4a": _("Audio only (AAC, M4A)"),
+            "audio_opus": _("Audio only (Opus)"),
+        }
+        return labels.get(key, labels[recorder.DEFAULT_RECORDING_FORMAT])
+
+    def _record_selected(self, *_args):
+        channel = self._selected_channel()
+        if not channel:
+            wx.MessageBox(_("Select a channel to record first."), _("Record"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+        self._record_channel(channel)
+
+    def _record_channel(self, channel: Dict[str, str]):
+        key = self._channel_record_key(channel)
+        # Toggle: if this channel is already recording, stop it instead.
+        if self.recorder.is_recording(key):
+            self._stop_recording_for_channel(channel)
+            return
+        try:
+            url = self._resolve_live_url(channel)
+        except ProviderError as err:
+            wx.MessageBox(_("Provider error: {error}").format(error=err),
+                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
+            return
+        except Exception as err:
+            wx.MessageBox(_("Could not resolve stream URL:\n{error}").format(error=err),
+                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
+            return
+        if not url:
+            wx.MessageBox(_("Could not find a stream URL for this channel."),
+                          _("Recording Error"), wx.OK | wx.ICON_WARNING)
+            return
+
+        headers = channel_http_headers(channel)
+        name = self._channel_display_name(channel)
+        fmt = normalize_recording_format(self.config.get("recording_format"))
+        out_dir = get_recordings_dir(self.config)
+        try:
+            rec = self.recorder.start(
+                url, name, fmt, headers, out_dir,
+                key=key, on_finish=self._on_recording_finished,
+            )
+        except Exception as err:
+            wx.MessageBox(_("Could not start recording:\n{error}").format(error=err),
+                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
+            return
+        wx.MessageBox(
+            _("Recording started ({fmt}):\n{path}").format(
+                fmt=self._recording_format_label(fmt), path=rec.out_path),
+            _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _stop_recording_for_channel(self, channel: Dict[str, str]):
+        key = self._channel_record_key(channel)
+        if self.recorder.stop_key(key):
+            wx.MessageBox(_("Stopping recording for {name}...").format(
+                name=self._channel_display_name(channel)),
+                _("Recording"), wx.OK | wx.ICON_INFORMATION)
+        else:
+            wx.MessageBox(_("This channel is not currently recording."),
+                          _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _stop_selected_recording(self, *_args):
+        channel = self._selected_channel()
+        if channel and self.recorder.is_recording(self._channel_record_key(channel)):
+            self._stop_recording_for_channel(channel)
+            return
+        # Fall back: if exactly one recording is active, stop it.
+        active = self.recorder.list_active()
+        if len(active) == 1:
+            self.recorder.stop(active[0].id)
+            wx.MessageBox(_("Stopping recording..."), _("Recording"), wx.OK | wx.ICON_INFORMATION)
+        elif not active:
+            wx.MessageBox(_("No recordings are currently active."),
+                          _("Recording"), wx.OK | wx.ICON_INFORMATION)
+        else:
+            self._stop_all_recordings()
+
+    def _stop_all_recordings(self, *_args):
+        count = self.recorder.stop_all()
+        if count:
+            wx.MessageBox(_("Stopping {count} recording(s)...").format(count=count),
+                          _("Recording"), wx.OK | wx.ICON_INFORMATION)
+        else:
+            wx.MessageBox(_("No recordings are currently active."),
+                          _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _on_recording_finished(self, rec, rc):
+        if getattr(self, "_suppress_recording_notifications", False):
+            return
+        def report():
+            if rc == 0:
+                wx.MessageBox(_("Recording saved:\n{path}").format(path=rec.out_path),
+                              _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
+            elif rec.stopped_by_user:
+                detail = "\n".join(rec.stderr_tail[-6:]) or _("No ffmpeg details were reported.")
+                wx.MessageBox(
+                    _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
+                        code=rc, detail=detail, path=rec.out_path),
+                    _("Recording Warning"), wx.OK | wx.ICON_WARNING)
+            else:
+                detail = "\n".join(rec.stderr_tail[-6:]) or _("No ffmpeg details were reported.")
+                wx.MessageBox(
+                    _("Recording of {name} ended unexpectedly (code {code}).\n\n{detail}").format(
+                        name=rec.title, code=rc, detail=detail),
+                    _("Recording Error"), wx.OK | wx.ICON_ERROR)
+        wx.CallAfter(report)
+
+    def _set_recording_format(self, key: str):
+        self.config["recording_format"] = normalize_recording_format(key)
+        save_config(self.config)
+
+    def _open_recordings_folder(self, *_args):
+        path = get_recordings_dir(self.config)
+        try:
+            if platform.system() == "Windows":
+                os.startfile(path)  # type: ignore[attr-defined]
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", path])
+            else:
+                subprocess.Popen(["xdg-open", path])
+        except Exception as err:
+            wx.MessageBox(_("Could not open folder:\n{error}").format(error=err),
+                          _("Recordings"), wx.OK | wx.ICON_ERROR)
+
+    def _choose_recordings_folder(self, *_args):
+        current = get_recordings_dir(self.config)
+        dlg = wx.DirDialog(self, _("Choose recordings folder"), defaultPath=current)
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.config["recordings_dir"] = dlg.GetPath()
+                save_config(self.config)
+        finally:
+            dlg.Destroy()
+
+    def _build_recording_format_menu(self) -> wx.Menu:
+        """A submenu of radio items for each recording preset (checked = active)."""
+        current = normalize_recording_format(self.config.get("recording_format"))
+        fmt_menu = wx.Menu()
+        for key in RECORDING_FORMATS:
+            item = fmt_menu.AppendRadioItem(wx.ID_ANY, self._recording_format_label(key))
+            if key == current:
+                item.Check(True)
+            fmt_menu.Bind(wx.EVT_MENU, lambda evt, k=key: self._set_recording_format(k), item)
+        return fmt_menu
+
+    def _populate_recordings_menu(self, menu: wx.Menu):
+        """Fill a Recordings menu (shared by the menubar and the Linux button menu)."""
+        start_item = menu.Append(wx.ID_ANY, _("Start Recording") + "\tCtrl+Shift+R")
+        menu.Bind(wx.EVT_MENU, self._record_selected, start_item)
+        stop_item = menu.Append(wx.ID_ANY, _("Stop Recording"))
+        menu.Bind(wx.EVT_MENU, self._stop_selected_recording, stop_item)
+        stop_all_item = menu.Append(wx.ID_ANY, _("Stop All Recordings"))
+        menu.Bind(wx.EVT_MENU, self._stop_all_recordings, stop_all_item)
+        menu.AppendSeparator()
+        menu.AppendSubMenu(self._build_recording_format_menu(), _("Recording Format"))
+        menu.AppendSeparator()
+        open_item = menu.Append(wx.ID_ANY, _("Open Recordings Folder"))
+        menu.Bind(wx.EVT_MENU, self._open_recordings_folder, open_item)
+        folder_item = menu.Append(wx.ID_ANY, _("Recordings Folder..."))
+        menu.Bind(wx.EVT_MENU, self._choose_recordings_folder, folder_item)
 
     def _show_about_dialog(self, _event=None):
         """Show About dialog with app info and links."""
@@ -1300,7 +1541,8 @@ class IPTVClient(wx.Frame):
                 on_player_show=self._tray_show_player,
                 on_player_toggle=self._tray_toggle_play_pause,
                 on_player_stop=self._tray_stop_player,
-                on_cast=self._tray_cast
+                on_cast=self._tray_cast,
+                on_record_stop=self._stop_all_recordings,
             )
         self.Hide()
         self._tray_ready_timer = wx.CallLater(250, self._enable_tray_restore)
@@ -1492,6 +1734,11 @@ class IPTVClient(wx.Frame):
                 pass
             self.tray_icon.Destroy()
             self.tray_icon = None
+        try:
+            self._suppress_recording_notifications = True
+            self.recorder.stop_all(wait=True)
+        except Exception:
+            pass
         self.caster.stop()
         self.Destroy()
 
@@ -1530,6 +1777,11 @@ class IPTVClient(wx.Frame):
                 pass
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
+            try:
+                self._suppress_recording_notifications = True
+                self.recorder.stop_all(wait=True)
+            except Exception:
+                pass
             if self.caster:
                 self.caster.stop()
             if self.tray_icon:

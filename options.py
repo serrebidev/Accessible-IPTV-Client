@@ -25,6 +25,7 @@ _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = platform.system() == "Windows"
 DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
+DEFAULT_RECORDING_FORMAT = "provider_mkv"
 
 _WINDOWS_TZ_RESETTER = None
 _WINDOWS_TZ_LOCK = threading.Lock()
@@ -279,6 +280,8 @@ def load_config() -> Dict:
         "epg_auto_import_interval_hours": 6.0,
         "show_player_on_enter": True,
         "language": "auto",
+        "recordings_dir": "",
+        "recording_format": DEFAULT_RECORDING_FORMAT,
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():
@@ -292,6 +295,7 @@ def load_config() -> Dict:
                         data.setdefault(k, v)
                     if data.get("internal_player_buffer_seconds") == 12.0:
                         data["internal_player_buffer_seconds"] = DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
+                    data["recording_format"] = normalize_recording_format(data.get("recording_format"))
                     resolve_internal_player_settings(data)
                     _CONFIG_PATH = p
                     return data
@@ -309,6 +313,7 @@ def load_config() -> Dict:
 
 def save_config(cfg: Dict):
     global _CONFIG_PATH
+    cfg["recording_format"] = normalize_recording_format(cfg.get("recording_format"))
     resolve_internal_player_settings(cfg)
     path = get_config_write_target()
     try:
@@ -346,6 +351,54 @@ def get_cache_dir():
 def get_cache_path_for_url(url):
     h = hashlib.sha1(url.encode("utf-8")).hexdigest()
     return os.path.join(get_cache_dir(), f"{h}.m3u")
+
+def normalize_recording_format(value) -> str:
+    """Clamp a recording-format key to a known preset, defaulting to MKV copy."""
+    try:
+        from recorder import RECORDING_FORMATS
+    except Exception:
+        return value if value == DEFAULT_RECORDING_FORMAT else DEFAULT_RECORDING_FORMAT
+    if isinstance(value, str) and value in RECORDING_FORMATS:
+        return value
+    return DEFAULT_RECORDING_FORMAT
+
+def _windows_videos_dir():
+    """Resolve the Windows 'Videos' known folder, falling back to ~/Videos."""
+    try:
+        # FOLDERID_Videos = {18989B1D-99B5-455B-841C-AB7C74E4DDFC}
+        from ctypes import wintypes
+        class GUID(ctypes.Structure):
+            _fields_ = [("Data1", wintypes.DWORD), ("Data2", wintypes.WORD),
+                        ("Data3", wintypes.WORD), ("Data4", ctypes.c_byte * 8)]
+        folderid = GUID(0x18989B1D, 0x99B5, 0x455B,
+                        (ctypes.c_byte * 8)(0x84, 0x1C, 0xAB, 0x7C, 0x74, 0xE4, 0xDD, 0xFC))
+        path_ptr = ctypes.c_void_p()
+        res = ctypes.windll.shell32.SHGetKnownFolderPath(
+            ctypes.byref(folderid), 0, None, ctypes.byref(path_ptr))
+        if res == 0 and path_ptr.value:
+            value = ctypes.wstring_at(path_ptr.value)
+            ctypes.windll.ole32.CoTaskMemFree(path_ptr)
+            return value
+    except Exception:
+        pass
+    return os.path.join(os.path.expanduser("~"), "Videos")
+
+def get_recordings_dir(cfg: Dict) -> str:
+    """Resolve the directory recordings are written to (creating it)."""
+    configured = (cfg or {}).get("recordings_dir") or ""
+    if configured.strip():
+        target = os.path.expanduser(configured.strip())
+    else:
+        if _IS_WINDOWS:
+            videos = _windows_videos_dir()
+        else:
+            videos = os.path.join(os.path.expanduser("~"), "Videos")
+        target = os.path.join(videos, "Accessible IPTV Recordings")
+    try:
+        os.makedirs(target, exist_ok=True)
+    except Exception:
+        pass
+    return target
 
 def get_db_path():
     return os.path.join(tempfile.gettempdir(), "epg.db")
