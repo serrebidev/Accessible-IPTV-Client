@@ -47,7 +47,7 @@ def test_english_uses_source_strings():
 
 def test_hungarian_translates_known_strings():
     i18n.set_language("hu")
-    assert i18n.gettext("Restore") == "Visszaállítás"
+    assert i18n.gettext("Restore") == "Ablak visszaállítása"
     assert i18n.gettext("Stop") == "Leállítás"
     assert i18n.gettext("Language") == "Nyelv"
     assert i18n.get_language() == "hu"
