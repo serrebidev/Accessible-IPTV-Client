@@ -9,10 +9,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from playlist import (
+    EPGDatabase,
     _derive_playlist_region,
     _detect_region_from_id,
     _expand_tvg_id_candidates,
     _ordered_channel_tokens,
+    _parse_xmltv_to_utc_str,
     epg_database_has_usable_data,
 )
 
@@ -151,3 +153,39 @@ def test_playlist_region_prefers_tvg_id_country_over_california_abbreviation():
 
 def test_ordered_channel_tokens_skip_quality_and_geoblock_noise():
     assert _ordered_channel_tokens("9Gem (720p) [Geo-blocked]")[:2] == ["9gem"]
+
+
+def test_epg_search_can_skip_programme_title_scan(tmp_path):
+    path = tmp_path / "epg.db"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    current_start = _xmltv_time(now - datetime.timedelta(minutes=15))
+    current_end = _xmltv_time(now + datetime.timedelta(minutes=45))
+
+    db = EPGDatabase(str(path))
+    db.insert_channel("news.example", "News Channel")
+    db.insert_channel("movies.example", "Movie Channel")
+    db.insert_programme("news.example", "Morning Magazine", current_start, current_end)
+    db.insert_programme("movies.example", "Breaking News Special", current_start, current_end)
+    db.commit()
+    db.close()
+
+    db = EPGDatabase(str(path), readonly=True)
+    try:
+        channel_only = db.get_channels_with_show("news", include_title_search=False, limit=10)
+        with_titles = db.get_channels_with_show("news", include_title_search=True, limit=10)
+    finally:
+        db.close()
+
+    assert {row["channel_id"] for row in channel_only} == {"news.example"}
+    assert {row["channel_id"] for row in with_titles} == {"news.example", "movies.example"}
+
+
+def test_xmltv_negative_half_hour_offset_parses_to_utc():
+    # Newfoundland (-0330): 12:00 local is 15:30 UTC. A naive offset_val//100 / %100
+    # split mishandles the half hour on negative offsets and would yield 14:50.
+    assert _parse_xmltv_to_utc_str("20240101120000 -0330") == "20240101153000"
+    # India (+0530): 12:00 local is 06:30 UTC.
+    assert _parse_xmltv_to_utc_str("20240101120000 +0530") == "20240101063000"
+    # Whole-hour offsets and UTC are unaffected.
+    assert _parse_xmltv_to_utc_str("20240101120000 -0500") == "20240101170000"
+    assert _parse_xmltv_to_utc_str("20240101120000 +0000") == "20240101120000"

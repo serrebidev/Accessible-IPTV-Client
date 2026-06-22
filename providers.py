@@ -3,6 +3,7 @@ import time
 import uuid
 import urllib.parse
 import urllib.request
+import threading
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -74,7 +75,11 @@ class XtreamCodesClient:
     def epg_urls(self) -> List[str]:
         if not self.cfg.auto_epg:
             return []
-        return [f"{self._base}/xmltv.php?username={urllib.parse.quote(self.cfg.username)}&password={urllib.parse.quote(self.cfg.password)}"]
+        params = urllib.parse.urlencode({
+            "username": self.cfg.username,
+            "password": self.cfg.password,
+        })
+        return [f"{self._base}/xmltv.php?{params}"]
 
     def fetch_playlist(self, timeout: int = 60) -> str:
         url = self.playlist_url()
@@ -117,6 +122,7 @@ class StalkerPortalClient:
         self._portal_endpoint = self._derive_portal_endpoint()
         self._token: Optional[str] = None
         self._token_issued: float = 0.0
+        self._token_lock = threading.Lock()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 
     def _derive_portal_endpoint(self) -> str:
@@ -155,34 +161,37 @@ class StalkerPortalClient:
             raise ProviderError(_("Invalid response from portal: {response}").format(response=repr(text)))
 
     def _ensure_token(self):
-        now = time.time()
-        if self._token and (now - self._token_issued) < 60 * 25:
-            return
-        # Step 1: handshake to get temporary token
-        data = self._portal_call({
-            "type": "stb",
-            "action": "handshake",
-            "token": "",
-            "prehash": "0",
-            "JsHttpRequest": "1-xml"
-        }, include_token=False)
-        token = data.get("token") or data.get("js", {}).get("token")
-        if not token:
-            raise ProviderError(_("Portal handshake failed: no token returned"))
-        self._token = token
-        self._token_issued = now
-        # Step 2: authenticate with credentials to obtain session token
-        auth = self._portal_call({
-            "type": "stb",
-            "action": "login",
-            "login": self.cfg.username,
-            "password": self.cfg.password,
-            "JsHttpRequest": "1-xml"
-        })
-        new_token = auth.get("token") or auth.get("js", {}).get("token")
-        if new_token:
-            self._token = new_token
-            self._token_issued = time.time()
+        # Serialize refreshes: this client is shared across background resolve threads,
+        # and overlapping handshake/login round-trips can interleave token writes.
+        with self._token_lock:
+            now = time.time()
+            if self._token and (now - self._token_issued) < 60 * 25:
+                return
+            # Step 1: handshake to get temporary token
+            data = self._portal_call({
+                "type": "stb",
+                "action": "handshake",
+                "token": "",
+                "prehash": "0",
+                "JsHttpRequest": "1-xml"
+            }, include_token=False)
+            token = data.get("token") or data.get("js", {}).get("token")
+            if not token:
+                raise ProviderError(_("Portal handshake failed: no token returned"))
+            self._token = token
+            self._token_issued = now
+            # Step 2: authenticate with credentials to obtain session token
+            auth = self._portal_call({
+                "type": "stb",
+                "action": "login",
+                "login": self.cfg.username,
+                "password": self.cfg.password,
+                "JsHttpRequest": "1-xml"
+            })
+            new_token = auth.get("token") or auth.get("js", {}).get("token")
+            if new_token:
+                self._token = new_token
+                self._token_issued = time.time()
 
     def fetch_channels(self) -> Tuple[List[Dict], List[str]]:
         self._ensure_token()

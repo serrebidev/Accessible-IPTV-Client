@@ -4,10 +4,39 @@ Tests for search, filtering, and category viewing functionality.
 import pytest
 import os
 import sys
+import sqlite3
+from types import SimpleNamespace
 from unittest.mock import Mock, patch, MagicMock
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _create_minimal_epg_db(path):
+    conn = sqlite3.connect(path)
+    conn.execute(
+        """
+        CREATE TABLE channels (
+            id TEXT PRIMARY KEY,
+            display_name TEXT,
+            norm_name TEXT,
+            group_tag TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE programmes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            channel_id TEXT,
+            title TEXT,
+            start TEXT,
+            end TEXT
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
 
 class TestChannelSearch:
@@ -504,6 +533,211 @@ class TestLargePlaylistHandling:
                     break
         
         assert len(results) == max_results
+
+    def test_broad_channel_search_skips_epg_scan(self, tmp_path):
+        """Broad searches should not trigger the expensive EPG programme scan."""
+        from main import IPTVClient
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = Mock(spec=IPTVClient)
+        client.config = {"epg_enabled": True}
+        client.current_group = "All Channels"
+        client.epg_importing = False
+        client._SEARCH_EPG_MIN_CHARS = IPTVClient._SEARCH_EPG_MIN_CHARS
+        client._SEARCH_EPG_BROAD_CHANNEL_LIMIT = IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT
+
+        with patch("main.get_db_path", return_value=str(db_path)):
+            assert not IPTVClient._should_run_epg_search(
+                client,
+                "news",
+                IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT + 1,
+            )
+
+    def test_first_run_epg_import_skips_search_epg_scan(self, tmp_path):
+        """EPG import already uses CPU and SQLite; first-run search should not compete."""
+        from main import IPTVClient
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = Mock(spec=IPTVClient)
+        client.config = {"epg_enabled": True}
+        client.current_group = "All Channels"
+        client.epg_importing = True
+        client._SEARCH_EPG_MIN_CHARS = IPTVClient._SEARCH_EPG_MIN_CHARS
+        client._SEARCH_EPG_BROAD_CHANNEL_LIMIT = IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT
+
+        with patch("main.get_db_path", return_value=str(db_path)):
+            assert not IPTVClient._should_run_epg_search(client, "news", 0)
+
+    def test_specific_search_can_use_epg_scan_when_idle(self, tmp_path):
+        """Specific searches still allow EPG lookup when the app is idle."""
+        from main import IPTVClient
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = Mock(spec=IPTVClient)
+        client.config = {"epg_enabled": True}
+        client.current_group = "All Channels"
+        client.epg_importing = False
+        client._SEARCH_EPG_MIN_CHARS = IPTVClient._SEARCH_EPG_MIN_CHARS
+        client._SEARCH_EPG_BROAD_CHANNEL_LIMIT = IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT
+
+        with patch("main.get_db_path", return_value=str(db_path)):
+            assert IPTVClient._should_run_epg_search(client, "movie", 0)
+
+    def test_pending_epg_autostart_skips_search_epg_scan(self, tmp_path):
+        """Search should not compete with delayed first-run EPG auto-import."""
+        from main import IPTVClient
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = Mock(spec=IPTVClient)
+        client.config = {"epg_enabled": True}
+        client.current_group = "All Channels"
+        client.epg_importing = False
+        client._pending_epg_autostart = True
+        client._epg_autostart_timer = None
+        client._SEARCH_EPG_MIN_CHARS = IPTVClient._SEARCH_EPG_MIN_CHARS
+        client._SEARCH_EPG_BROAD_CHANNEL_LIMIT = IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT
+
+        with patch("main.get_db_path", return_value=str(db_path)):
+            assert not IPTVClient._should_run_epg_search(client, "movie", 0)
+
+    def test_group_filter_skips_global_search_epg_scan(self, tmp_path):
+        """Group-scoped channel searches must not append global EPG hits."""
+        from main import IPTVClient
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = Mock(spec=IPTVClient)
+        client.config = {"epg_enabled": True}
+        client.current_group = "News"
+        client.epg_importing = False
+        client._pending_epg_autostart = False
+        client._epg_autostart_timer = None
+        client._SEARCH_EPG_MIN_CHARS = IPTVClient._SEARCH_EPG_MIN_CHARS
+        client._SEARCH_EPG_BROAD_CHANNEL_LIMIT = IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT
+
+        with patch("main.get_db_path", return_value=str(db_path)):
+            assert not IPTVClient._should_run_epg_search(client, "movie", 0)
+
+    def test_channel_search_epg_lookup_does_not_scan_programme_titles(self, tmp_path):
+        """Inline channel search must not run the expensive programme-title EPG scan."""
+        from main import IPTVClient
+
+        class FakeText:
+            def __init__(self, value):
+                self.value = value
+
+            def GetValue(self):
+                return self.value
+
+            def SetValue(self, value):
+                self.value = value
+
+        class FakeList:
+            def __init__(self):
+                self.items = []
+                self.frozen = 0
+                self.selection = -1
+
+            def Freeze(self):
+                self.frozen += 1
+
+            def Thaw(self):
+                self.frozen = max(0, self.frozen - 1)
+
+            def Clear(self):
+                self.items.clear()
+
+            def AppendItems(self, items):
+                self.items.extend(items)
+
+            def GetSelection(self):
+                return self.selection
+
+            def GetCount(self):
+                return len(self.items)
+
+            def SetSelection(self, selection):
+                self.selection = selection
+
+            def set_virtual_count(self):
+                # The virtual ListCtrl resyncs its item count from the model; the fake
+                # renders nothing, so this is a no-op for the purposes of this test.
+                pass
+
+        class FakeThread:
+            def __init__(self, target, daemon=False):
+                self.target = target
+
+            def start(self):
+                self.target()
+
+        calls = []
+
+        class FakeConn:
+            def execute(self, _sql):
+                return None
+
+            def close(self):
+                return None
+
+        class FakeEPGDatabase:
+            conn = FakeConn()
+
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def get_channels_with_show(self, query, **kwargs):
+                calls.append((query, kwargs))
+                return []
+
+            def close(self):
+                return None
+
+        db_path = tmp_path / "epg.db"
+        _create_minimal_epg_db(db_path)
+        client = SimpleNamespace(
+            filter_box=FakeText("rareterm"),
+            channel_list=FakeList(),
+            epg_display=FakeText(""),
+            url_display=FakeText(""),
+            all_channels=[{"name": "CNN"}, {"name": "BBC"}],
+            channels_by_group={},
+            current_group="All Channels",
+            displayed=[],
+            config={"epg_enabled": True},
+            epg_importing=False,
+            _pending_epg_autostart=False,
+            _epg_autostart_timer=None,
+            _populate_token=0,
+            _search_token=0,
+            _SEARCH_LARGE_RESULT_THRESHOLD=IPTVClient._SEARCH_LARGE_RESULT_THRESHOLD,
+            _SEARCH_PREVIEW_COUNT=IPTVClient._SEARCH_PREVIEW_COUNT,
+            _SEARCH_BATCH_SIZE=IPTVClient._SEARCH_BATCH_SIZE,
+            _SEARCH_EPG_MIN_CHARS=IPTVClient._SEARCH_EPG_MIN_CHARS,
+            _SEARCH_EPG_BROAD_CHANNEL_LIMIT=IPTVClient._SEARCH_EPG_BROAD_CHANNEL_LIMIT,
+            _SEARCH_EPG_RESULT_LIMIT=IPTVClient._SEARCH_EPG_RESULT_LIMIT,
+        )
+        client._append_search_results_chunked = (
+            lambda channels, token: IPTVClient._append_search_results_chunked(client, channels, token)
+        )
+        client._should_run_epg_search = (
+            lambda query, count: IPTVClient._should_run_epg_search(client, query, count)
+        )
+
+        with patch("main.get_db_path", return_value=str(db_path)), \
+             patch("main.EPGDatabase", FakeEPGDatabase), \
+             patch("main.threading.Thread", FakeThread), \
+             patch("main.wx.CallAfter", lambda fn, *args, **_kwargs: fn(*args)):
+            IPTVClient.apply_filter(client)
+
+        assert calls == [(
+            "rareterm",
+            {"limit": IPTVClient._SEARCH_EPG_RESULT_LIMIT, "include_title_search": False},
+        )]
 
 
 if __name__ == "__main__":

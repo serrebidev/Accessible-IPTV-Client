@@ -206,6 +206,12 @@ class ChromecastCaster(BaseCaster):
                     uuids=[device.identifier]
                 )
                 if not chromecasts:
+                    # Stop the first browser before starting a second discovery; otherwise its
+                    # zeroconf thread leaks for the lifetime of the connection.
+                    try:
+                        browser.stop_discovery()
+                    except Exception:
+                        pass
                     # If strictly searching by UUID failed, try searching by known IP
                     # This is useful if the UUID changed or discovery is flaky but IP is known
                     # However, get_chromecasts(known_hosts=[...]) is better

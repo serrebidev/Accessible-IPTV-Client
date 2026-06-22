@@ -315,6 +315,12 @@ class IPTVClient(wx.Frame):
 
     _CACHE_SHOW_STALE_SECS = 600
     _CACHE_REFRESH_AFTER_SECS = 180
+    _SEARCH_LARGE_RESULT_THRESHOLD = 1500
+    _SEARCH_PREVIEW_COUNT = 200
+    _SEARCH_BATCH_SIZE = 800
+    _SEARCH_EPG_MIN_CHARS = 3
+    _SEARCH_EPG_BROAD_CHANNEL_LIMIT = 75
+    _SEARCH_EPG_RESULT_LIMIT = 100
 
     def __init__(self):
         super().__init__(None, title="Accessible IPTV Client", size=(800, 600))
@@ -370,6 +376,7 @@ class IPTVClient(wx.Frame):
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
+        self._search_token = 0
 
         # Timer for polling DB during EPG import so UI shows incoming data.
         self._epg_poll_timer: Optional[wx.Timer] = None
@@ -379,6 +386,7 @@ class IPTVClient(wx.Frame):
         
         # Caching map: canonical_name -> db_channel_id
         self._epg_match_cache: Dict[str, Optional[str]] = {}
+        self._epg_match_lock = threading.Lock()
         # Dedicated executor for EPG lookups to avoid thread-spawning overhead
         self._epg_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="EPGFetch")
 
@@ -517,8 +525,6 @@ class IPTVClient(wx.Frame):
         Loads playlists from cache for a fast UI update, then refreshes from the network.
         Crucially, it only starts the EPG import *after* playlists are loaded.
         """
-        import concurrent.futures
-
         playlist_sources = self.config.get("playlists", [])
         # Ensure all provider entries have persistent IDs so we can track clients.
         mutated = False
@@ -674,7 +680,8 @@ class IPTVClient(wx.Frame):
                         ) as resp:
                             raw = resp.read()
                             try:
-                                text = raw.decode("utf-8")
+                                # utf-8-sig strips a leading BOM if present; otherwise == utf-8.
+                                text = raw.decode("utf-8-sig")
                             except UnicodeDecodeError:
                                 text = raw.decode("latin-1", "ignore")
                         with open(cache_path, "w", encoding="utf-8") as f:
@@ -788,14 +795,16 @@ class IPTVClient(wx.Frame):
         self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
         vs_l.Add(self.group_list, 1, wx.EXPAND | wx.ALL, 5)
         self.filter_box = wx.TextCtrl(p, style=wx.TE_PROCESS_ENTER)
-        self.channel_list = wx.ListBox(p, style=wx.LB_SINGLE)
+        # Virtual list control (native SysListView32) so 50k-300k channels stay responsive
+        # for the UI and NVDA alike — only visible rows are realized. Backed by self.displayed.
+        self.channel_list = _VirtualChannelList(p, self)
         # Key bindings (original + added robust handlers)
         self.channel_list.Bind(wx.EVT_CHAR_HOOK, self.on_channel_key)  # original
         self.channel_list.Bind(wx.EVT_KEY_DOWN, self._on_channel_key_down)  # reliable Enter on all platforms
-        # Mouse activation (original + added wx generic left double click)
-        self.channel_list.Bind(wx.EVT_LISTBOX, lambda _: self.on_highlight())
-        self.channel_list.Bind(wx.EVT_LISTBOX_DCLICK, lambda _: self.play_selected())  # original
-        self.channel_list.Bind(wx.EVT_LEFT_DCLICK, self._on_lb_activate)  # GTK/mac fallback
+        # Selection change (keyboard arrows + mouse) -> refresh EPG/URL panel.
+        self.channel_list.Bind(wx.EVT_LIST_ITEM_SELECTED, lambda _evt: self.on_highlight())
+        # Activation: Enter is consumed by the key handlers above, so this fires on double-click.
+        self.channel_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, lambda _evt: self.play_selected())
         self.channel_list.Bind(wx.EVT_CONTEXT_MENU, self._on_channel_context_menu)
 
         self.epg_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
@@ -1993,6 +2002,18 @@ class IPTVClient(wx.Frame):
             self.recorder.stop_all(wait=True)
         except Exception:
             pass
+        # Mirror on_close cleanup so the EPG poll timer can't fire into a destroyed frame
+        # and executor threads don't leak when exiting from the tray.
+        try:
+            self._stop_epg_poll_timer()
+        except Exception:
+            pass
+        try:
+            self._cancel_epg_autostart_timer()
+        except Exception:
+            pass
+        if hasattr(self, "_epg_executor"):
+            self._epg_executor.shutdown(wait=False)
         self.caster.stop()
         self.Destroy()
 
@@ -2094,101 +2115,149 @@ class IPTVClient(wx.Frame):
         else:
             event.Skip()
 
+    def _append_search_results_chunked(self, channels: List[Dict[str, str]], token: int):
+        # Virtual list: appending is O(1) regardless of count, so no chunking is needed.
+        if token != self._populate_token:
+            return
+        for ch in channels:
+            self.displayed.append({"type": "channel", "data": ch})
+        self.channel_list.set_virtual_count()
+        self.epg_display.SetValue("")
+
+    def _should_run_epg_search(self, query: str, channel_match_count: int) -> bool:
+        if not self.config.get("epg_enabled", True):
+            return False
+        if getattr(self, "current_group", "All Channels") != "All Channels":
+            return False
+        if self.epg_importing:
+            return False
+        if getattr(self, "_pending_epg_autostart", False):
+            return False
+        if getattr(self, "_epg_autostart_timer", None) is not None:
+            return False
+        if len(query) < self._SEARCH_EPG_MIN_CHARS:
+            return False
+        if channel_match_count > self._SEARCH_EPG_BROAD_CHANNEL_LIMIT:
+            return False
+        try:
+            path = get_db_path()
+            if not os.path.exists(path):
+                return False
+            conn = sqlite3.connect(f"file:{path}?mode=ro&cache=shared", uri=True, timeout=0.5)
+            try:
+                tables = {
+                    row[0]
+                    for row in conn.execute(
+                        """
+                        SELECT name
+                        FROM sqlite_master
+                        WHERE type = 'table' AND name IN ('channels', 'programmes')
+                        """
+                    ).fetchall()
+                }
+                return not ({"channels", "programmes"} - tables)
+            finally:
+                conn.close()
+        except Exception:
+            return False
+
     def apply_filter(self):
         txt = self.filter_box.GetValue().strip().lower()
         self._populate_token += 1
+        populate_token = self._populate_token
+        self._search_token += 1
+        search_token = self._search_token
         self.displayed = []
-        self.channel_list.Freeze()
-        try:
-            self.channel_list.Clear()
-            source = (self.all_channels if self.current_group == "All Channels"
-                      else self.channels_by_group.get(self.current_group, []))
-            if not txt:
-                # Rebuild current group quickly without blocking the UI
-                self.channel_list.Thaw()
-                self.on_group_select()
-                return
+        source = (self.all_channels if self.current_group == "All Channels"
+                  else self.channels_by_group.get(self.current_group, []))
+        self.channel_list.Clear()
+        self.epg_display.SetValue("")
+        self.url_display.SetValue("")
 
-            items = []
-            for ch in source:
-                name = (ch.get("name") or "")
-                if txt and txt not in name.lower():
-                    continue
-                self.displayed.append({"type": "channel", "data": ch})
-                items.append(name)
+        if not txt:
+            # Rebuild current group quickly without blocking the UI
+            self.on_group_select()
+            return
 
-            if items:
-                self.channel_list.AppendItems(items)
+        matching_channels = []
+        for ch in source:
+            name = (ch.get("name") or "")
+            if txt and txt not in name.lower():
+                continue
+            matching_channels.append(ch)
 
-            # Kick off EPG search in background and append results later
-            if not hasattr(self, "_search_token"):
-                self._search_token = 0
-            self._search_token += 1
-            my_token = self._search_token
+        self._append_search_results_chunked(matching_channels, populate_token)
 
-            def epg_search(token):
-                try:
-                    db = EPGDatabase(get_db_path(), readonly=True)
-                    try:
-                        if hasattr(db, "conn"):
-                            db.conn.execute("PRAGMA busy_timeout=2000;")
-                            db.conn.execute("PRAGMA read_uncommitted=1;")
-                    except Exception:
-                        pass
-                    results = db.get_channels_with_show(txt)
-                    try:
-                        if hasattr(db, "close"):
-                            db.close()
-                        elif hasattr(db, "conn"):
-                            db.conn.close()
-                    except Exception:
-                        pass
-                except Exception:
-                    results = []
-                def update_ui():
-                    if getattr(self, "_search_token", 0) != token:
-                        return
-                    if txt != self.filter_box.GetValue().strip().lower():
-                        return
-                    # Preserve current selection to avoid scroll jumps while appending
-                    try:
-                        cur_sel = self.channel_list.GetSelection()
-                        cur_count = self.channel_list.GetCount()
-                    except Exception:
-                        cur_sel, cur_count = wx.NOT_FOUND, 0
-                    if results:
-                        add_items = []
-                        for r in results:
-                            chan_name = r.get('channel_name') or ""
-                            show_name = r.get('show_title') or ""
-                            chan_lower = chan_name.lower()
-                            show_lower = show_name.lower()
-                            if txt and txt not in chan_lower and txt not in show_lower:
-                                continue
-                            label = f"{r['channel_name']} - {r['show_title']} ({self._fmt_time(r['start'])}–{self._fmt_time(r['end'])})"
-                            self.displayed.append({"type": "epg", "data": r})
-                            add_items.append(label)
-                        if add_items:
-                            self.channel_list.AppendItems(add_items)
-                    # Only auto-select the first item if the list was previously empty
-                    # and nothing is selected. Do NOT steal focus or jump the list.
-                    try:
-                        if cur_count == 0 and cur_sel in (-1, wx.NOT_FOUND) and self.channel_list.GetCount() > 0:
-                            # Leave selection empty to avoid scroll jump; user can choose.
-                            # If desired later, we can make this opt-in via a setting.
-                            pass
-                        elif cur_sel not in (-1, wx.NOT_FOUND) and cur_sel < self.channel_list.GetCount():
-                            # Reinstate prior selection to keep view position stable.
-                            self.channel_list.SetSelection(cur_sel)
-                    except Exception:
-                        pass
-                wx.CallAfter(update_ui)
-            threading.Thread(target=lambda: epg_search(my_token), daemon=True).start()
-        finally:
+        # Kick off bounded EPG search only for specific channel-name searches.
+        # Do not search programme titles here: a leading-wildcard title query
+        # scans large XMLTV databases and causes the first-run CPU spike.
+        if not self._should_run_epg_search(txt, len(matching_channels)):
+            return
+
+        def epg_search(active_search_token, active_populate_token):
             try:
-                self.channel_list.Thaw()
+                db = EPGDatabase(get_db_path(), readonly=True)
+                try:
+                    if hasattr(db, "conn"):
+                        db.conn.execute("PRAGMA busy_timeout=2000;")
+                        db.conn.execute("PRAGMA read_uncommitted=1;")
+                except Exception:
+                    pass
+                results = db.get_channels_with_show(
+                    txt,
+                    limit=self._SEARCH_EPG_RESULT_LIMIT,
+                    include_title_search=False,
+                )
+                try:
+                    if hasattr(db, "close"):
+                        db.close()
+                    elif hasattr(db, "conn"):
+                        db.conn.close()
+                except Exception:
+                    pass
             except Exception:
-                pass
+                results = []
+            def update_ui():
+                if getattr(self, "_search_token", 0) != active_search_token:
+                    return
+                if getattr(self, "_populate_token", 0) != active_populate_token:
+                    return
+                if txt != self.filter_box.GetValue().strip().lower():
+                    return
+                # Preserve current selection to avoid scroll jumps while appending
+                try:
+                    cur_sel = self.channel_list.GetSelection()
+                    cur_count = self.channel_list.GetCount()
+                except Exception:
+                    cur_sel, cur_count = wx.NOT_FOUND, 0
+                if results:
+                    add_items = []
+                    for r in results:
+                        chan_name = r.get('channel_name') or ""
+                        show_name = r.get('show_title') or ""
+                        chan_lower = chan_name.lower()
+                        show_lower = show_name.lower()
+                        if txt and txt not in chan_lower and txt not in show_lower:
+                            continue
+                        label = f"{r['channel_name']} - {r['show_title']} ({self._fmt_time(r['start'])}–{self._fmt_time(r['end'])})"
+                        self.displayed.append({"type": "epg", "data": r, "label": label})
+                        add_items.append(label)
+                    if add_items:
+                        self.channel_list.set_virtual_count()
+                # Only auto-select the first item if the list was previously empty
+                # and nothing is selected. Do NOT steal focus or jump the list.
+                try:
+                    if cur_count == 0 and cur_sel in (-1, wx.NOT_FOUND) and self.channel_list.GetCount() > 0:
+                        # Leave selection empty to avoid scroll jump; user can choose.
+                        # If desired later, we can make this opt-in via a setting.
+                        pass
+                    elif cur_sel not in (-1, wx.NOT_FOUND) and cur_sel < self.channel_list.GetCount():
+                        # Reinstate prior selection to keep view position stable.
+                        self.channel_list.SetSelection(cur_sel)
+                except Exception:
+                    pass
+            wx.CallAfter(update_ui)
+        threading.Thread(target=lambda: epg_search(search_token, populate_token), daemon=True).start()
 
     def _refresh_group_ui(self):
         self.group_list.Freeze()
@@ -2343,7 +2412,8 @@ class IPTVClient(wx.Frame):
         with self.epg_cache_lock:
             self.epg_cache.clear()
         # Clear match cache as IDs/channels may have changed in the DB
-        self._epg_match_cache.clear()
+        with self._epg_match_lock:
+            self._epg_match_cache.clear()
         if success:
             try:
                 self.config["epg_last_import_epoch"] = int(time.time())
@@ -2391,18 +2461,31 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("EPG is not enabled."), _("EPG Not Available"), wx.OK | wx.ICON_WARNING)
             return
 
-        try:
-            db = EPGDatabase(get_db_path(), readonly=True)
-            programs = db.get_all_now_playing()
-            db.close()
-        except Exception as e:
-            wx.MessageBox(_("Failed to fetch EPG data: {error}").format(error=e), _("Error"), wx.OK | wx.ICON_ERROR)
-            return
+        # Fetching every currently-airing programme can touch a lot of rows on a large EPG,
+        # so do the DB work on a background thread and present the dialog when it's ready.
+        def worker():
+            error = None
+            programs = []
+            try:
+                db = EPGDatabase(get_db_path(), readonly=True)
+                try:
+                    programs = db.get_all_now_playing()
+                finally:
+                    db.close()
+            except Exception as e:
+                error = e
+            wx.CallAfter(self._present_whats_on_now, programs, error)
 
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _present_whats_on_now(self, programs, error):
+        if error is not None:
+            wx.MessageBox(_("Failed to fetch EPG data: {error}").format(error=error), _("Error"), wx.OK | wx.ICON_ERROR)
+            return
         if not programs:
             wx.MessageBox(_("No programs are currently airing, or EPG data has not been imported yet."), _("No Data"), wx.OK | wx.ICON_INFORMATION)
             return
-        
+
         dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording)
         if dlg.ShowModal() == wx.ID_OK:
             selection = dlg.get_selection()
@@ -2861,104 +2944,24 @@ class IPTVClient(wx.Frame):
 
     def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
         self._populate_token += 1
-        token = self._populate_token
 
         self.displayed = []
-        self.channel_list.Freeze()
-        try:
-            self.channel_list.Clear()
-        finally:
-            try:
-                self.channel_list.Thaw()
-            except Exception:
-                pass
+        for ch in source:
+            self.displayed.append({"type": "channel", "data": ch})
+        self.channel_list.set_virtual_count()
 
-        total = len(source)
-        if total == 0:
+        if not source:
             self.epg_display.SetValue("")
             self.url_display.SetValue("")
             self._maybe_autostart_epg_import()
             return
 
-        # For small lists, append in one shot for speed
-        if total <= 1500:
-            names = []
-            for ch in source:
-                self.displayed.append({"type": "channel", "data": ch})
-                names.append(ch.get("name", ""))
-            self.channel_list.Freeze()
-            try:
-                if names:
-                    self.channel_list.AppendItems(names)
-            finally:
-                try:
-                    self.channel_list.Thaw()
-                except Exception:
-                    pass
-            self.channel_list.SetSelection(0)
-            # Only set focus if window is visible (avoid stealing focus from tray)
-            if self.IsShown() and not self.IsIconized():
-                self.channel_list.SetFocus()
-            self.on_highlight()
-            self._maybe_autostart_epg_import()
-            return
-
-        # For large lists, add in batches to keep UI responsive
-        batch = 800 if total > 8000 else 500
-        idx = 0
-
-        # Provide a minimal immediate preview
-        preview_end = min(200, total)
-        preview_names = []
-        for ch in source[:preview_end]:
-            self.displayed.append({"type": "channel", "data": ch})
-            preview_names.append(ch.get("name", ""))
-        self.channel_list.Freeze()
-        try:
-            if preview_names:
-                self.channel_list.AppendItems(preview_names)
-        finally:
-            try:
-                self.channel_list.Thaw()
-            except Exception:
-                pass
         self.channel_list.SetSelection(0)
         # Only set focus if window is visible (avoid stealing focus from tray)
         if self.IsShown() and not self.IsIconized():
             self.channel_list.SetFocus()
         self.on_highlight()
-        idx = preview_end
-        self.epg_display.SetValue(f"Loading channels… {idx}/{total}")
-
-        def add_next_chunk():
-            nonlocal idx
-            if token != self._populate_token:
-                return  # canceled due to group/filter change
-            end = min(idx + batch, total)
-            names = []
-            for ch in source[idx:end]:
-                self.displayed.append({"type": "channel", "data": ch})
-                names.append(ch.get("name", ""))
-            if names:
-                self.channel_list.Freeze()
-                try:
-                    self.channel_list.AppendItems(names)
-                finally:
-                    try:
-                        self.channel_list.Thaw()
-                    except Exception:
-                        pass
-            idx = end
-            if idx >= total or token != self._populate_token:
-                if token == self._populate_token:
-                    self.epg_display.SetValue("")
-                    self._maybe_autostart_epg_import()
-                return
-            # update progress and schedule next chunk
-            self.epg_display.SetValue(f"Loading channels… {idx}/{total}")
-            wx.CallLater(30, add_next_chunk)  # 30ms between chunks keeps UI smooth
-
-        wx.CallLater(30, add_next_chunk)
+        self._maybe_autostart_epg_import()
 
     def _fmt_time(self, s):
         # s: "YYYYMMDDHHMMSS" (UTC)
@@ -3073,13 +3076,14 @@ class IPTVClient(wx.Frame):
             self.url_display.SetValue("")
             r = item["data"]
             url = ""
+            target_norm = canonicalize_name(r.get("channel_name", ""))
             for ch in self.all_channels:
-                if canonicalize_name(ch["name"]) == canonicalize_name(r["channel_name"]):
+                if canonicalize_name(ch.get("name", "")) == target_norm:
                     url = ch.get("url", "")
                     break
             msg = (
-                f"Show: {r['show_title']} | Channel: {r['channel_name']} | "
-                f"Start: {self._fmt_time(r['start'])} | End: {self._fmt_time(r['end'])}"
+                f"Show: {r.get('show_title', '')} | Channel: {r.get('channel_name', '')} | "
+                f"Start: {self._fmt_time(r.get('start', ''))} | End: {self._fmt_time(r.get('end', ''))}"
             )
             if self.epg_importing:
                 msg = msg + "\n\nNote: EPG import in progress — data may still be updating."
@@ -3116,12 +3120,14 @@ class IPTVClient(wx.Frame):
                 db = EPGDatabase(get_db_path(), readonly=True)
                 try:
                     # Check match cache first
-                    cached_id = self._epg_match_cache.get(key)
+                    with self._epg_match_lock:
+                        cached_id = self._epg_match_cache.get(key)
                     if cached_id is None:
-                        # Resolve and cache
+                        # Resolve outside the lock so workers don't serialize on DB I/O
                         cached_id = db.resolve_best_channel_id(channel)
                         # Cache even if None to avoid repeated expensive misses
-                        self._epg_match_cache[key] = cached_id or ""
+                        with self._epg_match_lock:
+                            self._epg_match_cache[key] = cached_id or ""
                     
                     # If we have a valid ID (and it's not the empty string marker for 'no match')
                     if cached_id:
@@ -3343,7 +3349,9 @@ class IPTVClient(wx.Frame):
         except (TypeError, ValueError):
             pass
 
-        duration = max(1, int((end_local - start_local).total_seconds() // 60))
+        # Compute duration from the UTC instants (DST-safe); the offset shifts start and end
+        # equally, so it doesn't affect duration. start_token still uses adjusted local time.
+        duration = max(1, int((end_dt - start_dt).total_seconds() // 60))
         start_token = start_local.strftime("%Y-%m-%d:%H-%M")
         ctype = (channel.get("catchup-type") or channel.get("catchup") or "xc").lower()
         if ctype in {"", "xc", "default", "catchup"}:
@@ -3764,7 +3772,7 @@ class CastDiscoveryDialog(wx.Dialog):
 
     def _on_select(self, event):
         sel = self.listbox.GetSelection()
-        if sel != wx.NOT_FOUND:
+        if sel != wx.NOT_FOUND and 0 <= sel < len(self.devices):
             self.ok_btn.Enable()
             dev = self.devices[sel]
             # Enable Pair button for AirPlay devices
@@ -4216,6 +4224,72 @@ class WhatsOnNowDialog(wx.Dialog):
         if idx == -1 or idx >= len(self.filtered_programs):
             return None
         return self.filtered_programs[idx]
+
+
+class _VirtualChannelList(wx.ListCtrl):
+    """Virtual, single-column list for the main channel / search-results list.
+
+    Backed by the frame's ``displayed`` model (a list of {"type","data"[, "label"]}
+    entries); only visible rows are realized, so 50k-300k entries stay responsive for the
+    UI and NVDA. Exposes a small wx.ListBox-compatible API (GetSelection / SetSelection /
+    GetCount / Clear) so the existing selection code did not need to change when the control
+    was switched from wx.ListBox to a virtual wx.ListCtrl. This same virtual-ListCtrl pattern
+    is already used (and screen-reader tested) by _VirtualWhatsOnList below.
+    """
+
+    def __init__(self, parent, frame):
+        super().__init__(
+            parent,
+            style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL,
+            name="Channels",
+        )
+        self._frame = frame
+        self.InsertColumn(0, "")
+        self.SetItemCount(0)
+        self.Bind(wx.EVT_SIZE, self._on_size)
+
+    def _on_size(self, event):
+        # Keep the single column as wide as the control so long names aren't clipped.
+        width = self.GetClientSize().width
+        if width > 0:
+            self.SetColumnWidth(0, width)
+        event.Skip()
+
+    def OnGetItemText(self, item, column):
+        disp = self._frame.displayed
+        if 0 <= item < len(disp):
+            entry = disp[item]
+            label = entry.get("label")
+            if label is not None:
+                return label
+            data = entry.get("data") or {}
+            return data.get("name", "")
+        return ""
+
+    def set_virtual_count(self):
+        """Resync the control to the current length of frame.displayed."""
+        self.SetItemCount(len(self._frame.displayed))
+        width = self.GetClientSize().width
+        if width > 0:
+            self.SetColumnWidth(0, width)
+
+    # --- wx.ListBox-compatible shims so existing call sites keep working ---
+    def GetSelection(self):
+        return self.GetFirstSelected()
+
+    def SetSelection(self, index):
+        if index is None or index < 0:
+            return
+        if index < self.GetItemCount():
+            self.Select(index)
+            self.Focus(index)
+            self.EnsureVisible(index)
+
+    def GetCount(self):
+        return self.GetItemCount()
+
+    def Clear(self):
+        self.SetItemCount(0)
 
 
 class _VirtualWhatsOnList(wx.ListCtrl):

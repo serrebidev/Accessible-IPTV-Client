@@ -248,8 +248,15 @@ NOISE_WORDS = [
     'sd', 'hd', 'fhd', 'uhd', '4k', '8k', 'plus', 'live', 'network'
 ]
 
-def group_synonyms():
-    return {
+_GROUP_SYNONYMS_CACHE: Optional[Dict[str, List[str]]] = None
+
+
+def group_synonyms() -> Dict[str, List[str]]:
+    global _GROUP_SYNONYMS_CACHE
+    cache = _GROUP_SYNONYMS_CACHE
+    if cache is not None:
+        return cache
+    cache = {
         "us": ["us","usa","u.s.","u.s","us.","united states","united states of america","america"],
         "ca": ["ca","can","canada","car"],
         "mx": ["mx","mex","mexico","mÃ©xico"],
@@ -343,47 +350,81 @@ def group_synonyms():
         "ci": ["ci","civ","cÃ´te dâ€™ivoire","ivory coast"],
         "sn": ["sn","sen","senegal"],
     }
+    _GROUP_SYNONYMS_CACHE = cache
+    return cache
+
+
+# Precompiled, cached regex structures. canonicalize_name / strip_noise_words / extract_group
+# run once per channel during EPG import and once per channel in every UI matching scan, so
+# rebuilding+recompiling these patterns per call was a major cost on large playlists. These
+# compile once and produce results identical to the previous per-call construction.
+_CANON_STRIP_EDGE_RE = re.compile(
+    r'^(?:' + '|'.join(STRIP_TAGS) + r')\b[\s\-:()\[\]]*|[\s\-:()\[\]]*\b(?:' + '|'.join(STRIP_TAGS) + r')$',
+    re.I,
+)
+_CANON_STRIP_WORD_RE = re.compile(r'\b(?:' + '|'.join(STRIP_TAGS) + r')\b', re.I)
+_CANON_EMPTY_BRACKETS_RE = re.compile(r'\(\s*\)|\[\s*\]')
+_CANON_WS_RE = re.compile(r'\s+')
+_NOISE_WORDS_RE = re.compile(r'\b(' + '|'.join(re.escape(w) for w in NOISE_WORDS) + r')\b', re.I)
+_NOISE_SEP_RE = re.compile(r'[\s\-_]+')
+_LEADING_CODE_RE = re.compile(r'([a-z]{2,3})\b')
+_PAREN_CODE_RE = re.compile(r'\(([a-z]{2,3})\)')
+
+_GROUP_SYNONYM_PATTERNS_CACHE = None
+
+
+def _group_synonym_patterns():
+    """[(norm_tag, compiled \\b(?:variant|...)\\b regex)] in group_synonyms() order.
+
+    Equivalent to the previous per-variant loop: returns the first tag whose any variant
+    matches, and variant order within a tag does not affect which tag is returned.
+    """
+    global _GROUP_SYNONYM_PATTERNS_CACHE
+    if _GROUP_SYNONYM_PATTERNS_CACHE is None:
+        _GROUP_SYNONYM_PATTERNS_CACHE = [
+            (tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in variants) + r')\b'))
+            for tag, variants in group_synonyms().items()
+        ]
+    return _GROUP_SYNONYM_PATTERNS_CACHE
+
 
 def canonicalize_name(name: str) -> str:
     name = (name or "").strip().lower()
-    tags = STRIP_TAGS
-    pattern = r'^(?:' + '|'.join(tags) + r')\b[\s\-:()\[\]]*|[\s\-:()\[\]]*\b(?:' + '|'.join(tags) + r')$'
     while True:
-        newname = re.sub(pattern, '', name, flags=re.I).strip()
+        newname = _CANON_STRIP_EDGE_RE.sub('', name).strip()
         if newname == name:
             break
         name = newname
-    name = re.sub(r'\b(?:' + '|'.join(tags) + r')\b', '', name, flags=re.I)
-    name = re.sub(r'\(\s*\)|\[\s*\]', '', name)
-    name = re.sub(r'\s+', ' ', name)
+    name = _CANON_STRIP_WORD_RE.sub('', name)
+    name = _CANON_EMPTY_BRACKETS_RE.sub('', name)
+    name = _CANON_WS_RE.sub(' ', name)
     return name.strip()
 
 def strip_noise_words(text: str) -> str:
     if not text:
         return ""
     text = text.lower()
-    pattern = r'\b(' + '|'.join(re.escape(w) for w in NOISE_WORDS) + r')\b'
-    text = re.sub(pattern, '', text, flags=re.I)
-    text = re.sub(r'[\s\-_]+', ' ', text)
+    text = _NOISE_WORDS_RE.sub('', text)
+    text = _NOISE_SEP_RE.sub(' ', text)
     return text.strip()
 
 def extract_group(title: str) -> str:
     if not title:
         return ''
     title = title.lower()
-    for norm_tag, variants in group_synonyms().items():
-        for v in variants:
-            if re.search(r'\b' + re.escape(v) + r'\b', title):
-                return norm_tag
-    m = re.match(r'([a-z]{2,3})\b', title)
+    for norm_tag, rx in _group_synonym_patterns():
+        if rx.search(title):
+            return norm_tag
+    syn = group_synonyms()
+    m = _LEADING_CODE_RE.match(title)
     if m:
         code = m.group(1)
-        if code in group_synonyms():
+        if code in syn:
             return code
-    m = re.search(r'\(([a-z]{2,3})\)', title)
+    m = _PAREN_CODE_RE.search(title)
     if m:
         code = m.group(1)
-        if code in group_synonyms():
+        if code in syn:
             return code
     return ''
 
@@ -864,8 +905,12 @@ def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
             dt_str, offset_str = "".join(m.groups()[:6]), m.group(7)
             dt = datetime.datetime.strptime(dt_str, "%Y%m%d%H%M%S")
             if offset_str:
-                offset_val = int(offset_str)
-                tz = datetime.timezone(datetime.timedelta(hours=offset_val//100, minutes=offset_val%100))
+                # Parse sign and magnitude separately; floor-division on a negative
+                # combined value mishandles half-hour zones (e.g. -0330 -> -3h50m).
+                sign = -1 if offset_str[0] == '-' else 1
+                off_hours = int(offset_str[1:3])
+                off_minutes = int(offset_str[3:5])
+                tz = datetime.timezone(sign * datetime.timedelta(hours=off_hours, minutes=off_minutes))
                 dt = dt.replace(tzinfo=tz)
             else:
                  dt = dt.replace(tzinfo=datetime.timezone.utc)
@@ -1044,10 +1089,10 @@ class EPGDatabase:
                     self.conn.execute(p)
                 except Exception:
                     pass
-        self._create_tables()
-        # Opportunistic repair: if we can write, reconcile any region mismatches
-        # caused by ambiguous display names (e.g., "CA" for California vs Canada).
         if not self.readonly:
+            self._create_tables()
+            # Opportunistic repair: if we can write, reconcile any region mismatches
+            # caused by ambiguous display names (e.g., "CA" for California vs Canada).
             try:
                 self._repair_channel_regions_prefer_id()
                 self._repair_norm_names()
@@ -1076,11 +1121,18 @@ class EPGDatabase:
             )
         """)
         # Indexes crucial for fast lookups
-        c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start ON programmes (channel_id, start)")
+        # idx_programmes_channel_start_end is a left-prefix superset of (channel_id, start),
+        # so the standalone (channel_id, start) index is redundant — drop it to speed bulk
+        # inserts. The old (start, end) index and the never-used title index are replaced.
+        c.execute("DROP INDEX IF EXISTS idx_programmes_channel_start")
+        c.execute("DROP INDEX IF EXISTS idx_programmes_start_end")
+        c.execute("DROP INDEX IF EXISTS idx_programmes_title")
         c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_end ON programmes (channel_id, end)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start_end ON programmes (channel_id, start, end)")
-        c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_title ON programmes (title)")
+        # Covering index for "what's on now": range-scan start, filter end, no row lookups.
+        c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_start_cover ON programmes (start, end, channel_id, title)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_channels_norm ON channels (norm_name)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_channels_group ON channels (group_tag)")
         self.conn.commit()
 
     def close(self):
@@ -1660,21 +1712,82 @@ class EPGDatabase:
             return None
         return self.get_now_next_by_id(cid)
     
-    def get_channels_with_show(self, query: str) -> List[Dict[str, str]]:
-        q = "%" + canonicalize_name(strip_noise_words(query)) + "%"
+    def get_channels_with_show(
+        self,
+        query: str,
+        *,
+        limit: int = 100,
+        include_title_search: bool = True,
+        title_hours: int = 48,
+    ) -> List[Dict[str, str]]:
+        limit = max(1, int(limit or 100))
+        raw_query = (query or "").strip()
+        normalized_query = canonicalize_name(strip_noise_words(raw_query))
+        if not normalized_query:
+            return []
+        q = "%" + normalized_query + "%"
+        title_q = "%" + raw_query.lower() + "%"
         c = self.conn.cursor()
         now = self._utcnow().strftime("%Y%m%d%H%M%S")
-        rows = c.execute("""
-            SELECT p.channel_id, p.title, p.start, p.end, c.display_name
-            FROM programmes p
-            JOIN channels c ON c.id = p.channel_id
-            WHERE (LOWER(c.norm_name) LIKE LOWER(?) OR LOWER(p.title) LIKE LOWER(?))
-              AND p.end >= ?
-            ORDER BY p.start ASC
-            LIMIT 200
-        """, (q, q, now)).fetchall()
+        rows = []
+
+        channel_rows = c.execute(
+            """
+            SELECT id
+            FROM channels
+            WHERE norm_name LIKE ?
+            LIMIT ?
+            """,
+            (q, limit),
+        ).fetchall()
+        channel_ids = [row[0] for row in channel_rows if row and row[0]]
+        if channel_ids:
+            placeholders = ",".join("?" for _ in channel_ids)
+            rows.extend(
+                c.execute(
+                    f"""
+                    SELECT p.channel_id, p.title, p.start, p.end, c.display_name
+                    FROM programmes p
+                    JOIN channels c ON c.id = p.channel_id
+                    WHERE p.channel_id IN ({placeholders})
+                      AND p.end >= ?
+                    ORDER BY p.start ASC
+                    LIMIT ?
+                    """,
+                    (*channel_ids, now, limit),
+                ).fetchall()
+            )
+
+        if include_title_search and len(rows) < limit:
+            try:
+                horizon = (
+                    self._utcnow() + datetime.timedelta(hours=max(1, int(title_hours or 48)))
+                ).strftime("%Y%m%d%H%M%S")
+            except Exception:
+                horizon = now
+            rows.extend(
+                c.execute(
+                    """
+                    SELECT p.channel_id, p.title, p.start, p.end, c.display_name
+                    FROM programmes p
+                    JOIN channels c ON c.id = p.channel_id
+                    WHERE LOWER(p.title) LIKE ?
+                      AND p.end >= ?
+                      AND p.start <= ?
+                    ORDER BY p.start ASC
+                    LIMIT ?
+                    """,
+                    (title_q, now, horizon, max(1, limit - len(rows))),
+                ).fetchall()
+            )
+
         result = []
+        seen = set()
         for channel_id, show_title, start, end, channel_name in rows:
+            key = (channel_id, show_title, start, end)
+            if key in seen:
+                continue
+            seen.add(key)
             result.append({
                 "channel_id": channel_id,
                 "show_title": show_title,
@@ -1682,6 +1795,8 @@ class EPGDatabase:
                 "end": end,
                 "channel_name": channel_name
             })
+            if len(result) >= limit:
+                break
         now_int = int(now)
         on_now = [r for r in result if int(r["start"]) <= now_int < int(r["end"])]
         future = [r for r in result if int(r["start"]) > now_int]
@@ -1692,6 +1807,8 @@ class EPGDatabase:
             if key not in added:
                 added.add(key)
                 final.append(r)
+                if len(final) >= limit:
+                    break
         return final
 
     def get_all_now_playing(self) -> List[Dict[str, str]]:
@@ -1703,15 +1820,18 @@ class EPGDatabase:
         c = self.conn.cursor()
         now = self._utcnow()
         now_str = now.strftime("%Y%m%d%H%M%S")
-        
+        # A programme airing *now* cannot have started more than ~a day ago; this floor lets
+        # SQLite range-scan idx_programmes_start_cover instead of scanning all past programmes.
+        floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
+
         # Get all programs where start <= now < end
         rows = c.execute("""
             SELECT p.title, p.start, p.end, c.display_name, c.id
             FROM programmes p
             JOIN channels c ON c.id = p.channel_id
-            WHERE p.start <= ? AND p.end > ?
+            WHERE p.start >= ? AND p.start <= ? AND p.end > ?
             ORDER BY p.title COLLATE NOCASE ASC
-        """, (now_str, now_str)).fetchall()
+        """, (floor_str, now_str, now_str)).fetchall()
         
         result = []
         seen = set()  # Avoid duplicates (same title on same channel)
@@ -1851,7 +1971,23 @@ class EPGDatabase:
                             except Exception:
                                 pass
                             return _http_download_gz_with_resume(src)
-                        return gzip.GzipFile(fileobj=resp) if is_gz else resp
+                        if is_gz:
+                            gz = gzip.GzipFile(fileobj=resp)
+                            # gzip.GzipFile(fileobj=...) does NOT close the underlying HTTP
+                            # response when the GzipFile is closed, leaking the connection on
+                            # every error/retry. Chain the closes together.
+                            _gz_close = gz.close
+                            def _close_both(_gz_close=_gz_close, _resp=resp):
+                                try:
+                                    _gz_close()
+                                finally:
+                                    try:
+                                        _resp.close()
+                                    except Exception:
+                                        pass
+                            gz.close = _close_both
+                            return gz
+                        return resp
                     except Exception as e:
                         last_err = e
                         # brief backoff on transient HTTP/server connect issues
