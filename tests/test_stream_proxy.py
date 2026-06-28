@@ -19,6 +19,25 @@ from stream_proxy import (
 )
 
 
+def test_global_proxy_is_created_lazily():
+    old_proxy = stream_proxy_module._PROXY
+    try:
+        stream_proxy_module._PROXY = None
+
+        proxy = stream_proxy_module.get_proxy()
+
+        assert isinstance(proxy, StreamProxy)
+        assert stream_proxy_module._PROXY is proxy
+        assert stream_proxy_module.get_proxy() is proxy
+    finally:
+        if stream_proxy_module._PROXY is not None:
+            try:
+                stream_proxy_module._PROXY.stop()
+            except Exception:
+                pass
+        stream_proxy_module._PROXY = old_proxy
+
+
 def test_normalize_request_headers_expands_extra_headers():
     headers = normalize_request_headers(
         {

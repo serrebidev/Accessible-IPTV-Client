@@ -140,8 +140,6 @@ class ChromecastCaster(BaseCaster):
         self._cast = None
         self._browser = None
         self._devices: Dict[str, Any] = {}
-        # Ensure proxy is ready
-        get_proxy().start()
     
     async def discover(self, timeout: float = 5.0) -> List[CastDevice]:
         """Discover Chromecast devices."""
@@ -250,15 +248,17 @@ class ChromecastCaster(BaseCaster):
             
             # 1. Best-effort MIME detection (probes if URL is opaque)
             content_type_actual = _detect_mime_type(url, content_type)
+            proxy = get_proxy()
+            proxy.start()
             
             # 2. Selection of optimal proxy path.
             # Video uses the local HLS converter; radio uses the buffered audio proxy.
             if content_type_actual.startswith("audio/"):
-                proxied_url = get_proxy().get_audio_url(url, headers)
+                proxied_url = proxy.get_audio_url(url, headers)
                 content_type_cast = "audio/mpeg"
                 LOG.info(f"Casting Radio to Chromecast via audio proxy: {proxied_url} -> {url}")
             else:
-                proxied_url = get_proxy().get_transcoded_url(
+                proxied_url = proxy.get_transcoded_url(
                     url,
                     headers,
                     transcode_profile="chromecast_h264",
@@ -610,8 +610,6 @@ class AirPlayCaster(BaseCaster):
         self._atv = None
         self._audio_task: Optional[asyncio.Task] = None
         self._has_video_protocol = False
-        # Ensure proxy is ready so we can hand off proxied URLs to pyatv.
-        get_proxy().start()
         
     async def discover(self, timeout: float = 5.0) -> List[CastDevice]:
         """Discover AirPlay devices."""
@@ -732,17 +730,19 @@ class AirPlayCaster(BaseCaster):
 
         content_type_actual = _detect_mime_type(url, content_type)
         is_audio = content_type_actual.startswith("audio/")
+        proxy = get_proxy()
+        proxy.start()
 
         # Audio content (radio) goes straight to RAOP — receivers without a
         # video AirPlay service can still play it.
         if is_audio:
-            audio_url = get_proxy().get_audio_url(url, headers)
+            audio_url = proxy.get_audio_url(url, headers)
             LOG.info("Casting Audio to AirPlay via RAOP: %s -> %s", audio_url, url)
             await self._start_audio_stream(audio_url, title)
             return
 
         # Video content: remux to a Chromecast-safe HLS profile that Apple TV also accepts.
-        proxied_url = get_proxy().get_transcoded_url(
+        proxied_url = proxy.get_transcoded_url(
             url, headers, transcode_profile="chromecast_h264"
         )
         LOG.info("Casting Video to AirPlay via HLS proxy: %s -> %s", proxied_url, url)
@@ -764,7 +764,7 @@ class AirPlayCaster(BaseCaster):
             "AirPlay receiver does not support video; falling back to RAOP audio"
         )
         try:
-            audio_url = get_proxy().get_audio_url(url, headers)
+            audio_url = proxy.get_audio_url(url, headers)
             await self._start_audio_stream(audio_url, title)
         except Exception as audio_err:
             raise PlaybackError(

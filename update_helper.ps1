@@ -23,13 +23,16 @@ function Write-Log {
 
 Write-Log "Updater started. Waiting for PID $ParentPid."
 
-$deadline = (Get-Date).AddMinutes(5)
+$deadline = (Get-Date).AddSeconds(30)
 while ((Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 500
 }
 
-if (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) {
-    Write-Log "Process $ParentPid did not exit within timeout."
+$parentProcess = Get-Process -Id $ParentPid -ErrorAction SilentlyContinue
+if ($parentProcess) {
+    Write-Log "Process $ParentPid did not exit within timeout; terminating it."
+    Stop-Process -Id $ParentPid -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 1000
 }
 
 if (-not (Test-Path -LiteralPath $StagingDir)) {
@@ -40,7 +43,9 @@ if (-not (Test-Path -LiteralPath $StagingDir)) {
 # Kill any processes running from the install directory (Zombies)
 Write-Log "Scanning for processes locking $InstallDir..."
 try {
-    $zombies = Get-Process | Where-Object { 
+    $targetProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
+    $candidateProcesses = Get-Process -Name $targetProcessName -ErrorAction SilentlyContinue
+    $zombies = $candidateProcesses | Where-Object {
         try { 
             $_.MainModule.FileName.StartsWith($InstallDir, [System.StringComparison]::OrdinalIgnoreCase) 
         } catch { 

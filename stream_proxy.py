@@ -1123,5 +1123,14 @@ class StreamProxy:
             subprocess.run(["netsh", "advfirewall", "firewall", "add", "rule", f"name={rule_name}", "dir=in", "action=allow", "protocol=TCP", f"localport={self.port}", "profile=private,domain"], capture_output=True, creationflags=flags)
         except: pass
 
-_PROXY = StreamProxy()
-def get_proxy(): return _PROXY
+_PROXY = None
+_PROXY_LOCK = threading.Lock()
+
+
+def get_proxy():
+    global _PROXY
+    if _PROXY is None:
+        with _PROXY_LOCK:
+            if _PROXY is None:
+                _PROXY = StreamProxy()
+    return _PROXY

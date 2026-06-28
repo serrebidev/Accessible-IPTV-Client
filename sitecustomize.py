@@ -1,45 +1,62 @@
 """Runtime shim to keep buffering logic canonical.
 
-This module is auto-imported by Python if present. The internal player
-behavior now lives solely in ``internal_player.py``; we deliberately avoid
-maintaining a second, divergent implementation here.  Symbols are re-exported
-for compatibility so other code importing ``sitecustomize`` still works.
+This module is auto-imported by Python if present. The internal player behavior
+now lives solely in ``internal_player.py``; this shim lazily re-exports symbols
+for compatibility without importing wx/VLC during interpreter startup.
 """
 
+import importlib
 import logging
 
 LOG = logging.getLogger(__name__)
 
-try:  # Best-effort: some headless tools may not have full dependencies.
-    import internal_player as _ip  # type: ignore
-except Exception as exc:  # pragma: no cover - import guard
-    LOG.debug("sitecustomize could not import internal_player: %s", exc)
-    _ip = None
-    _IMPORT_ERROR = exc
-else:
-    _IMPORT_ERROR = None
+_IP = None
+_IMPORT_ATTEMPTED = False
+_IMPORT_ERROR = None
 
-if _ip is not None:
-    InternalPlayerFrame = _ip.InternalPlayerFrame  # type: ignore[attr-defined]
-    InternalPlayerUnavailableError = _ip.InternalPlayerUnavailableError  # type: ignore[attr-defined]
-    _prepare_vlc_runtime = getattr(_ip, "_prepare_vlc_runtime", None)
-    _VLC_IMPORT_ERROR = getattr(_ip, "_VLC_IMPORT_ERROR", None)
-    vlc = getattr(_ip, "vlc", None)
-    exported = list(getattr(_ip, "__all__", []))
-    if "InternalPlayerFrame" not in exported:
-        exported.append("InternalPlayerFrame")
-    __all__ = exported
-else:
-    class InternalPlayerUnavailableError(RuntimeError):
-        """Fallback error used when the internal player cannot be loaded."""
+__all__ = [
+    "InternalPlayerFrame",
+    "InternalPlayerUnavailableError",
+    "_prepare_vlc_runtime",
+    "_VLC_IMPORT_ERROR",
+    "vlc",
+]
 
-    InternalPlayerFrame = None  # type: ignore[assignment]
-    _prepare_vlc_runtime = None
-    _VLC_IMPORT_ERROR = _IMPORT_ERROR
-    vlc = None
-    __all__ = [
-        "InternalPlayerFrame",
-        "InternalPlayerUnavailableError",
-        "_VLC_IMPORT_ERROR",
-        "vlc",
-    ]
+
+class InternalPlayerUnavailableError(RuntimeError):
+    """Fallback error used when the internal player cannot be loaded."""
+
+
+def _load_internal_player():
+    global _IP
+    global _IMPORT_ATTEMPTED
+    global _IMPORT_ERROR
+
+    if not _IMPORT_ATTEMPTED:
+        _IMPORT_ATTEMPTED = True
+        try:
+            _IP = importlib.import_module("internal_player")
+        except Exception as exc:  # pragma: no cover - import guard
+            LOG.debug("sitecustomize could not import internal_player: %s", exc)
+            _IMPORT_ERROR = exc
+            _IP = None
+    return _IP
+
+
+def __getattr__(name):
+    if name == "_VLC_IMPORT_ERROR":
+        module = _load_internal_player()
+        if module is not None:
+            return getattr(module, "_VLC_IMPORT_ERROR", None)
+        return _IMPORT_ERROR
+
+    if name in __all__:
+        module = _load_internal_player()
+        if module is None:
+            if name == "InternalPlayerUnavailableError":
+                return InternalPlayerUnavailableError
+            if name in {"InternalPlayerFrame", "_prepare_vlc_runtime", "vlc"}:
+                return None
+        return getattr(module, name)
+
+    raise AttributeError(name)

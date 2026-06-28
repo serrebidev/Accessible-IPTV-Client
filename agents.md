@@ -86,6 +86,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 - `wx.LogError` uses printf-style formatting. Escape literal percent signs before passing user/provider text into it.
 - `sitecustomize.py` must remain a shim. The internal player implementation belongs in `internal_player.py` only.
+- Startup must stay lazy: do not run FFmpeg probes/installs, import casting stacks (`pychromecast`, `async_upnp_client`, `pyatv`), start the stream proxy/firewall rule, or import the built-in VLC player during `main.py` import or `IPTVClient.__init__`. Initialize those only when recording, casting, or built-in playback is actually requested.
 - EPG auto-import should be based on usable joined EPG data and source freshness, not just the presence or mtime of `epg.db`. `_ensure_db_tuned()` must not create an empty placeholder database.
 - EPG matching must account for country-specific channel aliases and suffixes, especially AU/CA/IE/UK/US sources. IPTV-org style XMLTV IDs with `@` suffixes need expansion for better channel matching.
 - XMLTV downloads can resume, but HTTP 416 means the local partial file is already complete or invalid for that source; the downloader has fallback logic for this and should keep it.
@@ -110,6 +111,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Audio/radio proxy FFmpeg processes must terminate when the client disconnects. Stale transcoders can keep consuming CPU and cause Chromecast video buffering.
 - The stream proxy's Windows Firewall rule is best effort. Failure to run `netsh` should log a warning and not block casting.
 - Auto-update is for packaged Windows builds. The helper script uses PowerShell parameter names (`-ParentPid`, `-InstallDir`, `-StagingDir`, `-BackupDir`, `-ExeName`), not GNU-style flags.
+- Automatic update checks should be throttled and use short metadata timeouts; interactive update checks/downloads may use longer waits. Do not schedule passive GitHub checks before the initial playlist load has yielded UI.
 - Authenticode verification must use Windows PowerShell 5.1 with a clean environment because PowerShell Core module paths can break `Get-AuthenticodeSignature` from Python subprocesses.
 - Update installs preserve a user's existing `iptvclient.conf` from backup when present. This is different from bundling a repo config file in a release, which must not happen.
 - PyInstaller hidden imports for chardet mypyc modules are required for clean builds in the current environment.

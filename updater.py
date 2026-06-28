@@ -100,11 +100,11 @@ def _extract_manifest_thumbprints(payload: dict) -> Tuple[str, ...]:
     return ()
 
 
-def fetch_latest_release(owner: str, repo: str) -> dict:
+def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dict:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     req = _build_request(url)
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             payload = resp.read().decode("utf-8")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
@@ -115,7 +115,12 @@ def fetch_latest_release(owner: str, repo: str) -> dict:
         raise UpdateError(_("Unable to reach GitHub. Please check your connection.")) from exc
 
 
-def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
+def fetch_update_manifest(
+    release: dict,
+    manifest_name: str,
+    *,
+    timeout: float = 20.0,
+) -> UpdateManifest:
     assets = release.get("assets") or []
     manifest_asset = None
     for asset in assets:
@@ -130,7 +135,7 @@ def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
     if not url:
         raise UpdateError(_("Update manifest download URL is missing."))
 
-    data = download_json(url)
+    data = download_json(url, timeout=timeout)
     LOG.debug("fetch_update_manifest: raw data=%s", data)
     
     env_thumbs = list(_env_thumbprints())
@@ -156,10 +161,10 @@ def fetch_update_manifest(release: dict, manifest_name: str) -> UpdateManifest:
         raise UpdateError(_("Update manifest is missing required fields.")) from exc
 
 
-def download_json(url: str) -> dict:
+def download_json(url: str, *, timeout: float = 20.0) -> dict:
     req = _build_request(url)
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             payload = resp.read().decode("utf-8")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:

@@ -42,29 +42,51 @@ from providers import (
     StalkerPortalClient, StalkerPortalConfig,
     ProviderError, generate_provider_id
 )
-from casting import CastingManager, CastDevice
 from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
-from stream_proxy import get_ffmpeg_path
 import recorder
 from recorder import RECORDING_FORMATS
 import dvr
 
-try:
-    from internal_player import (
-        InternalPlayerFrame,
-        InternalPlayerUnavailableError,
-        _VLC_IMPORT_ERROR,
-    )
-except Exception as _internal_player_import_error:  # pragma: no cover - import guard
-    InternalPlayerFrame = None  # type: ignore[assignment]
-    _VLC_IMPORT_ERROR = _internal_player_import_error  # type: ignore[assignment]
+_INTERNAL_PLAYER_FRAME_CLASS = None
+_INTERNAL_PLAYER_IMPORT_ATTEMPTED = False
+_INTERNAL_PLAYER_IMPORT_ERROR = None
 
-    class InternalPlayerUnavailableError(RuntimeError):
-        """Fallback error when internal player cannot load."""
+
+class InternalPlayerUnavailableError(RuntimeError):
+    """Raised when the built-in VLC player cannot be loaded."""
+
+
+def _load_internal_player_frame_class():
+    global _INTERNAL_PLAYER_FRAME_CLASS
+    global _INTERNAL_PLAYER_IMPORT_ATTEMPTED
+    global _INTERNAL_PLAYER_IMPORT_ERROR
+
+    if not _INTERNAL_PLAYER_IMPORT_ATTEMPTED:
+        _INTERNAL_PLAYER_IMPORT_ATTEMPTED = True
+        try:
+            from internal_player import (  # type: ignore
+                InternalPlayerFrame as frame_class,
+                _VLC_IMPORT_ERROR as vlc_import_error,
+            )
+        except Exception as exc:  # pragma: no cover - import guard
+            _INTERNAL_PLAYER_IMPORT_ERROR = exc
+            _INTERNAL_PLAYER_FRAME_CLASS = None
+        else:
+            _INTERNAL_PLAYER_FRAME_CLASS = frame_class
+            _INTERNAL_PLAYER_IMPORT_ERROR = vlc_import_error
+
+    if _INTERNAL_PLAYER_FRAME_CLASS is None:
+        detail = _INTERNAL_PLAYER_IMPORT_ERROR or _("Built-in player is unavailable.")
+        raise InternalPlayerUnavailableError(str(detail))
+    return _INTERNAL_PLAYER_FRAME_CLASS
 
 
 _M3U_ATTR_RE = re.compile(r'([A-Za-z0-9_\-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^",\s]+))')
+_AUTO_UPDATE_CHECK_INTERVAL_SECONDS = 12 * 60 * 60
+_AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
+_AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
+_MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
 
 def set_linux_env():
     if platform.system() != "Linux":
@@ -124,6 +146,7 @@ def set_linux_env():
 
 def check_ffmpeg() -> bool:
     try:
+        from stream_proxy import get_ffmpeg_path
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
         # Use the resolved ffmpeg path (bundled or system)
         ffmpeg_bin = get_ffmpeg_path()
@@ -200,14 +223,6 @@ def install_ffmpeg():
             raise RuntimeError(f"Unsupported Linux distribution: {distro}. Please install ffmpeg manually.")
     else:
         raise RuntimeError(f"Unsupported OS: {system}. Please install ffmpeg manually.")
-
-set_linux_env()
-
-if not check_ffmpeg():
-    try:
-        install_ffmpeg()
-    except Exception as e:
-        print(f"Warning: ffmpeg not found and installation failed: {e}")
 
 class TrayIcon(wx.adv.TaskBarIcon):
     TBMENU_RESTORE = wx.NewIdRef()
@@ -347,17 +362,18 @@ class IPTVClient(wx.Frame):
         self._tray_ready_timer: Optional[wx.CallLater] = None
         self.provider_clients: Dict[str, object] = {}
         self.provider_epg_sources: List[str] = []
-        self._internal_player_frame: Optional[InternalPlayerFrame] = None
+        self._internal_player_frame: Optional[object] = None
         self._update_check_inflight = False
         self._update_install_pending = False
+        self._auto_update_check_scheduled = False
         self._playlist_load_token = 0
         self._pending_epg_autostart = False
         self._pending_epg_autostart_token = 0
         self._epg_autostart_timer: Optional[wx.CallLater] = None
 
-        # Casting Manager
-        self.caster = CastingManager()
-        self.caster.start()
+        # Casting loads several network/media stacks and may start the local
+        # stream proxy. Keep it lazy so the first window is not delayed.
+        self.caster = None
 
         self.player_launcher = ExternalPlayerLauncher()
 
@@ -400,11 +416,48 @@ class IPTVClient(wx.Frame):
         # Defer all loading. This call starts ONLY the playlist loading thread.
         wx.CallAfter(self.start_playlist_load)
 
-        if self.auto_check_updates:
-            wx.CallLater(3000, lambda: self._start_update_check(interactive=False))
-        
         self.Bind(wx.EVT_ICONIZE, self.on_minimize)
         self.Bind(wx.EVT_CLOSE, self.on_close)
+
+    def _ensure_caster(self):
+        caster = getattr(self, "caster", None)
+        if caster is None:
+            from casting import CastingManager
+
+            caster = CastingManager()
+            caster.start()
+            self.caster = caster
+        return caster
+
+    def _schedule_auto_update_check(self):
+        if getattr(self, "_auto_update_check_scheduled", False):
+            return
+        if not self.auto_check_updates:
+            return
+        if not self._should_run_auto_update_check():
+            return
+        self._auto_update_check_scheduled = True
+        wx.CallLater(
+            _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS,
+            lambda: self._start_update_check(interactive=False),
+        )
+
+    def _should_run_auto_update_check(self) -> bool:
+        try:
+            last_check = float(self.config.get("update_last_auto_check_epoch", 0) or 0)
+        except Exception:
+            last_check = 0.0
+        now = time.time()
+        if last_check <= 0 or last_check > now + 300:
+            return True
+        return (now - last_check) >= _AUTO_UPDATE_CHECK_INTERVAL_SECONDS
+
+    def _record_auto_update_check_attempt(self):
+        try:
+            self.config["update_last_auto_check_epoch"] = int(time.time())
+            save_config(self.config)
+        except Exception:
+            pass
 
     def _channel_is_epg_exempt(self, channel: Dict[str, str]) -> bool:
         """Detect channels that typically have no EPG (e.g., 24/7 loops).
@@ -769,6 +822,7 @@ class IPTVClient(wx.Frame):
             self._cleanup_cache_and_channels(valid_caches)
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
+            self._schedule_auto_update_check()
 
         wx.CallAfter(finish_playlist_load_and_start_background_tasks)
 
@@ -1621,7 +1675,16 @@ class IPTVClient(wx.Frame):
             if not getattr(sys, "frozen", False):
                 raise updater.UpdateError(_("Updates are only available in the packaged build."))
 
-            release = updater.fetch_latest_release(app_meta.GITHUB_OWNER, app_meta.GITHUB_REPO)
+            timeout = (
+                _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS
+                if interactive
+                else _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS
+            )
+            release = updater.fetch_latest_release(
+                app_meta.GITHUB_OWNER,
+                app_meta.GITHUB_REPO,
+                timeout=timeout,
+            )
             tag = release.get("tag_name") or ""
             latest_version = updater.normalize_version_tag(tag)
             if not latest_version:
@@ -1650,6 +1713,8 @@ class IPTVClient(wx.Frame):
                     wx.OK | wx.ICON_ERROR,
                 )
         finally:
+            if not interactive:
+                self._record_auto_update_check_attempt()
             self._update_check_inflight = False
 
     def _prompt_update(self, latest_version: str, current_version: str, notes: str, release: Dict):
@@ -1676,6 +1741,7 @@ class IPTVClient(wx.Frame):
             manifest = updater.fetch_update_manifest(
                 release,
                 app_meta.UPDATE_MANIFEST_NAME,
+                timeout=_MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS,
             )
             if not updater.is_newer_version(app_meta.APP_VERSION, manifest.version):
                 raise updater.UpdateError(_("Update manifest version is not newer than the current app."))
@@ -2014,7 +2080,8 @@ class IPTVClient(wx.Frame):
             pass
         if hasattr(self, "_epg_executor"):
             self._epg_executor.shutdown(wait=False)
-        self.caster.stop()
+        if self.caster:
+            self.caster.stop()
         self.Destroy()
 
     def _enable_tray_restore(self):
@@ -3433,10 +3500,8 @@ class IPTVClient(wx.Frame):
     def _on_internal_player_closed(self) -> None:
         self._internal_player_frame = None
 
-    def _ensure_internal_player(self) -> InternalPlayerFrame:
-        if InternalPlayerFrame is None:
-            detail = _VLC_IMPORT_ERROR or _("Built-in player is unavailable.")
-            raise InternalPlayerUnavailableError(str(detail))
+    def _ensure_internal_player(self) -> object:
+        frame_class = _load_internal_player_frame_class()
         frame = getattr(self, "_internal_player_frame", None)
         if frame:
             try:
@@ -3447,7 +3512,7 @@ class IPTVClient(wx.Frame):
         if frame:
             return frame
         settings = resolve_internal_player_settings(self.config)
-        frame = InternalPlayerFrame(
+        frame = frame_class(
             self,
             base_buffer_seconds=settings.base_buffer_seconds,
             max_buffer_seconds=settings.max_buffer_seconds,
@@ -3477,14 +3542,15 @@ class IPTVClient(wx.Frame):
             show_internal_player = self.show_player_on_enter
 
         # Check if casting
-        if self.caster.is_connected():
+        caster = getattr(self, "caster", None)
+        if caster and caster.is_connected():
             try:
-                device_name = self.caster.active_device.display_name
+                device_name = caster.active_device.display_name
 
                 # Run async cast play in background thread
                 def do_cast():
                     try:
-                        self.caster.play(url, title or _("IPTV Stream"), channel=channel)
+                        caster.play(url, title or _("IPTV Stream"), channel=channel)
                     except Exception as e:
                         err_msg = str(e)
                         # The current cast device is incompatible or unreachable
@@ -3492,7 +3558,7 @@ class IPTVClient(wx.Frame):
                         # stuck re-trying the same dead device on every channel
                         # change — they can re-select from the cast menu.
                         try:
-                            self.caster.disconnect()
+                            caster.disconnect()
                         except Exception:
                             pass
                         wx.CallAfter(lambda: wx.MessageBox(
@@ -3564,13 +3630,15 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("No active stream to cast."), _("Casting"), wx.OK | wx.ICON_WARNING)
             return
 
-        def do_cast(device: CastDevice):
+        caster = self._ensure_caster()
+
+        def do_cast(device):
             try:
                 creds = self.config.get("cast_credentials", {}).get(device.identifier)
-                self.caster.connect(device, credentials=creds)
+                caster.connect(device, credentials=creds)
                 # Use the active caster directly so we can forward headers from the current stream.
-                if self.caster.active_caster:
-                    self.caster.dispatch(self.caster.active_caster.play(url, title, headers=headers))
+                if caster.active_caster:
+                    caster.dispatch(caster.active_caster.play(url, title, headers=headers))
                 else:
                     raise RuntimeError("Caster not connected.")
                 wx.CallAfter(self._handoff_internal_player_after_cast, url, title)
@@ -3578,11 +3646,11 @@ class IPTVClient(wx.Frame):
             except Exception as e:
                 wx.CallAfter(lambda err=e: wx.MessageBox(_("Failed to cast: {error}").format(error=err), _("Casting Error"), wx.OK | wx.ICON_ERROR))
 
-        if self.caster.is_connected() and self.caster.active_device:
-            threading.Thread(target=lambda: do_cast(self.caster.active_device), daemon=True).start()
+        if caster.is_connected() and caster.active_device:
+            threading.Thread(target=lambda: do_cast(caster.active_device), daemon=True).start()
             return
 
-        dlg = CastDiscoveryDialog(self, self.caster)
+        dlg = CastDiscoveryDialog(self, caster)
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 device = dlg.get_selected_device()
@@ -3666,15 +3734,16 @@ class IPTVClient(wx.Frame):
             dlg.Destroy()
 
     def show_cast_dialog(self, _event):
-        if self.caster.is_connected():
+        caster = self._ensure_caster()
+        if caster.is_connected():
             msg = _("Currently connected to: {device}\n\nDisconnect?").format(
-                device=self.caster.active_device.display_name)
+                device=caster.active_device.display_name)
             if wx.MessageBox(msg, _("Casting"), wx.YES_NO | wx.ICON_QUESTION) == wx.YES:
                 # Disconnect in background
-                threading.Thread(target=self.caster.disconnect, daemon=True).start()
+                threading.Thread(target=caster.disconnect, daemon=True).start()
             return
 
-        dlg = CastDiscoveryDialog(self, self.caster)
+        dlg = CastDiscoveryDialog(self, caster)
         if dlg.ShowModal() == wx.ID_OK:
             device = dlg.get_selected_device()
             if device:
@@ -3682,7 +3751,7 @@ class IPTVClient(wx.Frame):
                 def do_connect():
                     try:
                         creds = self.config.get("cast_credentials", {}).get(device.identifier)
-                        self.caster.connect(device, credentials=creds)
+                        caster.connect(device, credentials=creds)
                         wx.CallAfter(lambda: wx.MessageBox(_("Connected to {device}").format(device=device.display_name), _("Connected"), wx.OK))
                     except Exception as e:
                         err_msg = str(e)
@@ -3705,11 +3774,11 @@ class IPTVClient(wx.Frame):
 
 
 class CastDiscoveryDialog(wx.Dialog):
-    def __init__(self, parent, caster: CastingManager):
+    def __init__(self, parent, caster):
         super().__init__(parent, title=_("Select Device to Cast"), size=(450, 350))
         self.parent_frame = parent
         self.caster = caster
-        self.devices: List[CastDevice] = []
+        self.devices: List[object] = []
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -3757,7 +3826,7 @@ class CastDiscoveryDialog(wx.Dialog):
 
         threading.Thread(target=do_scan, daemon=True).start()
 
-    def _update_list(self, devices: List[CastDevice]):
+    def _update_list(self, devices: List[object]):
         self.devices = devices
         self.listbox.Clear()
         if not devices:
@@ -3865,7 +3934,7 @@ class CastDiscoveryDialog(wx.Dialog):
         wx.MessageBox(_("Successfully paired with {device}!").format(device=device.name), _("Pairing Complete"), wx.OK)
         self.status_lbl.SetLabel(_("Paired with {device}. Ready to connect.").format(device=device.name))
 
-    def get_selected_device(self) -> Optional[CastDevice]:
+    def get_selected_device(self) -> Optional[object]:
         sel = self.listbox.GetSelection()
         if sel != wx.NOT_FOUND and 0 <= sel < len(self.devices):
             return self.devices[sel]
