@@ -22,7 +22,7 @@ Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EP
 - **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, config clamping, and canonical naming helpers.
 - **casting.py**: Persistent background asyncio loop for cast operations. Supports Chromecast, DLNA/UPnP, and AirPlay when optional libraries are installed.
 - **stream_proxy.py**: Local stream proxy for casting. Handles direct byte proxying, HLS remux/transcode, Chromecast-safe HLS output, radio/audio mode, Python-to-FFmpeg piping for provider auth headers, bootstrap HLS startup, and best-effort Windows Firewall rules.
-- **updater.py**, **update_helper.bat**, **update_helper.ps1**, **update_helper_launcher.vbs**: Windows packaged-app updater. Uses a GitHub release manifest, SHA-256 validation, Authenticode verification with pinned thumbprints, hidden helper launch, backup, rollback, and local config preservation.
+- **updater.py**, **update_helper.bat**, **update_helper.ps1**: Windows packaged-app updater. Uses a GitHub release manifest, SHA-256 validation, Authenticode verification with pinned thumbprints, a fully silent helper launch (no console window) driven from an accessible `wx.ProgressDialog`, backup, rollback, and local config preservation. Every update subprocess goes through `updater.run_hidden`/`updater.popen_hidden` so nothing flashes a console.
 - **main.spec**, **tools/release.py**, **build.bat**, **build_exe.bat**: Build and release pipeline. `build.bat` delegates to `build_exe.bat`; `build_exe.bat` delegates core work to `tools/release.py`.
 
 ## Key Features

@@ -82,7 +82,6 @@ a = Analysis(
         ('ffmpeg.exe', '.'),
         ('update_helper.bat', '.'),
         ('update_helper.ps1', '.'),
-        ('update_helper_launcher.vbs', '.'),
     ] + locale_datas,
     hiddenimports=hidden_imports,
     hookspath=[],

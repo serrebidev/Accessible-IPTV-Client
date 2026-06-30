@@ -22,6 +22,62 @@ class UpdateError(RuntimeError):
     pass
 
 
+class UpdateCancelled(UpdateError):
+    """Raised when the user cancels an in-progress update download."""
+
+
+# --- Silent subprocess execution -------------------------------------------------
+#
+# The packaged app is built with console=False, so any console subprocess we spawn
+# (powershell.exe, cmd.exe) would otherwise allocate and flash its own console
+# window. These helpers mirror the BlindRSS updater: CREATE_NO_WINDOW plus an
+# explicitly hidden STARTUPINFO, with stdio detached for fire-and-forget launches.
+
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+_CREATE_BREAKAWAY_FROM_JOB = getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000)
+
+
+def _hidden_startupinfo():
+    """A STARTUPINFO that hides the window, or None off Windows."""
+    if os.name != "nt":
+        return None
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0  # SW_HIDE
+    return startupinfo
+
+
+def run_hidden(cmd, **kwargs):
+    """subprocess.run that never flashes a console window on Windows."""
+    if os.name == "nt":
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | _CREATE_NO_WINDOW
+        kwargs.setdefault("startupinfo", _hidden_startupinfo())
+    return subprocess.run(cmd, **kwargs)
+
+
+def popen_hidden(cmd, **kwargs):
+    """Launch a detached background process with no console window.
+
+    stdio is detached so the helper outlives us cleanly. On Windows we also
+    request CREATE_BREAKAWAY_FROM_JOB so the helper survives the parent exiting,
+    falling back without it if an enclosing job object refuses.
+    """
+    kwargs.setdefault("stdin", subprocess.DEVNULL)
+    kwargs.setdefault("stdout", subprocess.DEVNULL)
+    kwargs.setdefault("stderr", subprocess.DEVNULL)
+    kwargs.setdefault("close_fds", True)
+    if os.name != "nt":
+        kwargs.setdefault("start_new_session", True)
+        return subprocess.Popen(cmd, **kwargs)
+    kwargs["startupinfo"] = kwargs.get("startupinfo") or _hidden_startupinfo()
+    base_flags = kwargs.pop("creationflags", 0) | _CREATE_NO_WINDOW | _CREATE_NEW_PROCESS_GROUP
+    try:
+        return subprocess.Popen(cmd, creationflags=base_flags | _CREATE_BREAKAWAY_FROM_JOB, **kwargs)
+    except OSError:
+        return subprocess.Popen(cmd, creationflags=base_flags, **kwargs)
+
+
 @dataclass
 class UpdateManifest:
     version: str
@@ -173,17 +229,33 @@ def download_json(url: str, *, timeout: float = 20.0) -> dict:
         raise UpdateError(_("Unable to download manifest. Please check your connection.")) from exc
 
 
-def download_file_with_sha256(url: str, dest_path: str) -> str:
+def download_file_with_sha256(url: str, dest_path: str, *, progress_cb=None) -> str:
+    """Download ``url`` to ``dest_path`` and return its SHA-256 hex digest.
+
+    If ``progress_cb`` is given it is called as ``progress_cb(fraction)`` where
+    fraction is 0.0-1.0 (or None when the server sends no Content-Length). If it
+    returns False the download is aborted with :class:`UpdateCancelled`.
+    """
     req = _build_request(url)
     digest = hashlib.sha256()
     try:
         with urllib.request.urlopen(req, timeout=60) as resp, open(dest_path, "wb") as handle:
+            try:
+                total = int(resp.headers.get("Content-Length") or 0)
+            except (TypeError, ValueError):
+                total = 0
+            downloaded = 0
             while True:
                 chunk = resp.read(1024 * 1024)
                 if not chunk:
                     break
                 handle.write(chunk)
                 digest.update(chunk)
+                downloaded += len(chunk)
+                if progress_cb is not None:
+                    fraction = (downloaded / total) if total > 0 else None
+                    if progress_cb(fraction) is False:
+                        raise UpdateCancelled(_("Update cancelled."))
     except urllib.error.HTTPError as exc:
         raise UpdateError(_("Failed to download update ({code}).").format(code=exc.code)) from exc
     except urllib.error.URLError as exc:
@@ -256,7 +328,7 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
             if 'PSMODULE' in k.upper() or 'POWERSHELL' in k.upper():
                 del clean_env[k]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=clean_env)
+        result = run_hidden(cmd, capture_output=True, text=True, timeout=30, env=clean_env)
         
         LOG.debug("verify_authenticode: returncode=%s, stdout=%r, stderr=%r", 
                   result.returncode, result.stdout[:500] if result.stdout else None, 

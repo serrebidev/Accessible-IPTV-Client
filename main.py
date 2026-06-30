@@ -1733,11 +1733,57 @@ class IPTVClient(wx.Frame):
             dlg.Destroy()
 
     def _start_update_download(self, release: Dict):
+        self._update_cancel = threading.Event()
+        self._update_progress_dlg = wx.ProgressDialog(
+            _("Updating {app}").format(app=app_meta.APP_DISPLAY_NAME),
+            _("Starting update..."),
+            maximum=100,
+            parent=self,
+            style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_SMOOTH | wx.PD_ELAPSED_TIME,
+        )
         threading.Thread(target=self._download_update_worker, args=(release,), daemon=True).start()
+
+    def _report_update_progress(self, phase: str, fraction) -> bool:
+        """Progress callback for the download worker thread.
+
+        Marshals the update to the GUI thread and returns False if the user has
+        pressed Cancel so the worker can abort.
+        """
+        wx.CallAfter(self._apply_update_progress, phase, fraction)
+        cancel = getattr(self, "_update_cancel", None)
+        return not (cancel is not None and cancel.is_set())
+
+    def _apply_update_progress(self, phase: str, fraction):
+        dlg = getattr(self, "_update_progress_dlg", None)
+        if not dlg:
+            return
+        try:
+            if fraction is None:
+                keep_going, _skip = dlg.Pulse(phase)
+            else:
+                pct = int(max(0.0, min(1.0, float(fraction))) * 100)
+                keep_going, _skip = dlg.Update(pct, phase)
+            if not keep_going:
+                cancel = getattr(self, "_update_cancel", None)
+                if cancel is not None:
+                    cancel.set()
+        except Exception:
+            pass
+
+    def _destroy_update_progress(self):
+        dlg = getattr(self, "_update_progress_dlg", None)
+        if dlg is not None:
+            try:
+                dlg.Destroy()
+            except Exception:
+                pass
+        self._update_progress_dlg = None
 
     def _download_update_worker(self, release: Dict):
         temp_root = None
+        progress = self._report_update_progress
         try:
+            progress(_("Checking for update details..."), None)
             manifest = updater.fetch_update_manifest(
                 release,
                 app_meta.UPDATE_MANIFEST_NAME,
@@ -1748,10 +1794,17 @@ class IPTVClient(wx.Frame):
 
             temp_root = tempfile.mkdtemp(prefix="iptvclient_update_")
             zip_path = os.path.join(temp_root, manifest.asset_filename)
-            digest = updater.download_file_with_sha256(manifest.download_url, zip_path)
+            progress(_("Downloading update..."), 0.0)
+            digest = updater.download_file_with_sha256(
+                manifest.download_url,
+                zip_path,
+                progress_cb=lambda fraction: progress(_("Downloading update..."), fraction),
+            )
+            progress(_("Verifying download..."), None)
             if digest.lower() != manifest.sha256.lower():
                 raise updater.UpdateError(_("Downloaded update failed SHA-256 verification."))
 
+            progress(_("Extracting update..."), None)
             extract_root = os.path.join(temp_root, "extracted")
             updater.safe_extract_zip(zip_path, extract_root)
 
@@ -1760,6 +1813,7 @@ class IPTVClient(wx.Frame):
             if not new_exe:
                 raise updater.UpdateError(_("Updated executable '{name}' not found in the package.").format(name=exe_name))
 
+            progress(_("Verifying signature..."), None)
             updater.verify_authenticode(new_exe, manifest.signing_thumbprints)
 
             staging_dir = os.path.dirname(new_exe)
@@ -1768,28 +1822,24 @@ class IPTVClient(wx.Frame):
 
             helper_source = os.path.join(get_app_dir(), "update_helper.bat")
             helper_ps1_source = os.path.join(get_app_dir(), "update_helper.ps1")
-            helper_vbs_source = os.path.join(get_app_dir(), "update_helper_launcher.vbs")
             
             # PyInstaller 6+ onedir layout puts datas in _internal
             if not os.path.exists(helper_source):
                 helper_source = os.path.join(get_app_dir(), "_internal", "update_helper.bat")
             if not os.path.exists(helper_ps1_source):
                 helper_ps1_source = os.path.join(get_app_dir(), "_internal", "update_helper.ps1")
-            if not os.path.exists(helper_vbs_source):
-                helper_vbs_source = os.path.join(get_app_dir(), "_internal", "update_helper_launcher.vbs")
 
-            if not os.path.exists(helper_source) or not os.path.exists(helper_ps1_source) or not os.path.exists(helper_vbs_source):
+            if not os.path.exists(helper_source) or not os.path.exists(helper_ps1_source):
                 raise updater.UpdateError(_("Update helper is missing from this build."))
 
             helper_dir = os.path.join(temp_root, "helper")
             os.makedirs(helper_dir, exist_ok=True)
             helper_bat = os.path.join(helper_dir, "update_helper.bat")
             helper_ps1 = os.path.join(helper_dir, "update_helper.ps1")
-            helper_vbs = os.path.join(helper_dir, "update_helper_launcher.vbs")
             shutil.copy2(helper_source, helper_bat)
             shutil.copy2(helper_ps1_source, helper_ps1)
-            shutil.copy2(helper_vbs_source, helper_vbs)
 
+            progress(_("Preparing to restart..."), None)
             wx.CallAfter(
                 self._launch_update_helper,
                 helper_bat,
@@ -1798,7 +1848,12 @@ class IPTVClient(wx.Frame):
                 backup_dir,
                 exe_name,
             )
+        except updater.UpdateCancelled:
+            wx.CallAfter(self._destroy_update_progress)
+            if temp_root:
+                shutil.rmtree(temp_root, ignore_errors=True)
         except updater.UpdateError as exc:
+            wx.CallAfter(self._destroy_update_progress)
             wx.CallAfter(
                 wx.MessageBox,
                 _("Update failed: {error}").format(error=exc),
@@ -1819,14 +1874,9 @@ class IPTVClient(wx.Frame):
         backup_dir: str,
         exe_name: str,
     ):
-        wx.MessageBox(
-            _("Update verified. The app will now close to install the update, then restart automatically."),
-            _("Installing Update"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
-        creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
         cmd = [
             "cmd",
+            "/d",
             "/c",
             helper_bat,
             "-ParentPid",
@@ -1840,8 +1890,18 @@ class IPTVClient(wx.Frame):
             "-ExeName",
             exe_name,
         ]
-        subprocess.Popen(cmd, creationflags=creation_flags, cwd=os.path.dirname(helper_bat))
+        try:
+            updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
+        except OSError as exc:
+            self._destroy_update_progress()
+            wx.MessageBox(
+                _("Update failed to start: {error}").format(error=exc),
+                _("Update Error"),
+                wx.OK | wx.ICON_ERROR,
+            )
+            return
         self._update_install_pending = True
+        self._destroy_update_progress()
         self.Close()
 
     @staticmethod
