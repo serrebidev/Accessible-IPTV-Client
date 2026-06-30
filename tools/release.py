@@ -396,20 +396,61 @@ def get_signing_thumbprint(exe_path):
     override = os.environ.get("SIGN_CERT_THUMBPRINT", "").strip()
     if override:
         return override
-    result = run(
+
+    powershell = "powershell"
+    clean_env = os.environ.copy()
+    if os.name == "nt":
+        system_root = os.environ.get("SYSTEMROOT", r"C:\Windows")
+        candidate = os.path.join(
+            system_root,
+            "System32",
+            "WindowsPowerShell",
+            "v1.0",
+            "powershell.exe",
+        )
+        if os.path.exists(candidate):
+            powershell = candidate
+        for key in list(clean_env.keys()):
+            upper = key.upper()
+            if "PSMODULE" in upper or "POWERSHELL" in upper:
+                clean_env.pop(key, None)
+        clean_env["PSModulePath"] = os.path.join(
+            system_root,
+            "System32",
+            "WindowsPowerShell",
+            "v1.0",
+            "Modules",
+        )
+
+    literal_path = os.path.abspath(exe_path).replace("'", "''")
+    result = subprocess.run(
         [
-            "powershell",
+            powershell,
             "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
             "-Command",
             (
-                f"$sig = Get-AuthenticodeSignature -FilePath '{exe_path}'; "
-                "if ($sig.SignerCertificate) { $sig.SignerCertificate.Thumbprint }"
+                "$ErrorActionPreference = 'Stop'; "
+                f"$sig = Get-AuthenticodeSignature -LiteralPath '{literal_path}'; "
+                "if (-not $sig.SignerCertificate) { throw 'No signer certificate found.' }; "
+                "$sig.SignerCertificate.Thumbprint"
             ),
         ],
+        cwd=REPO_ROOT,
         check=False,
         capture_output=True,
+        text=True,
+        env=clean_env,
     )
     thumbprint = (result.stdout or "").strip()
+    if result.returncode != 0 or not thumbprint:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            "Failed to read signing thumbprint from signed executable."
+            + (f" {detail}" if detail else "")
+        )
     return thumbprint
 
 
