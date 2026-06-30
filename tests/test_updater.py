@@ -72,6 +72,26 @@ def test_fetch_update_manifest_uses_supplied_timeout(monkeypatch):
     assert calls == [("https://example.test/manifest.json", 6.0)]
 
 
+def test_download_json_accepts_utf8_bom(monkeypatch):
+    class BomResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return b"\xef\xbb\xbf{\"ok\": true}"
+
+    monkeypatch.setattr(
+        updater.urllib.request,
+        "urlopen",
+        lambda req, timeout: BomResponse(),
+    )
+
+    assert updater.download_json("https://example.test/manifest.json") == {"ok": True}
+
+
 class _DownloadResponse:
     """Minimal urlopen() stand-in that yields the payload in small chunks."""
 

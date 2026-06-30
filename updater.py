@@ -161,7 +161,7 @@ def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dic
     req = _build_request(url)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            payload = resp.read().decode("utf-8")
+            payload = resp.read().decode("utf-8-sig")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
         if exc.code == 403 and exc.headers.get("X-RateLimit-Remaining") == "0":
@@ -221,7 +221,7 @@ def download_json(url: str, *, timeout: float = 20.0) -> dict:
     req = _build_request(url)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            payload = resp.read().decode("utf-8")
+            payload = resp.read().decode("utf-8-sig")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
         raise UpdateError(_("Failed to download manifest ({code}).").format(code=exc.code)) from exc
