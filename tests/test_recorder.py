@@ -1,6 +1,5 @@
 import os
 import sys
-import functools
 import http.server
 import socketserver
 import subprocess
@@ -170,12 +169,27 @@ def test_recording_manager_records_http_stream_end_to_end(tmp_path):
         "-c:a", "aac", "-shortest", "-f", "mpegts", str(source),
     ], check=True, timeout=30)
 
-    class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    class FixtureHandler(http.server.BaseHTTPRequestHandler):
         def log_message(self, _format, *_args):
             pass
 
-    handler = functools.partial(QuietHandler, directory=str(tmp_path))
-    with socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler) as httpd:
+        def do_GET(self):
+            if self.path != "/source.ts":
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "video/MP2T")
+            self.send_header("Content-Length", str(source.stat().st_size))
+            self.end_headers()
+            with open(source, "rb") as handle:
+                while True:
+                    chunk = handle.read(4096)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+
+    with socketserver.ThreadingTCPServer(("127.0.0.1", 0), FixtureHandler) as httpd:
         httpd.daemon_threads = True
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()

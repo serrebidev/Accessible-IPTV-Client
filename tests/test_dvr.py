@@ -1,5 +1,4 @@
 import datetime
-import functools
 import http.server
 import os
 import socketserver
@@ -133,22 +132,45 @@ def test_scheduled_recording_runs_end_to_end(tmp_path):
     source = tmp_path / "source.ts"
     subprocess.run([
         ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
-        "-f", "lavfi", "-i", "testsrc2=duration=7:size=96x54:rate=8",
-        "-f", "lavfi", "-i", "sine=frequency=800:duration=7",
+        "-f", "lavfi", "-i", "testsrc2=duration=3:size=96x54:rate=8",
+        "-f", "lavfi", "-i", "sine=frequency=800:duration=3",
         "-map", "0:v:0", "-map", "1:a:0",
         "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-shortest", "-f", "mpegts", str(source),
     ], check=True, timeout=30)
 
-    class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    class LiveStreamHandler(http.server.BaseHTTPRequestHandler):
         def log_message(self, _format, *_args):
             pass
+
+        def do_GET(self):
+            if self.path != "/source.ts":
+                self.send_error(404)
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "video/MP2T")
+            self.end_headers()
+            bytes_sent = 0
+            try:
+                while True:
+                    with open(source, "rb") as handle:
+                        while True:
+                            chunk = handle.read(2048)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                            bytes_sent += len(chunk)
+                            if bytes_sent > 32768:
+                                time.sleep(0.05)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return
 
     class ReusableServer(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
 
-    handler = functools.partial(QuietHandler, directory=str(tmp_path))
-    with ReusableServer(("127.0.0.1", 0), handler) as httpd:
+    with ReusableServer(("127.0.0.1", 0), LiveStreamHandler) as httpd:
         httpd.daemon_threads = True
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
