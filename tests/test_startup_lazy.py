@@ -176,3 +176,62 @@ def test_playlist_import_delays_epg_log_file_creation():
 
     assert data["playlist_loaded"] is True
     assert data["log_exists"] is False
+
+
+def test_epg_import_thread_priority_helper_lowers_real_thread_priority():
+    """`_lower_current_thread_priority` runs at the top of the EPG auto-import
+    worker thread (see do_import() in start_epg_import_background) so a long
+    background import competes less for CPU with the UI thread. Verify it
+    actually moves the *calling* thread's OS priority -- checked against the
+    real Win32 API rather than a mock, since a mock would not have caught the
+    HANDLE marshaling bug this once had (GetCurrentThread()'s pseudo-HANDLE
+    getting truncated without explicit ctypes argtypes/restype).
+    """
+    data = _run_child(
+        """
+        import ctypes
+        import json
+        import platform
+
+        import main
+
+        is_windows = platform.system() == "Windows"
+        before = after = None
+        if is_windows:
+            from ctypes import wintypes
+            kernel32 = ctypes.windll.kernel32
+            kernel32.GetCurrentThread.restype = wintypes.HANDLE
+            kernel32.GetThreadPriority.argtypes = [wintypes.HANDLE]
+            kernel32.GetThreadPriority.restype = ctypes.c_int
+            before = kernel32.GetThreadPriority(kernel32.GetCurrentThread())
+
+        main._lower_current_thread_priority()
+
+        if is_windows:
+            after = kernel32.GetThreadPriority(kernel32.GetCurrentThread())
+
+        print(json.dumps({"is_windows": is_windows, "before": before, "after": after}))
+        """
+    )
+
+    if data["is_windows"]:
+        THREAD_PRIORITY_LOWEST = -2
+        assert data["before"] != THREAD_PRIORITY_LOWEST
+        assert data["after"] == THREAD_PRIORITY_LOWEST
+
+
+def test_start_epg_import_background_invokes_priority_lowering():
+    """Confirms the background import worker actually calls the priority-lowering
+    helper (wiring), independent of the helper's own OS-level behavior above."""
+    data = _run_child(
+        """
+        import inspect
+        import json
+
+        import main
+
+        src = inspect.getsource(main.IPTVClient.start_epg_import_background)
+        print(json.dumps({"calls_helper": "_lower_current_thread_priority()" in src}))
+        """
+    )
+    assert data["calls_helper"] is True

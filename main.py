@@ -8,7 +8,7 @@ import urllib.parse
 import sqlite3
 import threading
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import wx
 import datetime
 import re
@@ -224,6 +224,31 @@ def install_ffmpeg():
             raise RuntimeError(f"Unsupported Linux distribution: {distro}. Please install ffmpeg manually.")
     else:
         raise RuntimeError(f"Unsupported OS: {system}. Please install ffmpeg manually.")
+
+def _lower_current_thread_priority():
+    """Best-effort: drop the OS scheduling priority of the *calling* thread only.
+
+    Used by the background EPG import worker so a long (tens-of-minutes) import
+    competes less aggressively for CPU with the UI thread and other apps, without
+    touching the whole process's priority class (which would also throttle the UI
+    thread). Windows-only; a harmless no-op everywhere else or if the call fails.
+    """
+    if platform.system() != "Windows":
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+        THREAD_PRIORITY_LOWEST = -2
+        kernel32 = ctypes.windll.kernel32
+        # GetCurrentThread() returns a pseudo-HANDLE (pointer-sized). Without explicit
+        # argtypes/restype, ctypes' default 32-bit c_int marshaling can mangle it on
+        # 64-bit Python, silently turning this into a no-op.
+        kernel32.GetCurrentThread.restype = wintypes.HANDLE
+        kernel32.SetThreadPriority.argtypes = [wintypes.HANDLE, ctypes.c_int]
+        kernel32.SetThreadPriority.restype = wintypes.BOOL
+        kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_PRIORITY_LOWEST)
+    except Exception:
+        pass
 
 class TrayIcon(wx.adv.TaskBarIcon):
     TBMENU_RESTORE = wx.NewIdRef()
@@ -638,6 +663,19 @@ class IPTVClient(wx.Frame):
         prefilled_all: List[Dict[str, str]] = []
         prefill_seen = set()
 
+        # (hash, channels) already read from a parsed-cache file during prefill, keyed by
+        # that file's path. On the common "nothing changed" launch, fetch_and_process_playlist
+        # below re-derives the same path and, once it has the freshly-fetched text_hash, can
+        # reuse this instead of re-reading + re-decoding the same (potentially huge) JSON file.
+        prefill_loaded: Dict[str, Tuple[Optional[str], List[Dict[str, str]]]] = {}
+
+        def _cached_channels_for(parsed_cache, text_hash, provider_meta):
+            entry = prefill_loaded.get(parsed_cache)
+            if entry is not None:
+                stored_hash, stored_channels = entry
+                return stored_channels if stored_hash == text_hash else None
+            return self._load_cached_playlist(parsed_cache, text_hash, provider_meta)
+
         def _prefill_from_cache(src) -> None:
             parsed_cache = None
             provider_meta = None
@@ -654,9 +692,11 @@ class IPTVClient(wx.Frame):
                 parsed_cache = self._parsed_cache_path_for_key(f"file:{os.path.abspath(src)}")
             if not parsed_cache or not os.path.exists(parsed_cache):
                 return
-            cached = self._load_cached_playlist(parsed_cache, text_hash=None, provider_meta=provider_meta, skip_hash=True)
+            stored_hash, cached = self._read_cached_playlist_file(parsed_cache)
             if not cached:
                 return
+            self._apply_cached_provider_meta(cached, provider_meta)
+            prefill_loaded[parsed_cache] = (stored_hash, cached)
             for ch in cached:
                 key = (ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
                 if key in prefill_seen:
@@ -717,7 +757,7 @@ class IPTVClient(wx.Frame):
                         
                         channels = None
                         if parsed_cache and text_hash:
-                            channels = self._load_cached_playlist(parsed_cache, text_hash, provider_meta)
+                            channels = _cached_channels_for(parsed_cache, text_hash, provider_meta)
                         if channels is None:
                             channels = self._parse_m3u_return(text, provider_info=provider_meta)
                             if parsed_cache and text_hash:
@@ -786,7 +826,7 @@ class IPTVClient(wx.Frame):
                     
                     channels = None
                     if parsed_cache and text_hash:
-                        channels = self._load_cached_playlist(parsed_cache, text_hash, provider_meta=None)
+                        channels = _cached_channels_for(parsed_cache, text_hash, provider_meta=None)
                     if channels is None:
                         channels = self._parse_m3u_return(text, provider_info=None)
                         if parsed_cache and text_hash:
@@ -803,7 +843,7 @@ class IPTVClient(wx.Frame):
                     
                     channels = None
                     if parsed_cache and text_hash:
-                        channels = self._load_cached_playlist(parsed_cache, text_hash, provider_meta=None)
+                        channels = _cached_channels_for(parsed_cache, text_hash, provider_meta=None)
                     if channels is None:
                         channels = self._parse_m3u_return(text, provider_info=None)
                         if parsed_cache and text_hash:
@@ -2630,6 +2670,7 @@ class IPTVClient(wx.Frame):
         wx.CallAfter(self._start_epg_poll_timer)
 
         def do_import():
+            _lower_current_thread_priority()
             success = False
             try:
                 db = EPGDatabase(get_db_path(), for_threading=True)
@@ -3102,6 +3143,36 @@ class IPTVClient(wx.Frame):
         os.makedirs(cache_dir, exist_ok=True)
         return os.path.join(cache_dir, f"parsed_{digest}.json")
 
+    def _read_cached_playlist_file(
+        self, cache_path: str
+    ) -> Tuple[Optional[str], Optional[List[Dict[str, str]]]]:
+        """Raw (hash, channels) read of a parsed-cache JSON file, no hash check/mutation.
+        Split out of _load_cached_playlist so callers that already have the parsed
+        result (e.g. the playlist-load prefill pass) can share it instead of paying
+        for the disk read + JSON decode a second time."""
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            channels = data.get("channels")
+            if not isinstance(channels, list):
+                return None, None
+            return data.get("hash"), channels
+        except Exception:
+            return None, None
+
+    def _apply_cached_provider_meta(self, channels: List[Dict[str, str]], provider_meta: Optional[Dict[str, str]]) -> None:
+        if not provider_meta:
+            return
+        pid = provider_meta.get("provider-id")
+        ptype = provider_meta.get("provider-type")
+        if not pid and not ptype:
+            return
+        for ch in channels:
+            if pid:
+                ch["provider-id"] = pid
+            if ptype:
+                ch["provider-type"] = ptype
+
     def _load_cached_playlist(
         self,
         cache_path: str,
@@ -3110,22 +3181,12 @@ class IPTVClient(wx.Frame):
         skip_hash: bool = False,
     ) -> Optional[List[Dict[str, str]]]:
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            if not skip_hash and text_hash is not None and data.get("hash") != text_hash:
+            stored_hash, channels = self._read_cached_playlist_file(cache_path)
+            if channels is None:
                 return None
-            channels = data.get("channels")
-            if not isinstance(channels, list):
+            if not skip_hash and text_hash is not None and stored_hash != text_hash:
                 return None
-            if provider_meta:
-                pid = provider_meta.get("provider-id")
-                ptype = provider_meta.get("provider-type")
-                if pid or ptype:
-                    for ch in channels:
-                        if pid:
-                            ch["provider-id"] = pid
-                        if ptype:
-                            ch["provider-type"] = ptype
+            self._apply_cached_provider_meta(channels, provider_meta)
             return channels
         except Exception:
             return None

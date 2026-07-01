@@ -909,8 +909,12 @@ def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
         else: # Handle formats like "YYYYMMDDHHMMSS +ZZZZ"
             m = _XMLTV_TS_RX.match(s)
             if not m: return None
-            dt_str, offset_str = "".join(m.groups()[:6]), m.group(7)
-            dt = datetime.datetime.strptime(dt_str, "%Y%m%d%H%M%S")
+            # This branch is the per-programme hot path (millions of calls on large
+            # feeds); datetime.strptime's locale-aware parsing dominated EPG import
+            # CPU time in profiling (~55%). The fixed-width digit groups are already
+            # validated by the regex, so construct directly instead.
+            y, mo, d, h, mi, sec, offset_str = m.groups()
+            dt = datetime.datetime(int(y), int(mo), int(d), int(h), int(mi), int(sec))
             if offset_str:
                 # Parse sign and magnitude separately; floor-division on a negative
                 # combined value mishandles half-hour zones (e.g. -0330 -> -3h50m).
@@ -924,7 +928,10 @@ def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
 
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=datetime.timezone.utc)
-        return dt.astimezone(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+        dt = dt.astimezone(datetime.timezone.utc)
+        # Manual zero-padded formatting avoids strftime's (locale-aware) overhead;
+        # fields are plain ints so this is a straight numeric format, no locale lookup.
+        return "%04d%02d%02d%02d%02d%02d" % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
     except (ValueError, TypeError):
         return None
 
@@ -1001,6 +1008,23 @@ PRAGMA_IMPORT = [
     "PRAGMA wal_autocheckpoint=0;",  # we'll checkpoint manually
     "PRAGMA busy_timeout=20000;",
 ]
+
+
+# Bump this whenever `_detect_region_from_id`'s logic changes in a way that could
+# flip previously-computed group_tag values. `_repair_channel_regions_prefer_id`
+# persists the version it last fully scanned under into PRAGMA user_version, so a
+# DB only ever pays for a full channels-table scan once per logic change instead
+# of on every EPGDatabase(...) open/reopen.
+_REGION_REPAIR_SCHEMA_VERSION = 1
+
+# Same idea as _REGION_REPAIR_SCHEMA_VERSION above, but for _repair_norm_names (bump
+# whenever canonicalize_name/strip_noise_words change). Uses PRAGMA application_id --
+# SQLite's other free header slot -- instead of user_version, which the region-repair
+# gate above already owns. Without this gate, a live production EPG DB with ~26k
+# channels was observed re-running the *full* channels-table normalize-and-rewrite
+# on every single writable EPGDatabase() open/reopen (every 20s-4min in one debug log,
+# whenever something reopened the connection), not just once.
+_NORM_REPAIR_SCHEMA_VERSION = 1
 
 PRAGMA_READONLY = [
     "PRAGMA busy_timeout=2000;",
@@ -1369,9 +1393,20 @@ class EPGDatabase:
         """One-time reconciliation: if a channel's id clearly encodes a region
         (e.g., ".us", ".ca", ".uk") but the stored group_tag differs, fix it.
         Safe to run multiple times; only updates mismatches.
+
+        Gated behind a persisted PRAGMA user_version marker (_REGION_REPAIR_SCHEMA_VERSION):
+        a full `SELECT id, group_tag FROM channels` + per-row regex scan is expensive on
+        real-world EPG databases (tens of thousands of channel rows), so once a DB has been
+        scanned under the current region-detection logic, later EPGDatabase(...) opens/reopens
+        (including the reopen() retry path in import_epg_xml) skip the scan entirely instead of
+        unconditionally repeating it every time. Bump _REGION_REPAIR_SCHEMA_VERSION whenever
+        _detect_region_from_id's logic changes so existing databases get one more repair pass.
         """
         try:
             c = self.conn.cursor()
+            current_version = c.execute("PRAGMA user_version").fetchone()[0]
+            if current_version >= _REGION_REPAIR_SCHEMA_VERSION:
+                return
             rows = c.execute("SELECT id, group_tag FROM channels").fetchall()
             fixes = []
             for ch_id, grp in rows:
@@ -1380,18 +1415,30 @@ class EPGDatabase:
                     fixes.append((want, ch_id))
             if fixes:
                 c.executemany("UPDATE channels SET group_tag = ? WHERE id = ?", fixes)
-                self.conn.commit()
                 _logger.debug("Repaired channel regions using id for %d rows", len(fixes))
+            # Mark this DB as scanned under the current logic even when nothing needed fixing,
+            # so a clean/already-repaired DB never pays for the full scan again.
+            c.execute("PRAGMA user_version = %d" % _REGION_REPAIR_SCHEMA_VERSION)
+            self.conn.commit()
         except Exception as e:
             _logger.debug("Region repair skipped/failed: %s", e)
 
     def _repair_norm_names(self):
-        """Re-normalize all channel names in the DB to match current canonicalize_name logic."""
-        # Use a sentinel property to run this only once per process/session if desired,
-        # or just rely on the fact that it's fast enough. 
-        # For safety, we check a few rows to see if they match the current logic.
+        """Re-normalize all channel names in the DB to match current canonicalize_name logic.
+
+        Gated behind a persisted PRAGMA application_id marker (_NORM_REPAIR_SCHEMA_VERSION),
+        mirroring how _repair_channel_regions_prefer_id is gated behind PRAGMA user_version:
+        even the 50-row sample-then-maybe-full-scan approach here means every writable
+        EPGDatabase(...) open/reopen pays at least a sample query, and pays a full
+        channels-table SELECT + rewrite whenever the sample finds a mismatch. On a
+        real-world ~26k-channel DB this showed up as a full rescan+rewrite repeating
+        every open, not just once after a genuine logic change.
+        """
         try:
             c = self.conn.cursor()
+            current_version = c.execute("PRAGMA application_id").fetchone()[0]
+            if current_version >= _NORM_REPAIR_SCHEMA_VERSION:
+                return
             # Sample check
             sample = c.execute("SELECT id, display_name, norm_name FROM channels LIMIT 50").fetchall()
             updates = []
@@ -1399,7 +1446,7 @@ class EPGDatabase:
                 new_norm = canonicalize_name(strip_noise_words(disp))
                 if new_norm != old_norm:
                     updates.append((new_norm, ch_id))
-            
+
             # If we found mismatches in the sample, do a full scan/update
             if updates:
                 _logger.info("Detected stale norm_names in EPG DB. Re-normalizing all channels...")
@@ -1408,10 +1455,13 @@ class EPGDatabase:
                 for ch_id, disp in all_rows:
                     nn = canonicalize_name(strip_noise_words(disp))
                     full_updates.append((nn, ch_id))
-                
+
                 c.executemany("UPDATE channels SET norm_name = ? WHERE id = ?", full_updates)
-                self.conn.commit()
                 _logger.info("Re-normalized %d channels.", len(full_updates))
+            # Mark this DB as checked under the current logic even when nothing needed
+            # fixing, so a clean/already-repaired DB never pays for the scan again.
+            c.execute("PRAGMA application_id = %d" % _NORM_REPAIR_SCHEMA_VERSION)
+            self.conn.commit()
         except Exception as e:
             _logger.debug("Norm-name repair failed: %s", e)
 

@@ -331,5 +331,116 @@ class TestM3UFileIO:
             assert "http://test" in lines
 
 
+class TestParsedPlaylistCache:
+    """Tests for the parsed-playlist JSON cache (main.IPTVClient), covering the
+    _read_cached_playlist_file/_apply_cached_provider_meta split used to let
+    playlist-load prefill share a parsed cache with the network-fetch path
+    instead of re-reading + re-decoding the same file twice per launch."""
+
+    @staticmethod
+    def _client():
+        # A real (not Mock) stand-in: _load_cached_playlist calls self._read_cached_playlist_file/
+        # self._apply_cached_provider_meta internally, so a Mock(spec=...) `self` would resolve
+        # those to mocked stubs instead of the real implementations under test.
+        from main import IPTVClient
+
+        class _Probe:
+            _read_cached_playlist_file = IPTVClient._read_cached_playlist_file
+            _apply_cached_provider_meta = IPTVClient._apply_cached_provider_meta
+            _load_cached_playlist = IPTVClient._load_cached_playlist
+            _store_cached_playlist = IPTVClient._store_cached_playlist
+
+        return _Probe()
+
+    def _cache_path(self, tmp_path):
+        return str(tmp_path / "parsed_test.json")
+
+    def test_store_then_read_raw_roundtrips_hash_and_channels(self, tmp_path):
+        from main import IPTVClient
+        client = self._client()
+        cache_path = self._cache_path(tmp_path)
+        channels = [{"name": "CNN", "url": "http://x/cnn"}, {"name": "BBC", "url": "http://x/bbc"}]
+
+        IPTVClient._store_cached_playlist(client, cache_path, "hash123", channels, provider_meta=None)
+        stored_hash, read_back = IPTVClient._read_cached_playlist_file(client, cache_path)
+
+        assert stored_hash == "hash123"
+        assert read_back == channels
+
+    def test_read_raw_missing_file_returns_none_none(self, tmp_path):
+        from main import IPTVClient
+        client = self._client()
+        stored_hash, channels = IPTVClient._read_cached_playlist_file(client, str(tmp_path / "missing.json"))
+        assert stored_hash is None
+        assert channels is None
+
+    def test_load_cached_playlist_matches_hash(self, tmp_path):
+        from main import IPTVClient
+        client = self._client()
+        cache_path = self._cache_path(tmp_path)
+        channels = [{"name": "CNN", "url": "http://x/cnn"}]
+        IPTVClient._store_cached_playlist(client, cache_path, "hashA", channels, provider_meta=None)
+
+        assert IPTVClient._load_cached_playlist(client, cache_path, "hashA") == channels
+        assert IPTVClient._load_cached_playlist(client, cache_path, "hashB") is None
+        # skip_hash=True (used by the prefill pass) ignores a hash mismatch/absence.
+        assert IPTVClient._load_cached_playlist(client, cache_path, None, skip_hash=True) == channels
+
+    def test_apply_cached_provider_meta_sets_id_and_type(self, tmp_path):
+        from main import IPTVClient
+        client = self._client()
+        channels = [{"name": "CNN"}, {"name": "BBC"}]
+        IPTVClient._apply_cached_provider_meta(client, channels, {"provider-id": "p1", "provider-type": "xtream"})
+        assert all(ch["provider-id"] == "p1" and ch["provider-type"] == "xtream" for ch in channels)
+
+    def test_apply_cached_provider_meta_noop_without_meta(self, tmp_path):
+        from main import IPTVClient
+        client = self._client()
+        channels = [{"name": "CNN"}]
+        IPTVClient._apply_cached_provider_meta(client, channels, None)
+        assert "provider-id" not in channels[0]
+
+    def test_prefill_hash_can_gate_a_second_read_without_reopening_the_file(self, tmp_path, monkeypatch):
+        """Perf-sanity: the (hash, channels) pair from a single _read_cached_playlist_file
+        call is sufficient to decide whether a later fetch can reuse it (hash matches ->
+        reuse; hash differs -> re-parse) without opening the cache file again. This is the
+        contract _do_playlist_refresh's _cached_channels_for relies on to avoid paying for
+        the disk read + JSON decode of a large parsed-cache file twice per playlist load."""
+        from main import IPTVClient
+        client = self._client()
+        cache_path = self._cache_path(tmp_path)
+        channels = [{"name": f"Channel {i}", "url": f"http://x/{i}"} for i in range(2000)]
+        IPTVClient._store_cached_playlist(client, cache_path, "freshhash", channels, provider_meta=None)
+
+        open_calls = {"n": 0}
+        real_open = open
+
+        def counting_open(*args, **kwargs):
+            if args and str(args[0]) == cache_path:
+                open_calls["n"] += 1
+            return real_open(*args, **kwargs)
+
+        monkeypatch.setattr("builtins.open", counting_open)
+
+        # Simulate _do_playlist_refresh's flow: one prefill read, then a fetch-time
+        # cache_channels_for lookup that only re-opens the file on a hash mismatch.
+        stored_hash, prefetched = IPTVClient._read_cached_playlist_file(client, cache_path)
+        assert open_calls["n"] == 1
+
+        def cached_channels_for(text_hash):
+            return prefetched if stored_hash == text_hash else IPTVClient._load_cached_playlist(
+                client, cache_path, text_hash
+            )
+
+        # Cache still valid (hash unchanged): reused in-memory, no extra file open.
+        reused = cached_channels_for("freshhash")
+        assert reused == channels
+        assert open_calls["n"] == 1
+
+        # Cache stale (hash changed): falls back to a real (re-)read.
+        cached_channels_for("differenthash")
+        assert open_calls["n"] == 2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -281,6 +281,197 @@ def test_candidate_rows_stay_bounded_for_short_or_unicode_names(tmp_path):
     db.close()
 
 
+def test_region_repair_fixes_mismatch_and_marks_user_version(tmp_path):
+    # A row written under old/buggy logic (or hand-corrupted) with an id that clearly
+    # encodes "us" but a stale/wrong group_tag of "ca" must get corrected the first
+    # time a writable EPGDatabase is opened against it.
+    path = tmp_path / "epg.db"
+    conn = _create_epg_schema(path)
+    conn.execute(
+        "INSERT INTO channels (id, display_name, norm_name, group_tag) VALUES (?, ?, ?, ?)",
+        ("Some.Channel.us", "Some Channel", "somechannel", "ca"),
+    )
+    conn.commit()
+    conn.close()
+
+    db = EPGDatabase(str(path))
+    try:
+        group_tag = db.conn.execute(
+            "SELECT group_tag FROM channels WHERE id = ?", ("Some.Channel.us",)
+        ).fetchone()[0]
+        user_version = db.conn.execute("PRAGMA user_version").fetchone()[0]
+    finally:
+        db.close()
+
+    assert group_tag == "us"
+    assert user_version == playlist._REGION_REPAIR_SCHEMA_VERSION
+
+
+def test_region_repair_skips_full_table_scan_once_already_versioned(tmp_path, monkeypatch):
+    # First open repairs (and version-stamps) the DB. A *second* open of the same,
+    # already-stamped DB must not re-scan the channels table at all: patch
+    # _detect_region_from_id to count calls, hand-corrupt a row's group_tag without
+    # going through insert_channel, and confirm the (gated) repair pass makes zero
+    # calls into the per-row region detector and leaves the corruption untouched.
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path))
+    db.insert_channel("Some.Channel.us", "Some Channel")
+    db.commit()
+    db.close()
+
+    # Re-corrupt directly via SQL (bypassing insert_channel's own correct-at-insert
+    # logic) to simulate a row that would need fixing if the scan actually ran.
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE channels SET group_tag = 'ca' WHERE id = ?", ("Some.Channel.us",))
+    conn.commit()
+    conn.close()
+
+    calls = []
+    real_detect = playlist._detect_region_from_id
+
+    def counting_detect(ch_id):
+        calls.append(ch_id)
+        return real_detect(ch_id)
+
+    monkeypatch.setattr(playlist, "_detect_region_from_id", counting_detect)
+
+    db2 = EPGDatabase(str(path))
+    try:
+        group_tag = db2.conn.execute(
+            "SELECT group_tag FROM channels WHERE id = ?", ("Some.Channel.us",)
+        ).fetchone()[0]
+    finally:
+        db2.close()
+
+    assert calls == []  # no per-row scan happened
+    assert group_tag == "ca"  # left untouched -- proves the scan, not luck, was skipped
+
+
+def test_region_repair_reruns_after_schema_version_bump(tmp_path, monkeypatch):
+    # Correctness guarantee: when _detect_region_from_id's logic changes (modeled here
+    # by bumping the schema-version constant), a previously-versioned DB must still get
+    # one more full repair pass so stale mismatches from before the logic change get
+    # fixed -- the version gate must not permanently hide real mismatches.
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path))
+    db.insert_channel("Some.Channel.us", "Some Channel")
+    db.commit()
+    stamped_version = db.conn.execute("PRAGMA user_version").fetchone()[0]
+    db.close()
+
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE channels SET group_tag = 'ca' WHERE id = ?", ("Some.Channel.us",))
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(playlist, "_REGION_REPAIR_SCHEMA_VERSION", stamped_version + 1)
+
+    db2 = EPGDatabase(str(path))
+    try:
+        group_tag = db2.conn.execute(
+            "SELECT group_tag FROM channels WHERE id = ?", ("Some.Channel.us",)
+        ).fetchone()[0]
+        new_version = db2.conn.execute("PRAGMA user_version").fetchone()[0]
+    finally:
+        db2.close()
+
+    assert group_tag == "us"
+    assert new_version == stamped_version + 1
+
+
+def test_norm_repair_fixes_mismatch_and_marks_application_id(tmp_path):
+    # Mirrors test_region_repair_fixes_mismatch_and_marks_user_version, but for
+    # _repair_norm_names/_NORM_REPAIR_SCHEMA_VERSION (gated via PRAGMA application_id
+    # instead of user_version, since region-repair already owns user_version).
+    path = tmp_path / "epg.db"
+    conn = _create_epg_schema(path)
+    conn.execute(
+        "INSERT INTO channels (id, display_name, norm_name, group_tag) VALUES (?, ?, ?, ?)",
+        ("chan1.us", "Some Channel HD", "totally-stale-value", "us"),
+    )
+    conn.commit()
+    conn.close()
+
+    db = EPGDatabase(str(path))
+    try:
+        norm_name = db.conn.execute(
+            "SELECT norm_name FROM channels WHERE id = ?", ("chan1.us",)
+        ).fetchone()[0]
+        app_id = db.conn.execute("PRAGMA application_id").fetchone()[0]
+    finally:
+        db.close()
+
+    assert norm_name == canonicalize_name(strip_noise_words("Some Channel HD"))
+    assert app_id == playlist._NORM_REPAIR_SCHEMA_VERSION
+
+
+def test_norm_repair_skips_full_table_scan_once_already_versioned(tmp_path, monkeypatch):
+    # Mirrors test_region_repair_skips_full_table_scan_once_already_versioned: a second
+    # open of an already-versioned DB must not re-run canonicalize_name at all, even
+    # when a row has been hand-corrupted (bypassing insert_channel) since the first open.
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path))
+    db.insert_channel("chan1.us", "Some Channel HD")
+    db.commit()
+    db.close()
+
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE channels SET norm_name = 'recorrupted' WHERE id = ?", ("chan1.us",))
+    conn.commit()
+    conn.close()
+
+    calls = []
+    real_canon = playlist.canonicalize_name
+
+    def counting_canon(*args, **kwargs):
+        calls.append(args)
+        return real_canon(*args, **kwargs)
+
+    monkeypatch.setattr(playlist, "canonicalize_name", counting_canon)
+
+    db2 = EPGDatabase(str(path))
+    try:
+        norm_name = db2.conn.execute(
+            "SELECT norm_name FROM channels WHERE id = ?", ("chan1.us",)
+        ).fetchone()[0]
+    finally:
+        db2.close()
+
+    assert calls == []  # no per-row scan happened
+    assert norm_name == "recorrupted"  # left untouched -- proves the scan, not luck, was skipped
+
+
+def test_norm_repair_reruns_after_schema_version_bump(tmp_path, monkeypatch):
+    # Mirrors test_region_repair_reruns_after_schema_version_bump: bumping
+    # _NORM_REPAIR_SCHEMA_VERSION must force one more full repair pass so a
+    # previously-versioned DB still picks up a real canonicalize_name logic change.
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path))
+    db.insert_channel("chan1.us", "Some Channel HD")
+    db.commit()
+    stamped_version = db.conn.execute("PRAGMA application_id").fetchone()[0]
+    db.close()
+
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE channels SET norm_name = 'recorrupted' WHERE id = ?", ("chan1.us",))
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(playlist, "_NORM_REPAIR_SCHEMA_VERSION", stamped_version + 1)
+
+    db2 = EPGDatabase(str(path))
+    try:
+        norm_name = db2.conn.execute(
+            "SELECT norm_name FROM channels WHERE id = ?", ("chan1.us",)
+        ).fetchone()[0]
+        new_version = db2.conn.execute("PRAGMA application_id").fetchone()[0]
+    finally:
+        db2.close()
+
+    assert norm_name == canonicalize_name(strip_noise_words("Some Channel HD"))
+    assert new_version == stamped_version + 1
+
+
 def test_epg_search_can_skip_programme_title_scan(tmp_path):
     path = tmp_path / "epg.db"
     now = datetime.datetime.now(datetime.timezone.utc)
