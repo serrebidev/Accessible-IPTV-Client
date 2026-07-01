@@ -19,8 +19,6 @@ import threading
 import time
 from typing import Callable, Dict, List, Optional
 
-from stream_proxy import get_ffmpeg_path, normalize_request_headers
-
 LOG = logging.getLogger(__name__)
 
 # preset key -> (English display label, file extension, kind)
@@ -38,6 +36,13 @@ RECORDING_FORMATS: "Dict[str, tuple]" = {
 }
 
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
+
+
+def get_ffmpeg_path():
+    """Resolve ffmpeg lazily so importing recorder stays cheap at startup."""
+    from stream_proxy import get_ffmpeg_path as _get_ffmpeg_path
+
+    return _get_ffmpeg_path()
 
 
 def format_label(fmt: str) -> str:
@@ -71,6 +76,8 @@ def _header_input_args(headers: Optional[Dict[str, object]]) -> List[str]:
     the dedicated ``-user_agent`` / ``-referer`` options (most reliable) and fold every
     other header into a single ``-headers`` CRLF-joined blob.
     """
+    from stream_proxy import normalize_request_headers
+
     normalized = normalize_request_headers(headers, add_default_user_agent=True)
     args: List[str] = []
     extra_lines: List[str] = []

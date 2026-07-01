@@ -179,17 +179,27 @@ def test_recording_manager_records_http_stream_end_to_end(tmp_path):
                 return
             self.send_response(200)
             self.send_header("Content-Type", "video/MP2T")
-            self.send_header("Content-Length", str(source.stat().st_size))
             self.end_headers()
-            with open(source, "rb") as handle:
+            bytes_sent = 0
+            try:
                 while True:
-                    chunk = handle.read(4096)
-                    if not chunk:
-                        break
-                    self.wfile.write(chunk)
-                    self.wfile.flush()
+                    with open(source, "rb") as handle:
+                        while True:
+                            chunk = handle.read(4096)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                            bytes_sent += len(chunk)
+                            if bytes_sent > 32768:
+                                time.sleep(0.02)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return
 
-    with socketserver.ThreadingTCPServer(("127.0.0.1", 0), FixtureHandler) as httpd:
+    class ReusableServer(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+
+    with ReusableServer(("127.0.0.1", 0), FixtureHandler) as httpd:
         httpd.daemon_threads = True
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
@@ -204,18 +214,28 @@ def test_recording_manager_records_http_stream_end_to_end(tmp_path):
             finished.set()
 
         manager = recorder.RecordingManager()
-        rec = manager.start(url, "End To End Channel", "provider_mkv", {}, str(tmp_path),
-                            key="e2e-channel", on_finish=on_finish)
-        assert finished.wait(30)
-        assert result["returncode"] == 0
-        assert rec.out_path.endswith(".mkv")
-        assert os.path.exists(rec.out_path)
-        assert os.path.getsize(rec.out_path) > 1024
-        assert not manager.list_active()
+        try:
+            rec = manager.start(
+                url,
+                "End To End Channel",
+                "provider_mkv",
+                {},
+                str(tmp_path),
+                key="e2e-channel",
+                on_finish=on_finish,
+                duration=2.0,
+            )
+            assert finished.wait(30)
+            assert result["returncode"] == 0
+            assert rec.out_path.endswith(".mkv")
+            assert os.path.exists(rec.out_path)
+            assert os.path.getsize(rec.out_path) > 1024
+            assert not manager.list_active()
 
-        subprocess.run([
-            ffmpeg, "-hide_banner", "-loglevel", "error", "-i", rec.out_path,
-            "-f", "null", "-",
-        ], check=True, timeout=30)
-
-        httpd.shutdown()
+            subprocess.run([
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-i", rec.out_path,
+                "-f", "null", "-",
+            ], check=True, timeout=30)
+        finally:
+            manager.stop_all(wait=True)
+            httpd.shutdown()

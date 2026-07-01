@@ -381,14 +381,7 @@ class IPTVClient(wx.Frame):
         self.recorder = recorder.RecordingManager()
         self._suppress_recording_notifications = False
         self._dvr_dialog = None
-        self.dvr_scheduler = dvr.DVRScheduler(
-            get_dvr_schedule_path(),
-            on_start=self._start_scheduled_recording,
-            on_stop=self._stop_scheduled_recording,
-            on_update=self._on_dvr_schedule_updated,
-            poll_seconds=10,
-        )
-        self.dvr_scheduler.start()
+        self.dvr_scheduler = None
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -405,19 +398,64 @@ class IPTVClient(wx.Frame):
         self._epg_match_lock = threading.Lock()
         # Dedicated executor for EPG lookups to avoid thread-spawning overhead
         self._epg_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="EPGFetch")
-
-        self._ensure_db_tuned()
+        self._db_tune_lock = threading.Lock()
+        self._db_tune_started = False
         self._build_ui()
         self.Centre()
 
         self.group_list.Append(_("Loading playlists..."))
         self.Show()
 
-        # Defer all loading. This call starts ONLY the playlist loading thread.
-        wx.CallAfter(self.start_playlist_load)
+        # Defer non-UI startup work until the frame has had a chance to paint.
+        wx.CallLater(50, self._run_deferred_startup_tasks)
 
         self.Bind(wx.EVT_ICONIZE, self.on_minimize)
         self.Bind(wx.EVT_CLOSE, self.on_close)
+
+    def _run_deferred_startup_tasks(self):
+        self._ensure_db_tuned_background()
+        self._start_dvr_scheduler()
+        self.start_playlist_load()
+
+    def _ensure_db_tuned_background(self):
+        with self._db_tune_lock:
+            if self._db_tune_started:
+                return
+            self._db_tune_started = True
+
+        def tune_db():
+            try:
+                self._ensure_db_tuned()
+            except Exception:
+                LOG.exception("Failed to tune EPG database during startup.")
+
+        threading.Thread(target=tune_db, daemon=True, name="EPGDBTune").start()
+
+    def _ensure_dvr_scheduler(self, *, start: bool = False):
+        scheduler = getattr(self, "dvr_scheduler", None)
+        if scheduler is None:
+            scheduler = dvr.DVRScheduler(
+                get_dvr_schedule_path(),
+                on_start=self._start_scheduled_recording,
+                on_stop=self._stop_scheduled_recording,
+                on_update=self._on_dvr_schedule_updated,
+                poll_seconds=10,
+            )
+            self.dvr_scheduler = scheduler
+        if start:
+            scheduler.start()
+        return scheduler
+
+    def _start_dvr_scheduler(self):
+        try:
+            self._ensure_dvr_scheduler(start=True)
+        except Exception:
+            LOG.exception("Failed to start DVR scheduler.")
+
+    def _stop_dvr_scheduler(self, *, wait: bool = False):
+        scheduler = getattr(self, "dvr_scheduler", None)
+        if scheduler is not None:
+            scheduler.stop(wait=wait)
 
     def _ensure_caster(self):
         caster = getattr(self, "caster", None)
@@ -1321,7 +1359,7 @@ class IPTVClient(wx.Frame):
                           _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
             return
 
-        self.dvr_scheduler.add_job(job)
+        self._ensure_dvr_scheduler(start=True).add_job(job)
         wx.MessageBox(
             _("Scheduled recording:\n{title}\n{time}").format(
                 title=job.get("display_title") or job.get("title") or "",
@@ -1344,7 +1382,7 @@ class IPTVClient(wx.Frame):
     def _find_duplicate_scheduled_job(self, new_job: Dict[str, object]) -> Optional[Dict[str, object]]:
         new_channel = new_job.get("channel") if isinstance(new_job.get("channel"), dict) else {}
         new_key = self._channel_record_key(new_channel) if isinstance(new_channel, dict) else ""
-        for job in self.dvr_scheduler.list_jobs(include_done=False):
+        for job in self._ensure_dvr_scheduler().list_jobs(include_done=False):
             channel = job.get("channel") if isinstance(job.get("channel"), dict) else {}
             key = self._channel_record_key(channel) if isinstance(channel, dict) else ""
             if (key and key == new_key
@@ -1362,7 +1400,7 @@ class IPTVClient(wx.Frame):
                 return
             except Exception:
                 self._dvr_dialog = None
-        self._dvr_dialog = ScheduledRecordingsDialog(self, self.dvr_scheduler)
+        self._dvr_dialog = ScheduledRecordingsDialog(self, self._ensure_dvr_scheduler(start=True))
         self._dvr_dialog.Show()
 
     def _on_dvr_schedule_updated(self):
@@ -1414,12 +1452,12 @@ class IPTVClient(wx.Frame):
         self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
 
     def _cancel_scheduled_recording(self, job_id: str) -> bool:
-        job = self.dvr_scheduler.get_job(job_id)
+        job = self._ensure_dvr_scheduler().get_job(job_id)
         if not job:
             return False
         if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
             self._stop_scheduled_recording(job)
-        return self.dvr_scheduler.cancel_job(job_id)
+        return self._ensure_dvr_scheduler(start=True).cancel_job(job_id)
 
     def _record_selected(self, *_args):
         channel = self._selected_channel()
@@ -1512,7 +1550,7 @@ class IPTVClient(wx.Frame):
         if job_id:
             detail = "\n".join(rec.stderr_tail[-6:])
             suppressed = getattr(self, "_suppress_recording_notifications", False)
-            self.dvr_scheduler.mark_finished(
+            self._ensure_dvr_scheduler(start=True).mark_finished(
                 str(job_id),
                 success=(rc == 0 and not suppressed),
                 output_path=rec.out_path,
@@ -2120,7 +2158,7 @@ class IPTVClient(wx.Frame):
             self.tray_icon.Destroy()
             self.tray_icon = None
         try:
-            self.dvr_scheduler.stop(wait=True)
+            self._stop_dvr_scheduler(wait=True)
         except Exception:
             pass
         try:
@@ -2180,7 +2218,7 @@ class IPTVClient(wx.Frame):
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
             try:
-                self.dvr_scheduler.stop(wait=True)
+                self._stop_dvr_scheduler(wait=True)
             except Exception:
                 pass
             try:

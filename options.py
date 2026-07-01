@@ -111,9 +111,9 @@ def get_cwd_dir():
     except Exception:
         return None
 
-def get_user_config_dir():
+def get_user_config_dir(*, create: bool = True):
     """
-    Gets the user-specific config directory, creating it if it doesn't exist.
+    Gets the user-specific config directory, creating it when requested.
     This relies on a wx.App object having been created with AppName set, but
     gracefully falls back when running headless or before wx.App exists.
     """
@@ -127,7 +127,8 @@ def get_user_config_dir():
         try:
             paths = wx.StandardPaths.Get()
             config_dir = paths.GetUserConfigDir()
-            os.makedirs(config_dir, exist_ok=True)
+            if create:
+                os.makedirs(config_dir, exist_ok=True)
             return config_dir
         except Exception:
             pass
@@ -140,6 +141,8 @@ def get_user_config_dir():
     else:  # linux and other unix
         path = os.path.join(os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), "IPTVClient")
 
+    if not create:
+        return path
     try:
         os.makedirs(path, exist_ok=True)
         return path
@@ -162,7 +165,7 @@ def get_config_read_candidates():
     if cwd:
         candidates.append(os.path.join(cwd, CONFIG_FILE))
 
-    user_dir = get_user_config_dir()
+    user_dir = get_user_config_dir(create=False)
     if user_dir:
         candidates.append(os.path.join(user_dir, CONFIG_FILE))
 
