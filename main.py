@@ -29,7 +29,8 @@ from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
     get_db_path, canonicalize_name, extract_group, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
-    get_recordings_dir, get_dvr_schedule_path, normalize_recording_format
+    get_recordings_dir, get_dvr_schedule_path, normalize_recording_format,
+    is_windows_installed_build
 )
 import app_meta
 import updater
@@ -1831,6 +1832,51 @@ class IPTVClient(wx.Frame):
                 raise updater.UpdateError(_("Update manifest version is not newer than the current app."))
 
             temp_root = tempfile.mkdtemp(prefix="iptvclient_update_")
+            if is_windows_installed_build():
+                if not manifest.installer_asset_filename or not manifest.installer_download_url or not manifest.installer_sha256:
+                    raise updater.UpdateError(_("Update manifest is missing required fields."))
+
+                installer_path = os.path.join(temp_root, manifest.installer_asset_filename)
+                progress(_("Downloading update..."), 0.0)
+                digest = updater.download_file_with_sha256(
+                    manifest.installer_download_url,
+                    installer_path,
+                    progress_cb=lambda fraction: progress(_("Downloading update..."), fraction),
+                )
+                progress(_("Verifying download..."), None)
+                if digest.lower() != manifest.installer_sha256.lower():
+                    raise updater.UpdateError(_("Downloaded update failed SHA-256 verification."))
+
+                progress(_("Verifying signature..."), None)
+                updater.verify_authenticode(installer_path, manifest.signing_thumbprints)
+
+                helper_source = os.path.join(get_app_dir(), "update_helper.bat")
+                helper_ps1_source = os.path.join(get_app_dir(), "update_helper.ps1")
+                if not os.path.exists(helper_source):
+                    helper_source = os.path.join(get_app_dir(), "_internal", "update_helper.bat")
+                if not os.path.exists(helper_ps1_source):
+                    helper_ps1_source = os.path.join(get_app_dir(), "_internal", "update_helper.ps1")
+
+                if not os.path.exists(helper_source) or not os.path.exists(helper_ps1_source):
+                    raise updater.UpdateError(_("Update helper is missing from this build."))
+
+                helper_dir = os.path.join(temp_root, "helper")
+                os.makedirs(helper_dir, exist_ok=True)
+                helper_bat = os.path.join(helper_dir, "update_helper.bat")
+                helper_ps1 = os.path.join(helper_dir, "update_helper.ps1")
+                shutil.copy2(helper_source, helper_bat)
+                shutil.copy2(helper_ps1_source, helper_ps1)
+
+                progress(_("Preparing to restart..."), None)
+                wx.CallAfter(
+                    self._launch_installer_update_helper,
+                    helper_bat,
+                    os.path.dirname(sys.executable),
+                    installer_path,
+                    os.path.basename(sys.executable),
+                )
+                return
+
             zip_path = os.path.join(temp_root, manifest.asset_filename)
             progress(_("Downloading update..."), 0.0)
             digest = updater.download_file_with_sha256(
@@ -1904,6 +1950,40 @@ class IPTVClient(wx.Frame):
                 except Exception:
                     pass
 
+    def _launch_installer_update_helper(
+        self,
+        helper_bat: str,
+        install_dir: str,
+        installer_path: str,
+        exe_name: str,
+    ):
+        cmd = [
+            "cmd",
+            "/d",
+            "/c",
+            helper_bat,
+            "-ParentPid",
+            str(os.getpid()),
+            "-InstallDir",
+            install_dir,
+            "-InstallerPath",
+            installer_path,
+            "-ExeName",
+            exe_name,
+        ]
+        try:
+            updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
+        except OSError as exc:
+            self._destroy_update_progress()
+            wx.MessageBox(
+                _("Update failed to start: {error}").format(error=exc),
+                _("Update Error"),
+                wx.OK | wx.ICON_ERROR,
+            )
+            return
+        self._update_install_pending = True
+        self._destroy_update_progress()
+        self.Close()
     def _launch_update_helper(
         self,
         helper_bat: str,
@@ -4559,6 +4639,6 @@ if __name__ == "__main__":
     except Exception:
         pass
     app = wx.App()
-    app.SetAppName("IPTVClient")
+    app.SetAppName(app_meta.APP_NAME)
     IPTVClient()
     app.MainLoop()

@@ -20,6 +20,7 @@ DEFAULT_SIGNTOOL = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64
 FFMPEG_NAME = "ffmpeg.exe"
 BUNDLED_CONFIG_NAME = "iptvclient.conf"
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
+INSTALLER_SCRIPT = os.path.join(REPO_ROOT, "installer", "AccessibleIPTVClient.iss")
 
 
 def run(cmd, cwd=REPO_ROOT, check=True, capture_output=False):
@@ -475,7 +476,83 @@ def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
-def build_assets(version, release_notes, signing_thumbprint=None):
+def find_inno_setup_compiler():
+    override = os.environ.get("INNO_SETUP_COMPILER") or os.environ.get("ISCC_PATH")
+    if override and os.path.isfile(override):
+        return override
+
+    candidates = []
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    program_files = os.environ.get("ProgramFiles")
+    program_files_x86 = os.environ.get("ProgramFiles(x86)")
+    for base in (local_appdata, program_files, program_files_x86):
+        if not base:
+            continue
+        for version in ("6", "7"):
+            candidates.append(os.path.join(base, "Programs", f"Inno Setup {version}", "ISCC.exe"))
+            candidates.append(os.path.join(base, f"Inno Setup {version}", "ISCC.exe"))
+
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            return candidate
+
+    found = shutil.which("ISCC.exe") or shutil.which("iscc")
+    if found:
+        return found
+
+    if os.name == "nt":
+        result = subprocess.run(
+            ["where", "ISCC.exe"],
+            cwd=REPO_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        for line in (result.stdout or "").splitlines():
+            candidate = line.strip()
+            if candidate and os.path.isfile(candidate):
+                return candidate
+    return None
+
+
+def build_installer(version, compiler=None):
+    compiler = compiler or find_inno_setup_compiler()
+    if not compiler:
+        raise RuntimeError(
+            "Inno Setup compiler ISCC.exe was not found. Install Inno Setup 6/7, "
+            "add ISCC.exe to PATH, or set INNO_SETUP_COMPILER."
+        )
+    dist_dir = os.path.join(REPO_ROOT, "dist", "iptvclient")
+    if not os.path.isdir(dist_dir):
+        raise RuntimeError("Build output not found at dist\\iptvclient.")
+    if not os.path.isfile(INSTALLER_SCRIPT):
+        raise RuntimeError("Installer script not found at installer\\AccessibleIPTVClient.iss.")
+
+    assets_dir = os.path.join(REPO_ROOT, "dist", "release")
+    ensure_dir(assets_dir)
+    installer_filename = app_meta.INSTALLER_ASSET_TEMPLATE.format(
+        app=app_meta.APP_NAME,
+        version=version,
+    )
+    installer_path = os.path.join(assets_dir, installer_filename)
+    if os.path.exists(installer_path):
+        os.remove(installer_path)
+
+    print(f"Building Windows installer with {compiler}...")
+    run([
+        compiler,
+        f"/DMyAppVersion={version}",
+        f"/DSourceDir={dist_dir}",
+        f"/DOutputDir={assets_dir}",
+        INSTALLER_SCRIPT,
+    ])
+    if not os.path.isfile(installer_path):
+        raise RuntimeError(f"Installer output was not created at {installer_path}.")
+    if os.path.getsize(installer_path) < 1024 * 1024:
+        raise RuntimeError(f"Installer output is unexpectedly small: {installer_path}.")
+    return installer_path
+
+def build_assets(version, release_notes, signing_thumbprint=None, installer_path=None):
     dist_dir = os.path.join(REPO_ROOT, "dist", "iptvclient")
     if not os.path.isdir(dist_dir):
         raise RuntimeError("Build output not found at dist\\iptvclient.")
@@ -496,6 +573,16 @@ def build_assets(version, release_notes, signing_thumbprint=None):
         f"https://github.com/{app_meta.GITHUB_OWNER}/{app_meta.GITHUB_REPO}/releases/download/"
         f"v{version}/{asset_filename}"
     )
+    installer_filename = None
+    installer_download_url = None
+    installer_sha = None
+    if installer_path:
+        installer_filename = os.path.basename(installer_path)
+        installer_sha = sha256_file(installer_path)
+        installer_download_url = (
+            f"https://github.com/{app_meta.GITHUB_OWNER}/{app_meta.GITHUB_REPO}/releases/download/"
+            f"v{version}/{installer_filename}"
+        )
     summary = updater.summarize_release_notes(release_notes)
     manifest_data = updater.build_manifest(
         version=version,
@@ -504,6 +591,9 @@ def build_assets(version, release_notes, signing_thumbprint=None):
         sha256=asset_sha,
         release_notes_summary=summary,
         signing_thumbprint=signing_thumbprint,
+        installer_asset_filename=installer_filename,
+        installer_download_url=installer_download_url,
+        installer_sha256=installer_sha,
     )
     manifest_path = os.path.join(assets_dir, app_meta.UPDATE_MANIFEST_NAME)
     with open(manifest_path, "w", encoding="utf-8") as handle:
@@ -518,8 +608,8 @@ def build_assets(version, release_notes, signing_thumbprint=None):
         "latest_path": latest_path,
         "manifest_path": manifest_path,
         "notes_path": notes_path,
+        "installer_path": installer_path,
     }
-
 
 def json_dump(payload):
     return json.dumps(payload, indent=2)
@@ -538,14 +628,16 @@ def git_push(version):
 
 
 def gh_release_create(version, assets):
+    release_assets = [assets["asset_path"], assets["latest_path"]]
+    if assets.get("installer_path"):
+        release_assets.append(assets["installer_path"])
+    release_assets.append(assets["manifest_path"])
     cmd = [
         "gh",
         "release",
         "create",
         f"v{version}",
-        assets["asset_path"],
-        assets["latest_path"],
-        assets["manifest_path"],
+        *release_assets,
         "--title",
         f"v{version}",
         "--notes-file",
@@ -590,6 +682,7 @@ def print_dry_run(version, tag, bump, assets):
     print("- build: pyinstaller --noconfirm main.spec")
     print(f"- sign: {app_meta.EXE_NAME}")
     print(f"- zip: {assets['asset_path']}")
+    print(f"- installer: {assets['installer_path']}")
     print(f"- manifest: {assets['manifest_path']}")
     print(f"- release: gh release create v{version} ...")
 
@@ -626,7 +719,9 @@ def main():
         validate_no_bundled_config()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
-        assets = build_assets(next_version, release_notes, signing_thumbprint)
+        installer_path = build_installer(next_version)
+        sign_executable(installer_path)
+        assets = build_assets(next_version, release_notes, signing_thumbprint, installer_path=installer_path)
         git_commit_and_tag(next_version)
         git_push(next_version)
         gh_release_create(next_version, assets)
@@ -642,7 +737,14 @@ def main():
         validate_no_bundled_config()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
-        build_assets(app_meta.APP_VERSION, release_notes, signing_thumbprint)
+        installer_path = None
+        compiler = find_inno_setup_compiler()
+        if compiler:
+            installer_path = build_installer(app_meta.APP_VERSION, compiler=compiler)
+            sign_executable(installer_path)
+        else:
+            print("Inno Setup compiler not found; skipping local installer build.")
+        build_assets(app_meta.APP_VERSION, release_notes, signing_thumbprint, installer_path=installer_path)
         return
 
     if args.mode == "dry-run":
@@ -650,6 +752,7 @@ def main():
         release_notes = build_release_notes(commits)
         assets = {
             "asset_path": os.path.join(REPO_ROOT, "dist", "release", "asset.zip"),
+            "installer_path": os.path.join(REPO_ROOT, "dist", "release", app_meta.INSTALLER_ASSET_TEMPLATE.format(app=app_meta.APP_NAME, version=next_version)),
             "manifest_path": os.path.join(REPO_ROOT, "dist", "release", app_meta.UPDATE_MANIFEST_NAME),
         }
         print_dry_run(next_version, tag, bump, assets)

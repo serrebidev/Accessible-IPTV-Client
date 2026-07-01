@@ -17,6 +17,7 @@ import hashlib
 import threading
 from http.client import IncompleteRead
 from providers import generate_provider_id
+from options import get_epg_log_path
 from typing import Dict, List, Optional, Tuple, Set
 
 import sys
@@ -69,8 +70,7 @@ else:
 # =========================
 
 DEBUG = True if os.getenv("EPG_DEBUG", "0").strip() not in {"0", "false", "False"} else False
-# FIX: Write log to temp dir to avoid permission errors on startup
-LOG_PATH = os.path.join(tempfile.gettempdir(), "iptvclient_epg_debug.log")
+LOG_PATH = get_epg_log_path()
 _logger = logging.getLogger("EPG")
 if not _logger.handlers:
     _logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)

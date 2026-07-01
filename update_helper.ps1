@@ -3,10 +3,9 @@ param(
     [int]$ParentPid,
     [Parameter(Mandatory = $true)]
     [string]$InstallDir,
-    [Parameter(Mandatory = $true)]
-    [string]$StagingDir,
-    [Parameter(Mandatory = $true)]
-    [string]$BackupDir,
+    [string]$StagingDir = "",
+    [string]$BackupDir = "",
+    [string]$InstallerPath = "",
     [Parameter(Mandatory = $true)]
     [string]$ExeName,
     [string]$RestartArgs = ""
@@ -35,22 +34,17 @@ if ($parentProcess) {
     Start-Sleep -Milliseconds 1000
 }
 
-if (-not (Test-Path -LiteralPath $StagingDir)) {
-    Write-Log "Staging directory missing: $StagingDir"
-    exit 1
-}
-
-# Kill any processes running from the install directory (Zombies)
+# Kill any processes running from the install directory.
 Write-Log "Scanning for processes locking $InstallDir..."
 try {
     $targetProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
     $candidateProcesses = Get-Process -Name $targetProcessName -ErrorAction SilentlyContinue
     $zombies = $candidateProcesses | Where-Object {
-        try { 
-            $_.MainModule.FileName.StartsWith($InstallDir, [System.StringComparison]::OrdinalIgnoreCase) 
-        } catch { 
-            $false 
-        } 
+        try {
+            $_.MainModule.FileName.StartsWith($InstallDir, [System.StringComparison]::OrdinalIgnoreCase)
+        } catch {
+            $false
+        }
     }
     foreach ($proc in $zombies) {
         if ($proc.Id -ne $PID -and $proc.Id -ne $ParentPid) {
@@ -58,10 +52,55 @@ try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
         }
     }
-    # Brief pause to allow OS to release locks
     Start-Sleep -Milliseconds 500
 } catch {
     Write-Log "Warning: Failed to scan/kill zombie processes: $($_.Exception.Message)"
+}
+
+if ($InstallerPath) {
+    if (-not (Test-Path -LiteralPath $InstallerPath)) {
+        Write-Log "Installer missing: $InstallerPath"
+        exit 1
+    }
+
+    Write-Log "Launching installer update: $InstallerPath"
+    $installerArgs = @(
+        "/VERYSILENT",
+        "/SUPPRESSMSGBOXES",
+        "/NORESTART",
+        "/SP-",
+        "/DIR=`"$InstallDir`""
+    )
+    try {
+        $proc = Start-Process -FilePath $InstallerPath -ArgumentList $installerArgs -Verb RunAs -Wait -PassThru
+        if ($proc.ExitCode -ne 0) {
+            Write-Log "Installer failed with exit code $($proc.ExitCode)."
+            exit $proc.ExitCode
+        }
+    } catch {
+        Write-Log "Failed to launch installer: $($_.Exception.Message)"
+        exit 1
+    }
+
+    $exePath = Join-Path $InstallDir $ExeName
+    if (Test-Path -LiteralPath $exePath) {
+        Write-Log "Restarting app after installer update: $exePath"
+        if ($RestartArgs) {
+            Start-Process -FilePath $exePath -WorkingDirectory $InstallDir -ArgumentList $RestartArgs
+        } else {
+            Start-Process -FilePath $exePath -WorkingDirectory $InstallDir
+        }
+        Write-Log "Installer updater completed."
+        exit 0
+    }
+
+    Write-Log "Executable not found after installer update: $exePath"
+    exit 1
+}
+
+if (-not (Test-Path -LiteralPath $StagingDir)) {
+    Write-Log "Staging directory missing: $StagingDir"
+    exit 1
 }
 
 $parentDir = Split-Path -Parent $InstallDir
@@ -87,15 +126,17 @@ try {
     Move-Item -LiteralPath $StagingDir -Destination $InstallDir -Force
     Write-Log "Installed update to $InstallDir"
 
-    # Restore configuration if it existed
+    # Migrate legacy install-local configuration to the per-user roaming folder.
     $oldConfig = Join-Path $BackupDir "iptvclient.conf"
-    $newConfig = Join-Path $InstallDir "iptvclient.conf"
-    if (Test-Path -LiteralPath $oldConfig) {
+    $roamingDir = Join-Path $env:APPDATA "AccessibleIPTVClient"
+    $roamingConfig = Join-Path $roamingDir "iptvclient.conf"
+    if ((Test-Path -LiteralPath $oldConfig) -and -not (Test-Path -LiteralPath $roamingConfig)) {
         try {
-            Copy-Item -LiteralPath $oldConfig -Destination $newConfig -Force
-            Write-Log "Restored configuration from backup."
+            New-Item -ItemType Directory -Path $roamingDir -Force | Out-Null
+            Copy-Item -LiteralPath $oldConfig -Destination $roamingConfig -Force
+            Write-Log "Migrated configuration from backup to roaming profile."
         } catch {
-            Write-Log "Failed to restore configuration: $($_.Exception.Message)"
+            Write-Log "Failed to migrate configuration: $($_.Exception.Message)"
         }
     }
 } catch {
@@ -124,7 +165,6 @@ if (Test-Path -LiteralPath $exePath) {
     exit 1
 }
 
-# Clean up backup directory after successful update
 if (Test-Path -LiteralPath $BackupDir) {
     try {
         Write-Log "Removing backup directory: $BackupDir"

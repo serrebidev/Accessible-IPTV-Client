@@ -132,7 +132,7 @@ def test_config_read_candidates_do_not_create_user_config_dir():
         os.environ["APPDATA"] = tmp
         try:
             import options
-            target = os.path.join(tmp, "IPTVClient")
+            target = os.path.join(tmp, "AccessibleIPTVClient")
             options.get_config_read_candidates()
             created_after_read = os.path.exists(target)
             options.get_user_config_dir()

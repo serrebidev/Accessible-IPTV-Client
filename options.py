@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import hashlib
+import shutil
 from dataclasses import dataclass
 import datetime
 import re
@@ -21,6 +22,14 @@ import tempfile
 from i18n import gettext as _
 
 CONFIG_FILE = "iptvclient.conf"
+APP_DATA_DIR_NAME = "AccessibleIPTVClient"
+LEGACY_APP_DATA_DIR_NAME = "IPTVClient"
+WINDOWS_INSTALL_MARKER = ".windows-installed"
+WINDOWS_INSTALL_MIGRATION_SENTINEL = ".windows-installed-data-migrated"
+EPG_DB_FILE = "epg.db"
+EPG_DEBUG_LOG_FILE = "iptvclient_epg_debug.log"
+DVR_SCHEDULE_FILE = "scheduled_recordings.json"
+CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = platform.system() == "Windows"
 DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
@@ -111,12 +120,50 @@ def get_cwd_dir():
     except Exception:
         return None
 
+def _is_windows_platform() -> bool:
+    return _IS_WINDOWS or sys.platform.startswith("win")
+
+
+def _windows_roaming_base() -> str:
+    return os.getenv("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
+
+
+def _legacy_user_config_dir() -> str:
+    if _is_windows_platform():
+        return os.path.join(_windows_roaming_base(), LEGACY_APP_DATA_DIR_NAME)
+    if sys.platform == "darwin":
+        return os.path.join(os.path.expanduser("~/Library/Application Support"), LEGACY_APP_DATA_DIR_NAME)
+    return os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), LEGACY_APP_DATA_DIR_NAME)
+
+
+def is_windows_installed_build() -> bool:
+    """Return True for an Inno-installed frozen Windows build."""
+    if not _is_windows_platform() or not getattr(sys, "frozen", False):
+        return False
+    try:
+        return os.path.exists(os.path.join(get_app_dir(), WINDOWS_INSTALL_MARKER))
+    except Exception:
+        return False
+
+
 def get_user_config_dir(*, create: bool = True):
     """
     Gets the user-specific config directory, creating it when requested.
-    This relies on a wx.App object having been created with AppName set, but
-    gracefully falls back when running headless or before wx.App exists.
+
+    Windows deliberately uses the explicit roaming profile folder so installed
+    builds keep mutable data out of Program Files and remain stable even before
+    wx.App is initialized.
     """
+    if _is_windows_platform():
+        path = os.path.join(_windows_roaming_base(), APP_DATA_DIR_NAME)
+        if not create:
+            return path
+        try:
+            os.makedirs(path, exist_ok=True)
+            return path
+        except Exception:
+            return tempfile.gettempdir()
+
     app = None
     if _HAS_WX and hasattr(wx, "GetApp"):
         try:
@@ -133,13 +180,10 @@ def get_user_config_dir(*, create: bool = True):
         except Exception:
             pass
 
-    # Fallback for headless environments or if called before wx.App is created.
-    if sys.platform == "win32":
-        path = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), "IPTVClient")
-    elif sys.platform == "darwin":
-        path = os.path.join(os.path.expanduser('~/Library/Application Support'), "IPTVClient")
-    else:  # linux and other unix
-        path = os.path.join(os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), "IPTVClient")
+    if sys.platform == "darwin":
+        path = os.path.join(os.path.expanduser("~/Library/Application Support"), LEGACY_APP_DATA_DIR_NAME)
+    else:
+        path = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), LEGACY_APP_DATA_DIR_NAME)
 
     if not create:
         return path
@@ -147,10 +191,89 @@ def get_user_config_dir(*, create: bool = True):
         os.makedirs(path, exist_ok=True)
         return path
     except Exception:
-        # Last resort if we can't create any directory
         return tempfile.gettempdir()
 
+
+def _dedupe_paths(paths):
+    unique = []
+    seen = set()
+    for candidate in paths:
+        if candidate and candidate not in seen:
+            unique.append(candidate)
+            seen.add(candidate)
+    return unique
+
+
+def _copy_file_if_missing(src: str, dest: str) -> None:
+    if not src or not dest or not os.path.isfile(src) or os.path.exists(dest):
+        return
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.copy2(src, dest)
+
+
+def _copy_tree_if_missing(src: str, dest: str) -> None:
+    if not src or not dest or not os.path.isdir(src) or os.path.exists(dest):
+        return
+    shutil.copytree(src, dest)
+
+
+def _prepare_windows_installed_data() -> None:
+    """Copy legacy mutable files to the per-user installed-build directory."""
+    if not is_windows_installed_build():
+        return
+    user_dir = get_user_config_dir()
+    sentinel = os.path.join(user_dir, WINDOWS_INSTALL_MIGRATION_SENTINEL)
+    if os.path.exists(sentinel):
+        return
+
+    old_user_dir = _legacy_user_config_dir()
+    app_dir = get_app_dir()
+    cwd = get_cwd_dir()
+    config_dest = os.path.join(user_dir, CONFIG_FILE)
+    for base in (old_user_dir, app_dir, cwd):
+        if base:
+            _copy_file_if_missing(os.path.join(base, CONFIG_FILE), config_dest)
+
+    _copy_file_if_missing(
+        os.path.join(old_user_dir, DVR_SCHEDULE_FILE),
+        os.path.join(user_dir, DVR_SCHEDULE_FILE),
+    )
+
+    temp_dir = tempfile.gettempdir()
+    for suffix in ("", "-wal", "-shm", "-journal"):
+        name = EPG_DB_FILE + suffix
+        _copy_file_if_missing(os.path.join(temp_dir, name), os.path.join(user_dir, name))
+
+    _copy_file_if_missing(
+        os.path.join(temp_dir, EPG_DEBUG_LOG_FILE),
+        os.path.join(user_dir, EPG_DEBUG_LOG_FILE),
+    )
+    _copy_tree_if_missing(
+        os.path.join(temp_dir, CACHE_DIR_NAME),
+        os.path.join(user_dir, CACHE_DIR_NAME),
+    )
+
+    try:
+        with open(sentinel, "w", encoding="utf-8") as handle:
+            handle.write("ok\n")
+    except Exception:
+        pass
+
+
 def get_config_read_candidates():
+    if _is_windows_platform():
+        candidates = [os.path.join(get_user_config_dir(create=False), CONFIG_FILE)]
+        app_dir = get_app_dir()
+        if app_dir:
+            candidates.append(os.path.join(app_dir, CONFIG_FILE))
+        cwd = get_cwd_dir()
+        if cwd:
+            candidates.append(os.path.join(cwd, CONFIG_FILE))
+        candidates.append(os.path.join(_legacy_user_config_dir(), CONFIG_FILE))
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            candidates.append(os.path.join(sys._MEIPASS, CONFIG_FILE))
+        return _dedupe_paths(candidates)
+
     # Revised priority to ensure the app-local config file is honored:
     # 1) App Dir (next to the code/executable)
     # 2) CWD (portable override when explicitly run from that folder)
@@ -169,20 +292,16 @@ def get_config_read_candidates():
     if user_dir:
         candidates.append(os.path.join(user_dir, CONFIG_FILE))
 
-    # 4) Bundled resource dir (PyInstaller _MEIPASS)
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         candidates.append(os.path.join(sys._MEIPASS, CONFIG_FILE))
 
-    # De-duplicate paths while preserving order
-    unique_candidates = []
-    seen = set()
-    for c in candidates:
-        if c not in seen:
-            unique_candidates.append(c)
-            seen.add(c)
-    return unique_candidates
+    return _dedupe_paths(candidates)
+
 
 def get_config_write_target():
+    if _is_windows_platform():
+        return os.path.join(get_user_config_dir(), CONFIG_FILE)
+
     # Prefer writing back to the file that was loaded, to avoid surprises.
     global _CONFIG_PATH
     if _CONFIG_PATH:
@@ -203,6 +322,7 @@ def get_config_write_target():
         return os.path.join(cwd, CONFIG_FILE)
 
     return os.path.join(get_user_config_dir(), CONFIG_FILE)
+
 
 def _apply_internal_player_bounds(cfg: Dict) -> None:
     """Coerce internal player buffering settings into valid ranges."""
@@ -271,6 +391,7 @@ def resolve_internal_player_settings(cfg: Dict) -> InternalPlayerSettings:
 
 def load_config() -> Dict:
     global _CONFIG_PATH
+    _prepare_windows_installed_data()
     default = {
         "playlists": [],
         "epgs": [],
@@ -310,11 +431,9 @@ def load_config() -> Dict:
             except Exception as e:
                 _log_error(f"Failed to load config from {p}: {e}")
                 # Do not break; try the next candidate location.
-    # No config found; remember we are effectively using the App Dir path
+    # No config found; remember where a future save should write.
     try:
-        app_dir = get_app_dir()
-        if app_dir:
-            _CONFIG_PATH = os.path.join(app_dir, CONFIG_FILE)
+        _CONFIG_PATH = get_config_write_target()
     except Exception:
         _CONFIG_PATH = None
     normalize_recording_padding(default)
@@ -354,9 +473,13 @@ def get_loaded_config_path() -> str:
     return _CONFIG_PATH or ""
 
 def get_cache_dir():
-    cache_dir = os.path.join(tempfile.gettempdir(), "iptv_cache")
+    if _is_windows_platform():
+        cache_dir = os.path.join(get_user_config_dir(), CACHE_DIR_NAME)
+    else:
+        cache_dir = os.path.join(tempfile.gettempdir(), CACHE_DIR_NAME)
     os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
+
 
 def get_cache_path_for_url(url):
     h = hashlib.sha1(url.encode("utf-8")).hexdigest()
@@ -428,10 +551,19 @@ def get_recordings_dir(cfg: Dict) -> str:
 
 def get_dvr_schedule_path() -> str:
     """Path to the persistent scheduled-recordings store."""
-    return os.path.join(get_user_config_dir(), "scheduled_recordings.json")
+    return os.path.join(get_user_config_dir(), DVR_SCHEDULE_FILE)
+
 
 def get_db_path():
-    return os.path.join(tempfile.gettempdir(), "epg.db")
+    if _is_windows_platform():
+        return os.path.join(get_user_config_dir(), EPG_DB_FILE)
+    return os.path.join(tempfile.gettempdir(), EPG_DB_FILE)
+
+
+def get_epg_log_path():
+    if _is_windows_platform():
+        return os.path.join(get_user_config_dir(), EPG_DEBUG_LOG_FILE)
+    return os.path.join(tempfile.gettempdir(), EPG_DEBUG_LOG_FILE)
 
 # Strip from names when canonicalizing (NOT used to detect country)
 STRIP_TAGS = [

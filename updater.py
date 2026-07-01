@@ -87,6 +87,9 @@ class UpdateManifest:
     published_date: str
     release_notes_summary: Optional[str] = None
     signing_thumbprints: Tuple[str, ...] = ()
+    installer_asset_filename: Optional[str] = None
+    installer_download_url: Optional[str] = None
+    installer_sha256: Optional[str] = None
 
 
 def parse_version(value: str) -> Optional[Tuple[int, int, int]]:
@@ -156,6 +159,20 @@ def _extract_manifest_thumbprints(payload: dict) -> Tuple[str, ...]:
     return ()
 
 
+def _extract_installer_fields(payload: dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    installer = payload.get("installer")
+    if not isinstance(installer, dict):
+        return None, None, None
+    filename = installer.get("asset") or installer.get("asset_name") or installer.get("asset_filename")
+    download_url = installer.get("download_url")
+    sha256 = installer.get("sha256")
+    return (
+        str(filename).strip() if filename else None,
+        str(download_url).strip() if download_url else None,
+        str(sha256).strip() if sha256 else None,
+    )
+
+
 def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dict:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     req = _build_request(url)
@@ -201,6 +218,7 @@ def fetch_update_manifest(
     thumbprints = _normalize_thumbprints(env_thumbs + manifest_thumbs)
     LOG.debug("fetch_update_manifest: normalized thumbprints=%s", thumbprints)
     
+    installer_asset, installer_url, installer_sha = _extract_installer_fields(data)
     try:
         manifest = UpdateManifest(
             version=str(data["version"]),
@@ -210,6 +228,9 @@ def fetch_update_manifest(
             published_date=str(data.get("published_date", "")),
             release_notes_summary=data.get("release_notes_summary"),
             signing_thumbprints=thumbprints,
+            installer_asset_filename=installer_asset,
+            installer_download_url=installer_url,
+            installer_sha256=installer_sha,
         )
         LOG.debug("fetch_update_manifest: created manifest with signing_thumbprints=%s", manifest.signing_thumbprints)
         return manifest
@@ -399,8 +420,11 @@ def build_manifest(
     sha256: str,
     release_notes_summary: Optional[str] = None,
     signing_thumbprint: Optional[str] = None,
+    installer_asset_filename: Optional[str] = None,
+    installer_download_url: Optional[str] = None,
+    installer_sha256: Optional[str] = None,
 ) -> dict:
-    published = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    published = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     manifest = {
         "version": version,
         "asset_filename": asset_filename,
@@ -411,4 +435,10 @@ def build_manifest(
     }
     if signing_thumbprint:
         manifest["signing_thumbprint"] = signing_thumbprint
+    if installer_asset_filename and installer_download_url and installer_sha256:
+        manifest["installer"] = {
+            "asset": installer_asset_filename,
+            "download_url": installer_download_url,
+            "sha256": installer_sha256,
+        }
     return manifest

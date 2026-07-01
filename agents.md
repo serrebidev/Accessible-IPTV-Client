@@ -84,6 +84,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 ## Current Learnings
 
+- Windows installer builds use Inno Setup with a `.windows-installed` marker in Program Files. Installed/runtime mutable state belongs under `%APPDATA%\AccessibleIPTVClient`; Program Files should contain only application binaries and bundled assets, and installed auto-updates should use the signed setup EXE rather than replacing Program Files directly.
 - `wx.LogError` uses printf-style formatting. Escape literal percent signs before passing user/provider text into it.
 - `sitecustomize.py` must remain a shim. The internal player implementation belongs in `internal_player.py` only.
 - Startup must stay lazy: do not run FFmpeg probes/installs, import casting stacks (`pychromecast`, `async_upnp_client`, `pyatv`), start the stream proxy/firewall rule, or import the built-in VLC player during `main.py` import or `IPTVClient.__init__`. Initialize those only when recording, casting, or built-in playback is actually requested.

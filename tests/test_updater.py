@@ -227,3 +227,55 @@ def test_popen_hidden_falls_back_without_breakaway(monkeypatch):
     assert not (attempts[1] & updater._CREATE_BREAKAWAY_FROM_JOB)
     assert attempts[1] & updater._CREATE_NO_WINDOW
     assert attempts[1] & updater._CREATE_NEW_PROCESS_GROUP
+
+
+def test_fetch_update_manifest_reads_installer_metadata(monkeypatch):
+    release = {
+        "assets": [
+            {
+                "name": "manifest.json",
+                "browser_download_url": "https://example.test/manifest.json",
+            }
+        ]
+    }
+    manifest_payload = {
+        "version": "1.2.3",
+        "asset_filename": "AccessibleIPTVClient-v1.2.3.zip",
+        "download_url": "https://example.test/AccessibleIPTVClient-v1.2.3.zip",
+        "sha256": "a" * 64,
+        "installer": {
+            "asset": "AccessibleIPTVClient-Setup-v1.2.3.exe",
+            "download_url": "https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe",
+            "sha256": "b" * 64,
+        },
+    }
+
+    monkeypatch.setattr(
+        updater.urllib.request,
+        "urlopen",
+        lambda req, timeout: _Response(manifest_payload),
+    )
+
+    manifest = updater.fetch_update_manifest(release, "manifest.json")
+
+    assert manifest.installer_asset_filename == "AccessibleIPTVClient-Setup-v1.2.3.exe"
+    assert manifest.installer_download_url == "https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe"
+    assert manifest.installer_sha256 == "b" * 64
+
+
+def test_build_manifest_includes_optional_installer_metadata():
+    manifest = updater.build_manifest(
+        version="1.2.3",
+        asset_filename="AccessibleIPTVClient-v1.2.3.zip",
+        download_url="https://example.test/AccessibleIPTVClient-v1.2.3.zip",
+        sha256="a" * 64,
+        installer_asset_filename="AccessibleIPTVClient-Setup-v1.2.3.exe",
+        installer_download_url="https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe",
+        installer_sha256="b" * 64,
+    )
+
+    assert manifest["installer"] == {
+        "asset": "AccessibleIPTVClient-Setup-v1.2.3.exe",
+        "download_url": "https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe",
+        "sha256": "b" * 64,
+    }
