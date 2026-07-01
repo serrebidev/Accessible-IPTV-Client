@@ -695,7 +695,14 @@ def _detect_region_from_id(ch_id: str) -> str:
             if code:
                 return code
 
-    m = re.search(r'([a-z]{2,3})', s)
+    # Last resort: pull a glued-on code out of the trailing segment only (e.g. "ukhd").
+    # Scanning the *whole* id here (previously `s`) is wrong: for ids with a non-country
+    # suffix (e.g. brand/source tags like "PEACOCK"/"distro"/"dtvsp"), the first 2-3
+    # letters of the *channel name* can coincidentally equal a real country synonym
+    # (e.g. "Bravo.PEACOCK" -> "bra" -> Brazil, "Cartoon.Network.PEACOCK" -> "car" -> Canada),
+    # producing a confidently wrong region instead of ''.
+    last = base_parts[-1] if base_parts else ''
+    m = re.search(r'([a-z]{2,3})', last)
     if m:
         code = _norm_country(m.group(1))
         if code:
