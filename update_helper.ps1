@@ -126,15 +126,27 @@ try {
     Move-Item -LiteralPath $StagingDir -Destination $InstallDir -Force
     Write-Log "Installed update to $InstallDir"
 
-    # Migrate legacy install-local configuration to the per-user roaming folder.
+    # Portable zip updates replace the app directory; preserve the local config
+    # beside the new executable when the previous portable copy had one.
     $oldConfig = Join-Path $BackupDir "iptvclient.conf"
+    $newConfig = Join-Path $InstallDir "iptvclient.conf"
+    if ((Test-Path -LiteralPath $oldConfig) -and -not (Test-Path -LiteralPath $newConfig)) {
+        try {
+            Copy-Item -LiteralPath $oldConfig -Destination $newConfig -Force
+            Write-Log "Preserved portable configuration in install directory."
+        } catch {
+            Write-Log "Failed to preserve portable configuration: $($_.Exception.Message)"
+        }
+    }
+
+    # Preserve pre-portable AppData configs as a fallback for users updating
+    # from builds that still stored portable settings in the roaming profile.
     $roamingDir = Join-Path $env:APPDATA "AccessibleIPTVClient"
     $roamingConfig = Join-Path $roamingDir "iptvclient.conf"
-    if ((Test-Path -LiteralPath $oldConfig) -and -not (Test-Path -LiteralPath $roamingConfig)) {
+    if ((Test-Path -LiteralPath $roamingConfig) -and -not (Test-Path -LiteralPath $newConfig)) {
         try {
-            New-Item -ItemType Directory -Path $roamingDir -Force | Out-Null
-            Copy-Item -LiteralPath $oldConfig -Destination $roamingConfig -Force
-            Write-Log "Migrated configuration from backup to roaming profile."
+            Copy-Item -LiteralPath $roamingConfig -Destination $newConfig -Force
+            Write-Log "Migrated roaming configuration to portable install directory."
         } catch {
             Write-Log "Failed to migrate configuration: $($_.Exception.Message)"
         }

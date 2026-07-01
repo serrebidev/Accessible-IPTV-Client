@@ -146,6 +146,15 @@ def is_windows_installed_build() -> bool:
         return False
 
 
+def is_windows_portable_build() -> bool:
+    """Return True for a frozen Windows build that is not installer-managed."""
+    return (
+        _is_windows_platform()
+        and getattr(sys, "frozen", False)
+        and not is_windows_installed_build()
+    )
+
+
 def get_user_config_dir(*, create: bool = True):
     """
     Gets the user-specific config directory, creating it when requested.
@@ -262,14 +271,26 @@ def _prepare_windows_installed_data() -> None:
 
 def get_config_read_candidates():
     if _is_windows_platform():
-        candidates = [os.path.join(get_user_config_dir(create=False), CONFIG_FILE)]
+        user_config = os.path.join(get_user_config_dir(create=False), CONFIG_FILE)
         app_dir = get_app_dir()
-        if app_dir:
-            candidates.append(os.path.join(app_dir, CONFIG_FILE))
         cwd = get_cwd_dir()
-        if cwd:
-            candidates.append(os.path.join(cwd, CONFIG_FILE))
-        candidates.append(os.path.join(_legacy_user_config_dir(), CONFIG_FILE))
+        candidates = []
+
+        if is_windows_portable_build():
+            if app_dir:
+                candidates.append(os.path.join(app_dir, CONFIG_FILE))
+            if cwd:
+                candidates.append(os.path.join(cwd, CONFIG_FILE))
+            candidates.append(user_config)
+            candidates.append(os.path.join(_legacy_user_config_dir(), CONFIG_FILE))
+        else:
+            candidates.append(user_config)
+            if app_dir:
+                candidates.append(os.path.join(app_dir, CONFIG_FILE))
+            if cwd:
+                candidates.append(os.path.join(cwd, CONFIG_FILE))
+            candidates.append(os.path.join(_legacy_user_config_dir(), CONFIG_FILE))
+
         if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
             candidates.append(os.path.join(sys._MEIPASS, CONFIG_FILE))
         return _dedupe_paths(candidates)
@@ -299,11 +320,30 @@ def get_config_read_candidates():
 
 
 def get_config_write_target():
+    global _CONFIG_PATH
+
     if _is_windows_platform():
+        if not is_windows_portable_build():
+            return os.path.join(get_user_config_dir(), CONFIG_FILE)
+
+        app_dir = get_app_dir()
+        cwd = get_cwd_dir()
+        if app_dir:
+            if _is_writable_dir(app_dir):
+                return os.path.join(app_dir, CONFIG_FILE)
+        if _CONFIG_PATH:
+            try:
+                parent = os.path.dirname(_CONFIG_PATH)
+                if parent and _is_writable_dir(parent):
+                    return _CONFIG_PATH
+            except Exception:
+                pass
+        if cwd:
+            if _is_writable_dir(cwd):
+                return os.path.join(cwd, CONFIG_FILE)
         return os.path.join(get_user_config_dir(), CONFIG_FILE)
 
     # Prefer writing back to the file that was loaded, to avoid surprises.
-    global _CONFIG_PATH
     if _CONFIG_PATH:
         try:
             parent = os.path.dirname(_CONFIG_PATH)

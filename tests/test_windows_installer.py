@@ -41,11 +41,15 @@ def test_release_tool_builds_signs_and_uploads_installer_asset():
     assert 'release_assets.append(assets["installer_path"])' in release_py
 
 
-def test_update_helper_supports_elevated_installer_mode_and_roaming_config():
+def test_update_helper_supports_elevated_installer_mode_and_portable_config():
     helper = (ROOT / "update_helper.ps1").read_text(encoding="utf-8")
 
     assert "$InstallerPath" in helper
     assert "Start-Process -FilePath $InstallerPath" in helper
     assert "-Verb RunAs" in helper
+    assert helper.index("if ($InstallerPath)") < helper.index("Portable zip updates replace the app directory")
     assert 'Join-Path $env:APPDATA "AccessibleIPTVClient"' in helper
-    assert 'Join-Path $InstallDir "iptvclient.conf"' not in helper
+    assert '$newConfig = Join-Path $InstallDir "iptvclient.conf"' in helper
+    assert "Preserved portable configuration in install directory." in helper
+    assert "Migrated roaming configuration to portable install directory." in helper
+    assert "Migrated configuration from backup to roaming profile." not in helper
