@@ -1056,6 +1056,198 @@ def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.dateti
                 pass
 
 # =========================
+# EPG gzip download (resumable)
+# =========================
+class _TempGzipStream:
+    """File-like wrapper that deletes the temp gz on close."""
+    def __init__(self, temp_path: str, owning_lock: Optional[threading.Lock] = None):
+        self._path = temp_path
+        self._lock = owning_lock
+        self._lock_released = False
+        self._f = gzip.open(temp_path, 'rb')
+    def read(self, *a, **kw):
+        return self._f.read(*a, **kw)
+    def close(self):
+        if getattr(self, '_f', None) is None:
+            self._release_lock()
+            return
+        try:
+            self._f.close()
+        finally:
+            try:
+                keep = os.getenv('EPG_KEEP_TEMP_GZ', '0').strip() in {'1', 'true', 'True'}
+                if not keep:
+                    os.remove(self._path)
+            except Exception:
+                pass
+            self._f = None
+            self._release_lock()
+    def __getattr__(self, name):
+        return getattr(self._f, name)
+    def _release_lock(self):
+        if self._lock and not self._lock_released:
+            try:
+                self._lock.release()
+            except RuntimeError:
+                pass
+            self._lock_released = True
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            self._release_lock()
+
+def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: int = 1 << 16) -> _TempGzipStream:
+    """Download a gzip file to a temp path with HTTP Range resume and verify integrity.
+
+    Returns an open `_TempGzipStream` guarded by a per-source lock once
+    a full, verifiable gzip is present. Raises on failure after retries.
+    """
+    # Stable name in temp dir so we can resume within this process
+    h = hashlib.md5(url.encode('utf-8', 'ignore')).hexdigest()
+    temp_dir = tempfile.gettempdir()
+    temp_path = os.path.join(temp_dir, f"epg_{h}.xml.gz")
+    lock = _acquire_download_lock(temp_path)
+    success = False
+
+    def _quick_gzip_probe(path: str) -> bool:
+        """Lightweight integrity probe (read first 16KB) to avoid double full decompression."""
+        try:
+            with gzip.open(path, 'rb') as gzf:
+                gzf.read(1 << 14)
+            return True
+        except Exception:
+            return False
+
+    attempts = 0
+    last_err = None
+    try:
+        while attempts < max_attempts:
+            attempts += 1
+            try:
+                existing = os.path.getsize(temp_path) if os.path.exists(temp_path) else 0
+                # If existing file doesn't look like gzip, start over
+                if existing > 0:
+                    try:
+                        with open(temp_path, 'rb') as _chk:
+                            sig = _chk.read(2)
+                        if sig != b'\x1f\x8b':
+                            os.remove(temp_path)
+                            existing = 0
+                    except Exception:
+                        try:
+                            os.remove(temp_path)
+                        except Exception:
+                            pass
+                        existing = 0
+                headers_base = {
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/gzip, application/xml, text/xml, */*",
+                }
+                mode = 'ab' if existing > 0 else 'wb'
+                use_range = existing > 0
+                resp = None
+                while True:
+                    headers = headers_base.copy()
+                    if use_range:
+                        headers['Range'] = f'bytes={existing}-'
+                    req = urllib.request.Request(url, headers=headers)
+                    try:
+                        resp = urllib.request.urlopen(req, timeout=300)
+                    except urllib.error.HTTPError as he:
+                        if he.code == 416 and use_range:
+                            _logger.debug("EPG HTTP 416 for %s, retrying without Range", _sanitize_url(url))
+                            try:
+                                if os.path.exists(temp_path):
+                                    os.remove(temp_path)
+                            except Exception:
+                                pass
+                            use_range = False
+                            existing = 0
+                            mode = 'wb'
+                            continue
+                        last_err = he
+                        resp = None
+                    if resp is None:
+                        time.sleep(0.5 * attempts)
+                        break
+                    status = getattr(resp, 'status', None) or getattr(resp, 'code', None)
+                    if status == 200 and use_range:
+                        # Server ignored range request entirely; restart clean.
+                        mode = 'wb'
+                        use_range = False
+                        existing = 0
+                    break
+                if resp is None:
+                    continue
+                # Server-declared size for this response, so completeness is
+                # verified by byte count rather than trusting the gzip probe
+                # alone (a truncated multi-hundred-MB download can still leave
+                # a structurally valid gzip header/first block).
+                expected_total = None
+                try:
+                    if use_range:
+                        crange = resp.info().get('Content-Range')
+                        total_part = crange.rsplit('/', 1)[-1].strip() if crange else ''
+                        if total_part.isdigit():
+                            expected_total = int(total_part)
+                        else:
+                            clen = resp.info().get('Content-Length')
+                            if clen is not None:
+                                expected_total = existing + int(clen)
+                    else:
+                        clen = resp.info().get('Content-Length')
+                        if clen is not None:
+                            expected_total = int(clen)
+                except Exception:
+                    expected_total = None
+                with open(temp_path, mode) as out:
+                    while True:
+                        try:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            out.write(chunk)
+                        except IncompleteRead as ire:
+                            # Partial read; keep what we have, retry and resume
+                            last_err = ire
+                            break
+                try:
+                    resp.close()
+                except Exception:
+                    pass
+                final_size = os.path.getsize(temp_path)
+                if expected_total is not None and final_size < expected_total:
+                    # Byte count proves truncation even though the gzip probe
+                    # below only reads the first 16KB; keep the partial file so
+                    # the next attempt resumes via Range instead of restarting.
+                    last_err = RuntimeError(f"incomplete gzip download: {final_size}/{expected_total} bytes")
+                    time.sleep(0.5 * attempts)
+                    continue
+                # Quick probe for gzip integrity; avoid full second pass
+                if _quick_gzip_probe(temp_path):
+                    stream = _TempGzipStream(temp_path, lock)
+                    success = True
+                    return stream
+                # Not complete (or corrupt); brief backoff and retry with Range
+                last_err = last_err or RuntimeError('gzip verify failed; resuming download')
+                time.sleep(0.5 * attempts)
+                continue
+            except Exception as e:
+                last_err = e
+                time.sleep(0.5 * attempts)
+                continue
+        # Retries exhausted; bubble a helpful error
+        raise last_err or RuntimeError('Failed to download gzip with resume')
+    finally:
+        if not success:
+            try:
+                lock.release()
+            except RuntimeError:
+                pass
+
+
+# =========================
 # EPG Database
 # =========================
 
@@ -1997,165 +2189,6 @@ class EPGDatabase:
             else: # Local file
                 is_gz = src.lower().endswith('.gz')
                 return gzip.open(src, 'rb') if is_gz else open(src, 'rb')
-
-        class _TempGzipStream:
-            """File-like wrapper that deletes the temp gz on close."""
-            def __init__(self, temp_path: str, owning_lock: Optional[threading.Lock] = None):
-                self._path = temp_path
-                self._lock = owning_lock
-                self._lock_released = False
-                self._f = gzip.open(temp_path, 'rb')
-            def read(self, *a, **kw):
-                return self._f.read(*a, **kw)
-            def close(self):
-                if getattr(self, '_f', None) is None:
-                    self._release_lock()
-                    return
-                try:
-                    self._f.close()
-                finally:
-                    try:
-                        keep = os.getenv('EPG_KEEP_TEMP_GZ', '0').strip() in {'1', 'true', 'True'}
-                        if not keep:
-                            os.remove(self._path)
-                    except Exception:
-                        pass
-                    self._f = None
-                    self._release_lock()
-            def __getattr__(self, name):
-                return getattr(self._f, name)
-            def _release_lock(self):
-                if self._lock and not self._lock_released:
-                    try:
-                        self._lock.release()
-                    except RuntimeError:
-                        pass
-                    self._lock_released = True
-            def __del__(self):
-                try:
-                    self.close()
-                except Exception:
-                    self._release_lock()
-
-        def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: int = 1 << 16) -> _TempGzipStream:
-            """Download a gzip file to a temp path with HTTP Range resume and verify integrity.
-
-            Returns an open `_TempGzipStream` guarded by a per-source lock once
-            a full, verifiable gzip is present. Raises on failure after retries.
-            """
-            # Stable name in temp dir so we can resume within this process
-            h = hashlib.md5(url.encode('utf-8', 'ignore')).hexdigest()
-            temp_dir = tempfile.gettempdir()
-            temp_path = os.path.join(temp_dir, f"epg_{h}.xml.gz")
-            lock = _acquire_download_lock(temp_path)
-            success = False
-
-            def _quick_gzip_probe(path: str) -> bool:
-                """Lightweight integrity probe (read first 16KB) to avoid double full decompression."""
-                try:
-                    with gzip.open(path, 'rb') as gzf:
-                        gzf.read(1 << 14)
-                    return True
-                except Exception:
-                    return False
-
-            attempts = 0
-            last_err = None
-            try:
-                while attempts < max_attempts:
-                    attempts += 1
-                    try:
-                        existing = os.path.getsize(temp_path) if os.path.exists(temp_path) else 0
-                        # If existing file doesn't look like gzip, start over
-                        if existing > 0:
-                            try:
-                                with open(temp_path, 'rb') as _chk:
-                                    sig = _chk.read(2)
-                                if sig != b'\x1f\x8b':
-                                    os.remove(temp_path)
-                                    existing = 0
-                            except Exception:
-                                try:
-                                    os.remove(temp_path)
-                                except Exception:
-                                    pass
-                                existing = 0
-                        headers_base = {
-                            "User-Agent": "Mozilla/5.0",
-                            "Accept": "application/gzip, application/xml, text/xml, */*",
-                        }
-                        mode = 'ab' if existing > 0 else 'wb'
-                        use_range = existing > 0
-                        resp = None
-                        while True:
-                            headers = headers_base.copy()
-                            if use_range:
-                                headers['Range'] = f'bytes={existing}-'
-                            req = urllib.request.Request(url, headers=headers)
-                            try:
-                                resp = urllib.request.urlopen(req, timeout=300)
-                            except urllib.error.HTTPError as he:
-                                if he.code == 416 and use_range:
-                                    _logger.debug("EPG HTTP 416 for %s, retrying without Range", _sanitize_url(url))
-                                    try:
-                                        if os.path.exists(temp_path):
-                                            os.remove(temp_path)
-                                    except Exception:
-                                        pass
-                                    use_range = False
-                                    existing = 0
-                                    mode = 'wb'
-                                    continue
-                                last_err = he
-                                resp = None
-                            if resp is None:
-                                time.sleep(0.5 * attempts)
-                                break
-                            status = getattr(resp, 'status', None) or getattr(resp, 'code', None)
-                            if status == 200 and use_range:
-                                # Server ignored range request entirely; restart clean.
-                                mode = 'wb'
-                                use_range = False
-                                existing = 0
-                            break
-                        if resp is None:
-                            continue
-                        with open(temp_path, mode) as out:
-                            while True:
-                                try:
-                                    chunk = resp.read(chunk_size)
-                                    if not chunk:
-                                        break
-                                    out.write(chunk)
-                                except IncompleteRead as ire:
-                                    # Partial read; keep what we have, retry and resume
-                                    last_err = ire
-                                    break
-                        try:
-                            resp.close()
-                        except Exception:
-                            pass
-                        # Quick probe for gzip integrity; avoid full second pass
-                        if _quick_gzip_probe(temp_path):
-                            stream = _TempGzipStream(temp_path, lock)
-                            success = True
-                            return stream
-                        # Not complete (or corrupt); brief backoff and retry with Range
-                        last_err = last_err or RuntimeError('gzip verify failed; resuming download')
-                        time.sleep(0.5 * attempts)
-                        continue
-                    except Exception as e:
-                        last_err = e
-                        time.sleep(0.5 * attempts)
-                        continue
-                # Retries exhausted; bubble a helpful error
-                raise last_err or RuntimeError('Failed to download gzip with resume')
-            finally:
-                if not success:
-                    try:
-                        lock.release()
-                    except RuntimeError:
-                        pass
 
         def _is_transient_stream_error(err: Exception) -> bool:
             msg = str(err).lower()
