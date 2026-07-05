@@ -1,6 +1,6 @@
 # Accessible IPTV Client
 
-A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work well with screen readers and hold up on large playlists and EPGs.
+A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work well with screen readers and reliably load large playlists and EPGs.
 
 [![Join SerrebiProjects on Telegram](https://img.shields.io/badge/Telegram-SerrebiProjects-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/SerrebiProjects)
 
