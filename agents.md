@@ -133,7 +133,12 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 <!-- claude-memory:begin (managed by sync-claude-memory.py; canonical files live in C:\Users\admin\.claude - edit there, not here) -->
 ## Memories (shared from ~/.claude - project: c--Users-admin-git-Accessible-IPTV-Client)
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\MEMORY.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-import-robustness.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-source-support-vs-integration.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\hungarian-localization.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\large-playlist-optimization.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\startup-cpu-fixes.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md
 <!-- claude-memory:end -->
