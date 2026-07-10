@@ -2411,6 +2411,21 @@ class IPTVClient(wx.Frame):
         self.channel_list.set_virtual_count()
         self.epg_display.SetValue("")
 
+    def _replace_displayed(self, entries: List[Dict[str, str]]):
+        """Replace the virtual-list model without exposing an invalid row.
+
+        A search result list is a new model, not an append. The native control
+        can synchronously ask for item text while its item count changes, so
+        ``_VirtualChannelList`` owns the ordering of the model/count update.
+        Keep the small fallback for non-GUI test doubles.
+        """
+        replace_contents = getattr(self.channel_list, "replace_contents", None)
+        if callable(replace_contents):
+            replace_contents(entries)
+        else:
+            self.displayed = entries
+            self.channel_list.set_virtual_count()
+
     def _should_run_epg_search(self, query: str, channel_match_count: int) -> bool:
         if not self.config.get("epg_enabled", True):
             return False
@@ -2457,10 +2472,6 @@ class IPTVClient(wx.Frame):
         source = (self.all_channels if self.current_group == "All Channels"
                   else self.channels_by_group.get(self.current_group, []))
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
-        # Shrink the native list while the old model is still intact, then swap
-        # the model; any synchronous item query during the shrink stays valid.
-        self.channel_list.Clear()
-        self.displayed = []
         self.epg_display.SetValue("")
         self.url_display.SetValue("")
 
@@ -2476,7 +2487,13 @@ class IPTVClient(wx.Frame):
                 continue
             matching_channels.append(ch)
 
-        self._append_search_results_chunked(matching_channels, populate_token)
+        # Replacing search results is different from appending asynchronous EPG
+        # rows. Let the virtual list order the old/new model transition so
+        # NVDA never observes a stale active child during a SetItemCount shrink.
+        IPTVClient._replace_displayed(self, [
+            {"type": "channel", "data": ch}
+            for ch in matching_channels
+        ])
         LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
 
         # Kick off bounded EPG search only for specific channel-name searches.
@@ -3247,10 +3264,10 @@ class IPTVClient(wx.Frame):
     def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
         self._populate_token += 1
 
-        self.displayed = []
-        for ch in source:
-            self.displayed.append({"type": "channel", "data": ch})
-        self.channel_list.set_virtual_count()
+        IPTVClient._replace_displayed(self, [
+            {"type": "channel", "data": ch}
+            for ch in source
+        ])
 
         if not source:
             self.epg_display.SetValue("")
@@ -4600,7 +4617,21 @@ class _VirtualChannelList(wx.ListCtrl):
             return data.get("name", "")
         return ""
 
-    def _set_count_safe(self, count: int):
+    def _clear_active_item_state(self, minimum_index: int = 0):
+        """Clear selected/focused state for active rows at or after an index."""
+        old = self.GetItemCount()
+        for idx in {self.GetFirstSelected(), self.GetFocusedItem()}:
+            if idx is not None and minimum_index <= idx < old:
+                try:
+                    self.SetItemState(
+                        idx,
+                        0,
+                        wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED,
+                    )
+                except Exception:
+                    pass
+
+    def _set_count_safe(self, count: int, *, active_state_cleared: bool = False):
         """Resync the native item count, dropping stale selection/focus first.
 
         Shrinking a virtual SysListView32 while its focused/selected item index
@@ -4609,14 +4640,34 @@ class _VirtualChannelList(wx.ListCtrl):
         """
         old = self.GetItemCount()
         if count < old:
-            for idx in {self.GetFirstSelected(), self.GetFocusedItem()}:
-                if idx is not None and count <= idx < old:
-                    try:
-                        self.SetItemState(idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
-                    except Exception:
-                        pass
+            if not active_state_cleared:
+                self._clear_active_item_state(count)
             LOG.debug("channel list count %d -> %d", old, count)
         self.SetItemCount(count)
+
+    def replace_contents(self, entries: List[Dict[str, str]]):
+        """Replace the backing rows while keeping native indexes valid.
+
+        ``SetItemCount`` can trigger synchronous MSAA/UIA item queries. On a
+        shrink, reduce the native count while the old model still serves all
+        remaining indexes, then swap to the new model. On a grow, install the
+        new model first so every existing index remains valid. Clear active
+        state for *every* replacement, even when the old index would fit the
+        new count: it represents a different logical row after a search.
+        """
+        entries = list(entries)
+        old_count = self.GetItemCount()
+        new_count = len(entries)
+        self._clear_active_item_state()
+
+        if new_count < old_count:
+            self._set_count_safe(new_count, active_state_cleared=True)
+            self._frame.displayed = entries
+        else:
+            self._frame.displayed = entries
+            self._set_count_safe(new_count, active_state_cleared=True)
+
+        self.Refresh()
 
     def set_virtual_count(self):
         """Resync the control to the current length of frame.displayed."""

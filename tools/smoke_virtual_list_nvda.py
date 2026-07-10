@@ -2,6 +2,7 @@
 
 Exercises the exact hazard patterns on SysListView32:
 - shrinking SetItemCount while an item near the end is selected+focused
+- replacing a large selected result set with smaller search results
 - Clear() with a focused item
 - rapid repeated refiltering of WhatsOnNowDialog (debounced path)
 Run: python tools/smoke_virtual_list_nvda.py
@@ -37,6 +38,19 @@ def test_virtual_channel_list(parent):
     assert lst.GetItemCount() == 10
     assert lst.GetFocusedItem() < 10, f"stale focused item {lst.GetFocusedItem()}"
     assert lst.GetFirstSelected() < 10, f"stale selection {lst.GetFirstSelected()}"
+
+    # A real search replaces the row model, rather than merely shrinking it.
+    # Exercise the transition with an active item that remains numerically in
+    # range but refers to a different result after filtering.
+    frame.displayed = [{"type": "channel", "data": {"name": f"before {i}"}} for i in range(10_000)]
+    lst.set_virtual_count()
+    lst.SetSelection(5)
+    filtered = [{"type": "channel", "data": {"name": f"match {i}"}} for i in range(8)]
+    lst.replace_contents(filtered)
+    assert lst.GetItemCount() == len(filtered)
+    assert lst.OnGetItemText(7, 0) == "match 7"
+    assert lst.GetFocusedItem() == -1
+    assert lst.GetFirstSelected() == -1
 
     # Clear() with a focused item present.
     lst.SetSelection(5)
