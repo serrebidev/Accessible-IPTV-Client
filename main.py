@@ -18,7 +18,9 @@ import subprocess
 import hashlib
 import concurrent.futures
 
-LOG = logging.getLogger(__name__)
+# Child of the rotating-file "EPG" logger configured in playlist.py, so UI/search
+# diagnostics land in the same log file and honor the same EPG_DEBUG switch.
+LOG = logging.getLogger("EPG.ui")
 
 import wx.adv
 
@@ -2452,10 +2454,13 @@ class IPTVClient(wx.Frame):
         populate_token = self._populate_token
         self._search_token += 1
         search_token = self._search_token
-        self.displayed = []
         source = (self.all_channels if self.current_group == "All Channels"
                   else self.channels_by_group.get(self.current_group, []))
+        LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
+        # Shrink the native list while the old model is still intact, then swap
+        # the model; any synchronous item query during the shrink stays valid.
         self.channel_list.Clear()
+        self.displayed = []
         self.epg_display.SetValue("")
         self.url_display.SetValue("")
 
@@ -2472,12 +2477,15 @@ class IPTVClient(wx.Frame):
             matching_channels.append(ch)
 
         self._append_search_results_chunked(matching_channels, populate_token)
+        LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
 
         # Kick off bounded EPG search only for specific channel-name searches.
         # Do not search programme titles here: a leading-wildcard title query
         # scans large XMLTV databases and causes the first-run CPU spike.
         if not self._should_run_epg_search(txt, len(matching_channels)):
+            LOG.debug("search %r: EPG search skipped", txt)
             return
+        LOG.debug("search %r: EPG search started (token %d)", txt, search_token)
 
         def epg_search(active_search_token, active_populate_token):
             try:
@@ -2504,43 +2512,31 @@ class IPTVClient(wx.Frame):
                 results = []
             def update_ui():
                 if getattr(self, "_search_token", 0) != active_search_token:
+                    LOG.debug("EPG search %r: dropped stale search token", txt)
                     return
                 if getattr(self, "_populate_token", 0) != active_populate_token:
+                    LOG.debug("EPG search %r: dropped, list was repopulated", txt)
                     return
                 if txt != self.filter_box.GetValue().strip().lower():
+                    LOG.debug("EPG search %r: dropped, query changed", txt)
                     return
-                # Preserve current selection to avoid scroll jumps while appending
-                try:
-                    cur_sel = self.channel_list.GetSelection()
-                    cur_count = self.channel_list.GetCount()
-                except Exception:
-                    cur_sel, cur_count = wx.NOT_FOUND, 0
-                if results:
-                    add_items = []
-                    for r in results:
-                        chan_name = r.get('channel_name') or ""
-                        show_name = r.get('show_title') or ""
-                        chan_lower = chan_name.lower()
-                        show_lower = show_name.lower()
-                        if txt and txt not in chan_lower and txt not in show_lower:
-                            continue
-                        label = f"{r['channel_name']} - {r['show_title']} ({self._fmt_time(r['start'])}–{self._fmt_time(r['end'])})"
-                        self.displayed.append({"type": "epg", "data": r, "label": label})
-                        add_items.append(label)
-                    if add_items:
-                        self.channel_list.set_virtual_count()
-                # Only auto-select the first item if the list was previously empty
-                # and nothing is selected. Do NOT steal focus or jump the list.
-                try:
-                    if cur_count == 0 and cur_sel in (-1, wx.NOT_FOUND) and self.channel_list.GetCount() > 0:
-                        # Leave selection empty to avoid scroll jump; user can choose.
-                        # If desired later, we can make this opt-in via a setting.
-                        pass
-                    elif cur_sel not in (-1, wx.NOT_FOUND) and cur_sel < self.channel_list.GetCount():
-                        # Reinstate prior selection to keep view position stable.
-                        self.channel_list.SetSelection(cur_sel)
-                except Exception:
-                    pass
+                added = 0
+                for r in results:
+                    chan_name = r.get('channel_name') or ""
+                    show_name = r.get('show_title') or ""
+                    chan_lower = chan_name.lower()
+                    show_lower = show_name.lower()
+                    if txt and txt not in chan_lower and txt not in show_lower:
+                        continue
+                    label = f"{r['channel_name']} - {r['show_title']} ({self._fmt_time(r['start'])}–{self._fmt_time(r['end'])})"
+                    self.displayed.append({"type": "epg", "data": r, "label": label})
+                    added += 1
+                if added:
+                    self.channel_list.set_virtual_count()
+                # Appending to the end of a virtual list never moves the existing
+                # selection, so no Select/Focus/EnsureVisible here: re-firing focus
+                # events while the user is typing in the filter box confuses NVDA.
+                LOG.debug("EPG search %r: appended %d results", txt, added)
             wx.CallAfter(update_ui)
         threading.Thread(target=lambda: epg_search(search_token, populate_token), daemon=True).start()
 
@@ -4361,6 +4357,7 @@ class WhatsOnNowDialog(wx.Dialog):
         self.schedule_callback = schedule_callback
         self._type_ahead_buffer = ""
         self._type_ahead_timer = None
+        self._filter_timer = None
         
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -4485,8 +4482,19 @@ class WhatsOnNowDialog(wx.Dialog):
                 return
     
     def _on_search(self, event):
-        """Filter the list based on search text."""
-        query = self.search_box.GetValue().lower().strip()
+        """Debounce filtering so NVDA isn't hit with a list rebuild per keystroke."""
+        if self._filter_timer:
+            self._filter_timer.Stop()
+        self._filter_timer = wx.CallLater(200, self._apply_search_filter)
+
+    def _apply_search_filter(self):
+        self._filter_timer = None
+        try:
+            if not self:  # dialog already destroyed while the timer was pending
+                return
+            query = self.search_box.GetValue().lower().strip()
+        except RuntimeError:
+            return
         if not query:
             self.filtered_programs = self.programs[:]
         else:
@@ -4494,15 +4502,33 @@ class WhatsOnNowDialog(wx.Dialog):
                 p for p in self.programs
                 if query in p.get("title", "").lower() or query in p.get("channel_name", "").lower()
             ]
-        self.listbox.SetItemCount(len(self.filtered_programs))
+        new_count = len(self.filtered_programs)
+        # The old selection's index maps to a different program after refiltering,
+        # and a focused item past the new count leaves NVDA holding a stale index.
+        # Drop selection/focus state entirely before changing the count.
+        old_count = self.listbox.GetItemCount()
+        for idx in {self.listbox.GetFirstSelected(), self.listbox.GetFocusedItem()}:
+            if idx is not None and 0 <= idx < old_count:
+                try:
+                    self.listbox.SetItemState(idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+                except Exception:
+                    pass
+        self.listbox.SetItemCount(new_count)
         self.listbox.Refresh()
-        self.count_label.SetLabel(_("{count} programs").format(count=len(self.filtered_programs)))
-        if self.filtered_programs:
+        self.count_label.SetLabel(_("{count} programs").format(count=new_count))
+        # Only auto-select while the user is actually in the list; forcing
+        # Select/Focus while they type in the search box fires focus events at NVDA.
+        if self.filtered_programs and self.FindFocus() is self.listbox:
             self.listbox.Select(0)
             self.listbox.Focus(0)
+        LOG.debug("whats-on filter %r: %d/%d programs", query, new_count, len(self.programs))
 
     def _on_search_enter(self, event):
         """Move focus to list when Enter is pressed in search box."""
+        # Flush a pending debounced filter so the list matches the query.
+        if self._filter_timer:
+            self._filter_timer.Stop()
+            self._apply_search_filter()
         if self.filtered_programs:
             self.listbox.SetFocus()
             self.listbox.Select(0)
@@ -4574,9 +4600,27 @@ class _VirtualChannelList(wx.ListCtrl):
             return data.get("name", "")
         return ""
 
+    def _set_count_safe(self, count: int):
+        """Resync the native item count, dropping stale selection/focus first.
+
+        Shrinking a virtual SysListView32 while its focused/selected item index
+        is >= the new count leaves MSAA/UIA holding a stale index, which can
+        crash NVDA. Clear those item states before the shrink.
+        """
+        old = self.GetItemCount()
+        if count < old:
+            for idx in {self.GetFirstSelected(), self.GetFocusedItem()}:
+                if idx is not None and count <= idx < old:
+                    try:
+                        self.SetItemState(idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
+                    except Exception:
+                        pass
+            LOG.debug("channel list count %d -> %d", old, count)
+        self.SetItemCount(count)
+
     def set_virtual_count(self):
         """Resync the control to the current length of frame.displayed."""
-        self.SetItemCount(len(self._frame.displayed))
+        self._set_count_safe(len(self._frame.displayed))
         width = self.GetClientSize().width
         if width > 0:
             self.SetColumnWidth(0, width)
@@ -4597,7 +4641,7 @@ class _VirtualChannelList(wx.ListCtrl):
         return self.GetItemCount()
 
     def Clear(self):
-        self.SetItemCount(0)
+        self._set_count_safe(0)
 
 
 class _VirtualWhatsOnList(wx.ListCtrl):
