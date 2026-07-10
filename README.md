@@ -22,6 +22,8 @@ A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work we
 
 Grab the latest build from the [Releases page](https://github.com/serrebidev/Accessible-IPTV-Client/releases).
 
+See the [changelog](CHANGELOG.md) for release-by-release changes.
+
 **Windows installer (recommended)**
 
 1. Download `AccessibleIPTVClient-Setup-vX.Y.Z.exe`.

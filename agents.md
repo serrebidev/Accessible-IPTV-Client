@@ -130,6 +130,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 - Large existing EPG databases can make _ensure_db_tuned() a multi-second operation when an index is missing (observed 5.6 GB epg.db, 16M programmes, 14s index creation). Never run EPG DB tuning before the main frame is shown; keep it deferred/background or tied to actual EPG import/query work.
 - Replacing virtual channel-list search/group rows must clear the active selected/focused item state even when its numeric index remains in range. During a shrink, change the native item count while the old model still supplies every remaining row, then swap the model; during a grow, install the new model before increasing the count. This prevents NVDA/MSAA from querying stale or out-of-range virtual rows.
+- `build.bat release` prepends a readable version/date entry to `CHANGELOG.md` from the generated release notes before the version commit and tag. Keep `CHANGELOG.md` staged with `app_meta.py`; historical entries were reconstructed from the Forgejo mirror.
 
 <!-- claude-memory:begin (managed by sync-claude-memory.py; canonical files live in C:\Users\admin\.claude - edit there, not here) -->
 ## Memories (shared from ~/.claude - project: c--Users-admin-git-Accessible-IPTV-Client)

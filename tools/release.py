@@ -21,6 +21,7 @@ FFMPEG_NAME = "ffmpeg.exe"
 BUNDLED_CONFIG_NAME = "iptvclient.conf"
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 INSTALLER_SCRIPT = os.path.join(REPO_ROOT, "installer", "AccessibleIPTVClient.iss")
+CHANGELOG_PATH = os.path.join(REPO_ROOT, "CHANGELOG.md")
 
 
 def run(cmd, cwd=REPO_ROOT, check=True, capture_output=False):
@@ -122,6 +123,64 @@ def build_release_notes(commits):
         output.extend([f"- {item}" for item in items])
         output.append("")
     return "\n".join(output).strip() or "## Other\n- No notable changes."
+
+
+def _changelog_item(text):
+    """Turn a conventional-commit subject into a readable changelog bullet."""
+    item = (text or "").strip()
+    item = re.sub(r"^(?:feat|fix|perf|docs|test|chore|build|ci)(?:\([^)]+\))?!?:\s*", "", item, flags=re.I)
+    if not item:
+        return ""
+    return item[0].upper() + item[1:]
+
+
+def _changelog_items(release_notes):
+    items = []
+    for line in (release_notes or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("- "):
+            line = line[2:].strip()
+        item = _changelog_item(line)
+        if item:
+            items.append(item)
+    return items or ["No notable changes."]
+
+
+def _changelog_header():
+    return (
+        "# Changelog\n\n"
+        "Readable release history for Accessible IPTV Client. New entries are "
+        "prepended automatically by `build.bat release`. Older entries were "
+        "reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/"
+        "serrebi/Accessible-IPTV-Client).\n"
+    )
+
+
+def update_changelog(version, release_notes, release_date=None, path=None):
+    """Prepend a release entry and refuse to overwrite an existing version."""
+    path = path or CHANGELOG_PATH
+    release_date = release_date or time.strftime("%Y-%m-%d")
+    entry_heading = f"## v{version} - {release_date}"
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as handle:
+            existing = handle.read()
+    else:
+        existing = _changelog_header()
+
+    if entry_heading in existing or re.search(rf"^## v{re.escape(str(version))}\b", existing, re.M):
+        raise RuntimeError(f"CHANGELOG.md already contains v{version}.")
+
+    header = _changelog_header()
+    if not existing.startswith("# Changelog\n"):
+        raise RuntimeError("CHANGELOG.md must begin with '# Changelog'.")
+    body = existing[len(header):] if existing.startswith(header) else existing.split("\n", 1)[1].lstrip("\n")
+    lines = [entry_heading, ""]
+    lines.extend(f"- {item}" for item in _changelog_items(release_notes))
+    entry = "\n".join(lines) + "\n\n"
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(header + entry + body)
 
 
 def determine_bump(commits):
@@ -616,7 +675,7 @@ def json_dump(payload):
 
 
 def git_commit_and_tag(version):
-    run(["git", "add", "app_meta.py"])
+    run(["git", "add", "app_meta.py", "CHANGELOG.md"])
     run(["git", "commit", "-m", f"chore(release): v{version}"])
     run(["git", "tag", f"v{version}"])
 
@@ -711,6 +770,7 @@ def main():
         tag, next_version, commits, bump = compute_next_version()
         release_notes = build_release_notes(commits)
         update_version_file(next_version)
+        update_changelog(next_version, release_notes)
         validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()

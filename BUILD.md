@@ -23,4 +23,4 @@ build.bat release
 
 ## Output
 
-Release mode builds the PyInstaller app, signs the executable, writes the update manifest, pushes the version commit and tag, and creates the GitHub release assets under `dist\release`.
+Release mode prepends the generated release notes to [`CHANGELOG.md`](CHANGELOG.md), builds the PyInstaller app, signs the executable, writes the update manifest, pushes the version commit and tag, and creates the GitHub release assets under `dist\release`.
