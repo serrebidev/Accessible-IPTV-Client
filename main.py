@@ -231,15 +231,23 @@ def _lower_current_thread_priority():
     """Best-effort: drop the OS scheduling priority of the *calling* thread only.
 
     Used by the background EPG import worker so a long (tens-of-minutes) import
-    competes less aggressively for CPU with the UI thread and other apps, without
+    competes less aggressively with the UI thread and other apps, without
     touching the whole process's priority class (which would also throttle the UI
     thread). Windows-only; a harmless no-op everywhere else or if the call fails.
+
+    Uses THREAD_MODE_BACKGROUND_BEGIN rather than a plain CPU-priority drop: a
+    multi-gigabyte EPG import is dominated by disk writes and page-cache churn,
+    and CPU priority alone leaves the import free to saturate the disk and evict
+    the UI's working set. Background mode lowers CPU, disk-I/O, *and* memory
+    priority together, which is what actually keeps the interface (and NVDA)
+    responsive while an import is running.
     """
     if platform.system() != "Windows":
         return
     try:
         import ctypes
         from ctypes import wintypes
+        THREAD_MODE_BACKGROUND_BEGIN = 0x00010000
         THREAD_PRIORITY_LOWEST = -2
         kernel32 = ctypes.windll.kernel32
         # GetCurrentThread() returns a pseudo-HANDLE (pointer-sized). Without explicit
@@ -248,7 +256,10 @@ def _lower_current_thread_priority():
         kernel32.GetCurrentThread.restype = wintypes.HANDLE
         kernel32.SetThreadPriority.argtypes = [wintypes.HANDLE, ctypes.c_int]
         kernel32.SetThreadPriority.restype = wintypes.BOOL
-        kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_PRIORITY_LOWEST)
+        # THREAD_MODE_BACKGROUND_BEGIN is only valid on the current thread's
+        # pseudo-handle, which is exactly how it is used here.
+        if not kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN):
+            kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_PRIORITY_LOWEST)
     except Exception:
         pass
 
@@ -2480,29 +2491,52 @@ class IPTVClient(wx.Frame):
             self.on_group_select()
             return
 
-        matching_channels = []
-        for ch in source:
-            name = (ch.get("name") or "")
-            if txt and txt not in name.lower():
-                continue
-            matching_channels.append(ch)
+        # Snapshot on the UI thread so the worker never races a playlist reload
+        # mutating the source list in place.
+        source_snapshot = list(source)
 
-        # Replacing search results is different from appending asynchronous EPG
-        # rows. Let the virtual list order the old/new model transition so
-        # NVDA never observes a stale active child during a SetItemCount shrink.
-        IPTVClient._replace_displayed(self, [
-            {"type": "channel", "data": ch}
-            for ch in matching_channels
-        ])
-        LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
+        def filter_worker():
+            # The match loop and entry building over 50k-300k channels run off
+            # the UI thread. While an EPG import is writing gigabytes, the disk
+            # and page cache are starved enough that this work on the UI thread
+            # freezes the interface (and NVDA with it); a worker thread absorbs
+            # those stalls while the UI keeps pumping messages.
+            matching_channels = []
+            for ch in source_snapshot:
+                name = (ch.get("name") or "")
+                if txt and txt not in name.lower():
+                    continue
+                matching_channels.append(ch)
+            entries = [
+                {"type": "channel", "data": ch}
+                for ch in matching_channels
+            ]
 
-        # Kick off bounded EPG search only for specific channel-name searches.
-        # Do not search programme titles here: a leading-wildcard title query
-        # scans large XMLTV databases and causes the first-run CPU spike.
-        if not self._should_run_epg_search(txt, len(matching_channels)):
-            LOG.debug("search %r: EPG search skipped", txt)
-            return
-        LOG.debug("search %r: EPG search started (token %d)", txt, search_token)
+            def apply_results():
+                if getattr(self, "_search_token", 0) != search_token:
+                    LOG.debug("search %r: dropped stale search token", txt)
+                    return
+                if getattr(self, "_populate_token", 0) != populate_token:
+                    LOG.debug("search %r: dropped, list was repopulated", txt)
+                    return
+                # Replacing search results is different from appending asynchronous
+                # EPG rows. Let the virtual list order the old/new model transition
+                # so NVDA never observes a stale active child during a SetItemCount
+                # shrink.
+                IPTVClient._replace_displayed(self, entries)
+                LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
+            wx.CallAfter(apply_results)
+
+            # Kick off bounded EPG search only for specific channel-name searches.
+            # Do not search programme titles here: a leading-wildcard title query
+            # scans large XMLTV databases and causes the first-run CPU spike.
+            # wx.CallAfter is FIFO, so the EPG rows queued by epg_search below
+            # always land after apply_results has installed the channel rows.
+            if not self._should_run_epg_search(txt, len(matching_channels)):
+                LOG.debug("search %r: EPG search skipped", txt)
+                return
+            LOG.debug("search %r: EPG search started (token %d)", txt, search_token)
+            epg_search(search_token, populate_token)
 
         def epg_search(active_search_token, active_populate_token):
             try:
@@ -2555,7 +2589,7 @@ class IPTVClient(wx.Frame):
                 # events while the user is typing in the filter box confuses NVDA.
                 LOG.debug("EPG search %r: appended %d results", txt, added)
             wx.CallAfter(update_ui)
-        threading.Thread(target=lambda: epg_search(search_token, populate_token), daemon=True).start()
+        threading.Thread(target=filter_worker, daemon=True).start()
 
     def _refresh_group_ui(self):
         self.group_list.Freeze()

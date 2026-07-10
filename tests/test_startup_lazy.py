@@ -181,11 +181,16 @@ def test_playlist_import_delays_epg_log_file_creation():
 def test_epg_import_thread_priority_helper_lowers_real_thread_priority():
     """`_lower_current_thread_priority` runs at the top of the EPG auto-import
     worker thread (see do_import() in start_epg_import_background) so a long
-    background import competes less for CPU with the UI thread. Verify it
-    actually moves the *calling* thread's OS priority -- checked against the
-    real Win32 API rather than a mock, since a mock would not have caught the
-    HANDLE marshaling bug this once had (GetCurrentThread()'s pseudo-HANDLE
-    getting truncated without explicit ctypes argtypes/restype).
+    background import competes less for CPU/disk/memory with the UI thread.
+    Verify it actually moves the *calling* thread's OS priority -- checked
+    against the real Win32 API rather than a mock, since a mock would not have
+    caught the HANDLE marshaling bug this once had (GetCurrentThread()'s
+    pseudo-HANDLE getting truncated without explicit ctypes argtypes/restype).
+
+    The helper prefers THREAD_MODE_BACKGROUND_BEGIN (GetThreadPriority then
+    reports a value below THREAD_PRIORITY_LOWEST, -4 in practice) and falls
+    back to THREAD_PRIORITY_LOWEST (-2), so assert on the shared bound rather
+    than one exact constant.
     """
     data = _run_child(
         """
@@ -216,8 +221,8 @@ def test_epg_import_thread_priority_helper_lowers_real_thread_priority():
 
     if data["is_windows"]:
         THREAD_PRIORITY_LOWEST = -2
-        assert data["before"] != THREAD_PRIORITY_LOWEST
-        assert data["after"] == THREAD_PRIORITY_LOWEST
+        assert data["before"] > THREAD_PRIORITY_LOWEST
+        assert data["after"] <= THREAD_PRIORITY_LOWEST
 
 
 def test_start_epg_import_background_invokes_priority_lowering():
