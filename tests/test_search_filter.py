@@ -740,5 +740,72 @@ class TestLargePlaylistHandling:
         )]
 
 
+def test_startup_tuning_does_not_rebuild_redundant_channel_start_index(tmp_path):
+    from main import IPTVClient
+
+    db_path = tmp_path / "epg.db"
+    _create_minimal_epg_db(db_path)
+
+    with patch("main.get_db_path", return_value=str(db_path)):
+        IPTVClient._ensure_db_tuned(SimpleNamespace())
+
+    conn = sqlite3.connect(db_path)
+    try:
+        indexes = {row[1] for row in conn.execute("PRAGMA index_list(programmes)")}
+    finally:
+        conn.close()
+
+    assert "idx_programmes_channel_start" not in indexes
+    assert "idx_programmes_channel_start_end" in indexes
+
+
+def test_large_search_results_are_batched_and_stale_batches_stop():
+    from main import IPTVClient
+
+    scheduled = []
+    counts = []
+
+    class FakeList:
+        def set_virtual_count(self):
+            counts.append(len(client.displayed))
+
+    def fake_call_later(_delay, callback, *args):
+        scheduled.append((callback, args))
+
+    client = SimpleNamespace(
+        displayed=[],
+        channel_list=FakeList(),
+        _search_token=7,
+        _populate_token=11,
+        _SEARCH_LARGE_RESULT_THRESHOLD=3,
+        _SEARCH_PREVIEW_COUNT=2,
+        _SEARCH_BATCH_SIZE=3,
+    )
+
+    entries = [{"type": "channel", "data": {"name": str(i)}} for i in range(10)]
+
+    with patch("main.wx.CallLater", fake_call_later):
+        IPTVClient._replace_search_results_chunked(
+            client,
+            entries,
+            7,
+            11,
+        )
+        assert counts == [2]
+        while scheduled:
+            callback, args = scheduled.pop(0)
+            callback(*args)
+        assert counts == [2, 5, 8, 10]
+
+        client.displayed = []
+        scheduled.clear()
+        counts.clear()
+        IPTVClient._replace_search_results_chunked(client, entries, 7, 11)
+        client._search_token = 8
+        callback, args = scheduled.pop(0)
+        callback(*args)
+        assert counts == [2]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

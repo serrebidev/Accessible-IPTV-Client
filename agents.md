@@ -129,6 +129,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Do not patch update manifest JSON with PowerShell `Set-Content`; it can write a UTF-8 BOM, and same-name GitHub release asset replacements may be served from cache for a while. Prefer regenerating manifests through `tools/release.py` or explicitly writing UTF-8 without BOM.
 
 - Large existing EPG databases can make _ensure_db_tuned() a multi-second operation when an index is missing (observed 5.6 GB epg.db, 16M programmes, 14s index creation). Never run EPG DB tuning before the main frame is shown; keep it deferred/background or tied to actual EPG import/query work.
+- Keep `_ensure_db_tuned()` index creation consistent with `EPGDatabase._create_tables()`: never recreate the redundant `(channel_id, start)` index after the database layer drops it, because rebuilding it over a multi-gigabyte EPG can saturate disk/CPU during startup and make unrelated UI actions such as search appear frozen.
 - Replacing virtual channel-list search/group rows must clear the active selected/focused item state even when its numeric index remains in range. During a shrink, change the native item count while the old model still supplies every remaining row, then swap the model; during a grow, install the new model before increasing the count. This prevents NVDA/MSAA from querying stale or out-of-range virtual rows.
 - `build.bat release` prepends a readable version/date entry to `CHANGELOG.md` from the generated release notes before the version commit and tag. Keep `CHANGELOG.md` staged with `app_meta.py`; historical entries were reconstructed from the Forgejo mirror.
 
@@ -139,8 +140,10 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-source-support-vs-integration.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\hungarian-localization.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\large-playlist-optimization.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\nvda-search-crash-fix.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\search-freeze-during-epg-import.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\startup-cpu-fixes.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md
 <!-- claude-memory:end -->

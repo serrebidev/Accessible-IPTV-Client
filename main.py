@@ -594,7 +594,6 @@ class IPTVClient(wx.Frame):
             cur.execute("PRAGMA cache_size=-65536;")
             cur.execute("PRAGMA wal_autocheckpoint=0;")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_end ON programmes(channel_id, end);")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start ON programmes(channel_id, start);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start_end ON programmes(channel_id, start, end);")
             conn.commit()
         except Exception:
@@ -2281,6 +2280,8 @@ class IPTVClient(wx.Frame):
             wx.CallAfter(frame._adjust_volume, delta)
 
     def exit_from_tray(self):
+        self._search_token += 1
+        self._populate_token += 1
         self._tray_allow_restore = False
         self._cancel_tray_ready_timer()
         if self.tray_icon:
@@ -2339,6 +2340,8 @@ class IPTVClient(wx.Frame):
             wx.CallAfter(self.show_tray_icon)
             event.Veto()
         else:
+            self._search_token += 1
+            self._populate_token += 1
             # Ensure poll timer stopped on exit
             try:
                 self._stop_epg_poll_timer()
@@ -2422,6 +2425,33 @@ class IPTVClient(wx.Frame):
         self.channel_list.set_virtual_count()
         self.epg_display.SetValue("")
 
+    def _replace_search_results_chunked(
+        self,
+        entries: List[Dict[str, str]],
+        search_token: int,
+        populate_token: int,
+    ):
+        """Install broad search results in yielding, accessibility-safe batches."""
+        if len(entries) <= self._SEARCH_LARGE_RESULT_THRESHOLD:
+            IPTVClient._replace_displayed(self, entries)
+            return
+
+        preview_count = min(self._SEARCH_PREVIEW_COUNT, len(entries))
+        IPTVClient._replace_displayed(self, entries[:preview_count])
+
+        def append_batch(offset=preview_count):
+            if getattr(self, "_search_token", 0) != search_token:
+                return
+            if getattr(self, "_populate_token", 0) != populate_token:
+                return
+            end = min(offset + self._SEARCH_BATCH_SIZE, len(entries))
+            self.displayed.extend(entries[offset:end])
+            self.channel_list.set_virtual_count()
+            if end < len(entries):
+                wx.CallLater(1, append_batch, end)
+
+        wx.CallLater(1, append_batch)
+
     def _replace_displayed(self, entries: List[Dict[str, str]]):
         """Replace the virtual-list model without exposing an invalid row.
 
@@ -2502,7 +2532,10 @@ class IPTVClient(wx.Frame):
             # freezes the interface (and NVDA with it); a worker thread absorbs
             # those stalls while the UI keeps pumping messages.
             matching_channels = []
-            for ch in source_snapshot:
+            for index, ch in enumerate(source_snapshot):
+                if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
+                    LOG.debug("search %r: cancelled stale channel scan", txt)
+                    return
                 name = (ch.get("name") or "")
                 if txt and txt not in name.lower():
                     continue
@@ -2523,7 +2556,9 @@ class IPTVClient(wx.Frame):
                 # EPG rows. Let the virtual list order the old/new model transition
                 # so NVDA never observes a stale active child during a SetItemCount
                 # shrink.
-                IPTVClient._replace_displayed(self, entries)
+                IPTVClient._replace_search_results_chunked(
+                    self, entries, search_token, populate_token
+                )
                 LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
             wx.CallAfter(apply_results)
 
@@ -2532,6 +2567,9 @@ class IPTVClient(wx.Frame):
             # scans large XMLTV databases and causes the first-run CPU spike.
             # wx.CallAfter is FIFO, so the EPG rows queued by epg_search below
             # always land after apply_results has installed the channel rows.
+            if getattr(self, "_search_token", 0) != search_token:
+                LOG.debug("search %r: cancelled before EPG lookup", txt)
+                return
             if not self._should_run_epg_search(txt, len(matching_channels)):
                 LOG.debug("search %r: EPG search skipped", txt)
                 return
@@ -2539,6 +2577,7 @@ class IPTVClient(wx.Frame):
             epg_search(search_token, populate_token)
 
         def epg_search(active_search_token, active_populate_token):
+            db = None
             try:
                 db = EPGDatabase(get_db_path(), readonly=True)
                 try:
@@ -2552,15 +2591,16 @@ class IPTVClient(wx.Frame):
                     limit=self._SEARCH_EPG_RESULT_LIMIT,
                     include_title_search=False,
                 )
+            except Exception:
+                results = []
+            finally:
                 try:
-                    if hasattr(db, "close"):
+                    if db is not None and hasattr(db, "close"):
                         db.close()
-                    elif hasattr(db, "conn"):
+                    elif db is not None and hasattr(db, "conn"):
                         db.conn.close()
                 except Exception:
                     pass
-            except Exception:
-                results = []
             def update_ui():
                 if getattr(self, "_search_token", 0) != active_search_token:
                     LOG.debug("EPG search %r: dropped stale search token", txt)
@@ -4689,7 +4729,8 @@ class _VirtualChannelList(wx.ListCtrl):
         state for *every* replacement, even when the old index would fit the
         new count: it represents a different logical row after a search.
         """
-        entries = list(entries)
+        if not isinstance(entries, list):
+            entries = list(entries)
         old_count = self.GetItemCount()
         new_count = len(entries)
         self._clear_active_item_state()
