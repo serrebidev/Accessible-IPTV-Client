@@ -33,18 +33,16 @@ def test_categorize_m3u_splits_movies_and_series():
     order, groups = vod.categorize_m3u_vod(channels)
 
     # A live news channel must not be swept into VOD.
-    assert all("CNN" not in lbl for lbl in order)
+    assert "News" not in order
+    # Category labels are the provider's own group-titles, verbatim.
+    assert "VOD Movies" in order and "Series Drama" in order
 
-    movie_labels = [l for l in order if l.startswith(vod._("Movies"))]
-    series_labels = [l for l in order if l.startswith(vod._("Series"))]
-    assert movie_labels and series_labels
-
-    movies = groups[movie_labels[0]]
+    movies = groups["VOD Movies"]
     assert len(movies) == 1 and movies[0]["kind"] == vod.KIND_MOVIE
     assert movies[0]["url"] == "http://x/movie/2"
 
-    series_bucket = groups[series_labels[0]]
-    assert len(series_bucket) == 1  # one show, episodes merged
+    series_bucket = groups["Series Drama"]
+    assert len(series_bucket) == 1  # one episodic show, episodes merged into a folder
     series = series_bucket[0]
     assert series["kind"] == vod.KIND_SERIES
     assert series["name"] == "Breaking Bad"
@@ -52,6 +50,33 @@ def test_categorize_m3u_splits_movies_and_series():
     assert len(eps) == 3
     # Episodes must be ordered by (season, episode).
     assert [e["_se"] for e in eps] == [(1, 1), (1, 2), (2, 1)]
+
+
+def test_single_stream_show_is_flat_not_a_folder():
+    """A '24/7 <Show>' single stream must be directly playable, not a 1-item folder."""
+    channels = [
+        {"name": "Bar Rescue", "group": "24/7 Shows", "url": "http://x/br"},
+        {"name": "Blue Bloods", "group": "24/7 Shows", "url": "http://x/bb"},
+        {"name": "Bar Rescue", "group": "24/7 Shows", "url": "http://x/br"},  # dupe
+    ]
+    order, groups = vod.categorize_m3u_vod(channels)
+    assert order == ["24/7 Shows"]
+    items = groups["24/7 Shows"]
+    # Deduped to two directly-playable items; no series folders.
+    assert len(items) == 2
+    assert all(it["kind"] == vod.KIND_MOVIE for it in items)
+    assert {it["url"] for it in items} == {"http://x/br", "http://x/bb"}
+
+
+def test_no_hint_and_garbage_names_are_excluded():
+    """Entries without a movie/series group hint stay out of VOD (no blind SxxExx guessing)."""
+    channels = [
+        {"name": "US: ABC 9 Syracuse (WSYR)", "group": "US ABC", "url": "http://x/abc"},
+        # Malformed entry: base64 logo blob as the name, empty group -> country fallback.
+        {"name": "iVBORw0KGgoS01aE05bcd", "group": "us", "url": "http://x/junk"},
+    ]
+    order, groups = vod.categorize_m3u_vod(channels)
+    assert order == [] and groups == {}
 
 
 class _FakeXtream:

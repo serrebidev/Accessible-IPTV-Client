@@ -105,57 +105,102 @@ def _add(group_order: List[str], groups: Dict[str, List[Dict]], label: str, item
 # --------------------------------------------------------------------------- #
 # Plain M3U heuristic (source #2)
 # --------------------------------------------------------------------------- #
+def _flat_item(ch: Dict, category: str) -> Dict:
+    """A directly-playable VOD entry (movie, or a single-stream '24/7 show')."""
+    item = dict(ch)
+    item["kind"] = KIND_MOVIE
+    item["group"] = category
+    return item
+
+
 def categorize_m3u_vod(channels: List[Dict]) -> Tuple[List[str], Dict[str, List[Dict]]]:
     """Split movies and series out of a flat channel list using group-title hints.
 
-    Conservative: an entry is treated as VOD only when its ``group-title``
-    names movies/series, or its name carries an unmistakable ``SxxExx`` marker.
-    Live channels that merely happen to contain a digit are left alone.
+    Conservative on purpose — plain M3U has no VOD API, so mistakes are easy:
+
+    * An entry is considered VOD **only** when its ``group-title`` explicitly
+      names movies or series. Name-only ``SxxExx`` guessing is not enough (real
+      providers tag the group, and blind matching swept in malformed entries —
+      e.g. a base64 logo blob pasted as a channel name).
+    * A drill-in **series folder** is created only for a genuinely episodic show:
+      two or more episodes carrying two or more distinct ``SxxExx`` markers.
+      Everything else (movies, and single-stream "24/7 <Show>" channels) is a
+      flat, directly-playable item under its category — no pointless one-item
+      folders.
+
+    Category labels are the provider's own ``group-title`` verbatim, so the
+    listing reads the way the provider organised it.
     """
     group_order: List[str] = []
     groups: Dict[str, List[Dict]] = {}
-    # (category, show_title_lower) -> series dict, so episodes of one show merge.
-    series_index: Dict[Tuple[str, str], Dict] = {}
+
+    # First pass: bucket candidates by category, splitting movie vs series hint.
+    order: List[str] = []
+    movie_by_cat: Dict[str, List[Dict]] = {}
+    # category -> show_title_lower -> [(se, channel), ...]
+    series_by_cat: Dict[str, Dict[str, List[Tuple[Optional[Tuple[int, int]], Dict]]]] = {}
+    show_display: Dict[Tuple[str, str], str] = {}
+
+    def note_category(cat: str):
+        if cat not in movie_by_cat and cat not in series_by_cat and cat not in order:
+            order.append(cat)
 
     for ch in channels:
         name = (ch.get("name") or ch.get("tvg-name") or ch.get("tvg_name") or "").strip()
         if not name:
             continue
-        group = (ch.get("group") or "").strip()
-        gl = group.lower()
-        se = parse_season_episode(name)
+        category = (ch.get("group") or "").strip()
+        gl = category.lower()
         is_series = any(h in gl for h in _SERIES_HINTS)
         is_movie = any(h in gl for h in _MOVIE_HINTS)
+        if not (is_series or is_movie):
+            continue  # require an explicit group-title hint — no blind guessing
 
-        if is_series or (se is not None and not is_movie):
+        note_category(category)
+        if is_series and not is_movie:
             show = _series_title(name)
-            category = group or _("Series")
-            label = _("Series") + " — " + category
-            key = (label, show.lower())
-            series = series_index.get(key)
-            if series is None:
+            key = show.lower()
+            bucket = series_by_cat.setdefault(category, {}).setdefault(key, [])
+            bucket.append((parse_season_episode(name), ch))
+            show_display.setdefault((category, key), show)
+        else:
+            movie_by_cat.setdefault(category, []).append(_flat_item(ch, category))
+
+    seen_urls: Dict[str, set] = {}
+
+    def add_flat(category: str, item: Dict):
+        # Collapse duplicate listings of the same stream within a category.
+        url = item.get("url", "")
+        urls = seen_urls.setdefault(category, set())
+        if url and url in urls:
+            return
+        if url:
+            urls.add(url)
+        _add(group_order, groups, category, item)
+
+    for category in order:
+        for key, entries in series_by_cat.get(category, {}).items():
+            markers = [se for se, _ in entries if se]
+            if len(entries) >= 2 and len(set(markers)) >= 2:
+                # Genuinely episodic: a browsable series folder.
+                episodes = []
+                for se, ch in entries:
+                    ep = dict(ch)
+                    ep["_se"] = se
+                    episodes.append(ep)
                 series = {
                     "kind": KIND_SERIES,
-                    "name": show,
+                    "name": show_display.get((category, key), key),
                     "group": category,
-                    "episodes": [],
+                    "episodes": _sort_episodes(episodes),
                 }
-                series_index[key] = series
-                _add(group_order, groups, label, series)
-            episode = dict(ch)
-            episode["_se"] = se
-            series["episodes"].append(episode)
-        elif is_movie:
-            category = group or _("Movies")
-            label = _("Movies") + " — " + category
-            movie = dict(ch)
-            movie["kind"] = KIND_MOVIE
-            movie["group"] = category
-            _add(group_order, groups, label, movie)
-
-    # Freeze episode ordering now that every episode of each show is collected.
-    for series in series_index.values():
-        series["episodes"] = _sort_episodes(series["episodes"])
+                _add(group_order, groups, category, series)
+            else:
+                # Not a real series — flat playable item(s).
+                for _se, ch in entries:
+                    add_flat(category, _flat_item(ch, category))
+        for item in movie_by_cat.get(category, []):
+            add_flat(category, item)
 
     return group_order, groups
 
