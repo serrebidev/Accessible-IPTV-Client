@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.106.0 - 2026-07-12
+
+- Add 12 languages and keep catalogues synced on release
+
 ## v1.105.2 - 2026-07-12
 
 - Group untagged channels as Uncategorized, not by guessed country
