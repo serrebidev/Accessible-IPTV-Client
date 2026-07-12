@@ -91,6 +91,77 @@ class XtreamCodesClient:
         except UnicodeDecodeError:
             return raw.decode("latin-1", "ignore")
 
+    # ------------------------------------------------------------------ #
+    # player_api.php (structured VOD / Series browsing)
+    #
+    # The get.php m3u_plus feed above returns a flat, mixed channel list. The
+    # player_api endpoints instead expose movies and series as a browsable
+    # catalogue with categories, and — crucially — let series episodes be
+    # loaded lazily per series (get_series_info) so we never enumerate every
+    # episode of every show up front.
+    # ------------------------------------------------------------------ #
+    def _player_api_url(self, action: Optional[str] = None, extra: Optional[Dict[str, str]] = None) -> str:
+        params: Dict[str, str] = {
+            "username": self.cfg.username,
+            "password": self.cfg.password,
+        }
+        if action:
+            params["action"] = action
+        if extra:
+            for k, v in extra.items():
+                if v is not None:
+                    params[k] = v
+        return f"{self._base}/player_api.php?{urllib.parse.urlencode(params)}"
+
+    def _player_api(self, action: Optional[str] = None, extra: Optional[Dict[str, str]] = None, timeout: int = 30):
+        url = self._player_api_url(action, extra)
+        req = urllib.request.Request(url, headers={"User-Agent": self.cfg.user_agent})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1", "ignore")
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            raise ProviderError(_("Invalid response from Xtream player API"))
+
+    def get_vod_categories(self, timeout: int = 30) -> List[Dict]:
+        data = self._player_api("get_vod_categories", timeout=timeout)
+        return data if isinstance(data, list) else []
+
+    def get_vod_streams(self, category_id: Optional[str] = None, timeout: int = 60) -> List[Dict]:
+        extra = {"category_id": str(category_id)} if category_id is not None else None
+        data = self._player_api("get_vod_streams", extra, timeout=timeout)
+        return data if isinstance(data, list) else []
+
+    def get_series_categories(self, timeout: int = 30) -> List[Dict]:
+        data = self._player_api("get_series_categories", timeout=timeout)
+        return data if isinstance(data, list) else []
+
+    def get_series(self, category_id: Optional[str] = None, timeout: int = 60) -> List[Dict]:
+        extra = {"category_id": str(category_id)} if category_id is not None else None
+        data = self._player_api("get_series", extra, timeout=timeout)
+        return data if isinstance(data, list) else []
+
+    def get_series_info(self, series_id, timeout: int = 30) -> Dict:
+        extra = {"series_id": str(series_id)}
+        data = self._player_api("get_series_info", extra, timeout=timeout)
+        return data if isinstance(data, dict) else {}
+
+    def vod_stream_url(self, stream_id, ext: str = "mp4") -> str:
+        ext = (ext or "mp4").lstrip(".")
+        user = urllib.parse.quote(self.cfg.username, safe="")
+        pw = urllib.parse.quote(self.cfg.password, safe="")
+        return f"{self._base}/movie/{user}/{pw}/{stream_id}.{ext}"
+
+    def series_stream_url(self, episode_id, ext: str = "mp4") -> str:
+        ext = (ext or "mp4").lstrip(".")
+        user = urllib.parse.quote(self.cfg.username, safe="")
+        pw = urllib.parse.quote(self.cfg.password, safe="")
+        return f"{self._base}/series/{user}/{pw}/{episode_id}.{ext}"
+
     def describe(self) -> str:
         label = self.cfg.name or urllib.parse.urlparse(self._base).netloc
         return f"Xtream Codes ({label})"

@@ -45,6 +45,7 @@ from providers import (
     StalkerPortalClient, StalkerPortalConfig,
     ProviderError, generate_provider_id
 )
+import vod
 from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
 import recorder
@@ -387,6 +388,17 @@ class IPTVClient(wx.Frame):
         self.all_channels: List[Dict[str, str]] = []
         self.displayed: List[Dict[str, str]] = []
         self.current_group = "All Channels"
+        # View mode: "live" (channels + catch-up, the default) or "vod"
+        # (browsable movies & series). VOD is built lazily on first switch.
+        self.view_mode = "live"
+        self.vod_group_order: List[str] = []
+        self.vod_groups: Dict[str, List[Dict]] = {}
+        self.vod_current_group: Optional[str] = None
+        self.vod_loaded = False
+        self.vod_loading = False
+        self._vod_load_token = 0
+        # When drilled into a series, the category to return to on "Back".
+        self._vod_series_return_group: Optional[str] = None
         self.default_player = self.config.get("media_player", "Built-in Player")
         self.custom_player_path = self.config.get("custom_player_path", "")
         self.show_player_on_enter = self._bool_pref(self.config.get("show_player_on_enter", True), default=True)
@@ -909,7 +921,14 @@ class IPTVClient(wx.Frame):
             self.reload_epg_sources()
             self._pending_epg_autostart = True
             self._pending_epg_autostart_token = refresh_token
-            self._refresh_group_ui()
+            # A reload invalidates any previously built VOD catalogue.
+            self.vod_loaded = False
+            self.vod_groups = {}
+            self.vod_group_order = []
+            if self.view_mode == "vod":
+                self._load_vod_catalog()
+            else:
+                self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
@@ -980,6 +999,15 @@ class IPTVClient(wx.Frame):
                 self.Bind(wx.EVT_MENU, self._menu_toggle_player, id=1202)
                 self.Bind(wx.EVT_MENU, self._menu_stop_player, id=1203)
                 self.Bind(wx.EVT_MENU, self._menu_cast_from_player, id=1204)
+                # View submenu: Live TV / catch-up vs Video on Demand.
+                view_menu = wx.Menu()
+                view_live = view_menu.AppendRadioItem(1301, _("Live TV && Catch-up"))
+                view_vod = view_menu.AppendRadioItem(1302, _("Video on Demand (Movies && Series)"))
+                view_live.Check(self.view_mode == "live")
+                view_vod.Check(self.view_mode == "vod")
+                self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), id=1301)
+                self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), id=1302)
+                menu.AppendSubMenu(view_menu, _("View"))
                 menu.AppendSeparator()
                 player_menu = wx.Menu()
                 for idx, (label, attr) in enumerate(self.PLAYER_KEYS):
@@ -1064,6 +1092,15 @@ class IPTVClient(wx.Frame):
             pm_stop = pm.Append(wx.ID_ANY, _("Stop") + "\tCtrl+Shift+S")
             pm_cast = pm.Append(wx.ID_ANY, _("Cast / Connect...") + "\tCtrl+Shift+C")
             mb.Append(pm, _("Player"))
+            # View menu: switch between Live TV / catch-up and Video on Demand.
+            vm = wx.Menu()
+            self.view_live_item = vm.AppendRadioItem(wx.ID_ANY, _("Live TV && Catch-up"))
+            self.view_vod_item = vm.AppendRadioItem(wx.ID_ANY, _("Video on Demand (Movies && Series)"))
+            self.view_live_item.Check(self.view_mode == "live")
+            self.view_vod_item.Check(self.view_mode == "vod")
+            mb.Append(vm, _("View"))
+            self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)
+            self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), self.view_vod_item)
             om = wx.Menu()
             player_menu = wx.Menu()
             self.player_menu_items = []
@@ -2506,6 +2543,9 @@ class IPTVClient(wx.Frame):
 
     def apply_filter(self):
         txt = self.filter_box.GetValue().strip().lower()
+        if getattr(self, "view_mode", "live") == "vod":
+            self._vod_apply_filter(txt)
+            return
         self._populate_token += 1
         populate_token = self._populate_token
         self._search_token += 1
@@ -2663,6 +2703,237 @@ class IPTVClient(wx.Frame):
                 pass
         
         self.on_group_select()
+
+    # ================================================================== #
+    # Video on Demand (movies & series) view
+    # ================================================================== #
+    def _set_view_mode(self, mode: str):
+        """Switch between the live channel view and the VOD view."""
+        if mode not in ("live", "vod"):
+            return
+        if mode == self.view_mode:
+            return
+        self.view_mode = mode
+        self._sync_view_menu()
+        # Leaving a filter behind between modes is confusing; clear it.
+        try:
+            self.filter_box.ChangeValue("")
+        except Exception:
+            pass
+        if mode == "live":
+            self._refresh_group_ui()
+            return
+        # Switching to VOD.
+        if self.vod_loaded:
+            self._refresh_vod_group_ui()
+        else:
+            self._load_vod_catalog()
+
+    def _sync_view_menu(self):
+        for attr, wanted in (("view_live_item", "live"), ("view_vod_item", "vod")):
+            item = getattr(self, attr, None)
+            if item is not None:
+                try:
+                    item.Check(self.view_mode == wanted)
+                except Exception:
+                    pass
+
+    def _load_vod_catalog(self):
+        """Build the VOD catalogue in the background, then show it."""
+        if self.vod_loading:
+            return
+        self.vod_loading = True
+        self._vod_load_token += 1
+        token = self._vod_load_token
+
+        self.group_list.Freeze()
+        try:
+            self.group_list.Clear()
+            self.channel_list.Clear()
+            self.group_list.Append(_("Loading Video on Demand…"))
+            self.group_list.SetSelection(0)
+        finally:
+            try:
+                self.group_list.Thaw()
+            except Exception:
+                pass
+        self.epg_display.SetValue("")
+        self.url_display.SetValue("")
+
+        clients = dict(self.provider_clients)
+        m3u_channels = [
+            ch for ch in self.all_channels
+            if ch.get("provider-type") not in ("xtream", "stalker")
+        ]
+
+        def worker():
+            catalogs = []
+            try:
+                for pid, client in clients.items():
+                    if isinstance(client, XtreamCodesClient):
+                        try:
+                            catalogs.append(vod.build_xtream_catalog(client, pid))
+                        except Exception:
+                            continue
+                if m3u_channels:
+                    try:
+                        catalogs.append(vod.categorize_m3u_vod(m3u_channels))
+                    except Exception:
+                        pass
+                order, groups = vod.merge_catalogs(catalogs)
+            except Exception:
+                order, groups = [], {}
+            wx.CallAfter(self._on_vod_catalog_ready, token, order, groups)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_vod_catalog_ready(self, token: int, order: List[str], groups: Dict[str, List[Dict]]):
+        if token != self._vod_load_token:
+            return  # a newer load (or a switch back to live) superseded this one
+        self.vod_loading = False
+        self.vod_loaded = True
+        self.vod_group_order = order
+        self.vod_groups = groups
+        if self.view_mode != "vod":
+            return
+        self._refresh_vod_group_ui()
+
+    def _refresh_vod_group_ui(self):
+        self.vod_current_group = None
+        self._vod_series_return_group = None
+        self.group_list.Freeze()
+        try:
+            self.group_list.Clear()
+            self.channel_list.Clear()
+            if not self.vod_group_order:
+                self.group_list.Append(_("No Video on Demand content found."))
+                self.epg_display.SetValue("")
+                self.url_display.SetValue("")
+                return
+            for label in self.vod_group_order:
+                count = len(self.vod_groups.get(label, []))
+                self.group_list.Append(f"{label} ({count})")
+            self.group_list.SetSelection(0)
+        finally:
+            try:
+                self.group_list.Thaw()
+            except Exception:
+                pass
+        if self.vod_group_order:
+            self.on_group_select()
+
+    def _vod_on_group_select(self):
+        sel = self.group_list.GetSelection()
+        if sel == wx.NOT_FOUND or sel >= len(self.vod_group_order):
+            return
+        label = self.vod_group_order[sel]
+        self.vod_current_group = label
+        self._vod_series_return_group = None
+        items = self.vod_groups.get(label, [])
+        self._vod_show_items(items)
+
+    def _vod_show_items(self, items: List[Dict]):
+        """Render a category listing: movies play directly, series drill in."""
+        displayed = []
+        for it in items:
+            if it.get("kind") == vod.KIND_SERIES:
+                displayed.append({"type": "vod_series", "data": it,
+                                  "label": it.get("name", "")})
+            else:
+                displayed.append({"type": "channel", "data": it})
+        self._populate_token += 1
+        IPTVClient._replace_displayed(self, displayed)
+        if displayed:
+            self.channel_list.SetSelection(0)
+            if self.IsShown() and not self.IsIconized():
+                self.channel_list.SetFocus()
+            self.on_highlight()
+        else:
+            self.epg_display.SetValue("")
+            self.url_display.SetValue("")
+
+    def _vod_open_series(self, series: Dict):
+        """Drill into a series: list its episodes (in order) with a Back entry."""
+        self._vod_series_return_group = self.vod_current_group
+        name = series.get("name", "")
+        # M3U series carry their episodes inline; Xtream series load lazily.
+        inline = series.get("episodes")
+        if inline is not None:
+            self._vod_show_episodes(name, inline)
+            return
+
+        client = self.provider_clients.get(series.get("provider-id"))
+        series_id = series.get("series_id")
+        if not isinstance(client, XtreamCodesClient) or series_id is None:
+            wx.MessageBox(_("Could not load episodes for this series."),
+                          _("Video on Demand"), wx.OK | wx.ICON_WARNING)
+            return
+
+        # Show a placeholder while episodes are fetched.
+        self._populate_token += 1
+        IPTVClient._replace_displayed(self, [
+            {"type": "vod_back", "label": _("◄ Back")},
+            {"type": "vod_info", "label": _("Loading episodes…")},
+        ])
+        self.channel_list.SetSelection(0)
+        self.url_display.SetValue("")
+        self.epg_display.SetValue("")
+        token = self._vod_load_token
+
+        def worker():
+            try:
+                episodes = vod.xtream_series_episodes(client, series_id, series.get("provider-id"))
+            except Exception as err:
+                wx.CallAfter(lambda: wx.MessageBox(
+                    _("Could not load episodes:\n{error}").format(error=err),
+                    _("Video on Demand"), wx.OK | wx.ICON_ERROR))
+                return
+            wx.CallAfter(self._on_series_episodes_ready, token, name, episodes)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_series_episodes_ready(self, token: int, name: str, episodes: List[Dict]):
+        if token != self._vod_load_token or self.view_mode != "vod":
+            return
+        self._vod_show_episodes(name, episodes)
+
+    def _vod_show_episodes(self, name: str, episodes: List[Dict]):
+        displayed = [{"type": "vod_back", "label": _("◄ Back")}]
+        for ep in episodes:
+            displayed.append({"type": "channel", "data": ep})
+        self._populate_token += 1
+        IPTVClient._replace_displayed(self, displayed)
+        if not episodes:
+            self.channel_list.SetSelection(0)
+            self.epg_display.SetValue(_("No episodes found for this series."))
+            self.url_display.SetValue("")
+            return
+        # Select the first episode (not the Back row) so playback is one keypress away.
+        self.channel_list.SetSelection(1)
+        if self.IsShown() and not self.IsIconized():
+            self.channel_list.SetFocus()
+        self.on_highlight()
+
+    def _vod_go_back(self):
+        label = self._vod_series_return_group or self.vod_current_group
+        self._vod_series_return_group = None
+        if label and label in self.vod_groups:
+            self.vod_current_group = label
+            self._vod_show_items(self.vod_groups.get(label, []))
+        else:
+            self._refresh_vod_group_ui()
+
+    def _vod_apply_filter(self, txt: str):
+        """Substring-filter the current VOD category by item name."""
+        if not self.vod_current_group:
+            return
+        items = self.vod_groups.get(self.vod_current_group, [])
+        if not txt:
+            self._vod_show_items(items)
+            return
+        needle = txt.lower()
+        filtered = [it for it in items if needle in (it.get("name", "").lower())]
+        self._vod_show_items(filtered)
 
     def reload_epg_sources(self):
         base = list(self.config.get("epgs", []))
@@ -3321,6 +3592,9 @@ class IPTVClient(wx.Frame):
         return ""
 
     def on_group_select(self):
+        if getattr(self, "view_mode", "live") == "vod":
+            self._vod_on_group_select()
+            return
         sel = self.group_list.GetSelection()
         all_label = _("All Channels")
         label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
@@ -3421,10 +3695,28 @@ class IPTVClient(wx.Frame):
             self.url_display.SetValue("")
             return
         item = self.displayed[i]
+        if item["type"] == "vod_series":
+            self.url_display.SetValue("")
+            self.epg_display.SetValue(
+                _("Series: {name} — press Enter to browse episodes.").format(
+                    name=item["data"].get("name", "")))
+            return
+        if item["type"] == "vod_back":
+            self.url_display.SetValue("")
+            self.epg_display.SetValue(_("Press Enter to go back."))
+            return
+        if item["type"] == "vod_info":
+            self.url_display.SetValue("")
+            return
         if item["type"] == "channel":
             ch = item["data"]
             self.url_display.SetValue(ch.get("url", ""))
             cname = ch.get("name", "")
+
+            # VOD movie/episode rows have no live EPG; skip the DB lookups.
+            if getattr(self, "view_mode", "live") == "vod":
+                self.epg_display.SetValue("")
+                return
 
             if not self.config.get("epg_enabled", True):
                 self.epg_display.SetValue("EPG is disabled in configuration.")
@@ -3768,6 +4060,16 @@ class IPTVClient(wx.Frame):
         if not (0 <= i < len(self.displayed)):
             return
         item = self.displayed[i]
+
+        # VOD navigation rows: activating them browses rather than plays.
+        if item["type"] == "vod_series":
+            self._vod_open_series(item["data"])
+            return
+        if item["type"] == "vod_back":
+            self._vod_go_back()
+            return
+        if item["type"] == "vod_info":
+            return
 
         channel = None
         show = None

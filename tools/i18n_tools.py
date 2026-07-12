@@ -37,6 +37,7 @@ SOURCE_FILES = [
     "playlist.py",
     "options.py",
     "providers.py",
+    "vod.py",
     "updater.py",
     "external_player.py",
     "casting.py",
