@@ -3262,7 +3262,6 @@ class IPTVClient(wx.Frame):
 
         out: List[Dict[str, str]] = []
         append = out.append
-        extract_group_local = extract_group
         stream_id_for = self._extract_stream_id
         attr_iter = _M3U_ATTR_RE.finditer
 
@@ -3408,7 +3407,12 @@ class IPTVClient(wx.Frame):
                 continue
 
             url = s
-            grp_value = group or extract_group_local(name)
+            # Channels with no explicit group-title fall to "Uncategorized"
+            # (see the `ch.get("group") or "Uncategorized"` grouping below) rather
+            # than being bucketed by a country code guessed from the name. That
+            # guessing produced confusing giant "us"/"ca" groups that mixed
+            # unrelated channels and swept in malformed entries.
+            grp_value = group
             channel = {
                 "name": name,
                 "group": grp_value,

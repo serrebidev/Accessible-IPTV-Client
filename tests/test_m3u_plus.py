@@ -120,6 +120,31 @@ http://stream.example.com/hbo
         assert "Sports" in groups
         assert len(groups) == 3
 
+    def test_empty_group_title_is_not_bucketed_by_country(self):
+        """A channel with no group-title must NOT be grouped by a guessed country code."""
+        import main
+
+        class _FakeFrame:
+            def _extract_stream_id(self, url):
+                return ""
+
+        text = (
+            "#EXTM3U\n"
+            '#EXTINF:-1 tvg-id="wsyr.NY.us" tvg-name="US: ABC 9 Syracuse (WSYR)",'
+            "US: ABC 9 Syracuse (WSYR)\n"
+            "http://stream.example.com/abc\n"
+            '#EXTINF:-1 group-title="Sports",ESPN\n'
+            "http://stream.example.com/espn\n"
+        )
+        channels = main.IPTVClient._parse_m3u_return(_FakeFrame(), text)
+        by_name = {c["name"]: c for c in channels}
+
+        # No group-title -> empty group (becomes "Uncategorized" at grouping time),
+        # never a country code guessed from the "US: ABC ..." name.
+        assert by_name["US: ABC 9 Syracuse (WSYR)"]["group"] == ""
+        # An explicit group-title is still honoured verbatim.
+        assert by_name["ESPN"]["group"] == "Sports"
+
     def test_handle_empty_attributes(self):
         """Test handling of empty/missing attributes."""
         line = '#EXTINF:-1 tvg-id="" tvg-name="" group-title="Sports",ESPN'
