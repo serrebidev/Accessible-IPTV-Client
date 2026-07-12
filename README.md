@@ -84,7 +84,11 @@ Lower values start faster; higher values are more tolerant of jitter.
 
 ## Languages and translations
 
-The interface is translatable with GNU gettext. By default the app follows your OS language and falls back to English; override this under **Options > Language** (Automatic / English / Hungarian). The choice is saved to `iptvclient.conf` (`language`) and applies fully after a restart.
+The interface is translatable with GNU gettext. By default the app follows your OS language and falls back to English; override this under **Options > Language**. The choice is saved to `iptvclient.conf` (`language`) and applies fully after a restart.
+
+Bundled languages: English, Spanish, Arabic, Portuguese (Brazilian), French, German, Russian, Turkish, Italian, Polish, Hindi, Chinese (Simplified), Japanese, and Hungarian. Most were produced with AI assistance and have not yet been reviewed by native speakers, so wording may be imperfect.
+
+**Found a translation mistake, or want a language added?** Please [open an issue](https://github.com/serrebidev/Accessible-IPTV-Client/issues) or contact the maintainer with your fixes and they will be added. New languages are welcome too — human-translated, AI-translated (just ask and they can be generated), or submitted by anyone. Every release keeps all catalogues in sync automatically, so corrections and additions ship in the next build.
 
 Translations live in `locale/<lang>/LC_MESSAGES/iptvclient.po`. The tooling is pure Python — no GNU gettext, Babel, or polib required:
 

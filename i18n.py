@@ -33,11 +33,23 @@ LANG_AUTO = "auto"
 _LANGUAGE_LABELS = [
     (LANG_AUTO, "Automatic"),
     ("en", "English"),
+    ("es", "Español (Spanish)"),
+    ("ar", "العربية (Arabic)"),
+    ("pt", "Português – Brasil (Portuguese)"),
+    ("fr", "Français (French)"),
+    ("de", "Deutsch (German)"),
+    ("ru", "Русский (Russian)"),
+    ("tr", "Türkçe (Turkish)"),
+    ("it", "Italiano (Italian)"),
+    ("pl", "Polski (Polish)"),
+    ("hi", "हिन्दी (Hindi)"),
+    ("zh", "中文（简体） (Chinese, Simplified)"),
+    ("ja", "日本語 (Japanese)"),
     ("hu", "Magyar (Hungarian)"),
 ]
 
 # Languages we actually ship a compiled catalogue for (source language is English).
-SHIPPED_CATALOGS = ("hu",)
+SHIPPED_CATALOGS = ("es", "ar", "pt", "fr", "de", "ru", "tr", "it", "pl", "hi", "zh", "ja", "hu")
 
 _translation: _gettext.NullTranslations = _gettext.NullTranslations()
 _active_code: str = LANG_AUTO

@@ -45,6 +45,6 @@ def test_release_commit_stages_changelog(monkeypatch):
 
     release.git_commit_and_tag("1.2.3")
 
-    assert commands[0] == ["git", "add", "app_meta.py", "CHANGELOG.md"]
+    assert commands[0] == ["git", "add", "app_meta.py", "CHANGELOG.md", "locale"]
     assert commands[1] == ["git", "commit", "-m", "chore(release): v1.2.3"]
     assert commands[2] == ["git", "tag", "v1.2.3"]

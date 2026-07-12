@@ -9,6 +9,8 @@ import os
 import re
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import i18n  # noqa: E402
@@ -34,9 +36,18 @@ def test_underscore_builtin_is_installed():
     assert callable(__builtins__["_"] if isinstance(__builtins__, dict) else __builtins__._)
 
 
-def test_available_languages_offers_auto_en_hu():
+def test_available_languages_order_and_membership():
     codes = [code for code, _label in i18n.available_languages()]
-    assert codes[:3] == ["auto", "en", "hu"]
+    # Automatic + English lead; then the requested language order.
+    assert codes[:14] == [
+        "auto", "en", "es", "ar", "pt", "fr", "de", "ru", "tr", "it",
+        "pl", "hi", "zh", "ja",
+    ]
+    # Hungarian remains available too.
+    assert "hu" in codes
+    # Every shipped catalogue is offered in the menu.
+    for code in i18n.SHIPPED_CATALOGS:
+        assert code in codes, code
 
 
 def test_english_uses_source_strings():
@@ -100,28 +111,34 @@ def test_locale_files_exist():
     assert os.path.exists(HU_MO)
 
 
-def test_hungarian_catalogue_is_fully_translated():
+def _po_path(code):
+    return os.path.join(LOCALE, code, "LC_MESSAGES", "iptvclient.po")
+
+
+@pytest.mark.parametrize("code", i18n.SHIPPED_CATALOGS)
+def test_shipped_catalogue_is_fully_translated(code):
     sys.path.insert(0, os.path.join(REPO, "tools"))
     import i18n_tools
 
-    entries = [e for e in i18n_tools.parse_po(HU_PO) if e.get("msgid")]
+    entries = [e for e in i18n_tools.parse_po(_po_path(code)) if e.get("msgid")]
     untranslated = [e["msgid"] for e in entries if not e.get("msgstr")]
-    assert not untranslated, f"Untranslated Hungarian strings: {untranslated[:5]}"
+    assert not untranslated, f"Untranslated {code} strings: {untranslated[:5]}"
 
 
-def test_translation_placeholders_match_source():
+@pytest.mark.parametrize("code", i18n.SHIPPED_CATALOGS)
+def test_shipped_catalogue_placeholders_match_source(code):
     """Every {placeholder} in a source string must survive into its translation."""
     sys.path.insert(0, os.path.join(REPO, "tools"))
     import i18n_tools
 
     mismatches = []
-    for e in i18n_tools.parse_po(HU_PO):
+    for e in i18n_tools.parse_po(_po_path(code)):
         msgid, msgstr = e.get("msgid", ""), e.get("msgstr", "")
         if not msgid or not msgstr:
             continue
         if set(_PLACEHOLDER.findall(msgid)) != set(_PLACEHOLDER.findall(msgstr)):
             mismatches.append(msgid)
-    assert not mismatches, f"Placeholder mismatch in: {mismatches}"
+    assert not mismatches, f"Placeholder mismatch in {code}: {mismatches}"
 
 
 # --------------------------------------------------------------------------- #

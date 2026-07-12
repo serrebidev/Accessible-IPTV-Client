@@ -366,6 +366,23 @@ def _read_text_file(path):
         return handle.read()
 
 
+def sync_translations():
+    """Keep every translation catalogue in step with the source before building.
+
+    Re-extracts the message template from source, merges new strings into each
+    ``locale/<lang>/LC_MESSAGES/*.po`` (preserving existing translations), and
+    compiles every catalogue to ``.mo`` so the build always bundles up-to-date
+    translations. New source strings that lack a translation fall back to
+    English until a translator fills them in.
+    """
+    import i18n_tools
+
+    print("Syncing translation catalogues...")
+    messages = i18n_tools.cmd_extract()
+    i18n_tools.cmd_update(messages)
+    i18n_tools.cmd_compile()
+
+
 def run_pyinstaller():
     if _is_elevated_windows_token():
         _run_pyinstaller_limited()
@@ -675,7 +692,7 @@ def json_dump(payload):
 
 
 def git_commit_and_tag(version):
-    run(["git", "add", "app_meta.py", "CHANGELOG.md"])
+    run(["git", "add", "app_meta.py", "CHANGELOG.md", "locale"])
     run(["git", "commit", "-m", f"chore(release): v{version}"])
     run(["git", "tag", f"v{version}"])
 
@@ -771,6 +788,7 @@ def main():
         release_notes = build_release_notes(commits)
         update_version_file(next_version)
         update_changelog(next_version, release_notes)
+        sync_translations()
         validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()
@@ -789,6 +807,7 @@ def main():
 
     if args.mode == "build":
         release_notes = "## Other\n- Local build."
+        sync_translations()
         validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()
