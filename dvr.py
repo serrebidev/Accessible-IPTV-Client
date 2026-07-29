@@ -48,10 +48,6 @@ def iso_from_ts(ts: float) -> str:
     return datetime.datetime.fromtimestamp(float(ts), datetime.timezone.utc).isoformat()
 
 
-def ts_from_iso(value: str) -> float:
-    return datetime.datetime.fromisoformat(value).timestamp()
-
-
 def program_title(program: Dict[str, str]) -> str:
     return (
         program.get("show_title")

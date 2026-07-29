@@ -6,7 +6,7 @@ import os
 import sys
 import sqlite3
 from types import SimpleNamespace
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -307,7 +307,6 @@ class TestRecentlyWatched:
     def test_add_to_recent(self):
         """Test adding to recently watched."""
         recent = []
-        max_recent = 10
         
         recent.insert(0, "channel1")
         recent.insert(0, "channel2")

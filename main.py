@@ -29,16 +29,19 @@ from i18n import gettext as _
 
 from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
-    get_db_path, canonicalize_name, extract_group, utc_to_local,
+    get_db_path, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
     get_recordings_dir, get_dvr_schedule_path, normalize_recording_format,
     is_windows_installed_build
 )
+# Same normalization the EPG database indexes with - importing it from anywhere
+# else is how the UI and the database drift apart.
+from channel_names import canonicalize_name, strip_noise_words
 import app_meta
 import updater
 from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
-    strip_noise_words, epg_database_has_usable_data
+    epg_database_has_usable_data
 )
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
@@ -122,7 +125,7 @@ def set_linux_env():
         elif "pop" in os_release and "pop_os" in os_release:
             distro = "popos"
     except Exception:
-        pass
+        LOG.debug("set_linux_env: ignored exception", exc_info=True)
 
     os.environ["MYAPP_DISTRO"] = distro
 
@@ -147,86 +150,6 @@ def set_linux_env():
         os.environ["XDG_CURRENT_DESKTOP"] = os.environ.get("XDG_CURRENT_DESKTOP", "X-Cinnamon")
     elif distro == "popos":
         os.environ["GDK_BACKEND"] = os.environ.get("GDK_BACKEND", "x11")
-
-def check_ffmpeg() -> bool:
-    try:
-        from stream_proxy import get_ffmpeg_path
-        creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
-        # Use the resolved ffmpeg path (bundled or system)
-        ffmpeg_bin = get_ffmpeg_path()
-        result = subprocess.run([ffmpeg_bin, '-version'], capture_output=True, text=True, timeout=10, creationflags=creation_flags)
-        return result.returncode == 0
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        return False
-
-def install_ffmpeg():
-    system = platform.system()
-    if system == 'Windows':
-        # Helper to check if choco is available
-        def check_choco():
-            try:
-                subprocess.run(['choco', '--version'], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0)
-                return True
-            except (FileNotFoundError, OSError):
-                return False
-
-        # Helper to install choco
-        def install_choco():
-            print("Chocolatey not found. Installing Chocolatey...")
-            ps_command = "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-            try:
-                subprocess.run(["powershell", "-NoProfile", "-InputFormat", "None", "-ExecutionPolicy", "Bypass", "-Command", ps_command], check=True, creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to install Chocolatey: {e}")
-
-        # Install ffmpeg using choco
-        try:
-            if not check_choco():
-                install_choco()
-                # Refresh path? The current process might not see the new path immediately.
-                # However, choco usually adds to path. We might need to restart or use full path.
-                # For now, let's assume it works or the user restarts.
-                # Or try to run it via refreshing env vars.
-                pass
-            
-            print("Installing ffmpeg via Chocolatey...")
-            subprocess.run(['choco', 'install', 'ffmpeg', '-y'], check=True, creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to install ffmpeg via Chocolatey: {e}")
-
-    elif system == 'Linux':
-        distro = os.environ.get("MYAPP_DISTRO", "unknown")
-        if distro in ("ubuntu", "debian", "mint", "popos"):
-            try:
-                subprocess.run(['sudo', 'apt-get', 'update'], check=True)
-                subprocess.run(['sudo', 'apt-get', 'install', '-y', 'ffmpeg'], check=True)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to install ffmpeg on {distro}: {e}")
-        elif distro in ("fedora",):
-            try:
-                subprocess.run(['sudo', 'dnf', 'install', '-y', 'ffmpeg'], check=True)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to install ffmpeg on {distro}: {e}")
-        elif distro in ("centos", "rhel"):
-            # CentOS 7 uses yum, CentOS 8 uses dnf
-            try:
-                subprocess.run(['sudo', 'dnf', 'install', '-y', 'ffmpeg'], check=True)
-            except subprocess.CalledProcessError:
-                subprocess.run(['sudo', 'yum', 'install', '-y', 'ffmpeg'], check=True)
-        elif distro in ("arch", "manjaro"):
-            try:
-                subprocess.run(['sudo', 'pacman', '-S', '--noconfirm', 'ffmpeg'], check=True)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to install ffmpeg on {distro}: {e}")
-        elif distro == "opensuse":
-            try:
-                subprocess.run(['sudo', 'zypper', 'install', '-y', 'ffmpeg'], check=True)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to install ffmpeg on {distro}: {e}")
-        else:
-            raise RuntimeError(f"Unsupported Linux distribution: {distro}. Please install ffmpeg manually.")
-    else:
-        raise RuntimeError(f"Unsupported OS: {system}. Please install ffmpeg manually.")
 
 def _lower_current_thread_priority():
     """Best-effort: drop the OS scheduling priority of the *calling* thread only.
@@ -262,7 +185,7 @@ def _lower_current_thread_priority():
         if not kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN):
             kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_PRIORITY_LOWEST)
     except Exception:
-        pass
+        LOG.debug("_lower_current_thread_priority: ignored exception", exc_info=True)
 
 class TrayIcon(wx.adv.TaskBarIcon):
     TBMENU_RESTORE = wx.NewIdRef()
@@ -546,7 +469,7 @@ class IPTVClient(wx.Frame):
             self.config["update_last_auto_check_epoch"] = int(time.time())
             save_config(self.config)
         except Exception:
-            pass
+            LOG.debug("IPTVClient._record_auto_update_check_attempt: ignored exception", exc_info=True)
 
     def _channel_is_epg_exempt(self, channel: Dict[str, str]) -> bool:
         """Detect channels that typically have no EPG (e.g., 24/7 loops).
@@ -562,7 +485,7 @@ class IPTVClient(wx.Frame):
             if "24/7" in name or "24x7" in name or "24/7" in group or "24x7" in group:
                 return True
         except Exception:
-            pass
+            LOG.debug("IPTVClient._channel_is_epg_exempt: ignored exception", exc_info=True)
         return False
 
     def start_playlist_load(self):
@@ -609,13 +532,13 @@ class IPTVClient(wx.Frame):
             cur.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start_end ON programmes(channel_id, start, end);")
             conn.commit()
         except Exception:
-            pass
+            LOG.debug("IPTVClient._ensure_db_tuned: ignored exception", exc_info=True)
         finally:
             if conn:
                 try:
                     conn.close()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._ensure_db_tuned: ignored exception", exc_info=True)
 
     def _sync_player_menu_from_config(self):
         defplayer = self.config.get("media_player", "Built-in Player")
@@ -641,13 +564,13 @@ class IPTVClient(wx.Frame):
             try:
                 self.show_player_on_enter_item.Check(self.show_player_on_enter)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_menu_open: ignored exception", exc_info=True)
         self.auto_check_updates = self._bool_pref(self.config.get("auto_check_updates", True), default=True)
         if hasattr(self, "auto_check_updates_item"):
             try:
                 self.auto_check_updates_item.Check(self.auto_check_updates)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_menu_open: ignored exception", exc_info=True)
         event.Skip()
 
     def start_refresh_timer(self):
@@ -948,7 +871,7 @@ class IPTVClient(wx.Frame):
                 try:
                     os.remove(f)
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._cleanup_cache_and_channels: ignored exception", exc_info=True)
 
     def _build_ui(self):
         p = wx.Panel(self)
@@ -1192,9 +1115,6 @@ class IPTVClient(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4016)
         self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
 
-    def _on_lb_activate(self, event):
-        # Called on generic left double click to ensure activation on GTK/mac too
-        self.play_selected()
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
     def _on_channel_key_down(self, event):
@@ -1219,7 +1139,7 @@ class IPTVClient(wx.Frame):
                     self.channel_list.SetFocus()
                     idx = hit_idx
             except Exception:
-                pass
+                LOG.debug("IPTVClient._on_channel_context_menu: ignored exception", exc_info=True)
         if idx == wx.NOT_FOUND and self.channel_list.GetCount():
             self.channel_list.SetSelection(0)
             idx = 0
@@ -1500,7 +1420,7 @@ class IPTVClient(wx.Frame):
                 try:
                     dlg.refresh()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._on_dvr_schedule_updated.refresh: ignored exception", exc_info=True)
         wx.CallAfter(refresh)
 
     def _start_scheduled_recording(self, job: Dict[str, object]):
@@ -1538,7 +1458,7 @@ class IPTVClient(wx.Frame):
                 self.recorder.stop(int(rec_id))
                 return
             except Exception:
-                pass
+                LOG.debug("IPTVClient._stop_scheduled_recording: ignored exception", exc_info=True)
         self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
 
     def _cancel_scheduled_recording(self, job_id: str) -> bool:
@@ -1725,7 +1645,7 @@ class IPTVClient(wx.Frame):
 
     def _show_about_dialog(self, _event=None):
         """Show About dialog with app info and links."""
-        from app_meta import APP_DISPLAY_NAME, APP_VERSION, GITHUB_OWNER, GITHUB_REPO
+        from app_meta import APP_DISPLAY_NAME, APP_VERSION, GITHUB_OWNER
         
         info = wx.adv.AboutDialogInfo()
         info.SetName(APP_DISPLAY_NAME)
@@ -1896,7 +1816,7 @@ class IPTVClient(wx.Frame):
                 if cancel is not None:
                     cancel.set()
         except Exception:
-            pass
+            LOG.debug("IPTVClient._apply_update_progress: ignored exception", exc_info=True)
 
     def _destroy_update_progress(self):
         dlg = getattr(self, "_update_progress_dlg", None)
@@ -1904,7 +1824,7 @@ class IPTVClient(wx.Frame):
             try:
                 dlg.Destroy()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._destroy_update_progress: ignored exception", exc_info=True)
         self._update_progress_dlg = None
 
     def _download_update_worker(self, release: Dict):
@@ -2037,7 +1957,7 @@ class IPTVClient(wx.Frame):
                 try:
                     shutil.rmtree(temp_root, ignore_errors=True)
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._download_update_worker: ignored exception", exc_info=True)
 
     def _launch_installer_update_helper(
         self,
@@ -2147,11 +2067,11 @@ class IPTVClient(wx.Frame):
             try:
                 self.tray_icon.RemoveIcon()
             except Exception:
-                pass
+                LOG.debug("IPTVClient.restore_from_tray: ignored exception", exc_info=True)
             try:
                 self.tray_icon.Destroy()
             except Exception:
-                pass
+                LOG.debug("IPTVClient.restore_from_tray: ignored exception", exc_info=True)
             self.tray_icon = None
         # Show and restore the window
         self.Show()
@@ -2175,7 +2095,7 @@ class IPTVClient(wx.Frame):
             try:
                 self.SetFocus()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._force_foreground: ignored exception", exc_info=True)
             return
         try:
             import ctypes
@@ -2228,7 +2148,7 @@ class IPTVClient(wx.Frame):
             try:
                 self.SetFocus()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._force_foreground: ignored exception", exc_info=True)
 
     def _focus_channel_list(self):
         """Set focus to channel list - used after restore from tray."""
@@ -2259,9 +2179,9 @@ class IPTVClient(wx.Frame):
                             # Fire selection event on the selected item (1-indexed for MSAA)
                             user32.NotifyWinEvent(EVENT_OBJECT_SELECTION, list_hwnd, OBJID_CLIENT, sel + 1)
                         except Exception:
-                            pass
+                            LOG.debug("IPTVClient._focus_channel_list: ignored exception", exc_info=True)
         except Exception:
-            pass
+            LOG.debug("IPTVClient._focus_channel_list: ignored exception", exc_info=True)
 
     def _tray_show_player(self):
         try:
@@ -2325,28 +2245,28 @@ class IPTVClient(wx.Frame):
             try:
                 self.tray_icon.RemoveIcon()
             except Exception:
-                pass
+                LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
             self.tray_icon.Destroy()
             self.tray_icon = None
         try:
             self._stop_dvr_scheduler(wait=True)
         except Exception:
-            pass
+            LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         try:
             self._suppress_recording_notifications = True
             self.recorder.stop_all(wait=True)
         except Exception:
-            pass
+            LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         # Mirror on_close cleanup so the EPG poll timer can't fire into a destroyed frame
         # and executor threads don't leak when exiting from the tray.
         try:
             self._stop_epg_poll_timer()
         except Exception:
-            pass
+            LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         try:
             self._cancel_epg_autostart_timer()
         except Exception:
-            pass
+            LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         if hasattr(self, "_epg_executor"):
             self._epg_executor.shutdown(wait=False)
         if self.caster:
@@ -2363,7 +2283,7 @@ class IPTVClient(wx.Frame):
             try:
                 self._tray_ready_timer.Stop()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._cancel_tray_ready_timer: ignored exception", exc_info=True)
             self._tray_ready_timer = None
 
     def on_minimize(self, event):
@@ -2383,29 +2303,29 @@ class IPTVClient(wx.Frame):
             try:
                 self._stop_epg_poll_timer()
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
                 self._cancel_epg_autostart_timer()
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
             try:
                 self._stop_dvr_scheduler(wait=True)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
                 self._suppress_recording_notifications = True
                 self.recorder.stop_all(wait=True)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             if self.caster:
                 self.caster.stop()
             if self.tray_icon:
                 try:
                     self.tray_icon.RemoveIcon()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
                 self.tray_icon.Destroy()
                 self.tray_icon = None
             frame = getattr(self, "_internal_player_frame", None)
@@ -2413,7 +2333,7 @@ class IPTVClient(wx.Frame):
                 try:
                     frame.Destroy()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
                 self._internal_player_frame = None
             self.Destroy()
 
@@ -2625,7 +2545,7 @@ class IPTVClient(wx.Frame):
                         db.conn.execute("PRAGMA busy_timeout=2000;")
                         db.conn.execute("PRAGMA read_uncommitted=1;")
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient.apply_filter.epg_search: ignored exception", exc_info=True)
                 results = db.get_channels_with_show(
                     txt,
                     limit=self._SEARCH_EPG_RESULT_LIMIT,
@@ -2640,7 +2560,7 @@ class IPTVClient(wx.Frame):
                     elif db is not None and hasattr(db, "conn"):
                         db.conn.close()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient.apply_filter.epg_search: ignored exception", exc_info=True)
             def update_ui():
                 if getattr(self, "_search_token", 0) != active_search_token:
                     LOG.debug("EPG search %r: dropped stale search token", txt)
@@ -2700,7 +2620,7 @@ class IPTVClient(wx.Frame):
             try:
                 self.group_list.Thaw()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
         
         self.on_group_select()
 
@@ -2719,7 +2639,7 @@ class IPTVClient(wx.Frame):
         try:
             self.filter_box.ChangeValue("")
         except Exception:
-            pass
+            LOG.debug("IPTVClient._set_view_mode: ignored exception", exc_info=True)
         if mode == "live":
             self._refresh_group_ui()
             return
@@ -2736,7 +2656,7 @@ class IPTVClient(wx.Frame):
                 try:
                     item.Check(self.view_mode == wanted)
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._sync_view_menu: ignored exception", exc_info=True)
 
     def _load_vod_catalog(self):
         """Build the VOD catalogue in the background, then show it."""
@@ -2756,7 +2676,7 @@ class IPTVClient(wx.Frame):
             try:
                 self.group_list.Thaw()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._load_vod_catalog: ignored exception", exc_info=True)
         self.epg_display.SetValue("")
         self.url_display.SetValue("")
 
@@ -2779,7 +2699,7 @@ class IPTVClient(wx.Frame):
                     try:
                         catalogs.append(vod.categorize_m3u_vod(m3u_channels))
                     except Exception:
-                        pass
+                        LOG.debug("IPTVClient._load_vod_catalog.worker: ignored exception", exc_info=True)
                 order, groups = vod.merge_catalogs(catalogs)
             except Exception:
                 order, groups = [], {}
@@ -2818,7 +2738,7 @@ class IPTVClient(wx.Frame):
             try:
                 self.group_list.Thaw()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._refresh_vod_group_ui: ignored exception", exc_info=True)
         if self.vod_group_order:
             self.on_group_select()
 
@@ -2883,8 +2803,8 @@ class IPTVClient(wx.Frame):
         def worker():
             try:
                 episodes = vod.xtream_series_episodes(client, series_id, series.get("provider-id"))
-            except Exception as err:
-                wx.CallAfter(lambda: wx.MessageBox(
+            except Exception as e:
+                wx.CallAfter(lambda err=e: wx.MessageBox(
                     _("Could not load episodes:\n{error}").format(error=err),
                     _("Video on Demand"), wx.OK | wx.ICON_ERROR))
                 return
@@ -2994,7 +2914,7 @@ class IPTVClient(wx.Frame):
             try:
                 self._epg_autostart_timer.Stop()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._cancel_epg_autostart_timer: ignored exception", exc_info=True)
             self._epg_autostart_timer = None
 
     def _schedule_epg_autostart(self, token: int, delay_ms: int = 5000):
@@ -3042,9 +2962,9 @@ class IPTVClient(wx.Frame):
                     elif hasattr(db, "conn"):
                         db.conn.close()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient.start_epg_import_background.do_import: ignored exception", exc_info=True)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.start_epg_import_background.do_import: ignored exception", exc_info=True)
             finally:
                 wx.CallAfter(self.finish_import_background, success)
         threading.Thread(target=do_import, daemon=True).start()
@@ -3064,7 +2984,7 @@ class IPTVClient(wx.Frame):
                 self.config["epg_last_sources_hash"] = self._hash_epg_sources(self.epg_sources)
                 save_config(self.config)
             except Exception:
-                pass
+                LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
         self.on_highlight()
         self._start_epg_poll_timer()
 
@@ -3145,82 +3065,12 @@ class IPTVClient(wx.Frame):
         if not channel_name and not channel_id:
             wx.MessageBox(_("Could not identify the channel."), _("Error"), wx.OK | wx.ICON_ERROR)
             return
-        
-        # Try to find the channel in our playlist
-        matching_channel = None
-        best_score = 0
-        channel_name_lower = channel_name.lower() if channel_name else ""
-        channel_name_norm = canonicalize_name(strip_noise_words(channel_name)) if channel_name else ""
-        
-        # Extract base name without HD/SD suffixes for fuzzy matching
-        base_patterns = ["hd", "sd", "fhd", "uhd", "4k", "hevc", "h264", "h.264"]
-        channel_base = channel_name_lower
-        for pat in base_patterns:
-            channel_base = channel_base.replace(f" {pat}", "").replace(f"({pat})", "").replace(f"[{pat}]", "")
-        channel_base = channel_base.strip()
-        
-        for ch in self.all_channels:
-            ch_name = ch.get("name", "")
-            ch_tvg_name = ch.get("tvg-name", "")
-            ch_tvg_id = ch.get("tvg-id", "")
-            ch_name_lower = ch_name.lower()
-            
-            score = 0
-            
-            # Exact match on tvg-id (most reliable) - 100 points
-            if channel_id and ch_tvg_id:
-                if channel_id.lower() == ch_tvg_id.lower():
-                    score = 100
-                elif channel_id.lower() in ch_tvg_id.lower() or ch_tvg_id.lower() in channel_id.lower():
-                    score = max(score, 80)
-            
-            # Exact match on name - 90 points
-            if ch_name_lower == channel_name_lower:
-                score = max(score, 90)
-            
-            # Exact match on tvg-name - 90 points
-            if ch_tvg_name and ch_tvg_name.lower() == channel_name_lower:
-                score = max(score, 90)
-            
-            # Normalized match - 70 points
-            ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
-            ch_tvg_norm = canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else ""
-            if channel_name_norm and (ch_name_norm == channel_name_norm or ch_tvg_norm == channel_name_norm):
-                score = max(score, 70)
-            
-            # Base name match (without HD/SD etc) - 60 points
-            ch_base = ch_name_lower
-            for pat in base_patterns:
-                ch_base = ch_base.replace(f" {pat}", "").replace(f"({pat})", "").replace(f"[{pat}]", "")
-            ch_base = ch_base.strip()
-            if channel_base and ch_base and channel_base == ch_base:
-                score = max(score, 60)
-            
-            # Partial/contains match - 40 points
-            if channel_name_lower in ch_name_lower or ch_name_lower in channel_name_lower:
-                score = max(score, 40)
-            if ch_tvg_name and (channel_name_lower in ch_tvg_name.lower() or ch_tvg_name.lower() in channel_name_lower):
-                score = max(score, 40)
-            
-            # Word overlap score - up to 30 points
-            if channel_name_norm and ch_name_norm:
-                words_epg = set(channel_name_norm.split())
-                words_ch = set(ch_name_norm.split())
-                if words_epg and words_ch:
-                    overlap = len(words_epg & words_ch)
-                    total = max(len(words_epg), len(words_ch))
-                    if overlap > 0:
-                        word_score = int(30 * overlap / total)
-                        score = max(score, word_score)
-            
-            if score > best_score:
-                best_score = score
-                matching_channel = ch
-        
-        if not matching_channel or best_score < 30:
+
+        matching_channel = self._find_matching_channel_for_program(program)
+        if not matching_channel:
             wx.MessageBox(_("Could not find channel '{channel}' in your playlist.").format(channel=channel_name), _("Channel Not Found"), wx.OK | wx.ICON_WARNING)
             return
-        
+
         # Find and select the channel in the currently displayed list
         for idx, item in enumerate(self.displayed):
             if item.get("type") == "channel":
@@ -3245,15 +3095,6 @@ class IPTVClient(wx.Frame):
                     self.channel_list.SetSelection(idx)
                     wx.CallAfter(self.play_selected)
                     return
-
-    def finish_import(self):
-        # legacy-sounding API; ensure poll timer is stopped here too.
-        self.epg_importing = False
-        self._stop_epg_poll_timer()
-        with self.epg_cache_lock:
-            self.epg_cache.clear()
-        self.on_highlight()
-        self._start_epg_poll_timer()
 
     def _parse_m3u_return(self, text, provider_info=None):
         provider_info = provider_info or {}
@@ -3573,7 +3414,7 @@ class IPTVClient(wx.Frame):
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
             except Exception:
-                pass
+                LOG.debug("IPTVClient._store_cached_playlist: ignored exception", exc_info=True)
 
     def _extract_stream_id(self, url: str) -> str:
         try:
@@ -3837,7 +3678,7 @@ class IPTVClient(wx.Frame):
                 try:
                     self._epg_fetch_inflight.discard(key)
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._fetch_and_cache_epg._on_done: ignored exception", exc_info=True)
 
             if not now_next:
                 now_show, next_show = None, None
@@ -3883,7 +3724,7 @@ class IPTVClient(wx.Frame):
                 try:
                     self._epg_poll_timer.Stop()
                 except Exception:
-                    pass
+                    LOG.debug("IPTVClient._stop_epg_poll_timer: ignored exception", exc_info=True)
                 # Unbind the specific handler for this timer source to avoid removing other EVT_TIMER bindings.
                 try:
                     # Unbind signature: Unbind(event, source=timer, handler=callable)
@@ -3893,7 +3734,7 @@ class IPTVClient(wx.Frame):
                     try:
                         self.Unbind(wx.EVT_TIMER, handler=self._on_epg_poll_timer)
                     except Exception:
-                        pass
+                        LOG.debug("IPTVClient._stop_epg_poll_timer: ignored exception", exc_info=True)
                 self._epg_poll_timer = None
         except Exception:
             self._epg_poll_timer = None
@@ -3930,7 +3771,7 @@ class IPTVClient(wx.Frame):
             if not already:
                 threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
         except Exception:
-            pass
+            LOG.debug("IPTVClient._on_epg_poll_timer: ignored exception", exc_info=True)
 
     def _find_channel_for_epg(self, show: Dict[str, str]) -> Optional[Dict[str, str]]:
         return self._find_matching_channel_for_program(show)
@@ -4036,7 +3877,7 @@ class IPTVClient(wx.Frame):
                 start_local -= delta
                 end_local -= delta
         except (TypeError, ValueError):
-            pass
+            LOG.debug("IPTVClient._build_generic_catchup_url: ignored exception", exc_info=True)
 
         # Compute duration from the UTC instants (DST-safe); the offset shifts start and end
         # equally, so it doesn't affect duration. start_token still uses adjusted local time.
@@ -4192,7 +4033,7 @@ class IPTVClient(wx.Frame):
                         try:
                             caster.disconnect()
                         except Exception:
-                            pass
+                            LOG.debug("IPTVClient._launch_stream.do_cast: ignored exception", exc_info=True)
                         wx.CallAfter(lambda: wx.MessageBox(
                             _("Casting failed: {error}").format(error=err_msg) + "\n\n"
                             + _("Disconnected from the cast device. "
@@ -4255,7 +4096,7 @@ class IPTVClient(wx.Frame):
             if self.IsShown() and self.IsActive():
                 self.channel_list.SetFocus()
         except Exception:
-            pass
+            LOG.debug("IPTVClient._restore_main_focus: ignored exception", exc_info=True)
 
     def _cast_from_internal_player(self, url: str, title: str, headers: Dict[str, object]) -> None:
         if not url:
@@ -4305,15 +4146,15 @@ class IPTVClient(wx.Frame):
                 if stream_kind is None:
                     stream_kind = getattr(frame, "_current_stream_kind", None)
             except Exception:
-                pass
+                LOG.debug("IPTVClient._handoff_internal_player_after_cast: ignored exception", exc_info=True)
             try:
                 frame.stop(manual=True)
             except Exception:
-                pass
+                LOG.debug("IPTVClient._handoff_internal_player_after_cast: ignored exception", exc_info=True)
             try:
                 frame.Hide()
             except Exception:
-                pass
+                LOG.debug("IPTVClient._handoff_internal_player_after_cast: ignored exception", exc_info=True)
 
         player = self.default_player
         
@@ -4548,7 +4389,7 @@ class CastDiscoveryDialog(wx.Dialog):
                     try:
                         self.caster.dispatch(handler.close())
                     except Exception:
-                        pass
+                        LOG.debug("CastDiscoveryDialog._on_pair.do_pair_flow: ignored exception", exc_info=True)
             finally:
                 wx.CallAfter(self._on_select, None) # Re-enable buttons
         
@@ -4740,7 +4581,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
         try:
             self.parent_frame._dvr_dialog = None
         except Exception:
-            pass
+            LOG.debug("ScheduledRecordingsDialog._on_close: ignored exception", exc_info=True)
         self.Destroy()
 
 
@@ -4909,7 +4750,7 @@ class WhatsOnNowDialog(wx.Dialog):
                 try:
                     self.listbox.SetItemState(idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
                 except Exception:
-                    pass
+                    LOG.debug("WhatsOnNowDialog._apply_search_filter: ignored exception", exc_info=True)
         self.listbox.SetItemCount(new_count)
         self.listbox.Refresh()
         self.count_label.SetLabel(_("{count} programs").format(count=new_count))
@@ -5009,7 +4850,7 @@ class _VirtualChannelList(wx.ListCtrl):
                         wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED,
                     )
                 except Exception:
-                    pass
+                    LOG.debug("_VirtualChannelList._clear_active_item_state: ignored exception", exc_info=True)
 
     def _set_count_safe(self, count: int, *, active_state_cleared: bool = False):
         """Resync the native item count, dropping stale selection/focus first.
@@ -5150,7 +4991,7 @@ class ChannelEPGDialog(wx.Dialog):
                     self.list_ctrl.SetItemFont(idx, font)
                     self.list_ctrl.EnsureVisible(idx)
             except Exception:
-                pass
+                LOG.debug("ChannelEPGDialog._populate_list: ignored exception", exc_info=True)
 
     def _selected_programme(self) -> Optional[Dict[str, str]]:
         idx = self.list_ctrl.GetFirstSelected()
@@ -5174,7 +5015,7 @@ if __name__ == "__main__":
     try:
         i18n.init_from_config(load_config())
     except Exception:
-        pass
+        LOG.debug("<module>: ignored exception", exc_info=True)
     app = wx.App()
     app.SetAppName(app_meta.APP_NAME)
     IPTVClient()

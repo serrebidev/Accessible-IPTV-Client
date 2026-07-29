@@ -5,7 +5,6 @@ import hashlib
 import shutil
 from dataclasses import dataclass
 import datetime
-import re
 import time
 import platform
 import threading
@@ -20,6 +19,9 @@ from typing import Dict
 import tempfile
 
 from i18n import gettext as _
+import logging
+
+LOG = logging.getLogger(__name__)
 
 CONFIG_FILE = "iptvclient.conf"
 APP_DATA_DIR_NAME = "AccessibleIPTVClient"
@@ -54,7 +56,7 @@ if _IS_WINDOWS:
             try:
                 resetter.restype = None
             except Exception:
-                pass
+                LOG.debug("<module>: ignored exception", exc_info=True)
             _WINDOWS_TZ_RESETTER = resetter
             break
 
@@ -93,7 +95,7 @@ def _log_error(message: str):
             wx.LogError(text.replace("%", "%%"))
             return
         except Exception:
-            pass
+            LOG.debug("_log_error: ignored exception", exc_info=True)
     sys.stderr.write(f"{text}\n")
 
 
@@ -187,7 +189,7 @@ def get_user_config_dir(*, create: bool = True):
                 os.makedirs(config_dir, exist_ok=True)
             return config_dir
         except Exception:
-            pass
+            LOG.debug("get_user_config_dir: ignored exception", exc_info=True)
 
     if sys.platform == "darwin":
         path = os.path.join(os.path.expanduser("~/Library/Application Support"), LEGACY_APP_DATA_DIR_NAME)
@@ -266,7 +268,7 @@ def _prepare_windows_installed_data() -> None:
         with open(sentinel, "w", encoding="utf-8") as handle:
             handle.write("ok\n")
     except Exception:
-        pass
+        LOG.debug("_prepare_windows_installed_data: ignored exception", exc_info=True)
 
 
 def get_config_read_candidates():
@@ -337,7 +339,7 @@ def get_config_write_target():
                 if parent and _is_writable_dir(parent):
                     return _CONFIG_PATH
             except Exception:
-                pass
+                LOG.debug("get_config_write_target: ignored exception", exc_info=True)
         if cwd:
             if _is_writable_dir(cwd):
                 return os.path.join(cwd, CONFIG_FILE)
@@ -350,7 +352,7 @@ def get_config_write_target():
             if parent and _is_writable_dir(parent):
                 return _CONFIG_PATH
         except Exception:
-            pass
+            LOG.debug("get_config_write_target: ignored exception", exc_info=True)
 
     # Otherwise, prefer App Dir, then CWD, then user config dir
     app_dir = get_app_dir()
@@ -502,7 +504,7 @@ def save_config(cfg: Dict):
                 try:
                     os.remove(path)
                 except Exception:
-                    pass
+                    LOG.debug("save_config: ignored exception", exc_info=True)
             os.rename(tmp_path, path)
         _CONFIG_PATH = path
     except Exception as e:
@@ -569,7 +571,7 @@ def _windows_videos_dir():
             ctypes.windll.ole32.CoTaskMemFree(path_ptr)
             return value
     except Exception:
-        pass
+        LOG.debug("_windows_videos_dir: ignored exception", exc_info=True)
     return os.path.join(os.path.expanduser("~"), "Videos")
 
 def get_recordings_dir(cfg: Dict) -> str:
@@ -586,7 +588,7 @@ def get_recordings_dir(cfg: Dict) -> str:
     try:
         os.makedirs(target, exist_ok=True)
     except Exception:
-        pass
+        LOG.debug("get_recordings_dir: ignored exception", exc_info=True)
     return target
 
 def get_dvr_schedule_path() -> str:
@@ -606,206 +608,9 @@ def get_epg_log_path():
     return os.path.join(tempfile.gettempdir(), EPG_DEBUG_LOG_FILE)
 
 # Strip from names when canonicalizing (NOT used to detect country)
-STRIP_TAGS = [
-    'hd', 'sd', 'hevc', 'fhd', 'uhd', '4k', '8k', 'hdr', 'dash', 'hq', 'st',
-    'us', 'usa', 'ca', 'canada', 'car', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
-    'au', 'aus', 'nz', 'eu', 'ukhd', 'uksd', 'fhd', 'uhd', 'h.265', 'h265', 'h.264', 'h264',
-    '50fps', '60fps'
-]
-
-def group_synonyms():
-    # Canonical country code -> variants
-    return {
-        # North America
-        "us": ["us", "usa", "u.s.", "u.s", "us.", "united states", "united states of america", "america"],
-        "ca": ["ca", "can", "canada", "car"],
-        "mx": ["mx", "mex", "mexico", "méxico"],
-
-        # UK + Ireland
-        "uk": ["uk", "u.k.", "gb", "gbr", "great britain", "britain", "united kingdom", "england", "scotland", "wales", "northern ireland"],
-        "ie": ["ie", "irl", "ireland", "eire", "éire"],
-
-        # DACH
-        "de": ["de", "ger", "deu", "germany", "deutschland"],
-        "at": ["at", "aut", "austria", "österreich", "oesterreich"],
-        "ch": ["ch", "che", "switzerland", "schweiz", "suisse", "svizzera"],
-
-        # Benelux
-        "nl": ["nl", "nld", "netherlands", "holland", "nederland"],
-        "be": ["be", "bel", "belgium", "belgie", "belgië", "belgique"],
-        "lu": ["lu", "lux", "luxembourg", "letzebuerg", "lëtzebuerg"],
-
-        # Nordics
-        "se": ["se", "swe", "sweden", "svenska", "sverige"],
-        "no": ["no", "nor", "norway", "norge", "noreg"],
-        "dk": ["dk", "dnk", "denmark", "danmark"],
-        "fi": ["fi", "fin", "finland", "suomi"],
-        "is": ["is", "isl", "iceland", "ísland"],
-
-        # Southern Europe
-        "fr": ["fr", "fra", "france", "français", "française"],
-        "it": ["it", "ita", "italy", "italia"],
-        "es": ["es", "esp", "spain", "españa", "espana", "español"],
-        "pt": ["pt", "prt", "portugal", "português"],
-        "gr": ["gr", "grc", "greece", "ελλάδα", "ellada"],
-        "mt": ["mt", "mlt", "malta"],
-        "cy": ["cy", "cyp", "cyprus"],
-
-        # Central/Eastern Europe
-        "pl": ["pl", "pol", "poland", "polska"],
-        "cz": ["cz", "cze", "czech", "czechia", "cesko", "česko"],
-        "sk": ["sk", "svk", "slovakia", "slovensko"],
-        "hu": ["hu", "hun", "hungary", "magyar"],
-        "si": ["si", "svn", "slovenia", "slovenija"],
-        "hr": ["hr", "hrv", "croatia", "hrvatska"],
-        "rs": ["rs", "srb", "serbia", "srbija"],
-        "ba": ["ba", "bih", "bosnia", "bosnia and herzegovina", "bosna", "hercegovina"],
-        "mk": ["mk", "mkd", "north macedonia", "macedonia"],
-        "ro": ["ro", "rou", "romania", "românia"],
-        "bg": ["bg", "bgr", "bulgaria", "българия", "balgariya"],
-        "ua": ["ua", "ukr", "ukraine", "ukraina"],
-        "by": ["by", "blr", "belarus"],
-        "ru": ["ru", "rus", "russia", "россия", "rossiya"],
-        "ee": ["ee", "est", "estonia", "eesti"],
-        "lv": ["lv", "lva", "latvia", "latvija"],
-        "lt": ["lt", "ltu", "lithuania", "lietuva"],
-
-        # Balkans + nearby
-        "al": ["al", "alb", "albania", "shqipëri", "shqiperia"],
-        "me": ["me", "mne", "montenegro", "crna gora"],
-        "xk": ["xk", "kosovo"],
-
-        # MENA (subset)
-        "tr": ["tr", "tur", "turkey", "türkiye", "turkiye"],
-        "ma": ["ma", "mar", "morocco", "maroc"],
-        "dz": ["dz", "dza", "algeria", "algérie"],
-        "tn": ["tn", "tun", "tunisia", "tunisie"],
-        "eg": ["eg", "egypt", "misr"],
-        "il": ["il", "isr", "israel"],
-        "sa": ["sa", "sau", "saudi", "saudi arabia"],
-        "ae": ["ae", "are", "uae", "united arab emirates"],
-        "qa": ["qa", "qat", "qatar"],
-        "kw": ["kw", "kwt", "kuwait"],
-
-        # Asia (subset)
-        "in": ["in", "ind", "india", "bharat"],
-        "pk": ["pk", "pak", "pakistan"],
-        "bd": ["bd", "bgd", "bangladesh"],
-        "lk": ["lk", "lka", "sri lanka"],
-        "np": ["np", "npl", "nepal"],
-        "cn": ["cn", "chn", "china"],
-        "hk": ["hk", "hkg", "hong kong"],
-        "tw": ["tw", "twn", "taiwan"],
-        "jp": ["jp", "jpn", "japan", "日本"],
-        "kr": ["kr", "kor", "korea", "south korea"],
-        "sg": ["sg", "sgp", "singapore"],
-        "my": ["my", "mys", "malaysia"],
-        "th": ["th", "tha", "thailand"],
-        "vn": ["vn", "vnm", "vietnam"],
-        "ph": ["ph", "phl", "philippines"],
-        "id": ["id", "idn", "indonesia"],
-
-        # Oceania
-        "au": ["au", "aus", "australia"],
-        "nz": ["nz", "nzl", "new zealand", "aotearoa"],
-
-        # Latin America (subset)
-        "br": ["br", "bra", "brazil", "brasil"],
-        "ar": ["ar", "arg", "argentina"],
-        "cl": ["cl", "chl", "chile"],
-        "co": ["co", "col", "colombia"],
-        "pe": ["pe", "per", "peru", "perú"],
-        "uy": ["uy", "ury", "uruguay"],
-        "py": ["py", "pry", "paraguay"],
-        "bo": ["bo", "bol", "bolivia"],
-        "ec": ["ec", "ecu", "ecuador"],
-        "ve": ["ve", "ven", "venezuela"],
-        "cr": ["cr", "cri", "costa rica"],
-        "pr": ["pr", "pri", "puerto rico"],
-
-        # Africa (subset)
-        "ng": ["ng", "nga", "nigeria"],
-        "za": ["za", "zaf", "south africa"],
-        "ke": ["ke", "ken", "kenya"],
-        "gh": ["gh", "gha", "ghana"],
-        "et": ["et", "eth", "ethiopia"],
-        "tz": ["tz", "tza", "tanzania"],
-        "ug": ["ug", "uga", "uganda"],
-        "ci": ["ci", "civ", "côte d’ivoire", "ivory coast"],
-        "sn": ["sn", "sen", "senegal"],
-    }
-
-def _build_reverse_country_lookup():
-    lookup = {}
-    for code, variants in group_synonyms().items():
-        for v in variants:
-            lookup[v.lower()] = code
-    lookup["gb"] = "uk"
-    lookup["gbr"] = "uk"
-    return lookup
-
-_COUNTRY_LOOKUP = _build_reverse_country_lookup()
-
-def _normalize_country_token(tok: str) -> str:
-    if not tok:
-        return ''
-    t = tok.strip().lower()
-    if t in _COUNTRY_LOOKUP:
-        return _COUNTRY_LOOKUP[t]
-    t2 = t.replace('.', '')
-    if t2 in _COUNTRY_LOOKUP:
-        return _COUNTRY_LOOKUP[t2]
-    return ''
-
-def canonicalize_name(name: str) -> str:
-    name = (name or "").strip().lower()
-    tags = STRIP_TAGS
-    pattern = r'^(?:' + '|'.join(tags) + r')\b[\s\-:()[\]]*|[\s\-:()[\]]*\b(?:' + '|'.join(tags) + r')$'
-    while True:
-        newname = re.sub(pattern, '', name, flags=re.I).strip()
-        if newname == name:
-            break
-        name = newname
-    name = re.sub(r'\b(?:' + '|'.join(tags) + r')\b', '', name, flags=re.I)
-    name = re.sub(r'\s+', ' ', name)
-    return name.strip()
-
-def relaxed_name(name: str) -> str:
-    n = name.strip().lower()
-    n = re.sub(r'[\(\[].*?[\)\]]', '', n)
-    tags = r'\b(?:' + '|'.join(STRIP_TAGS) + r')\b'
-    n = re.sub(tags, '', n, flags=re.I)
-    n = re.sub(r'[^\w\s]', '', n)
-    n = re.sub(r'\s+', ' ', n)
-    return n.strip()
-
-def _search_country_in_text(text: str) -> str:
-    if not text:
-        return ''
-    s = text.lower()
-    for m in re.findall(r'[\(\[\{]([^\)\]\}]{2,24})[\)\]\}]', s):
-        for token in re.findall(r'[a-zA-ZÀ-ÿ\.]+', m):
-            code = _normalize_country_token(token)
-            if code:
-                return code
-    for token in re.split(r'[\|\-\/:,–—]+', s):
-        token = token.strip()
-        code = _normalize_country_token(token)
-        if code:
-            return code
-    for word in re.findall(r'[a-zA-ZÀ-ÿ\.]+', s):
-        code = _normalize_country_token(word)
-        if code:
-            return code
-    m = re.match(r'^\s*([a-zA-Z\.]{2,4})\b', s)
-    if m:
-        code = _normalize_country_token(m.group(1))
-        if code:
-            return code
-    return ''
-
-def extract_group(title: str) -> str:
-    return _search_country_in_text(title or "")
+# Channel-name normalization and country detection used to be duplicated here.
+# It now lives in channel_names.py, which playlist.py also uses, so the UI and the
+# EPG database can never drift apart on how a channel name is normalized.
 
 def utc_to_local(dt):
     if _IS_WINDOWS:

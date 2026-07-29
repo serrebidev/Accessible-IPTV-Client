@@ -9,6 +9,9 @@ import tempfile
 from typing import Tuple
 
 from i18n import gettext as _
+import logging
+
+LOG = logging.getLogger(__name__)
 
 
 class ExternalPlayerLauncher:
@@ -118,7 +121,7 @@ class ExternalPlayerLauncher:
                 try:
                     os.unlink(ipc)
                 except Exception:
-                    pass
+                    LOG.debug("ExternalPlayerLauncher._argv_for: ignored exception", exc_info=True)
             return [exe_or_cmd, *flags, url]
         # Default: just pass URL
         return [exe_or_cmd, url]

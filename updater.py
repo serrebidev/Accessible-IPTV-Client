@@ -297,7 +297,7 @@ def safe_extract_zip(zip_path: str, dest_dir: str) -> None:
 
 def find_executable(root: str, exe_name: str) -> Optional[str]:
     exe_name_lower = exe_name.lower()
-    for dirpath, _, filenames in os.walk(root):
+    for dirpath, _dirnames, filenames in os.walk(root):
         for filename in filenames:
             if filename.lower() == exe_name_lower:
                 return os.path.join(dirpath, filename)
@@ -358,7 +358,7 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
         try:
             os.unlink(script_path)
         except OSError:
-            pass
+            LOG.debug("verify_authenticode: ignored exception", exc_info=True)
     
     if result.returncode != 0:
         raise UpdateError(_("Authenticode verification failed: {detail}").format(

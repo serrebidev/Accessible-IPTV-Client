@@ -198,7 +198,7 @@ class InternalPlayerFrame(wx.Frame):
             if current >= 0:
                 self._volume_value = current
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.__init__: ignored exception", exc_info=True)
 
         panel = wx.Panel(self)
         panel.SetBackgroundColour(wx.BLACK)
@@ -384,7 +384,7 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         self.player.set_media(media)
         if video_visible:
             self._ensure_player_window()
@@ -393,15 +393,15 @@ class InternalPlayerFrame(wx.Frame):
             try:
                 self.player.set_nsobject(None)  # macOS
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
             try:
                 self.player.set_hwnd(0)  # Windows
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
             try:
                 self.player.set_xwindow(0)  # Linux
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         LOG.debug("Calling player.play()...")
         self.player.play()
         self._is_paused = False
@@ -427,21 +427,11 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.stop: ignored exception", exc_info=True)
         self._is_paused = True
         self._has_seen_playing = False
         self.play_pause_btn.SetLabel(_("Play"))
         self._update_status_label(_("Stopped"))
-
-    def update_base_buffer(self, seconds: float) -> None:
-        """Update default buffer target for future plays."""
-        try:
-            seconds = float(seconds)
-        except Exception:
-            return
-        self.base_buffer_seconds = min(seconds, self._max_buffer_seconds)
-        self._refresh_ts_floor()
-        self._update_cache_bounds()
 
     # ---------------------------------------------------------------- internal
     def _apply_cache_options(self, media: "vlc.Media", profile: dict) -> None:
@@ -653,9 +643,6 @@ class InternalPlayerFrame(wx.Frame):
         if cap <= 0:
             return None
         return max(0.25, cap)
-
-    def update_variant_cap(self, max_mbps: Optional[float]) -> None:
-        self._variant_max_mbps = self._sanitize_variant_cap(max_mbps)
 
     @staticmethod
     def _is_linear_ts(url: str) -> bool:
@@ -972,69 +959,6 @@ class InternalPlayerFrame(wx.Frame):
         # Skip network probing for fast startup - let buffer tuning use defaults
         return None
 
-    def _preflight_check(self, url: str, headers: Optional[Dict[str, object]] = None) -> Optional[str]:
-        """Quick HTTP check to detect obvious errors before VLC tries to open.
-        
-        Returns None if OK, or an error message string if the stream is unreachable.
-        Only checks the initial HTTP response - does not follow redirects or wait for stream data.
-        VLC handles redirects and auth tokens differently, so we just verify basic connectivity.
-        """
-        if not url or not url.startswith(("http://", "https://")):
-            return None  # Skip check for non-HTTP URLs
-        
-        req_headers = self._request_headers(headers, include_accept=True)
-        req = urllib.request.Request(url, headers=req_headers, method="GET")
-        
-        # Don't follow redirects - just check the initial response
-        # VLC handles redirects internally and may handle auth tokens differently
-        class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
-            def redirect_request(self, req, fp, code, msg, headers, newurl):
-                return None  # Don't follow redirects
-        
-        opener = urllib.request.build_opener(NoRedirectHandler)
-        
-        try:
-            # Very short timeout for fast startup - just verify basic connectivity
-            resp = opener.open(req, timeout=2)
-            status = resp.status
-            resp.close()
-            if status >= 400:
-                return _("HTTP error {code}").format(code=status)
-            return None  # Success - got 2xx/3xx response (3xx means redirect, let VLC handle it)
-        except urllib.error.HTTPError as e:
-            # 3xx redirects are fine - VLC will follow them
-            if 300 <= e.code < 400:
-                return None  # Redirect is OK
-            LOG.warning("Stream preflight failed: HTTP %d %s for %s", e.code, e.reason, url)
-            if e.code == 404:
-                return _("Stream not found (HTTP 404). The channel may be offline or the URL may have expired.")
-            elif e.code == 403:
-                return _("Access denied (HTTP 403). Authentication may have expired.")
-            elif e.code == 401:
-                return _("Authentication required (HTTP 401). Please check your credentials.")
-            elif e.code == 502:
-                return _("Bad gateway (HTTP 502). The provider's server may be having issues.")
-            elif e.code == 503:
-                return _("Service unavailable (HTTP 503). The provider may be overloaded.")
-            elif e.code >= 500:
-                return _("Server error (HTTP {code}). Try again later.").format(code=e.code)
-            else:
-                return _("HTTP error {code}: {reason}").format(code=e.code, reason=e.reason)
-        except urllib.error.URLError as e:
-            reason = str(e.reason) if e.reason else _("Unknown error")
-            LOG.warning("Stream preflight failed: %s for %s", reason, url)
-            if "ssl" in reason.lower() or "certificate" in reason.lower():
-                return _("SSL/TLS error: {reason}").format(reason=reason)
-            elif "timeout" in reason.lower() or "timed out" in reason.lower():
-                return None  # Timeouts are OK - let VLC try with its own buffering
-            elif "refused" in reason.lower():
-                return _("Connection refused. The server may be down.")
-            else:
-                return _("Connection error: {reason}").format(reason=reason)
-        except Exception as e:
-            LOG.debug("Preflight check exception (non-fatal): %s", e)
-            return None  # Let VLC try anyway for unknown errors
-
     def _detect_stream_content_type(self, url: str, headers: Optional[Dict[str, object]] = None) -> Optional[str]:
         """Detect if the stream is MPEG-TS based on URL patterns.
         
@@ -1282,7 +1206,7 @@ class InternalPlayerFrame(wx.Frame):
                 self.play_pause_btn.SetLabel(_("Pause"))
                 self._update_status_label(_("Buffering..."))
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
             return
 
         if is_stopped_state and can_resume:
@@ -1294,7 +1218,7 @@ class InternalPlayerFrame(wx.Frame):
                 self._status_timer.Start(500)
                 self._update_status_label(_("Buffering..."))
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
             return
 
         try:
@@ -1302,7 +1226,7 @@ class InternalPlayerFrame(wx.Frame):
             self._is_paused = not self._is_paused
             self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
 
     def _on_cast(self, _event: Optional[wx.Event] = None) -> None:
         if not self._on_cast_cb:
@@ -1491,7 +1415,7 @@ class InternalPlayerFrame(wx.Frame):
                 self.player.audio_set_volume(self._volume_value)
                 self._sync_volume_slider()
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._schedule_volume_apply._apply: ignored exception", exc_info=True)
 
         wx.CallLater(150, _apply)
 
@@ -1500,7 +1424,7 @@ class InternalPlayerFrame(wx.Frame):
             try:
                 self.volume_slider.SetValue(int(min(100, max(0, self._volume_value))))
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._sync_volume_slider: ignored exception", exc_info=True)
 
     def _on_volume_slider(self, event: wx.CommandEvent) -> None:
         try:
@@ -1529,7 +1453,7 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.audio_set_volume(ival)
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._apply_volume: ignored exception", exc_info=True)
 
     def _set_fullscreen(self, enable: bool) -> None:
         enable = bool(enable)
@@ -1550,11 +1474,11 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.Hide()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._hide_player: ignored exception", exc_info=True)
         try:
             self._status_timer.Start(500)
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._hide_player: ignored exception", exc_info=True)
 
     def _exit_player(self) -> None:
         # Stop playback and destroy window explicitly.
@@ -1562,16 +1486,16 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self._status_timer.Stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
         try:
             self.player.stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
         if self._on_close_cb:
             try:
                 self._on_close_cb()
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
         self.Destroy()
 
     def _on_close(self, event: wx.CloseEvent) -> None:
@@ -1583,12 +1507,12 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame._on_close: ignored exception", exc_info=True)
         if self._on_close_cb:
             try:
                 self._on_close_cb()
             except Exception:
-                pass
+                LOG.debug("InternalPlayerFrame._on_close: ignored exception", exc_info=True)
         self._destroyed = True
         event.Skip()
 
@@ -1601,15 +1525,15 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self.player.stop()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
         try:
             self.player.release()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
         try:
             self.instance.release()
         except Exception:
-            pass
+            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
         return super().Destroy()
 
 

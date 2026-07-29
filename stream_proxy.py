@@ -452,7 +452,7 @@ class HLSConverter:
                                 self._ffmpeg_stderr_tail.append(line)
                                 self._ffmpeg_stderr_tail = self._ffmpeg_stderr_tail[-8:]
                 except Exception:
-                    pass
+                    LOG.debug("HLSConverter.start._drain_stderr: ignored exception", exc_info=True)
 
             threading.Thread(target=_drain_stderr, daemon=True).start()
 
@@ -530,7 +530,8 @@ class HLSConverter:
                 finally:
                     if self.process and self.process.stdin:
                         try: self.process.stdin.close()
-                        except: pass
+                        except:
+                            LOG.debug("HLSConverter.start._pump: ignored exception", exc_info=True)
             threading.Thread(target=_pump, daemon=True).start()
             threading.Thread(target=self._cleanup_old_segments, daemon=True).start()
         except Exception as e:
@@ -569,7 +570,7 @@ class HLSConverter:
             try:
                 os.remove(path)
             except OSError:
-                pass
+                LOG.debug("HLSConverter._cleanup_old_segments_once: ignored exception", exc_info=True)
 
     def _cleanup_old_segments(self):
         while self.is_alive():
@@ -579,11 +580,13 @@ class HLSConverter:
     def stop(self):
         if self.process:
             try: self.process.terminate()
-            except: pass
+            except:
+                LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
             self.process = None
         if os.path.exists(self.temp_dir):
             try: shutil.rmtree(self.temp_dir)
-            except: pass
+            except:
+                LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
 
     def is_alive(self): return self.process and self.process.poll() is None
     def touch(self): self.last_access = time.time()
@@ -628,7 +631,7 @@ class HLSConverter:
                     if ready:
                         return True
                 except OSError:
-                    pass
+                    LOG.debug("HLSConverter.wait_for_playlist: ignored exception", exc_info=True)
             if not self.is_alive():
                 with self._state_lock:
                     if not self._startup_error:
@@ -715,13 +718,13 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         try:
             LOG.debug("proxy %s - %s", self.address_string(), format % args)
         except Exception:
-            pass
+            LOG.debug("StreamProxyHandler.log_message: ignored exception", exc_info=True)
 
     def log_error(self, format, *args):
         try:
             LOG.info("proxy %s - %s", self.address_string(), format % args)
         except Exception:
-            pass
+            LOG.debug("StreamProxyHandler.log_error: ignored exception", exc_info=True)
 
     def _send_no_cache_headers(self):
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -749,7 +752,8 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             req_headers = {}
             if headers_json:
                 try: req_headers = json.loads(base64.b64decode(headers_json).decode())
-                except: pass
+                except:
+                    LOG.debug("StreamProxyHandler.do_GET: ignored exception", exc_info=True)
             req_headers = normalize_request_headers(req_headers)
             
             # --- RADIO Path ---
@@ -803,11 +807,13 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                                                 proc.stdin.write(chunk)
                                                 proc.stdin.flush()
                                             except: break
-                                except Exception: pass
+                                except Exception:
+                                    LOG.debug("StreamProxyHandler.do_GET._upstream_worker._feeder: ignored exception", exc_info=True)
                                 finally:
                                     if proc and proc.stdin:
                                         try: proc.stdin.close()
-                                        except: pass
+                                        except:
+                                            LOG.debug("StreamProxyHandler.do_GET._upstream_worker._feeder: ignored exception", exc_info=True)
 
                             threading.Thread(target=_feeder, daemon=True).start()
 
@@ -849,7 +855,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                                 try:
                                     proc.kill()
                                 except Exception:
-                                    pass
+                                    LOG.debug("StreamProxyHandler.do_GET._upstream_worker: ignored exception", exc_info=True)
 
                 # Start the producer thread
                 threading.Thread(target=_upstream_worker, daemon=True).start()
@@ -969,7 +975,8 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 try:
                     with open(file_path, 'rb') as f: shutil.copyfileobj(f, self.wfile)
-                except: pass
+                except:
+                    LOG.debug("StreamProxyHandler.do_GET: ignored exception", exc_info=True)
                 return
 
         # 4. --- Route: /bootstrap.ts (1s black segment) ---
@@ -990,10 +997,12 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             try:
                 data = proc.stdout.read()
                 if data: self.wfile.write(data)
-            except: pass
+            except:
+                LOG.debug("StreamProxyHandler.do_GET: ignored exception", exc_info=True)
             finally:
                 try: proc.terminate()
-                except: pass
+                except:
+                    LOG.debug("StreamProxyHandler.do_GET: ignored exception", exc_info=True)
             return
 
         self.send_error(404)
@@ -1020,13 +1029,15 @@ class StreamProxy:
             ip = s.getsockname()[0]
             s.close()
             if ip and not ip.startswith('127.'): return ip
-        except: pass
+        except:
+            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
 
         try:
             # Method 2: Hostname lookup
             ip = socket.gethostbyname(socket.gethostname())
             if ip and not ip.startswith('127.'): return ip
-        except: pass
+        except:
+            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
 
         try:
             # Method 3: Interface scan (last resort)
@@ -1034,7 +1045,8 @@ class StreamProxy:
             for addr in socket.getaddrinfo(socket.gethostname(), None):
                 ip = addr[4][0]
                 if '.' in ip and not ip.startswith('127.'): return ip
-        except: pass
+        except:
+            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
 
         return '127.0.0.1'
 
@@ -1121,7 +1133,8 @@ class StreamProxy:
             flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={rule_name}"], capture_output=True, creationflags=flags)
             subprocess.run(["netsh", "advfirewall", "firewall", "add", "rule", f"name={rule_name}", "dir=in", "action=allow", "protocol=TCP", f"localport={self.port}", "profile=private,domain"], capture_output=True, creationflags=flags)
-        except: pass
+        except:
+            LOG.debug("StreamProxy._ensure_firewall_rule: ignored exception", exc_info=True)
 
 _PROXY = None
 _PROXY_LOCK = threading.Lock()

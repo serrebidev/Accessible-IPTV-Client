@@ -23,6 +23,9 @@ import builtins
 import gettext as _gettext
 import os
 import sys
+import logging
+
+LOG = logging.getLogger(__name__)
 
 # gettext domain -> locale/<lang>/LC_MESSAGES/iptvclient.mo
 DOMAIN = "iptvclient"
@@ -89,7 +92,7 @@ def detect_system_language() -> str:
             if name:
                 return name.split("_")[0].lower()
         except Exception:
-            pass
+            LOG.debug("detect_system_language: ignored exception", exc_info=True)
     # 3) Generic default locale (deprecated API; guarded + warning-suppressed).
     try:
         import locale as _locale
@@ -101,7 +104,7 @@ def detect_system_language() -> str:
         if loc:
             return loc.replace("-", "_").split("_")[0].lower()
     except Exception:
-        pass
+        LOG.debug("detect_system_language: ignored exception", exc_info=True)
     return "en"
 
 

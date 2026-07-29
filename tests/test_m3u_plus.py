@@ -221,6 +221,7 @@ class TestNameNormalization:
         
         # All should contain 'cnn' as the core
         assert "cnn" in name1.lower()
+        assert "cnn" in name2.lower()
         assert "cnn" in name3.lower()
 
 
@@ -305,7 +306,6 @@ class TestLargePlaylistHandling:
         
         while processed < total:
             end = min(processed + batch_size, total)
-            chunk_size = end - processed
             processed = end
             batches += 1
         

@@ -32,6 +32,9 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from i18n import gettext as _
+import logging
+
+LOG = logging.getLogger(__name__)
 
 KIND_MOVIE = "movie"
 KIND_SERIES = "series"
@@ -248,7 +251,7 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
             _add(group_order, groups, _("Movies") + " — " + category, movie)
     except Exception:
         # A provider may not offer VOD; keep whatever we did collect.
-        pass
+        LOG.debug("build_xtream_catalog: ignored exception", exc_info=True)
 
     # Series (episodes loaded lazily on open).
     try:
@@ -268,7 +271,7 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
             }
             _add(group_order, groups, _("Series") + " — " + category, series)
     except Exception:
-        pass
+        LOG.debug("build_xtream_catalog: ignored exception", exc_info=True)
 
     return group_order, groups
 

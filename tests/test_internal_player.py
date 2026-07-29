@@ -5,7 +5,6 @@ import pytest
 import os
 import sys
 import time
-from unittest.mock import Mock, patch, MagicMock, PropertyMock
 from enum import IntEnum
 
 # Add parent directory to path for imports
@@ -291,42 +290,6 @@ class TestVolumeControl:
         assert clamp_volume(-10) == 0
         assert clamp_volume(150) == 100
         assert clamp_volume(50) == 50
-
-
-class TestPreflightCheck:
-    """Test preflight stream check functionality."""
-
-    def test_preflight_http_request(self):
-        """Test preflight makes HTTP HEAD/GET request."""
-        url = "http://example.com/stream.m3u8"
-        
-        # Should use HEAD request first
-        method = "HEAD"
-        
-        assert method in ["HEAD", "GET"]
-
-    def test_preflight_timeout(self):
-        """Test preflight has reasonable timeout."""
-        timeout_seconds = 10
-        
-        assert timeout_seconds >= 5
-        assert timeout_seconds <= 30
-
-    def test_preflight_detects_404(self):
-        """Test preflight detects 404 errors."""
-        status_code = 404
-        
-        is_error = status_code >= 400
-        
-        assert is_error is True
-
-    def test_preflight_accepts_redirect(self):
-        """Test preflight follows redirects."""
-        status_code = 302
-        
-        is_redirect = 300 <= status_code < 400
-        
-        assert is_redirect is True
 
 
 class TestPlayerReconnection:

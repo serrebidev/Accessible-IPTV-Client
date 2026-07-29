@@ -45,12 +45,6 @@ def get_ffmpeg_path():
     return _get_ffmpeg_path()
 
 
-def format_label(fmt: str) -> str:
-    """English display label for a format key (callers translate at display time)."""
-    entry = RECORDING_FORMATS.get(fmt) or RECORDING_FORMATS[DEFAULT_RECORDING_FORMAT]
-    return entry[0]
-
-
 def format_extension(fmt: str) -> str:
     entry = RECORDING_FORMATS.get(fmt) or RECORDING_FORMATS[DEFAULT_RECORDING_FORMAT]
     return entry[1]
@@ -277,13 +271,13 @@ class RecordingManager:
                     rec.stderr_tail.append(line)
                     rec.stderr_tail = rec.stderr_tail[-12:]
         except Exception:
-            pass
+            LOG.debug("RecordingManager._drain_stderr: ignored exception", exc_info=True)
 
     def _watch(self, rec: Recording, on_finish: Optional[Callable[[Recording, int], None]]) -> None:
         try:
             rec.process.wait()
         except Exception:
-            pass
+            LOG.debug("RecordingManager._watch: ignored exception", exc_info=True)
         rc = rec.process.returncode if rec.process else -1
         with self._lock:
             self._recordings.pop(rec.id, None)
@@ -304,7 +298,7 @@ class RecordingManager:
                 try:
                     proc.wait(timeout=8)
                 except Exception:
-                    pass
+                    LOG.debug("RecordingManager._graceful_stop: ignored exception", exc_info=True)
             return
         rec.stopping = True
 
@@ -316,22 +310,22 @@ class RecordingManager:
                     proc.stdin.write(b"q\n")
                     proc.stdin.flush()
             except Exception:
-                pass
+                LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
             try:
                 proc.wait(timeout=8)
                 return
             except Exception:
-                pass
+                LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
             try:
                 proc.terminate()
                 proc.wait(timeout=5)
                 return
             except Exception:
-                pass
+                LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
             try:
                 proc.kill()
             except Exception:
-                pass
+                LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
 
         if wait:
             _finalize()

@@ -1,4 +1,4 @@
-﻿"""Unified casting module for Chromecast, DLNA/UPnP, and AirPlay.
+"""Unified casting module for Chromecast, DLNA/UPnP, and AirPlay.
 
 Provides a simple interface to discover and cast to network media devices.
 Each device is labeled with its type for easy identification.
@@ -209,7 +209,7 @@ class ChromecastCaster(BaseCaster):
                     try:
                         browser.stop_discovery()
                     except Exception:
-                        pass
+                        LOG.debug("ChromecastCaster.connect.do_connect: ignored exception", exc_info=True)
                     # If strictly searching by UUID failed, try searching by known IP
                     # This is useful if the UUID changed or discovery is flaky but IP is known
                     # However, get_chromecasts(known_hosts=[...]) is better
@@ -298,9 +298,9 @@ class ChromecastCaster(BaseCaster):
                     break
                 if last_state == "IDLE" and last_idle_reason == "ERROR":
                     raise PlaybackError(
-                        f"Chromecast rejected the stream (idle reason ERROR). "
-                        f"This usually means the upstream took too long to start "
-                        f"or the receiver couldn't decode the segments."
+                        "Chromecast rejected the stream (idle reason ERROR). "
+                        "This usually means the upstream took too long to start "
+                        "or the receiver couldn't decode the segments."
                     )
                 _time.sleep(0.5)
             if not saw_playing:
@@ -337,13 +337,13 @@ class ChromecastCaster(BaseCaster):
             try:
                 self._cast.disconnect()
             except Exception:
-                pass
+                LOG.debug("ChromecastCaster.disconnect: ignored exception", exc_info=True)
             self._cast = None
         if self._browser:
             try:
                 self._browser.stop_discovery()
             except Exception:
-                pass
+                LOG.debug("ChromecastCaster.disconnect: ignored exception", exc_info=True)
             self._browser = None
     
     def is_connected(self) -> bool:
@@ -583,7 +583,7 @@ class DLNACaster(BaseCaster):
             try:
                 await self._requester.async_close()
             except Exception:
-                pass
+                LOG.debug("DLNACaster.disconnect: ignored exception", exc_info=True)
             self._requester = None
 
     def is_connected(self) -> bool:
@@ -669,7 +669,7 @@ class AirPlayCaster(BaseCaster):
             return
         except Exception:
             # Fallback: re-scan and retry once
-            pass
+            LOG.debug("AirPlayCaster.connect: ignored exception", exc_info=True)
 
         try:
             # Re-scan to get fresh config (handles IP changes, ephemeral ports, loop affinity)
@@ -823,7 +823,7 @@ class AirPlayCaster(BaseCaster):
         try:
             await task
         except (asyncio.CancelledError, Exception):
-            pass
+            LOG.debug("AirPlayCaster._cancel_audio_task: ignored exception", exc_info=True)
     
     async def stop(self) -> None:
         await self._cancel_audio_task()
@@ -831,21 +831,21 @@ class AirPlayCaster(BaseCaster):
             try:
                 await self._atv.remote_control.stop()
             except Exception:
-                pass
+                LOG.debug("AirPlayCaster.stop: ignored exception", exc_info=True)
 
     async def pause(self) -> None:
         if self._atv:
             try:
                 await self._atv.remote_control.pause()
             except Exception:
-                pass
+                LOG.debug("AirPlayCaster.pause: ignored exception", exc_info=True)
 
     async def resume(self) -> None:
         if self._atv:
             try:
                 await self._atv.remote_control.play()
             except Exception:
-                pass
+                LOG.debug("AirPlayCaster.resume: ignored exception", exc_info=True)
 
     async def set_volume(self, level: float) -> None:
         if self._atv:
@@ -853,7 +853,7 @@ class AirPlayCaster(BaseCaster):
                 # pyatv audio set_volume is 0-100
                 await self._atv.audio.set_volume(level * 100)
             except Exception:
-                pass
+                LOG.debug("AirPlayCaster.set_volume: ignored exception", exc_info=True)
 
     async def disconnect(self) -> None:
         await self._cancel_audio_task()
@@ -861,7 +861,7 @@ class AirPlayCaster(BaseCaster):
             try:
                 self._atv.close()
             except Exception:
-                pass
+                LOG.debug("AirPlayCaster.disconnect: ignored exception", exc_info=True)
             self._atv = None
         self._has_video_protocol = False
 
@@ -916,7 +916,7 @@ def _detect_mime_type(url: str, default: str = "video/mp2t") -> str:
                         return default
                     return ctype
     except Exception:
-        pass
+        LOG.debug("_detect_mime_type: ignored exception", exc_info=True)
 
     # Heuristic for common radio/stream endpoints without extensions
     if any(token in u for token in ("/stream", "radio", "/live")):

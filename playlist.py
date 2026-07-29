@@ -40,7 +40,7 @@ def _log_wx_error(message: str):
             wx.LogError(text.replace("%", "%%"))
             return
         except Exception:
-            pass
+            _logger.debug("_log_wx_error: ignored exception", exc_info=True)
     sys.stderr.write(f"{text}\n")
 
 
@@ -176,7 +176,7 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
                 with open(pid_path, 'w', encoding='utf-8') as pf:
                     pf.write(str(os.getpid()))
             except Exception:
-                pass
+                _logger.debug("_try_acquire_import_lock: ignored exception", exc_info=True)
             _logger.debug("EPG import lock acquired: %s", lock_path)
             return True
         except FileExistsError:
@@ -188,12 +188,12 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
                 try:
                     os.remove(lock_path)
                 except Exception:
-                    pass
+                    _logger.debug("_try_acquire_import_lock: ignored exception", exc_info=True)
                 try:
                     if os.path.exists(pid_path):
                         os.remove(pid_path)
                 except Exception:
-                    pass
+                    _logger.debug("_try_acquire_import_lock: ignored exception", exc_info=True)
                 continue
             if time.time() >= deadline:
                 # Silent negative result; caller decides whether to wait/log.
@@ -208,15 +208,15 @@ def _release_import_lock(db_path: str):
         if os.path.exists(lock_path):
             os.remove(lock_path)
     except Exception:
-        pass
+        _logger.debug("_release_import_lock: ignored exception", exc_info=True)
     try:
         if os.path.exists(pid_path):
             os.remove(pid_path)
     except Exception:
-        pass
+        _logger.debug("_release_import_lock: ignored exception", exc_info=True)
 
 def _wait_for_import_lock(db_path: str, poll_sec: int = 10, log_every: int = 30):
-    """Block until the crossâ€‘process import lock can be acquired.
+    """Block until the cross‑process import lock can be acquired.
 
     No user-facing popups; emits periodic debug logs only.
     """
@@ -229,204 +229,24 @@ def _wait_for_import_lock(db_path: str, poll_sec: int = 10, log_every: int = 30)
             try:
                 _logger.debug("EPG import waiting for lock; waited=%ss", waited)
             except Exception:
-                pass
+                _logger.debug("_wait_for_import_lock: ignored exception", exc_info=True)
 
 # =========================
 # Normalization & Tokenizing
 # =========================
 
-STRIP_TAGS = [
-    'hd', 'sd', 'hevc', 'fhd', 'uhd', '4k', '8k', 'hdr', 'dash', 'hq', 'st',
-    'us', 'usa', 'ca', 'canada', 'car', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
-    'au', 'aus', 'nz', 'ukhd', 'uksd', 'fhd', 'uhd', 'h.265', 'h265', 'h.264', 'h264',
-    '50fps', '60fps'
-]
-
-NOISE_WORDS = [
-    'backup', 'alt', 'feed', 'main', 'extra', 'mirror', 'test', 'temp',
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-    'sd', 'hd', 'fhd', 'uhd', '4k', '8k', 'plus', 'live', 'network'
-]
-
-_GROUP_SYNONYMS_CACHE: Optional[Dict[str, List[str]]] = None
-
-
-def group_synonyms() -> Dict[str, List[str]]:
-    global _GROUP_SYNONYMS_CACHE
-    cache = _GROUP_SYNONYMS_CACHE
-    if cache is not None:
-        return cache
-    cache = {
-        "us": ["us","usa","u.s.","u.s","us.","united states","united states of america","america"],
-        "ca": ["ca","can","canada","car"],
-        "mx": ["mx","mex","mexico","mÃ©xico"],
-        "uk": ["uk","u.k.","gb","gbr","great britain","britain","united kingdom","england","scotland","wales","northern ireland"],
-        "ie": ["ie","irl","ireland","eire","Ã©ire"],
-        "de": ["de","ger","deu","germany","deutschland"],
-        "at": ["at","aut","austria","Ã¶sterreich","oesterreich"],
-        "ch": ["ch","che","switzerland","schweiz","suisse","svizzera"],
-        "nl": ["nl","nld","netherlands","holland","nederland"],
-        "be": ["be","bel","belgium","belgie","belgiÃ«","belgique"],
-        "lu": ["lu","lux","luxembourg","letzebuerg","lÃ«tzebuerg"],
-        "se": ["se","swe","sweden","svenska","sverige"],
-        "no": ["no","nor","norway","norge","noreg"],
-        "dk": ["dk","dnk","denmark","danmark"],
-        "fi": ["fi","fin","finland","suomi"],
-        "is": ["is","isl","iceland","Ã­sland"],
-        "fr": ["fr","fra","france","franÃ§ais","franÃ§aise"],
-        "it": ["it","ita","italy","italia"],
-        "es": ["es","esp","spain","espaÃ±a","espana","espaÃ±ol"],
-        "pt": ["pt","prt","portugal","portuguÃªs"],
-        "gr": ["gr","grc","greece","ÎµÎ»Î»Î¬Î´Î±","ellada"],
-        "mt": ["mt","mlt","malta"],
-        "cy": ["cy","cyp","cyprus"],
-        "pl": ["pl","pol","poland","polska"],
-        "cz": ["cz","cze","czech","czechia","cesko","Äesko"],
-        "sk": ["sk","svk","slovakia","slovensko"],
-        "hu": ["hu","hun","hungary","magyar"],
-        "si": ["si","svn","slovenia","slovenija"],
-        "hr": ["hr","hrv","croatia","hrvatska"],
-        "rs": ["rs","srb","serbia","srbija"],
-        "ba": ["ba","bih","bosnia","bosnia and herzegovina","bosna","hercegovina"],
-        "mk": ["mk","mkd","north macedonia","macedonia"],
-        "ro": ["ro","rou","romania","romÃ¢nia"],
-        "bg": ["bg","bgr","bulgaria","Ð±ÑŠÐ»Ð³Ð°Ñ€Ð¸Ñ","balgariya"],
-        "ua": ["ua","ukr","ukraine","ukraina"],
-        "by": ["by","blr","belarus"],
-        "ru": ["ru","rus","russia","Ñ€Ð¾ÑÑÐ¸Ñ","rossiya"],
-        "ee": ["ee","est","estonia","eesti"],
-        "lv": ["lv","lva","latvia","latvija"],
-        "lt": ["lt","ltu","lithuania","lietuva"],
-        "al": ["al","alb","albania","shqipÃ«ri","shqiperia"],
-        "me": ["me","mne","montenegro","crna gora"],
-        "xk": ["xk","kosovo"],
-        "tr": ["tr","tur","turkey","tÃ¼rkiye","turkiye"],
-        "ma": ["ma","mar","morocco","maroc"],
-        "dz": ["dz","dza","algeria","algÃ©rie"],
-        "tn": ["tn","tun","tunisia","tunisie"],
-        "eg": ["eg","egypt","misr"],
-        "il": ["il","isr","israel"],
-        "sa": ["sa","sau","saudi","saudi arabia"],
-        "ae": ["ae","are","uae","united arab emirates"],
-        "qa": ["qa","qat","qatar"],
-        "kw": ["kw","kwt","kuwait"],
-        "in": ["in","ind","india","bharat"],
-        "pk": ["pk","pak","pakistan"],
-        "bd": ["bd","bgd","bangladesh"],
-        "lk": ["lk","lka","sri lanka"],
-        "np": ["np","npl","nepal"],
-        "cn": ["cn","chn","china"],
-        "hk": ["hk","hkg","hong kong"],
-        "tw": ["tw","twn","taiwan"],
-        "jp": ["jp","jpn","japan","æ—¥æœ¬"],
-        "kr": ["kr","kor","korea","south korea"],
-        "sg": ["sg","sgp","singapore"],
-        "my": ["my","mys","malaysia"],
-        "th": ["th","tha","thailand"],
-        "vn": ["vn","vnm","vietnam"],
-        "ph": ["ph","phl","philippines"],
-        "id": ["id","idn","indonesia"],
-        "au": ["au","aus","australia"],
-        "nz": ["nz","nzl","new zealand","aotearoa"],
-        "br": ["br","bra","brazil","brasil"],
-        "ar": ["ar","arg","argentina"],
-        "cl": ["cl","chl","chile"],
-        "co": ["co","col","colombia"],
-        "pe": ["pe","per","peru","perÃº"],
-        "uy": ["uy","ury","uruguay"],
-        "py": ["py","pry","paraguay"],
-        "bo": ["bo","bolivia"],
-        "ec": ["ec","ecu","ecuador"],
-        "ve": ["ve","ven","venezuela"],
-        "cr": ["cr","cri","costa rica"],
-        "pr": ["pr","pri","puerto rico"],
-        "ng": ["ng","nga","nigeria"],
-        "za": ["za","zaf","south africa"],
-        "ke": ["ke","ken","kenya"],
-        "gh": ["gh","gha","ghana"],
-        "et": ["et","eth","ethiopia"],
-        "tz": ["tz","tza","tanzania"],
-        "ug": ["ug","uga","uganda"],
-        "ci": ["ci","civ","cÃ´te dâ€™ivoire","ivory coast"],
-        "sn": ["sn","sen","senegal"],
-    }
-    _GROUP_SYNONYMS_CACHE = cache
-    return cache
-
-
-# Precompiled, cached regex structures. canonicalize_name / strip_noise_words / extract_group
-# run once per channel during EPG import and once per channel in every UI matching scan, so
-# rebuilding+recompiling these patterns per call was a major cost on large playlists. These
-# compile once and produce results identical to the previous per-call construction.
-_CANON_STRIP_EDGE_RE = re.compile(
-    r'^(?:' + '|'.join(STRIP_TAGS) + r')\b[\s\-:()\[\]]*|[\s\-:()\[\]]*\b(?:' + '|'.join(STRIP_TAGS) + r')$',
-    re.I,
+# Canonical implementations live in channel_names so options.py can share them
+# without importing playlist (playlist already imports options). Re-exported here
+# because callers and tests import these names from playlist.
+from channel_names import (
+    STRIP_TAGS,
+    NOISE_WORDS,
+    group_synonyms,
+    canonicalize_name,
+    strip_noise_words,
+    extract_group,
 )
-_CANON_STRIP_WORD_RE = re.compile(r'\b(?:' + '|'.join(STRIP_TAGS) + r')\b', re.I)
-_CANON_EMPTY_BRACKETS_RE = re.compile(r'\(\s*\)|\[\s*\]')
-_CANON_WS_RE = re.compile(r'\s+')
-_NOISE_WORDS_RE = re.compile(r'\b(' + '|'.join(re.escape(w) for w in NOISE_WORDS) + r')\b', re.I)
-_NOISE_SEP_RE = re.compile(r'[\s\-_]+')
-_LEADING_CODE_RE = re.compile(r'([a-z]{2,3})\b')
-_PAREN_CODE_RE = re.compile(r'\(([a-z]{2,3})\)')
 
-_GROUP_SYNONYM_PATTERNS_CACHE = None
-
-
-def _group_synonym_patterns():
-    """[(norm_tag, compiled \\b(?:variant|...)\\b regex)] in group_synonyms() order.
-
-    Equivalent to the previous per-variant loop: returns the first tag whose any variant
-    matches, and variant order within a tag does not affect which tag is returned.
-    """
-    global _GROUP_SYNONYM_PATTERNS_CACHE
-    if _GROUP_SYNONYM_PATTERNS_CACHE is None:
-        _GROUP_SYNONYM_PATTERNS_CACHE = [
-            (tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in variants) + r')\b'))
-            for tag, variants in group_synonyms().items()
-        ]
-    return _GROUP_SYNONYM_PATTERNS_CACHE
-
-
-def canonicalize_name(name: str) -> str:
-    name = (name or "").strip().lower()
-    while True:
-        newname = _CANON_STRIP_EDGE_RE.sub('', name).strip()
-        if newname == name:
-            break
-        name = newname
-    name = _CANON_STRIP_WORD_RE.sub('', name)
-    name = _CANON_EMPTY_BRACKETS_RE.sub('', name)
-    name = _CANON_WS_RE.sub(' ', name)
-    return name.strip()
-
-def strip_noise_words(text: str) -> str:
-    if not text:
-        return ""
-    text = text.lower()
-    text = _NOISE_WORDS_RE.sub('', text)
-    text = _NOISE_SEP_RE.sub(' ', text)
-    return text.strip()
-
-def extract_group(title: str) -> str:
-    if not title:
-        return ''
-    title = title.lower()
-    for norm_tag, rx in _group_synonym_patterns():
-        if rx.search(title):
-            return norm_tag
-    syn = group_synonyms()
-    m = _LEADING_CODE_RE.match(title)
-    if m:
-        code = m.group(1)
-        if code in syn:
-            return code
-    m = _PAREN_CODE_RE.search(title)
-    if m:
-        code = m.group(1)
-        if code in syn:
-            return code
-    return ''
 
 def tokenize_channel_name(name: str) -> set:
     return set(_ordered_channel_tokens(name))
@@ -546,9 +366,6 @@ def _tvg_id_has_region_hint(tvg_id: str) -> bool:
     return bool(_detect_region_from_id(tvg_id or ""))
 
 
-def strip_backup_terms(name: str) -> str:
-    return strip_noise_words(name)
-
 # =========================
 # Matching helpers
 # =========================
@@ -594,25 +411,22 @@ def _normalize_hbo_variant(country_code: str, variant: str) -> str:
         return "base"
     return v
 
-def _is_hbo_family(text: str) -> bool:
-    return bool(text and re.search(r'\bhbo\b', text.lower()))
-
 AFFILIATE_MARKETS: Dict[str, Dict[str, Dict[str, Set[str]]]] = {
     "ca": {
         "cbc": {"vancouver-bc": _mk("vancouver","bc"), "calgary-ab": _mk("calgary","ab"), "edmonton-ab": _mk("edmonton","ab"),
                 "saskatoon-sk": _mk("saskatoon","sk"), "regina-sk": _mk("regina","sk"), "winnipeg-mb": _mk("winnipeg","mb"),
-                "ottawa-on": _mk("ottawa","on"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montrÃ©al","qc"),
+                "ottawa-on": _mk("ottawa","on"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montréal","qc"),
                 "halifax-ns": _mk("halifax","ns"), "stjohns-nl": _mk("st johns","st. johns","nl")},
         "ctv": {"vancouver-bc": _mk("vancouver","bc"), "calgary-ab": _mk("calgary","ab"), "edmonton-ab": _mk("edmonton","ab"),
                 "saskatoon-sk": _mk("saskatoon","sk"), "regina-sk": _mk("regina","sk"), "winnipeg-mb": _mk("winnipeg","mb"),
                 "ottawa-on": _mk("ottawa","on"), "toronto-on": _mk("toronto","on"), "london-on": _mk("london","on"),
-                "montreal-qc": _mk("montreal","montrÃ©al","qc"), "halifax-ns": _mk("halifax","ns")},
+                "montreal-qc": _mk("montreal","montréal","qc"), "halifax-ns": _mk("halifax","ns")},
         "ctv2": {"vancouver-bc": _mk("vancouver","bc"), "ottawa-on": _mk("ottawa","on"), "london-on": _mk("london","on"), "windsor-on": _mk("windsor","on")},
         "citytv": {"vancouver-bc": _mk("vancouver","bc"), "calgary-ab": _mk("calgary","ab"), "edmonton-ab": _mk("edmonton","ab"),
-                   "winnipeg-mb": _mk("winnipeg","mb"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montrÃ©al","qc")},
+                   "winnipeg-mb": _mk("winnipeg","mb"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montréal","qc")},
         "global": {"vancouver-bc": _mk("vancouver","bc","british columbia","global bc"), "calgary-ab": _mk("calgary","ab"),
                    "edmonton-ab": _mk("edmonton","ab"), "saskatoon-sk": _mk("saskatoon","sk"), "regina-sk": _mk("regina","sk"),
-                   "winnipeg-mb": _mk("winnipeg","mb"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montrÃ©al","qc"),
+                   "winnipeg-mb": _mk("winnipeg","mb"), "toronto-on": _mk("toronto","on"), "montreal-qc": _mk("montreal","montréal","qc"),
                    "halifax-ns": _mk("halifax","ns")},
         "tsn": {"tsn1-west": _mk("tsn1","west","bc","ab","pacific","mountain"), "tsn2-central": _mk("central"),
                 "tsn3-prairies": _mk("prairies","mb","sk"), "tsn4-ontario": _mk("ontario","on","toronto"),
@@ -621,8 +435,8 @@ AFFILIATE_MARKETS: Dict[str, Dict[str, Dict[str, Set[str]]]] = {
                       "prairies": _mk("prairies","sk","mb"), "ontario": _mk("ontario","on","toronto"),
                       "east": _mk("east","qc","montreal","atlantic"), "one": _mk("sn1","sportsnet one","one"),
                       "360": _mk("sportsnet 360","sn360","360")},
-        "tva": {"montreal-qc": _mk("montreal","montrÃ©al","qc")},
-        "noovo": {"montreal-qc": _mk("montreal","montrÃ©al","qc")},
+        "tva": {"montreal-qc": _mk("montreal","montréal","qc")},
+        "noovo": {"montreal-qc": _mk("montreal","montréal","qc")},
         "hbo": {},
     },
     "us": {"abc": {}, "nbc": {}, "cbs": {}, "fox": {}, "pbs": {}, "cw": {}, "mynetwork": {}, "telemundo": {}, "univision": {}, "hbo": {}},
@@ -727,7 +541,7 @@ def _detect_timeshift(text: str) -> int:
                 if 0 < v <= 24:
                     return v
             except Exception:
-                pass
+                _logger.debug("_detect_timeshift: ignored exception", exc_info=True)
     return 0
 
 def _detect_zone(text: str) -> str:
@@ -1084,7 +898,7 @@ def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.dateti
             try:
                 conn.close()
             except Exception:
-                pass
+                _logger.debug("epg_database_has_usable_data: ignored exception", exc_info=True)
 
 # =========================
 # EPG gzip download (resumable)
@@ -1110,7 +924,7 @@ class _TempGzipStream:
                 if not keep:
                     os.remove(self._path)
             except Exception:
-                pass
+                _logger.debug("_TempGzipStream.close: ignored exception", exc_info=True)
             self._f = None
             self._release_lock()
     def __getattr__(self, name):
@@ -1120,7 +934,7 @@ class _TempGzipStream:
             try:
                 self._lock.release()
             except RuntimeError:
-                pass
+                _logger.debug("_TempGzipStream._release_lock: ignored exception", exc_info=True)
             self._lock_released = True
     def __del__(self):
         try:
@@ -1169,7 +983,7 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                         try:
                             os.remove(temp_path)
                         except Exception:
-                            pass
+                            _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
                         existing = 0
                 headers_base = {
                     "User-Agent": "Mozilla/5.0",
@@ -1192,7 +1006,7 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
                             except Exception:
-                                pass
+                                _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
                             use_range = False
                             existing = 0
                             mode = 'wb'
@@ -1246,7 +1060,7 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                 try:
                     resp.close()
                 except Exception:
-                    pass
+                    _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
                 final_size = os.path.getsize(temp_path)
                 if expected_total is not None and final_size < expected_total:
                     # Byte count proves truncation even though the gzip probe
@@ -1275,7 +1089,7 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
             try:
                 lock.release()
             except RuntimeError:
-                pass
+                _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
 
 
 # =========================
@@ -1299,7 +1113,7 @@ class EPGDatabase:
                 try:
                     self.conn.execute(p)
                 except Exception:
-                    pass
+                    _logger.debug("EPGDatabase._open: ignored exception", exc_info=True)
         else:
             # Writer/normal
             self.conn = sqlite3.connect(
@@ -1311,7 +1125,7 @@ class EPGDatabase:
                 try:
                     self.conn.execute(p)
                 except Exception:
-                    pass
+                    _logger.debug("EPGDatabase._open: ignored exception", exc_info=True)
         if not self.readonly:
             self._create_tables()
             # Opportunistic repair: if we can write, reconcile any region mismatches
@@ -1320,7 +1134,7 @@ class EPGDatabase:
                 self._repair_channel_regions_prefer_id()
                 self._repair_norm_names()
             except Exception:
-                pass
+                _logger.debug("EPGDatabase._open: ignored exception", exc_info=True)
 
     def _create_tables(self):
         c = self.conn.cursor()
@@ -1362,7 +1176,7 @@ class EPGDatabase:
         try:
             self.conn.close()
         except Exception:
-            pass
+            _logger.debug("EPGDatabase.close: ignored exception", exc_info=True)
 
     def reopen(self):
         """Close and reopen the underlying SQLite connection, reapplying pragmas."""
@@ -1370,14 +1184,14 @@ class EPGDatabase:
             if hasattr(self, "conn"):
                 self.conn.close()
         except Exception:
-            pass
+            _logger.debug("EPGDatabase.reopen: ignored exception", exc_info=True)
         self._open()
 
     def insert_channel(self, channel_id: str, display_name: str):
         name_region = extract_group(display_name)
         id_region = _detect_region_from_id(channel_id or "")
         # Prefer region derived from the channel id when it contradicts the display name.
-        # This avoids false positives like "â€¦ Palm Springs CA â€¦" (California) being tagged as Canada.
+        # This avoids false positives like "… Palm Springs CA …" (California) being tagged as Canada.
         if id_region and name_region and id_region != name_region:
             group_tag = id_region
         else:
@@ -1868,14 +1682,6 @@ class EPGDatabase:
         except AttributeError:
             return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
-    def _rank_key(self, start_int: int, ch_id: str, aux_map: Dict[str, dict], playlist_region: str):
-        md = aux_map.get(ch_id, {})
-        score = int(md.get('score', 0))
-        tok = int(md.get('token_overlap', 0))
-        grp = (md.get('group_tag') or '').strip().lower()
-        rb = 0 if grp == playlist_region else (1 if grp == '' else 2)
-        return (-score, -tok, rb, start_int)
-
     def resolve_best_channel_id(self, channel: Dict[str, str]) -> Optional[str]:
         """Find the best matching DB channel ID for a playlist channel."""
         matches, playlist_region = self.get_matching_channel_ids(channel)
@@ -2179,7 +1985,8 @@ class EPGDatabase:
 
         for p in PRAGMA_IMPORT:
             try: self.conn.execute(p)
-            except Exception: pass
+            except Exception:
+                _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
         total = len(xml_sources)
         BATCH = 15000
@@ -2207,7 +2014,7 @@ class EPGDatabase:
                             head = b''
                         head_txt = head.decode('utf-8', 'ignore') if head else ''
                         if 'another request' in head_txt.lower() or 'too many requests' in head_txt.lower():
-                            last_err = RuntimeError("Provider is busy or blocking concurrent downloads; will retryâ€¦")
+                            last_err = RuntimeError("Provider is busy or blocking concurrent downloads; will retry…")
                             time.sleep(2 + attempt)
                             continue
                         is_gz = resp.info().get('Content-Encoding') == 'gzip' or src.lower().endswith('.gz') or 'application/gzip' in ctype
@@ -2218,7 +2025,7 @@ class EPGDatabase:
                             try:
                                 resp.close()
                             except Exception:
-                                pass
+                                _logger.debug("EPGDatabase.import_epg_xml._open_stream: ignored exception", exc_info=True)
                             return _http_download_gz_with_resume(src)
                         if is_gz:
                             gz = gzip.GzipFile(fileobj=resp)
@@ -2233,7 +2040,7 @@ class EPGDatabase:
                                     try:
                                         _resp.close()
                                     except Exception:
-                                        pass
+                                        _logger.debug("EPGDatabase.import_epg_xml._open_stream._close_both: ignored exception", exc_info=True)
                             gz.close = _close_both
                             return gz
                         return resp
@@ -2265,7 +2072,7 @@ class EPGDatabase:
                 if isinstance(err, IncompleteRead):
                     return True
             except Exception:
-                pass
+                _logger.debug("EPGDatabase.import_epg_xml._is_transient_stream_error: ignored exception", exc_info=True)
             return any(h in msg for h in hints)
 
         for idx, src in enumerate(xml_sources):
@@ -2284,7 +2091,7 @@ class EPGDatabase:
                     try:
                         self.conn.execute("PRAGMA busy_timeout=15000;")
                     except Exception:
-                        pass
+                        _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     for attempt in range(10):
                         try:
                             self.conn.execute("BEGIN IMMEDIATE")
@@ -2307,7 +2114,7 @@ class EPGDatabase:
                         try:
                             self.conn.execute("PRAGMA busy_timeout=20000;")
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         for retry in range(5):
                             try:
                                 self.conn.execute("BEGIN IMMEDIATE")
@@ -2375,14 +2182,14 @@ class EPGDatabase:
                                     if parent is not None:
                                         parent.remove(elem)
                                 except Exception:
-                                    pass
+                                    _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
                     parser.close() # Finalize
                     self.commit()
                     try:
                         self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
                     except Exception:
-                        pass
+                        _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     _logger.debug("EPG DONE src=%s channels=%d progs=%d elapsed=%.1fs mem=%sMB",
                                   _sanitize_url(src), chan_count, prog_count, time.time() - t0, _mem_mb())
 
@@ -2402,12 +2209,12 @@ class EPGDatabase:
                             if began_txn:
                                 self.conn.rollback()
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         try:
                             if stream:
                                 stream.close()
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         stream = None
                         # Reopen connection to clear any lingering writer locks
                         try:
@@ -2415,9 +2222,9 @@ class EPGDatabase:
                             try:
                                 self.conn.execute("PRAGMA busy_timeout=30000;")
                             except Exception:
-                                pass
+                                _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         time.sleep(1.5 * (4 - attempts_left))
                         attempts_left -= 1
                         continue
@@ -2432,12 +2239,12 @@ class EPGDatabase:
                             if began_txn:
                                 self.conn.rollback()
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         try:
                             if stream:
                                 stream.close()
                         except Exception:
-                            pass
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                         time.sleep(1.0)
                         attempts_left -= 1
                         continue
@@ -2452,20 +2259,22 @@ class EPGDatabase:
                             try:
                                 self.conn.rollback()
                             except sqlite3.ProgrammingError:
-                                pass
+                                _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                             except Exception:
-                                pass
+                                _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     except Exception:
-                        pass
+                        _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     if stream:
                         try: stream.close()
-                        except Exception: pass
+                        except Exception:
+                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
             grand_chan += chan_count
             grand_prog += prog_count
             if progress_callback:
                 try: progress_callback(idx + 1, total)
-                except Exception: pass
+                except Exception:
+                    _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
         
         try:
             self.prune_old_programmes(days=14)
@@ -2488,7 +2297,7 @@ class EPGDatabase:
         try:
             _release_import_lock(self.db_path)
         except Exception:
-            pass
+            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
 
 # =========================
@@ -2518,7 +2327,7 @@ if WX_AVAILABLE:
                 self.gauge.SetRange(max(1, total))
                 self.gauge.SetValue(min(value, total))
             except Exception:
-                pass
+                _logger.debug("EPGImportDialog.set_progress: ignored exception", exc_info=True)
 else:
     class EPGImportDialog:  # type: ignore[misc]
         def __init__(self, *_args, **_kwargs):
@@ -2742,7 +2551,7 @@ if WX_AVAILABLE:
                     try:
                         ctrl.SetHint(hint)
                     except Exception:
-                        pass
+                        _logger.debug("XtreamCodesDialog._build_ui.add_row: ignored exception", exc_info=True)
                 if hasattr(ctrl, "SetAccessible"):
                     acc = _FieldAccessible(label, desc)
                     ctrl.SetAccessible(acc)
@@ -2855,7 +2664,7 @@ if WX_AVAILABLE:
                     try:
                         ctrl.SetHint(hint)
                     except Exception:
-                        pass
+                        _logger.debug("StalkerPortalDialog._build_ui.add_row: ignored exception", exc_info=True)
                 if hasattr(ctrl, "SetAccessible"):
                     acc = _FieldAccessible(label, desc)
                     ctrl.SetAccessible(acc)

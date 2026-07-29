@@ -6,7 +6,7 @@ import json
 import urllib.parse
 import os
 import sys
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,7 +15,6 @@ from providers import (
     StalkerPortalConfig,
     StalkerPortalClient,
     ProviderError,
-    _normalize_base_url,
 )
 
 
@@ -354,7 +353,6 @@ class TestStalkerTimeshift:
         base_url = "http://portal.example.com/stalker_portal"
         channel_id = "123"
         start_time = "2024-01-15 14:00:00"
-        duration = 3600  # 1 hour
         
         # Typical timeshift request params
         params = {

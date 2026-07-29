@@ -243,6 +243,8 @@ def _remove_tree(path: str) -> None:
         try:
             os.chmod(failed_path, stat.S_IWRITE)
         except Exception:
+            # Best-effort: clearing the read-only bit may fail for reasons that
+            # do not block deletion. The retry below reports the real error.
             pass
         func(failed_path)
 
@@ -356,6 +358,8 @@ def _run_pyinstaller_limited():
         try:
             os.rmdir(temp_root)
         except OSError:
+            # Expected when a concurrent build still holds a sibling temp dir;
+            # temp_root is disposable either way.
             pass
 
 

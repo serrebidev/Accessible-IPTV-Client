@@ -1,0 +1,41 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    "build",
+    "dist",
+    "locale",
+    ".pytest-tmp",
+]
+
+[tool.ruff.lint]
+# Gate on the rules that catch real defects: pyflakes (undefined names, unused
+# imports, shadowed bindings) plus pycodestyle's error-level checks. The codebase
+# deliberately uses lazy/conditional imports (E402) and guarded one-line bodies
+# (E701), and has ~900 long lines, so those families are left off the gate rather
+# than mass-reformatted. Tighten incrementally if desired.
+select = ["F", "E9"]
+
+[tool.ruff.lint.per-file-ignores]
+# sitecustomize re-exports the internal player lazily through a module-level
+# __getattr__, so these __all__ entries resolve at runtime but not statically.
+"sitecustomize.py" = ["F822"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The default Windows temp location (%TEMP%\pytest-of-<user>) has broken ACLs on
+# at least one dev machine, which fails every test that uses tmp_path. Keeping
+# scratch dirs inside the repo sidesteps it and needs no per-run flags.
+addopts = "--basetemp=.pytest-tmp"
+cache_dir = ".pytest-cache"
+filterwarnings = [
+    "error::SyntaxWarning",
+]
+
+[tool.pyright]
+# Without this, Pyright resolves imports relative to each file's directory and
+# reports the repo's own top-level modules (channel_names, playlist, ...) as
+# missing when imported from tests/.
+include = ["."]
+exclude = ["build", "dist", ".pytest-tmp", "locale"]
+extraPaths = ["."]

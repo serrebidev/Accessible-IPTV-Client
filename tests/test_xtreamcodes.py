@@ -2,12 +2,10 @@
 Tests for XtreamCodes provider functionality.
 """
 import pytest
-import json
 import urllib.parse
 import os
 import sys
-from unittest.mock import Mock, patch, MagicMock
-from io import BytesIO
+from unittest.mock import Mock, patch
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,7 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from providers import (
     XtreamCodesConfig,
     XtreamCodesClient,
-    ProviderError,
     _normalize_base_url,
 )
 

@@ -16,10 +16,16 @@ dist/
 *.log
 #conf's
 iptvclient.conf
-# Tool caches
+# Tool caches / test scratch
 .pytest_cache/
+.pytest-cache/
+.pytest-tmp/
+.pytest-search-temp/
 .mypy_cache/
 .ruff_cache/
+
+# One-off local repro output
+test_zombie_env/
 
 # Claude Code local settings
 .claude/
