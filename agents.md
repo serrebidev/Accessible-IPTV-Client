@@ -18,8 +18,9 @@ Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EP
 - **internal_player.py**: Built-in libVLC player with adaptive buffering, stream preflight checks, live/catch-up option handling, automatic reconnect logic, fullscreen (F11), play/pause/stop controls, accessible control names, and volume slider. Volume uses 2% normal steps and 5% Ctrl+Up/Down steps.
 - **sitecustomize.py**: Compatibility shim only. It re-exports the canonical `InternalPlayerFrame` from `internal_player.py` and must not grow separate player logic.
 - **playlist.py**: Playlist parsing plus XMLTV import/search/matching. The EPG database is SQLite in `tempfile.gettempdir()` via `options.get_db_path()`, uses WAL and busy timeouts, logs debug details to `iptvclient_epg_debug.log` in the temp directory, and handles XML/GZip downloads with resume plus HTTP 416 fallback.
+- **channel_names.py**: Single source of truth for channel-name normalization and country/group detection (`STRIP_TAGS`, `NOISE_WORDS`, `group_synonyms`, `canonicalize_name`, `strip_noise_words`, `extract_group`). Stdlib-only and dependency-free so both `playlist.py` and `options.py` can import it without a cycle (`playlist` already imports `options`). `playlist.py` re-exports these names for existing callers. Never re-implement or copy these helpers into another module: the UI and the EPG database must normalize names identically or matching silently fails.
 - **providers.py**: Xtream Codes and Stalker Portal clients for building playlist/EPG URLs, handling auth/session state, and surfacing `ProviderError`.
-- **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, config clamping, and canonical naming helpers.
+- **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, and config clamping. Name-normalization helpers live in `channel_names.py`, not here.
 - **casting.py**: Persistent background asyncio loop for cast operations. Supports Chromecast, DLNA/UPnP, and AirPlay when optional libraries are installed.
 - **stream_proxy.py**: Local stream proxy for casting. Handles direct byte proxying, HLS remux/transcode, Chromecast-safe HLS output, radio/audio mode, Python-to-FFmpeg piping for provider auth headers, bootstrap HLS startup, and best-effort Windows Firewall rules.
 - **updater.py**, **update_helper.bat**, **update_helper.ps1**: Windows packaged-app updater. Uses a GitHub release manifest, SHA-256 validation, Authenticode verification with pinned thumbprints, a fully silent helper launch (no console window) driven from an accessible `wx.ProgressDialog`, backup, rollback, and local config preservation. Every update subprocess goes through `updater.run_hidden`/`updater.popen_hidden` so nothing flashes a console.
@@ -48,7 +49,9 @@ Important keys include `playlists`, `epgs`, `media_player`, `custom_player_path`
 
 ## Dependencies
 
-Runtime requirements are defined in `requirements.txt`: `wxPython`, `python-vlc`, `pychromecast`, `async-upnp-client`, and `pyatv`. `pytest` is listed for development/testing.
+Runtime requirements are defined in `requirements.txt`: `wxPython`, `python-vlc`, `pychromecast`, `async-upnp-client`, `pyatv`, and `chardet>=7.0.0`. `pytest` is listed for development/testing.
+
+`chardet` is pinned because `main.spec` does `import chardet.pipeline` at spec-parse time and bundles its mypyc modules by name. That subpackage only exists in chardet 7.0.0+; on 6.x or earlier the release build dies with `ModuleNotFoundError` before PyInstaller starts. Anything `main.spec` imports directly must be pinned in `requirements.txt`.
 
 The standalone Windows build also explicitly collects dynamic modules and metadata in `main.spec`, including casting/network stacks, VLC, updater/signing dependencies, `psutil`, and chardet mypyc modules. Keep `main.spec` in sync whenever imports or optional runtime features change.
 
@@ -135,15 +138,37 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 <!-- claude-memory:begin (managed by sync-claude-memory.py; canonical files live in C:\Users\admin\.claude - edit there, not here) -->
 ## Memories (shared from ~/.claude - project: c--Users-admin-git-Accessible-IPTV-Client)
+Index of memory files - read one on demand when a task touches its
+topic (agents that expand @imports get every file via the @ lines below).
+New memories for this project go in C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory - see the memory protocol in
+the global AGENTS.md for the required format, and re-run
+sync-claude-memory.py after writing one:
+# Memory Index
+- [Release workflow](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md) — how `build.bat release` versions, signs, tags and publishes; commit other work first
+- [Git history cautions](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\git-history-cautions.md) — ffmpeg.exe is LFS (don't misread its size); stash before any rewrite; provider credentials still need rotating
+- [Tooling and pytest config](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md) — repo-local basetemp/cache in pyproject.toml; bare `pytest` needs no flags
+- [Large playlists](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\large-playlist-optimization.md) — the channel list must stay virtual at 50k–300k channels; what's precompiled; what's still queued
+- [NVDA virtual-list rules](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\nvda-search-crash-fix.md) — three patterns that crash NVDA during search, and the guards that prevent them
+- [Search freeze during EPG import](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\search-freeze-during-epg-import.md) — the cause is disk, not the GIL; group-select is still synchronous
+- [Startup/EPG profiling](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\startup-cpu-fixes.md) — the isolated-APPDATA + py-spy technique, and which hot paths are already optimized
+- [EPG import robustness](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-import-robustness.md) — measured baseline at 2.6M rows, and the two failure modes to keep guarded
+- [EPG source support vs integration](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-source-support-vs-integration.md) — "support X source" means harden the generic path, not hardcode X
+- [Localization](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\localization.md) — 13 languages, mostly AI-generated and unreviewed; the completeness test is strict for all of them
+- [Hungarian localization](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\hungarian-localization.md) — merge a contributor's .po, never overwrite it; DVR strings still await review
+- [VOD view](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\vod-view.md) — architecture and the conservative M3U heuristic; auto-advance to next episode is the open follow-up
+- [Subagent worktree caveat](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md) — worktree isolation can collapse after a resume; verify before trusting it
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\MEMORY.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-import-robustness.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-source-support-vs-integration.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\git-history-cautions.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\hungarian-localization.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\large-playlist-optimization.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\localization.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\nvda-search-crash-fix.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\search-freeze-during-epg-import.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\startup-cpu-fixes.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\vod-view.md
 <!-- claude-memory:end -->
