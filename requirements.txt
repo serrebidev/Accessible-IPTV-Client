@@ -3,6 +3,10 @@ python-vlc>=3.0.20123
 pychromecast>=14.0.0
 async-upnp-client>=0.38.0
 pyatv>=0.14.0
+# main.spec imports chardet.pipeline and bundles its mypyc modules by name.
+# That subpackage first appears in 7.0.0; on 6.x and earlier the release build
+# fails at spec-parse time with ModuleNotFoundError.
+chardet>=7.0.0
 
 # Development dependencies
 pytest>=7.0.0
