@@ -1,0 +1,102 @@
+name: Debian Package
+
+# Windows releases are built and signed locally with build.bat, which has no way
+# to produce a .deb. This workflow covers the Debian side: every push to main
+# builds a package as a downloadable artifact, and a published release (or a
+# manual run against a tag) also attaches the .deb to that release.
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to build and upload the .deb for
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    name: Build Debian package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target ref
+        id: target
+        env:
+          EVENT: ${{ github.event_name }}
+          DISPATCH_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          case "$EVENT" in
+            workflow_dispatch) tag="$DISPATCH_TAG" ;;
+            release)           tag="$RELEASE_TAG" ;;
+            *)                 tag="" ;;
+          esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "ref=${tag:-${{ github.sha }}}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out ${{ steps.target.outputs.ref }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.target.outputs.ref }}
+          fetch-depth: 0
+          # ffmpeg.exe is a Git LFS object the Debian package does not ship, so
+          # leaving it as a pointer keeps the checkout small.
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dpkg-dev lintian
+
+      - name: Build the .deb
+        id: build
+        env:
+          TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          # Reproducible timestamps: stamp the archive with the commit date.
+          export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+          if [ -n "$TAG" ]; then
+            python3 tools/build_deb.py --version "${TAG#v}" --output-dir dist/release
+          else
+            python3 tools/build_deb.py --output-dir dist/release
+          fi
+          deb="$(ls dist/release/accessible-iptv-client_*_all.deb | head -1)"
+          echo "deb=$deb" >> "$GITHUB_OUTPUT"
+
+      - name: Inspect the package
+        run: |
+          dpkg-deb --info "${{ steps.build.outputs.deb }}"
+          dpkg-deb --contents "${{ steps.build.outputs.deb }}"
+
+      - name: Lint the package
+        # Warnings are printed for review; only errors fail the build, so a newer
+        # lintian adding a pedantic tag cannot break a release.
+        run: lintian --tag-display-limit 0 --fail-on error "${{ steps.build.outputs.deb }}"
+
+      - name: Install and launch on Debian 13
+        run: |
+          docker run --rm -v "$PWD:/src" debian:trixie \
+            sh /src/tools/deb_smoke_test.sh "/src/${{ steps.build.outputs.deb }}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessible-iptv-client-deb-${{ steps.target.outputs.ref }}
+          path: dist/release/*.deb
+
+      - name: Upload release asset
+        if: ${{ steps.target.outputs.tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.target.outputs.tag }}" "${{ steps.build.outputs.deb }}" --clobber
