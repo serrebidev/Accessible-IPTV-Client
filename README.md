@@ -36,6 +36,7 @@ Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files,
 - Channel groups, fast channel search, and EPG search.
 - XMLTV EPG support (`.xml` and `.xml.gz`), including large multi-million-row guides.
 - Catch-up/timeshift playback for channels that support it.
+- Account status under **File > Account Info** — expiry date, days remaining, trial flag and connection limits for Xtream Codes and Stalker Portal accounts, including accounts detected automatically from a playlist or stream URL.
 - Casting support, plus optional system tray minimize.
 - Multilingual interface (14 languages) with automatic OS-language detection and a manual selector under **Options > Language**.
 - Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update.
@@ -92,6 +93,7 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 - **Ctrl+M** — Playlist Manager
 - **Ctrl+E** — EPG Manager
 - **Ctrl+I** — Import EPG to database
+- **Ctrl+Shift+A** — Account Info
 - **Ctrl+Q** — Exit
 - **Enter** — Play selected channel
 - **Context Menu / Apps key** — Channel options (including Catch-up if available)

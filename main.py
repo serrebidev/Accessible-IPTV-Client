@@ -49,6 +49,7 @@ from providers import (
     ProviderError, generate_provider_id
 )
 import vod
+import account_info
 from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
 import recorder
@@ -936,6 +937,7 @@ class IPTVClient(wx.Frame):
                 menu.Append(1001, _("Playlist Manager") + "\tCtrl+M")
                 menu.Append(1002, _("EPG Manager") + "\tCtrl+E")
                 menu.Append(1003, _("Import EPG to DB") + "\tCtrl+I")
+                menu.Append(1007, _("Account Info") + "\tCtrl+Shift+A")
                 menu.AppendSeparator()
                 player_ctrl_menu = wx.Menu()
                 player_ctrl_menu.Append(1201, _("Show Built-in Player"))
@@ -1013,6 +1015,7 @@ class IPTVClient(wx.Frame):
                 self.Bind(wx.EVT_MENU, self.show_manager, id=1001)
                 self.Bind(wx.EVT_MENU, self.show_epg_manager, id=1002)
                 self.Bind(wx.EVT_MENU, self.import_epg, id=1003)
+                self.Bind(wx.EVT_MENU, self.show_account_info, id=1007)
                 self.Bind(wx.EVT_MENU, lambda evt: self.Close(), id=1004)
                 self.menu_button.PopupMenu(menu)
             self.menu_button.Bind(wx.EVT_BUTTON, on_menu_btn)
@@ -1028,6 +1031,7 @@ class IPTVClient(wx.Frame):
             m_epg = fm.Append(wx.ID_ANY, _("EPG Manager") + "\tCtrl+E")
             m_imp = fm.Append(wx.ID_ANY, _("Import EPG to DB") + "\tCtrl+I")
             m_now = fm.Append(wx.ID_ANY, _("What's on Now") + "\tCtrl+W")
+            m_acct = fm.Append(wx.ID_ANY, _("Account Info") + "\tCtrl+Shift+A")
             fm.AppendSeparator()
             # Casting Menu Item (Windows/Mac)
             m_cast = fm.Append(wx.ID_ANY, _("Cast To..."))
@@ -1088,6 +1092,7 @@ class IPTVClient(wx.Frame):
             self.Bind(wx.EVT_MENU, self.show_epg_manager, m_epg)
             self.Bind(wx.EVT_MENU, self.import_epg, m_imp)
             self.Bind(wx.EVT_MENU, self.show_whats_on_now, m_now)
+            self.Bind(wx.EVT_MENU, self.show_account_info, m_acct)
             self.Bind(wx.EVT_MENU, self.show_cast_dialog, m_cast)
             self.Bind(wx.EVT_MENU, lambda _: self.Close(), m_exit)
             self.Bind(wx.EVT_MENU, self._menu_show_player, pm_show)
@@ -1124,6 +1129,7 @@ class IPTVClient(wx.Frame):
             (wx.ACCEL_CTRL, wx.WXK_UP, 4015),   # Volume up (Ctrl+Up)
             (wx.ACCEL_CTRL, wx.WXK_DOWN, 4016), # Volume down (Ctrl+Down)
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('R'), 4017),  # Start/stop recording
+            (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('A'), 4018),  # Account info
         ]
         atable = wx.AcceleratorTable(entries)
         self.SetAcceleratorTable(atable)
@@ -1139,6 +1145,7 @@ class IPTVClient(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(+2), id=4015)
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4016)
         self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
+        self.Bind(wx.EVT_MENU, self.show_account_info, id=4018)
 
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
@@ -3032,6 +3039,43 @@ class IPTVClient(wx.Frame):
             wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
         dlg.Destroy()
 
+    def show_account_info(self, _event):
+        """Show subscription status for configured and autodetected accounts."""
+        # Discovery walks every loaded channel URL to autodetect accounts that
+        # were never added through the Xtream dialog, so keep it off the UI thread.
+        sources = list(self.playlist_sources or [])
+        channels = self.all_channels
+
+        def worker():
+            error = None
+            accounts = []
+            try:
+                accounts = account_info.discover_accounts(sources, channels)
+            except Exception as e:
+                error = str(e)
+                LOG.debug("show_account_info: discovery failed", exc_info=True)
+            wx.CallAfter(self._present_account_info, accounts, error)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _present_account_info(self, accounts, error):
+        if error is not None:
+            wx.MessageBox(
+                _("Could not look for provider accounts: {error}").format(error=error),
+                _("Error"), wx.OK | wx.ICON_ERROR)
+            return
+        if not accounts:
+            wx.MessageBox(
+                _("No provider accounts were found.\n\n"
+                  "Xtream Codes and Stalker Portal accounts added in the Playlist Manager "
+                  "are listed here, along with any account detected from a playlist or "
+                  "stream URL."),
+                _("No Accounts"), wx.OK | wx.ICON_INFORMATION)
+            return
+        dlg = AccountInfoDialog(self, accounts)
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def import_epg(self, _event):
         if self.epg_importing:
             wx.MessageBox(_("EPG import is already in progress."), _("In Progress"), wx.OK | wx.ICON_INFORMATION)
@@ -4437,6 +4481,172 @@ class CastDiscoveryDialog(wx.Dialog):
         if sel != wx.NOT_FOUND and 0 <= sel < len(self.devices):
             return self.devices[sel]
         return None
+
+
+class AccountInfoDialog(wx.Dialog):
+    """Subscription status for every provider account the app can find.
+
+    Deliberately two controls: a list of accounts and one read-only multiline
+    field holding the whole report. That is the shape a screen reader handles
+    best - arrow through the accounts, tab once, read the details top to bottom.
+    Each lookup is a blocking HTTP request, so it runs on a worker thread and
+    results are matched against a request token before being displayed.
+    """
+
+    def __init__(self, parent, accounts: List[account_info.Account]):
+        super().__init__(
+            parent,
+            title=_("Account Info"),
+            size=(700, 520),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+        self.accounts = accounts
+        self._reports: Dict[int, str] = {}
+        self._request_token = 0
+        self._alive = True
+
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        intro = wx.StaticText(panel, label=_("Select an account to check its status:"))
+        list_label = wx.StaticText(panel, label=_("Accounts") + ":")
+        self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
+        self._label_control(self.listbox, _("Accounts"))
+        for account in accounts:
+            self.listbox.Append(account_info.account_label(account))
+
+        details_label = wx.StaticText(panel, label=_("Account details") + ":")
+        self.details = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self._label_control(self.details, _("Account details"))
+
+        self.status_lbl = wx.StaticText(panel, label="")
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.refresh_btn = wx.Button(panel, label=_("Refresh"))
+        self.copy_btn = wx.Button(panel, label=_("Copy Details"))
+        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
+        btn_sizer.Add(self.refresh_btn, 0, wx.ALL, 5)
+        btn_sizer.Add(self.copy_btn, 0, wx.ALL, 5)
+        btn_sizer.AddStretchSpacer(1)
+        btn_sizer.Add(close_btn, 0, wx.ALL, 5)
+
+        sizer.Add(intro, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        sizer.Add(list_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(details_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        sizer.Add(self.details, 2, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.status_lbl, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        panel.SetSizer(sizer)
+
+        self.listbox.Bind(wx.EVT_LISTBOX, self._on_select)
+        self.refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh)
+        self.copy_btn.Bind(wx.EVT_BUTTON, self._on_copy)
+        close_btn.Bind(wx.EVT_BUTTON, self._on_close_button)
+        self.Bind(wx.EVT_CLOSE, self._on_close_window)
+        self.SetEscapeId(wx.ID_CANCEL)
+
+        self.SetMinSize((520, 420))
+        self.Layout()
+        self.CenterOnParent()
+
+        if accounts:
+            self.listbox.SetSelection(0)
+            self.listbox.SetFocus()
+            self._start_lookup(0)
+
+    @staticmethod
+    def _label_control(ctrl, label):
+        ctrl.SetName(label)
+        if hasattr(ctrl, "SetAccessibleName"):
+            ctrl.SetAccessibleName(label)
+
+    # ------------------------------------------------------------------ #
+    # Lookups
+    # ------------------------------------------------------------------ #
+    def _start_lookup(self, index: int, force: bool = False):
+        if not (0 <= index < len(self.accounts)):
+            return
+        self._request_token += 1
+        token = self._request_token
+        if not force and index in self._reports:
+            self._apply_report(token, index, self._reports[index])
+            return
+        account = self.accounts[index]
+        self.details.SetValue(_("Checking account, please wait..."))
+        self.status_lbl.SetLabel(_("Checking {account}...").format(
+            account=account_info.account_label(account)))
+        self.refresh_btn.Disable()
+
+        def worker():
+            try:
+                report = account_info.fetch_account_report(account)
+            except Exception as e:
+                LOG.debug("AccountInfoDialog: account lookup failed", exc_info=True)
+                wx.CallAfter(self._lookup_failed, token, index, str(e))
+                return
+            wx.CallAfter(self._lookup_finished, token, index, report)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _lookup_finished(self, token: int, index: int, report: str):
+        self._reports[index] = report
+        self._apply_report(token, index, report)
+
+    def _lookup_failed(self, token: int, index: int, error: str):
+        # Errors are not cached: re-selecting the account should retry it.
+        self._apply_report(
+            token,
+            index,
+            _("Could not check this account.\n\n{error}").format(error=error),
+            ok=False,
+        )
+
+    def _apply_report(self, token: int, index: int, report: str, ok: bool = True):
+        if not self._alive or token != self._request_token:
+            return
+        try:
+            self.details.SetValue(report)
+            # Reading starts at the top, not wherever the previous report ended.
+            self.details.SetInsertionPoint(0)
+            self.status_lbl.SetLabel(_("Ready.") if ok else _("Check failed."))
+            self.refresh_btn.Enable()
+        except RuntimeError:
+            LOG.debug("AccountInfoDialog._apply_report: dialog already gone", exc_info=True)
+
+    # ------------------------------------------------------------------ #
+    # Events
+    # ------------------------------------------------------------------ #
+    def _on_select(self, _event):
+        self._start_lookup(self.listbox.GetSelection())
+
+    def _on_refresh(self, _event):
+        self._start_lookup(self.listbox.GetSelection(), force=True)
+
+    def _on_copy(self, _event):
+        text = self.details.GetValue()
+        if not text:
+            return
+        if not wx.TheClipboard.Open():
+            self.status_lbl.SetLabel(_("Could not open the clipboard."))
+            return
+        try:
+            wx.TheClipboard.SetData(wx.TextDataObject(text))
+            wx.TheClipboard.Flush()
+        finally:
+            wx.TheClipboard.Close()
+        self.status_lbl.SetLabel(_("Account details copied to the clipboard."))
+
+    def _on_close_button(self, _event):
+        self._alive = False
+        if self.IsModal():
+            self.EndModal(wx.ID_CANCEL)
+        else:
+            self.Destroy()
+
+    def _on_close_window(self, event):
+        self._alive = False
+        event.Skip()
 
 
 class CatchupDialog(wx.Dialog):

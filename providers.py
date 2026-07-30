@@ -127,6 +127,20 @@ class XtreamCodesClient:
         except json.JSONDecodeError:
             raise ProviderError(_("Invalid response from Xtream player API"))
 
+    def get_account_info(self, timeout: int = 20) -> Dict:
+        """Return the raw ``player_api.php`` authentication payload.
+
+        Called with no ``action``, player_api answers with ``user_info``
+        (auth flag, status, expiry, trial flag, connection counts) and
+        ``server_info``. It is the only Xtream endpoint that reports
+        subscription state, and it is also the cheapest possible auth check —
+        no playlist download involved.
+        """
+        data = self._player_api(None, timeout=timeout)
+        if not isinstance(data, dict):
+            raise ProviderError(_("Unexpected account response from the Xtream server"))
+        return data
+
     def get_vod_categories(self, timeout: int = 30) -> List[Dict]:
         data = self._player_api("get_vod_categories", timeout=timeout)
         return data if isinstance(data, list) else []
@@ -311,6 +325,25 @@ class StalkerPortalClient:
             # but many also host XMLTV at /xmltv.php. Provide best-effort default.
             epg_urls.append(f"{self._base}/xmltv.php")
         return channels, epg_urls
+
+    def get_account_info(self, timeout: int = 30) -> Dict:
+        """Return the portal's subscription record for this MAC/login.
+
+        Ministra/Stalker exposes it as ``type=account_info&action=get_main_info``,
+        whose ``js`` object carries the tariff plan, end date and balance. Field
+        naming varies between panel builds, so callers must treat every key as
+        optional.
+        """
+        self._ensure_token()
+        payload = self._portal_call({
+            "type": "account_info",
+            "action": "get_main_info",
+            "JsHttpRequest": "1-xml"
+        }, timeout=timeout)
+        data = payload.get("js")
+        if not isinstance(data, dict):
+            raise ProviderError(_("Portal did not return account information"))
+        return data
 
     def resolve_stream(self, provider_data: Dict, timeout: int = 30) -> str:
         self._ensure_token()

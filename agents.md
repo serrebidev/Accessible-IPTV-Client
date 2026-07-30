@@ -19,7 +19,8 @@ Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EP
 - **sitecustomize.py**: Compatibility shim only. It re-exports the canonical `InternalPlayerFrame` from `internal_player.py` and must not grow separate player logic.
 - **playlist.py**: Playlist parsing plus XMLTV import/search/matching. The EPG database is SQLite in `tempfile.gettempdir()` via `options.get_db_path()`, uses WAL and busy timeouts, logs debug details to `iptvclient_epg_debug.log` in the temp directory, and handles XML/GZip downloads with resume plus HTTP 416 fallback.
 - **channel_names.py**: Single source of truth for channel-name normalization and country/group detection (`STRIP_TAGS`, `NOISE_WORDS`, `group_synonyms`, `canonicalize_name`, `strip_noise_words`, `extract_group`). Stdlib-only and dependency-free so both `playlist.py` and `options.py` can import it without a cycle (`playlist` already imports `options`). `playlist.py` re-exports these names for existing callers. Never re-implement or copy these helpers into another module: the UI and the EPG database must normalize names identically or matching silently fails.
-- **providers.py**: Xtream Codes and Stalker Portal clients for building playlist/EPG URLs, handling auth/session state, and surfacing `ProviderError`.
+- **providers.py**: Xtream Codes and Stalker Portal clients for building playlist/EPG URLs, handling auth/session state, and surfacing `ProviderError`. `get_account_info()` on each client returns the provider's subscription record (`player_api.php` with no action for Xtream; `type=account_info&action=get_main_info` for Stalker).
+- **account_info.py**: Provider account status (File > Account Info). wx-free: discovers accounts (configured providers plus accounts autodetected from `get.php?username=…` playlist URLs and `/live/USER/PASS/1234.ts` channel URLs), fetches them, and formats a flat `Label: value` report. The dialog itself is `main.AccountInfoDialog`.
 - **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, and config clamping. Name-normalization helpers live in `channel_names.py`, not here.
 - **casting.py**: Persistent background asyncio loop for cast operations. Supports Chromecast, DLNA/UPnP, and AirPlay when optional libraries are installed.
 - **stream_proxy.py**: Local stream proxy for casting. Handles direct byte proxying, HLS remux/transcode, Chromecast-safe HLS output, radio/audio mode, Python-to-FFmpeg piping for provider auth headers, bootstrap HLS startup, and best-effort Windows Firewall rules.
@@ -36,6 +37,7 @@ Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EP
 - External player support for VLC, MPV, MPC-HC, and custom player paths.
 - Chromecast, DLNA/UPnP, and AirPlay casting when dependencies and devices are available.
 - Catch-up/timeshift playback for supported channels.
+- Provider account status (expiry, trial flag, connection limits) for configured and autodetected accounts, under File > Account Info.
 - Channel grouping, channel search, and EPG search.
 - System tray minimize/restore support.
 - Windows packaged auto-update support.
@@ -134,6 +136,9 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Large existing EPG databases can make _ensure_db_tuned() a multi-second operation when an index is missing (observed 5.6 GB epg.db, 16M programmes, 14s index creation). Never run EPG DB tuning before the main frame is shown; keep it deferred/background or tied to actual EPG import/query work.
 - Keep `_ensure_db_tuned()` index creation consistent with `EPGDatabase._create_tables()`: never recreate the redundant `(channel_id, start)` index after the database layer drops it, because rebuilding it over a multi-gigabyte EPG can saturate disk/CPU during startup and make unrelated UI actions such as search appear frozen.
 - Replacing virtual channel-list search/group rows must clear the active selected/focused item state even when its numeric index remains in range. During a shrink, change the native item count while the old model still supplies every remaining row, then swap the model; during a grow, install the new model before increasing the count. This prevents NVDA/MSAA from querying stale or out-of-range virtual rows.
+- Account/subscription reports must stay plural-free and password-free: phrase day counts as separate `Days remaining` / `Days since expiry` labels rather than "in N days" (the app has no ngettext catalogues, and `i18n_tools`' PO writer does not emit plural forms), and never render a password into text that gets read aloud, copied to the clipboard, or pasted into an issue.
+- Autodetecting Xtream credentials from a URL must stay conservative: only a `*.php` endpoint with both `username` and `password` params, or an exact 3-segment / prefixed 4-segment / `timeshift` 6-segment path ending in a numeric stream id. A false positive shows the user an account that does not exist. Detection dedupes on (kind, host, username), because panels serve `get.php` and the streams themselves from different paths.
+- `tests/test_source_hygiene.py::test_no_hardcoded_provider_credentials` also fires on `password=account.password`-style keyword arguments and on comments containing that text. Bind short locals (`user, pw = ...`) instead of weakening the guard.
 - `build.bat release` prepends a readable version/date entry to `CHANGELOG.md` from the generated release notes before the version commit and tag. Keep `CHANGELOG.md` staged with `app_meta.py`; historical entries were reconstructed from the Forgejo mirror.
 
 <!-- claude-memory:begin (managed by sync-claude-memory.py; canonical files live in C:\Users\admin\.claude - edit there, not here) -->
@@ -145,7 +150,7 @@ the global AGENTS.md for the required format, and re-run
 sync-claude-memory.py after writing one:
 # Memory Index
 - [Release workflow](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md) — how `build.bat release` versions, signs, tags and publishes; commit other work first
-- [Git history cautions](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\git-history-cautions.md) — ffmpeg.exe is LFS (don't misread its size); stash before any rewrite; provider credentials still need rotating
+- [Git history cautions](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\git-history-cautions.md) — ffmpeg.exe is LFS (don't misread its size); stash before any history rewrite
 - [Tooling and pytest config](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md) — repo-local basetemp/cache in pyproject.toml; bare `pytest` needs no flags
 - [Large playlists](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\large-playlist-optimization.md) — the channel list must stay virtual at 50k–300k channels; what's precompiled; what's still queued
 - [NVDA virtual-list rules](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\nvda-search-crash-fix.md) — three patterns that crash NVDA during search, and the guards that prevent them
@@ -156,6 +161,7 @@ sync-claude-memory.py after writing one:
 - [Localization](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\localization.md) — 13 languages, mostly AI-generated and unreviewed; the completeness test is strict for all of them
 - [Hungarian localization](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\hungarian-localization.md) — merge a contributor's .po, never overwrite it; DVR strings still await review
 - [VOD view](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\vod-view.md) — architecture and the conservative M3U heuristic; auto-advance to next episode is the open follow-up
+- [Screenshot capture](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\screenshot-capture-technique.md) — screen grabs are black here; use PrintWindow + an in-process wx driver, and isolate APPDATA
 - [Subagent worktree caveat](C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md) — worktree isolation can collapse after a resume; verify before trusting it
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\MEMORY.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\epg-import-robustness.md
@@ -167,6 +173,7 @@ sync-claude-memory.py after writing one:
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\nvda-search-crash-fix.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\pytest-basetemp-permission-workaround.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\release-workflow.md
+@C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\screenshot-capture-technique.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\search-freeze-during-epg-import.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\startup-cpu-fixes.md
 @C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory\subagent-worktree-resume-caveat.md
