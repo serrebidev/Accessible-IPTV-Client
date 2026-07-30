@@ -1,6 +1,14 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.107.0 - 2026-07-29
+
+- Build a Debian package in CI
+- Split #EXTINF on the first unquoted comma
+- Refresh agents.md memory index and correct stale module facts
+- Pin LF endings for shell and YAML sources
+- Add app screenshots and Debian install instructions
+
 ## v1.106.1 - 2026-07-29
 
 - Repair channel-name matching, remove leaked credentials and dead code
