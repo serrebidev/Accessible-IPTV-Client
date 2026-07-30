@@ -145,6 +145,59 @@ http://stream.example.com/hbo
         # An explicit group-title is still honoured verbatim.
         assert by_name["ESPN"]["group"] == "Sports"
 
+    def test_comma_inside_a_quoted_attribute_does_not_become_the_name(self):
+        """A comma inside an attribute value must not be read as the name separator.
+
+        iptv-org ships this exact line. Splitting on the first raw comma made the
+        name "like Gecko) Chrome/... group-title="Movies",24 Hour Free Movies
+        (720p)" and truncated the attributes, so the channel also lost its group
+        and its user agent.
+        """
+        import main
+
+        class _FakeFrame:
+            def _extract_stream_id(self, url):
+                return ""
+
+        user_agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0"
+        )
+        text = (
+            "#EXTM3U\n"
+            '#EXTINF:-1 tvg-id="24HourFreeMovies.us@SD" tvg-logo="https://i.imgur.com/iSVnzR1.png" '
+            f'http-user-agent="{user_agent}" group-title="Movies",24 Hour Free Movies (720p)\n'
+            "https://example.com/movies.m3u8\n"
+        )
+        channels = main.IPTVClient._parse_m3u_return(_FakeFrame(), text)
+
+        assert len(channels) == 1
+        channel = channels[0]
+        assert channel["name"] == "24 Hour Free Movies (720p)"
+        assert channel["group"] == "Movies"
+        assert channel["tvg-id"] == "24HourFreeMovies.us@SD"
+        assert channel["http-user-agent"] == user_agent
+
+    def test_extinf_name_comma_handles_plain_and_awkward_lines(self):
+        """The separator scan must not regress plain, comma-bearing, or broken lines."""
+        import main
+
+        # No attributes at all.
+        line = "#EXTINF:-1,Channel One"
+        assert main._extinf_name_comma(line) == line.index(",")
+
+        # Commas in the display name belong to the name, not the split.
+        line = '#EXTINF:-1 group-title="Kids",Bob\'s Burgers, Season 1'
+        assert line[main._extinf_name_comma(line) + 1:] == "Bob's Burgers, Season 1"
+
+        # No comma at all.
+        assert main._extinf_name_comma("#EXTINF:-1") == -1
+
+        # Unbalanced quoting falls back to the first raw comma rather than losing
+        # the name entirely.
+        line = '#EXTINF:-1 tvg-name="Broken,ESPN'
+        assert main._extinf_name_comma(line) == line.index(",")
+
     def test_handle_empty_attributes(self):
         """Test handling of empty/missing attributes."""
         line = '#EXTINF:-1 tvg-id="" tvg-name="" group-title="Sports",ESPN'

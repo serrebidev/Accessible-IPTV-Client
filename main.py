@@ -90,6 +90,31 @@ def _load_internal_player_frame_class():
 
 
 _M3U_ATTR_RE = re.compile(r'([A-Za-z0-9_\-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^",\s]+))')
+
+
+def _extinf_name_comma(line: str) -> int:
+    """Index of the comma separating an #EXTINF's attributes from its name.
+
+    The separator is the first comma *outside* a quoted attribute value. Real
+    playlists ship values that contain commas — iptv-org, for one, emits
+    http-user-agent="Mozilla/5.0 (... (KHTML, like Gecko) Chrome/145 ..." — and
+    splitting on the first raw comma made the rest of the attribute list the
+    channel name while truncating the attributes themselves, losing the
+    channel's group and headers with it.
+
+    Returns -1 when the line holds no comma, and falls back to the first raw
+    comma when quoting is unbalanced, which is what a malformed line used to get.
+    """
+    quote = ""
+    for index, char in enumerate(line):
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in ('"', "'"):
+            quote = char
+        elif char == ",":
+            return index
+    return line.find(",")
 _AUTO_UPDATE_CHECK_INTERVAL_SECONDS = 12 * 60 * 60
 _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
@@ -3155,7 +3180,7 @@ class IPTVClient(wx.Frame):
                     http_auth = ""
                     http_accept = ""
 
-                    comma_idx = s.find(',')
+                    comma_idx = _extinf_name_comma(s)
                     info_part = s if comma_idx == -1 else s[:comma_idx]
                     if comma_idx != -1:
                         name = s[comma_idx + 1:].strip()
