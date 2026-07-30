@@ -6,6 +6,28 @@ A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work we
 
 **Have a question, hit a bug, or want early word on new releases?** Join the [SerrebiProjects Telegram group](https://t.me/SerrebiProjects) — the community hub for Accessible IPTV Client and my other projects, and the fastest place to get help.
 
+## Screenshots
+
+The main window: playlist groups on the left, the channel list on the right, and the now/next guide entry plus the stream URL for the selected channel underneath.
+
+![Main window of Accessible IPTV Client. The left pane lists channel groups such as Education, Entertainment, Movies and News with channel counts. The right pane lists the channels in the selected group. Below it, a panel shows the currently airing and next programme with times, and another shows the selected channel's stream URL.](docs/screenshots/main-window.png)
+
+Typing in the filter box narrows the channel list as you type; the guide panel follows the selection.
+
+![The same window filtered by the text "bbc", showing six BBC News variants. The guide panel below reads "Now: AI Decoded (17:30 - 18:00)" and "Next: Newsday (18:00 - 18:30)".](docs/screenshots/channel-search.png)
+
+**What's on Now** (in the EPG menu) lists everything airing across every channel, with its own filter box, and can play a programme's channel or schedule a recording.
+
+![The What's on Now dialog. A filter box contains the word "news", the label below reads "372 programs", and a list shows programme titles paired with their channel names. Buttons at the bottom read Play, Schedule Recording and Close.](docs/screenshots/whats-on-now.png)
+
+The built-in player (libVLC) with keyboard-reachable controls, or hand the stream to an external player instead.
+
+![The built-in player window titled "Red Bull TV (1080p) - Built-in Player", showing live video of a soapbox race. A Playback menu sits at the top; Pause, Stop, Cast and Full Screen buttons and a volume slider sit along the bottom.](docs/screenshots/builtin-player.jpg)
+
+Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files, URLs, Xtream Codes logins, and Stalker Portal details.
+
+![The Playlist Manager dialog. Buttons across the top read Add File, Add URL, Add Xtream Codes, Add Stalker Portal and Remove Selected. A list below holds one playlist URL, and OK and Cancel buttons sit at the bottom.](docs/screenshots/playlist-manager.png)
+
 ## Features
 
 - Screen reader friendly (NVDA, JAWS, Narrator, Orca).
@@ -15,7 +37,7 @@ A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work we
 - XMLTV EPG support (`.xml` and `.xml.gz`), including large multi-million-row guides.
 - Catch-up/timeshift playback for channels that support it.
 - Casting support, plus optional system tray minimize.
-- Multilingual interface (English and Hungarian) with automatic OS-language detection and a manual selector under **Options > Language**.
+- Multilingual interface (14 languages) with automatic OS-language detection and a manual selector under **Options > Language**.
 - Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update.
 
 ## Download and install
@@ -34,11 +56,27 @@ See the [changelog](CHANGELOG.md) for release-by-release changes.
 1. Download `AccessibleIPTVClient-vX.Y.Z.zip` (or `IPTVClient.zip`).
 2. Extract it anywhere and run `IPTVClient.exe` — no installation required.
 
-**Linux**
+**Debian and Ubuntu (.deb)**
 
-No packaged build yet — run it from source (below).
+1. Download `accessible-iptv-client_X.Y.Z-1_all.deb`.
+2. Install it with apt so the dependencies come along: `sudo apt install ./accessible-iptv-client_X.Y.Z-1_all.deb`
+3. Start it from your desktop menu, or run `accessible-iptv-client`.
 
-Installed builds keep your settings, EPG database, schedules, and cache in `%APPDATA%\AccessibleIPTVClient`. Portable builds keep the settings file (`iptvclient.conf`) next to `IPTVClient.exe` and fall back to the same `%APPDATA%` folder for everything else. Uninstalling leaves your data untouched.
+The package is architecture-independent and runs the app with the system Python, so apt supplies wxPython, python-vlc, the VLC plugins, and ffmpeg. It is built and install-tested on Debian 13 (trixie); other apt-based distributions work as long as they ship `python3-wxgtk4.0` and `python3-vlc`.
+
+Casting is optional there, because Debian's `python3-pychromecast` is older than the app needs and pyatv is not packaged at all. Everything else works without them; to add casting:
+
+```bash
+pip3 install --user "pychromecast>=14" "async-upnp-client>=0.38" "pyatv>=0.14"
+```
+
+There is no built-in updater on Linux — install the next `.deb` over the current one. Where your data lands on Linux is existing app behaviour that the package does not change: `iptvclient.conf` and `scheduled_recordings.json` go in your home directory, while the EPG database (`epg.db`), the playlist cache, and the EPG debug log go in your temp directory — so an imported guide is cleared whenever `/tmp` is, typically at reboot. Point `TMPDIR` somewhere persistent before launching if you want the guide to survive.
+
+**Other Linux**
+
+No package yet — run it from source (below).
+
+On Windows, installed builds keep your settings, EPG database, schedules, and cache in `%APPDATA%\AccessibleIPTVClient`. Portable builds keep the settings file (`iptvclient.conf`) next to `IPTVClient.exe` and fall back to the same `%APPDATA%` folder for everything else. Uninstalling leaves your data untouched.
 
 ## Run from source (Windows or Linux)
 
