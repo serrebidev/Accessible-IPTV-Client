@@ -41,7 +41,7 @@ jobs:
           echo "ref=${tag:-${{ github.sha }}}" >> "$GITHUB_OUTPUT"
 
       - name: Check out ${{ steps.target.outputs.ref }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ steps.target.outputs.ref }}
           fetch-depth: 0
@@ -50,7 +50,7 @@ jobs:
           lfs: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -90,7 +90,7 @@ jobs:
             sh /src/tools/deb_smoke_test.sh "/src/${{ steps.build.outputs.deb }}"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: accessible-iptv-client-deb-${{ steps.target.outputs.ref }}
           path: dist/release/*.deb
