@@ -90,7 +90,7 @@ jobs:
             sh /src/tools/deb_smoke_test.sh "/src/${{ steps.build.outputs.deb }}"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: accessible-iptv-client-deb-${{ steps.target.outputs.ref }}
           path: dist/release/*.deb
