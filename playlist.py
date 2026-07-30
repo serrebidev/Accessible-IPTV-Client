@@ -60,10 +60,94 @@ if WX_AVAILABLE:
             if childId in (0, wx.ACC_SELF):
                 return wx.ACC_OK, self._description
             return wx.ACC_NOT_IMPLEMENTED, None
+
+    def _attach_field_accessible(ctrl, label: str, description: str):
+        """Give ``ctrl`` a custom MSAA accessible carrying label and description.
+
+        wx.Accessible is the MSAA (Windows) bridge. On wxGTK a Python-derived
+        accessible is called back straight from the ATK/AT-SPI bridge while the
+        dialog is still being built, which can leave the dialog unmapped or wedge
+        the event loop, and GTK already exposes the label through SetName() /
+        SetAccessibleName(). So this is a Windows-only decoration.
+        """
+        if wx.Platform != "__WXMSW__" or not hasattr(ctrl, "SetAccessible"):
+            return
+        try:
+            acc = _FieldAccessible(label, description)
+            ctrl.SetAccessible(acc)
+            ctrl._field_accessible = acc  # keep the Python object alive
+        except Exception:
+            _logger.debug("_attach_field_accessible: ignored exception", exc_info=True)
+
+    def _nudge_off_parent(dlg):
+        """Stop a nested dialog from hiding exactly inside its parent's footprint.
+
+        Centred on its parent, a provider dialog can land wholly within the
+        Playlist Manager's rectangle. Raising it normally covers that, but a window
+        manager that refuses to stack a dialog above its (already modal) parent then
+        leaves nothing at all on screen, which is what issue #7 looked like. Only
+        wxGTK needs this insurance; MSW and macOS stack nested modals correctly, so
+        they keep the nicer centred placement.
+        """
+        if wx.Platform != "__WXGTK__":
+            return
+        try:
+            parent = dlg.GetParent()
+            if parent is None:
+                return
+            rect = dlg.GetScreenRect()
+            parent_rect = parent.GetScreenRect()
+            if not parent_rect.Contains(rect):
+                return  # already sticking out somewhere: visible either way
+            index = wx.Display.GetFromWindow(dlg)
+            area = wx.Display(index if index != wx.NOT_FOUND else 0).GetClientArea()
+            margin = 48
+            x = min(parent_rect.GetRight() - rect.GetWidth() + margin, area.GetRight() - rect.GetWidth())
+            y = min(parent_rect.GetBottom() - rect.GetHeight() + margin, area.GetBottom() - rect.GetHeight())
+            dlg.Move(max(area.GetLeft(), x), max(area.GetTop(), y))
+        except Exception:
+            _logger.debug("_nudge_off_parent: ignored exception", exc_info=True)
+
+    def _show_modal_raised(dlg, focus_ctrl=None):
+        """ShowModal a dialog, making sure it is really on top and focused.
+
+        The provider dialogs are opened from the already-modal Playlist Manager.
+        Some window managers stack such a nested dialog *behind* its parent, so it
+        is invisible while still blocking input and the app looks frozen with no
+        way to type credentials. Raising it once the nested event loop is running
+        puts it back in front; focusing the first field also gives a screen reader
+        something to announce on open.
+        """
+        def present():
+            try:
+                if not dlg.IsShown():
+                    return
+            except Exception:
+                _logger.debug("_show_modal_raised.present: ignored exception", exc_info=True)
+                return
+            _nudge_off_parent(dlg)
+            try:
+                dlg.Raise()
+                target = focus_ctrl if focus_ctrl is not None else dlg
+                target.SetFocus()
+            except Exception:
+                _logger.debug("_show_modal_raised.present: ignored exception", exc_info=True)
+
+        wx.CallAfter(present)
+        return dlg.ShowModal()
 else:
     class _FieldAccessible:  # type: ignore[misc]
         def __init__(self, *_args, **_kwargs):
             raise RuntimeError("_FieldAccessible requires wxPython. Install wxPython to use GUI dialogs.")
+
+    def _attach_field_accessible(_ctrl, _label, _description):
+        return
+
+    def _nudge_off_parent(_dlg):
+        return
+
+    def _show_modal_raised(_dlg, _focus_ctrl=None):
+        raise RuntimeError("_show_modal_raised requires wxPython. Install wxPython to use GUI dialogs.")
 
 # =========================
 # Debug logging (rotating file) + memory helpers
@@ -2468,24 +2552,29 @@ if WX_AVAILABLE:
                         self.lb.Append(self._format_source_label(url))
 
         def OnAddXtream(self, _):
-            dlg = XtreamCodesDialog(self)
-            if dlg.ShowModal() == wx.ID_OK:
-                data = dlg.get_data()
-                if data:
-                    data.setdefault("id", generate_provider_id())
-                    self.playlist_sources.append(data)
-                    self.lb.Append(self._format_source_label(data))
-            dlg.Destroy()
+            self._add_provider_source(XtreamCodesDialog)
 
         def OnAddStalker(self, _):
-            dlg = StalkerPortalDialog(self)
-            if dlg.ShowModal() == wx.ID_OK:
-                data = dlg.get_data()
-                if data:
-                    data.setdefault("id", generate_provider_id())
-                    self.playlist_sources.append(data)
-                    self.lb.Append(self._format_source_label(data))
-            dlg.Destroy()
+            self._add_provider_source(StalkerPortalDialog)
+
+        def _add_provider_source(self, dialog_cls):
+            try:
+                dlg = dialog_cls(self)
+            except Exception as exc:
+                # A dialog that dies half-built used to leave the manager looking
+                # frozen with nothing on screen; report it and stay usable instead.
+                _logger.exception("PlaylistManagerDialog._add_provider_source: %s failed to open", dialog_cls.__name__)
+                _log_wx_error(f"{dialog_cls.__name__} could not be opened: {exc}")
+                return
+            try:
+                if _show_modal_raised(dlg, getattr(dlg, "first_field", None)) == wx.ID_OK:
+                    data = dlg.get_data()
+                    if data:
+                        data.setdefault("id", generate_provider_id())
+                        self.playlist_sources.append(data)
+                        self.lb.Append(self._format_source_label(data))
+            finally:
+                dlg.Destroy()
 
         def OnRemove(self, _):
             i = self.lb.GetSelection()
@@ -2552,10 +2641,7 @@ if WX_AVAILABLE:
                         ctrl.SetHint(hint)
                     except Exception:
                         _logger.debug("XtreamCodesDialog._build_ui.add_row: ignored exception", exc_info=True)
-                if hasattr(ctrl, "SetAccessible"):
-                    acc = _FieldAccessible(label, desc)
-                    ctrl.SetAccessible(acc)
-                    ctrl._field_accessible = acc
+                _attach_field_accessible(ctrl, label, desc)
                 grid.Add(text, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL)
                 grid.Add(ctrl, 1, wx.EXPAND)
 
@@ -2599,6 +2685,9 @@ if WX_AVAILABLE:
             self.SetSizerAndFit(outer)
             self.SetEscapeId(wx.ID_CANCEL)
             self.Bind(wx.EVT_CLOSE, self._on_close)
+            # First field a screen reader should land on when the dialog opens.
+            self.first_field = self.name_ctrl
+            self.name_ctrl.SetFocus()
 
         def _on_ok(self, event):
             if not self.user_ctrl.GetValue().strip() or not self.pass_ctrl.GetValue().strip() or not self.url_ctrl.GetValue().strip():
@@ -2665,10 +2754,7 @@ if WX_AVAILABLE:
                         ctrl.SetHint(hint)
                     except Exception:
                         _logger.debug("StalkerPortalDialog._build_ui.add_row: ignored exception", exc_info=True)
-                if hasattr(ctrl, "SetAccessible"):
-                    acc = _FieldAccessible(label, desc)
-                    ctrl.SetAccessible(acc)
-                    ctrl._field_accessible = acc
+                _attach_field_accessible(ctrl, label, desc)
                 grid.Add(text, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL)
                 grid.Add(ctrl, 1, wx.EXPAND)
 
@@ -2717,6 +2803,9 @@ if WX_AVAILABLE:
             self.SetSizerAndFit(outer)
             self.SetEscapeId(wx.ID_CANCEL)
             self.Bind(wx.EVT_CLOSE, self._on_close)
+            # First field a screen reader should land on when the dialog opens.
+            self.first_field = self.name_ctrl
+            self.name_ctrl.SetFocus()
 
         def _sanitize_mac(self, value: str) -> str:
             value = value.replace('-', ':').replace('.', '')
