@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.108.1 - 2026-07-29
+
+- Keep the Stalker and Xtream dialogs from opening behind the Playlist Manager
+
 ## v1.108.0 - 2026-07-29
 
 - Add Account Info for Xtream Codes and Stalker accounts
