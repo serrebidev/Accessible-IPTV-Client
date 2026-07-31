@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nReport-Msgid-Bugs-To: https://github.com/serrebidev/Accessible-IPTV-Client/issues\nPO-Revision-Date: 2026-06-20 00:00+0000\nLast-Translator: Tibor Hermann (@htibcsike)\nLanguage-Team: Hungarian <https://github.com/serrebidev/Accessible-IPTV-Client/issues>\nLanguage: hu\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: tools/i18n_tools.py\n\n\n\n\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nReport-Msgid-Bugs-To: https://github.com/serrebidev/Accessible-IPTV-Client/issues\nPO-Revision-Date: 2026-06-20 00:00+0000\nLast-Translator: Tibor Hermann (@htibcsike)\nLanguage-Team: Hungarian <https://github.com/serrebidev/Accessible-IPTV-Client/issues>\nLanguage: hu\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: tools/i18n_tools.py\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "Csatorna"
 msgid "Channel Not Found"
 msgstr "A csatorna nem található"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "Hiányzik a csatorna parancshivatkozása"
 
@@ -925,6 +925,14 @@ msgstr "Tetszőleges becenév ehhez az Xtream Codes-fiókhoz"
 msgid "Optional nickname for this portal account"
 msgstr "Tetszőleges becenév ehhez a portálfiókhoz"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "A portálfiók jelszava (nem kötelező)"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "A portálfiók felhasználóneve (nem kötelező)"
+
 #: main.py:1079
 msgid "Options"
 msgstr "Beállítások"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "Válasszon másik csatornát, vagy próbálja újra később."
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "Adja meg a portál URL-jét, a felhasználónevet és a jelszót."
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "A portálfiók jelszava"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "A portálfiók felhasználóneve"
+msgid "Portal URL is required."
+msgstr "A portál URL-je kötelező."
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "A portál alap-URL-je"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "A portál nem küldött hivatkozást a visszanézhető tartalom megtekintéséhez"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "A portál nem adott vissza fiókadatokat"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "A portál nem küldött adás-URL-t"
 
@@ -1785,4 +1785,3 @@ msgstr "Körülbelül {value} Mbps"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ Vissza"
-

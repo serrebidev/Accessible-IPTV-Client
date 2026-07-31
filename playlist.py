@@ -2777,8 +2777,8 @@ if WX_AVAILABLE:
 
             add_row(_("Display name"), self.name_ctrl, _("Optional nickname for this portal account"))
             add_row(_("Portal base URL"), self.url_ctrl, _("Base URL of the Stalker/Ministra portal"))
-            add_row(_("Username"), self.user_ctrl, _("Portal account username"))
-            add_row(_("Password"), self.pass_ctrl, _("Portal account password"))
+            add_row(_("Optional portal account username"), self.user_ctrl, _("Optional portal account username"))
+            add_row(_("Optional portal account password"), self.pass_ctrl, _("Optional portal account password"))
             add_row(_("MAC address"), self.mac_ctrl, _("MAC address presented to the portal"))
             grid.Add(wx.StaticText(panel, label=""))
             grid.Add(self.mac_btn)
@@ -2823,8 +2823,8 @@ if WX_AVAILABLE:
             self.mac_ctrl.SetValue(self._default_mac())
 
         def _on_ok(self, event):
-            if not self.user_ctrl.GetValue().strip() or not self.pass_ctrl.GetValue().strip() or not self.url_ctrl.GetValue().strip():
-                wx.MessageBox(_("Portal URL, username, and password are required."), _("Validation"), wx.OK | wx.ICON_WARNING)
+            if not self.url_ctrl.GetValue().strip():
+                wx.MessageBox(_("Portal URL is required."), _("Validation"), wx.OK | wx.ICON_WARNING)
                 return
             mac = self._sanitize_mac(self.mac_ctrl.GetValue().strip())
             if len(mac.split(':')) != 6:
@@ -2846,7 +2846,8 @@ if WX_AVAILABLE:
             url = self.url_ctrl.GetValue().strip()
             username = self.user_ctrl.GetValue().strip()
             password = self.pass_ctrl.GetValue().strip()
-            if not url or not username or not password:
+            mac = self._sanitize_mac(self.mac_ctrl.GetValue().strip())
+            if not url or len(mac.split(':')) != 6:
                 return None
             return {
                 "type": "stalker",
@@ -2854,7 +2855,7 @@ if WX_AVAILABLE:
                 "base_url": url,
                 "username": username,
                 "password": password,
-                "mac": self.mac_ctrl.GetValue().strip(),
+                "mac": mac,
                 "auto_epg": self.auto_epg_ctrl.GetValue()
             }
 else:

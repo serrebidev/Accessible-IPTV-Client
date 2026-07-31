@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: zh\nPlural-Forms: nplurals=1; plural=0;\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: zh\nPlural-Forms: nplurals=1; plural=0;\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "频道"
 msgid "Channel Not Found"
 msgstr "未找到频道"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "频道缺少命令引用"
 
@@ -925,6 +925,14 @@ msgstr "此 Xtream Codes 账户的可选昵称"
 msgid "Optional nickname for this portal account"
 msgstr "此门户账户的可选昵称"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "可选的门户账户密码"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "可选的门户账户用户名"
+
 #: main.py:1079
 msgid "Options"
 msgstr "选项"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "请尝试其他频道或稍后重试。"
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "需要门户 URL、用户名和密码。"
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "门户账户密码"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "门户账户用户名"
+msgid "Portal URL is required."
+msgstr "必须填写门户 URL。"
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "门户基础 URL"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "门户未提供回看链接"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "门户未返回账户信息"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "门户未返回流 URL"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} Mbps"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ 返回"
-

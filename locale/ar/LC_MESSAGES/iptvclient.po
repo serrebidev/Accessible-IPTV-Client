@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ar\nPlural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ar\nPlural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "قناة"
 msgid "Channel Not Found"
 msgstr "لم يتم العثور على القناة"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "القناة تفتقد مرجع الأمر"
 
@@ -925,6 +925,14 @@ msgstr "اسم مستعار اختياري لحساب Xtream Codes هذا"
 msgid "Optional nickname for this portal account"
 msgstr "اسم مستعار اختياري لحساب البوابة هذا"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "كلمة مرور حساب البوابة (اختيارية)"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "اسم مستخدم حساب البوابة (اختياري)"
+
 #: main.py:1079
 msgid "Options"
 msgstr "الخيارات"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "يرجى تجربة قناة أخرى أو المحاولة مرة أخرى لاحقًا."
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "عنوان URL للبوابة واسم المستخدم وكلمة المرور مطلوبة."
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "كلمة مرور حساب البوابة"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "اسم مستخدم حساب البوابة"
+msgid "Portal URL is required."
+msgstr "عنوان URL للبوابة مطلوب."
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "عنوان URL الأساسي للبوابة"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "لم توفّر البوابة رابط المشاهدة اللاحقة"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "لم تُرجع البوابة معلومات الحساب"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "لم تُرجع البوابة عنوان URL للبث"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} ميغابت/ث"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ رجوع"
-

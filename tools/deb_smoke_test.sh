@@ -39,6 +39,45 @@ python3 -c 'import wx, vlc; print("wx", wx.version())'
 echo "=== launching under Xvfb"
 Xvfb "$DISPLAY" -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 &
 sleep 2
+
+echo "=== Stalker portal dialog check"
+python3 - <<'PY'
+import sys
+
+sys.path.insert(0, "/usr/lib/accessible-iptv-client")
+
+import wx
+from playlist import StalkerPortalDialog
+
+
+def descendants(window):
+    for child in window.GetChildren():
+        yield child
+        yield from descendants(child)
+
+
+app = wx.App(False)
+dialog = StalkerPortalDialog(None)
+try:
+    labels = {
+        child.GetLabel()
+        for child in descendants(dialog)
+        if isinstance(child, wx.StaticText)
+    }
+    assert "Optional portal account username:" in labels
+    assert "Optional portal account password:" in labels
+    dialog.url_ctrl.SetValue("http://portal.example.com/c/")
+    data = dialog.get_data()
+    assert data is not None
+    assert data["username"] == ""
+    assert data["password"] == ""
+    assert data["mac"]
+finally:
+    dialog.Destroy()
+    app.Destroy()
+print("PASS: Stalker portal credentials are visibly optional and may be blank")
+PY
+
 accessible-iptv-client >/tmp/app.log 2>&1 &
 
 WINDOW=""

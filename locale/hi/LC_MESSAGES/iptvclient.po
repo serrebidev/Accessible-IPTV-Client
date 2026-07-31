@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: hi\nPlural-Forms: nplurals=2; plural=(n != 1);\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: hi\nPlural-Forms: nplurals=2; plural=(n != 1);\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "चैनल"
 msgid "Channel Not Found"
 msgstr "चैनल नहीं मिला"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "चैनल में कमांड संदर्भ गायब है"
 
@@ -925,6 +925,14 @@ msgstr "इस Xtream Codes खाते के लिए वैकल्पि�
 msgid "Optional nickname for this portal account"
 msgstr "इस पोर्टल खाते के लिए वैकल्पिक उपनाम"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "वैकल्पिक पोर्टल खाता पासवर्ड"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "वैकल्पिक पोर्टल खाता उपयोगकर्ता नाम"
+
 #: main.py:1079
 msgid "Options"
 msgstr "विकल्प"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "कृपया दूसरा चैनल आज़माएँ या बाद में पुनः प्रयास करें।"
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "पोर्टल URL, उपयोगकर्ता नाम और पासवर्ड आवश्यक हैं।"
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "पोर्टल खाता पासवर्ड"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "पोर्टल खाता उपयोगकर्ता नाम"
+msgid "Portal URL is required."
+msgstr "पोर्टल URL आवश्यक है।"
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "पोर्टल बेस URL"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "पोर्टल ने कैच-अप लिंक प्रदान नहीं किया"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "पोर्टल ने खाता जानकारी नहीं दी"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "पोर्टल ने स्ट्रीम URL नहीं लौटाया"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} Mbps"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ वापस"
-

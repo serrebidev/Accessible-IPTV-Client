@@ -64,6 +64,11 @@ def test_stalker_dialog_builds_every_field(stalker):
     assert width > 100 and height > 100
 
 
+def test_stalker_dialog_marks_credentials_optional(stalker):
+    assert stalker.user_ctrl.GetName() == "Optional portal account username"
+    assert stalker.pass_ctrl.GetName() == "Optional portal account password"
+
+
 def test_stalker_dialog_focuses_first_field(stalker):
     assert stalker.first_field is stalker.name_ctrl
 
@@ -107,8 +112,16 @@ def test_stalker_get_data(stalker):
     }
 
 
-def test_stalker_get_data_requires_credentials(stalker):
+def test_stalker_get_data_allows_mac_only_authentication(stalker):
     stalker.url_ctrl.SetValue("http://portal.example.com/c/")
+    data = stalker.get_data()
+    assert data is not None
+    assert data["username"] == ""
+    assert data["password"] == ""
+    assert data["mac"] == stalker.mac_ctrl.GetValue()
+
+
+def test_stalker_get_data_still_requires_url(stalker):
     assert stalker.get_data() is None
 
 

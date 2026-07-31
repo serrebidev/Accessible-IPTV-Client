@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ru\nPlural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ru\nPlural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "Канал"
 msgid "Channel Not Found"
 msgstr "Канал не найден"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "У канала отсутствует ссылка на команду"
 
@@ -925,6 +925,14 @@ msgstr "Необязательное прозвище для этой учётн
 msgid "Optional nickname for this portal account"
 msgstr "Необязательное прозвище для этой учётной записи портала"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "Необязательный пароль учётной записи портала"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "Необязательное имя пользователя учётной записи портала"
+
 #: main.py:1079
 msgid "Options"
 msgstr "Параметры"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "Попробуйте другой канал или повторите попытку позже."
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "Требуются URL портала, имя пользователя и пароль."
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "Пароль учётной записи портала"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "Имя пользователя учётной записи портала"
+msgid "Portal URL is required."
+msgstr "URL-адрес портала обязателен."
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "Базовый URL портала"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "Портал не предоставил ссылку на архив"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "Портал не вернул сведения об учётной записи"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "Портал не вернул URL потока"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} Мбит/с"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ Назад"
-

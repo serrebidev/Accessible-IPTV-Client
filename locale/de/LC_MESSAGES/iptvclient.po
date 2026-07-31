@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: de\nPlural-Forms: nplurals=2; plural=(n != 1);\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: de\nPlural-Forms: nplurals=2; plural=(n != 1);\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "Sender"
 msgid "Channel Not Found"
 msgstr "Sender nicht gefunden"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "Dem Sender fehlt die Befehlsreferenz"
 
@@ -925,6 +925,14 @@ msgstr "Optionaler Spitzname für dieses Xtream-Codes-Konto"
 msgid "Optional nickname for this portal account"
 msgstr "Optionaler Spitzname für dieses Portal-Konto"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "Optionales Passwort für das Portal-Konto"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "Optionaler Benutzername für das Portal-Konto"
+
 #: main.py:1079
 msgid "Options"
 msgstr "Optionen"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "Bitte versuchen Sie einen anderen Sender oder versuchen Sie es später erneut."
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "Portal-URL, Benutzername und Passwort sind erforderlich."
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "Passwort des Portal-Kontos"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "Benutzername des Portal-Kontos"
+msgid "Portal URL is required."
+msgstr "Die Portal-URL ist erforderlich."
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "Basis-URL des Portals"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "Das Portal hat keinen Nachhol-Link bereitgestellt"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "Das Portal hat keine Kontoinformationen zurückgegeben"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "Das Portal hat keine Stream-URL zurückgegeben"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} Mbit/s"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ Zurück"
-

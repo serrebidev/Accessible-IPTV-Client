@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ja\nPlural-Forms: nplurals=1; plural=0;\n\n\n\n\n\n\n\n\n"
+"Project-Id-Version: Accessible IPTV Client\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nLanguage: ja\nPlural-Forms: nplurals=1; plural=0;\n\n\n\n\n\n\n\n\n\n"
 
 #: internal_player.py:311
 msgid "&Playback"
@@ -277,8 +277,8 @@ msgstr "チャンネル"
 msgid "Channel Not Found"
 msgstr "チャンネルが見つかりません"
 
-#: providers.py:352
-#: providers.py:373
+#: providers.py:355
+#: providers.py:376
 msgid "Channel missing command reference"
 msgstr "チャンネルにコマンド参照がありません"
 
@@ -925,6 +925,14 @@ msgstr "この Xtream Codes アカウントの任意のニックネーム"
 msgid "Optional nickname for this portal account"
 msgstr "このポータルアカウントの任意のニックネーム"
 
+#: playlist.py:2781
+msgid "Optional portal account password"
+msgstr "ポータルアカウントのパスワード（任意）"
+
+#: playlist.py:2780
+msgid "Optional portal account username"
+msgstr "ポータルアカウントのユーザー名（任意）"
+
 #: main.py:1079
 msgid "Options"
 msgstr "オプション"
@@ -1059,31 +1067,23 @@ msgid "Please try another channel or try again later."
 msgstr "別のチャンネルを試すか、後でもう一度お試しください。"
 
 #: playlist.py:2827
-msgid "Portal URL, username, and password are required."
-msgstr "ポータル URL、ユーザー名、パスワードが必要です。"
-
-#: playlist.py:2781
-msgid "Portal account password"
-msgstr "ポータルアカウントのパスワード"
-
-#: playlist.py:2780
-msgid "Portal account username"
-msgstr "ポータルアカウントのユーザー名"
+msgid "Portal URL is required."
+msgstr "ポータルURLは必須です。"
 
 #: playlist.py:2662
 #: playlist.py:2779
 msgid "Portal base URL"
 msgstr "ポータルのベース URL"
 
-#: providers.py:389
+#: providers.py:392
 msgid "Portal did not provide catch-up link"
 msgstr "ポータルは見逃し配信のリンクを提供しませんでした"
 
-#: providers.py:345
+#: providers.py:348
 msgid "Portal did not return account information"
 msgstr "ポータルがアカウント情報を返しませんでした"
 
-#: providers.py:362
+#: providers.py:365
 msgid "Portal did not return stream URL"
 msgstr "ポータルはストリーム URL を返しませんでした"
 
@@ -1785,4 +1785,3 @@ msgstr "~{value} Mbps"
 #: main.py:2853
 msgid "◄ Back"
 msgstr "◄ 戻る"
-

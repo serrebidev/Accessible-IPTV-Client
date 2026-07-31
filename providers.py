@@ -184,9 +184,9 @@ class XtreamCodesClient:
 @dataclass
 class StalkerPortalConfig:
     base_url: str
-    username: str
-    password: str
     mac: str
+    username: str = ""
+    password: str = ""
     name: Optional[str] = None
     auto_epg: bool = True
     provider_id: Optional[str] = None
@@ -265,18 +265,21 @@ class StalkerPortalClient:
                 raise ProviderError(_("Portal handshake failed: no token returned"))
             self._token = token
             self._token_issued = now
-            # Step 2: authenticate with credentials to obtain session token
-            auth = self._portal_call({
-                "type": "stb",
-                "action": "login",
-                "login": self.cfg.username,
-                "password": self.cfg.password,
-                "JsHttpRequest": "1-xml"
-            })
-            new_token = auth.get("token") or auth.get("js", {}).get("token")
-            if new_token:
-                self._token = new_token
-                self._token_issued = time.time()
+            # Many Stalker/Ministra portals authenticate solely through the MAC
+            # cookie and the handshake token.  Only perform the optional portal
+            # login when the user supplied at least one credential field.
+            if self.cfg.username or self.cfg.password:
+                auth = self._portal_call({
+                    "type": "stb",
+                    "action": "login",
+                    "login": self.cfg.username,
+                    "password": self.cfg.password,
+                    "JsHttpRequest": "1-xml"
+                })
+                new_token = auth.get("token") or auth.get("js", {}).get("token")
+                if new_token:
+                    self._token = new_token
+                    self._token_issued = time.time()
 
     def fetch_channels(self) -> Tuple[List[Dict], List[str]]:
         self._ensure_token()

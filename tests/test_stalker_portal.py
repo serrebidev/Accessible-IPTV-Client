@@ -49,6 +49,19 @@ class TestStalkerPortalConfig:
         assert "MAG" in cfg.user_agent
         assert "MAG" in cfg.profile_user_agent
 
+    def test_config_credentials_are_optional(self):
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            mac="00:1A:79:00:00:01",
+        )
+
+        assert cfg.username == ""
+        assert cfg.password == ""
+
+    def test_config_still_requires_mac(self):
+        with pytest.raises(TypeError):
+            StalkerPortalConfig(base_url="http://portal.example.com")
+
     def test_config_custom_user_agent(self):
         """Test configuration with custom user agent."""
         cfg = StalkerPortalConfig(
@@ -211,9 +224,10 @@ class TestStalkerHandshake:
     @patch.object(StalkerPortalClient, '_portal_call')
     def test_login_updates_token(self, mock_portal_call):
         """Test that login updates the session token."""
-        mock_portal_call.return_value = {
-            "js": {"token": "session_token_456"}
-        }
+        mock_portal_call.side_effect = [
+            {"js": {"token": "handshake_token_123"}},
+            {"js": {"token": "session_token_456"}},
+        ]
         
         cfg = StalkerPortalConfig(
             base_url="http://portal.example.com",
@@ -222,18 +236,41 @@ class TestStalkerHandshake:
             mac="00:1A:79:00:00:01"
         )
         client = StalkerPortalClient(cfg)
-        
-        # Simulate login
-        response = client._portal_call({
+
+        client._ensure_token()
+
+        assert mock_portal_call.call_count == 2
+        login_params = mock_portal_call.call_args_list[1].args[0]
+        assert login_params == {
             "type": "stb",
             "action": "login",
             "login": cfg.username,
             "password": cfg.password,
             "JsHttpRequest": "1-xml"
-        })
-        
-        new_token = response.get("js", {}).get("token")
-        assert new_token == "session_token_456"
+        }
+        assert client._token == "session_token_456"
+
+    @patch.object(StalkerPortalClient, '_portal_call')
+    def test_mac_only_handshake_skips_login(self, mock_portal_call):
+        mock_portal_call.return_value = {
+            "js": {"token": "handshake_token_123"}
+        }
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            mac="00:1A:79:00:00:01",
+        )
+        client = StalkerPortalClient(cfg)
+
+        client._ensure_token()
+
+        mock_portal_call.assert_called_once_with({
+            "type": "stb",
+            "action": "handshake",
+            "token": "",
+            "prehash": "0",
+            "JsHttpRequest": "1-xml"
+        }, include_token=False)
+        assert client._token == "handshake_token_123"
 
 
 class TestStalkerChannelFetch:
