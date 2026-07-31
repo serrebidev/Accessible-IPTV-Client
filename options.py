@@ -6,7 +6,6 @@ import shutil
 from dataclasses import dataclass
 import datetime
 import time
-import platform
 import threading
 import ctypes
 try:
@@ -33,7 +32,7 @@ EPG_DEBUG_LOG_FILE = "iptvclient_epg_debug.log"
 DVR_SCHEDULE_FILE = "scheduled_recordings.json"
 CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
-_IS_WINDOWS = platform.system() == "Windows"
+_IS_WINDOWS = sys.platform.startswith("win")
 DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
