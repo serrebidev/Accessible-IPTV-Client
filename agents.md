@@ -89,6 +89,8 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 ## Current Learnings
 
+- On Python 3.14, `platform.system()` can fall back to a subprocess on Windows. Do not call it at module import time; use `sys.platform` for import-time OS detection so importing `main.py` remains subprocess-free.
+- In the current Windows tooling, plain `rtk pytest ...` can incorrectly report that no tests were collected, while direct RTK passthrough invocations can surface a false nonzero wrapper status after a passing run. Use `rtk proxy cmd /d /c "python -m pytest ... & echo PYTEST_EXIT:%ERRORLEVEL%"` and require both pytest's pass summary and `PYTEST_EXIT:0`.
 - Windows installer builds use Inno Setup with a `.windows-installed` marker in Program Files. Installed/runtime mutable state belongs under `%APPDATA%\AccessibleIPTVClient`; Program Files should contain only application binaries and bundled assets, and installed auto-updates should use the signed setup EXE rather than replacing Program Files directly.
 - `wx.LogError` uses printf-style formatting. Escape literal percent signs before passing user/provider text into it.
 - `sitecustomize.py` must remain a shim. The internal player implementation belongs in `internal_player.py` only.
