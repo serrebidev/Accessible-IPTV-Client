@@ -124,6 +124,29 @@ def test_scheduler_persists_jobs_and_resets_interrupted_recording(tmp_path):
     assert loaded["recording_id"] is None
 
 
+def test_scheduler_fails_interrupted_recording_whose_window_closed(tmp_path):
+    """A restart after the stop time cannot resume, so the job must not re-arm."""
+    schedule_path = tmp_path / "schedule.json"
+    scheduler = dvr.DVRScheduler(str(schedule_path), on_start=lambda job: 1, on_stop=lambda job: None)
+    start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=2)
+    end = start + datetime.timedelta(minutes=30)
+    job = dvr.build_job(
+        {"name": "DVR Test Channel", "url": "http://example/stream"},
+        _sample_program(start, end),
+        "provider_mkv",
+        job_id="job1",
+    )
+    job["status"] = dvr.STATUS_RECORDING
+    job["recording_id"] = 99
+    scheduler.add_job(job)
+
+    reloaded = dvr.DVRScheduler(str(schedule_path), on_start=lambda job: 1, on_stop=lambda job: None)
+    loaded = reloaded.get_job("job1")
+    assert loaded["status"] == dvr.STATUS_FAILED
+    assert loaded["recording_id"] is None
+    assert loaded["message"]
+
+
 def test_scheduled_recording_runs_end_to_end(tmp_path):
     ffmpeg = _available_ffmpeg()
     if not ffmpeg:

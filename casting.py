@@ -520,9 +520,10 @@ class DLNACaster(BaseCaster):
             # Standard DLNA audio class
             upnp_class = "object.item.audioItem.musicTrack"
         else:
-            # For DLNA we use the Direct Proxy (headers only) unless it's a known TS requiring remux
-            # but usually Direct Proxy is safer for DLNA TVs.
-            proxied_url = get_proxy().get_audio_url(url, headers) # Using /audio path for simple proxying too
+            # For DLNA we use the video-capable proxy path (HLS remux via
+            # /stream). Using the /audio path here would advertise a video item
+            # but serve an audio-only MP3 stream.
+            proxied_url = get_proxy().get_stream_url(url, headers)
             upnp_class = "object.item.videoItem.videoBroadcast"
         
         try:
@@ -741,22 +742,27 @@ class AirPlayCaster(BaseCaster):
             await self._start_audio_stream(audio_url, title)
             return
 
-        # Video content: remux to a Chromecast-safe HLS profile that Apple TV also accepts.
-        proxied_url = proxy.get_transcoded_url(
-            url, headers, transcode_profile="chromecast_h264"
-        )
-        LOG.info("Casting Video to AirPlay via HLS proxy: %s -> %s", proxied_url, url)
-
-        try:
-            await self._atv.stream.play_url(proxied_url)
-            return
-        except Exception as e:
-            not_supported = (
-                _HAS_AIRPLAY
-                and isinstance(e, pyatv.exceptions.NotSupportedError)
+        # Video content: remux to a Chromecast-safe HLS profile that Apple TV also
+        # accepts. Audio-only receivers (HomePod, etc.) have no AirPlay video
+        # Stream service, so play_url would raise AttributeError; route them
+        # straight to the RAOP audio fallback instead.
+        stream = getattr(self._atv, "stream", None)
+        if self._has_video_protocol and stream is not None:
+            proxied_url = proxy.get_transcoded_url(
+                url, headers, transcode_profile="chromecast_h264"
             )
-            if not not_supported:
-                raise PlaybackError(f"Failed to start playback: {e}")
+            LOG.info("Casting Video to AirPlay via HLS proxy: %s -> %s", proxied_url, url)
+
+            try:
+                await stream.play_url(proxied_url)
+                return
+            except Exception as e:
+                not_supported = (
+                    _HAS_AIRPLAY
+                    and isinstance(e, pyatv.exceptions.NotSupportedError)
+                )
+                if not not_supported:
+                    raise PlaybackError(f"Failed to start playback: {e}")
 
         # Video isn't supported (audio-only AirPlay receiver). Try RAOP with
         # the audio path so the user at least hears the channel.
@@ -790,17 +796,21 @@ class AirPlayCaster(BaseCaster):
                 metadata = None
 
         async def run_stream():
+            if metadata is not None:
+                await stream.stream_file(audio_url, metadata=metadata)
+            else:
+                await stream.stream_file(audio_url)
+
+        def _on_audio_task_done(task):
+            if task.cancelled():
+                return
             try:
-                if metadata is not None:
-                    await stream.stream_file(audio_url, metadata=metadata)
-                else:
-                    await stream.stream_file(audio_url)
-            except asyncio.CancelledError:
-                raise
+                task.result()
             except Exception as exc:
                 LOG.info("AirPlay RAOP audio stream ended: %s", exc)
 
         self._audio_task = asyncio.create_task(run_stream())
+        self._audio_task.add_done_callback(_on_audio_task_done)
 
         # Give pyatv a moment to bind RTSP; if it errors immediately, surface it.
         try:
@@ -969,10 +979,28 @@ class CastingManager:
         if not self._running:
             return
         self._running = False
-        if self._loop:
-            self._loop.call_soon_threadsafe(self._loop.stop)
+        loop = self._loop
+        if loop and not loop.is_closed():
+            # Cancel in-flight tasks (e.g. a running RAOP audio stream) before the
+            # loop is torn down, so nothing keeps streaming after stop().
+            try:
+                loop.call_soon_threadsafe(self._cancel_pending_tasks)
+            except Exception:
+                LOG.debug("CastingManager.stop: ignored exception", exc_info=True)
+            try:
+                loop.call_soon_threadsafe(loop.stop)
+            except Exception:
+                LOG.debug("CastingManager.stop: ignored exception", exc_info=True)
         if self._thread:
             self._thread.join(timeout=2.0)
+
+    def _cancel_pending_tasks(self):
+        try:
+            for task in list(asyncio.all_tasks(self._loop)):
+                if not task.done():
+                    task.cancel()
+        except Exception:
+            LOG.debug("CastingManager._cancel_pending_tasks: ignored exception", exc_info=True)
 
     def dispatch(self, coro):
         """Run a coroutine on the background loop and return the result synchronously."""

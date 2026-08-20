@@ -31,6 +31,7 @@ DONE_STATUSES = {STATUS_COMPLETED, STATUS_FAILED, STATUS_MISSED, STATUS_CANCELED
 
 DEFAULT_PRE_PADDING_MINUTES = 0
 DEFAULT_POST_PADDING_MINUTES = 2
+STOP_TIMEOUT_SECONDS = 120.0
 
 
 def utc_now_ts() -> float:
@@ -144,6 +145,7 @@ class DVRScheduler:
         self._jobs: Dict[str, Dict[str, object]] = {}
         self._stop_event = threading.Event()
         self._wake_event = threading.Event()
+        self._stopping_since: Dict[str, float] = {}
         self._thread: Optional[threading.Thread] = None
         self.load()
 
@@ -165,8 +167,19 @@ class DVRScheduler:
                 if not isinstance(job, dict) or not job.get("id"):
                     continue
                 if job.get("status") in {STATUS_RECORDING, STATUS_STOPPING}:
-                    job["status"] = STATUS_SCHEDULED
+                    # The ffmpeg process died with the app, so the job is no longer
+                    # running whatever the file says. Re-arm it when its window is
+                    # still open (tick() restarts it, or marks it missed once the
+                    # stop time passes); only call it failed when the window has
+                    # already closed and there is nothing left to record.
                     job["recording_id"] = None
+                    stop_ts = float(job.get("stop_ts") or 0)
+                    if stop_ts and float(self.clock()) >= stop_ts:
+                        job["status"] = STATUS_FAILED
+                        job["message"] = job.get("message") or "Interrupted by application restart."
+                    else:
+                        job["status"] = STATUS_SCHEDULED
+                        job["message"] = ""
                 self._jobs[str(job["id"])] = job
 
     def save(self) -> None:
@@ -252,6 +265,7 @@ class DVRScheduler:
         message: str = "",
     ) -> None:
         with self._lock:
+            self._stopping_since.pop(str(job_id), None)
             job = self._jobs.get(str(job_id))
             if not job:
                 return
@@ -277,6 +291,10 @@ class DVRScheduler:
                     self._start_job(job_id)
             elif status == STATUS_RECORDING and stop_ts and now >= stop_ts:
                 self._stop_job(job_id)
+            elif status == STATUS_STOPPING:
+                since = self._stopping_since.get(job_id)
+                if since and now - since > STOP_TIMEOUT_SECONDS:
+                    self.mark_finished(job_id, success=False, message="Stop timed out.")
 
     def _run_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -326,6 +344,7 @@ class DVRScheduler:
                 return
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
+            self._stopping_since[job_id] = float(self.clock())
         self.save()
         self._notify_update()
         try:

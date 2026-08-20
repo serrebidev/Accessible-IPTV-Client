@@ -135,11 +135,12 @@ def group_synonyms() -> Dict[str, List[str]]:
 # run once per channel during EPG import and once per channel in every UI matching scan, so
 # rebuilding+recompiling these patterns per call was a major cost on large playlists. These
 # compile once and produce results identical to the previous per-call construction.
+_STRIP_TAGS_ESCAPED = [re.escape(tag) for tag in STRIP_TAGS]
 _CANON_STRIP_EDGE_RE = re.compile(
-    r'^(?:' + '|'.join(STRIP_TAGS) + r')\b[\s\-:()\[\]]*|[\s\-:()\[\]]*\b(?:' + '|'.join(STRIP_TAGS) + r')$',
+    r'^(?:' + '|'.join(_STRIP_TAGS_ESCAPED) + r')\b[\s\-:()\[\]]*|[\s\-:()\[\]]*\b(?:' + '|'.join(_STRIP_TAGS_ESCAPED) + r')$',
     re.I,
 )
-_CANON_STRIP_WORD_RE = re.compile(r'\b(?:' + '|'.join(STRIP_TAGS) + r')\b', re.I)
+_CANON_STRIP_WORD_RE = re.compile(r'\b(?:' + '|'.join(_STRIP_TAGS_ESCAPED) + r')\b', re.I)
 _CANON_EMPTY_BRACKETS_RE = re.compile(r'\(\s*\)|\[\s*\]')
 _CANON_WS_RE = re.compile(r'\s+')
 _NOISE_WORDS_RE = re.compile(r'\b(' + '|'.join(re.escape(w) for w in NOISE_WORDS) + r')\b', re.I)

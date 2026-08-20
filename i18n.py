@@ -85,12 +85,14 @@ def detect_system_language() -> str:
     if sys.platform.startswith("win"):
         try:
             import ctypes
-            import locale as _locale
 
             lcid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
-            name = _locale.windows_locale.get(lcid)
-            if name:
-                return name.split("_")[0].lower()
+            # LOCALE_SNAME (0x5C) returns the ISO 639 language name (e.g. "en-US")
+            # directly, unlike the incomplete locale.windows_locale alias table.
+            buf = ctypes.create_unicode_buffer(85)
+            n = ctypes.windll.kernel32.GetLocaleInfoW(lcid, 0x5C, buf, len(buf))
+            if n > 0 and buf.value:
+                return buf.value.replace("-", "_").split("_")[0].lower()
         except Exception:
             LOG.debug("detect_system_language: ignored exception", exc_info=True)
     # 3) Generic default locale (deprecated API; guarded + warning-suppressed).
@@ -156,6 +158,17 @@ def ngettext(singular: str, plural: str, n: int) -> str:
     return _translation.ngettext(singular, plural, n)
 
 
+def N_(message: str) -> str:
+    """Mark ``message`` for extraction without translating it here.
+
+    Used for strings that are stored or compared as stable English keys (config
+    values, table lookups) and only translated later at display time via ``_()``.
+    Returning the source text unchanged keeps the key stable; the extractor still
+    records the string so translators see it.
+    """
+    return message
+
+
 def init_from_config(config) -> str:
     """Activate the language stored under the config ``"language"`` key (default auto)."""
     try:
@@ -166,9 +179,10 @@ def init_from_config(config) -> str:
 
 
 def install() -> None:
-    """Expose ``_()`` and ``ngettext()`` as builtins (mirrors :func:`gettext.install`)."""
+    """Expose ``_()``, ``ngettext()`` and ``N_()`` as builtins (mirrors :func:`gettext.install`)."""
     builtins.__dict__["_"] = gettext
     builtins.__dict__["ngettext"] = ngettext
+    builtins.__dict__["N_"] = N_
 
 
 # Importing this module makes ``_()`` available everywhere immediately (as a no-op

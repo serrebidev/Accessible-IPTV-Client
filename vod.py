@@ -42,7 +42,7 @@ KIND_SERIES = "series"
 # Season/episode patterns, most specific first. "S01E02", "S1 E2", "1x05".
 _SE_RE = re.compile(r"[sS](\d{1,3})[\s._x-]*[eE](\d{1,3})")
 _SE_ALT_RE = re.compile(r"(?<!\d)(\d{1,2})[xX](\d{1,3})(?!\d)")
-_EP_ONLY_RE = re.compile(r"[eE]p(?:isode)?[\s._-]*(\d{1,3})(?!\d)")
+_EP_ONLY_RE = re.compile(r"\b[eE]p(?:isode)?[\s._-]*(\d{1,3})(?!\d)")
 
 # group-title keywords that mark a bucket as movies or series.
 _SERIES_HINTS = ("series", "tv show", "tv shows", "shows", "sezon", "season")
@@ -281,18 +281,22 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
     info = client.get_series_info(series_id)
     seasons = info.get("episodes") if isinstance(info, dict) else None
     episodes: List[Dict] = []
+    list_form = False
     if isinstance(seasons, dict):
         season_items = seasons.items()
     elif isinstance(seasons, list):
         # Some panels return a list of season arrays instead of a keyed object.
         season_items = enumerate(seasons)
+        list_form = True
     else:
         season_items = []
     for season_key, entries in season_items:
         if not isinstance(entries, list):
             continue
         s_no = int(season_key) if str(season_key).isdigit() else 0
-        for ep in entries:
+        if list_form:
+            s_no += 1
+        for idx, ep in enumerate(entries):
             if not isinstance(ep, dict):
                 continue
             eid = ep.get("id")
@@ -302,6 +306,8 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
                 e_no = int(ep.get("episode_num") or 0)
             except (TypeError, ValueError):
                 e_no = 0
+            if not e_no:
+                e_no = idx + 1
             ext = ep.get("container_extension") or "mp4"
             title = ep.get("title") or _("Episode {num}").format(num=e_no)
             label = "S%02dE%02d - %s" % (s_no, e_no, title)

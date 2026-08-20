@@ -327,11 +327,9 @@ def get_config_write_target():
         if not is_windows_portable_build():
             return os.path.join(get_user_config_dir(), CONFIG_FILE)
 
-        app_dir = get_app_dir()
-        cwd = get_cwd_dir()
-        if app_dir:
-            if _is_writable_dir(app_dir):
-                return os.path.join(app_dir, CONFIG_FILE)
+        # Prefer writing back to the file that was loaded (matches the read
+        # order), so a config loaded from CWD is not orphaned by creating a
+        # fresh app-dir config.
         if _CONFIG_PATH:
             try:
                 parent = os.path.dirname(_CONFIG_PATH)
@@ -339,6 +337,12 @@ def get_config_write_target():
                     return _CONFIG_PATH
             except Exception:
                 LOG.debug("get_config_write_target: ignored exception", exc_info=True)
+
+        app_dir = get_app_dir()
+        cwd = get_cwd_dir()
+        if app_dir:
+            if _is_writable_dir(app_dir):
+                return os.path.join(app_dir, CONFIG_FILE)
         if cwd:
             if _is_writable_dir(cwd):
                 return os.path.join(cwd, CONFIG_FILE)
@@ -499,12 +503,13 @@ def save_config(cfg: Dict):
         try:
             os.replace(tmp_path, path)
         except Exception:
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except Exception:
-                    LOG.debug("save_config: ignored exception", exc_info=True)
-            os.rename(tmp_path, path)
+            # Never destroy the existing config: if the atomic replace fails,
+            # leave the old file intact and clean up the temp file.
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                LOG.debug("save_config: ignored exception", exc_info=True)
+            raise
         _CONFIG_PATH = path
     except Exception as e:
         _log_error(f"Failed to save config to {path}: {e}")

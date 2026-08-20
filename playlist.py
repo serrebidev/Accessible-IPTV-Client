@@ -284,7 +284,9 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
                 return False
             time.sleep(1.0)
         except Exception:
-            return True
+            # An unexpected error (e.g. PermissionError on the lock dir) means we
+            # did NOT acquire the lock; report failure rather than proceeding.
+            return False
 
 def _release_import_lock(db_path: str):
     lock_path, pid_path = _import_lock_paths(db_path)
@@ -299,10 +301,12 @@ def _release_import_lock(db_path: str):
     except Exception:
         _logger.debug("_release_import_lock: ignored exception", exc_info=True)
 
-def _wait_for_import_lock(db_path: str, poll_sec: int = 10, log_every: int = 30):
+def _wait_for_import_lock(db_path: str, poll_sec: int = 10, log_every: int = 30, timeout_sec: int = 1800):
     """Block until the cross‑process import lock can be acquired.
 
-    No user-facing popups; emits periodic debug logs only.
+    No user-facing popups; emits periodic debug logs only. Raises after a hard
+    timeout so a stale-but-young lock (or a permanently wedged peer) can never
+    block the import thread forever.
     """
     waited = 0
     while True:
@@ -314,6 +318,8 @@ def _wait_for_import_lock(db_path: str, poll_sec: int = 10, log_every: int = 30)
                 _logger.debug("EPG import waiting for lock; waited=%ss", waited)
             except Exception:
                 _logger.debug("_wait_for_import_lock: ignored exception", exc_info=True)
+        if waited >= timeout_sec:
+            raise RuntimeError("Timed out waiting for the EPG import lock")
 
 # =========================
 # Normalization & Tokenizing
@@ -922,7 +928,7 @@ _REGION_REPAIR_SCHEMA_VERSION = 1
 # channels was observed re-running the *full* channels-table normalize-and-rewrite
 # on every single writable EPGDatabase() open/reopen (every 20s-4min in one debug log,
 # whenever something reopened the connection), not just once.
-_NORM_REPAIR_SCHEMA_VERSION = 1
+_NORM_REPAIR_SCHEMA_VERSION = 2
 
 PRAGMA_READONLY = [
     "PRAGMA busy_timeout=2000;",
@@ -935,54 +941,68 @@ def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.dateti
     if not db_path or not os.path.exists(db_path):
         return False
 
-    conn = None
-    try:
-        uri = f"file:{db_path}?mode=ro&cache=shared"
-        conn = sqlite3.connect(uri, uri=True, timeout=2.0)
-        cur = conn.cursor()
-        tables = {
-            row[0]
-            for row in cur.execute(
+    last_err: Optional[Exception] = None
+    for attempt in range(3):
+        conn = None
+        try:
+            uri = f"file:{urllib.parse.quote(db_path)}?mode=ro&cache=shared"
+            conn = sqlite3.connect(uri, uri=True, timeout=2.0)
+            cur = conn.cursor()
+            tables = {
+                row[0]
+                for row in cur.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name IN ('channels', 'programmes')
+                    """
+                ).fetchall()
+            }
+            if {"channels", "programmes"} - tables:
+                return False
+
+            if now_utc is None:
+                try:
+                    now_utc = datetime.datetime.now(datetime.UTC)
+                except AttributeError:
+                    now_utc = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+            elif now_utc.tzinfo is None:
+                now_utc = now_utc.replace(tzinfo=datetime.timezone.utc)
+            else:
+                now_utc = now_utc.astimezone(datetime.timezone.utc)
+
+            now_str = now_utc.strftime("%Y%m%d%H%M%S")
+            row = cur.execute(
                 """
-                SELECT name
-                FROM sqlite_master
-                WHERE type = 'table' AND name IN ('channels', 'programmes')
-                """
-            ).fetchall()
-        }
-        if {"channels", "programmes"} - tables:
+                SELECT 1
+                FROM programmes p
+                JOIN channels c ON c.id = p.channel_id
+                WHERE p.end > ?
+                LIMIT 1
+                """,
+                (now_str,),
+            ).fetchone()
+            return bool(row)
+        except sqlite3.OperationalError as err:
+            # A busy/locked DB during an active import is not "no usable data";
+            # retry briefly before giving up so auto-import decisions are not
+            # spuriously triggered by a transient lock.
+            msg = str(err).lower()
+            if "locked" not in msg and "busy" not in msg:
+                return False
+            last_err = err
+            time.sleep(0.5 * (attempt + 1))
+        except Exception:
             return False
-
-        if now_utc is None:
-            try:
-                now_utc = datetime.datetime.now(datetime.UTC)
-            except AttributeError:
-                now_utc = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
-        elif now_utc.tzinfo is None:
-            now_utc = now_utc.replace(tzinfo=datetime.timezone.utc)
-        else:
-            now_utc = now_utc.astimezone(datetime.timezone.utc)
-
-        now_str = now_utc.strftime("%Y%m%d%H%M%S")
-        row = cur.execute(
-            """
-            SELECT 1
-            FROM programmes p
-            JOIN channels c ON c.id = p.channel_id
-            WHERE p.end > ?
-            LIMIT 1
-            """,
-            (now_str,),
-        ).fetchone()
-        return bool(row)
-    except Exception:
-        return False
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                _logger.debug("epg_database_has_usable_data: ignored exception", exc_info=True)
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    _logger.debug("epg_database_has_usable_data: ignored exception", exc_info=True)
+    if last_err is not None:
+        _logger.debug("epg_database_has_usable_data: giving up after lock retries: %s", last_err)
+    return False
 
 # =========================
 # EPG gzip download (resumable)
@@ -1048,6 +1068,21 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
         except Exception:
             return False
 
+    def _full_gzip_probe(path: str) -> bool:
+        """Stream the whole gzip to EOF to verify the end-of-stream marker.
+
+        Used when the server omitted Content-Length/Content-Range, so the byte
+        count cannot prove completeness and a truncation that leaves a valid
+        header/first block would otherwise pass the quick probe.
+        """
+        try:
+            with gzip.open(path, 'rb') as gzf:
+                while gzf.read(1 << 20):
+                    pass
+            return True
+        except Exception:
+            return False
+
     attempts = 0
     last_err = None
     try:
@@ -1091,11 +1126,19 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                                     os.remove(temp_path)
                             except Exception:
                                 _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
+                            try:
+                                he.close()
+                            except Exception:
+                                _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
                             use_range = False
                             existing = 0
                             mode = 'wb'
                             continue
                         last_err = he
+                        try:
+                            he.close()
+                        except Exception:
+                            _logger.debug("_http_download_gz_with_resume: ignored exception", exc_info=True)
                         resp = None
                     if resp is None:
                         time.sleep(0.5 * attempts)
@@ -1153,8 +1196,15 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                     last_err = RuntimeError(f"incomplete gzip download: {final_size}/{expected_total} bytes")
                     time.sleep(0.5 * attempts)
                     continue
-                # Quick probe for gzip integrity; avoid full second pass
-                if _quick_gzip_probe(temp_path):
+                # Verify gzip integrity. When the server declared a size we can
+                # trust the byte count and only need a quick header probe; when
+                # it did not (chunked encoding), stream the whole file to EOF so
+                # a truncated download cannot masquerade as a valid stream.
+                if expected_total is None:
+                    ok = _full_gzip_probe(temp_path)
+                else:
+                    ok = _quick_gzip_probe(temp_path)
+                if ok:
                     stream = _TempGzipStream(temp_path, lock)
                     success = True
                     return stream
@@ -1576,7 +1626,8 @@ class EPGDatabase:
                     continue
 
                 # Keep strong exact matches even if the region metadata disagrees.
-                if v.get("why") in {"exact-id", "exact-tvg-name"}:
+                why = v.get("why") or ""
+                if why.startswith("exact-id") or why.startswith("exact-tvg-name"):
                     lowered_score = max(1, v.get("score", 0) - 30)
                     v = dict(v)
                     v["score"] = lowered_score
@@ -1998,8 +2049,8 @@ class EPGDatabase:
         c = self.conn.cursor()
         results: List[Dict[str, str]] = []
         seen: Set[Tuple[str, str, str]] = set()
-        per_match = max(1, limit // max(1, len(matches)))
         ordered = sorted(matches, key=lambda m: -m.get('score', 0))[:5]
+        per_match = max(1, limit // max(1, len(ordered)))
         for m in ordered:
             ch_id = m.get('id')
             if not ch_id:
@@ -2059,8 +2110,19 @@ class EPGDatabase:
     # Streaming importer with detailed debug
     # =========================
     def import_epg_xml(self, xml_sources: List[str], progress_callback=None):
-        # Block until we can import; avoid user-facing warnings.
+        # Block until we can import; avoid user-facing warnings. The lock is
+        # always released in a finally so an unexpected error can never leave a
+        # stale lock file behind and block every later import.
         _wait_for_import_lock(self.db_path)
+        try:
+            self._import_epg_xml_locked(xml_sources, progress_callback)
+        finally:
+            try:
+                _release_import_lock(self.db_path)
+            except Exception:
+                _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
+
+    def _import_epg_xml_locked(self, xml_sources: List[str], progress_callback=None):
         trace_mem = DEBUG or os.getenv("EPG_TRACE_MEM", "0").strip().lower() in {"1", "true", "yes"}
         if trace_mem and tracemalloc.is_tracing():
             tracemalloc.stop()
@@ -2099,6 +2161,10 @@ class EPGDatabase:
                         head_txt = head.decode('utf-8', 'ignore') if head else ''
                         if 'another request' in head_txt.lower() or 'too many requests' in head_txt.lower():
                             last_err = RuntimeError("Provider is busy or blocking concurrent downloads; will retry…")
+                            try:
+                                resp.close()
+                            except Exception:
+                                _logger.debug("EPGDatabase.import_epg_xml._open_stream: ignored exception", exc_info=True)
                             time.sleep(2 + attempt)
                             continue
                         is_gz = resp.info().get('Content-Encoding') == 'gzip' or src.lower().endswith('.gz') or 'application/gzip' in ctype
@@ -2377,11 +2443,6 @@ class EPGDatabase:
             _logger.info("EPG SUMMARY total_added ch=%d pg=%d | db_final ch=%s pg=%s | mem=%sMB peak_trace=%sKB",
                          grand_chan, grand_prog, row_c[0] if row_c else '?', row_p[0] if row_p else '?', _mem_mb(), int(peak/1024))
         except Exception as e: _logger.debug("EPG SUMMARY failed to query DB counts: %s", e)
-        # Release cross-process import lock
-        try:
-            _release_import_lock(self.db_path)
-        except Exception:
-            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
 
 # =========================

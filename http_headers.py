@@ -24,6 +24,8 @@ def channel_http_headers(channel: Optional[Dict[str, str]]) -> Dict[str, object]
     _copy(["http-accept"], "accept")
 
     extra = channel.get("http-headers")
+    if isinstance(extra, (str, tuple, set)):
+        extra = [extra]
     if isinstance(extra, list):
         headers["_extra"] = [str(h) for h in extra if h]
 

@@ -38,10 +38,11 @@ if ($parentProcess) {
 Write-Log "Scanning for processes locking $InstallDir..."
 try {
     $targetProcessName = [System.IO.Path]::GetFileNameWithoutExtension($ExeName)
+    $installPrefix = $InstallDir.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
     $candidateProcesses = Get-Process -Name $targetProcessName -ErrorAction SilentlyContinue
     $zombies = $candidateProcesses | Where-Object {
         try {
-            $_.MainModule.FileName.StartsWith($InstallDir, [System.StringComparison]::OrdinalIgnoreCase)
+            $_.MainModule.FileName.StartsWith($installPrefix, [System.StringComparison]::OrdinalIgnoreCase)
         } catch {
             $false
         }
@@ -174,6 +175,15 @@ if (Test-Path -LiteralPath $exePath) {
     }
 } else {
     Write-Log "Executable not found after update: $exePath"
+    if (Test-Path -LiteralPath $BackupDir) {
+        try {
+            Remove-Item -LiteralPath $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $BackupDir -Destination $InstallDir -Force
+            Write-Log "Rolled back to previous version because the new executable was missing."
+        } catch {
+            Write-Log "Rollback failed: $($_.Exception.Message)"
+        }
+    }
     exit 1
 }
 

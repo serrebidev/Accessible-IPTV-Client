@@ -17,6 +17,12 @@ class ProviderError(RuntimeError):
     """Raised when a provider fails to return a playlist."""
 
 
+_PORTAL_FILENAMES = (
+    "portal.php", "load.php", "get.php", "xmltv.php",
+    "player_api.php", "panel_api.php", "api.php",
+)
+
+
 def _normalize_base_url(url: str) -> str:
     url = url.strip()
     if not url:
@@ -25,18 +31,19 @@ def _normalize_base_url(url: str) -> str:
     if not parsed.scheme:
         url = "http://" + url
         parsed = urllib.parse.urlparse(url)
-    if parsed.path and parsed.path != "/":
-        # Remove trailing portal filename (common inputs like http://host/stalker_portal)
-        # Keep the directory so we can append files below.
-        if parsed.path.endswith("portal.php"):
-            path = parsed.path.rsplit("/", 1)[0]
-        else:
-            path = parsed.path
-    else:
-        path = parsed.path or ""
+    # Strip any userinfo (http://user:pass@host) so credentials never round-trip
+    # into the rebuilt base URL.
+    host = parsed.hostname or ""
+    if parsed.port:
+        host = "{host}:{port}".format(host=host, port=parsed.port)
+    path = parsed.path or ""
+    if path and path != "/":
+        filename = path.rsplit("/", 1)[-1].lower()
+        if filename in _PORTAL_FILENAMES:
+            path = path.rsplit("/", 1)[0]
     rebuilt = urllib.parse.urlunparse((
         parsed.scheme,
-        parsed.netloc,
+        host,
         path.rstrip('/'),
         '',
         '',
@@ -84,8 +91,11 @@ class XtreamCodesClient:
     def fetch_playlist(self, timeout: int = 60) -> str:
         url = self.playlist_url()
         req = urllib.request.Request(url, headers={"User-Agent": self.cfg.user_agent})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read()
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read()
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
+            raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
             return raw.decode("utf-8")
         except UnicodeDecodeError:
@@ -116,8 +126,11 @@ class XtreamCodesClient:
     def _player_api(self, action: Optional[str] = None, extra: Optional[Dict[str, str]] = None, timeout: int = 30):
         url = self._player_api_url(action, extra)
         req = urllib.request.Request(url, headers={"User-Agent": self.cfg.user_agent})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read()
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read()
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
+            raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
@@ -237,13 +250,18 @@ class StalkerPortalClient:
         query = urllib.parse.urlencode(params)
         url = f"{self._portal_endpoint}?{query}"
         req = urllib.request.Request(url, headers=self._headers(include_token=include_token))
-        with self._opener.open(req, timeout=timeout) as resp:
-            raw = resp.read()
+        try:
+            with self._opener.open(req, timeout=timeout) as resp:
+                raw = resp.read()
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
+            raise ProviderError(_("Could not reach the portal: {error}").format(error=err)) from err
         text = raw.decode("utf-8", "ignore")
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            raise ProviderError(_("Invalid response from portal: {response}").format(response=repr(text)))
+            import logging
+            logging.getLogger("EPG.providers").debug("Portal returned non-JSON body: %r", text[:500])
+            raise ProviderError(_("Invalid response from portal"))
 
     def _ensure_token(self):
         # Serialize refreshes: this client is shared across background resolve threads,

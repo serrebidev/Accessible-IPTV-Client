@@ -95,9 +95,12 @@ class Account:
 
         Deliberately ignores the rest of the base URL: panels routinely serve
         ``get.php`` and the streams themselves from different paths, and one
-        account must not be listed twice because of that.
+        account must not be listed twice because of that. Stalker accounts are
+        MAC-authenticated and frequently have an empty username, so the MAC is
+        used as the identity for those instead.
         """
-        return (self.kind, self.host.lower(), self.username)
+        identity = self.username.lower() or self.mac.lower()
+        return (self.kind, self.host.lower(), identity)
 
 
 def kind_label(kind: str) -> str:
@@ -424,7 +427,8 @@ def _extra_lines(data: Dict, handled) -> List[str]:
     """
     lines = []
     for key in sorted(data or {}):
-        if key in handled or "password" in key.lower():
+        lowered = key.lower()
+        if key in handled or _is_secret_key(lowered):
             continue
         value = data[key]
         if isinstance(value, (list, tuple)):
@@ -438,6 +442,18 @@ def _extra_lines(data: Dict, handled) -> List[str]:
             continue
         lines.append(_line(key.replace("_", " "), text))
     return lines
+
+
+def _is_secret_key(lowered: str) -> bool:
+    for part in _SECRET_KEY_PARTS:
+        if part in lowered:
+            return True
+    return False
+
+
+_SECRET_KEY_PARTS = (
+    "password", "passwd", "pwd", "secret", "token", "api_key", "apikey", "auth",
+)
 
 
 def _format_xtream_report(payload: Dict, now: datetime.datetime) -> List[str]:

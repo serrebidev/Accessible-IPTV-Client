@@ -18,18 +18,20 @@ class ExternalPlayerLauncher:
     def __init__(self):
         self._launch_guard_lock = threading.Lock()
         self._last_launch_ts = 0.0
+        self._last_launch_url = ""
 
     def launch(self, player_name: str, url: str, custom_path: str = "") -> Tuple[bool, str]:
         """
         Launches the specified external player with the given URL.
         Returns (success, error_message).
         """
-        # Guard against accidental double-invocation
+        # Guard against accidental double-invocation of the same stream.
         with self._launch_guard_lock:
             now = time.time()
-            if (now - self._last_launch_ts) < 0.75:
+            if (now - self._last_launch_ts) < 0.75 and self._last_launch_url == url:
                 return True, "" # Debounced
             self._last_launch_ts = now
+            self._last_launch_url = url
 
         # If using mpv, try to reuse an existing instance via IPC first.
         if player_name == "MPV":
@@ -180,12 +182,19 @@ class ExternalPlayerLauncher:
             except Exception:
                 return False
         else:
+            s = None
             try:
-                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                # AF_UNIX only exists off Windows; this branch is the non-Windows one.
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)  # pyright: ignore[reportAttributeAccessIssue]
                 s.settimeout(0.25)
                 s.connect(ipc)
                 s.sendall(payload)
-                s.close()
                 return True
             except Exception:
                 return False
+            finally:
+                if s is not None:
+                    try:
+                        s.close()
+                    except Exception:
+                        LOG.debug("mpv IPC socket close failed", exc_info=True)

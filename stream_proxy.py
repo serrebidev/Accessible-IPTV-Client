@@ -578,14 +578,28 @@ class HLSConverter:
             self._cleanup_old_segments_once()
 
     def stop(self):
-        if self.process:
-            try: self.process.terminate()
-            except:
+        proc = self.process
+        if proc:
+            try:
+                proc.terminate()
+            except Exception:
                 LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
+            try:
+                proc.wait(timeout=5)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
+                try:
+                    proc.wait(timeout=2)
+                except Exception:
+                    LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
             self.process = None
         if os.path.exists(self.temp_dir):
-            try: shutil.rmtree(self.temp_dir)
-            except:
+            try:
+                shutil.rmtree(self.temp_dir)
+            except Exception:
                 LOG.debug("HLSConverter.stop: ignored exception", exc_info=True)
 
     def is_alive(self): return self.process and self.process.poll() is None
@@ -663,6 +677,8 @@ class StreamBuffer:
 
     def write(self, chunk):
         with self.lock:
+            if self.closed:
+                return
             while self.current_size + len(chunk) > self.max_size:
                 if self.closed: return
                 self.not_full.wait()
@@ -706,6 +722,16 @@ class StreamBuffer:
     def is_closed(self):
         with self.lock:
             return self.closed
+
+
+def _is_safe_segment_name(name: str) -> bool:
+    """Reject path traversal / separators in a transcode segment filename."""
+    if not name or name in (".", ".."):
+        return False
+    if ".." in name or "/" in name or "\\" in name or "\x00" in name:
+        return False
+    return True
+
 
 class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -884,6 +910,8 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             parts = parsed.path.split('/')
             if len(parts) >= 4:
                 session_id, filename = parts[2], parts[3]
+                if not _is_safe_segment_name(filename):
+                    return self.send_error(404)
                 converter = get_proxy().get_converter(session_id)
                 if not converter: return self.send_error(404)
                 converter.touch()
@@ -1019,6 +1047,7 @@ class StreamProxy:
         self.lock = threading.Lock()
         self._cleanup_thread = None
         self._running = False
+        self._firewall_rule_name = None
 
     def _get_local_ip(self):
         """Robust primary IP detection for Chromecast compatibility."""
@@ -1064,11 +1093,33 @@ class StreamProxy:
 
     def stop(self):
         self._running = False
-        if self.server: self.server.shutdown()
+        server = self.server
+        if server:
+            self.server = None
+            try:
+                server.shutdown()
+            except Exception:
+                LOG.debug("StreamProxy.stop: ignored exception", exc_info=True)
+            try:
+                server.server_close()
+            except Exception:
+                LOG.debug("StreamProxy.stop: ignored exception", exc_info=True)
+        if self.thread and self.thread.is_alive():
+            self.thread.join(timeout=2.0)
+        self.thread = None
         with self.lock:
-            for c in self.converters.values(): c.stop()
+            converters = list(self.converters.values())
             self.converters.clear()
             self.converter_sources.clear()
+        for c in converters:
+            try:
+                c.stop()
+            except Exception:
+                LOG.debug("StreamProxy.stop: ignored exception", exc_info=True)
+        if self._cleanup_thread and self._cleanup_thread.is_alive():
+            self._cleanup_thread.join(timeout=2.0)
+        self._cleanup_thread = None
+        self._remove_firewall_rule()
 
     def get_stream_url(self, target_url, headers=None, mode="auto"):
         params = {'url': target_url, 'mode': mode}
@@ -1113,28 +1164,43 @@ class StreamProxy:
         while self._running:
             time.sleep(10)
             now = time.time()
+            stale_converters = []
             with self.lock:
-                dead = [sid for sid, c in self.converters.items() if now - c.last_access > 60]
-                for sid in dead:
-                    self.converters[sid].stop()
-                    del self.converters[sid]
-                if dead:
-                    dead_set = set(dead)
+                stale = [sid for sid, c in self.converters.items() if now - c.last_access > 60]
+                if stale:
+                    for sid in stale:
+                        stale_converters.append(self.converters.pop(sid))
+                    dead_set = set(stale)
                     self.converter_sources = {
                         key: sid
                         for key, sid in self.converter_sources.items()
                         if sid not in dead_set
                     }
+            for c in stale_converters:
+                try:
+                    c.stop()
+                except Exception:
+                    LOG.debug("StreamProxy._cleanup_loop: ignored exception", exc_info=True)
 
     def _ensure_firewall_rule(self):
         if os.name != "nt" or not self.port: return
         rule_name = f"IPTV Proxy ({self.port})"
+        self._firewall_rule_name = rule_name
         try:
             flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={rule_name}"], capture_output=True, creationflags=flags)
             subprocess.run(["netsh", "advfirewall", "firewall", "add", "rule", f"name={rule_name}", "dir=in", "action=allow", "protocol=TCP", f"localport={self.port}", "profile=private,domain"], capture_output=True, creationflags=flags)
         except:
             LOG.debug("StreamProxy._ensure_firewall_rule: ignored exception", exc_info=True)
+
+    def _remove_firewall_rule(self):
+        if os.name != "nt" or not self._firewall_rule_name: return
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
+            subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={self._firewall_rule_name}"], capture_output=True, creationflags=flags)
+        except:
+            LOG.debug("StreamProxy._remove_firewall_rule: ignored exception", exc_info=True)
+        self._firewall_rule_name = None
 
 _PROXY = None
 _PROXY_LOCK = threading.Lock()

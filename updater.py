@@ -214,8 +214,15 @@ def fetch_update_manifest(
     env_thumbs = list(_env_thumbprints())
     manifest_thumbs = list(_extract_manifest_thumbprints(data))
     LOG.debug("fetch_update_manifest: env_thumbprints=%s, manifest_thumbprints=%s", env_thumbs, manifest_thumbs)
-    
-    thumbprints = _normalize_thumbprints(env_thumbs + manifest_thumbs)
+
+    # The manifest is an unsigned HTTPS asset, so thumbprints it declares are
+    # only as trustworthy as the sha256 next to them. An out-of-band pin (env
+    # var) is authoritative and overrides the self-declared value when present.
+    env_normalized = _normalize_thumbprints(env_thumbs)
+    if env_normalized:
+        thumbprints = env_normalized
+    else:
+        thumbprints = _normalize_thumbprints(manifest_thumbs)
     LOG.debug("fetch_update_manifest: normalized thumbprints=%s", thumbprints)
     
     installer_asset, installer_url, installer_sha = _extract_installer_fields(data)
@@ -277,9 +284,13 @@ def download_file_with_sha256(url: str, dest_path: str, *, progress_cb=None) -> 
                     fraction = (downloaded / total) if total > 0 else None
                     if progress_cb(fraction) is False:
                         raise UpdateCancelled(_("Update cancelled."))
+    except UpdateCancelled:
+        raise
     except urllib.error.HTTPError as exc:
         raise UpdateError(_("Failed to download update ({code}).").format(code=exc.code)) from exc
     except urllib.error.URLError as exc:
+        raise UpdateError(_("Unable to download update. Please check your connection.")) from exc
+    except OSError as exc:
         raise UpdateError(_("Unable to download update. Please check your connection.")) from exc
     return digest.hexdigest()
 
@@ -314,17 +325,19 @@ def verify_authenticode(exe_path: str, allowed_thumbprints: Iterable[str]) -> No
     # Write the PowerShell script to a temp file to avoid module loading issues
     # when running from a frozen PyInstaller app or PowerShell Core environment
     import tempfile
+    escaped_path = abs_path.replace("'", "''")
     ps_script = f'''
 $ErrorActionPreference = 'SilentlyContinue'
-$sig = Get-AuthenticodeSignature -LiteralPath "{abs_path}"
+$sig = Get-AuthenticodeSignature -LiteralPath '{escaped_path}'
 $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} else {{ "" }}
 @{{Status=$sig.Status.ToString(); StatusMessage=$sig.StatusMessage; Thumbprint=$thumb}} | ConvertTo-Json -Compress
 '''
     
-    # Create temp script file
+    # Create temp script file (UTF-8 with BOM so Windows PowerShell 5.1 reads it
+    # correctly even when the path contains non-ASCII characters).
     script_fd, script_path = tempfile.mkstemp(suffix=".ps1")
     try:
-        os.write(script_fd, ps_script.encode('utf-8'))
+        os.write(script_fd, ps_script.encode('utf-8-sig'))
         os.close(script_fd)
         
         # Use cmd.exe to launch Windows PowerShell with a clean environment
@@ -349,7 +362,12 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
             if 'PSMODULE' in k.upper() or 'POWERSHELL' in k.upper():
                 del clean_env[k]
         
-        result = run_hidden(cmd, capture_output=True, text=True, timeout=30, env=clean_env)
+        try:
+            result = run_hidden(cmd, capture_output=True, text=True, errors="replace", timeout=30, env=clean_env)
+        except subprocess.TimeoutExpired as exc:
+            raise UpdateError(_("Authenticode verification timed out.")) from exc
+        except OSError as exc:
+            raise UpdateError(_("Could not run Authenticode verification: {detail}").format(detail=exc)) from exc
         
         LOG.debug("verify_authenticode: returncode=%s, stdout=%r, stderr=%r", 
                   result.returncode, result.stdout[:500] if result.stdout else None, 
@@ -374,22 +392,21 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
     
     LOG.debug("verify_authenticode: status=%s, thumbprint=%s", status, thumbprint)
 
-    # Case 1: Signature is fully valid (trusted CA)
-    if status.lower() == "valid":
-        LOG.debug("verify_authenticode: PASS - status is Valid")
-        return
-    
-    # Case 2: Self-signed or untrusted CA, but thumbprint matches allowed list
-    # This handles UnknownError, NotTrusted, etc. when we have a pinned thumbprint
+    # A pinned thumbprint always wins: an exact match passes regardless of the
+    # CA's trust assessment (handles self-signed / not-yet-trusted certs).
     if thumbprint and thumbprint in allowed:
         LOG.debug("verify_authenticode: PASS - thumbprint %s in allowed set", thumbprint)
         return
-    
-    # Case 3: No allowed thumbprints configured, but we have a signature - warn but allow
-    # This provides backwards compatibility for releases without pinned thumbprints
-    if thumbprint and not allowed:
-        LOG.warning("verify_authenticode: No allowed thumbprints configured, allowing signed exe with thumbprint %s", thumbprint)
+
+    # No pin configured: a fully CA-trusted ("Valid") signature is the best
+    # signal available. This is the standard Windows trust model.
+    if not allowed and status.lower() == "valid":
+        LOG.debug("verify_authenticode: PASS - no pin configured and signature is Valid")
         return
+
+    # Everything else fails. A "Valid" signature from a certificate that is not
+    # in the pinned set, or any non-Valid signature with no matching pin, is
+    # rejected rather than silently allowed.
     
     # Verification failed - build detailed error message
     detail = _("Authenticode status was {status}.").format(status=status or _("Unknown"))

@@ -89,6 +89,14 @@ def _header_input_args(headers: Optional[Dict[str, object]]) -> List[str]:
     return args
 
 
+def _close_stdin(proc: "subprocess.Popen") -> None:
+    try:
+        if proc.stdin:
+            proc.stdin.close()
+    except Exception:
+        LOG.debug("RecordingManager._close_stdin: ignored exception", exc_info=True)
+
+
 def build_ffmpeg_command(
     ffmpeg_path: str,
     url: str,
@@ -118,7 +126,7 @@ def build_ffmpeg_command(
         cmd += ["-t", str(float(duration))]
 
     if fmt == "provider_mp4":
-        cmd += ["-map", "0", "-c", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart"]
+        cmd += ["-map", "0", "-c:v", "copy", "-c:s", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
     elif fmt == "provider_mkv":
         cmd += ["-map", "0", "-c", "copy"]
     elif fmt in ("x264_mp4", "x264_mkv"):
@@ -274,11 +282,14 @@ class RecordingManager:
             LOG.debug("RecordingManager._drain_stderr: ignored exception", exc_info=True)
 
     def _watch(self, rec: Recording, on_finish: Optional[Callable[[Recording, int], None]]) -> None:
-        try:
-            rec.process.wait()
-        except Exception:
-            LOG.debug("RecordingManager._watch: ignored exception", exc_info=True)
-        rc = rec.process.returncode if rec.process else -1
+        proc = rec.process
+        if proc:
+            try:
+                proc.wait()
+            except Exception:
+                LOG.debug("RecordingManager._watch: ignored exception", exc_info=True)
+            _close_stdin(proc)
+        rc = proc.returncode if proc else -1
         with self._lock:
             self._recordings.pop(rec.id, None)
         LOG.info("Recording finished: %s (rc=%s)", rec.out_path, rc)
@@ -309,6 +320,7 @@ class RecordingManager:
                 if proc.stdin:
                     proc.stdin.write(b"q\n")
                     proc.stdin.flush()
+                    proc.stdin.close()
             except Exception:
                 LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
             try:

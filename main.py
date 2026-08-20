@@ -26,6 +26,7 @@ import wx.adv
 
 import i18n
 from i18n import gettext as _
+from i18n import N_
 
 from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
@@ -281,8 +282,11 @@ class TrayIcon(wx.adv.TaskBarIcon):
             self.on_exit()
 
 class IPTVClient(wx.Frame):
+    # Labels double as the stored ``media_player`` config value, so they stay
+    # English here; N_() only marks the one non-brand entry for extraction and
+    # the menu translates it at build time via _(label).
     PLAYER_KEYS = [
-        ("Built-in Player", "player_Internal"),
+        (N_("Built-in Player"), "player_Internal"),
         ("VLC", "player_VLC"),
         ("MPC", "player_MPC"),
         ("MPC-BE", "player_MPCBE"),
@@ -337,6 +341,9 @@ class IPTVClient(wx.Frame):
         self.all_channels: List[Dict[str, str]] = []
         self.displayed: List[Dict[str, str]] = []
         self.current_group = "All Channels"
+        # Parallel list of real group keys, indexed like group_list, so group
+        # names containing " (" round-trip correctly instead of being truncated.
+        self._group_keys: List[str] = []
         # View mode: "live" (channels + catch-up, the default) or "vod"
         # (browsable movies & series). VOD is built lazily on first switch.
         self.view_mode = "live"
@@ -600,10 +607,11 @@ class IPTVClient(wx.Frame):
         event.Skip()
 
     def start_refresh_timer(self):
-        if self.refresh_timer:
+        if self.refresh_timer is None:
+            self.refresh_timer = wx.Timer(self)
+            self.Bind(wx.EVT_TIMER, self.on_timer_refresh, self.refresh_timer)
+        else:
             self.refresh_timer.Stop()
-        self.refresh_timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_timer_refresh, self.refresh_timer)
         self.refresh_timer.Start(3 * 60 * 60 * 1000, wx.TIMER_CONTINUOUS)
 
     def on_timer_refresh(self, event):
@@ -688,6 +696,8 @@ class IPTVClient(wx.Frame):
             all_channels = list(prefilled_all)
 
             def apply_prefill(pref_by_group, pref_all):
+                if refresh_token != self._playlist_load_token:
+                    return
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
                 self._refresh_group_ui()
@@ -860,13 +870,15 @@ class IPTVClient(wx.Frame):
                     channels_by_group.setdefault(grp, []).append(ch)
                     all_channels.append(ch)
 
-        # Replace provider mappings atomically after successful refresh
-        self.provider_clients = provider_clients_local
-        self.provider_epg_sources = provider_epg_sources
-
         def finish_playlist_load_and_start_background_tasks():
+            # A stale background load (e.g. the refresh timer firing during a slow
+            # initial load) must not clobber newer channels/EPG sources.
+            if refresh_token != self._playlist_load_token:
+                return
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            self.provider_clients = provider_clients_local
+            self.provider_epg_sources = provider_epg_sources
             self.reload_epg_sources()
             self._pending_epg_autostart = True
             self._pending_epg_autostart_token = refresh_token
@@ -1877,7 +1889,10 @@ class IPTVClient(wx.Frame):
                 if not manifest.installer_asset_filename or not manifest.installer_download_url or not manifest.installer_sha256:
                     raise updater.UpdateError(_("Update manifest is missing required fields."))
 
-                installer_path = os.path.join(temp_root, manifest.installer_asset_filename)
+                installer_filename = os.path.basename(manifest.installer_asset_filename)
+                if not installer_filename or installer_filename in (".", "..") or installer_filename != manifest.installer_asset_filename:
+                    raise updater.UpdateError(_("Update manifest contains an unsafe installer filename."))
+                installer_path = os.path.join(temp_root, installer_filename)
                 progress(_("Downloading update..."), 0.0)
                 digest = updater.download_file_with_sha256(
                     manifest.installer_download_url,
@@ -1918,7 +1933,10 @@ class IPTVClient(wx.Frame):
                 )
                 return
 
-            zip_path = os.path.join(temp_root, manifest.asset_filename)
+            zip_filename = os.path.basename(manifest.asset_filename)
+            if not zip_filename or zip_filename in (".", "..") or zip_filename != manifest.asset_filename:
+                raise updater.UpdateError(_("Update manifest contains an unsafe asset filename."))
+            zip_path = os.path.join(temp_root, zip_filename)
             progress(_("Downloading update..."), 0.0)
             digest = updater.download_file_with_sha256(
                 manifest.download_url,
@@ -1978,6 +1996,22 @@ class IPTVClient(wx.Frame):
             if temp_root:
                 shutil.rmtree(temp_root, ignore_errors=True)
         except updater.UpdateError as exc:
+            wx.CallAfter(self._destroy_update_progress)
+            wx.CallAfter(
+                wx.MessageBox,
+                _("Update failed: {error}").format(error=exc),
+                _("Update Error"),
+                wx.OK | wx.ICON_ERROR,
+            )
+            if temp_root:
+                try:
+                    shutil.rmtree(temp_root, ignore_errors=True)
+                except Exception:
+                    LOG.debug("IPTVClient._download_update_worker: ignored exception", exc_info=True)
+        except Exception as exc:
+            # Never leave the modal progress dialog stuck on an unexpected
+            # error (socket timeouts, subprocess failures, etc.).
+            LOG.exception("Update worker failed unexpectedly: %s", exc)
             wx.CallAfter(self._destroy_update_progress)
             wx.CallAfter(
                 wx.MessageBox,
@@ -2155,26 +2189,27 @@ class IPTVClient(wx.Frame):
             if foreground_tid and foreground_tid != current_tid:
                 attached = user32.AttachThreadInput(foreground_tid, current_tid, True)
             
-            # Show and restore the window
-            user32.ShowWindow(hwnd, SW_RESTORE)
-            user32.ShowWindow(hwnd, SW_SHOW)
-            
-            # Move window to top of Z-order
-            user32.SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-            
-            # Simulate Alt key press to unlock foreground
-            user32.keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY, 0)
-            user32.keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0)
-            
-            # Set foreground and focus
-            user32.BringWindowToTop(hwnd)
-            user32.SetForegroundWindow(hwnd)
-            user32.SetActiveWindow(hwnd)
-            user32.SetFocus(hwnd)
-            
-            # Detach threads if we attached
-            if attached:
-                user32.AttachThreadInput(foreground_tid, current_tid, False)
+            try:
+                # Show and restore the window
+                user32.ShowWindow(hwnd, SW_RESTORE)
+                user32.ShowWindow(hwnd, SW_SHOW)
+                
+                # Move window to top of Z-order
+                user32.SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+                
+                # Simulate Alt key press to unlock foreground
+                user32.keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY, 0)
+                user32.keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0)
+                
+                # Set foreground and focus
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+                user32.SetActiveWindow(hwnd)
+                user32.SetFocus(hwnd)
+            finally:
+                # Detach threads if we attached
+                if attached:
+                    user32.AttachThreadInput(foreground_tid, current_tid, False)
         except Exception:
             # Fallback to wx method if Windows API fails
             try:
@@ -2611,7 +2646,7 @@ class IPTVClient(wx.Frame):
                     show_lower = show_name.lower()
                     if txt and txt not in chan_lower and txt not in show_lower:
                         continue
-                    label = f"{r['channel_name']} - {r['show_title']} ({self._fmt_time(r['start'])}–{self._fmt_time(r['end'])})"
+                    label = f"{r.get('channel_name', '')} - {r.get('show_title', '')} ({self._fmt_time(r.get('start', ''))}–{self._fmt_time(r.get('end', ''))})"
                     self.displayed.append({"type": "epg", "data": r, "label": label})
                     added += 1
                 if added:
@@ -2631,12 +2666,16 @@ class IPTVClient(wx.Frame):
 
             if not self.all_channels:
                 self.group_list.Append(_("No channels found."))
+                self._group_keys = []
                 self._maybe_autostart_epg_import()
                 return
 
             self.group_list.Append(_("All Channels") + f" ({len(self.all_channels)})")
+            keys = ["All Channels"]
             for grp in sorted(self.channels_by_group):
                 self.group_list.Append(f"{grp} ({len(self.channels_by_group[grp])})")
+                keys.append(grp)
+            self._group_keys = keys
             
             try:
                 current_idx = self.group_list.FindString(self.current_group)
@@ -3512,9 +3551,12 @@ class IPTVClient(wx.Frame):
         sel = self.group_list.GetSelection()
         all_label = _("All Channels")
         label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
-        # "All Channels" is the internal sentinel; match either the translated label
-        # (current UI language) or the English source (e.g. config from another locale).
-        if label.startswith(all_label) or label.startswith("All Channels"):
+        # Prefer the parallel key list so group names containing " (" are not
+        # truncated by label round-tripping; fall back to the label only when
+        # the key list is out of sync.
+        if 0 <= sel < len(self._group_keys):
+            grp = self._group_keys[sel]
+        elif label.startswith(all_label) or label.startswith("All Channels"):
             grp = "All Channels"
         else:
             grp = label.split(" (", 1)[0]
@@ -3633,14 +3675,14 @@ class IPTVClient(wx.Frame):
                 return
 
             if not self.config.get("epg_enabled", True):
-                self.epg_display.SetValue("EPG is disabled in configuration.")
+                self.epg_display.SetValue(_("EPG is disabled in configuration."))
                 return
 
             self._start_epg_poll_timer()
 
             # If this channel is exempt (likely has no EPG), show a clear message and do not fetch.
             if self._channel_is_epg_exempt(ch):
-                self.epg_display.SetValue("No EPG data for this channel.")
+                self.epg_display.SetValue(_("No EPG data for this channel."))
                 return
 
             key = canonicalize_name(cname)
@@ -3655,10 +3697,10 @@ class IPTVClient(wx.Frame):
                             threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
                 msg = self._epg_msg_from_tuple(now_show, next_show)
                 if needs_refresh:
-                    msg += "\n\nUpdating EPG..."
+                    msg += "\n\n" + _("Updating EPG...")
                 # If an import is running, indicate that data may still be arriving.
                 if self.epg_importing:
-                    msg = msg + "\n\nNote: EPG import in progress — newer program data may still arrive."
+                    msg = msg + "\n\n" + _("Note: EPG import in progress — newer program data may still arrive.")
                 self.epg_display.SetValue(msg)
             else:
                 # No cached entry: fetch what exists now (reader connection to DB).
@@ -3667,9 +3709,9 @@ class IPTVClient(wx.Frame):
                     if not already:
                         threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
                 # Provide placeholder while we wait for DB read.
-                placeholder = "Loading EPG for this channel…"
+                placeholder = _("Loading EPG for this channel…")
                 if self.epg_importing:
-                    placeholder += "\n\nEPG import in progress — displaying available data as it arrives."
+                    placeholder += "\n\n" + _("EPG import in progress — displaying available data as it arrives.")
                 self.epg_display.SetValue(placeholder)
         elif item["type"] == "epg":
             self.url_display.SetValue("")
@@ -3680,12 +3722,14 @@ class IPTVClient(wx.Frame):
                 if canonicalize_name(ch.get("name", "")) == target_norm:
                     url = ch.get("url", "")
                     break
-            msg = (
-                f"Show: {r.get('show_title', '')} | Channel: {r.get('channel_name', '')} | "
-                f"Start: {self._fmt_time(r.get('start', ''))} | End: {self._fmt_time(r.get('end', ''))}"
+            msg = _("Show: {show} | Channel: {channel} | Start: {start} | End: {end}").format(
+                show=r.get('show_title', ''),
+                channel=r.get('channel_name', ''),
+                start=self._fmt_time(r.get('start', '')),
+                end=self._fmt_time(r.get('end', '')),
             )
             if self.epg_importing:
-                msg = msg + "\n\nNote: EPG import in progress — data may still be updating."
+                msg = msg + "\n\n" + _("Note: EPG import in progress — data may still be updating.")
             self.epg_display.SetValue(msg)
             self.url_display.SetValue(url)
 
@@ -3695,13 +3739,16 @@ class IPTVClient(wx.Frame):
             return local.strftime('%H:%M')
         msg = ""
         if now:
-            msg += f"Now: {now['title']} ({localfmt(now['start'])} – {localfmt(now['end'])})"
+            msg += _("Now: {title} ({start} – {end})").format(
+                title=now['title'], start=localfmt(now['start']), end=localfmt(now['end']))
         elif nxt:
-            msg += f"Starts at {localfmt(nxt['start'])}: {nxt['title']}"
+            msg += _("Starts at {start}: {title}").format(
+                start=localfmt(nxt['start']), title=nxt['title'])
         else:
-            msg += "No program currently airing."
+            msg += _("No program currently airing.")
         if nxt:
-            msg += f"\nNext: {nxt['title']} ({localfmt(nxt['start'])} – {localfmt(nxt['end'])})"
+            msg += "\n" + _("Next: {title} ({start} – {end})").format(
+                title=nxt['title'], start=localfmt(nxt['start']), end=localfmt(nxt['end']))
         return msg
 
     def _fetch_and_cache_epg(self, channel, cname):
@@ -3763,17 +3810,21 @@ class IPTVClient(wx.Frame):
         self._epg_executor.submit(_do_work).add_done_callback(_on_done)
 
     def _update_epg_display_if_selected(self, channel, now_show, next_show):
-        i = self.channel_list.GetSelection()
-        if 0 <= i < len(self.displayed):
-            item = self.displayed[i]
-            if item["type"] == "channel" and canonicalize_name(item["data"].get("name", "")) == canonicalize_name(channel.get("name", "")):
-                if self._channel_is_epg_exempt(channel) and not (now_show or next_show):
-                    msg = "No EPG data for this channel."
-                else:
-                    msg = self._epg_msg_from_tuple(now_show, next_show)
-                if self.epg_importing:
-                    msg = msg + "\n\nNote: EPG import in progress — newer program data may still arrive."
-                self.epg_display.SetValue(msg)
+        try:
+            i = self.channel_list.GetSelection()
+            if 0 <= i < len(self.displayed):
+                item = self.displayed[i]
+                if item["type"] == "channel" and canonicalize_name(item["data"].get("name", "")) == canonicalize_name(channel.get("name", "")):
+                    if self._channel_is_epg_exempt(channel) and not (now_show or next_show):
+                        msg = _("No EPG data for this channel.")
+                    else:
+                        msg = self._epg_msg_from_tuple(now_show, next_show)
+                    if self.epg_importing:
+                        msg = msg + "\n\n" + _("Note: EPG import in progress — newer program data may still arrive.")
+                    self.epg_display.SetValue(msg)
+        except Exception:
+            # The frame may already be destroyed when a queued EPG callback fires.
+            LOG.debug("IPTVClient._update_epg_display_if_selected: ignored exception", exc_info=True)
 
     def _start_epg_poll_timer(self):
         try:

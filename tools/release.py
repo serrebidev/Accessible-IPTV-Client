@@ -774,7 +774,7 @@ def compute_next_version():
         base_version = parse_version_tag(tag)
 
     if not base_version:
-        base_version = (1, 4, 2)
+        base_version = parse_version_tag(app_meta.APP_VERSION) or (1, 4, 2)
 
     commits = get_commits_since(tag)
     bump = determine_bump(commits)

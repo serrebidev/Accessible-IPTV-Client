@@ -22,6 +22,7 @@ import array
 import os
 import struct
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCALE_DIR = os.path.join(REPO_ROOT, "locale")
@@ -44,7 +45,9 @@ SOURCE_FILES = [
     "stream_proxy.py",
 ]
 
-TRANSLATION_FUNCS = {"_", "gettext"}
+# ``N_`` marks a string for extraction without translating it at that point
+# (stable English keys that are translated later, at display time).
+TRANSLATION_FUNCS = {"_", "gettext", "N_"}
 PLURAL_FUNCS = {"ngettext"}
 
 
@@ -189,7 +192,7 @@ def _unescape(text):
 def parse_po(path):
     """Parse a .po file into a list of entries (dicts) plus the header msgstr."""
     entries = []
-    cur = None
+    cur: Optional[Dict[str, Any]] = None
     state = None  # which field the continuation strings belong to
 
     def flush():
@@ -225,6 +228,7 @@ def parse_po(path):
             elif stripped.startswith("msgstr["):
                 idx = int(stripped[7 : stripped.index("]")])
                 value = _unescape(stripped[stripped.index("]") + 1 :].strip()[1:-1])
+                cur = cur or {}
                 cur.setdefault("plurals", {})[idx] = value
                 state = ("plural", idx)
             elif stripped.startswith("msgstr "):
@@ -232,6 +236,8 @@ def parse_po(path):
                 cur["msgstr"] = _unescape(stripped[7:].strip()[1:-1])
                 state = "msgstr"
             elif stripped.startswith('"'):
+                if cur is None:
+                    continue  # continuation line with no entry open: malformed .po
                 piece = _unescape(stripped[1:-1])
                 if state == "msgid":
                     cur["msgid"] += piece
@@ -337,13 +343,19 @@ def find_po_files():
 # update: fold freshly-extracted strings into an existing .po, keeping translations
 # --------------------------------------------------------------------------- #
 def update_po(po_path, messages):
-    existing = {e["msgid"]: e for e in parse_po(po_path) if e.get("msgid")}
-    header = next((e for e in parse_po(po_path) if e.get("msgid", "") == ""), None)
+    entries = parse_po(po_path)
+    existing = {e["msgid"]: e for e in entries if e.get("msgid")}
+    header = next((e for e in entries if e.get("msgid", "") == ""), None)
     chunks = []
     if header and header.get("msgstr"):
         chunks.append('msgid ""\n')
         chunks.append('msgstr ""\n')
-        for piece in header["msgstr"].split("\\n"):
+        # parse_po() already turned the escaped "\n" separators into real newlines,
+        # so split on those and re-escape one header field per line. Splitting on
+        # the literal two-character sequence collapsed the whole header onto a
+        # single line and appended a stray blank field on every update run.
+        for piece in header["msgstr"].split("\n"):
+            piece = piece.strip()
             if piece:
                 chunks.append(f'"{_escape(piece)}\\n"\n')
         chunks.append("\n")

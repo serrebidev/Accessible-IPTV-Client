@@ -52,8 +52,12 @@ def test_provider_formats_stream_copy():
     assert "-c" in mkv and mkv[mkv.index("-c") + 1] == "copy"
     assert "libx264" not in mkv
     mp4 = _cmd("provider_mp4")
-    # MP4 from MPEG-TS needs the ADTS->ASC bitstream filter and faststart.
-    assert "aac_adtstoasc" in mp4
+    # MP4 keeps the video bitstream verbatim but re-encodes audio to AAC: provider
+    # streams also carry MP3/AC3, which no bitstream filter can mux into MP4, so a
+    # plain copy plus aac_adtstoasc failed on those channels.
+    assert "-c:v" in mp4 and mp4[mp4.index("-c:v") + 1] == "copy"
+    assert "-c:a" in mp4 and mp4[mp4.index("-c:a") + 1] == "aac"
+    assert "libx264" not in mp4
     assert "+faststart" in mp4
     assert mp4[-1].endswith(".mp4")
 

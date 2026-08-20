@@ -135,6 +135,9 @@ class InternalPlayerFrame(wx.Frame):
         self._max_network_cache_seconds = 0.0
         self._ts_network_bias = 0.0
         self._xtream_buffer_refresh_seconds = 5.0
+        self._xtream_refresh_count = 0
+        self._max_xtream_refreshes = 6
+        self._first_start_buffer_timeout_seconds = 20.0
         self._detected_content_ts = False  # True if stream detected as TS via Content-Type
         self._refresh_ts_floor()
         self._update_cache_bounds()
@@ -334,6 +337,7 @@ class InternalPlayerFrame(wx.Frame):
                 stream_kind = self._current_stream_kind
         else:
             self._reconnect_attempts = 0
+            self._xtream_refresh_count = 0
             self._last_restart_reason = ""
             self._gave_up = False
         if stream_kind is None:
@@ -347,6 +351,7 @@ class InternalPlayerFrame(wx.Frame):
         self._current_title = title or "IPTV Stream"
         self._play_start_monotonic = time.monotonic()
         self._pending_restart = False
+        self._pending_xtream_refresh = False
         self._buffering_events.clear()
         self._last_state_name = None
         self._last_position_ms = None
@@ -385,7 +390,14 @@ class InternalPlayerFrame(wx.Frame):
             self.player.stop()
         except Exception:
             LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
-        self.player.set_media(media)
+        try:
+            self.player.set_media(media)
+        except Exception as err:
+            try:
+                media.release()
+            except Exception:
+                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
+            raise InternalPlayerUnavailableError(_("Could not load the stream: {error}").format(error=err))
         if video_visible:
             self._ensure_player_window()
         else:
@@ -403,7 +415,10 @@ class InternalPlayerFrame(wx.Frame):
             except Exception:
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         LOG.debug("Calling player.play()...")
-        self.player.play()
+        try:
+            self.player.play()
+        except Exception as err:
+            raise InternalPlayerUnavailableError(_("Could not start playback: {error}").format(error=err))
         self._is_paused = False
         self.play_pause_btn.SetLabel(_("Pause"))
         self._schedule_volume_apply()
@@ -716,6 +731,23 @@ class InternalPlayerFrame(wx.Frame):
             return False
         if self._pending_restart:
             return True
+        # A genuinely dead live channel would otherwise refresh forever without
+        # ever consuming the reconnect budget. Cap consecutive refreshes.
+        if self._xtream_refresh_count >= self._max_xtream_refreshes:
+            self._pending_xtream_refresh = False
+            self._gave_up = True
+            self._manual_stop = True
+            self._current_url = None
+            wx.CallAfter(
+                wx.MessageBox,
+                _("Stream disconnected. The stream may be offline or experiencing issues.")
+                + "\n\n" + _("Please try another channel or try again later."),
+                _("Stream Lost"),
+                wx.OK | wx.ICON_WARNING,
+            )
+            self._update_status_label(_("Stream lost"))
+            return False
+        self._xtream_refresh_count += 1
         self._pending_restart = True
         self._pending_xtream_refresh = True
         self._last_restart_reason = "xtream segment rollover"
@@ -836,9 +868,13 @@ class InternalPlayerFrame(wx.Frame):
         with_bandwidth = [v for v in variants if v.get("bandwidth_mbps")]
         if with_bandwidth:
             return min(with_bandwidth, key=lambda v: v["bandwidth_mbps"] or 0.0)
-        return variants[0]
+        # No variant reports a usable bandwidth; returning the first entry could
+        # exceed the cap, so let the caller fall back to the master playlist.
+        return None
 
     def _ensure_player_window(self) -> None:
+        if self._destroyed:
+            return
         if self._have_handle:
             return
         if not self.video_panel:
@@ -1291,6 +1327,7 @@ class InternalPlayerFrame(wx.Frame):
             if state_key == "playing":
                 self._has_seen_playing = True
                 self._stall_ticks = 0
+                self._xtream_refresh_count = 0
             elif state_key != "playing":
                 self._stall_ticks = 0
 
@@ -1323,6 +1360,13 @@ class InternalPlayerFrame(wx.Frame):
                 self._schedule_restart("early buffering detected", adjust_buffer=True)
             elif allow_recovery and not handled_xtream_refresh and not self._pending_restart and buffer_duration >= 10.0:
                 self._schedule_restart("prolonged buffering", adjust_buffer=True)
+            elif (
+                not allow_recovery
+                and self._play_start_monotonic
+                and not self._pending_restart
+                and since_start >= self._first_start_buffer_timeout_seconds
+            ):
+                self._schedule_restart("no media received", adjust_buffer=True)
         else:
             if self._buffer_start_ts is not None:
                 self._record_buffer_event(now)
@@ -1406,6 +1450,8 @@ class InternalPlayerFrame(wx.Frame):
 
     def _schedule_volume_apply(self) -> None:
         def _apply() -> None:
+            if self._destroyed:
+                return
             try:
                 # Ensure audio is not muted (can happen with --intf=dummy)
                 self.player.audio_set_mute(False)
@@ -1449,8 +1495,11 @@ class InternalPlayerFrame(wx.Frame):
             self.volume_slider.SetValue(ival)
             
         # 2. Apply to VLC immediately
-        # Simple, direct, synchronous call.
+        # Simple, direct, synchronous call. Also clear any mute state, since
+        # libVLC can start muted with the dummy interface and a muted stream
+        # makes volume changes silently no-ops.
         try:
+            self.player.audio_set_mute(False)
             self.player.audio_set_volume(ival)
         except Exception:
             LOG.debug("InternalPlayerFrame._apply_volume: ignored exception", exc_info=True)
