@@ -8,6 +8,29 @@ import chardet.pipeline
 block_cipher = None
 chardet_pipeline_path = os.path.dirname(chardet.pipeline.__file__)
 
+# chardet ships its pipeline as mypyc-compiled extensions, and the module naming
+# changed across releases: 7.0.x emitted a separate "<name>__mypyc" shared module
+# that only gets imported at runtime (invisible to static analysis), while 7.3+
+# compiles straight over "<name>". Hard-coding either scheme makes PyInstaller log
+# "Hidden import not found" ERRORs on the other, which would mask a real missing
+# import. Discover what this interpreter actually has instead.
+chardet_pipeline_hiddenimports = []
+for _fn in sorted(os.listdir(chardet_pipeline_path)):
+    if not _fn.endswith(('.pyd', '.so')):
+        continue
+    _mod = _fn.split('.')[0]
+    chardet_pipeline_hiddenimports.append('chardet.pipeline.' + _mod)
+    # The 7.0.x-style companion module, only when it is really present.
+    if not _mod.endswith('__mypyc'):
+        _companion = _mod + '__mypyc'
+        for _cand in os.listdir(chardet_pipeline_path):
+            if _cand.split('.')[0] == _companion:
+                chardet_pipeline_hiddenimports.append('chardet.pipeline.' + _companion)
+                break
+chardet_pipeline_hiddenimports = sorted(set(chardet_pipeline_hiddenimports))
+print('main.spec: chardet %s pipeline hidden imports -> %d module(s)'
+      % (getattr(chardet, '__version__', '?'), len(chardet_pipeline_hiddenimports)))
+
 # Always (re)compile translations from the .po sources so a release can never ship a
 # stale .mo. Pure standard library (no GNU gettext / Babel needed).
 try:
@@ -47,17 +70,7 @@ hidden_imports = [
     'vlc',
     'psutil',
     'cryptography',
-    'chardet.pipeline.ascii__mypyc',
-    'chardet.pipeline.confusion__mypyc',
-    'chardet.pipeline.escape__mypyc',
-    'chardet.pipeline.magic__mypyc',
-    'chardet.pipeline.orchestrator__mypyc',
-    'chardet.pipeline.statistical__mypyc',
-    'chardet.pipeline.structural__mypyc',
-    'chardet.pipeline.utf1632__mypyc',
-    'chardet.pipeline.utf8__mypyc',
-    'chardet.pipeline.validity__mypyc',
-]
+] + chardet_pipeline_hiddenimports
 
 # Explicitly add some submodules that PyInstaller might miss
 hidden_imports += [
