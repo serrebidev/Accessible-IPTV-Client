@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.109.1 - 2026-08-19
+
+- Discover chardet pipeline hidden imports instead of hard-coding them
+- Complete the translation audit and harden playback, casting, and updates
+- Pin changelog line endings
+
 ## v1.109.0 - 2026-07-30
 
 - Allow MAC-only Stalker portal accounts
