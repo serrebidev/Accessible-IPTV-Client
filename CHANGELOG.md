@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.110.0 - 2026-08-29
+
+- Add audio track selection and keep group-list focus
+
 ## v1.109.1 - 2026-08-19
 
 - Discover chardet pipeline hidden imports instead of hard-coding them
