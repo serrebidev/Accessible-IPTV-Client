@@ -175,6 +175,11 @@ class InternalPlayerFrame(wx.Frame):
         # Volume throttling state
         self._last_status_prefix = "Idle"
 
+        # Audio track selection state
+        self._wanted_audio_track_name: Optional[str] = None
+        self._audio_track_label = ""
+        self._audio_reapply_pending = False
+
         instance_opts = [
             "--quiet",
             "--no-video-title-show",
@@ -298,6 +303,12 @@ class InternalPlayerFrame(wx.Frame):
         m_play_pause = playback_menu.Append(wx.ID_ANY, _("Play/Pause") + "\tCtrl+P")
         m_stop = playback_menu.Append(wx.ID_ANY, _("Stop") + "\tCtrl+S")
         playback_menu.AppendSeparator()
+        self.audio_track_menu = wx.Menu()
+        self._audio_track_menu_map: Dict[int, int] = {}
+        self.Bind(wx.EVT_MENU_OPEN, self._on_any_menu_open)
+        self.Bind(wx.EVT_MENU, self._on_audio_track_menu_select)
+        playback_menu.AppendSubMenu(self.audio_track_menu, _("Audio Track") + "\tA")
+        playback_menu.AppendSeparator()
         m_cast = playback_menu.Append(wx.ID_ANY, _("Cast...") + "\tCtrl+C")
         m_full = playback_menu.Append(wx.ID_ANY, _("Toggle Full Screen") + "\tF11")
         playback_menu.AppendSeparator()
@@ -335,11 +346,16 @@ class InternalPlayerFrame(wx.Frame):
             self._manual_stop = False
             if stream_kind is None:
                 stream_kind = self._current_stream_kind
+            # Re-apply a previously chosen audio track once the stream resumes.
+            self._audio_reapply_pending = bool(self._wanted_audio_track_name)
         else:
             self._reconnect_attempts = 0
             self._xtream_refresh_count = 0
             self._last_restart_reason = ""
             self._gave_up = False
+            self._wanted_audio_track_name = None
+            self._audio_track_label = ""
+            self._audio_reapply_pending = False
         if stream_kind is None:
             stream_kind = "live"
         self._current_stream_kind = stream_kind
@@ -1304,8 +1320,12 @@ class InternalPlayerFrame(wx.Frame):
         real_prefix = prefix if prefix else self._last_status_prefix
         if prefix:
             self._last_status_prefix = prefix
-            
-        label = f"{real_prefix}{(' ' if real_prefix else '')}{buf_txt}{bitrate_txt}{vol_txt}"
+
+        audio_txt = ""
+        if getattr(self, "_audio_track_label", ""):
+            audio_txt = " | " + _("Audio: {name}").format(name=self._audio_track_label)
+
+        label = f"{real_prefix}{(' ' if real_prefix else '')}{buf_txt}{bitrate_txt}{vol_txt}{audio_txt}"
         self.status_label.SetLabel(label.strip())
 
     def _on_timer(self, _event: wx.TimerEvent) -> None:
@@ -1330,6 +1350,9 @@ class InternalPlayerFrame(wx.Frame):
                 self._xtream_refresh_count = 0
             elif state_key != "playing":
                 self._stall_ticks = 0
+
+        if state_key == "playing":
+            self._maybe_reapply_audio_track()
 
         self._monitor_playback_progress(now, state_key)
         xtream_live = self._current_stream_kind == "live" and self._looks_like_xtream_live_ts()
@@ -1443,6 +1466,9 @@ class InternalPlayerFrame(wx.Frame):
         if key == wx.WXK_F11:
             self._set_fullscreen(not self._fullscreen)
             return
+        if key == ord("A") and not event.ControlDown() and not event.AltDown():
+            self._cycle_audio_track()
+            return
         if key == wx.WXK_ESCAPE and self._fullscreen:
             self._set_fullscreen(False)
             return
@@ -1503,6 +1529,130 @@ class InternalPlayerFrame(wx.Frame):
             self.player.audio_set_volume(ival)
         except Exception:
             LOG.debug("InternalPlayerFrame._apply_volume: ignored exception", exc_info=True)
+
+    # -------------------------------------------------------------- audio track
+    @staticmethod
+    def _normalise_audio_tracks(description) -> List[Tuple[int, str]]:
+        """Turn a libVLC track description into filtered (id, name) pairs."""
+        tracks: List[Tuple[int, str]] = []
+        if not description:
+            return tracks
+        for entry in description:
+            try:
+                tid = int(entry[0])
+            except (TypeError, ValueError, IndexError):
+                continue
+            if tid < 0:
+                continue
+            name = ""
+            try:
+                if len(entry) > 1 and entry[1]:
+                    name = str(entry[1]).strip()
+            except Exception:
+                name = ""
+            if not name:
+                name = _("Track {id}").format(id=tid)
+            tracks.append((tid, name))
+        return tracks
+
+    @staticmethod
+    def _next_audio_track_id(tracks: List[Tuple[int, str]], current_id: Optional[int]) -> Optional[int]:
+        if not tracks:
+            return None
+        ids = [t[0] for t in tracks]
+        if current_id in ids:
+            idx = ids.index(current_id)
+            return ids[(idx + 1) % len(ids)]
+        return ids[0]
+
+    def _get_audio_tracks(self) -> List[Tuple[int, str]]:
+        try:
+            description = self.player.audio_get_track_description()
+        except Exception:
+            return []
+        return self._normalise_audio_tracks(description)
+
+    def _current_audio_track_id(self) -> Optional[int]:
+        try:
+            return self.player.audio_get_track()
+        except Exception:
+            return None
+
+    def _select_audio_track(self, track_id: int) -> None:
+        name = ""
+        for tid, tname in self._get_audio_tracks():
+            if tid == track_id:
+                name = tname
+                break
+        try:
+            self.player.audio_set_track(track_id)
+        except Exception:
+            LOG.debug("InternalPlayerFrame._select_audio_track: ignored exception", exc_info=True)
+            self._update_status_label(_("Audio track unavailable"))
+            return
+        if not name:
+            name = _("Track {id}").format(id=track_id)
+        self._wanted_audio_track_name = name
+        self._audio_track_label = name
+        self._audio_reapply_pending = False
+        self._update_status_label(_("Audio: {name}").format(name=name))
+
+    def _cycle_audio_track(self) -> None:
+        tracks = self._get_audio_tracks()
+        if not tracks:
+            self._update_status_label(_("No audio tracks available"))
+            return
+        if len(tracks) < 2:
+            self._update_status_label(_("Audio: {name}").format(name=tracks[0][1]))
+            return
+        nxt = self._next_audio_track_id(tracks, self._current_audio_track_id())
+        if nxt is not None:
+            self._select_audio_track(nxt)
+
+    def _on_any_menu_open(self, event: wx.MenuEvent) -> None:
+        try:
+            menu = event.GetMenu()
+        except Exception:
+            menu = None
+        if menu is self.audio_track_menu:
+            self._on_audio_track_menu_open(event)
+        event.Skip()
+
+    def _on_audio_track_menu_open(self, _event: wx.MenuEvent) -> None:
+        menu = self.audio_track_menu
+        for item in list(menu.GetMenuItems()):
+            menu.DestroyItem(item)
+        self._audio_track_menu_map = {}
+        tracks = self._get_audio_tracks()
+        if not tracks:
+            empty = menu.Append(wx.ID_ANY, _("No audio tracks available"))
+            empty.Enable(False)
+            return
+        current = self._current_audio_track_id()
+        for tid, name in tracks:
+            item = menu.AppendRadioItem(wx.ID_ANY, name)
+            item.Check(tid == current)
+            self._audio_track_menu_map[item.GetId()] = tid
+
+    def _on_audio_track_menu_select(self, event: wx.CommandEvent) -> None:
+        track_id = self._audio_track_menu_map.get(event.GetId())
+        if track_id is not None:
+            self._select_audio_track(track_id)
+
+    def _maybe_reapply_audio_track(self) -> None:
+        if not self._audio_reapply_pending or not self._wanted_audio_track_name:
+            self._audio_reapply_pending = False
+            return
+        self._audio_reapply_pending = False
+        wanted = self._wanted_audio_track_name
+        for tid, name in self._get_audio_tracks():
+            if name == wanted:
+                try:
+                    self.player.audio_set_track(tid)
+                except Exception:
+                    LOG.debug("InternalPlayerFrame._maybe_reapply_audio_track: ignored exception", exc_info=True)
+                self._audio_track_label = wanted
+                break
 
     def _set_fullscreen(self, enable: bool) -> None:
         enable = bool(enable)
