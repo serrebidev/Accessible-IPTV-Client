@@ -1,6 +1,11 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.110.1 - 2026-08-29
+
+- Tab moves focus from group list to channel list
+- Record audio-track re-apply and i18n line-ending learnings
+
 ## v1.110.0 - 2026-08-29
 
 - Add audio track selection and keep group-list focus
