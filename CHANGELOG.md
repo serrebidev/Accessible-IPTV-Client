@@ -1,6 +1,11 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.110.2 - 2026-08-29
+
+- Decouple category selection from channel-list activation
+- Record category list selection/activation decoupling
+
 ## v1.110.1 - 2026-08-29
 
 - Tab moves focus from group list to channel list
