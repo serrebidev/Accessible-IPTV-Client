@@ -393,9 +393,6 @@ class IPTVClient(wx.Frame):
         # batch-population state to avoid UI hangs
         self._populate_token = 0
         self._search_token = 0
-        # When navigating groups with Up/Down, keep focus in the group list
-        # instead of jumping to the channel list (see on_group_key).
-        self._suppress_channel_focus_on_group_nav = False
 
         # Timer for polling DB during EPG import so UI shows incoming data.
         self._epg_poll_timer: Optional[wx.Timer] = None
@@ -1128,7 +1125,7 @@ class IPTVClient(wx.Frame):
             self.show_player_on_enter_item.Check(self.show_player_on_enter)
             self.auto_check_updates_item.Check(self.auto_check_updates)
 
-        self.group_list.Bind(wx.EVT_LISTBOX, lambda _: self.on_group_select())
+        self.group_list.Bind(wx.EVT_LEFT_UP, self._on_group_activated)
         self.filter_box.Bind(wx.EVT_TEXT_ENTER, lambda _: self.apply_filter())
 
         entries = [
@@ -2439,23 +2436,27 @@ class IPTVClient(wx.Frame):
     def on_group_key(self, event):
         key = event.GetKeyCode()
         if key in (wx.WXK_UP, wx.WXK_DOWN):
-            # Let the native listbox move the selection (so screen readers
-            # announce it), but keep focus here instead of jumping to the
-            # channel list. Enter/Tab moves focus to the channel list explicitly.
-            self._suppress_channel_focus_on_group_nav = True
+            # Navigate the category list: let the native listbox move the
+            # selection (NVDA announces the new category) but do NOT repopulate
+            # the channel list or move focus. Enter/Tab activate the category.
             event.Skip()
-            wx.CallAfter(self._clear_group_nav_focus)
             return
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
-            if self.channel_list.GetCount() > 0:
-                self.channel_list.SetFocus()
+            self._activate_selected_group()
             return
         if key in (wx.WXK_LEFT, wx.WXK_RIGHT):
             return
         event.Skip()
 
-    def _clear_group_nav_focus(self):
-        self._suppress_channel_focus_on_group_nav = False
+    def _activate_selected_group(self):
+        """Switch the channel list to the selected category and move focus there."""
+        self.on_group_select()
+        if self.channel_list.GetCount() > 0:
+            self.channel_list.SetFocus()
+
+    def _on_group_activated(self, _event):
+        # Mouse activation of a category follows the same path as Enter/Tab.
+        self.on_group_select()
 
     def _append_search_results_chunked(self, channels: List[Dict[str, str]], token: int):
         # Virtual list: appending is O(1) regardless of count, so no chunking is needed.
@@ -2853,8 +2854,7 @@ class IPTVClient(wx.Frame):
         IPTVClient._replace_displayed(self, displayed)
         if displayed:
             self.channel_list.SetSelection(0)
-            if (self.IsShown() and not self.IsIconized()
-                    and not self._suppress_channel_focus_on_group_nav):
+            if self.IsShown() and not self.IsIconized():
                 self.channel_list.SetFocus()
             self.on_highlight()
         else:
@@ -3563,31 +3563,25 @@ class IPTVClient(wx.Frame):
         return ""
 
     def on_group_select(self):
-        try:
-            if getattr(self, "view_mode", "live") == "vod":
-                self._vod_on_group_select()
-                return
-            sel = self.group_list.GetSelection()
-            all_label = _("All Channels")
-            label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
-            # Prefer the parallel key list so group names containing " (" are not
-            # truncated by label round-tripping; fall back to the label only when
-            # the key list is out of sync.
-            if 0 <= sel < len(self._group_keys):
-                grp = self._group_keys[sel]
-            elif label.startswith(all_label) or label.startswith("All Channels"):
-                grp = "All Channels"
-            else:
-                grp = label.split(" (", 1)[0]
-            self.current_group = grp
+        if getattr(self, "view_mode", "live") == "vod":
+            self._vod_on_group_select()
+            return
+        sel = self.group_list.GetSelection()
+        all_label = _("All Channels")
+        label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
+        # Prefer the parallel key list so group names containing " (" are not
+        # truncated by label round-tripping; fall back to the label only when
+        # the key list is out of sync.
+        if 0 <= sel < len(self._group_keys):
+            grp = self._group_keys[sel]
+        elif label.startswith(all_label) or label.startswith("All Channels"):
+            grp = "All Channels"
+        else:
+            grp = label.split(" (", 1)[0]
+        self.current_group = grp
 
-            source = self.all_channels if grp == "All Channels" else self.channels_by_group.get(grp, [])
-            self._populate_channel_list_chunked(source)
-        finally:
-            # A single Up/Down press suppresses the focus jump exactly once;
-            # clear it here (and via CallAfter as a safety net) so mouse clicks
-            # and other selection changes keep moving focus normally.
-            self._suppress_channel_focus_on_group_nav = False
+        source = self.all_channels if grp == "All Channels" else self.channels_by_group.get(grp, [])
+        self._populate_channel_list_chunked(source)
 
     def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
         self._populate_token += 1
@@ -3604,11 +3598,8 @@ class IPTVClient(wx.Frame):
             return
 
         self.channel_list.SetSelection(0)
-        # Only set focus if window is visible (avoid stealing focus from tray),
-        # and keep focus in the group list while the user navigates groups with
-        # the Up/Down arrow keys.
-        if (self.IsShown() and not self.IsIconized()
-                and not self._suppress_channel_focus_on_group_nav):
+        # Only set focus if window is visible (avoid stealing focus from tray).
+        if self.IsShown() and not self.IsIconized():
             self.channel_list.SetFocus()
         self.on_highlight()
         self._maybe_autostart_epg_import()
