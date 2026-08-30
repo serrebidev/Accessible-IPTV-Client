@@ -2441,12 +2441,12 @@ class IPTVClient(wx.Frame):
         if key in (wx.WXK_UP, wx.WXK_DOWN):
             # Let the native listbox move the selection (so screen readers
             # announce it), but keep focus here instead of jumping to the
-            # channel list. Enter moves focus to the channel list explicitly.
+            # channel list. Enter/Tab moves focus to the channel list explicitly.
             self._suppress_channel_focus_on_group_nav = True
             event.Skip()
             wx.CallAfter(self._clear_group_nav_focus)
             return
-        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
             if self.channel_list.GetCount() > 0:
                 self.channel_list.SetFocus()
             return
