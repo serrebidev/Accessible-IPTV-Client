@@ -262,6 +262,16 @@ def test_add_provider_source_survives_a_dialog_that_cannot_open(manager):
     assert manager.lb.GetCount() == 0
 
 
+def test_wx_errors_are_not_shown_as_modal_dialogs(wx_app):
+    """The failure paths above reach ``wx.LogError``, whose GUI target is a message box.
+
+    conftest redirects wx logging to stderr, but constructing ``wx.App`` installs wx's own
+    GUI target over it -- and a queued error then blocks the interpreter at exit behind a
+    dialog with no event loop to show it, which looks exactly like a hung test run.
+    """
+    assert isinstance(wx.Log.GetActiveTarget(), wx.LogStderr)
+
+
 def test_add_provider_source_records_the_account(manager):
     class _Stub(_FakeModalDialog):
         def __init__(self, _parent):
