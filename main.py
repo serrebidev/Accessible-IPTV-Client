@@ -1595,6 +1595,38 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("No recordings are currently active."),
                           _("Recording"), wx.OK | wx.ICON_INFORMATION)
 
+    def _release_recordings_on_exit(self):
+        """Stop every recording for shutdown without truncating the output files.
+
+        ffmpeg is asked to quit and then left alone: finalizing a large MP4 means
+        rewriting the whole file to move the moov atom to the front, which takes far
+        longer than a window close should block for, and killing it partway through
+        is what leaves an unplayable recording. ffmpeg is a separate process and
+        finishes on its own. Anything it was told to do is therefore recorded here,
+        because nothing will be left running to report it afterwards.
+        """
+        self._suppress_recording_notifications = True
+        active = self.recorder.list_active()
+        self.recorder.stop_all(wait=True, detach=True)
+        scheduler = getattr(self, "dvr_scheduler", None)
+        if scheduler is None:
+            return
+        for rec in active:
+            try:
+                job_id = rec.metadata.get("dvr_job_id")
+            except Exception:
+                job_id = None
+            if not job_id:
+                continue
+            note = ("Stopped because the app exited; ffmpeg was left to finish writing "
+                    "the file." if rec.detached else "Stopped because the app exited.")
+            try:
+                scheduler.mark_finished(str(job_id), success=False,
+                                        output_path=rec.out_path, message=note)
+            except Exception:
+                LOG.debug("IPTVClient._release_recordings_on_exit: ignored exception",
+                          exc_info=True)
+
     def _on_recording_finished(self, rec, rc):
         job_id = None
         try:
@@ -1617,18 +1649,25 @@ class IPTVClient(wx.Frame):
                 wx.MessageBox(_("Recording saved:\n{path}").format(path=rec.out_path),
                               _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
             elif rec.stopped_by_user:
-                detail = "\n".join(rec.stderr_tail[-6:]) or _("No ffmpeg details were reported.")
                 wx.MessageBox(
                     _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
-                        code=rc, detail=detail, path=rec.out_path),
+                        code=rc, detail=self._recording_failure_detail(rec), path=rec.out_path),
                     _("Recording Warning"), wx.OK | wx.ICON_WARNING)
             else:
-                detail = "\n".join(rec.stderr_tail[-6:]) or _("No ffmpeg details were reported.")
                 wx.MessageBox(
                     _("Recording of {name} ended unexpectedly (code {code}).\n\n{detail}").format(
-                        name=rec.title, code=rc, detail=detail),
+                        name=rec.title, code=rc, detail=self._recording_failure_detail(rec)),
                     _("Recording Error"), wx.OK | wx.ICON_ERROR)
         wx.CallAfter(report)
+
+    def _recording_failure_detail(self, rec) -> str:
+        """What ffmpeg said, plus where the rest of what it said was written."""
+        lines = list(rec.stderr_tail[-6:]) or [_("No ffmpeg details were reported.")]
+        log_path = getattr(rec, "log_path", "")
+        if log_path and os.path.exists(log_path):
+            lines.append("")
+            lines.append(_("Full ffmpeg log:\n{path}").format(path=log_path))
+        return "\n".join(lines)
 
     def _set_recording_format(self, key: str):
         self.config["recording_format"] = normalize_recording_format(key)
@@ -2320,8 +2359,7 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         try:
-            self._suppress_recording_notifications = True
-            self.recorder.stop_all(wait=True)
+            self._release_recordings_on_exit()
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         # Mirror on_close cleanup so the EPG poll timer can't fire into a destroyed frame
@@ -2382,8 +2420,7 @@ class IPTVClient(wx.Frame):
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
-                self._suppress_recording_notifications = True
-                self.recorder.stop_all(wait=True)
+                self._release_recordings_on_exit()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             if self.caster:

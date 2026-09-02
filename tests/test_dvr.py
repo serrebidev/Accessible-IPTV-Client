@@ -267,3 +267,15 @@ def test_scheduled_recording_runs_end_to_end(tmp_path):
             scheduler.stop(wait=True)
             manager.stop_all(wait=True)
             httpd.shutdown()
+
+
+def test_stop_timeout_outlasts_the_recorder_finalize_budget():
+    """The scheduler must not call a recording failed while ffmpeg is still writing it.
+
+    A provider-quality MP4 finalizes by rewriting the whole file (+faststart), so the
+    recorder grants a budget that scales with the capture. If the scheduler gave up
+    first it would mark a perfectly good recording "Stop timed out."
+    """
+    assert dvr.STOP_TIMEOUT_SECONDS > recorder.FINALIZE_GRACE_SECONDS
+    # A multi-gigabyte capture, which is exactly the case that used to break.
+    assert dvr.STOP_TIMEOUT_SECONDS > 5 * 1024 ** 3 / recorder.FINALIZE_REWRITE_BYTES_PER_SECOND

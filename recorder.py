@@ -37,6 +37,98 @@ RECORDING_FORMATS: "Dict[str, tuple]" = {
 
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 
+# Formats whose muxer rewrites the whole output file when it closes. ``+faststart``
+# moves the MP4 moov atom in front of the media data, which means ffmpeg reads back
+# and rewrites every byte it just captured.
+FASTSTART_FORMATS = frozenset({"provider_mp4", "x264_mp4"})
+
+# How long ffmpeg may take to close its container after being asked to stop.
+#
+# This is not a formality. A provider-quality MP4 finalizes by writing the moov atom
+# and then rewriting the entire file to move it to the front, so the cost scales with
+# the recording: seconds on an internal SSD, many minutes on the external USB or
+# network drives recordings usually live on. Killing ffmpeg partway through leaves a
+# file that is ``ftyp`` followed by one enormous ``mdat`` and no moov atom at all --
+# "moov atom not found", unplayable, with every byte of a multi-hour capture stranded
+# inside it. So we wait for as long as the container can plausibly need, and escalate
+# only once ffmpeg is genuinely wedged.
+FINALIZE_GRACE_SECONDS = 30.0
+FINALIZE_REWRITE_BYTES_PER_SECOND = 8 * 1024 * 1024  # pessimistic: USB 2.0 / SMB share
+FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
+TERMINATE_GRACE_SECONDS = 15.0
+# On shutdown we ask ffmpeg to stop, wait briefly, then leave it alone. It is a separate
+# process and finishes the container on its own; blocking the GUI thread for the full
+# finalize timeout would look like a hang, and killing it would corrupt the recording.
+DETACH_WAIT_SECONDS = 5.0
+
+# ffmpeg's stderr for each recording is kept next to the recordings themselves, so a
+# capture that went wrong can still be diagnosed afterwards.
+RECORDING_LOG_DIRNAME = "logs"
+LOG_URL_PLACEHOLDER = "<stream url>"
+STDERR_TAIL_LINES = 12
+_LOG_TAIL_WINDOW_BYTES = 262144
+# ``-loglevel level+info`` prefixes every line with its severity.
+_PROBLEM_LINE_RE = re.compile(r"^\[(?:panic|fatal|error|warning)\]", re.IGNORECASE)
+
+
+def format_uses_faststart(fmt: str) -> bool:
+    return fmt in FASTSTART_FORMATS
+
+
+def finalize_timeout_seconds(fmt: str, out_path: str) -> float:
+    """Seconds to allow ffmpeg to finish writing ``out_path`` after a stop request."""
+    timeout = FINALIZE_GRACE_SECONDS
+    if format_uses_faststart(fmt):
+        try:
+            size = os.path.getsize(out_path)
+        except OSError:
+            size = 0
+        timeout += float(size) / FINALIZE_REWRITE_BYTES_PER_SECOND
+    return min(timeout, FINALIZE_TIMEOUT_CAP_SECONDS)
+
+
+def recording_log_path(out_dir: str, out_path: str) -> str:
+    """Where the full ffmpeg stderr for ``out_path`` is written."""
+    base = os.path.splitext(os.path.basename(out_path))[0]
+    return os.path.join(out_dir, RECORDING_LOG_DIRNAME, base + ".log")
+
+
+def redact_log(path: str, url: str) -> None:
+    """Replace the stream URL wherever ffmpeg echoed it into ``path``.
+
+    ffmpeg prints its input URL in the stream dump, and for Xtream Codes and Stalker
+    providers that URL carries the account's username and password. These logs exist
+    to be sent to somebody for diagnosis, so the credentials must not travel with them.
+    """
+    if not path or not url:
+        return
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+        needle = url.encode("utf-8", errors="replace")
+        if needle not in data:
+            return
+        with open(path, "wb") as handle:
+            handle.write(data.replace(needle, LOG_URL_PLACEHOLDER.encode("utf-8")))
+    except OSError:
+        LOG.debug("redact_log: ignored exception", exc_info=True)
+
+
+def read_log_problems(path: str, limit: int = STDERR_TAIL_LINES) -> List[str]:
+    """The last few warning/error lines of a recording log, for the finish dialog."""
+    if not path:
+        return []
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as handle:
+            if size > _LOG_TAIL_WINDOW_BYTES:
+                handle.seek(size - _LOG_TAIL_WINDOW_BYTES)
+            data = handle.read()
+    except OSError:
+        return []
+    lines = [line.strip() for line in data.decode("utf-8", errors="replace").splitlines()]
+    return [line for line in lines if _PROBLEM_LINE_RE.match(line)][-limit:]
+
 
 def get_ffmpeg_path():
     """Resolve ffmpeg lazily so importing recorder stays cheap at startup."""
@@ -110,7 +202,7 @@ def build_ffmpeg_command(
     if fmt not in RECORDING_FORMATS:
         fmt = DEFAULT_RECORDING_FORMAT
 
-    cmd: List[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "error", "-y"]
+    cmd: List[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "level+info", "-nostats", "-y"]
     # Reconnect/robustness for long-running HTTP(S) live captures.
     cmd += [
         "-rw_timeout", "15000000",
@@ -126,7 +218,13 @@ def build_ffmpeg_command(
         cmd += ["-t", str(float(duration))]
 
     if fmt == "provider_mp4":
-        cmd += ["-map", "0", "-c:v", "copy", "-c:s", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
+        # Only video and audio: MP4 cannot carry the DVB teletext/subtitle and data
+        # streams that IPTV transport streams routinely include, so "-map 0" with
+        # "-c:s copy" made ffmpeg fail at header write ("Could not find tag for codec
+        # ... not currently supported in container") and leave a 0-byte recording.
+        # MKV keeps everything; that is what provider_mkv is for.
+        cmd += ["-map", "0:v?", "-map", "0:a?", "-dn", "-sn",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k"]
     elif fmt == "provider_mkv":
         cmd += ["-map", "0", "-c", "copy"]
     elif fmt in ("x264_mp4", "x264_mkv"):
@@ -135,8 +233,6 @@ def build_ffmpeg_command(
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
         ]
-        if fmt == "x264_mp4":
-            cmd += ["-movflags", "+faststart"]
     elif fmt == "audio_wav":
         cmd += ["-vn", "-c:a", "pcm_s16le"]
     elif fmt == "audio_flac":
@@ -150,6 +246,9 @@ def build_ffmpeg_command(
     else:  # pragma: no cover - defensive, normalized upstream
         cmd += ["-map", "0", "-c", "copy"]
 
+    if format_uses_faststart(fmt):
+        cmd += ["-movflags", "+faststart"]
+
     cmd.append(out_path)
     return cmd
 
@@ -158,7 +257,8 @@ class Recording:
     """A single in-progress (or finished) recording."""
 
     def __init__(self, rec_id: int, key: str, url: str, title: str, fmt: str, out_path: str,
-                 process: "subprocess.Popen", metadata: Optional[Dict[str, object]] = None):
+                 process: "subprocess.Popen", metadata: Optional[Dict[str, object]] = None,
+                 log_path: str = "", command: Optional[List[str]] = None):
         self.id = rec_id
         self.key = key  # stable channel identity (resolved URL can change per resolve)
         self.url = url
@@ -171,6 +271,12 @@ class Recording:
         self.stopped_by_user = False
         self.stopping = False
         self.metadata = metadata or {}
+        self.log_path = log_path
+        self.command = list(command or [])
+        # Set when ffmpeg had to be killed before it finished writing the container,
+        # which is the one case where the output file is expected to be unplayable.
+        self.finalize_timed_out = False
+        self.detached = False
 
 
 class RecordingManager:
@@ -218,43 +324,66 @@ class RecordingManager:
         cmd = build_ffmpeg_command(get_ffmpeg_path(), url, out_path, fmt, headers, duration=duration)
         LOG.info("Starting recording: %s -> %s (%s)", display_name, out_path, fmt)
 
+        # ffmpeg writes its diagnostics straight into the log file rather than into a
+        # pipe we drain. That keeps the complete stderr for every recording, and it
+        # means the log survives -- and ffmpeg keeps running -- when the app exits
+        # while a capture is still finalizing.
+        log_path = recording_log_path(out_dir, out_path)
+        log_handle = self._open_log(log_path, cmd, url)
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
-        process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            creationflags=creation_flags,
-        )
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=log_handle if log_handle else subprocess.PIPE,
+                creationflags=creation_flags,
+            )
+        except Exception:
+            if log_handle:
+                log_handle.close()
+            raise
+        if log_handle:
+            # The child owns the descriptor now; ours would only pin the file open.
+            log_handle.close()
+        else:
+            log_path = ""
 
         with self._lock:
             rec_id = self._next_id
             self._next_id += 1
-            rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process, metadata)
+            rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process,
+                            metadata, log_path=log_path, command=cmd)
             self._recordings[rec_id] = rec
 
-        threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()
+        if not log_path:
+            threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()
         threading.Thread(target=self._watch, args=(rec, on_finish), daemon=True).start()
         return rec
 
-    def stop(self, rec_id: int, *, wait: bool = False) -> None:
+    def stop(self, rec_id: int, *, wait: bool = False, detach: bool = False) -> None:
         with self._lock:
             rec = self._recordings.get(rec_id)
         if rec:
-            self._graceful_stop(rec, wait=wait)
+            self._graceful_stop(rec, wait=wait, detach=detach)
 
-    def stop_key(self, key: str, *, wait: bool = False) -> int:
+    def stop_key(self, key: str, *, wait: bool = False, detach: bool = False) -> int:
         stopped = 0
         for rec in self.list_active():
             if rec.key == key:
-                self._graceful_stop(rec, wait=wait)
+                self._graceful_stop(rec, wait=wait, detach=detach)
                 stopped += 1
         return stopped
 
-    def stop_all(self, *, wait: bool = False) -> int:
+    def stop_all(self, *, wait: bool = False, detach: bool = False) -> int:
+        """Stop every active recording.
+
+        ``detach`` is for application shutdown: ffmpeg is asked to stop and then left
+        to finish writing its container by itself, however long that takes.
+        """
         active = self.list_active()
         for rec in active:
-            self._graceful_stop(rec, wait=wait)
+            self._graceful_stop(rec, wait=wait, detach=detach)
         return len(active)
 
     # -- internals ---------------------------------------------------------
@@ -268,6 +397,33 @@ class RecordingManager:
             counter += 1
         return candidate
 
+    def _open_log(self, log_path: str, cmd: List[str], url: str):
+        """Open the per-recording ffmpeg log, or return None if we cannot write one."""
+        try:
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            handle = open(log_path, "wb")
+        except Exception:
+            LOG.debug("RecordingManager._open_log: ignored exception", exc_info=True)
+            return None
+        try:
+            # The URL can carry provider credentials, so record the command with it
+            # masked; the log lives beside the recordings and may well be shared.
+            safe = []
+            for index, part in enumerate(cmd):
+                if part == url:
+                    safe.append(LOG_URL_PLACEHOLDER)
+                elif index and cmd[index - 1] == "-headers":
+                    safe.append("<headers>")
+                else:
+                    safe.append(part)
+            header = "# %s\n# ffmpeg %s\n\n" % (
+                time.strftime("%Y-%m-%d %H:%M:%S"), subprocess.list2cmdline(safe[1:]))
+            handle.write(header.encode("utf-8", errors="replace"))
+            handle.flush()
+        except Exception:
+            LOG.debug("RecordingManager._open_log: ignored exception", exc_info=True)
+        return handle
+
     def _drain_stderr(self, rec: Recording) -> None:
         proc = rec.process
         if not proc or not proc.stderr:
@@ -275,9 +431,9 @@ class RecordingManager:
         try:
             for raw in proc.stderr:
                 line = raw.decode("utf-8", errors="replace").strip()
-                if line:
+                if line and _PROBLEM_LINE_RE.match(line):
                     rec.stderr_tail.append(line)
-                    rec.stderr_tail = rec.stderr_tail[-12:]
+                    rec.stderr_tail = rec.stderr_tail[-STDERR_TAIL_LINES:]
         except Exception:
             LOG.debug("RecordingManager._drain_stderr: ignored exception", exc_info=True)
 
@@ -290,16 +446,19 @@ class RecordingManager:
                 LOG.debug("RecordingManager._watch: ignored exception", exc_info=True)
             _close_stdin(proc)
         rc = proc.returncode if proc else -1
+        if rec.log_path:
+            redact_log(rec.log_path, rec.url)
+            rec.stderr_tail = read_log_problems(rec.log_path)
         with self._lock:
             self._recordings.pop(rec.id, None)
-        LOG.info("Recording finished: %s (rc=%s)", rec.out_path, rc)
+        LOG.info("Recording finished: %s (rc=%s, log=%s)", rec.out_path, rc, rec.log_path or "-")
         if on_finish:
             try:
                 on_finish(rec, rc if rc is not None else -1)
             except Exception:
                 LOG.exception("Recording on_finish callback failed")
 
-    def _graceful_stop(self, rec: Recording, *, wait: bool = False) -> None:
+    def _graceful_stop(self, rec: Recording, *, wait: bool = False, detach: bool = False) -> None:
         proc = rec.process
         rec.stopped_by_user = True
         if not proc or proc.poll() is not None:
@@ -307,7 +466,8 @@ class RecordingManager:
         if rec.stopping:
             if wait:
                 try:
-                    proc.wait(timeout=8)
+                    proc.wait(timeout=DETACH_WAIT_SECONDS if detach
+                              else finalize_timeout_seconds(rec.fmt, rec.out_path))
                 except Exception:
                     LOG.debug("RecordingManager._graceful_stop: ignored exception", exc_info=True)
             return
@@ -315,7 +475,7 @@ class RecordingManager:
 
         def _finalize():
             # Ask ffmpeg to quit cleanly so the container is finalized (MP4 moov atom,
-            # MKV cues). Fall back to terminate/kill if it ignores us.
+            # MKV cues).
             try:
                 if proc.stdin:
                     proc.stdin.write(b"q\n")
@@ -323,14 +483,35 @@ class RecordingManager:
                     proc.stdin.close()
             except Exception:
                 LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
+
+            if detach:
+                # Shutdown. Give ffmpeg a moment for the common short recording, then
+                # leave it to finish on its own: it is a separate process and does not
+                # need us alive. Killing it here is exactly what strands a long MP4
+                # with no moov atom.
+                rec.detached = True
+                try:
+                    proc.wait(timeout=DETACH_WAIT_SECONDS)
+                    rec.detached = False
+                except Exception:
+                    LOG.info("Leaving ffmpeg to finish writing %s after shutdown", rec.out_path)
+                return
+
+            # Finalizing is disk-bound and scales with the size of the capture, so the
+            # budget is derived from the file rather than fixed. Terminating early here
+            # is what produced unplayable MP4s: ffmpeg had rewritten the mdat header but
+            # had not yet written the moov atom, so nothing could open the result.
+            timeout = finalize_timeout_seconds(rec.fmt, rec.out_path)
             try:
-                proc.wait(timeout=8)
+                proc.wait(timeout=timeout)
                 return
             except Exception:
-                LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)
+                LOG.warning("ffmpeg has not finalized %s after %.0fs; terminating it. "
+                            "The file may be incomplete.", rec.out_path, timeout)
+            rec.finalize_timed_out = True
             try:
                 proc.terminate()
-                proc.wait(timeout=5)
+                proc.wait(timeout=TERMINATE_GRACE_SECONDS)
                 return
             except Exception:
                 LOG.debug("RecordingManager._graceful_stop._finalize: ignored exception", exc_info=True)

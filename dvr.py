@@ -31,7 +31,12 @@ DONE_STATUSES = {STATUS_COMPLETED, STATUS_FAILED, STATUS_MISSED, STATUS_CANCELED
 
 DEFAULT_PRE_PADDING_MINUTES = 0
 DEFAULT_POST_PADDING_MINUTES = 2
-STOP_TIMEOUT_SECONDS = 120.0
+# How long a job may sit in "stopping" before it is written off. This has to clear
+# the time the recorder gives ffmpeg to close its container, which for a large MP4
+# means rewriting the whole file to move the moov atom to the front: minutes on the
+# external and network drives recordings usually live on. Two minutes declared a
+# recording failed while ffmpeg was still successfully finishing it.
+STOP_TIMEOUT_SECONDS = 1800.0
 
 
 def utc_now_ts() -> float:
