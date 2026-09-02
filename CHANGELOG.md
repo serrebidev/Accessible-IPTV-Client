@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.110.3 - 2026-09-02
+
+- Finish writing the MP4 before stopping FFmpeg
+
 ## v1.110.2 - 2026-08-29
 
 - Decouple category selection from channel-list activation
