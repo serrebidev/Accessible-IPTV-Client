@@ -56,6 +56,8 @@ from external_player import ExternalPlayerLauncher
 import recorder
 from recorder import RECORDING_FORMATS
 import dvr
+import favorites
+import power
 
 _INTERNAL_PLAYER_FRAME_CLASS = None
 _INTERNAL_PLAYER_IMPORT_ATTEMPTED = False
@@ -341,6 +343,12 @@ class IPTVClient(wx.Frame):
         self.all_channels: List[Dict[str, str]] = []
         self.displayed: List[Dict[str, str]] = []
         self.current_group = "All Channels"
+        # Favorite channels. The keys are provider-stable identities (see
+        # favorites.channel_key); the set is what the list rows are painted from,
+        # so it has to stay in step with the list.
+        self.favorite_keys: List[str] = favorites.normalize(self.config.get("favorites"))
+        self._favorite_key_set = set(self.favorite_keys)
+        self._favorites_cache: Optional[List[Dict[str, str]]] = None
         # Parallel list of real group keys, indexed like group_list, so group
         # names containing " (" round-trip correctly instead of being truncated.
         self._group_keys: List[str] = []
@@ -389,6 +397,17 @@ class IPTVClient(wx.Frame):
         self._suppress_recording_notifications = False
         self._dvr_dialog = None
         self.dvr_scheduler = None
+
+        # Shut down the computer once recording is finished (Recordings menu).
+        # ``_recorded_since_shutdown_armed`` is what stops the option powering the
+        # machine off the moment it is switched on: there has to be something to
+        # wait for first.
+        self._shutdown_after_recordings = bool(self.config.get("shutdown_after_recordings", False))
+        self._recorded_since_shutdown_armed = False
+        self._shutdown_dialog = None
+        # Set when we are exiting on purpose (an update, or our own shutdown), so
+        # on_close does not bounce the window into the tray instead of closing.
+        self._exit_forced = False
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -504,6 +523,203 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("IPTVClient._record_auto_update_check_attempt: ignored exception", exc_info=True)
 
+    # ------------------------------------------------------------------ #
+    # Favorites                                                          #
+    # ------------------------------------------------------------------ #
+    def _favorites_group_label(self, count: int) -> str:
+        return _("Favorites") + " ({count})".format(count=count)
+
+    def _favorite_channels(self) -> List[Dict[str, str]]:
+        """The favorited channels in playlist order, rebuilt only when it changed.
+
+        Scanning 300k channels is cheap but not free, and this is asked for on
+        every category refresh, so the result is cached until the favorites or the
+        playlist change.
+        """
+        if self._favorites_cache is None:
+            self._favorites_cache = favorites.filter_channels(self.all_channels, self.favorite_keys)
+        return self._favorites_cache
+
+    def _invalidate_favorites_cache(self):
+        self._favorites_cache = None
+
+    def _is_favorite(self, channel: Optional[Dict[str, str]]) -> bool:
+        key = favorites.channel_key(channel)
+        return bool(key) and key in self._favorite_key_set
+
+    def _source_for_group(self, group: str) -> List[Dict[str, str]]:
+        """The channels a category holds. "All Channels" and "Favorites" are sentinels."""
+        if group == favorites.FAVORITES_GROUP:
+            return self._favorite_channels()
+        if group == "All Channels":
+            return self.all_channels
+        return self.channels_by_group.get(group, [])
+
+    def _sync_favorites_from_config(self):
+        """Re-read favorites after the config has been reloaded from disk."""
+        keys = favorites.normalize(self.config.get("favorites"))
+        if keys == self.favorite_keys:
+            return
+        self.favorite_keys = keys
+        self._favorite_key_set = set(keys)
+        self._invalidate_favorites_cache()
+
+    def _decorate_channel_label(self, name: str, channel: Dict[str, str]) -> str:
+        """Row text for a channel, marking favorites outside the Favorites category.
+
+        A screen reader reads the row text, so the marker is a word rather than a
+        star glyph: NVDA says nothing at all for most symbols at the default
+        punctuation level. Inside the Favorites category every row would carry it,
+        which is pure noise, so it is left off there.
+        """
+        if not self._favorite_key_set or self.current_group == favorites.FAVORITES_GROUP:
+            return name
+        try:
+            if favorites.channel_key(channel) in self._favorite_key_set:
+                return _("{name} (Favorite)").format(name=name)
+        except Exception:
+            LOG.debug("IPTVClient._decorate_channel_label: ignored exception", exc_info=True)
+        return name
+
+    def _toggle_favorite_selected(self, *_args):
+        channel = self._selected_channel()
+        if not channel:
+            wx.MessageBox(_("Select a channel first."), _("Favorites"),
+                          wx.OK | wx.ICON_INFORMATION)
+            return
+        self._toggle_favorite(channel)
+
+    def _toggle_favorite(self, channel: Dict[str, str]):
+        """Add or remove a channel, then tell the user which it was."""
+        if not favorites.channel_key(channel):
+            wx.MessageBox(_("This entry cannot be added to Favorites."), _("Favorites"),
+                          wx.OK | wx.ICON_WARNING)
+            return
+        was_favorite = self._is_favorite(channel)
+        keys, is_favorite = favorites.toggle(self.favorite_keys, channel)
+        self.favorite_keys = keys
+        self._favorite_key_set = set(keys)
+        self.config["favorites"] = keys
+        save_config(self.config)
+        self._invalidate_favorites_cache()
+        self._update_favorites_group_row()
+        self._sync_favorite_menu_item()
+        name = self._channel_display_name(channel)
+        if was_favorite and self.current_group == favorites.FAVORITES_GROUP:
+            # The row this was on has just left the category being displayed.
+            self._rebuild_favorites_view(name)
+            return
+        self._announce_channel_row()
+        LOG.debug("Favorite %s: %s", "added" if is_favorite else "removed", name)
+
+    def _announce_channel_row(self):
+        """Re-fire focus on the current row so the screen reader re-reads it.
+
+        Changing a virtual row's text does not make NVDA say anything, and the
+        favorite marker is part of that text, so the focus event is the feedback
+        that the channel was added or removed.
+        """
+        announce = getattr(self.channel_list, "announce_item", None)
+        if not callable(announce):
+            return
+        try:
+            announce(self.channel_list.GetSelection())
+        except Exception:
+            LOG.debug("IPTVClient._announce_channel_row: ignored exception", exc_info=True)
+
+    def _rebuild_favorites_view(self, removed_name: str = ""):
+        """Refresh the Favorites category after a channel was removed from it."""
+        index = self.channel_list.GetSelection()
+        entries = [{"type": "channel", "data": ch} for ch in self._favorite_channels()]
+        self._populate_token += 1
+        IPTVClient._replace_displayed(self, entries)
+        if not entries:
+            self.epg_display.SetValue("")
+            self.url_display.SetValue("")
+            # Nothing left to focus here, so hand the user back to the categories.
+            self._refresh_group_ui()
+            wx.MessageBox(_("{name} was removed. Favorites is now empty.").format(name=removed_name),
+                          _("Favorites"), wx.OK | wx.ICON_INFORMATION)
+            return
+        self.channel_list.SetSelection(min(max(index, 0), len(entries) - 1))
+        self.on_highlight()
+        self._announce_channel_row()
+
+    def _update_favorites_group_row(self):
+        """Insert, relabel or drop the Favorites category without moving focus.
+
+        A full ``_refresh_group_ui`` would repopulate the channel list and pull
+        focus out of it, which is exactly what must not happen while the user is
+        marking favorites from the channel list.
+        """
+        if getattr(self, "view_mode", "live") != "live":
+            return
+        keys = self._group_keys
+        if not keys or keys[0] != "All Channels":
+            return  # still loading, or showing the placeholder row
+        count = len(self._favorite_channels())
+        try:
+            existing = keys.index(favorites.FAVORITES_GROUP)
+        except ValueError:
+            existing = -1
+        selection = self.group_list.GetSelection()
+        try:
+            if count and existing == -1:
+                self.group_list.Insert(self._favorites_group_label(count), 1)
+                keys.insert(1, favorites.FAVORITES_GROUP)
+                if selection != wx.NOT_FOUND and selection >= 1:
+                    selection += 1
+            elif count and existing != -1:
+                self.group_list.SetString(existing, self._favorites_group_label(count))
+            elif not count and existing != -1:
+                self.group_list.Delete(existing)
+                keys.pop(existing)
+                if selection != wx.NOT_FOUND and selection > existing:
+                    selection -= 1
+                elif selection == existing:
+                    selection = 0
+                    self.current_group = "All Channels"
+            if selection != wx.NOT_FOUND and 0 <= selection < self.group_list.GetCount():
+                self.group_list.SetSelection(selection)
+        except Exception:
+            LOG.debug("IPTVClient._update_favorites_group_row: ignored exception", exc_info=True)
+
+    def _favorite_action_label(self, channel: Optional[Dict[str, str]] = None) -> str:
+        """Whether the favorites action would add or remove, for the channel it will hit."""
+        if channel is None:
+            channel = self._selected_channel()
+        return _("Remove from Favorites") if self._is_favorite(channel) else _("Add to Favorites")
+
+    def _go_to_favorites(self, *_args):
+        """Move the category selection to Favorites and focus the channel list."""
+        if getattr(self, "view_mode", "live") != "live":
+            self._set_view_mode("live")
+        if not self._favorite_channels():
+            wx.MessageBox(
+                _("You have not added any favorites yet. Select a channel and press "
+                  "Ctrl+D to add it."),
+                _("Favorites"), wx.OK | wx.ICON_INFORMATION)
+            return
+        if favorites.FAVORITES_GROUP not in self._group_keys:
+            self._refresh_group_ui()
+        try:
+            index = self._group_keys.index(favorites.FAVORITES_GROUP)
+        except ValueError:
+            LOG.debug("IPTVClient._go_to_favorites: favorites category is not listed")
+            return
+        self.group_list.SetSelection(index)
+        self._activate_selected_group()
+
+    def _sync_favorite_menu_item(self):
+        """Keep the View menu entry saying what it will actually do."""
+        item = getattr(self, "favorite_menu_item", None)
+        if item is None:
+            return
+        try:
+            item.SetItemLabel(self._favorite_action_label() + "\tCtrl+D")
+        except Exception:
+            LOG.debug("IPTVClient._sync_favorite_menu_item: ignored exception", exc_info=True)
+
     def _channel_is_epg_exempt(self, channel: Dict[str, str]) -> bool:
         """Detect channels that typically have no EPG (e.g., 24/7 loops).
         We do NOT modify names; this only avoids unnecessary DB lookups/logs.
@@ -589,6 +805,17 @@ class IPTVClient(wx.Frame):
         from options import load_config
         self.config = load_config()
         self._sync_player_menu_from_config()
+        # The config was just replaced, so anything cached out of it is re-read.
+        self._sync_favorites_from_config()
+        self._sync_favorite_menu_item()
+        self._shutdown_after_recordings = self._bool_pref(
+            self.config.get("shutdown_after_recordings", False))
+        item = getattr(self, "_shutdown_after_item", None)
+        if item is not None:
+            try:
+                item.Check(self._shutdown_after_recordings)
+            except Exception:
+                LOG.debug("IPTVClient.on_menu_open: ignored exception", exc_info=True)
         if hasattr(self, "min_to_tray_item"):
             self.minimize_to_tray = bool(self.config.get("minimize_to_tray", False))
             self.min_to_tray_item.Check(self.minimize_to_tray)
@@ -700,6 +927,7 @@ class IPTVClient(wx.Frame):
                     return
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
+                self._invalidate_favorites_cache()
                 self._refresh_group_ui()
 
             wx.CallAfter(apply_prefill, prefilled_by_group, prefilled_all)
@@ -877,6 +1105,7 @@ class IPTVClient(wx.Frame):
                 return
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
             self.reload_epg_sources()
@@ -969,6 +1198,11 @@ class IPTVClient(wx.Frame):
                 view_vod.Check(self.view_mode == "vod")
                 self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), id=1301)
                 self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), id=1302)
+                view_menu.AppendSeparator()
+                view_menu.Append(1310, self._favorite_action_label() + "\tCtrl+D")
+                view_menu.Append(1311, _("Go to Favorites"))
+                self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, id=1310)
+                self.Bind(wx.EVT_MENU, self._go_to_favorites, id=1311)
                 menu.AppendSubMenu(view_menu, _("View"))
                 menu.AppendSeparator()
                 player_menu = wx.Menu()
@@ -985,6 +1219,8 @@ class IPTVClient(wx.Frame):
                 if self.default_player == "Custom":
                     customitem.Check(True)
                 menu.AppendSubMenu(player_menu, _("Media Player to Use"))
+                menu.Append(1312, _("Preferred Audio Track..."))
+                self.Bind(wx.EVT_MENU, self._show_audio_preference_dialog, id=1312)
                 # Recordings submenu (Linux)
                 rec_menu = wx.Menu()
                 self._populate_recordings_menu(rec_menu)
@@ -1062,9 +1298,16 @@ class IPTVClient(wx.Frame):
             self.view_vod_item = vm.AppendRadioItem(wx.ID_ANY, _("Video on Demand (Movies && Series)"))
             self.view_live_item.Check(self.view_mode == "live")
             self.view_vod_item.Check(self.view_mode == "vod")
+            vm.AppendSeparator()
+            # The label follows the selected channel, so it always says what
+            # activating it will do (see _sync_favorite_menu_item).
+            self.favorite_menu_item = vm.Append(wx.ID_ANY, _("Add to Favorites") + "\tCtrl+D")
+            self.goto_favorites_item = vm.Append(wx.ID_ANY, _("Go to Favorites"))
             mb.Append(vm, _("View"))
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), self.view_vod_item)
+            self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, self.favorite_menu_item)
+            self.Bind(wx.EVT_MENU, self._go_to_favorites, self.goto_favorites_item)
             om = wx.Menu()
             player_menu = wx.Menu()
             self.player_menu_items = []
@@ -1074,6 +1317,8 @@ class IPTVClient(wx.Frame):
                 self.player_menu_items.append((item, label))
             self.player_Custom = player_menu.AppendRadioItem(wx.ID_ANY, _("Custom Player..."))
             om.AppendSubMenu(player_menu, _("Media Player to Use"))
+            self.audio_preference_item = om.Append(wx.ID_ANY, _("Preferred Audio Track..."))
+            self.Bind(wx.EVT_MENU, self._show_audio_preference_dialog, self.audio_preference_item)
             # Language submenu (Windows/macOS)
             lang_menu = wx.Menu()
             self._lang_menu_items = {}
@@ -1142,6 +1387,7 @@ class IPTVClient(wx.Frame):
             (wx.ACCEL_CTRL, wx.WXK_DOWN, 4016), # Volume down (Ctrl+Down)
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('R'), 4017),  # Start/stop recording
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('A'), 4018),  # Account info
+            (wx.ACCEL_CTRL, ord('D'), 4019),  # Add/remove favorite
         ]
         atable = wx.AcceleratorTable(entries)
         self.SetAcceleratorTable(atable)
@@ -1158,6 +1404,7 @@ class IPTVClient(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4016)
         self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
         self.Bind(wx.EVT_MENU, self.show_account_info, id=4018)
+        self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, id=4019)
 
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
@@ -1200,6 +1447,9 @@ class IPTVClient(wx.Frame):
         menu = wx.Menu()
         play_item = menu.Append(wx.ID_ANY, _("Play"))
         menu.Bind(wx.EVT_MENU, lambda evt: self.play_selected(), play_item)
+
+        fav_item = menu.Append(wx.ID_ANY, self._favorite_action_label(channel))
+        menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._toggle_favorite(ch), fav_item)
 
         if self.recorder.is_recording(self._channel_record_key(channel)):
             rec_item = menu.Append(wx.ID_ANY, _("Stop Recording"))
@@ -1465,6 +1715,9 @@ class IPTVClient(wx.Frame):
                     dlg.refresh()
                 except Exception:
                     LOG.debug("IPTVClient._on_dvr_schedule_updated.refresh: ignored exception", exc_info=True)
+            # A canceled or completed job can be the last thing an armed shutdown
+            # was waiting for.
+            self._maybe_shutdown_after_recordings()
         wx.CallAfter(refresh)
 
     def _start_scheduled_recording(self, job: Dict[str, object]):
@@ -1486,6 +1739,7 @@ class IPTVClient(wx.Frame):
             metadata={"dvr_job_id": job.get("id")},
             on_finish=self._on_recording_finished,
         )
+        self._note_recording_started()
         wx.CallAfter(
             wx.MessageBox,
             _("Scheduled recording started:\n{title}").format(
@@ -1555,6 +1809,7 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("Could not start recording:\n{error}").format(error=err),
                           _("Recording Error"), wx.OK | wx.ICON_ERROR)
             return
+        self._note_recording_started()
         wx.MessageBox(
             _("Recording started ({fmt}):\n{path}").format(
                 fmt=self._recording_format_label(fmt), path=rec.out_path),
@@ -1594,6 +1849,128 @@ class IPTVClient(wx.Frame):
         else:
             wx.MessageBox(_("No recordings are currently active."),
                           _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    # ------------------------------------------------------------------ #
+    # Shut down the computer when recording is finished                  #
+    # ------------------------------------------------------------------ #
+    def _set_shutdown_after_recordings(self, enabled: bool):
+        self._shutdown_after_recordings = bool(enabled)
+        self.config["shutdown_after_recordings"] = self._shutdown_after_recordings
+        save_config(self.config)
+        item = getattr(self, "_shutdown_after_item", None)
+        if item is not None:
+            try:
+                item.Check(self._shutdown_after_recordings)
+            except Exception:
+                LOG.debug("IPTVClient._set_shutdown_after_recordings: ignored exception", exc_info=True)
+        if not self._shutdown_after_recordings:
+            self._recorded_since_shutdown_armed = False
+            return
+        # Switching this on while something is already recording or queued means
+        # that work is what we wait for. Switching it on with nothing running waits
+        # for the next recording to start, so the machine does not power off now.
+        scheduler = getattr(self, "dvr_scheduler", None)
+        jobs = scheduler.list_jobs(include_done=False) if scheduler is not None else []
+        self._recorded_since_shutdown_armed = bool(
+            self.recorder.list_active() or power.pending_job_count(jobs))
+
+    def _on_toggle_shutdown_after_recordings(self, event):
+        item = getattr(self, "_shutdown_after_item", None)
+        if platform.system() == "Linux":
+            # The Linux menu is a popup that is rebuilt on every open, and its check
+            # item has no dependable state by the time this runs -- the same reason
+            # on_toggle_min_to_tray branches on the platform instead of reading it.
+            wanted = not self._shutdown_after_recordings
+        else:
+            try:
+                wanted = bool(item.IsChecked()) if item is not None else not self._shutdown_after_recordings
+            except Exception:
+                LOG.debug("IPTVClient._on_toggle_shutdown_after_recordings: ignored exception", exc_info=True)
+                wanted = not self._shutdown_after_recordings
+        if wanted:
+            answer = wx.MessageBox(
+                _("The computer will shut down once every recording that is running "
+                  "or still scheduled has finished.\n\n"
+                  "You get a countdown you can cancel first, and this setting turns "
+                  "itself off again as soon as it has been used.\n\n"
+                  "Shut down the computer when recordings finish?"),
+                _("Shut Down After Recordings"), wx.YES_NO | wx.ICON_QUESTION)
+            if answer != wx.YES:
+                if item is not None:
+                    try:
+                        item.Check(False)
+                    except Exception:
+                        LOG.debug("IPTVClient._on_toggle_shutdown_after_recordings: ignored exception",
+                                  exc_info=True)
+                return
+        self._set_shutdown_after_recordings(wanted)
+
+    def _note_recording_started(self):
+        """Record that there is now something for an armed shutdown to wait for."""
+        if self._shutdown_after_recordings:
+            self._recorded_since_shutdown_armed = True
+
+    def _maybe_shutdown_after_recordings(self):
+        """Start the shutdown countdown if nothing is recording or queued."""
+        if not self._shutdown_after_recordings or self._shutdown_dialog is not None:
+            return
+        if getattr(self, "_suppress_recording_notifications", False):
+            return  # the app is exiting; that is not what this option is for
+        scheduler = getattr(self, "dvr_scheduler", None)
+        jobs = scheduler.list_jobs(include_done=False) if scheduler is not None else []
+        if not power.should_shutdown(
+            armed=self._shutdown_after_recordings,
+            recorded_something=self._recorded_since_shutdown_armed,
+            active_recordings=len(self.recorder.list_active()),
+            pending_jobs=power.pending_job_count(jobs),
+        ):
+            return
+        self._begin_shutdown_countdown()
+
+    def _begin_shutdown_countdown(self):
+        LOG.info("Recordings finished; starting the shutdown countdown")
+        # No parent: the main window may well be minimized to the tray at this
+        # point, and a dialog owned by a hidden window never appears.
+        self._shutdown_dialog = ShutdownCountdownDialog(
+            None,
+            on_cancel=self._cancel_pending_shutdown,
+            on_shutdown=self._shutdown_computer_now,
+        )
+        self._shutdown_dialog.Show()
+        self._shutdown_dialog.Raise()
+
+    def _destroy_shutdown_dialog(self):
+        dlg, self._shutdown_dialog = self._shutdown_dialog, None
+        if dlg is None:
+            return
+        try:
+            dlg.Destroy()
+        except Exception:
+            LOG.debug("IPTVClient._destroy_shutdown_dialog: ignored exception", exc_info=True)
+
+    def _cancel_pending_shutdown(self):
+        self._destroy_shutdown_dialog()
+        # The option goes off with the cancel: leaving it armed would spring the
+        # same countdown on the user again at the end of the next recording.
+        self._set_shutdown_after_recordings(False)
+        wx.MessageBox(
+            _("Shutdown canceled. Automatic shutdown after recordings is now off."),
+            _("Shut Down After Recordings"), wx.OK | wx.ICON_INFORMATION)
+
+    def _shutdown_computer_now(self):
+        self._destroy_shutdown_dialog()
+        self._set_shutdown_after_recordings(False)
+        try:
+            power.shutdown_computer()
+        except Exception as err:
+            wx.MessageBox(
+                _("Could not shut down the computer:\n{error}").format(error=err),
+                _("Shut Down After Recordings"), wx.OK | wx.ICON_ERROR)
+            return
+        # Close through our own handler so the tray icon, scheduler and any
+        # finalizing ffmpeg are dealt with properly rather than being cut off.
+        self._exit_forced = True
+        wx.CallAfter(self.Close, True)
 
     def _release_recordings_on_exit(self):
         """Stop every recording for shutdown without truncating the output files.
@@ -1644,6 +2021,9 @@ class IPTVClient(wx.Frame):
             )
         if getattr(self, "_suppress_recording_notifications", False):
             return
+        # Called from the recorder's watcher thread, so the check has to be
+        # marshalled onto the UI thread like the report below.
+        wx.CallAfter(self._maybe_shutdown_after_recordings)
         def report():
             if rc == 0:
                 wx.MessageBox(_("Recording saved:\n{path}").format(path=rec.out_path),
@@ -1725,6 +2105,11 @@ class IPTVClient(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._open_recordings_folder, open_item)
         folder_item = menu.Append(wx.ID_ANY, _("Recordings Folder..."))
         menu.Bind(wx.EVT_MENU, self._choose_recordings_folder, folder_item)
+        menu.AppendSeparator()
+        self._shutdown_after_item = menu.AppendCheckItem(
+            wx.ID_ANY, _("Shut Down the Computer When Recordings Finish"))
+        self._shutdown_after_item.Check(self._shutdown_after_recordings)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_shutdown_after_recordings, self._shutdown_after_item)
 
     def _show_about_dialog(self, _event=None):
         """Show About dialog with app info and links."""
@@ -2398,7 +2783,7 @@ class IPTVClient(wx.Frame):
             event.Skip()
 
     def on_close(self, event):
-        if self.minimize_to_tray and not self._update_install_pending:
+        if self.minimize_to_tray and not self._update_install_pending and not self._exit_forced:
             wx.CallAfter(self.show_tray_icon)
             event.Veto()
         else:
@@ -2592,8 +2977,7 @@ class IPTVClient(wx.Frame):
         populate_token = self._populate_token
         self._search_token += 1
         search_token = self._search_token
-        source = (self.all_channels if self.current_group == "All Channels"
-                  else self.channels_by_group.get(self.current_group, []))
+        source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
         self.epg_display.SetValue("")
         self.url_display.SetValue("")
@@ -2727,20 +3111,27 @@ class IPTVClient(wx.Frame):
 
             self.group_list.Append(_("All Channels") + f" ({len(self.all_channels)})")
             keys = ["All Channels"]
+            favorite_channels = self._favorite_channels()
+            if favorite_channels:
+                # Second, so it is one Down press from the top of the categories.
+                self.group_list.Append(self._favorites_group_label(len(favorite_channels)))
+                keys.append(favorites.FAVORITES_GROUP)
             for grp in sorted(self.channels_by_group):
                 self.group_list.Append(f"{grp} ({len(self.channels_by_group[grp])})")
                 keys.append(grp)
             self._group_keys = keys
-            
+
+            # Restore the selection by key, not by label: the sentinel categories
+            # are stored in English and displayed translated (and with a count), so
+            # matching on the visible string cannot find them.
             try:
-                current_idx = self.group_list.FindString(self.current_group)
-                if current_idx != wx.NOT_FOUND and self.current_group != "All Channels":
-                    for i in range(self.group_list.GetCount()):
-                        if self.group_list.GetString(i).startswith(f"{self.current_group} ("):
-                            current_idx = i
-                            break
-                self.group_list.SetSelection(current_idx if current_idx != wx.NOT_FOUND else 0)
+                current_idx = keys.index(self.current_group)
+            except ValueError:
+                current_idx = 0
+            try:
+                self.group_list.SetSelection(current_idx)
             except Exception:
+                LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
                 self.group_list.SetSelection(0)
         finally:
             try:
@@ -3617,7 +4008,7 @@ class IPTVClient(wx.Frame):
             grp = label.split(" (", 1)[0]
         self.current_group = grp
 
-        source = self.all_channels if grp == "All Channels" else self.channels_by_group.get(grp, [])
+        source = self._source_for_group(grp)
         self._populate_channel_list_chunked(source)
 
     def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
@@ -4167,9 +4558,50 @@ class IPTVClient(wx.Frame):
             variant_max_mbps=settings.variant_max_mbps,
             on_cast=self._cast_from_internal_player,
             on_close=self._on_internal_player_closed,
+            preferred_audio_tracks=list(self.config.get("preferred_audio_tracks") or []),
+            prefer_audio_description=self._bool_pref(self.config.get("prefer_audio_description", False)),
+            on_audio_preference=self._on_player_audio_preference,
         )
         self._internal_player_frame = frame
         return frame
+
+    def _on_player_audio_preference(self, track_name: str) -> None:
+        """Remember the audio track the user pinned from the player's menu."""
+        name = (track_name or "").strip()
+        if not name:
+            return
+        keywords = [
+            keyword for keyword in (self.config.get("preferred_audio_tracks") or [])
+            if str(keyword).lower() != name.lower()
+        ]
+        self.config["preferred_audio_tracks"] = [name] + keywords
+        save_config(self.config)
+        LOG.info("Preferred audio track set to %s", name)
+
+    def _show_audio_preference_dialog(self, _event=None):
+        dlg = AudioTrackPreferenceDialog(
+            self,
+            keywords=list(self.config.get("preferred_audio_tracks") or []),
+            prefer_audio_description=self._bool_pref(self.config.get("prefer_audio_description", False)),
+        )
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            keywords = dlg.get_keywords()
+            prefer_audio_description = dlg.get_prefer_audio_description()
+        finally:
+            dlg.Destroy()
+        self.config["preferred_audio_tracks"] = keywords
+        self.config["prefer_audio_description"] = prefer_audio_description
+        save_config(self.config)
+        # An open player picks the change up for the next channel it is given.
+        frame = getattr(self, "_internal_player_frame", None)
+        setter = getattr(frame, "set_preferred_audio_tracks", None) if frame is not None else None
+        if callable(setter):
+            try:
+                setter(keywords, prefer_audio_description=prefer_audio_description)
+            except Exception:
+                LOG.debug("IPTVClient._show_audio_preference_dialog: ignored exception", exc_info=True)
 
     def _launch_stream(
         self,
@@ -4813,6 +5245,147 @@ class CatchupDialog(wx.Dialog):
         return self.programmes[idx]
 
 
+class AudioTrackPreferenceDialog(wx.Dialog):
+    """Which audio track the built-in player should choose by itself.
+
+    Channels that carry an audio description track put it beside the ordinary one
+    and start on the ordinary one, so a viewer who needs the description has had to
+    switch by hand on every single channel. This is the setting that stops that.
+    """
+
+    _WRAP_WIDTH = 430
+
+    def __init__(self, parent, keywords=None, prefer_audio_description: bool = False):
+        super().__init__(parent, title=_("Preferred Audio Track"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        intro = wx.StaticText(self, label=_(
+            "When a channel offers more than one audio track, the built-in player can "
+            "switch to the track you want on its own."))
+        intro.Wrap(self._WRAP_WIDTH)
+        sizer.Add(intro, 0, wx.ALL, 10)
+
+        self.ad_check = wx.CheckBox(self, label=_(
+            "Prefer an audio description track when the channel has one"))
+        self.ad_check.SetValue(bool(prefer_audio_description))
+        self._label_control(self.ad_check, _("Prefer an audio description track when the channel has one"))
+        sizer.Add(self.ad_check, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        keywords_label = _("Preferred track names or languages, most wanted first:")
+        sizer.Add(wx.StaticText(self, label=keywords_label), 0, wx.LEFT | wx.RIGHT, 10)
+        self.keywords_txt = wx.TextCtrl(self, value=", ".join(str(k) for k in (keywords or [])))
+        self._label_control(self.keywords_txt, keywords_label)
+        sizer.Add(self.keywords_txt, 0, wx.EXPAND | wx.ALL, 10)
+
+        hint = wx.StaticText(self, label=_(
+            "Separate them with commas, for example: audio description, English. A "
+            "track is used when its name contains one of these words. Leave this empty "
+            "to keep whatever track the channel starts on."))
+        hint.Wrap(self._WRAP_WIDTH)
+        sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+        self.SetSizerAndFit(sizer)
+        self.CenterOnParent()
+        wx.CallAfter(self.ad_check.SetFocus)
+
+    @staticmethod
+    def _label_control(ctrl, label):
+        ctrl.SetName(label)
+        if hasattr(ctrl, "SetAccessibleName"):
+            ctrl.SetAccessibleName(label)
+
+    def get_keywords(self) -> List[str]:
+        from options import coerce_string_list
+
+        return coerce_string_list(self.keywords_txt.GetValue())
+
+    def get_prefer_audio_description(self) -> bool:
+        return bool(self.ad_check.GetValue())
+
+
+class ShutdownCountdownDialog(wx.Dialog):
+    """The last chance to stop the computer powering off after a recording.
+
+    Modeless and parentless on purpose: it has to appear even when the main window
+    is minimized to the tray, which is exactly where it will be at 3am.
+    """
+
+    COUNTDOWN_SECONDS = 60
+
+    def __init__(self, parent, on_cancel, on_shutdown, seconds: Optional[int] = None):
+        super().__init__(parent, title=_("Shut Down After Recordings"),
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
+        self._on_cancel_cb = on_cancel
+        self._on_shutdown_cb = on_shutdown
+        self._remaining = int(self.COUNTDOWN_SECONDS if seconds is None else seconds)
+        self._finished = False
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.message = wx.StaticText(self, label=self._message_text())
+        self.message.Wrap(400)
+        sizer.Add(self.message, 0, wx.ALL, 12)
+
+        buttons = wx.BoxSizer(wx.HORIZONTAL)
+        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel Shutdown"))
+        self.shutdown_btn = wx.Button(self, label=_("Shut Down Now"))
+        buttons.Add(self.cancel_btn, 0, wx.RIGHT, 8)
+        buttons.Add(self.shutdown_btn, 0)
+        sizer.Add(buttons, 0, wx.ALL | wx.ALIGN_RIGHT, 12)
+        self.SetSizerAndFit(sizer)
+
+        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel())
+        self.shutdown_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._shutdown())
+        self.Bind(wx.EVT_CLOSE, lambda _evt: self._cancel())
+        # Cancel is both the default and focused: a dialog that appeared on its own
+        # must not power the machine off because Enter or Escape was already on its
+        # way to something else.
+        self.cancel_btn.SetDefault()
+        self.cancel_btn.SetFocus()
+        self.Centre()
+
+        self._timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_tick, self._timer)
+        self._timer.Start(1000)
+
+    def _message_text(self) -> str:
+        # Phrased so the number never needs a plural form: the app ships no plural
+        # catalogues, so "1 seconds" would be unfixable in translation.
+        return _("All recordings have finished.\n\n"
+                 "The computer will shut down by itself. Seconds remaining: {seconds}").format(
+                     seconds=max(0, self._remaining))
+
+    def _on_tick(self, _event):
+        self._remaining -= 1
+        if self._remaining <= 0:
+            self._shutdown()
+            return
+        try:
+            self.message.SetLabel(self._message_text())
+        except Exception:
+            LOG.debug("ShutdownCountdownDialog._on_tick: ignored exception", exc_info=True)
+
+    def _stop_timer(self):
+        try:
+            self._timer.Stop()
+        except Exception:
+            LOG.debug("ShutdownCountdownDialog._stop_timer: ignored exception", exc_info=True)
+
+    def _cancel(self):
+        if self._finished:
+            return
+        self._finished = True
+        self._stop_timer()
+        self._on_cancel_cb()
+
+    def _shutdown(self):
+        if self._finished:
+            return
+        self._finished = True
+        self._stop_timer()
+        self._on_shutdown_cb()
+
+
 class ScheduledRecordingsDialog(wx.Dialog):
     """Dialog showing all DVR schedule entries."""
 
@@ -5176,8 +5749,27 @@ class _VirtualChannelList(wx.ListCtrl):
             if label is not None:
                 return label
             data = entry.get("data") or {}
-            return data.get("name", "")
+            name = data.get("name", "")
+            # getattr rather than a direct call: the non-GUI test doubles that stand
+            # in for the frame only supply displayed.
+            decorate = getattr(self._frame, "_decorate_channel_label", None)
+            return decorate(name, data) if callable(decorate) else name
         return ""
+
+    def announce_item(self, index: int):
+        """Re-fire focus for one row so a screen reader reads its new text.
+
+        Only the focus state is cycled. Cycling the selection too would re-run the
+        EPG lookup for the row and re-enter ``on_highlight`` for no benefit.
+        """
+        if index is None or not (0 <= index < self.GetItemCount()):
+            return
+        try:
+            self.RefreshItem(index)
+            self.SetItemState(index, 0, wx.LIST_STATE_FOCUSED)
+            self.SetItemState(index, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
+        except Exception:
+            LOG.debug("_VirtualChannelList.announce_item: ignored exception", exc_info=True)
 
     def _clear_active_item_state(self, minimum_index: int = 0):
         """Clear selected/focused state for active rows at or after an index."""

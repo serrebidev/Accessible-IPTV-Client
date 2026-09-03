@@ -726,6 +726,9 @@ class TestLargePlaylistHandling:
         client._should_run_epg_search = (
             lambda query, count: IPTVClient._should_run_epg_search(client, query, count)
         )
+        client._source_for_group = (
+            lambda group: IPTVClient._source_for_group(client, group)
+        )
 
         with patch("main.get_db_path", return_value=str(db_path)), \
              patch("main.EPGDatabase", FakeEPGDatabase), \

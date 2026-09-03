@@ -27,6 +27,11 @@ def test_virtual_channel_list(parent):
     frame = FakeFrame()
     lst = main._VirtualChannelList(parent, frame)
 
+    # A frame double with no favorites support at all: row text must still work.
+    frame.displayed = [{"type": "channel", "data": {"name": "plain"}}]
+    lst.set_virtual_count()
+    assert lst.OnGetItemText(0, 0) == "plain"
+
     # Grow to 100k, select+focus near the end, then shrink hard.
     frame.displayed = [{"type": "channel", "data": {"name": f"ch {i}"}} for i in range(100_000)]
     lst.set_virtual_count()
@@ -58,6 +63,27 @@ def test_virtual_channel_list(parent):
     lst.Clear()
     assert lst.GetItemCount() == 0
     assert lst.GetFocusedItem() == -1
+
+    # Favorite rows carry a spoken marker, and announce_item re-fires focus on the
+    # row so NVDA reads the new text. Neither may disturb the item count.
+    frame.displayed = [{"type": "channel", "data": {"name": f"ch {i}"}} for i in range(5)]
+    frame.current_group = "All Channels"
+    frame._favorite_key_set = {main.favorites.channel_key({"name": "ch 2"})}
+    frame._decorate_channel_label = lambda name, channel: main.IPTVClient._decorate_channel_label(
+        frame, name, channel)
+    lst.set_virtual_count()
+    assert lst.OnGetItemText(2, 0) != "ch 2", lst.OnGetItemText(2, 0)
+    assert lst.OnGetItemText(2, 0).startswith("ch 2")
+    assert lst.OnGetItemText(1, 0) == "ch 1"
+    lst.SetSelection(2)
+    lst.announce_item(2)
+    assert lst.GetItemCount() == 5
+    assert lst.GetFocusedItem() == 2, lst.GetFocusedItem()
+    lst.announce_item(999)  # out of range must be a no-op, not a crash
+    assert lst.GetItemCount() == 5
+    # Inside the Favorites category the marker is dropped: every row would have it.
+    frame.current_group = main.favorites.FAVORITES_GROUP
+    assert lst.OnGetItemText(2, 0) == "ch 2"
     print("virtual channel list: OK")
 
 

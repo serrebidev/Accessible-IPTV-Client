@@ -455,6 +455,10 @@ def load_config() -> Dict:
         "recording_format": DEFAULT_RECORDING_FORMAT,
         "recording_pre_padding_minutes": DEFAULT_RECORDING_PRE_PADDING_MINUTES,
         "recording_post_padding_minutes": DEFAULT_RECORDING_POST_PADDING_MINUTES,
+        "shutdown_after_recordings": False,
+        "favorites": [],
+        "preferred_audio_tracks": [],
+        "prefer_audio_description": False,
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():
@@ -470,6 +474,7 @@ def load_config() -> Dict:
                         data["internal_player_buffer_seconds"] = DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
                     data["recording_format"] = normalize_recording_format(data.get("recording_format"))
                     normalize_recording_padding(data)
+                    normalize_channel_and_audio_settings(data)
                     resolve_internal_player_settings(data)
                     _CONFIG_PATH = p
                     return data
@@ -482,12 +487,14 @@ def load_config() -> Dict:
     except Exception:
         _CONFIG_PATH = None
     normalize_recording_padding(default)
+    normalize_channel_and_audio_settings(default)
     return default
 
 def save_config(cfg: Dict):
     global _CONFIG_PATH
     cfg["recording_format"] = normalize_recording_format(cfg.get("recording_format"))
     normalize_recording_padding(cfg)
+    normalize_channel_and_audio_settings(cfg)
     resolve_internal_player_settings(cfg)
     path = get_config_write_target()
     try:
@@ -556,6 +563,59 @@ def normalize_recording_padding(cfg: Dict) -> None:
         cfg.get("recording_pre_padding_minutes"), DEFAULT_RECORDING_PRE_PADDING_MINUTES)
     cfg["recording_post_padding_minutes"] = _coerce_padding_minutes(
         cfg.get("recording_post_padding_minutes"), DEFAULT_RECORDING_POST_PADDING_MINUTES)
+
+def coerce_string_list(value) -> list:
+    """Coerce a stored setting into a clean, ordered, duplicate-free list of strings.
+
+    Hand-edited config files are the reason this exists: a user who writes a bare
+    string, a number or a null into ``preferred_audio_tracks`` should get a working
+    app and a sane value back, not a crash on the next startup.
+    """
+    if value is None:
+        return []
+    if isinstance(value, str):
+        items = value.split(",")
+    elif isinstance(value, (list, tuple, set)):
+        items = list(value)
+    else:
+        return []
+    out = []
+    seen = set()
+    for item in items:
+        if item is None or isinstance(item, (dict, list, tuple, set)):
+            continue
+        text = str(item).strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return out
+
+
+def coerce_bool(value, default: bool = False) -> bool:
+    """Read a boolean the way a hand-edited config file might have written it."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in ("1", "true", "yes", "on"):
+            return True
+        if text in ("0", "false", "no", "off", ""):
+            return False
+    return default
+
+
+def normalize_channel_and_audio_settings(cfg: Dict) -> None:
+    """Clamp the favorites, preferred-audio-track and auto-shutdown settings."""
+    if cfg is None:
+        return
+    cfg["favorites"] = coerce_string_list(cfg.get("favorites"))
+    cfg["preferred_audio_tracks"] = coerce_string_list(cfg.get("preferred_audio_tracks"))
+    cfg["prefer_audio_description"] = coerce_bool(cfg.get("prefer_audio_description"), False)
+    cfg["shutdown_after_recordings"] = coerce_bool(cfg.get("shutdown_after_recordings"), False)
+
 
 def _windows_videos_dir():
     """Resolve the Windows 'Videos' known folder, falling back to ~/Videos."""

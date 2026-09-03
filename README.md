@@ -34,10 +34,13 @@ Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files,
 - M3U/M3U+ playlists, Xtream Codes, and Stalker Portal sources.
 - Built-in player (libVLC via python-vlc) or an external player (VLC, MPC-HC, MPV, etc.).
 - Channel groups, fast channel search, and EPG search.
+- Favorites: mark channels with **Ctrl+D** and reach them from the **Favorites** category at the top of the category list.
+- A preferred audio track for the built-in player, under **Options > Preferred Audio Track** — pick an audio description track automatically wherever a channel offers one, or name the track/language you want.
 - XMLTV EPG support (`.xml` and `.xml.gz`), including large multi-million-row guides.
 - Catch-up/timeshift playback for channels that support it.
 - Account status under **File > Account Info** — expiry date, days remaining, trial flag and connection limits for Xtream Codes and Stalker Portal accounts, including accounts detected automatically from a playlist or stream URL.
 - Casting support, plus optional system tray minimize.
+- Recording and DVR scheduling, with an optional **Recordings > Shut Down the Computer When Recordings Finish** for overnight captures.
 - Multilingual interface (14 languages) with automatic OS-language detection and a manual selector under **Options > Language**.
 - Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update.
 
@@ -94,6 +97,8 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 - **Ctrl+E** — EPG Manager
 - **Ctrl+I** — Import EPG to database
 - **Ctrl+Shift+A** — Account Info
+- **Ctrl+D** — Add the selected channel to Favorites, or remove it
+- **Ctrl+Shift+R** — Start recording the selected channel
 - **Ctrl+Q** — Exit
 - **Enter** — Play selected channel
 - **Context Menu / Apps key** — Channel options (including Catch-up if available)
@@ -103,9 +108,28 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 - **Space** — Play/Pause
 - **Up / Down** — Adjust volume (2% steps)
 - **Ctrl+Up / Ctrl+Down** — Adjust volume (5% steps)
+- **A** — Next audio track
 - **F11** — Toggle fullscreen
 - **Escape** — Exit fullscreen
 - **Tab** — Navigate between controls
+
+## Favorites
+
+Press **Ctrl+D** on a channel to mark it, or use the context menu / **View > Add to Favorites**. Marked channels appear under **Favorites**, the second category in the category list, and are read out as "(Favorite)" elsewhere in the list. Favorites are stored in `iptvclient.conf` by provider and channel id, so they survive a playlist refresh; nothing about your account is stored with them.
+
+## Preferred audio track
+
+Channels that carry an audio description track usually start on the ordinary one, which means switching by hand on every channel. **Options > Preferred Audio Track** fixes that:
+
+- **Prefer an audio description track when the channel has one** matches the wording providers actually use, in several languages ("audio description", "AD", "Audiodeskription", "Hörfilm", and so on).
+- The text field takes your own track names or languages, most wanted first, separated by commas.
+- In the player, **Playback > Audio Track > Always Prefer This Audio Track** pins whatever you are listening to right now.
+
+The chosen track is re-applied after a reconnect, and a track you pick by hand always wins for the channel you are watching. Press **A** in the player to cycle tracks as before.
+
+## Shutting down after recordings
+
+**Recordings > Shut Down the Computer When Recordings Finish** powers the machine off once every running and scheduled recording is done, which is what you want for a late-night capture. It never fires while something is still recording or waiting in the schedule, it shows a 60-second countdown you can cancel first, and it turns itself off once it has been used or canceled, so it can never surprise you twice.
 
 ## EPG notes
 
