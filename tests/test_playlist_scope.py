@@ -63,7 +63,15 @@ class TestScopeHelpers:
         assert main._source_scope_id({"id": "p1"}) == "p1"
         assert main._source_scope_id({"provider_id": "p2"}) == "p2"
         assert main._source_scope_id({}) == ""
-        assert main._source_scope_id("http://example.com/x.m3u") == ""
+        assert main._source_scope_id("http://example.com/x.m3u").startswith("m3u:")
+
+    def test_plain_sources_are_selectable_and_have_distinct_private_ids(self):
+        sources = ["https://example.com/a.m3u?token=secret", "C:/lists/b.m3u"]
+        assert main._tagged_sources(sources) == sources
+        ids = [main._source_scope_id(src) for src in sources]
+        assert ids[0] != ids[1]
+        assert "secret" not in ids[0]
+        assert ids[0] == main._source_scope_id(sources[0])
 
     def test_client_pid_scope(self):
         assert main._client_pid_scope("prov-123", "prov-123") is True

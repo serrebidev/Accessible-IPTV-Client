@@ -64,6 +64,56 @@ def test_stalker_dialog_builds_every_field(stalker):
     assert width > 100 and height > 100
 
 
+@pytest.mark.parametrize("manager_class", [playlist.PlaylistManagerDialog, playlist.EPGManagerDialog])
+def test_source_names_survive_reopen_without_changing_source(wx_app, monkeypatch, manager_class):
+    source = "https://example.com/source"
+    names = {}
+    answer = ["My source"]
+
+    class Entry:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def ShowModal(self):
+            return wx.ID_OK
+        def GetValue(self):
+            return answer[0]
+
+    monkeypatch.setattr(wx, "TextEntryDialog", Entry)
+    dlg = manager_class(None, [source], names)
+    try:
+        dlg.OnRename(None)
+        assert dlg.lb.GetString(0) == "My source"
+        assert dlg.GetResult() == [source]
+        assert names == {}
+        saved = dlg.GetNames()
+    finally:
+        dlg.Destroy()
+    reopened = manager_class(None, [source], saved)
+    try:
+        assert reopened.lb.GetString(0) == "My source"
+        answer[0] = " "
+        reopened.OnRename(None)
+        assert reopened.lb.GetString(0) == source
+        assert reopened.GetNames() == {}
+    finally:
+        reopened.Destroy()
+
+
+def test_provider_names_are_isolated_until_manager_is_accepted(wx_app):
+    source = {"type": "xtream", "id": "one", "name": "Original"}
+    dlg = PlaylistManagerDialog(None, [source])
+    try:
+        dlg.playlist_sources[0]["name"] = "Edited"
+        assert source["name"] == "Original"
+        assert dlg.GetResult()[0]["name"] == "Edited"
+    finally:
+        dlg.Destroy()
+
+
 def test_stalker_dialog_marks_credentials_optional(stalker):
     assert stalker.user_ctrl.GetName() == "Optional portal account username"
     assert stalker.pass_ctrl.GetName() == "Optional portal account password"

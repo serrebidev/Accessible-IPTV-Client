@@ -98,6 +98,10 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 
 ## Current Learnings
 
+- M3U and EPG display names are stored in `playlist_names` / `epg_names` mappings keyed by `playlist.source_name_key()` (SHA-256 of the original source). Keep source strings intact for existing loaders/caches. Provider names remain in their source dictionaries. Managers copy editable state so Cancel cannot change the live configuration; names are accepted with `GetNames()` alongside `GetResult()`.
+
+- Playlist scope must include plain M3U URL/file strings using stable hashed IDs as well as provider IDs. Associate each completed playlist future with its actual source, and tag both cached and fetched channels; never use a leftover loop variable. Category counts and rows must use the scoped sources. The browsing Tab cycle is Playlist view, categories, channels, reversed by Shift+Tab; creating the combo before the categories also preserves native control order. Run `tools/smoke_playlist_navigation.py` after changing this wiring.
+
 - On Python 3.14, `platform.system()` can fall back to a subprocess on Windows. Do not call it at module import time; use `sys.platform` for import-time OS detection so importing `main.py` remains subprocess-free.
 - In the current Windows tooling, plain `rtk pytest ...` can incorrectly report that no tests were collected, while direct RTK passthrough invocations can surface a false nonzero wrapper status after a passing run. Use `rtk proxy cmd /d /c "python -m pytest ... & echo PYTEST_EXIT:%ERRORLEVEL%"` and require both pytest's pass summary and `PYTEST_EXIT:0`.
 - Windows installer builds use Inno Setup with a `.windows-installed` marker in Program Files. Installed/runtime mutable state belongs under `%APPDATA%\AccessibleIPTVClient`; Program Files should contain only application binaries and bundled assets, and installed auto-updates should use the signed setup EXE rather than replacing Program Files directly.

@@ -2481,11 +2481,54 @@ else:
         def set_progress(self, *_args, **_kwargs):
             return None
 
+def source_name_key(source):
+    """Identify a URL/file label without storing credentials in mapping keys."""
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()
+
+
+def normalize_source_names(names):
+    if not isinstance(names, dict):
+        return {}
+    return {key: value.strip() for key, value in names.items()
+            if isinstance(key, str) and isinstance(value, str) and value.strip()}
+
+
+class _SourceNamesMixin:
+    def OnRename(self, _event):
+        index = self.lb.GetSelection()
+        if index == wx.NOT_FOUND:
+            return
+        sources = getattr(self, "playlist_sources", None)
+        if sources is None:
+            sources = self.epg_sources
+        source = sources[index]
+        current = (source.get("name", "") if isinstance(source, dict)
+                   else self.source_names.get(source_name_key(source), ""))
+        with wx.TextEntryDialog(self, _("Name (leave blank to use the default)"),
+                                _("Rename Selected"), value=current) as dlg:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            name = dlg.GetValue().strip()
+        if isinstance(source, dict):
+            source["name"] = name
+        elif name:
+            self.source_names[source_name_key(source)] = name
+        else:
+            self.source_names.pop(source_name_key(source), None)
+        self.lb.SetString(index, self._format_source_label(source))
+        self.lb.SetSelection(index)
+        self.lb.SetFocus()
+
+    def GetNames(self):
+        return dict(self.source_names)
+
+
 if WX_AVAILABLE:
-    class EPGManagerDialog(wx.Dialog):  # type: ignore[misc]
-        def __init__(self, parent, epg_sources):
+    class EPGManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
+        def __init__(self, parent, epg_sources, source_names=None):
             super().__init__(parent, title=_("EPG Manager"), size=(600, 300))
             self.epg_sources = epg_sources.copy()
+            self.source_names = normalize_source_names(source_names)
             self._build_ui()
             self.CenterOnParent()
             self.Layout()
@@ -2497,12 +2540,13 @@ if WX_AVAILABLE:
             self.add_file_btn = wx.Button(panel, label=_("Add File"))
             self.add_url_btn = wx.Button(panel, label=_("Add URL"))
             self.remove_btn = wx.Button(panel, label=_("Remove Selected"))
-            for btn in (self.add_file_btn, self.add_url_btn, self.remove_btn):
+            self.rename_btn = wx.Button(panel, label=_("Rename Selected"))
+            for btn in (self.add_file_btn, self.add_url_btn, self.rename_btn, self.remove_btn):
                 btn_sizer.Add(btn, 0, wx.ALL, 2)
             main_sizer.Add(btn_sizer, 0, wx.EXPAND)
             self.lb = wx.ListBox(panel, style=wx.LB_SINGLE)
             for src in self.epg_sources:
-                self.lb.Append(src)
+                self.lb.Append(self._format_source_label(src))
             if self.epg_sources:
                 self.lb.SetSelection(0)
             main_sizer.Add(self.lb, 1, wx.EXPAND | wx.ALL, 5)
@@ -2516,6 +2560,10 @@ if WX_AVAILABLE:
             self.add_file_btn.Bind(wx.EVT_BUTTON, self.OnAddFile)
             self.add_url_btn.Bind(wx.EVT_BUTTON, self.OnAddURL)
             self.remove_btn.Bind(wx.EVT_BUTTON, self.OnRemove)
+            self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
+
+        def _format_source_label(self, src):
+            return self.source_names.get(source_name_key(src), src)
 
         def OnAddFile(self, _event):
             wildcard = "|".join([
@@ -2527,7 +2575,8 @@ if WX_AVAILABLE:
                 if dlg.ShowModal() == wx.ID_OK:
                     path = dlg.GetPath()
                     self.epg_sources.append(path)
-                    self.lb.Append(path)
+                    self.lb.Append(self._format_source_label(path))
+                    self.lb.SetSelection(len(self.epg_sources) - 1)
 
         def OnAddURL(self, _event):
             with wx.TextEntryDialog(self, _("Enter EPG XML URL")) as dlg:
@@ -2535,7 +2584,8 @@ if WX_AVAILABLE:
                     url = dlg.GetValue().strip()
                     if url:
                         self.epg_sources.append(url)
-                        self.lb.Append(url)
+                        self.lb.Append(self._format_source_label(url))
+                        self.lb.SetSelection(len(self.epg_sources) - 1)
 
         def OnRemove(self, _):
             i = self.lb.GetSelection()
@@ -2554,10 +2604,12 @@ else:
             return []
 
 if WX_AVAILABLE:
-    class PlaylistManagerDialog(wx.Dialog):  # type: ignore[misc]
-        def __init__(self, parent, playlist_sources):
+    class PlaylistManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
+        def __init__(self, parent, playlist_sources, source_names=None):
             super().__init__(parent, title=_("Playlist Manager"), size=(600, 300))
-            self.playlist_sources = playlist_sources.copy()
+            self.playlist_sources = [dict(src) if isinstance(src, dict) else src
+                                     for src in playlist_sources]
+            self.source_names = normalize_source_names(source_names)
             self._build_ui()
             self.CenterOnParent()
             self.Layout()
@@ -2565,13 +2617,14 @@ if WX_AVAILABLE:
         def _build_ui(self):
             panel = wx.Panel(self)
             main_sizer = wx.BoxSizer(wx.VERTICAL)
-            btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            btn_sizer = wx.WrapSizer(wx.HORIZONTAL)
             self.add_file_btn = wx.Button(panel, label=_("Add File"))
             self.add_url_btn = wx.Button(panel, label=_("Add URL"))
             self.add_xtream_btn = wx.Button(panel, label=_("Add Xtream Codes"))
             self.add_stalker_btn = wx.Button(panel, label=_("Add Stalker Portal"))
             self.remove_btn = wx.Button(panel, label=_("Remove Selected"))
-            for btn in (self.add_file_btn, self.add_url_btn, self.add_xtream_btn, self.add_stalker_btn, self.remove_btn):
+            self.rename_btn = wx.Button(panel, label=_("Rename Selected"))
+            for btn in (self.add_file_btn, self.add_url_btn, self.add_xtream_btn, self.add_stalker_btn, self.rename_btn, self.remove_btn):
                 btn_sizer.Add(btn, 0, wx.ALL, 2)
             main_sizer.Add(btn_sizer, 0, wx.EXPAND)
             self.lb = wx.ListBox(panel, style=wx.LB_SINGLE)
@@ -2592,6 +2645,7 @@ if WX_AVAILABLE:
             self.add_xtream_btn.Bind(wx.EVT_BUTTON, self.OnAddXtream)
             self.add_stalker_btn.Bind(wx.EVT_BUTTON, self.OnAddStalker)
             self.remove_btn.Bind(wx.EVT_BUTTON, self.OnRemove)
+            self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
 
         def OnAddFile(self, _event):
             wildcard = "|".join([
@@ -2603,6 +2657,7 @@ if WX_AVAILABLE:
                     path = dlg.GetPath()
                     self.playlist_sources.append(path)
                     self.lb.Append(self._format_source_label(path))
+                    self.lb.SetSelection(len(self.playlist_sources) - 1)
 
         def OnAddURL(self, _event):
             with wx.TextEntryDialog(self, _("Enter M3U URL")) as dlg:
@@ -2611,6 +2666,7 @@ if WX_AVAILABLE:
                     if url:
                         self.playlist_sources.append(url)
                         self.lb.Append(self._format_source_label(url))
+                        self.lb.SetSelection(len(self.playlist_sources) - 1)
 
         def OnAddXtream(self, _):
             self._add_provider_source(XtreamCodesDialog)
@@ -2652,7 +2708,7 @@ if WX_AVAILABLE:
                 if stype == "stalker":
                     return _("Stalker Portal – {name}").format(name=name)
                 return _("Provider – {name}").format(name=name)
-            return src
+            return self.source_names.get(source_name_key(src), src)
 
         def GetResult(self):
             return self.playlist_sources

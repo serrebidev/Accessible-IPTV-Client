@@ -44,6 +44,7 @@ from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
     epg_database_has_usable_data
 )
+from playlist import source_name_key, normalize_source_names
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
     StalkerPortalClient, StalkerPortalConfig,
@@ -73,6 +74,8 @@ def _source_scope_id(src) -> str:
     """The stable id that tags a playlist's channels for the scope filter."""
     if isinstance(src, dict):
         return str(src.get("id") or src.get("provider_id") or "")
+    if isinstance(src, str) and src.strip():
+        return "m3u:" + hashlib.sha256(src.encode("utf-8")).hexdigest()
     return ""
 
 
@@ -114,7 +117,7 @@ def _tagged_sources(sources) -> list:
     promise "only this playlist" and then deliver everything.
     """
     return [src for src in (sources or [])
-            if isinstance(src, dict) and _source_scope_id(src)]
+            if _source_scope_id(src)]
 
 
 class InternalPlayerUnavailableError(RuntimeError):
@@ -624,6 +627,14 @@ class IPTVClient(wx.Frame):
 
     def _scope_choice_label(self, src: dict) -> str:
         """The combo label for a playlist: what the Playlist Manager shows."""
+        if isinstance(src, str):
+            name = normalize_source_names(self.config.get("playlist_names")).get(source_name_key(src))
+            if name:
+                return name
+            if src.startswith(("http://", "https://")):
+                parsed = urllib.parse.urlsplit(src)
+                return parsed.hostname or _("Playlist")
+            return os.path.basename(src)
         stype = (src.get("type") or "").lower()
         name = src.get("name") or src.get("username") or src.get("base_url") or _("Provider")
         if stype == "xtream":
@@ -677,6 +688,8 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("IPTVClient.on_playlist_scope_changed: ignored exception", exc_info=True)
         self._refresh_group_ui()
+        if hasattr(self.playlist_scope_combo, "SetFocus"):
+            self.playlist_scope_combo.SetFocus()
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
@@ -1051,15 +1064,13 @@ class IPTVClient(wx.Frame):
             prefill_loaded[parsed_cache] = (stored_hash, cached)
             # Tag each channel with the playlist it came from so the playlist
             # scope combo can show a single playlist's categories.
-            scope_id = None
-            if isinstance(src, dict):
-                scope_id = src.get("id") or src.get("provider_id") or ""
+            scope_id = _source_scope_id(src)
             for ch in cached:
-                key = (ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
+                key = (scope_id, ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
                 if key in prefill_seen:
                     continue
                 if scope_id:
-                    ch.setdefault("playlist-id", scope_id)
+                    ch["playlist-id"] = scope_id
                 prefill_seen.add(key)
                 grp = ch.get("group") or "Uncategorized"
                 prefilled_by_group.setdefault(grp, []).append(ch)
@@ -1227,8 +1238,9 @@ class IPTVClient(wx.Frame):
         worker_cap = max(2, cpu_count // 2)
         max_workers = min(source_count if source_count else 1, worker_cap, 4)
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(fetch_and_process_playlist, src) for src in playlist_sources]
+            futures = {executor.submit(fetch_and_process_playlist, src): src for src in playlist_sources}
             for future in concurrent.futures.as_completed(futures):
+                src = futures[future]
                 res = future.result()
                 if res["error"]:
                     continue
@@ -1242,16 +1254,15 @@ class IPTVClient(wx.Frame):
                         provider_epg_sources.append(epg)
                 
                 for ch in res["channels"]:
-                    key = (ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
+                    scope_id = _source_scope_id(src)
+                    key = (scope_id, ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
                     if key in seen_channel_keys:
                         continue
                     seen_channel_keys.add(key)
                     # Remember which playlist each channel belongs to so the
                     # playlist scope combo can filter categories per playlist.
-                    if isinstance(src, dict):
-                        scope_id = src.get("id") or src.get("provider_id") or ""
-                        if scope_id:
-                            ch.setdefault("playlist-id", scope_id)
+                    if scope_id:
+                        ch["playlist-id"] = scope_id
                     grp = ch.get("group") or "Uncategorized"
                     channels_by_group.setdefault(grp, []).append(ch)
                     all_channels.append(ch)
@@ -1304,16 +1315,18 @@ class IPTVClient(wx.Frame):
         hs = wx.BoxSizer(wx.HORIZONTAL)
         vs_l = wx.BoxSizer(wx.VERTICAL)
         vs_r = wx.BoxSizer(wx.VERTICAL)
-        self.group_list = wx.ListBox(p, style=wx.LB_SINGLE)
-        self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
         # Playlist scope picker, one Shift+Tab before the categories list. The
         # categories and channels show only the chosen playlist's entries (or
         # everything for "All playlists"). wx.Choice gets an MSAA name through
         # SetName/SetAccessibleName so screen readers announce a label.
+        vs_l.Add(wx.StaticText(p, label=_("Playlist view")), 0, wx.LEFT | wx.TOP, 5)
         self.playlist_scope_combo = wx.Choice(p, choices=[])
-        self.playlist_scope_combo.SetName(_("Playlist"))
+        self.playlist_scope_combo.SetName(_("Playlist view"))
         if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
-            self.playlist_scope_combo.SetAccessibleName(_("Playlist"))
+            self.playlist_scope_combo.SetAccessibleName(_("Playlist view"))
+        self.playlist_scope_combo.Bind(wx.EVT_CHAR_HOOK, self.on_playlist_scope_key)
+        self.group_list = wx.ListBox(p, style=wx.LB_SINGLE)
+        self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
         self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
         self._fill_playlist_scope_combo()
         vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
@@ -3018,10 +3031,18 @@ class IPTVClient(wx.Frame):
     def on_channel_key(self, event):
         # Kept for compatibility; EVT_KEY_DOWN handler above is the reliable path
         key = event.GetKeyCode()
-        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+        if key == wx.WXK_TAB:
+            (self.group_list if event.ShiftDown() else self.playlist_scope_combo).SetFocus()
+        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected()
         elif key in (wx.WXK_LEFT, wx.WXK_RIGHT):
             return
+        else:
+            event.Skip()
+
+    def on_playlist_scope_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB:
+            (self.channel_list if event.ShiftDown() else self.group_list).SetFocus()
         else:
             event.Skip()
 
@@ -3033,8 +3054,12 @@ class IPTVClient(wx.Frame):
             # the channel list or move focus. Enter/Tab activate the category.
             event.Skip()
             return
+        if key == wx.WXK_TAB and event.ShiftDown():
+            self.playlist_scope_combo.SetFocus()
+            return
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
             self._activate_selected_group()
+            self.channel_list.SetFocus()
             return
         if key in (wx.WXK_LEFT, wx.WXK_RIGHT):
             return
@@ -3272,26 +3297,28 @@ class IPTVClient(wx.Frame):
         threading.Thread(target=filter_worker, daemon=True).start()
 
     def _refresh_group_ui(self):
+        scoped_channels = self.scoped_all_channels()
+        scoped_groups = self.scoped_channels_by_group()
         self.group_list.Freeze()
         try:
             self.group_list.Clear()
             self.channel_list.Clear()
 
-            if not self.all_channels:
+            if not scoped_channels:
                 self.group_list.Append(_("No channels found."))
                 self._group_keys = []
                 self._maybe_autostart_epg_import()
                 return
 
-            self.group_list.Append(_("All Channels") + f" ({len(self.all_channels)})")
+            self.group_list.Append(_("All Channels") + f" ({len(scoped_channels)})")
             keys = ["All Channels"]
             favorite_channels = self._favorite_channels()
             if favorite_channels:
                 # Second, so it is one Down press from the top of the categories.
                 self.group_list.Append(self._favorites_group_label(len(favorite_channels)))
                 keys.append(favorites.FAVORITES_GROUP)
-            for grp in sorted(self.channels_by_group):
-                self.group_list.Append(f"{grp} ({len(self.channels_by_group[grp])})")
+            for grp in sorted(scoped_groups):
+                self.group_list.Append(f"{grp} ({len(scoped_groups[grp])})")
                 keys.append(grp)
             self._group_keys = keys
 
@@ -3687,19 +3714,22 @@ class IPTVClient(wx.Frame):
         self._start_epg_poll_timer()
 
     def show_manager(self, _):
-        dlg = PlaylistManagerDialog(self, self.playlist_sources)
+        dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"))
         if dlg.ShowModal() == wx.ID_OK:
             self.playlist_sources = dlg.GetResult()
             self.config["playlists"] = self.playlist_sources
+            self.config["playlist_names"] = dlg.GetNames()
+            self._fill_playlist_scope_combo()
             save_config(self.config)
             self.start_playlist_load() # Reload everything after changes
         dlg.Destroy()
 
     def show_epg_manager(self, _):
-        dlg = EPGManagerDialog(self, self.epg_sources)
+        dlg = EPGManagerDialog(self, self.epg_sources, self.config.get("epg_names"))
         if dlg.ShowModal() == wx.ID_OK:
             self.epg_sources = dlg.GetResult()
             self.config["epgs"] = self.epg_sources
+            self.config["epg_names"] = dlg.GetNames()
             save_config(self.config)
             self.reload_epg_sources()
             wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
