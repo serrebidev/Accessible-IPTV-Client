@@ -3032,7 +3032,7 @@ class IPTVClient(wx.Frame):
         # Kept for compatibility; EVT_KEY_DOWN handler above is the reliable path
         key = event.GetKeyCode()
         if key == wx.WXK_TAB:
-            (self.group_list if event.ShiftDown() else self.playlist_scope_combo).SetFocus()
+            (self.filter_box if event.ShiftDown() else self.epg_display).SetFocus()
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected()
         elif key in (wx.WXK_LEFT, wx.WXK_RIGHT):
@@ -3041,10 +3041,8 @@ class IPTVClient(wx.Frame):
             event.Skip()
 
     def on_playlist_scope_key(self, event):
-        if event.GetKeyCode() == wx.WXK_TAB:
-            (self.channel_list if event.ShiftDown() else self.group_list).SetFocus()
-        else:
-            event.Skip()
+        # Native traversal includes search, programme information and URL.
+        event.Skip()
 
     def on_group_key(self, event):
         key = event.GetKeyCode()
@@ -3059,7 +3057,7 @@ class IPTVClient(wx.Frame):
             return
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
             self._activate_selected_group()
-            self.channel_list.SetFocus()
+            (self.filter_box if key == wx.WXK_TAB else self.channel_list).SetFocus()
             return
         if key in (wx.WXK_LEFT, wx.WXK_RIGHT):
             return
