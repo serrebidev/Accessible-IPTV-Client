@@ -93,6 +93,8 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - `tools/release.py` creates the update manifest asset required by the auto-updater. Required manifest fields include `version`, `asset_filename`, `download_url`, `sha256`, and `release_notes_summary`.
 - PowerShell/Batch release quoting matters on Windows. In batch files, `git describe --tags --abbrev=0` must be written as `--abbrev^=0` inside `for /f`. Inside a quoted `powershell -Command`, use a normal pipeline character (`|`), not `^|`.
 - When cleaning GitHub draft releases from PowerShell, decode JSON first and filter explicit draft booleans with `Where-Object { $_.isDraft -eq $true }`; do not pipe raw JSON array output directly into a truthy object filter.
+- A release run can die partway and leave the repo half-released. The window is between the commit and the tag in `git_commit_and_tag`: a `chore(release): vX.Y.Z` commit exists, but there is no tag, nothing is pushed, and there is no GitHub release, while the built and signed assets already sit in `dist/release/`. Diagnose with `git tag --list`, `gh release list`, and `git rev-list --left-right --count HEAD...origin/main`.
+- Recover an aborted release by finishing it, not by repeating it. Re-running `build.bat release` fails by design in `update_changelog` with `CHANGELOG.md already contains vX.Y.Z`, and resetting the release commit only forces a rebuild that reproduces identical artifacts and re-signs them for nothing. Create the missing tag, then call `git_push` and `gh_release_create` from `tools/release.py` with the assets already on disk. The asset dict keys are `asset_path`, `latest_path`, `manifest_path`, `notes_path`, and `installer_path`; `gh_release_create` already calls `ensure_release_published_latest` and `delete_draft_releases`, so the published result matches a normal run. Only reuse assets whose manifest version and hashes match the current `HEAD`.
 
 ## Current Learnings
 
@@ -167,12 +169,3 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Anything that closes the app on purpose has to set `_exit_forced` before `Close()`. `on_close` vetoes the close and hides to the tray whenever `minimize_to_tray` is on, which would otherwise leave the app running through its own shutdown request.
 - A test run that finishes green and then appears to hang is wx waiting for a click. Tests exercise failure paths on purpose -- `test_add_provider_source_survives_a_dialog_that_cannot_open` feeds in a dialog class that raises -- and the production code answers with `wx.LogError`, whose default target under a GUI app is a *modal message box*. The box is queued, surfaces at interpreter shutdown with no event loop behind it, and blocks the process until someone dismisses it. From a terminal it looks exactly like an infinite hang: the suite reports all tests passed, then nothing. With a screen reader the stray dialog is worse than the delay. `tests/conftest.py` redirects wx logging to `wx.LogStderr`, which took the full run from 36s to 15s with a clean exit 0.
 - Setting that log target once at session start is not enough: constructing `wx.App` installs wx's own GUI target and discards ours, so conftest re-checks it before every test body (a `pytest_runtest_call` wrapper, which runs after fixtures have built the app). `test_wx_errors_are_not_shown_as_modal_dialogs` asserts the redirect survived. Never restore the previous target afterwards: `wx.Log.SetActiveTarget` takes ownership of what it is given and deletes what it returns, so handing the old pointer back at teardown is a use-after-free that kills the interpreter with a Windows access violation.
-
-<!-- claude-memory:begin (managed by sync-claude-memory.py; canonical files live in C:\Users\admin\.claude - edit there, not here) -->
-## Memories (shared from ~/.claude - project: c--Users-admin-git-Accessible-IPTV-Client)
-Index of memory files - read one on demand when a task touches its
-topic (agents that expand @imports get every file via the @ lines below).
-New memories for this project go in C:\Users\admin\.claude\projects\c--Users-admin-git-Accessible-IPTV-Client\memory - see the memory protocol in
-the global AGENTS.md for the required format, and re-run
-sync-claude-memory.py after writing one:
-<!-- claude-memory:end -->
