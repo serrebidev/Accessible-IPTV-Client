@@ -729,6 +729,14 @@ class TestLargePlaylistHandling:
         client._source_for_group = (
             lambda group: IPTVClient._source_for_group(client, group)
         )
+        client.playlist_scope = ""
+        client.playlist_sources = []
+        client.scoped_all_channels = (
+            lambda: IPTVClient.scoped_all_channels(client)
+        )
+        client.scoped_channels_by_group = (
+            lambda: IPTVClient.scoped_channels_by_group(client)
+        )
 
         with patch("main.get_db_path", return_value=str(db_path)), \
              patch("main.EPGDatabase", FakeEPGDatabase), \

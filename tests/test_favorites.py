@@ -159,6 +159,8 @@ def _client(favorite_names=(), all_names=("A", "B", "C"), group="All Channels",
     keys = [favorites.channel_key({"name": name}) for name in favorite_names]
     client = SimpleNamespace(
         view_mode="live",
+        playlist_scope="",
+        playlist_sources=[],
         all_channels=channels,
         channels_by_group={"UK": channels},
         current_group=group,
@@ -170,7 +172,8 @@ def _client(favorite_names=(), all_names=("A", "B", "C"), group="All Channels",
     )
     for name in ("_favorite_channels", "_invalidate_favorites_cache", "_source_for_group",
                  "_favorites_group_label", "_update_favorites_group_row",
-                 "_decorate_channel_label", "_is_favorite"):
+                 "_decorate_channel_label", "_is_favorite",
+                 "scoped_all_channels", "scoped_channels_by_group"):
         setattr(client, name, _bind(IPTVClient, name, client))
     return client
 

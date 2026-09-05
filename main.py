@@ -63,6 +63,59 @@ _INTERNAL_PLAYER_FRAME_CLASS = None
 _INTERNAL_PLAYER_IMPORT_ATTEMPTED = False
 _INTERNAL_PLAYER_IMPORT_ERROR = None
 
+# The value stored in config["playlist_scope"] (and shown in the scope combo)
+# when no single playlist is selected: categories and channels come from every
+# loaded playlist.
+ALL_PLAYLISTS_SCOPE = ""
+
+
+def _source_scope_id(src) -> str:
+    """The stable id that tags a playlist's channels for the scope filter."""
+    if isinstance(src, dict):
+        return str(src.get("id") or src.get("provider_id") or "")
+    return ""
+
+
+def _scope_includes_channel(ch: Dict[str, str], scope: str) -> bool:
+    """True when ``ch`` belongs to the playlist selected by ``scope``.
+
+    The "All playlists" sentinel accepts everything, including legacy channels
+    that never got a playlist tag. A specific scope requires the tag to match,
+    so an untagged channel (a pre-existing cache, or a source without an id)
+    stays out of a single playlist's view instead of leaking into it.
+    """
+    if scope == ALL_PLAYLISTS_SCOPE:
+        return True
+    return bool(ch.get("playlist-id")) and ch.get("playlist-id") == scope
+
+
+def _scoped_channels(channels, scope: str):
+    """The channels of ``channels`` that belong to playlist ``scope``."""
+    if scope == ALL_PLAYLISTS_SCOPE:
+        return channels
+    return [ch for ch in channels if _scope_includes_channel(ch, scope)]
+
+
+def _client_pid_scope(pid: str, scope: str) -> bool:
+    """Whether a provider client id belongs to the playlist scope.
+
+    A provider id embeds the source's stable id; matching by containment keeps
+    this tolerant of the wrapper formats without needing a second registry.
+    """
+    if not scope:
+        return True
+    return scope in str(pid or "")
+
+
+def _tagged_sources(sources) -> list:
+    """The playlist sources that carry a stable id, in the order given.
+
+    Sources without one are hidden from the scope picker: selecting them would
+    promise "only this playlist" and then deliver everything.
+    """
+    return [src for src in (sources or [])
+            if isinstance(src, dict) and _source_scope_id(src)]
+
 
 class InternalPlayerUnavailableError(RuntimeError):
     """Raised when the built-in VLC player cannot be loaded."""
@@ -352,6 +405,12 @@ class IPTVClient(wx.Frame):
         # Parallel list of real group keys, indexed like group_list, so group
         # names containing " (" round-trip correctly instead of being truncated.
         self._group_keys: List[str] = []
+        # Playlist scope: which playlist the categories and channels come from.
+        # Stored as the source's stable "id" (from the Playlist Manager); the
+        # sentinel ALL_PLAYLISTS_SCOPE shows everything. Restored from config.
+        self.playlist_scope = self.config.get("playlist_scope", ALL_PLAYLISTS_SCOPE)
+        if not isinstance(self.playlist_scope, str):
+            self.playlist_scope = ALL_PLAYLISTS_SCOPE
         # View mode: "live" (channels + catch-up, the default) or "vod"
         # (browsable movies & series). VOD is built lazily on first switch.
         self.view_mode = "live"
@@ -537,7 +596,8 @@ class IPTVClient(wx.Frame):
         playlist change.
         """
         if self._favorites_cache is None:
-            self._favorites_cache = favorites.filter_channels(self.all_channels, self.favorite_keys)
+            self._favorites_cache = favorites.filter_channels(
+                self.scoped_all_channels(), self.favorite_keys)
         return self._favorites_cache
 
     def _invalidate_favorites_cache(self):
@@ -552,8 +612,86 @@ class IPTVClient(wx.Frame):
         if group == favorites.FAVORITES_GROUP:
             return self._favorite_channels()
         if group == "All Channels":
-            return self.all_channels
-        return self.channels_by_group.get(group, [])
+            return self.scoped_all_channels()
+        return self.scoped_channels_by_group().get(group, [])
+
+    # ------------------------------------------------------------------ #
+    # Playlist scope (categories and channels from a single playlist)
+    # ------------------------------------------------------------------ #
+    def _scoped_sources(self) -> List[dict]:
+        """The playlist sources visible in the scope picker, in playlist-manager order."""
+        return _tagged_sources(self.playlist_sources)
+
+    def _scope_choice_label(self, src: dict) -> str:
+        """The combo label for a playlist: what the Playlist Manager shows."""
+        stype = (src.get("type") or "").lower()
+        name = src.get("name") or src.get("username") or src.get("base_url") or _("Provider")
+        if stype == "xtream":
+            return _("Xtream Codes – {name}").format(name=name)
+        if stype == "stalker":
+            return _("Stalker Portal – {name}").format(name=name)
+        return _("Provider – {name}").format(name=name)
+
+    def _fill_playlist_scope_combo(self):
+        """(Re)build the scope combo entries and select the stored scope.
+
+        Safe to call before ``__init__`` state exists: ``_build_ui`` runs it
+        while the frame is still being assembled.
+        """
+        combo = getattr(self, "playlist_scope_combo", None)
+        if combo is None:
+            return
+        combo.Clear()
+        combo.Append(_("All playlists"))
+        for src in self._scoped_sources():
+            combo.Append(self._scope_choice_label(src))
+        combo.SetSelection(self._combo_index_for_scope(self.playlist_scope))
+
+    def _combo_index_for_scope(self, scope: str) -> int:
+        """Combo index for a stored scope; an unknown id falls back to All."""
+        if scope != ALL_PLAYLISTS_SCOPE:
+            for i, src in enumerate(_tagged_sources(self.playlist_sources), start=1):
+                if _source_scope_id(src) == scope:
+                    return i
+        return 0
+
+    def on_playlist_scope_changed(self, _event):
+        """Switch the category and channel lists to the selected playlist."""
+        sel = self.playlist_scope_combo.GetSelection()
+        scope = ALL_PLAYLISTS_SCOPE
+        if sel > 0:
+            sources = _tagged_sources(self.playlist_sources)
+            if 0 < sel <= len(sources):
+                scope = _source_scope_id(sources[sel - 1])
+        if scope == self.playlist_scope:
+            return
+        self.playlist_scope = scope
+        self.config["playlist_scope"] = scope
+        save_config(self.config)
+        self._invalidate_favorites_cache()
+        # Reset the category to the top so the view cannot point at a category
+        # that no longer exists in this playlist.
+        self.current_group = "All Channels"
+        try:
+            self.filter_box.ChangeValue("")
+        except Exception:
+            LOG.debug("IPTVClient.on_playlist_scope_changed: ignored exception", exc_info=True)
+        self._refresh_group_ui()
+
+    def scoped_all_channels(self) -> List[Dict[str, str]]:
+        """``self.all_channels`` filtered to the playlist scope."""
+        return _scoped_channels(self.all_channels, self.playlist_scope)
+
+    def scoped_channels_by_group(self) -> Dict[str, List[Dict[str, str]]]:
+        """``self.channels_by_group`` filtered to the playlist scope."""
+        scope = self.playlist_scope
+        if scope == ALL_PLAYLISTS_SCOPE:
+            return self.channels_by_group
+        return {
+            grp: [ch for ch in lst if _scope_includes_channel(ch, scope)]
+            for grp, lst in self.channels_by_group.items()
+            if any(_scope_includes_channel(ch, scope) for ch in lst)
+        }
 
     def _sync_favorites_from_config(self):
         """Re-read favorites after the config has been reloaded from disk."""
@@ -807,6 +945,12 @@ class IPTVClient(wx.Frame):
         self._sync_player_menu_from_config()
         # The config was just replaced, so anything cached out of it is re-read.
         self._sync_favorites_from_config()
+        # The playlist list may have changed on disk; keep the scope picker in
+        # step (its stored selection may also have been replaced or removed).
+        self.playlist_scope = self.config.get("playlist_scope", ALL_PLAYLISTS_SCOPE)
+        if not isinstance(self.playlist_scope, str):
+            self.playlist_scope = ALL_PLAYLISTS_SCOPE
+        self._fill_playlist_scope_combo()
         self._sync_favorite_menu_item()
         self._shutdown_after_recordings = self._bool_pref(
             self.config.get("shutdown_after_recordings", False))
@@ -905,10 +1049,17 @@ class IPTVClient(wx.Frame):
                 return
             self._apply_cached_provider_meta(cached, provider_meta)
             prefill_loaded[parsed_cache] = (stored_hash, cached)
+            # Tag each channel with the playlist it came from so the playlist
+            # scope combo can show a single playlist's categories.
+            scope_id = None
+            if isinstance(src, dict):
+                scope_id = src.get("id") or src.get("provider_id") or ""
             for ch in cached:
                 key = (ch.get("name", ""), ch.get("url", ""), ch.get("provider-id", ""))
                 if key in prefill_seen:
                     continue
+                if scope_id:
+                    ch.setdefault("playlist-id", scope_id)
                 prefill_seen.add(key)
                 grp = ch.get("group") or "Uncategorized"
                 prefilled_by_group.setdefault(grp, []).append(ch)
@@ -928,6 +1079,7 @@ class IPTVClient(wx.Frame):
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
                 self._invalidate_favorites_cache()
+                self._fill_playlist_scope_combo()
                 self._refresh_group_ui()
 
             wx.CallAfter(apply_prefill, prefilled_by_group, prefilled_all)
@@ -1094,6 +1246,12 @@ class IPTVClient(wx.Frame):
                     if key in seen_channel_keys:
                         continue
                     seen_channel_keys.add(key)
+                    # Remember which playlist each channel belongs to so the
+                    # playlist scope combo can filter categories per playlist.
+                    if isinstance(src, dict):
+                        scope_id = src.get("id") or src.get("provider_id") or ""
+                        if scope_id:
+                            ch.setdefault("playlist-id", scope_id)
                     grp = ch.get("group") or "Uncategorized"
                     channels_by_group.setdefault(grp, []).append(ch)
                     all_channels.append(ch)
@@ -1115,6 +1273,7 @@ class IPTVClient(wx.Frame):
             self.vod_loaded = False
             self.vod_groups = {}
             self.vod_group_order = []
+            self._fill_playlist_scope_combo()
             if self.view_mode == "vod":
                 self._load_vod_catalog()
             else:
@@ -1147,6 +1306,17 @@ class IPTVClient(wx.Frame):
         vs_r = wx.BoxSizer(wx.VERTICAL)
         self.group_list = wx.ListBox(p, style=wx.LB_SINGLE)
         self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
+        # Playlist scope picker, one Shift+Tab before the categories list. The
+        # categories and channels show only the chosen playlist's entries (or
+        # everything for "All playlists"). wx.Choice gets an MSAA name through
+        # SetName/SetAccessibleName so screen readers announce a label.
+        self.playlist_scope_combo = wx.Choice(p, choices=[])
+        self.playlist_scope_combo.SetName(_("Playlist"))
+        if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
+            self.playlist_scope_combo.SetAccessibleName(_("Playlist"))
+        self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
+        self._fill_playlist_scope_combo()
+        vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
         vs_l.Add(self.group_list, 1, wx.EXPAND | wx.ALL, 5)
         self.filter_box = wx.TextCtrl(p, style=wx.TE_PROCESS_ENTER)
         # Virtual list control (native SysListView32) so 50k-300k channels stay responsive
@@ -2873,6 +3043,10 @@ class IPTVClient(wx.Frame):
     def _activate_selected_group(self):
         """Switch the channel list to the selected category and move focus there."""
         self.on_group_select()
+        # An empty scope combo has no selection: repopulating would fire
+        # EVT_LIST_ITEM_SELECTED on a negative selection and crash here.
+        if self.playlist_scope_combo.GetSelection() == wx.NOT_FOUND:
+            return
         if self.channel_list.GetCount() > 0:
             self.channel_list.SetFocus()
 
@@ -3198,10 +3372,17 @@ class IPTVClient(wx.Frame):
         self.url_display.SetValue("")
 
         clients = dict(self.provider_clients)
+        # Honour the playlist scope: only the selected playlist's VOD entries.
         m3u_channels = [
-            ch for ch in self.all_channels
+            ch for ch in self.scoped_all_channels()
             if ch.get("provider-type") not in ("xtream", "stalker")
         ]
+        scope = self.playlist_scope
+        if scope != ALL_PLAYLISTS_SCOPE:
+            clients = {
+                pid: client for pid, client in clients.items()
+                if _client_pid_scope(pid, scope)
+            }
 
         def worker():
             catalogs = []
