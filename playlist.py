@@ -2623,9 +2623,7 @@ if WX_AVAILABLE:
             self.add_url_btn = wx.Button(panel, label=_("Add URL"))
             self.add_xtream_btn = wx.Button(panel, label=_("Add Xtream Codes"))
             self.add_stalker_btn = wx.Button(panel, label=_("Add Stalker Portal"))
-            self.remove_btn = wx.Button(panel, label=_("Remove Selected"))
-            self.rename_btn = wx.Button(panel, label=_("Rename Selected"))
-            for btn in (self.add_file_btn, self.add_url_btn, self.add_xtream_btn, self.add_stalker_btn, self.rename_btn, self.remove_btn):
+            for btn in (self.add_file_btn, self.add_url_btn, self.add_xtream_btn, self.add_stalker_btn):
                 btn_sizer.Add(btn, 0, wx.ALL, 2)
             main_sizer.Add(btn_sizer, 0, wx.EXPAND)
             self.lb = wx.ListBox(panel, style=wx.LB_SINGLE)
@@ -2645,8 +2643,35 @@ if WX_AVAILABLE:
             self.add_url_btn.Bind(wx.EVT_BUTTON, self.OnAddURL)
             self.add_xtream_btn.Bind(wx.EVT_BUTTON, self.OnAddXtream)
             self.add_stalker_btn.Bind(wx.EVT_BUTTON, self.OnAddStalker)
-            self.remove_btn.Bind(wx.EVT_BUTTON, self.OnRemove)
-            self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
+            # Keeping row-specific actions on the selected row makes the main
+            # dialog quieter for keyboard and screen-reader users. EVT_CONTEXT_MENU
+            # also covers Shift+F10 and the Applications key.
+            self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+
+        def _on_source_context_menu(self, event):
+            position = event.GetPosition()
+            if position != wx.DefaultPosition:
+                try:
+                    index = self.lb.HitTest(self.lb.ScreenToClient(position))
+                    if isinstance(index, tuple):
+                        index = index[0]
+                    if index != wx.NOT_FOUND:
+                        self.lb.SetSelection(index)
+                except Exception:
+                    _logger.debug("PlaylistManagerDialog._on_source_context_menu: ignored exception", exc_info=True)
+
+            has_selection = self.lb.GetSelection() != wx.NOT_FOUND
+            menu = wx.Menu()
+            rename_item = menu.Append(wx.ID_ANY, _("Rename Selected"))
+            remove_item = menu.Append(wx.ID_ANY, _("Remove Selected"))
+            rename_item.Enable(has_selection)
+            remove_item.Enable(has_selection)
+            menu.Bind(wx.EVT_MENU, self.OnRename, rename_item)
+            menu.Bind(wx.EVT_MENU, self.OnRemove, remove_item)
+            try:
+                self.lb.PopupMenu(menu)
+            finally:
+                menu.Destroy()
 
         def OnAddFile(self, _event):
             wildcard = "|".join([

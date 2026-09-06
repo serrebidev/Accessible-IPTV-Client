@@ -128,6 +128,43 @@ def test_audio_preference_dialog(parent):
     print("audio preference dialog: OK")
 
 
+def test_accessible_about_dialog(parent):
+    """Both the explicit OK button and the window close command must end modal UI."""
+    dlg = main.AccessibleAboutDialog(parent)
+    try:
+        assert dlg.ok_btn.IsEnabled() and dlg.close_btn.IsEnabled()
+
+        def press_ok():
+            event = wx.CommandEvent(wx.EVT_BUTTON.typeId, dlg.ok_btn.GetId())
+            dlg.ok_btn.Command(event)
+
+        wx.CallLater(10, press_ok)
+        assert dlg.ShowModal() == wx.ID_OK
+    finally:
+        dlg.Destroy()
+
+    dlg = main.AccessibleAboutDialog(parent)
+    try:
+        wx.CallLater(10, dlg.Close)
+        assert dlg.ShowModal() == wx.ID_CANCEL
+    finally:
+        dlg.Destroy()
+    print("accessible About dialog: OK")
+
+
+def test_recording_padding_dialog(parent):
+    dlg = main.RecordingPaddingDialog(parent, before_minutes=-2, after_minutes=999)
+    try:
+        assert dlg.get_padding() == (0, 180)
+        dlg.before_ctrl.SetValue(4)
+        dlg.after_ctrl.SetValue(7)
+        assert dlg.get_padding() == (4, 7)
+        assert dlg.before_ctrl.GetName() and dlg.after_ctrl.GetName()
+    finally:
+        dlg.Destroy()
+    print("recording padding dialog: OK")
+
+
 def test_shutdown_countdown():
     fired = []
     dlg = main.ShutdownCountdownDialog(None, on_cancel=lambda: fired.append("cancel"),
@@ -190,6 +227,8 @@ if __name__ == "__main__":
     test_favorites(frame)
     test_shutdown_arming(frame)
     test_audio_preference_dialog(parent)
+    test_accessible_about_dialog(parent)
+    test_recording_padding_dialog(parent)
     test_shutdown_countdown()
     test_player_preference(parent)
     frame._exit_forced = True

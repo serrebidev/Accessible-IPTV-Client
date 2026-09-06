@@ -136,7 +136,11 @@ class AccessibleAboutDialog(wx.Dialog):
     def __init__(self, parent):
         from app_meta import APP_DISPLAY_NAME, APP_VERSION
 
-        super().__init__(parent, title=_("About {name}").format(name=APP_DISPLAY_NAME))
+        super().__init__(
+            parent,
+            title=_("About {name}").format(name=APP_DISPLAY_NAME),
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
         panel = wx.Panel(self)
         layout = wx.BoxSizer(wx.VERTICAL)
 
@@ -168,11 +172,32 @@ class AccessibleAboutDialog(wx.Dialog):
             link.SetName(label)
             layout.Add(link, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
-        layout.Add(self.CreateButtonSizer(wx.OK), 0, wx.EXPAND | wx.ALL, 12)
+        # Create buttons on the panel and handle both exit paths explicitly.
+        # ``CreateButtonSizer`` creates children of the dialog itself; placing
+        # those children in a panel sizer leaves wxMSW without a usable command
+        # route, which made the original About dialog impossible to dismiss.
+        button_sizer = wx.StdDialogButtonSizer()
+        self.ok_btn = wx.Button(panel, id=wx.ID_OK)
+        self.close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
+        button_sizer.AddButton(self.ok_btn)
+        button_sizer.AddButton(self.close_btn)
+        button_sizer.Realize()
+        layout.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 12)
         panel.SetSizerAndFit(layout)
         self.SetMinSize((540, -1))
         self.Fit()
         self.CentreOnParent()
+        self.ok_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_OK))
+        self.close_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_CANCEL))
+        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish(wx.ID_CANCEL))
+        self.SetEscapeId(wx.ID_CANCEL)
+        self.ok_btn.SetDefault()
+
+    def _finish(self, result):
+        if self.IsModal():
+            self.EndModal(result)
+        else:
+            self.Destroy()
 
 
 def _redact_diagnostic_text(text: str) -> str:
@@ -206,6 +231,10 @@ class _AccessibleCategoryTree(wx.TreeCtrl):
         if hasattr(self, "SetAccessibleName"):
             self.SetAccessibleName(_("Categories"))
         self._labels: List[str] = []
+        # An optional display path keeps a category's identity separate from
+        # its position. In particular, two playlists may both have a "News"
+        # category, but they must remain separate branches in All playlists.
+        self._paths: Dict[int, List[object]] = {}
         self._selection = wx.NOT_FOUND
         self._batch_depth = 0
         self._rebuilding = False
@@ -243,17 +272,26 @@ class _AccessibleCategoryTree(wx.TreeCtrl):
 
     def Clear(self):
         self._labels = []
+        self._paths = {}
         self._selection = wx.NOT_FOUND
         self._changed()
 
-    def Append(self, label: str):
+    def Append(self, label: str, tree_path: Optional[List[object]] = None):
         self._labels.append(str(label))
+        if tree_path:
+            self._paths[len(self._labels) - 1] = list(tree_path)
         self._changed()
         return len(self._labels) - 1
 
-    def Insert(self, label: str, index: int):
+    def Insert(self, label: str, index: int, tree_path: Optional[List[object]] = None):
         index = max(0, min(int(index), len(self._labels)))
         self._labels.insert(index, str(label))
+        self._paths = {
+            existing + 1 if existing >= index else existing: path
+            for existing, path in self._paths.items()
+        }
+        if tree_path:
+            self._paths[index] = list(tree_path)
         if self._selection >= index:
             self._selection += 1
         self._changed()
@@ -263,6 +301,11 @@ class _AccessibleCategoryTree(wx.TreeCtrl):
         if not 0 <= index < len(self._labels):
             return
         self._labels.pop(index)
+        self._paths = {
+            existing - 1 if existing > index else existing: path
+            for existing, path in self._paths.items()
+            if existing != index
+        }
         if self._selection == index:
             self._selection = wx.NOT_FOUND
         elif self._selection > index:
@@ -303,6 +346,25 @@ class _AccessibleCategoryTree(wx.TreeCtrl):
             else:
                 self.Expand(item)
 
+    def ExpandSelectedBranch(self):
+        item = super().GetSelection()
+        if item is not None and item.IsOk() and self.ItemHasChildren(item):
+            self.Expand(item)
+
+    def CollapseSelectedBranch(self):
+        item = super().GetSelection()
+        if item is not None and item.IsOk() and self.ItemHasChildren(item):
+            self.Collapse(item)
+
+    @classmethod
+    def _leaf_text(cls, label: str, leaf: object) -> str:
+        """Display just the last path segment, retaining its channel count."""
+        suffix_match = cls._COUNT_SUFFIX.search(label or "")
+        suffix = suffix_match.group(0) if suffix_match else ""
+        if isinstance(leaf, tuple):
+            leaf = leaf[-1]
+        return str(leaf) + suffix
+
     def _on_tree_selection(self, event):
         if self._rebuilding:
             event.Skip()
@@ -322,29 +384,35 @@ class _AccessibleCategoryTree(wx.TreeCtrl):
         self._rebuilding = True
         try:
             self.DeleteAllItems()
-            self._item_indexes = {}
             self._index_items = {}
             root = self.AddRoot(_("Categories"))
-            path_items: Dict[Tuple[str, ...], object] = {}
+            path_items: Dict[Tuple[object, ...], object] = {}
             for index, label in enumerate(self._labels):
                 parent = root
-                path: List[str] = []
-                parts = self._path_parts(label)
+                path: List[object] = []
+                parts = self._paths.get(index) or self._path_parts(label)
                 for part_index, part in enumerate(parts):
                     path.append(part)
                     path_key = tuple(path)
                     item = path_items.get(path_key)
                     if item is None:
-                        text = label if part_index == len(parts) - 1 else part
+                        text = self._leaf_text(label, part) if part_index == len(parts) - 1 else (
+                            str(part[-1]) if isinstance(part, tuple) else str(part)
+                        )
                         item = self.AppendItem(parent, text)
                         path_items[path_key] = item
                     elif part_index == len(parts) - 1:
                         # The category itself may also be a branch. Its own label
                         # includes its channel count, while its children stay put.
-                        self.SetItemText(item, label)
+                        self.SetItemText(item, self._leaf_text(label, part))
                     parent = item
-                self._item_indexes[parent.GetID()] = index
                 self._index_items[index] = parent
+            # A source's categories are visible immediately under its branch.
+            # The user can still collapse any branch with Left; this only sets
+            # the useful initial state after a playlist/category refresh.
+            for item in path_items.values():
+                if item.IsOk() and self.ItemHasChildren(item):
+                    self.Expand(item)
         finally:
             self._rebuilding = False
         if 0 <= self._selection < len(self._labels):
@@ -839,12 +907,19 @@ class IPTVClient(wx.Frame):
         key = favorites.channel_key(channel)
         return bool(key) and key in self._favorite_key_set
 
-    def _source_for_group(self, group: str) -> List[Dict[str, str]]:
+    def _source_for_group(self, group) -> List[Dict[str, str]]:
         """The channels a category holds. "All Channels" and "Favorites" are sentinels."""
         if group == favorites.FAVORITES_GROUP:
             return self._favorite_channels()
         if group == "All Channels":
             return self.scoped_all_channels()
+        if (isinstance(group, tuple) and len(group) == 3
+                and group[0] == "playlist-group"):
+            _marker, scope, category = group
+            return [
+                channel for channel in self.scoped_channels_by_group().get(category, [])
+                if str(channel.get("playlist-id") or "") == scope
+            ]
         return self.scoped_channels_by_group().get(group, [])
 
     # ------------------------------------------------------------------ #
@@ -2612,6 +2687,25 @@ class IPTVClient(wx.Frame):
             fmt_menu.Bind(wx.EVT_MENU, lambda evt, k=key: self._set_recording_format(k), item)
         return fmt_menu
 
+    def _show_recording_padding_dialog(self, _event=None):
+        """Let the user set the lead-in/lead-out used for scheduled programmes."""
+        dlg = RecordingPaddingDialog(
+            self,
+            before_minutes=self.config.get("recording_pre_padding_minutes", 0),
+            after_minutes=self.config.get("recording_post_padding_minutes", 2),
+        )
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            before, after = dlg.get_padding()
+            self.config["recording_pre_padding_minutes"] = before
+            self.config["recording_post_padding_minutes"] = after
+            # save_config normalizes the values as well, protecting against an
+            # edited config or a future caller bypassing this dialog.
+            save_config(self.config)
+        finally:
+            dlg.Destroy()
+
     def _populate_recordings_menu(self, menu: wx.Menu):
         """Fill a Recordings menu (shared by the menubar and the Linux button menu)."""
         start_item = menu.Append(wx.ID_ANY, _("Start Recording") + "\tCtrl+Shift+R")
@@ -2625,6 +2719,8 @@ class IPTVClient(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._show_scheduled_recordings, schedule_item)
         menu.AppendSeparator()
         menu.AppendSubMenu(self._build_recording_format_menu(), _("Recording Format"))
+        padding_item = menu.Append(wx.ID_ANY, _("Schedule Padding..."))
+        menu.Bind(wx.EVT_MENU, self._show_recording_padding_dialog, padding_item)
         menu.AppendSeparator()
         open_item = menu.Append(wx.ID_ANY, _("Open Recordings Folder"))
         menu.Bind(wx.EVT_MENU, self._open_recordings_folder, open_item)
@@ -3409,7 +3505,11 @@ class IPTVClient(wx.Frame):
             self._activate_selected_group()
             (self.filter_box if key == wx.WXK_TAB else self.channel_list).SetFocus()
             return
-        if key in (wx.WXK_LEFT, wx.WXK_RIGHT):
+        if key == wx.WXK_LEFT:
+            self.group_list.CollapseSelectedBranch()
+            return
+        if key == wx.WXK_RIGHT:
+            self.group_list.ExpandSelectedBranch()
             return
         event.Skip()
 
@@ -3672,9 +3772,41 @@ class IPTVClient(wx.Frame):
                 # Second, so it is one Down press from the top of the categories.
                 self.group_list.Append(self._favorites_group_label(len(favorite_channels)))
                 keys.append(favorites.FAVORITES_GROUP)
-            for grp in sorted(scoped_groups):
-                self.group_list.Append(f"{grp} ({len(scoped_groups[grp])})")
-                keys.append(grp)
+            if self.playlist_scope == ALL_PLAYLISTS_SCOPE and self._scoped_sources():
+                # Each source gets a top-level provider branch. Its category
+                # leaves retain a scope-aware key, so selecting "News" below
+                # one provider cannot show the other providers' News channels.
+                source_labels = {
+                    _source_scope_id(source): self._scope_choice_label(source)
+                    for source in self._scoped_sources()
+                }
+                source_groups: Dict[str, Dict[str, int]] = {}
+                for channel in scoped_channels:
+                    scope = str(channel.get("playlist-id") or "")
+                    group = str(channel.get("group") or "Uncategorized")
+                    groups = source_groups.setdefault(scope, {})
+                    groups[group] = groups.get(group, 0) + 1
+
+                ordered_scopes = list(source_labels)
+                # Retain cached/legacy channels that do not have a source tag;
+                # they belong in their own branch instead of disappearing.
+                ordered_scopes.extend(scope for scope in source_groups if scope not in source_labels)
+                for scope in ordered_scopes:
+                    groups = source_groups.get(scope, {})
+                    if not groups:
+                        continue
+                    source_label = source_labels.get(scope, _("Other playlists"))
+                    provider_path = ("playlist", scope, source_label)
+                    for group in sorted(groups):
+                        self.group_list.Append(
+                            f"{group} ({groups[group]})",
+                            tree_path=[provider_path] + _AccessibleCategoryTree._path_parts(group),
+                        )
+                        keys.append(("playlist-group", scope, group))
+            else:
+                for grp in sorted(scoped_groups):
+                    self.group_list.Append(f"{grp} ({len(scoped_groups[grp])})")
+                    keys.append(grp)
             self._group_keys = keys
 
             # Restore the selection by key, not by label: the sentinel categories
@@ -5933,6 +6065,75 @@ class AudioTrackPreferenceDialog(wx.Dialog):
 
     def get_prefer_audio_description(self) -> bool:
         return bool(self.ad_check.GetValue())
+
+
+class RecordingPaddingDialog(wx.Dialog):
+    """Accessible settings for scheduled-recording lead-in and lead-out."""
+
+    MAX_PADDING_MINUTES = 180
+
+    def __init__(self, parent, before_minutes=0, after_minutes=2):
+        super().__init__(parent, title=_("Schedule Padding"), style=wx.DEFAULT_DIALOG_STYLE)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        intro = wx.StaticText(self, label=_(
+            "Start scheduled recordings early or keep recording after the programme ends. "
+            "Manual recordings are not changed."))
+        intro.Wrap(430)
+        sizer.Add(intro, 0, wx.ALL, 12)
+
+        grid = wx.FlexGridSizer(2, 2, 8, 10)
+        before_label = _("Minutes before programme:")
+        after_label = _("Minutes after programme:")
+        self.before_ctrl = wx.SpinCtrl(
+            self, min=0, max=self.MAX_PADDING_MINUTES,
+            initial=self._coerce_minutes(before_minutes),
+        )
+        self.after_ctrl = wx.SpinCtrl(
+            self, min=0, max=self.MAX_PADDING_MINUTES,
+            initial=self._coerce_minutes(after_minutes),
+        )
+        for label, control in ((before_label, self.before_ctrl), (after_label, self.after_ctrl)):
+            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
+            control.SetName(label)
+            if hasattr(control, "SetAccessibleName"):
+                control.SetAccessibleName(label)
+            grid.Add(control, 0, wx.EXPAND)
+        grid.AddGrowableCol(1, 1)
+        sizer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        buttons = wx.StdDialogButtonSizer()
+        self.ok_btn = wx.Button(self, id=wx.ID_OK)
+        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL)
+        buttons.AddButton(self.ok_btn)
+        buttons.AddButton(self.cancel_btn)
+        buttons.Realize()
+        sizer.Add(buttons, 0, wx.ALIGN_RIGHT | wx.ALL, 12)
+
+        self.SetSizerAndFit(sizer)
+        self.CentreOnParent()
+        self.ok_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_OK))
+        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_CANCEL))
+        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish(wx.ID_CANCEL))
+        self.SetEscapeId(wx.ID_CANCEL)
+        self.ok_btn.SetDefault()
+        self.before_ctrl.SetFocus()
+
+    @classmethod
+    def _coerce_minutes(cls, value) -> int:
+        try:
+            return max(0, min(int(float(value)), cls.MAX_PADDING_MINUTES))
+        except Exception:
+            return 0
+
+    def get_padding(self) -> Tuple[int, int]:
+        return self.before_ctrl.GetValue(), self.after_ctrl.GetValue()
+
+    def _finish(self, result):
+        if self.IsModal():
+            self.EndModal(result)
+        else:
+            self.Destroy()
 
 
 class ShutdownCountdownDialog(wx.Dialog):

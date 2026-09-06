@@ -114,6 +114,25 @@ def test_provider_names_are_isolated_until_manager_is_accepted(wx_app):
         dlg.Destroy()
 
 
+def test_playlist_selected_actions_live_in_the_context_menu(manager, monkeypatch):
+    """Rename/remove do not clutter the manager; Shift+F10 exposes both actions."""
+    assert not hasattr(manager, "rename_btn")
+    assert not hasattr(manager, "remove_btn")
+    labels = []
+
+    def popup(menu):
+        labels.extend(item.GetItemLabelText() for item in menu.GetMenuItems())
+
+    monkeypatch.setattr(manager.lb, "PopupMenu", popup)
+
+    class _ContextEvent:
+        def GetPosition(self):
+            return wx.DefaultPosition
+
+    manager._on_source_context_menu(_ContextEvent())
+    assert labels == ["Rename Selected", "Remove Selected"]
+
+
 def test_stalker_dialog_marks_credentials_optional(stalker):
     assert stalker.user_ctrl.GetName() == "Optional portal account username"
     assert stalker.pass_ctrl.GetName() == "Optional portal account password"
