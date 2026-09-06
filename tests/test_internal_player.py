@@ -5,10 +5,13 @@ import pytest
 import os
 import sys
 import time
+import types
 from enum import IntEnum
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import internal_player  # noqa: E402
 
 
 # Mock VLC State enum for testing without VLC installed
@@ -414,6 +417,50 @@ class TestStreamTypeDetection:
         for url in urls:
             is_audio = any(url.lower().endswith(ext) for ext in audio_extensions)
             assert is_audio is True
+
+
+class TestClosingTheShownPlayerStopsPlayback:
+    """Closing the player window must stop the channel, not hide it."""
+
+    @staticmethod
+    def _stub_frame():
+        frame = types.SimpleNamespace()
+        frame.events = []
+        frame._allow_close = False
+        frame._destroyed = False
+        frame.stopped = []
+        frame._status_timer = types.SimpleNamespace(Stop=lambda: None)
+        frame.player = types.SimpleNamespace(
+            stop=lambda: frame.stopped.append("player.stop"),
+            release=lambda: frame.stopped.append("release"),
+        )
+        frame.instance = types.SimpleNamespace(release=lambda: None)
+        frame._on_close_cb = lambda: frame.events.append("closed")
+        frame._exit_player = types.MethodType(
+            internal_player.InternalPlayerFrame._exit_player, frame)
+        frame._hide_player = lambda: frame.events.append("hidden")
+        frame.Destroy = lambda: True
+        return frame
+
+    def test_close_stops_playback_instead_of_hiding(self):
+        frame = self._stub_frame()
+        event = types.SimpleNamespace(CanVeto=lambda: True, Skip=lambda: None)
+
+        internal_player.InternalPlayerFrame._on_close(frame, event)
+
+        assert frame.stopped == ["player.stop"]
+        assert frame.events == ["closed"]
+
+    def test_explicit_exit_still_stops_and_destroys(self):
+        frame = self._stub_frame()
+        destroyed = []
+        frame.Destroy = lambda: destroyed.append(True) or True
+
+        internal_player.InternalPlayerFrame._exit_player(frame)
+
+        assert frame.stopped == ["player.stop"]
+        assert frame.events == ["closed"]
+        assert destroyed == [True]
 
 
 if __name__ == "__main__":

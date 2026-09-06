@@ -86,6 +86,18 @@ class TestScopedAccessors:
         got = main.IPTVClient.scoped_all_channels(stub)
         assert [ch["name"] for ch in got] == ["B"]
 
+    def test_playlist_all_group_returns_only_that_playlists_channels(self):
+        channels = [_ch("A", "p1"), _ch("B", "p1"), _ch("C", "p2"), _ch("D")]
+        stub = _stub("", channels)
+        stub.scoped_all_channels = lambda: main.IPTVClient.scoped_all_channels(stub)
+        got = main.IPTVClient._source_for_group(stub, ("playlist-all", "p1"))
+        assert [ch["name"] for ch in got] == ["A", "B"]
+
+    def test_playlist_all_group_unknown_scope_is_empty(self):
+        stub = _stub("", [_ch("A", "p1")])
+        stub.scoped_all_channels = lambda: main.IPTVClient.scoped_all_channels(stub)
+        assert main.IPTVClient._source_for_group(stub, ("playlist-all", "nope")) == []
+
     def test_scoped_all_channels_all_scope_returns_original(self):
         channels = [_ch("A")]
         stub = _stub("", channels)

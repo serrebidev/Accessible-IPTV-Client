@@ -95,10 +95,17 @@ def test_source_names_survive_reopen_without_changing_source(wx_app, monkeypatch
     reopened = manager_class(None, [source], saved)
     try:
         assert reopened.lb.GetString(0) == "My source"
+        # A blank answer now keeps the current label instead of reverting to
+        # the default, so a mis-keyed Enter cannot wipe a custom name.
         answer[0] = " "
         reopened.OnRename(None)
-        assert reopened.lb.GetString(0) == source
-        assert reopened.GetNames() == {}
+        assert reopened.lb.GetString(0) == "My source"
+        assert reopened.GetNames() == saved
+        # An unchanged name is a no-op too.
+        answer[0] = "My source"
+        reopened.OnRename(None)
+        assert reopened.lb.GetString(0) == "My source"
+        assert reopened.GetNames() == saved
     finally:
         reopened.Destroy()
 

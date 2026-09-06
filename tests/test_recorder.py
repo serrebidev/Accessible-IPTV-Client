@@ -394,13 +394,13 @@ def test_stopping_an_mp4_recording_leaves_a_playable_file(tmp_path):
                             "-i", rec.out_path, "-f", "null", "-"],
                            check=True, timeout=60)
 
-            # The complete ffmpeg output is kept for diagnosis, with the stream URL
-            # masked out of the recorded command line: it carries provider credentials.
+            # The complete ffmpeg output is kept for diagnosis, URLs and
+            # credentials included: masking them would make 403/timeout
+            # failures impossible to diagnose from the log.
             assert os.path.isfile(rec.log_path)
             log = open(rec.log_path, encoding="utf-8", errors="replace").read()
             assert "Input #0" in log
-            assert "<stream url>" in log
-            assert url not in log
+            assert url in log
         finally:
             manager.stop_all(wait=True)
 
@@ -482,14 +482,14 @@ def test_a_wedged_ffmpeg_is_still_escalated(tmp_path, monkeypatch):
     assert rec.finalize_timed_out
 
 
-def test_redact_log_removes_the_stream_url(tmp_path):
-    """Recording logs are made to be sent to somebody; provider credentials are not."""
+def test_recording_log_keeps_the_stream_url(tmp_path):
+    """The per-recording log exists for troubleshooting; URLs stay in it."""
     url = "http://provider.example/live/user/pass/123.ts"
     log = tmp_path / "rec.log"
-    log.write_text(f"[info] Input #0, mpegts, from '{url}':\n", encoding="utf-8")
-
-    recorder.redact_log(str(log), url)
+    header = recorder.RecordingManager()._open_log(str(log), ["ffmpeg", "-i", url, "out.mp4"], url)
+    assert header is not None
+    header.close()
 
     body = log.read_text(encoding="utf-8")
-    assert url not in body
-    assert recorder.LOG_URL_PLACEHOLDER in body
+    assert url in body
+    assert "<headers>" not in body

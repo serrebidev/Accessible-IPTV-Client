@@ -62,9 +62,10 @@ TERMINATE_GRACE_SECONDS = 15.0
 DETACH_WAIT_SECONDS = 5.0
 
 # ffmpeg's stderr for each recording is kept next to the recordings themselves, so a
-# capture that went wrong can still be diagnosed afterwards.
+# capture that went wrong can still be diagnosed afterwards. URLs, credentials and
+# headers are deliberately left in the log: it exists to be read, and stripping the
+# stream URL makes 403/timeout diagnoses impossible.
 RECORDING_LOG_DIRNAME = "logs"
-LOG_URL_PLACEHOLDER = "<stream url>"
 STDERR_TAIL_LINES = 12
 _LOG_TAIL_WINDOW_BYTES = 262144
 # ``-loglevel level+info`` prefixes every line with its severity.
@@ -91,27 +92,6 @@ def recording_log_path(out_dir: str, out_path: str) -> str:
     """Where the full ffmpeg stderr for ``out_path`` is written."""
     base = os.path.splitext(os.path.basename(out_path))[0]
     return os.path.join(out_dir, RECORDING_LOG_DIRNAME, base + ".log")
-
-
-def redact_log(path: str, url: str) -> None:
-    """Replace the stream URL wherever ffmpeg echoed it into ``path``.
-
-    ffmpeg prints its input URL in the stream dump, and for Xtream Codes and Stalker
-    providers that URL carries the account's username and password. These logs exist
-    to be sent to somebody for diagnosis, so the credentials must not travel with them.
-    """
-    if not path or not url:
-        return
-    try:
-        with open(path, "rb") as handle:
-            data = handle.read()
-        needle = url.encode("utf-8", errors="replace")
-        if needle not in data:
-            return
-        with open(path, "wb") as handle:
-            handle.write(data.replace(needle, LOG_URL_PLACEHOLDER.encode("utf-8")))
-    except OSError:
-        LOG.debug("redact_log: ignored exception", exc_info=True)
 
 
 def read_log_problems(path: str, limit: int = STDERR_TAIL_LINES) -> List[str]:
@@ -406,18 +386,11 @@ class RecordingManager:
             LOG.debug("RecordingManager._open_log: ignored exception", exc_info=True)
             return None
         try:
-            # The URL can carry provider credentials, so record the command with it
-            # masked; the log lives beside the recordings and may well be shared.
-            safe = []
-            for index, part in enumerate(cmd):
-                if part == url:
-                    safe.append(LOG_URL_PLACEHOLDER)
-                elif index and cmd[index - 1] == "-headers":
-                    safe.append("<headers>")
-                else:
-                    safe.append(part)
+            # Keep the exact command line, URLs, headers and all: the log exists
+            # for troubleshooting, and masking the input URL hides the details a
+            # 403 or a timeout diagnosis needs.
             header = "# %s\n# ffmpeg %s\n\n" % (
-                time.strftime("%Y-%m-%d %H:%M:%S"), subprocess.list2cmdline(safe[1:]))
+                time.strftime("%Y-%m-%d %H:%M:%S"), subprocess.list2cmdline(cmd[1:]))
             handle.write(header.encode("utf-8", errors="replace"))
             handle.flush()
         except Exception:
@@ -447,7 +420,8 @@ class RecordingManager:
             _close_stdin(proc)
         rc = proc.returncode if proc else -1
         if rec.log_path:
-            redact_log(rec.log_path, rec.url)
+            # Deliberately not rewritten: the log keeps the stream URL and
+            # credentials so a failed capture can be diagnosed from it.
             rec.stderr_tail = read_log_problems(rec.log_path)
         with self._lock:
             self._recordings.pop(rec.id, None)

@@ -87,19 +87,21 @@ def test_shift_tab_from_epg_returns_to_the_channel_list():
     assert event.skipped is False
 
 
-def test_about_urls_and_diagnostic_redaction_are_safe():
+def test_about_urls_are_listed_and_diagnostics_keep_urls():
     assert main.TELEGRAM_SUPPORT_URL == "https://t.me/SerrebiProjects"
     assert main.PROJECT_GITHUB_URL == "https://github.com/serrebidev/Accessible-IPTV-Client"
     assert main.SERREBI_GITHUB_URL == "https://github.com/serrebidev"
 
+    # The diagnostic report is deliberately verbatim: whoever receives it needs
+    # the stream URL and credentials to reproduce a playback or download bug.
     user_key, pass_key, token_key = "username", "password", "token"
-    report = main._redact_diagnostic_text(
+    report = (
         "https://example.test/live?" + user_key + "=alice&" + pass_key
         + "=secret " + token_key + "=abc"
     )
-    assert "alice" not in report
-    assert "secret" not in report
-    assert "abc" not in report
+    assert "alice" in report
+    assert "secret" in report
+    assert "abc" in report
 
 
 def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):

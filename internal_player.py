@@ -195,6 +195,8 @@ class InternalPlayerFrame(wx.Frame):
         preferred_audio_tracks: Optional[Sequence[str]] = None,
         prefer_audio_description: bool = False,
         on_audio_preference: Optional[Callable[[str], None]] = None,
+        on_last_track_changed: Optional[Callable[[str], None]] = None,
+        last_audio_track: str = "",
     ) -> None:
         _prepare_vlc_runtime()
         if vlc is None:
@@ -280,10 +282,17 @@ class InternalPlayerFrame(wx.Frame):
         self._wanted_audio_track_name: Optional[str] = None
         self._audio_track_label = ""
         self._audio_reapply_pending = False
+        # The track the user last chose by hand (menu, choice control, or cycle
+        # hotkey). It leads the match list on every later stream, so one manual
+        # pick carries across channels and sessions.
+        self._last_manual_audio_track = str(last_audio_track or "").strip()
         # Preferred-track state. libVLC does not publish the track list until a
         # moment after playback starts, so the preference is retried for a few
         # timer ticks rather than checked once and abandoned.
         self._on_audio_preference_cb = on_audio_preference
+        # Fires on hand-picked tracks only, so main can persist just the last
+        # used track without rewriting the keyword preference list.
+        self._on_last_track_changed_cb = on_last_track_changed
         self._preferred_audio_tracks: List[str] = [str(k) for k in (preferred_audio_tracks or [])]
         self._prefer_audio_description = bool(prefer_audio_description)
         self._audio_preference_pending = False
@@ -475,10 +484,7 @@ class InternalPlayerFrame(wx.Frame):
             self._xtream_refresh_count = 0
             self._last_restart_reason = ""
             self._gave_up = False
-            self._wanted_audio_track_name = None
-            self._audio_track_label = ""
-            self._audio_reapply_pending = False
-            self._arm_audio_preference()
+            self._begin_new_stream_audio_state()
         if stream_kind is None:
             stream_kind = "live"
         self._current_stream_kind = stream_kind
@@ -1730,7 +1736,7 @@ class InternalPlayerFrame(wx.Frame):
             track_id = self._audio_track_choice_ids[index]
         except (AttributeError, IndexError):
             return
-        self._select_audio_track(track_id)
+        self._select_audio_track(track_id, manual=True)
         self._refresh_audio_track_choice()
 
     def _current_audio_track_id(self) -> Optional[int]:
@@ -1739,7 +1745,7 @@ class InternalPlayerFrame(wx.Frame):
         except Exception:
             return None
 
-    def _select_audio_track(self, track_id: int) -> None:
+    def _select_audio_track(self, track_id: int, manual: bool = False) -> None:
         name = ""
         for tid, tname in self._get_audio_tracks():
             if tid == track_id:
@@ -1755,6 +1761,17 @@ class InternalPlayerFrame(wx.Frame):
             name = _("Track {id}").format(id=track_id)
         self._wanted_audio_track_name = name
         self._audio_track_label = name
+        # A deliberate pick from the menu, the choice control or the cycle
+        # hotkey carries to every later stream, not just this one. An
+        # automatic preferred-track match does not: it is already covered by
+        # its keyword.
+        if manual:
+            self._last_manual_audio_track = name
+            if self._on_last_track_changed_cb:
+                try:
+                    self._on_last_track_changed_cb(name)
+                except Exception:
+                    LOG.debug("InternalPlayerFrame._select_audio_track: ignored exception", exc_info=True)
         self._audio_reapply_pending = False
         self._update_status_label(_("Audio: {name}").format(name=name))
         self._refresh_audio_track_choice()
@@ -1769,7 +1786,7 @@ class InternalPlayerFrame(wx.Frame):
             return
         nxt = self._next_audio_track_id(tracks, self._current_audio_track_id())
         if nxt is not None:
-            self._select_audio_track(nxt)
+            self._select_audio_track(nxt, manual=True)
 
     def _on_any_menu_open(self, event: wx.MenuEvent) -> None:
         try:
@@ -1808,7 +1825,7 @@ class InternalPlayerFrame(wx.Frame):
             return
         track_id = self._audio_track_menu_map.get(event.GetId())
         if track_id is not None:
-            self._select_audio_track(track_id)
+            self._select_audio_track(track_id, manual=True)
 
     def _remember_current_audio_track(self) -> None:
         """Store the name of the playing track as the preferred one."""
@@ -1826,6 +1843,14 @@ class InternalPlayerFrame(wx.Frame):
         self._preferred_audio_tracks = [name] + [
             keyword for keyword in self._preferred_audio_tracks if keyword.lower() != name.lower()
         ]
+        # Pinning "always prefer this" is a deliberate pick too: it leads the
+        # match list on later streams exactly like choosing the track directly.
+        self._last_manual_audio_track = name
+        if self._on_last_track_changed_cb:
+            try:
+                self._on_last_track_changed_cb(name)
+            except Exception:
+                LOG.debug("InternalPlayerFrame._remember_current_audio_track: ignored exception", exc_info=True)
         if self._on_audio_preference_cb is not None:
             try:
                 self._on_audio_preference_cb(name)
@@ -1844,16 +1869,40 @@ class InternalPlayerFrame(wx.Frame):
         self._preferred_audio_tracks = [str(k) for k in (keywords or [])]
         if prefer_audio_description is not None:
             self._prefer_audio_description = bool(prefer_audio_description)
-        # Only re-arm when the user has not chosen a track by hand for this stream;
-        # a preference change must never override a deliberate selection.
+        # The hand-picked track is unaffected by preference changes; only
+        # re-arm when the user has not chosen a track by hand for this stream,
+        # so a preference change never overrides a deliberate selection.
         if self._wanted_audio_track_name is None:
             self._arm_audio_preference()
 
+    def set_last_audio_track(self, name: str) -> None:
+        """Set the hand-picked track from saved settings (main window only)."""
+        self._last_manual_audio_track = str(name or "").strip()
+
+    def _begin_new_stream_audio_state(self) -> None:
+        """Reset per-stream audio state, keeping the hand-picked track."""
+        # The hand-picked track carries across streams: only the per-stream
+        # selection state resets here.
+        self._last_manual_audio_track = str(
+            getattr(self, "_last_manual_audio_track", "") or "").strip()
+        self._wanted_audio_track_name = None
+        self._audio_track_label = ""
+        self._audio_reapply_pending = False
+        self._arm_audio_preference()
+
     def _preferred_audio_keywords(self) -> List[str]:
-        return preferred_audio_keywords(
+        # The hand-picked track comes first: the user chose it listening to a
+        # real stream, which beats any saved keyword and every built-in guess.
+        keywords = preferred_audio_keywords(
             self._preferred_audio_tracks,
             prefer_audio_description=self._prefer_audio_description,
         )
+        manual = str(getattr(self, "_last_manual_audio_track", "") or "").strip()
+        if manual:
+            lowered = manual.lower()
+            keywords = [k for k in keywords if str(k).lower() != lowered]
+            keywords.insert(0, manual)
+        return keywords
 
     def _arm_audio_preference(self) -> None:
         self._audio_preference_attempts = 0
@@ -1866,6 +1915,10 @@ class InternalPlayerFrame(wx.Frame):
         if self._wanted_audio_track_name is not None:
             # A manual choice (or an earlier match) wins; the reapply path owns it.
             self._audio_preference_pending = False
+            return
+        # _last_manual_audio_track is a match keyword, not a track id: without
+        # tracks published there is nothing to select, so the retry loop owns it.
+        if self._current_audio_track_id() is None:
             return
         keywords = self._preferred_audio_keywords()
         if not keywords:
@@ -1954,9 +2007,12 @@ class InternalPlayerFrame(wx.Frame):
         self.Destroy()
 
     def _on_close(self, event: wx.CloseEvent) -> None:
+        # Closing the window means "stop this channel". When the app hid the
+        # player deliberately (show_player_on_enter off), a Hide is not a Close,
+        # so nothing here runs for it; but a real user close always stops
+        # playback, even while the frame is disabled for accessibility.
         if not self._allow_close and event.CanVeto():
-            event.Veto()
-            self._hide_player()
+            self._exit_player()
             return
         self._status_timer.Stop()
         try:

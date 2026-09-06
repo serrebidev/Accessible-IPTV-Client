@@ -430,7 +430,11 @@ class HLSConverter:
     def start(self):
         # Video HLS engine (piped)
         cmd = self._build_ffmpeg_command()
-        LOG.info(f"Starting HLS engine for Video ({self.profile})")
+        # Source URL and headers are logged verbatim on purpose: the log exists
+        # for troubleshooting, and this is exactly what a failed upstream needs.
+        LOG.info(
+            "Starting HLS engine for Video (%s) source=%s headers=%s",
+            self.profile, self.source_url, dict(self.headers))
         
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
         try:

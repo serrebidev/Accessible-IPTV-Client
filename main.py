@@ -200,16 +200,6 @@ class AccessibleAboutDialog(wx.Dialog):
             self.Destroy()
 
 
-def _redact_diagnostic_text(text: str) -> str:
-    """Remove provider credentials and stream URLs before clipboard sharing."""
-    text = re.sub(r"(?i)\b(?:https?|rtsp)://[^\s'\"]+", "<stream URL>", text or "")
-    return re.sub(
-        r"(?i)\b(username|password|token|authorization)\s*[:=]\s*[^\s,;]+",
-        r"\1=<redacted>",
-        text,
-    )
-
-
 class _AccessibleCategoryTree(wx.TreeCtrl):
     """Native, NVDA-friendly category tree with ListBox-compatible helpers.
 
@@ -476,6 +466,92 @@ _AUTO_UPDATE_CHECK_INTERVAL_SECONDS = 12 * 60 * 60
 _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
 _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
+
+# EPG-style placeholders some providers embed in catchup-source templates.
+# ${start}/${timestamp} (teleelevidenie), {utc}/{lutc}, and the long variants
+# all appear in the wild; Kodi's IPTV Simple documents the {S} family.
+_CATCHUP_TEMPLATE_TOKENS = (
+    ("${start}", "start"), ("${timestamp}", "lutc"),
+    ("${duration}", "duration"), ("${end}", "end"),
+    ("{utc}", "start"), ("{lutc}", "lutc"),
+    ("{utcstart}", "start"), ("{utcend}", "end"),
+    ("{duration}", "duration"),
+    ("{S}", "start"), ("{E}", "end"), ("{L}", "lutc"), ("{D}", "duration"),
+    ("{Y}", "start_year"), ("{m}", "start_month"), ("{d}", "start_day"),
+    ("{H}", "start_hour"), ("{M}", "start_minute"),
+    ("{y}", "end_year"), ("{e}", "end_day"), ("{h}", "end_hour"), ("{i}", "end_minute"),
+)
+
+
+def _catchup_token_value(kind: str, start_dt, end_dt, now) -> str:
+    """Render one catchup-source placeholder as a string."""
+    if kind == "start":
+        return str(int(start_dt.timestamp()))
+    if kind == "end":
+        return str(int(end_dt.timestamp()))
+    if kind == "lutc":
+        return str(int(now.timestamp()))
+    if kind == "duration":
+        return str(max(1, int((end_dt - start_dt).total_seconds())))
+    if kind == "start_year":
+        return start_dt.strftime("%Y")
+    if kind == "start_month":
+        return start_dt.strftime("%m")
+    if kind == "start_day":
+        return start_dt.strftime("%d")
+    if kind == "start_hour":
+        return start_dt.strftime("%H")
+    if kind == "start_minute":
+        return start_dt.strftime("%M")
+    if kind == "end_year":
+        return end_dt.strftime("%Y")
+    if kind == "end_day":
+        return end_dt.strftime("%d")
+    if kind == "end_hour":
+        return end_dt.strftime("%H")
+    if kind == "end_minute":
+        return end_dt.strftime("%M")
+    return ""
+
+
+def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float = 0.0):
+    """Fill an EPG-template ``catchup-source`` in, or return None if it is not one.
+
+    Providers such as teleelevidenie ship ``catchup="append"`` plus a template
+    like ``?utc=${start}&lutc=${timestamp}``. That must be appended to the
+    channel's live URL with real epoch values, not treated as a static base
+    path -- the old code turned it into ``<host>/<start>/<duration>/``, which
+    the server answers with 403.
+    """
+    text = (source or "").strip()
+    if not text:
+        return None
+    expanded = text
+    matched = False
+    for token, kind in _CATCHUP_TEMPLATE_TOKENS:
+        if token in expanded:
+            matched = True
+            break
+    if not matched:
+        return None
+
+    if offset_hours:
+        try:
+            shift = datetime.timedelta(hours=float(offset_hours))
+        except (TypeError, ValueError):
+            shift = datetime.timedelta(0)
+        start_dt = start_dt - shift
+        end_dt = end_dt - shift
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for token, kind in _CATCHUP_TEMPLATE_TOKENS:
+        while token in expanded:
+            expanded = expanded.replace(
+                token,
+                _catchup_token_value(kind, start_dt, end_dt, now),
+                1,
+            )
+    return expanded
+
 
 def set_linux_env():
     if platform.system() != "Linux":
@@ -918,6 +994,13 @@ class IPTVClient(wx.Frame):
             _marker, scope, category = group
             return [
                 channel for channel in self.scoped_channels_by_group().get(category, [])
+                if str(channel.get("playlist-id") or "") == scope
+            ]
+        if (isinstance(group, tuple) and len(group) == 2
+                and group[0] == "playlist-all"):
+            _marker, scope = group
+            return [
+                channel for channel in self.scoped_all_channels()
                 if str(channel.get("playlist-id") or "") == scope
             ]
         return self.scoped_channels_by_group().get(group, [])
@@ -1878,6 +1961,9 @@ class IPTVClient(wx.Frame):
 
         self.group_list.Bind(wx.EVT_LEFT_UP, self._on_group_activated)
         self.filter_box.Bind(wx.EVT_TEXT_ENTER, lambda _: self.apply_filter())
+        # Tab in the search box applies the filter, exactly like Enter, so a
+        # screen-reader user can filter and move on without hunting for Enter.
+        self.filter_box.Bind(wx.EVT_CHAR_HOOK, self._on_filter_char_hook)
 
         entries = [
             (wx.ACCEL_CTRL, ord('M'), 4001),
@@ -2651,7 +2737,9 @@ class IPTVClient(wx.Frame):
         ]
         tail = self._read_diagnostic_log_tail(log_path)
         lines.append(tail or _("(No EPG debug log has been written yet.)"))
-        report = _redact_diagnostic_text("\n".join(lines))
+        # Deliberately verbatim: stream URLs and provider credentials stay in the
+        # report so the person receiving it can reproduce and diagnose the fault.
+        report = "\n".join(lines)
         try:
             if not wx.TheClipboard.Open():
                 raise RuntimeError(_("The clipboard is unavailable."))
@@ -3335,10 +3423,37 @@ class IPTVClient(wx.Frame):
         frame.Show()
         frame.Raise()
 
+    def _on_filter_char_hook(self, event):
+        """Apply the search filter on Tab from the filter box, like Enter does.
+
+        Enter is consumed by EVT_TEXT_ENTER, and apply_filter moves focus to
+        the channel list; Tab is swallowed here so it produces that same end
+        state instead of also cycling focus a second time.
+        """
+        if event.GetKeyCode() == wx.WXK_TAB and not event.HasAnyModifiers():
+            self.apply_filter()
+            return
+        event.Skip()
+
     def _menu_toggle_player(self, _=None):
         frame = getattr(self, "_internal_player_frame", None)
         if frame:
-            frame._on_toggle_pause()
+            try:
+                destroyed = bool(getattr(frame, "_destroyed", False))
+                has_media = bool(frame._current_url or frame._last_resolved_url)
+            except Exception:
+                destroyed, has_media = True, False
+            if not destroyed and has_media:
+                # A stream is loaded (playing, paused, or stopped, visible or
+                # hidden): toggle it. _on_toggle_pause also resumes after a
+                # manual stop or a stream that ended.
+                frame._on_toggle_pause()
+                return
+            # Nothing is loaded: Play/Pause plays the selected channel, like
+            # pressing Enter, instead of doing nothing.
+            self.play_selected()
+            return
+        self.play_selected()
 
     def _menu_stop_player(self, _=None):
         frame = getattr(self, "_internal_player_frame", None)
@@ -3797,6 +3912,14 @@ class IPTVClient(wx.Frame):
                         continue
                     source_label = source_labels.get(scope, _("Other playlists"))
                     provider_path = ("playlist", scope, source_label)
+                    channel_count = sum(groups.values())
+                    # "All Channels" leaf first, so every playlist branch opens
+                    # with its whole channel list one Enter press away.
+                    self.group_list.Append(
+                        _("All Channels") + f" ({channel_count})",
+                        tree_path=[provider_path, _("All Channels")],
+                    )
+                    keys.append(("playlist-all", scope))
                     for group in sorted(groups):
                         self.group_list.Append(
                             f"{group} ({groups[group]})",
@@ -5123,6 +5246,31 @@ class IPTVClient(wx.Frame):
         source = channel.get("catchup-source") or ""
         if not source:
             return ""
+
+        offset = channel.get("catchup-offset")
+        offset_hours = 0.0
+        try:
+            if offset:
+                offset_hours = float(offset)
+        except (TypeError, ValueError):
+            offset_hours = 0.0
+            LOG.debug("IPTVClient._build_generic_catchup_url: ignored exception", exc_info=True)
+
+        # Template style (catchup="append", e.g. teleelevidenie's
+        # "?utc=${start}&lutc=${timestamp}"): fill the placeholders into the
+        # template and append it to the channel's live URL.
+        expanded = _expand_catchup_template(source, start_dt, end_dt, offset_hours)
+        if expanded is not None:
+            base = (channel.get("url") or "").split("|")[0].rstrip()
+            if "?" in base and expanded.startswith("?"):
+                expanded = "&" + expanded[1:]
+            url = base + expanded
+            ua = channel.get("http-user-agent")
+            if ua and "|" not in url:
+                url = f"{url}|User-Agent={urllib.parse.quote(ua)}"
+            return url
+
+        # Path style (?utc=/ catchup="xc"): rebuild <base>/<start>/<duration>/.
         stream_id = channel.get("stream-id") or self._extract_stream_id(channel.get("url", ""))
         if not stream_id:
             return ""
@@ -5136,11 +5284,9 @@ class IPTVClient(wx.Frame):
 
         start_local = utc_to_local(start_dt)
         end_local = utc_to_local(end_dt)
-        offset = channel.get("catchup-offset")
         try:
-            if offset:
-                hours = float(offset)
-                delta = datetime.timedelta(hours=hours)
+            if offset_hours:
+                delta = datetime.timedelta(hours=offset_hours)
                 start_local -= delta
                 end_local -= delta
         except (TypeError, ValueError):
@@ -5262,6 +5408,8 @@ class IPTVClient(wx.Frame):
             preferred_audio_tracks=list(self.config.get("preferred_audio_tracks") or []),
             prefer_audio_description=self._bool_pref(self.config.get("prefer_audio_description", False)),
             on_audio_preference=self._on_player_audio_preference,
+            on_last_track_changed=self._on_player_last_audio_track_changed,
+            last_audio_track=str(self.config.get("last_audio_track") or ""),
         )
         self._internal_player_frame = frame
         return frame
@@ -5276,8 +5424,22 @@ class IPTVClient(wx.Frame):
             if str(keyword).lower() != name.lower()
         ]
         self.config["preferred_audio_tracks"] = [name] + keywords
+        # "Always Prefer This Audio Track" is a hand-pick as well; remember it
+        # as the last used track so it also leads later streams.
+        self._on_player_last_audio_track_changed(name)
         save_config(self.config)
         LOG.info("Preferred audio track set to %s", name)
+
+    def _on_player_last_audio_track_changed(self, track_name: str) -> None:
+        """Persist the track the user last chose by hand (survives restarts)."""
+        name = (track_name or "").strip()
+        if not name:
+            return
+        if self.config.get("last_audio_track") == name:
+            return
+        self.config["last_audio_track"] = name
+        save_config(self.config)
+        LOG.info("Last used audio track set to %s", name)
 
     def _show_audio_preference_dialog(self, _event=None):
         dlg = AudioTrackPreferenceDialog(
@@ -5558,9 +5720,15 @@ class IPTVClient(wx.Frame):
                 duration=duration,
             )
         except Exception as err:
+            # Stream URLs go to the debug log verbatim (credentials included):
+            # the log exists for troubleshooting, and the URL is the diagnosis.
+            LOG.error("Catch-up download failed to start for %s: %s", url, err)
             wx.MessageBox(_("Could not start catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
             return
+        LOG.info(
+            "Catch-up download started for %s -> %s",
+            url, rec.out_path)
         self._note_recording_started()
         wx.MessageBox(_("Catch-up download started ({fmt}):\n{path}").format(
             fmt=self._recording_format_label(fmt), path=rec.out_path),

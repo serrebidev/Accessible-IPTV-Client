@@ -154,22 +154,39 @@ else:
 # =========================
 
 DEBUG = True if os.getenv("EPG_DEBUG", "0").strip() not in {"0", "false", "False"} else False
+
+def _root_logging_configured_for_app() -> bool:
+    """Whether the root logger already carries this app's log file (or pytest)."""
+    if "pytest" in sys.modules:
+        return True
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            base = os.path.basename(getattr(handler, "baseFilename", "") or "")
+            if base == os.path.basename(LOG_PATH):
+                return True
+    return False
+
 LOG_PATH = get_epg_log_path()
 _logger = logging.getLogger("EPG")
-if not _logger.handlers:
-    _logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
-    _fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+if not _root_logging_configured_for_app():
+    # Root gets the single rotating-file handler, so every module logger --
+    # EPG.*, internal_player, recorder, stream_proxy -- lands in the same log.
+    # Stream URLs, provider credentials and headers are deliberately kept in
+    # the log so playback, catch-up and recording failures can be diagnosed
+    # from it without re-running anything.
+    _root = logging.getLogger()
+    _root.setLevel(logging.DEBUG)
+    _fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     try:
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         _fh = logging.handlers.RotatingFileHandler(LOG_PATH, maxBytes=5 * 1024 * 1024, backupCount=2, encoding="utf-8", delay=True)
         _fh.setFormatter(_fmt)
-        _logger.addHandler(_fh)
+        _root.addHandler(_fh)
         # Also mirror to stderr while debugging (harmless if GUI)
         if DEBUG:
             _sh = logging.StreamHandler()
             _sh.setFormatter(_fmt)
-            _logger.addHandler(_sh)
-        _logger.debug("EPG debug logging initialized. File: %s", LOG_PATH)
+            _root.addHandler(_sh)
     except Exception as e:
         # If logging setup fails, don't crash the app. Print error and continue.
         print(f"FATAL: Could not initialize logger at {LOG_PATH}. Error: {e}")
@@ -194,34 +211,6 @@ def _mem_mb() -> int:
 def _safe(s: str, n=200) -> str:
     s = str(s or "")
     return (s[:n] + "...") if len(s) > n else s
-
-# Redact sensitive query values when logging URLs
-_SENSITIVE_QUERY_KEYS = {
-    'username','user','login','u','password','pass','pwd','token','auth','apikey','api_key','key','secret'
-}
-
-def _sanitize_url(url: str) -> str:
-    try:
-        if not url:
-            return url
-        parts = urllib.parse.urlsplit(url)
-        if parts.scheme not in {"http", "https"}:
-            return url
-        q = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
-        redacted = []
-        for k, v in q:
-            if (k or '').lower() in _SENSITIVE_QUERY_KEYS:
-                redacted.append((k, '***'))
-            else:
-                redacted.append((k, v))
-        new_query = urllib.parse.urlencode(redacted)
-        return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
-    except Exception:
-        # Fail open: never block logging; return a conservative redaction when in doubt
-        try:
-            return re.sub(r"(?i)(username|user|login|u|password|pass|pwd|token|auth|apikey|api_key|key|secret)=([^&\s]+)", r"\1=***", str(url))
-        except Exception:
-            return str(url)
 
 # Ensure only one thread mutates a temp gzip download at a time to avoid
 # truncation races when multiple imports target the same source URL.
@@ -1121,7 +1110,7 @@ def _http_download_gz_with_resume(url: str, max_attempts: int = 4, chunk_size: i
                         resp = urllib.request.urlopen(req, timeout=300)
                     except urllib.error.HTTPError as he:
                         if he.code == 416 and use_range:
-                            _logger.debug("EPG HTTP 416 for %s, retrying without Range", _sanitize_url(url))
+                            _logger.debug("EPG HTTP 416 for %s, retrying without Range", url)
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -2140,7 +2129,7 @@ class EPGDatabase:
         grand_prog, grand_chan = 0, 0
 
         def _open_stream(src):
-            _logger.debug("Opening stream: %s", _sanitize_url(src))
+            _logger.debug("Opening stream: %s", src)
             if src.startswith(("http://", "https://")):
                 last_err = None
                 for attempt in range(3):
@@ -2152,7 +2141,7 @@ class EPGDatabase:
                         resp = urllib.request.urlopen(req, timeout=300)
                         status = getattr(resp, "status", None)
                         ctype = resp.info().get('Content-Type', '').lower()
-                        _logger.debug("HTTP GET %s | status=%s ctype=%s mem=%sMB", _sanitize_url(src), status, ctype, _mem_mb())
+                        _logger.debug("HTTP GET %s | status=%s ctype=%s mem=%sMB", src, status, ctype, _mem_mb())
                         # Some providers return HTML error pages when busy; sniff early and retry.
                         # Peek a small chunk without consuming the stream irreversibly.
                         try:
@@ -2237,7 +2226,7 @@ class EPGDatabase:
                     stream = _open_stream(src)
                     parser = ET.XMLPullParser(['start', 'end'])
                     elem_stack: List[ET.Element] = []
-                    _logger.debug("EPG START src=%s (mem=%sMB)", _sanitize_url(src), _mem_mb())
+                    _logger.debug("EPG START src=%s (mem=%sMB)", src, _mem_mb())
                     # Begin write transaction with retry/backoff to avoid transient lock errors
                     try:
                         self.conn.execute("PRAGMA busy_timeout=15000;")
@@ -2256,7 +2245,7 @@ class EPGDatabase:
                     if not began_txn:
                         _logger.warning(
                             "EPG database was locked when starting import for %s; reopening connection and retrying",
-                            _sanitize_url(src)
+                            src
                         )
                         try:
                             self.reopen()
@@ -2317,13 +2306,13 @@ class EPGDatabase:
 
                                 if st_utc and en_utc and ch_id:
                                     if DEBUG and sample_ok < 8:
-                                        _logger.debug("EPG SAMPLE OK src=%s ...", _sanitize_url(src)); sample_ok += 1
+                                        _logger.debug("EPG SAMPLE OK src=%s ...", src); sample_ok += 1
                                     self.insert_programme(ch_id, title_txt, st_utc, en_utc)
                                     prog_count += 1
                                     inserted_since_commit += 1
                                     if inserted_since_commit >= BATCH:
                                         self.commit()
-                                        _logger.debug("EPG COMMIT src=%s progs+%d total=%d mem=%sMB", _sanitize_url(src), BATCH, prog_count, _mem_mb())
+                                        _logger.debug("EPG COMMIT src=%s progs+%d total=%d mem=%sMB", src, BATCH, prog_count, _mem_mb())
                                         inserted_since_commit = 0
                             # Clear processed nodes and detach them from their parent so
                             # completed <programme>/<channel> elements don't accumulate.
@@ -2342,7 +2331,7 @@ class EPGDatabase:
                     except Exception:
                         _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     _logger.debug("EPG DONE src=%s channels=%d progs=%d elapsed=%.1fs mem=%sMB",
-                                  _sanitize_url(src), chan_count, prog_count, time.time() - t0, _mem_mb())
+                                  src, chan_count, prog_count, time.time() - t0, _mem_mb())
 
                     # success; exit retry loop for this source
                     break
@@ -2354,7 +2343,7 @@ class EPGDatabase:
                     if lockish:
                         _logger.warning(
                             "EPG database lock for %s — retrying after backoff (%d left)",
-                            _sanitize_url(src), attempts_left - 1
+                            src, attempts_left - 1
                         )
                         try:
                             if began_txn:
@@ -2383,7 +2372,7 @@ class EPGDatabase:
                     if _is_transient_stream_error(e) and attempts_left > 1:
                         _logger.warning(
                             "EPG transient error for %s: %s — retrying (%d left)",
-                            _sanitize_url(src), e, attempts_left - 1
+                            src, e, attempts_left - 1
                         )
                         try:
                             # rollback any partial transaction for a clean retry
@@ -2400,8 +2389,8 @@ class EPGDatabase:
                         attempts_left -= 1
                         continue
                     # Non-transient or out of retries: log and move on
-                    _logger.exception("EPG ERROR src=%s : %s", _sanitize_url(src), e)
-                    _log_wx_error(f"Failed to import EPG source {_sanitize_url(src)}: {e}")
+                    _logger.exception("EPG ERROR src=%s : %s", src, e)
+                    _log_wx_error(f"Failed to import EPG source {src}: {e}")
                     break
                 finally:
                     # Ensure no lingering transaction if an error occurred before commit
@@ -2505,11 +2494,16 @@ class _SourceNamesMixin:
         source = sources[index]
         current = (source.get("name", "") if isinstance(source, dict)
                    else self.source_names.get(source_name_key(source), ""))
-        with wx.TextEntryDialog(self, _("Name (leave blank to use the default)"),
+        with wx.TextEntryDialog(self, _("Name"),
                                 _("Rename Selected"), value=current) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return
             name = dlg.GetValue().strip()
+        # An empty field or an unchanged name means: keep the existing label.
+        if not name or name == current:
+            self.lb.SetSelection(index)
+            self.lb.SetFocus()
+            return
         if isinstance(source, dict):
             source["name"] = name
         elif name:

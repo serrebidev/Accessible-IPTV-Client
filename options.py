@@ -460,6 +460,7 @@ def load_config() -> Dict:
         "favorites": [],
         "preferred_audio_tracks": [],
         "prefer_audio_description": False,
+        "last_audio_track": "",
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():

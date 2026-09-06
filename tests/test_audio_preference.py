@@ -209,3 +209,86 @@ class TestApplyingThePreference:
             _apply(frame)
         assert frame.selected == []
         assert frame._audio_preference_pending is False
+
+
+class TestLastManualTrackIsRemembered:
+    def test_manual_pick_leads_the_match_list(self):
+        frame = _stub_frame(
+            [(0, "English"), (1, "Polski"), (2, "Audio Description")],
+            keywords=("audio description",))
+        frame._last_manual_audio_track = "Polski"
+        frame._update_status_label = lambda *a, **k: None
+        frame._refresh_audio_track_choice = lambda: None
+        frame.player = types.SimpleNamespace(
+            audio_set_track=lambda tid: frame.selected.append(tid))
+        frame._select_audio_track = types.MethodType(
+            internal_player.InternalPlayerFrame._select_audio_track, frame)
+        _apply(frame)
+        assert frame.selected == [1]
+        assert frame._wanted_audio_track_name == "Polski"
+
+    def test_selecting_a_track_records_it_as_the_last_manual_track(self):
+        frame = types.SimpleNamespace()
+        frame.selected = []
+        frame.status = []
+        frame._wanted_audio_track_name = None
+        frame._audio_track_label = ""
+        frame._audio_reapply_pending = False
+        frame._last_manual_audio_track = ""
+        frame._on_last_track_changed_cb = lambda name: frame.status.append(name)
+        frame._get_audio_tracks = lambda: [(0, "English"), (1, "Polski")]
+        frame.player = types.SimpleNamespace(
+            audio_set_track=lambda tid: frame.selected.append(tid))
+        frame._update_status_label = lambda *a, **k: None
+        frame._refresh_audio_track_choice = lambda: None
+
+        internal_player.InternalPlayerFrame._select_audio_track(frame, 1, manual=True)
+
+        assert frame._last_manual_audio_track == "Polski"
+        assert frame._wanted_audio_track_name == "Polski"
+        assert "Polski" in frame.status  # persisted via the callback
+
+    def test_an_automatic_preference_match_is_not_a_manual_pick(self):
+        frame = _stub_frame([(0, "English"), (1, "Audio Description")])
+        frame._last_manual_audio_track = ""
+        frame.player = types.SimpleNamespace(
+            audio_set_track=lambda tid: frame.selected.append(tid))
+        frame._select_audio_track = types.MethodType(
+            internal_player.InternalPlayerFrame._select_audio_track, frame)
+        frame._update_status_label = lambda *a, **k: None
+        frame._refresh_audio_track_choice = lambda: None
+
+        _apply(frame)
+
+        assert frame.selected == [1]
+        assert frame._last_manual_audio_track == "", (
+            "the automatic match must not overwrite the hand-picked track")
+
+    def test_last_manual_track_survives_a_stream_change(self):
+        frame = _stub_frame([], keywords=())
+        frame._last_manual_audio_track = "Polski"
+        frame._wanted_audio_track_name = "Polski"
+        frame._audio_track_label = "Polski"
+        frame._audio_reapply_pending = True
+        frame._arm_audio_preference = lambda: None
+
+        internal_player.InternalPlayerFrame._begin_new_stream_audio_state(frame)
+
+        assert frame._last_manual_audio_track == "Polski"
+        assert frame._wanted_audio_track_name is None
+        assert frame._audio_track_label == ""
+        assert frame._audio_reapply_pending is False
+
+    def test_always_prefer_this_also_sets_the_last_manual_track(self):
+        frame = _stub_frame([], keywords=())
+        frame._preferred_audio_tracks = []
+        frame._on_audio_preference_cb = lambda name: None
+        frame._on_last_track_changed_cb = lambda name: None
+        frame._update_status_label = lambda *a, **k: None
+        frame._current_audio_track_id = lambda: 2
+        frame._get_audio_tracks = lambda: [(0, "English"), (2, "Deutsch")]
+
+        internal_player.InternalPlayerFrame._remember_current_audio_track(frame)
+
+        assert frame._last_manual_audio_track == "Deutsch"
+        assert frame._preferred_audio_tracks == ["Deutsch"]
