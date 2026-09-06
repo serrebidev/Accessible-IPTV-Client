@@ -32,7 +32,8 @@ from options import (
     load_config, save_config, get_cache_path_for_url, get_cache_dir,
     get_db_path, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
-    get_recordings_dir, get_dvr_schedule_path, normalize_recording_format,
+    get_recordings_dir, get_dvr_schedule_path, get_logs_dir, get_epg_log_path,
+    normalize_recording_format,
     is_windows_installed_build
 )
 # Same normalization the EPG database indexes with - importing it from anywhere
@@ -59,6 +60,11 @@ from recorder import RECORDING_FORMATS
 import dvr
 import favorites
 import power
+
+TELEGRAM_SUPPORT_URL = "https://t.me/SerrebiProjects"
+PROJECT_GITHUB_URL = "https://github.com/{owner}/Accessible-IPTV-Client".format(
+    owner=app_meta.GITHUB_OWNER)
+SERREBI_GITHUB_URL = "https://github.com/serrebidev"
 
 _INTERNAL_PLAYER_FRAME_CLASS = None
 _INTERNAL_PLAYER_IMPORT_ATTEMPTED = False
@@ -122,6 +128,229 @@ def _tagged_sources(sources) -> list:
 
 class InternalPlayerUnavailableError(RuntimeError):
     """Raised when the built-in VLC player cannot be loaded."""
+
+
+class AccessibleAboutDialog(wx.Dialog):
+    """A keyboard-first About dialog whose support links are real tab stops."""
+
+    def __init__(self, parent):
+        from app_meta import APP_DISPLAY_NAME, APP_VERSION
+
+        super().__init__(parent, title=_("About {name}").format(name=APP_DISPLAY_NAME))
+        panel = wx.Panel(self)
+        layout = wx.BoxSizer(wx.VERTICAL)
+
+        heading = wx.StaticText(
+            panel,
+            label=_("{name} {version}").format(name=APP_DISPLAY_NAME, version=APP_VERSION),
+        )
+        heading.SetFont(heading.GetFont().Bold())
+        layout.Add(heading, 0, wx.ALL, 12)
+
+        description = wx.StaticText(
+            panel,
+            label=_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
+                    "Supports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, "
+                    "built-in VLC playback, casting, and XMLTV EPG."),
+        )
+        description.Wrap(500)
+        layout.Add(description, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        support = wx.StaticText(panel, label=_("Community and support"))
+        support.SetFont(support.GetFont().Bold())
+        layout.Add(support, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        for label, url in (
+            (_("Join the SerrebiProjects Telegram group"), TELEGRAM_SUPPORT_URL),
+            (_("Open the Accessible IPTV Client project on GitHub"), PROJECT_GITHUB_URL),
+            (_("Follow Serrebi on GitHub"), SERREBI_GITHUB_URL),
+        ):
+            link = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
+            link.SetName(label)
+            layout.Add(link, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        layout.Add(self.CreateButtonSizer(wx.OK), 0, wx.EXPAND | wx.ALL, 12)
+        panel.SetSizerAndFit(layout)
+        self.SetMinSize((540, -1))
+        self.Fit()
+        self.CentreOnParent()
+
+
+def _redact_diagnostic_text(text: str) -> str:
+    """Remove provider credentials and stream URLs before clipboard sharing."""
+    text = re.sub(r"(?i)\b(?:https?|rtsp)://[^\s'\"]+", "<stream URL>", text or "")
+    return re.sub(
+        r"(?i)\b(username|password|token|authorization)\s*[:=]\s*[^\s,;]+",
+        r"\1=<redacted>",
+        text,
+    )
+
+
+class _AccessibleCategoryTree(wx.TreeCtrl):
+    """Native, NVDA-friendly category tree with ListBox-compatible helpers.
+
+    The surrounding application stores category selection as a stable integer
+    into ``_group_keys``.  Keeping that small compatibility layer lets us use
+    the native tree's hierarchy, expansion state and MSAA/UIA role without
+    changing category identity to a display string.
+    """
+
+    _COUNT_SUFFIX = re.compile(r" \(\d+\)$")
+
+    def __init__(self, parent):
+        super().__init__(
+            parent,
+            style=wx.TR_HIDE_ROOT | wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE,
+            name="Categories",
+        )
+        self.SetName(_("Categories"))
+        if hasattr(self, "SetAccessibleName"):
+            self.SetAccessibleName(_("Categories"))
+        self._labels: List[str] = []
+        self._selection = wx.NOT_FOUND
+        self._batch_depth = 0
+        self._rebuilding = False
+        self._item_indexes: Dict[int, int] = {}
+        self._index_items: Dict[int, object] = {}
+        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_tree_selection)
+        self._rebuild()
+
+    @classmethod
+    def _path_parts(cls, label: str) -> List[str]:
+        base = cls._COUNT_SUFFIX.sub("", label or "").strip()
+        # IPTV providers commonly encode a hierarchy with either slash or a
+        # spaced greater-than sign. Keep all other punctuation literal: it can
+        # be part of a broadcaster's actual category name.
+        if " > " in base:
+            parts = base.split(" > ")
+        else:
+            parts = base.split("/")
+        return [part.strip() for part in parts if part.strip()] or [base]
+
+    def Freeze(self):
+        self._batch_depth += 1
+        return super().Freeze()
+
+    def Thaw(self):
+        result = super().Thaw()
+        self._batch_depth = max(0, self._batch_depth - 1)
+        if not self._batch_depth:
+            self._rebuild()
+        return result
+
+    def _changed(self):
+        if not self._batch_depth:
+            self._rebuild()
+
+    def Clear(self):
+        self._labels = []
+        self._selection = wx.NOT_FOUND
+        self._changed()
+
+    def Append(self, label: str):
+        self._labels.append(str(label))
+        self._changed()
+        return len(self._labels) - 1
+
+    def Insert(self, label: str, index: int):
+        index = max(0, min(int(index), len(self._labels)))
+        self._labels.insert(index, str(label))
+        if self._selection >= index:
+            self._selection += 1
+        self._changed()
+        return index
+
+    def Delete(self, index: int):
+        if not 0 <= index < len(self._labels):
+            return
+        self._labels.pop(index)
+        if self._selection == index:
+            self._selection = wx.NOT_FOUND
+        elif self._selection > index:
+            self._selection -= 1
+        self._changed()
+
+    def SetString(self, index: int, label: str):
+        if 0 <= index < len(self._labels):
+            self._labels[index] = str(label)
+            self._changed()
+
+    def GetString(self, index: int) -> str:
+        return self._labels[index] if 0 <= index < len(self._labels) else ""
+
+    def GetCount(self) -> int:
+        return len(self._labels)
+
+    def GetSelection(self) -> int:
+        return self._selection
+
+    def SetSelection(self, index: int):
+        if not 0 <= index < len(self._labels):
+            self._selection = wx.NOT_FOUND
+            return
+        self._selection = index
+        if self._batch_depth:
+            return
+        item = self._index_items.get(index)
+        if item is not None and item.IsOk():
+            self.SelectItem(item)
+            self.EnsureVisible(item)
+
+    def ToggleSelectedBranch(self):
+        item = super().GetSelection()
+        if item is not None and item.IsOk() and self.ItemHasChildren(item):
+            if self.IsExpanded(item):
+                self.Collapse(item)
+            else:
+                self.Expand(item)
+
+    def _on_tree_selection(self, event):
+        if self._rebuilding:
+            event.Skip()
+            return
+        item = event.GetItem()
+        # wxMSW returns a fresh ``sip.voidptr`` wrapper from GetID() on each
+        # call, so it is not a stable dictionary key. TreeItemId comparison is.
+        self._selection = next(
+            (index for index, known_item in self._index_items.items() if item == known_item),
+            wx.NOT_FOUND,
+        )
+        event.Skip()
+
+    def _rebuild(self):
+        # Rebuild only when a batched category refresh is complete. TreeCtrl
+        # exposes the hierarchy to NVDA, unlike an owner-drawn replacement.
+        self._rebuilding = True
+        try:
+            self.DeleteAllItems()
+            self._item_indexes = {}
+            self._index_items = {}
+            root = self.AddRoot(_("Categories"))
+            path_items: Dict[Tuple[str, ...], object] = {}
+            for index, label in enumerate(self._labels):
+                parent = root
+                path: List[str] = []
+                parts = self._path_parts(label)
+                for part_index, part in enumerate(parts):
+                    path.append(part)
+                    path_key = tuple(path)
+                    item = path_items.get(path_key)
+                    if item is None:
+                        text = label if part_index == len(parts) - 1 else part
+                        item = self.AppendItem(parent, text)
+                        path_items[path_key] = item
+                    elif part_index == len(parts) - 1:
+                        # The category itself may also be a branch. Its own label
+                        # includes its channel count, while its children stay put.
+                        self.SetItemText(item, label)
+                    parent = item
+                self._item_indexes[parent.GetID()] = index
+                self._index_items[index] = parent
+        finally:
+            self._rebuilding = False
+        if 0 <= self._selection < len(self._labels):
+            item = self._index_items.get(self._selection)
+            if item is not None and item.IsOk():
+                self.SelectItem(item)
 
 
 def _load_internal_player_frame_class():
@@ -958,6 +1187,7 @@ class IPTVClient(wx.Frame):
         self._sync_player_menu_from_config()
         # The config was just replaced, so anything cached out of it is re-read.
         self._sync_favorites_from_config()
+        self._update_recording_menu_state()
         # The playlist list may have changed on disk; keep the scope picker in
         # step (its stored selection may also have been replaced or removed).
         self.playlist_scope = self.config.get("playlist_scope", ALL_PLAYLISTS_SCOPE)
@@ -1325,8 +1555,9 @@ class IPTVClient(wx.Frame):
         if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
             self.playlist_scope_combo.SetAccessibleName(_("Playlist view"))
         self.playlist_scope_combo.Bind(wx.EVT_CHAR_HOOK, self.on_playlist_scope_key)
-        self.group_list = wx.ListBox(p, style=wx.LB_SINGLE)
+        self.group_list = _AccessibleCategoryTree(p)
         self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
+        self.group_list.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_group_activated)
         self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
         self._fill_playlist_scope_combo()
         vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
@@ -1346,6 +1577,10 @@ class IPTVClient(wx.Frame):
 
         self.epg_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.url_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
+        # Keep the documented Tab loop reversible for text controls as well as
+        # the virtual channel list: channels -> EPG -> stream URL.
+        self.epg_display.Bind(wx.EVT_CHAR_HOOK, self._on_epg_display_key)
+        self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.epg_display, 0, wx.EXPAND | wx.ALL, 5)
@@ -1438,6 +1673,15 @@ class IPTVClient(wx.Frame):
                 self.Bind(wx.EVT_MENU, self.on_check_updates, id=1006)
                 menu.AppendSeparator()
 
+                help_menu = wx.Menu()
+                logs_item = help_menu.Append(wx.ID_ANY, _("Open Logs Folder"))
+                copy_debug_item = help_menu.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
+                about_item = help_menu.Append(wx.ID_ABOUT, _("About..."))
+                help_menu.Bind(wx.EVT_MENU, self._open_logs_folder, logs_item)
+                help_menu.Bind(wx.EVT_MENU, self._copy_diagnostic_information, copy_debug_item)
+                help_menu.Bind(wx.EVT_MENU, self._show_about_dialog, about_item)
+                menu.AppendSubMenu(help_menu, _("Help"))
+
                 # Casting Menu Item (Linux)
                 menu.Append(1005, _("Cast To..."))
                 self.Bind(wx.EVT_MENU, self.show_cast_dialog, id=1005)
@@ -1524,6 +1768,8 @@ class IPTVClient(wx.Frame):
             # Help menu
             hm = wx.Menu()
             self.check_updates_item = hm.Append(wx.ID_ANY, _("Check for Updates..."))
+            self.open_logs_item = hm.Append(wx.ID_ANY, _("Open Logs Folder"))
+            self.copy_diagnostic_item = hm.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
             hm.AppendSeparator()
             m_about = hm.Append(wx.ID_ABOUT, _("About..."))
             mb.Append(hm, _("Help"))
@@ -1546,6 +1792,8 @@ class IPTVClient(wx.Frame):
             self.Bind(wx.EVT_MENU, self.on_toggle_show_player_on_enter, self.show_player_on_enter_item)
             self.Bind(wx.EVT_MENU, self.on_toggle_auto_check_updates, self.auto_check_updates_item)
             self.Bind(wx.EVT_MENU, self.on_check_updates, self.check_updates_item)
+            self.Bind(wx.EVT_MENU, self._open_logs_folder, self.open_logs_item)
+            self.Bind(wx.EVT_MENU, self._copy_diagnostic_information, self.copy_diagnostic_item)
             self.Bind(wx.EVT_MENU, self._show_about_dialog, m_about)
             self.Bind(wx.EVT_MENU_OPEN, self.on_menu_open)
             self._sync_player_menu_from_config()
@@ -1598,6 +1846,18 @@ class IPTVClient(wx.Frame):
             return  # swallow to prevent beep/focus issues
         event.Skip()
 
+    def _on_epg_display_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB:
+            (self.channel_list if event.ShiftDown() else self.url_display).SetFocus()
+            return
+        event.Skip()
+
+    def _on_url_display_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+            self.epg_display.SetFocus()
+            return
+        event.Skip()
+
     def _on_channel_context_menu(self, event):
         if not self.displayed:
             return
@@ -1647,6 +1907,11 @@ class IPTVClient(wx.Frame):
                 lambda evt, ch=channel, prog=item.get("data", {}): self._schedule_program_recording(ch, prog),
                 sched_item,
             )
+        elif not self._channel_is_epg_exempt(channel):
+            # A channel row is just as useful a starting point as a search result:
+            # open its upcoming guide so the user can choose the programme first.
+            sched_item = menu.Append(wx.ID_ANY, _("Schedule Recording..."))
+            menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._schedule_channel_recording(ch), sched_item)
 
         if not self._channel_is_epg_exempt(channel):
             epg_item = menu.Append(wx.ID_ANY, _("View EPG..."))
@@ -1673,6 +1938,25 @@ class IPTVClient(wx.Frame):
                 wx.CallAfter(lambda: self._show_epg_dialog(channel, channel.get("name", ""), programmes))
             except Exception as e:
                 wx.CallAfter(lambda err=e: wx.MessageBox(_("Error fetching EPG: {error}").format(error=err), _("Error"), wx.OK | wx.ICON_ERROR))
+
+        threading.Thread(target=fetch_and_show, daemon=True).start()
+
+    def _schedule_channel_recording(self, channel: Dict[str, str]):
+        """Let a channel-row user choose an upcoming EPG programme to record."""
+        def fetch_and_show():
+            try:
+                db = EPGDatabase(get_db_path(), readonly=True)
+                try:
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    programmes = db.get_schedule(channel, now, now + datetime.timedelta(days=7))
+                finally:
+                    db.close()
+                wx.CallAfter(lambda: self._show_epg_dialog(
+                    channel, self._channel_display_name(channel), programmes))
+            except Exception as err:
+                wx.CallAfter(lambda error=err: wx.MessageBox(
+                    _("Error fetching EPG: {error}").format(error=error),
+                    _("Error"), wx.OK | wx.ICON_ERROR))
 
         threading.Thread(target=fetch_and_show, daemon=True).start()
 
@@ -2249,6 +2533,64 @@ class IPTVClient(wx.Frame):
             wx.MessageBox(_("Could not open folder:\n{error}").format(error=err),
                           _("Recordings"), wx.OK | wx.ICON_ERROR)
 
+    def _open_logs_folder(self, *_args):
+        path = get_logs_dir()
+        try:
+            if platform.system() == "Windows":
+                os.startfile(path)  # type: ignore[attr-defined]
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", path])
+            else:
+                subprocess.Popen(["xdg-open", path])
+        except Exception as err:
+            wx.MessageBox(_("Could not open folder:\n{error}").format(error=err),
+                          _("Logs"), wx.OK | wx.ICON_ERROR)
+
+    @staticmethod
+    def _read_diagnostic_log_tail(path: str, max_bytes: int = 131072) -> str:
+        """Read a bounded tail so copying diagnostics cannot freeze the UI."""
+        try:
+            with open(path, "rb") as handle:
+                handle.seek(0, os.SEEK_END)
+                size = handle.tell()
+                handle.seek(max(0, size - max_bytes))
+                return handle.read().decode("utf-8", errors="replace")
+        except OSError:
+            return ""
+
+    def _copy_diagnostic_information(self, *_args):
+        """Copy useful, privacy-safe diagnostics that can be sent to the developer."""
+        from app_meta import APP_DISPLAY_NAME, APP_VERSION
+
+        log_path = get_epg_log_path()
+        lines = [
+            "{name} {version}".format(name=APP_DISPLAY_NAME, version=APP_VERSION),
+            _("Platform: {platform}").format(platform=sys.platform),
+            _("Python: {version}").format(version=sys.version.split()[0]),
+            _("wxPython: {version}").format(version=wx.version()),
+            _("EPG enabled: {enabled}").format(enabled=bool(self.config.get("epg_enabled", True))),
+            _("Configured playlists: {count}").format(count=len(self.config.get("playlists", []))),
+            _("Active recordings: {count}").format(count=len(self.recorder.list_active())),
+            "",
+            _("EPG debug log (latest 128 KiB):"),
+        ]
+        tail = self._read_diagnostic_log_tail(log_path)
+        lines.append(tail or _("(No EPG debug log has been written yet.)"))
+        report = _redact_diagnostic_text("\n".join(lines))
+        try:
+            if not wx.TheClipboard.Open():
+                raise RuntimeError(_("The clipboard is unavailable."))
+            try:
+                wx.TheClipboard.SetData(wx.TextDataObject(report))
+            finally:
+                wx.TheClipboard.Close()
+        except Exception as err:
+            wx.MessageBox(_("Could not copy diagnostic information:\n{error}").format(error=err),
+                          _("Diagnostic Information"), wx.OK | wx.ICON_ERROR)
+            return
+        wx.MessageBox(_("Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."),
+                      _("Diagnostic Information"), wx.OK | wx.ICON_INFORMATION)
+
     def _choose_recordings_folder(self, *_args):
         current = get_recordings_dir(self.config)
         dlg = wx.DirDialog(self, _("Choose recordings folder"), defaultPath=current)
@@ -2293,23 +2635,30 @@ class IPTVClient(wx.Frame):
             wx.ID_ANY, _("Shut Down the Computer When Recordings Finish"))
         self._shutdown_after_item.Check(self._shutdown_after_recordings)
         menu.Bind(wx.EVT_MENU, self._on_toggle_shutdown_after_recordings, self._shutdown_after_item)
+        self._recording_menu_items = (start_item, stop_item, stop_all_item)
+        self._update_recording_menu_state()
+
+    def _update_recording_menu_state(self):
+        """Keep recording commands honest for the selected channel's live state."""
+        items = getattr(self, "_recording_menu_items", ())
+        if len(items) != 3:
+            return
+        channel = self._selected_channel()
+        is_recording = bool(channel and self.recorder.is_recording(self._channel_record_key(channel)))
+        try:
+            items[0].Enable(bool(channel) and not is_recording)
+            items[1].Enable(is_recording)
+            items[2].Enable(self.recorder.has_active())
+        except Exception:
+            LOG.debug("IPTVClient._update_recording_menu_state: ignored exception", exc_info=True)
 
     def _show_about_dialog(self, _event=None):
-        """Show About dialog with app info and links."""
-        from app_meta import APP_DISPLAY_NAME, APP_VERSION, GITHUB_OWNER
-        
-        info = wx.adv.AboutDialogInfo()
-        info.SetName(APP_DISPLAY_NAME)
-        info.SetVersion(APP_VERSION)
-        info.SetDescription(_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
-                           "Supports M3U/M3U Plus playlists, Stalker Portal, XtreamCodes,\n"
-                           "built-in VLC player, casting, and XMLTV EPG."))
-        info.SetCopyright("© 2025-2026 Serrebi and contributors")
-        info.SetWebSite(f"https://github.com/{GITHUB_OWNER}", _("GitHub Profile"))
-        info.AddDeveloper("Serrebi")
-        info.SetLicense(_("MIT License\n\nSee LICENSE file for details."))
-        
-        wx.adv.AboutBox(info)
+        """Show the accessible, keyboard-navigable About dialog."""
+        dlg = AccessibleAboutDialog(self)
+        try:
+            dlg.ShowModal()
+        finally:
+            dlg.Destroy()
 
     def _show_epg_dialog(self, channel, channel_name, programmes):
         if not programmes:
@@ -3046,10 +3395,11 @@ class IPTVClient(wx.Frame):
 
     def on_group_key(self, event):
         key = event.GetKeyCode()
-        if key in (wx.WXK_UP, wx.WXK_DOWN):
+        if key in (wx.WXK_UP, wx.WXK_DOWN, wx.WXK_HOME, wx.WXK_END,
+                   wx.WXK_PAGEUP, wx.WXK_PAGEDOWN):
             # Navigate the category list: let the native listbox move the
-            # selection (NVDA announces the new category) but do NOT repopulate
-            # the channel list or move focus. Enter/Tab activate the category.
+            # selection (NVDA announces the tree item's level and state) but do
+            # NOT repopulate the channel list or move focus. Enter/Tab activate.
             event.Skip()
             return
         if key == wx.WXK_TAB and event.ShiftDown():
@@ -3065,6 +3415,13 @@ class IPTVClient(wx.Frame):
 
     def _activate_selected_group(self):
         """Switch the channel list to the selected category and move focus there."""
+        if self.group_list.GetSelection() == wx.NOT_FOUND:
+            # A hierarchy-only parent is navigation, not a playlist category.
+            # Enter/Tab expands it without unexpectedly showing All Channels.
+            toggle = getattr(self.group_list, "ToggleSelectedBranch", None)
+            if callable(toggle):
+                toggle()
+            return
         self.on_group_select()
         # An empty scope combo has no selection: repopulating would fire
         # EVT_LIST_ITEM_SELECTED on a negative selection and crash here.
@@ -3075,7 +3432,7 @@ class IPTVClient(wx.Frame):
 
     def _on_group_activated(self, _event):
         # Mouse activation of a category follows the same path as Enter/Tab.
-        self.on_group_select()
+        self._activate_selected_group()
 
     def _append_search_results_chunked(self, channels: List[Dict[str, str]], token: int):
         # Virtual list: appending is O(1) regardless of count, so no chunking is needed.
@@ -4204,6 +4561,8 @@ class IPTVClient(wx.Frame):
             self._vod_on_group_select()
             return
         sel = self.group_list.GetSelection()
+        if sel == wx.NOT_FOUND:
+            return
         all_label = _("All Channels")
         label = self.group_list.GetString(sel) if sel != wx.NOT_FOUND else all_label
         # Prefer the parallel key list so group names containing " (" are not
@@ -4301,6 +4660,7 @@ class IPTVClient(wx.Frame):
 
     def on_highlight(self):
         # Allow viewing cached or currently available EPG even while an import is running.
+        self._update_recording_menu_state()
         i = self.channel_list.GetSelection()
         if i < 0 or i >= len(self.displayed):
             self.url_display.SetValue("")
@@ -4998,29 +5358,81 @@ class IPTVClient(wx.Frame):
             return
         dlg = CatchupDialog(self, channel.get("name", ""), programmes)
         try:
-            if dlg.ShowModal() == wx.ID_OK:
-                selected = dlg.get_selection()
-                if not selected:
-                    return
-                show = {
-                    "channel_id": selected.get("channel_id", ""),
-                    "channel_name": channel.get("name", selected.get("channel_name", "")),
-                    "show_title": selected.get("title", ""),
-                    "start": selected.get("start", ""),
-                    "end": selected.get("end", "")
-                }
-                try:
-                    url, _unused = self._resolve_show_url(channel, show)
-                except ProviderError as err:
-                    wx.MessageBox(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                    return
-                except Exception as err:
-                    wx.MessageBox(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                    return
-                display = (selected.get("title") or channel.get("name", "IPTV Stream"))
-                self._launch_stream(url, display, stream_kind="catchup", channel=channel)
+            action = dlg.ShowModal()
+            if action not in (wx.ID_OK, wx.ID_SAVE):
+                return
+            selected = dlg.get_selection()
+            if not selected:
+                return
+            show = {
+                "channel_id": selected.get("channel_id", ""),
+                "channel_name": channel.get("name", selected.get("channel_name", "")),
+                "show_title": selected.get("title", ""),
+                "start": selected.get("start", ""),
+                "end": selected.get("end", "")
+            }
+            if action == wx.ID_SAVE:
+                self._download_catchup_programme(channel, show)
+                return
+            try:
+                url, _unused = self._resolve_show_url(channel, show)
+            except ProviderError as err:
+                wx.MessageBox(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
+                return
+            except Exception as err:
+                wx.MessageBox(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
+                return
+            display = (selected.get("title") or channel.get("name", "IPTV Stream"))
+            self._launch_stream(url, display, stream_kind="catchup", channel=channel)
         finally:
             dlg.Destroy()
+
+    def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str]):
+        """Save a completed catch-up programme using its finite EPG time window."""
+        try:
+            start_dt = self._parse_epg_time(show.get("start", ""))
+            end_dt = self._parse_epg_time(show.get("end", ""))
+            duration = max(1.0, (end_dt - start_dt).total_seconds())
+            url, is_catchup = self._resolve_show_url(channel, show)
+            if not is_catchup:
+                raise ProviderError(_("This programme is not available as catch-up content yet."))
+        except ProviderError as err:
+            wx.MessageBox(_("Provider error: {error}").format(error=err), _("Catch-up Download"),
+                          wx.OK | wx.ICON_ERROR)
+            return
+        except Exception as err:
+            wx.MessageBox(_("Unable to prepare catch-up download:\n{error}").format(error=err),
+                          _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+            return
+
+        title = show.get("show_title") or show.get("title") or self._channel_display_name(channel)
+        display_name = _("{title} - {channel}").format(
+            title=title, channel=self._channel_display_name(channel))
+        identity = "{channel}|{start}|{end}".format(
+            channel=self._channel_record_key(channel), start=show.get("start", ""), end=show.get("end", ""))
+        key = "catchup:" + hashlib.sha256(identity.encode("utf-8", errors="replace")).hexdigest()
+        if self.recorder.is_recording(key):
+            wx.MessageBox(_("This catch-up programme is already downloading."),
+                          _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+            return
+        fmt = normalize_recording_format(self.config.get("recording_format"))
+        try:
+            rec = self.recorder.start(
+                url, display_name, fmt, channel_http_headers(channel), get_recordings_dir(self.config),
+                key=key,
+                metadata={"catchup": True, "programme_start": show.get("start", ""),
+                          "programme_end": show.get("end", "")},
+                on_finish=self._on_recording_finished,
+                duration=duration,
+            )
+        except Exception as err:
+            wx.MessageBox(_("Could not start catch-up download:\n{error}").format(error=err),
+                          _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+            return
+        self._note_recording_started()
+        wx.MessageBox(_("Catch-up download started ({fmt}):\n{path}").format(
+            fmt=self._recording_format_label(fmt), path=rec.out_path),
+            _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
 
     def show_cast_dialog(self, _event):
         caster = self._ensure_caster()
@@ -5411,8 +5823,10 @@ class CatchupDialog(wx.Dialog):
             self.listbox.SetSelection(0)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
+        download_btn = wx.Button(panel, label=_("Download"))
         cancel_btn = wx.Button(panel, id=wx.ID_CANCEL)
         btn_sizer.Add(ok_btn, 0, wx.ALL, 5)
+        btn_sizer.Add(download_btn, 0, wx.ALL, 5)
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
         sizer.Add(intro, 0, wx.ALL, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
@@ -5420,6 +5834,7 @@ class CatchupDialog(wx.Dialog):
         panel.SetSizer(sizer)
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_listbox_activate)
         ok_btn.Bind(wx.EVT_BUTTON, self._on_ok)
+        download_btn.Bind(wx.EVT_BUTTON, self._on_download)
         self.SetMinSize((420, 320))
         self.Layout()
         self.CenterOnParent()
@@ -5446,6 +5861,13 @@ class CatchupDialog(wx.Dialog):
         if self.listbox.GetSelection() == wx.NOT_FOUND:
             return
         self.EndModal(wx.ID_OK)
+
+    def _on_download(self, _event):
+        if self.listbox.GetSelection() == wx.NOT_FOUND and self.programmes:
+            self.listbox.SetSelection(0)
+        if self.listbox.GetSelection() == wx.NOT_FOUND:
+            return
+        self.EndModal(wx.ID_SAVE)
 
     def get_selection(self) -> Optional[Dict[str, str]]:
         idx = self.listbox.GetSelection()

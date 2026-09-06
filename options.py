@@ -29,6 +29,7 @@ WINDOWS_INSTALL_MARKER = ".windows-installed"
 WINDOWS_INSTALL_MIGRATION_SENTINEL = ".windows-installed-data-migrated"
 EPG_DB_FILE = "epg.db"
 EPG_DEBUG_LOG_FILE = "iptvclient_epg_debug.log"
+LOG_DIR_NAME = "logs"
 DVR_SCHEDULE_FILE = "scheduled_recordings.json"
 CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
@@ -660,6 +661,17 @@ def get_dvr_schedule_path() -> str:
     return os.path.join(get_user_config_dir(), DVR_SCHEDULE_FILE)
 
 
+def get_logs_dir() -> str:
+    """Return the user-writable folder containing application diagnostic logs."""
+    base = get_user_config_dir() if _is_windows_platform() else tempfile.gettempdir()
+    path = os.path.join(base, LOG_DIR_NAME)
+    try:
+        os.makedirs(path, exist_ok=True)
+    except Exception:
+        LOG.debug("get_logs_dir: ignored exception", exc_info=True)
+    return path
+
+
 def get_db_path():
     if _is_windows_platform():
         return os.path.join(get_user_config_dir(), EPG_DB_FILE)
@@ -667,9 +679,19 @@ def get_db_path():
 
 
 def get_epg_log_path():
-    if _is_windows_platform():
-        return os.path.join(get_user_config_dir(), EPG_DEBUG_LOG_FILE)
-    return os.path.join(tempfile.gettempdir(), EPG_DEBUG_LOG_FILE)
+    path = os.path.join(get_logs_dir(), EPG_DEBUG_LOG_FILE)
+    # Keep existing diagnostic history visible after introducing the dedicated
+    # logs folder. Copy, rather than move, so a failed migration never loses it.
+    legacy = os.path.join(
+        get_user_config_dir() if _is_windows_platform() else tempfile.gettempdir(),
+        EPG_DEBUG_LOG_FILE,
+    )
+    if legacy != path and os.path.isfile(legacy) and not os.path.exists(path):
+        try:
+            shutil.copy2(legacy, path)
+        except OSError:
+            LOG.debug("get_epg_log_path: ignored legacy log copy failure", exc_info=True)
+    return path
 
 # Strip from names when canonicalizing (NOT used to detect country)
 # Channel-name normalization and country detection used to be duplicated here.

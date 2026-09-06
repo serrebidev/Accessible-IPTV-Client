@@ -160,6 +160,7 @@ if not _logger.handlers:
     _logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
     _fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     try:
+        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         _fh = logging.handlers.RotatingFileHandler(LOG_PATH, maxBytes=5 * 1024 * 1024, backupCount=2, encoding="utf-8", delay=True)
         _fh.setFormatter(_fmt)
         _logger.addHandler(_fh)

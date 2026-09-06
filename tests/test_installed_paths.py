@@ -124,7 +124,8 @@ def test_installed_windows_runtime_paths_use_roaming_appdata(monkeypatch, tmp_pa
     assert Path(options.get_db_path()) == user_dir / "epg.db"
     assert Path(options.get_cache_dir()) == user_dir / "iptv_cache"
     assert Path(options.get_dvr_schedule_path()) == user_dir / "scheduled_recordings.json"
-    assert Path(options.get_epg_log_path()) == user_dir / "iptvclient_epg_debug.log"
+    assert Path(options.get_logs_dir()) == user_dir / "logs"
+    assert Path(options.get_epg_log_path()) == user_dir / "logs" / "iptvclient_epg_debug.log"
 
     candidates = [Path(candidate) for candidate in options.get_config_read_candidates()]
     assert candidates[0] == user_dir / "iptvclient.conf"

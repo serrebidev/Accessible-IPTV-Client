@@ -88,6 +88,45 @@ class TestTrackSelection:
         assert internal_player.select_preferred_audio_track([(0, "English AD")], []) is None
 
 
+class _FakeChoice:
+    def __init__(self):
+        self.items = []
+        self.enabled = None
+        self.selection = None
+        self.name = ""
+
+    def SetItems(self, items):
+        self.items = list(items)
+
+    def Enable(self, value=True):
+        self.enabled = bool(value)
+
+    def SetSelection(self, index):
+        self.selection = index
+
+    def SetName(self, name):
+        self.name = name
+
+
+class TestTabReachableAudioTrackControl:
+    def test_choice_lists_and_announces_the_active_track(self):
+        choice = _FakeChoice()
+        frame = types.SimpleNamespace(
+            audio_track_choice=choice,
+            _audio_track_choice_ids=[],
+            _audio_track_choice_signature=(),
+            _get_audio_tracks=lambda: [(0, "English"), (3, "English AD")],
+            _current_audio_track_id=lambda: 3,
+        )
+
+        internal_player.InternalPlayerFrame._refresh_audio_track_choice(frame)
+
+        assert choice.items == ["English", "English AD"]
+        assert choice.enabled is True
+        assert choice.selection == 1
+        assert "English AD" in choice.name
+
+
 def _stub_frame(tracks, current_id=0, keywords=("audio description",), prefer_ad=False):
     """A stand-in with just enough state for the preference methods.
 

@@ -163,7 +163,7 @@ def test_playlist_import_delays_epg_log_file_creation():
         tempfile.tempdir = tmp
         try:
             import playlist
-            log_path = os.path.join(tmp, "iptvclient_epg_debug.log")
+            log_path = os.path.join(tmp, "logs", "iptvclient_epg_debug.log")
             print(json.dumps({
                 "playlist_loaded": "playlist" in globals(),
                 "log_exists": os.path.exists(log_path),

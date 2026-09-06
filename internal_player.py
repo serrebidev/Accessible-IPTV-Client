@@ -372,12 +372,22 @@ class InternalPlayerFrame(wx.Frame):
         self.volume_slider.SetName(_("Volume Control"))
         self.volume_slider.Bind(wx.EVT_SLIDER, self._on_volume_slider)
 
+        self.audio_track_choice = wx.Choice(self.controls_panel)
+        self.audio_track_choice.SetName(_("Choose Audio Track"))
+        self.audio_track_choice.Enable(False)
+        self.audio_track_choice.Bind(wx.EVT_CHOICE, self._on_audio_track_choice)
+        self.audio_track_choice.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
+        self.audio_track_choice.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
+        self._audio_track_choice_ids: List[int] = []
+        self._audio_track_choice_signature: Tuple[Tuple[int, str], ...] = ()
+
         controls.Add(self.play_pause_btn, 0, wx.ALL, 5)
         controls.Add(self.stop_btn, 0, wx.ALL, 5)
         controls.Add(self.cast_btn, 0, wx.ALL, 5)
         controls.Add(self.fullscreen_btn, 0, wx.ALL, 5)
         # Expand horizontally; avoid mixing ALIGN_* with EXPAND to prevent wx assertions.
         controls.Add(self.volume_slider, 1, wx.ALL | wx.EXPAND, 5)
+        controls.Add(self.audio_track_choice, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         controls.AddStretchSpacer(1)
         self.status_label = wx.StaticText(self.controls_panel, label=_("Idle"))
         controls.Add(self.status_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
@@ -396,6 +406,7 @@ class InternalPlayerFrame(wx.Frame):
             self.cast_btn,
             self.fullscreen_btn,
             self.volume_slider,
+            self.audio_track_choice,
         ]
 
         self._build_menu_bar()
@@ -1441,6 +1452,7 @@ class InternalPlayerFrame(wx.Frame):
         self.status_label.SetLabel(label.strip())
 
     def _on_timer(self, _event: wx.TimerEvent) -> None:
+        self._refresh_audio_track_choice()
         try:
             state = self.player.get_state()
         except Exception:
@@ -1565,6 +1577,10 @@ class InternalPlayerFrame(wx.Frame):
 
     def _on_key_down(self, event: wx.KeyEvent) -> None:
         key = event.GetKeyCode()
+        if (wx.Window.FindFocus() is getattr(self, "audio_track_choice", None)
+                and key in (wx.WXK_UP, wx.WXK_NUMPAD_UP, wx.WXK_DOWN, wx.WXK_NUMPAD_DOWN)):
+            event.Skip()
+            return
         
         # Volume control with optional Ctrl modifier for speed
         if key in (wx.WXK_UP, wx.WXK_NUMPAD_UP):
@@ -1685,6 +1701,38 @@ class InternalPlayerFrame(wx.Frame):
             return []
         return self._normalise_audio_tracks(description)
 
+    def _refresh_audio_track_choice(self) -> None:
+        """Expose the current libVLC audio track as a keyboard-reachable control."""
+        choice = getattr(self, "audio_track_choice", None)
+        if choice is None:
+            return
+        tracks = self._get_audio_tracks()
+        signature = tuple(tracks)
+        current = self._current_audio_track_id()
+        if signature != self._audio_track_choice_signature:
+            self._audio_track_choice_signature = signature
+            self._audio_track_choice_ids = [track_id for track_id, _name in tracks]
+            choice.SetItems([name for _track_id, name in tracks])
+            choice.Enable(bool(tracks))
+        if not tracks:
+            choice.SetName(_("No audio tracks available"))
+            return
+        try:
+            selected = self._audio_track_choice_ids.index(current)
+        except ValueError:
+            selected = 0
+        choice.SetSelection(selected)
+        choice.SetName(_("Audio Track: {name}").format(name=tracks[selected][1]))
+
+    def _on_audio_track_choice(self, _event: wx.CommandEvent) -> None:
+        try:
+            index = self.audio_track_choice.GetSelection()
+            track_id = self._audio_track_choice_ids[index]
+        except (AttributeError, IndexError):
+            return
+        self._select_audio_track(track_id)
+        self._refresh_audio_track_choice()
+
     def _current_audio_track_id(self) -> Optional[int]:
         try:
             return self.player.audio_get_track()
@@ -1709,6 +1757,7 @@ class InternalPlayerFrame(wx.Frame):
         self._audio_track_label = name
         self._audio_reapply_pending = False
         self._update_status_label(_("Audio: {name}").format(name=name))
+        self._refresh_audio_track_choice()
 
     def _cycle_audio_track(self) -> None:
         tracks = self._get_audio_tracks()
