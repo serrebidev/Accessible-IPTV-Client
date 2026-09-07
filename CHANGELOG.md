@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.115.0 - 2026-09-07
+
+- Catch-up download progress window, context-menu actions, screen-reader names
+
 ## v1.114.1 - 2026-09-06
 
 - Let Tab and Shift+Tab escape the search box; guard async refocus
