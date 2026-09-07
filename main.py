@@ -1961,6 +1961,11 @@ class IPTVClient(wx.Frame):
 
         self.group_list.Bind(wx.EVT_LEFT_UP, self._on_group_activated)
         self.filter_box.Bind(wx.EVT_TEXT_ENTER, lambda _: self.apply_filter())
+        # Track re-focuses of the search box: stale async search results must
+        # not yank focus back to the channel list while the user is editing a
+        # new query (see the generation guard in apply_results).
+        self._filter_focus_gen = 0
+        self.filter_box.Bind(wx.EVT_SET_FOCUS, self._on_filter_focus)
         # Tab in the search box applies the filter, exactly like Enter, so a
         # screen-reader user can filter and move on without hunting for Enter.
         self.filter_box.Bind(wx.EVT_CHAR_HOOK, self._on_filter_char_hook)
@@ -3291,9 +3296,9 @@ class IPTVClient(wx.Frame):
         # Force window to foreground using Windows API for proper focus
         self._force_foreground()
         # Set focus to channel list for screen reader accessibility
-        wx.CallAfter(self._focus_channel_list)
+        wx.CallAfter(self._restore_focus_after_tray)
         # Additional delayed attempt
-        wx.CallLater(100, self._focus_channel_list)
+        wx.CallLater(100, self._restore_focus_after_tray)
 
     def _force_foreground(self):
         """Force window to foreground on Windows using native API."""
@@ -3357,7 +3362,7 @@ class IPTVClient(wx.Frame):
             except Exception:
                 LOG.debug("IPTVClient._force_foreground: ignored exception", exc_info=True)
 
-    def _focus_channel_list(self):
+    def _restore_focus_after_tray(self):
         """Set focus to channel list - used after restore from tray."""
         try:
             if self.IsShown() and not self.IsIconized():
@@ -3386,9 +3391,9 @@ class IPTVClient(wx.Frame):
                             # Fire selection event on the selected item (1-indexed for MSAA)
                             user32.NotifyWinEvent(EVENT_OBJECT_SELECTION, list_hwnd, OBJID_CLIENT, sel + 1)
                         except Exception:
-                            LOG.debug("IPTVClient._focus_channel_list: ignored exception", exc_info=True)
+                            LOG.debug("IPTVClient._restore_focus_after_tray: ignored exception", exc_info=True)
         except Exception:
-            LOG.debug("IPTVClient._focus_channel_list: ignored exception", exc_info=True)
+            LOG.debug("IPTVClient._restore_focus_after_tray: ignored exception", exc_info=True)
 
     def _tray_show_player(self):
         try:
@@ -3423,17 +3428,48 @@ class IPTVClient(wx.Frame):
         frame.Show()
         frame.Raise()
 
+    def _on_filter_focus(self, event):
+        self._filter_focus_gen = getattr(self, "_filter_focus_gen", 0) + 1
+        event.Skip()
+
     def _on_filter_char_hook(self, event):
         """Apply the search filter on Tab from the filter box, like Enter does.
 
-        Enter is consumed by EVT_TEXT_ENTER, and apply_filter moves focus to
-        the channel list; Tab is swallowed here so it produces that same end
-        state instead of also cycling focus a second time.
+        Enter is consumed by EVT_TEXT_ENTER, so Tab is intercepted here and
+        routed through the same path. apply_filter always leaves focus on the
+        channel list when there is something to show, which is the natural
+        Tab target after a search; with an empty box (or no results) it calls
+        _focus_after_filter, which falls back to normal navigation when the
+        list cannot take focus.
+
+        Shift+Tab is the backward edge of the manual focus ring: the group
+        list's Tab rule sends focus here, so Shift+Tab returns there. Without
+        this, default traversal just moves the caret inside the text control
+        and the search field is a trap in both directions.
         """
         if event.GetKeyCode() == wx.WXK_TAB and not event.HasAnyModifiers():
             self.apply_filter()
+            self._focus_after_filter()
+            return
+        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+            self.group_list.SetFocus()
             return
         event.Skip()
+
+    def _focus_after_filter(self):
+        """Focus the channel list after a search, falling back to normal
+        navigation when it cannot take focus (no rows). Called from the
+        filter box so Tab never leaves the user stuck in the search field."""
+        if self.channel_list.GetCount() > 0:
+            self.channel_list.SetFocus()
+            return
+        # Nothing to focus: let the default navigation cycle move on instead
+        # of swallowing the Tab and trapping the caret in the search field.
+        nav = wx.NavigationKeyEvent()
+        nav.SetDirection(wx.NavigationKeyEvent.IsForward)
+        nav.SetCurrentFocus(self.filter_box)
+        nav.SetFromTab(True)
+        self.GetEventHandler().ProcessEvent(nav)
 
     def _menu_toggle_player(self, _=None):
         frame = getattr(self, "_internal_player_frame", None)
@@ -3739,6 +3775,10 @@ class IPTVClient(wx.Frame):
 
     def apply_filter(self):
         txt = self.filter_box.GetValue().strip().lower()
+        # Remember which focus generation started this search: results that
+        # land after the user has re-focused the box are stale for focus
+        # purposes and must not steal the caret.
+        self._filter_focus_gen_at_search = getattr(self, "_filter_focus_gen", 0)
         if getattr(self, "view_mode", "live") == "vod":
             self._vod_apply_filter(txt)
             return
@@ -3787,6 +3827,20 @@ class IPTVClient(wx.Frame):
                 if getattr(self, "_populate_token", 0) != populate_token:
                     LOG.debug("search %r: dropped, list was repopulated", txt)
                     return
+                # Results are installed asynchronously; move focus to the list
+                # now or a Tab press from the filter box would appear to do
+                # nothing (the caret stays in the search field). Skip when the
+                # user has re-focused the box since this search started: that
+                # result is stale and stealing focus would interrupt editing.
+                # getattr keeps non-GUI test doubles (no HasFocus) working.
+                has_focus = getattr(self.filter_box, "HasFocus", None)
+                if (
+                    callable(has_focus)
+                    and has_focus()
+                    and getattr(self, "_filter_focus_gen", 0)
+                    == getattr(self, "_filter_focus_gen_at_search", -1)
+                ):
+                    self._focus_after_filter()
                 # Replacing search results is different from appending asynchronous
                 # EPG rows. Let the virtual list order the old/new model transition
                 # so NVDA never observes a stale active child during a SetItemCount

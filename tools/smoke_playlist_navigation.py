@@ -42,7 +42,46 @@ for reverse in (False, True):
                              else wx.NavigationKeyEvent.IsForward)
         app.Yield()
         assert wx.Window.FindFocus() == controls[(index + (-1 if reverse else 1)) % len(controls)], (index, reverse, wx.Window.FindFocus())
+
+# Tab with text in the search box must filter AND land on the channel list:
+# the results install asynchronously, so yield until the worker catches up.
+# "Two" is the only channel in the active playlist scope.
+frame.filter_box.SetValue("Two")
+frame.filter_box.SetFocus()
+event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+event.SetKeyCode(wx.WXK_TAB)
+handled = frame.filter_box.GetEventHandler().ProcessEvent(event)
+assert handled and not event.GetSkipped()
+deadline = wx.StopWatch()
+while wx.Window.FindFocus() != frame.channel_list and deadline.Time() < 2000:
+    app.Yield()
+assert wx.Window.FindFocus() == frame.channel_list, wx.Window.FindFocus()
+assert frame.channel_list.GetCount() == 1
+
+# Shift+Tab must keep navigating backwards: leave the field, no filter forced.
+frame.filter_box.SetValue("Two")
+frame.filter_box.SetFocus()
+event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+event.SetKeyCode(wx.WXK_TAB)
+event.SetShiftDown(True)
+frame.filter_box.GetEventHandler().ProcessEvent(event)
+app.Yield()
+# The manual focus ring routes Shift+Tab back to the group list (the group
+# list's Tab rule sends focus here), and must not apply the filter.
+assert wx.Window.FindFocus() == frame.group_list, wx.Window.FindFocus()
+assert frame.channel_list.GetCount() == 1, "Shift+Tab must not apply the filter"
+
+# Tab out of an empty search box: no results, so navigation moves on and the
+# caret never gets stuck in the field.
+frame.filter_box.SetValue("")
+frame.filter_box.SetFocus()
+event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+event.SetKeyCode(wx.WXK_TAB)
+handled = frame.filter_box.GetEventHandler().ProcessEvent(event)
+assert handled and not event.GetSkipped()
+app.Yield()
+assert wx.Window.FindFocus() == frame.channel_list, wx.Window.FindFocus()
 frame._exit_forced = True
 frame.Close()
 app.Yield()
-print("Playlist choices, filtering and twelve Tab/Shift+Tab transitions including search and EPG: OK")
+print("Playlist choices, filtering and Tab/Shift+Tab transitions including search and EPG: OK")
