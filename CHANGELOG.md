@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.116.0 - 2026-09-07
+
+- Faster catch-up downloads, clearer download window, EPG descriptions, audio device picker
+
 ## v1.115.0 - 2026-09-07
 
 - Catch-up download progress window, context-menu actions, screen-reader names
