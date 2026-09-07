@@ -3057,9 +3057,21 @@ class IPTVClient(wx.Frame):
         if not programmes:
             wx.MessageBox(_("No upcoming schedule found for this channel."), _("EPG"), wx.OK | wx.ICON_INFORMATION)
             return
-        dlg = ChannelEPGDialog(self, channel_name, programmes, schedule_callback=self._schedule_program_recording, channel=channel)
-        dlg.ShowModal()
-        dlg.Destroy()
+        try:
+            dlg = ChannelEPGDialog(self, channel_name, programmes, schedule_callback=self._schedule_program_recording, channel=channel)
+        except Exception:
+            # This runs inside a wx.CallAfter from the fetch thread, so an
+            # exception here would otherwise vanish silently: the View EPG
+            # item appears to do nothing at all. Surface it instead.
+            LOG.exception("ChannelEPGDialog failed to build for %s", channel_name)
+            wx.MessageBox(
+                _("Could not open the EPG window: {error}").format(error=sys.exc_info()[1]),
+                _("Error"), wx.OK | wx.ICON_ERROR)
+            return
+        try:
+            dlg.ShowModal()
+        finally:
+            dlg.Destroy()
 
     def on_toggle_min_to_tray(self, event):
         if platform.system() == "Linux":
@@ -6272,7 +6284,6 @@ class CatchupDownloadDialog(wx.Dialog):
         self.status_text.SetName(_("Download status"))
         self.gauge.SetName(_("Download progress"))
         self.details_field.SetName(_("Download details"))
-        self.details_field.SetAccessibleName(_("Download details"))
 
         self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel_download())
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -7190,7 +7201,6 @@ class ChannelEPGDialog(wx.Dialog):
         self.description_field = wx.TextCtrl(
             panel, size=(-1, 110), style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.description_field.SetName(_("Episode description"))
-        self.description_field.SetAccessibleName(_("Episode description"))
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
@@ -7273,6 +7283,31 @@ class ChannelEPGDialog(wx.Dialog):
             return
         self.schedule_callback(self.channel, prog)
 
+def _install_exception_logging():
+    """Send uncaught exceptions to the debug log instead of losing them.
+
+    wxPython routes exceptions raised inside the event loop - including
+    wx.CallAfter callbacks fired from worker threads - to ``sys.excepthook``;
+    without a hook they only reach stderr, so a crashed dialog callback looks
+    like a menu item that silently does nothing. Worker-thread exceptions go
+    through ``threading.excepthook`` the same way. Both hooks write to the
+    debug log and then delegate to the default hooks so stderr stays intact.
+    """
+    def ui_hook(exc_type, exc_value, exc_tb):
+        LOG.error("Uncaught exception in the UI event loop",
+                  exc_info=(exc_type, exc_value, exc_tb))
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+    def thread_hook(args):
+        name = getattr(args.thread, "name", None) or "unknown"
+        LOG.error("Uncaught exception in thread %s", name,
+                  exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+        threading.__excepthook__(args)
+
+    sys.excepthook = ui_hook
+    threading.excepthook = thread_hook
+
+
 if __name__ == "__main__":
     set_linux_env()
     # Best-effort early language activation from saved config (the frame re-applies it too).
@@ -7280,6 +7315,7 @@ if __name__ == "__main__":
         i18n.init_from_config(load_config())
     except Exception:
         LOG.debug("<module>: ignored exception", exc_info=True)
+    _install_exception_logging()
     app = wx.App()
     app.SetAppName(app_meta.APP_NAME)
     IPTVClient()
