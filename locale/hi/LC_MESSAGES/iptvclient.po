@@ -86,34 +86,34 @@ msgstr "सक्रिय"
 msgid "Active recordings: {count}"
 msgstr "Active recordings: {count}"
 
-#: playlist.py:2822
-#: playlist.py:2940
+#: playlist.py:2894
+#: playlist.py:3012
 msgid "Add"
 msgstr "जोड़ें"
 
-#: playlist.py:2546
-#: playlist.py:2627
+#: playlist.py:2602
+#: playlist.py:2696
 msgid "Add File"
 msgstr "फ़ाइल जोड़ें"
 
-#: playlist.py:2630
+#: playlist.py:2699
 msgid "Add Stalker Portal"
 msgstr "Stalker Portal जोड़ें"
 
-#: playlist.py:2875
+#: playlist.py:2947
 msgid "Add Stalker Portal Account"
 msgstr "Stalker Portal खाता जोड़ें"
 
-#: playlist.py:2547
-#: playlist.py:2628
+#: playlist.py:2603
+#: playlist.py:2697
 msgid "Add URL"
 msgstr "URL जोड़ें"
 
-#: playlist.py:2629
+#: playlist.py:2698
 msgid "Add Xtream Codes"
 msgstr "Xtream Codes जोड़ें"
 
-#: playlist.py:2761
+#: playlist.py:2833
 msgid "Add Xtream Codes Account"
 msgstr "Xtream Codes खाता जोड़ें"
 
@@ -129,8 +129,8 @@ msgstr "पसंदीदा में जोड़ें"
 msgid "All Channels"
 msgstr "सभी चैनल"
 
-#: playlist.py:2578
-#: playlist.py:2684
+#: playlist.py:2647
+#: playlist.py:2756
 msgid "All files"
 msgstr "सभी फ़ाइलें"
 
@@ -150,9 +150,9 @@ msgstr "अनुमत प्रारूप"
 msgid "Always Prefer This Audio Track"
 msgstr "इस ऑडियो ट्रैक को हमेशा प्राथमिकता दें"
 
-#: playlist.py:2914
-#: playlist.py:2915
-#: playlist.py:2917
+#: playlist.py:2986
+#: playlist.py:2987
+#: playlist.py:2989
 msgid "Attempt to add provider XMLTV"
 msgstr "प्रदाता का XMLTV जोड़ने का प्रयास करें"
 
@@ -237,9 +237,9 @@ msgstr "अपडेट के लिए स्वतः जाँच करे�
 msgid "Automatic"
 msgstr "स्वचालित"
 
-#: playlist.py:2802
-#: playlist.py:2803
-#: playlist.py:2805
+#: playlist.py:2874
+#: playlist.py:2875
+#: playlist.py:2877
 msgid "Automatically add XMLTV URL"
 msgstr "XMLTV URL स्वतः जोड़ें"
 
@@ -247,11 +247,11 @@ msgstr "XMLTV URL स्वतः जोड़ें"
 msgid "Banned"
 msgstr "प्रतिबंधित"
 
-#: playlist.py:2927
+#: playlist.py:2999
 msgid "Base URL of the Stalker/Ministra portal"
 msgstr "Stalker/Ministra पोर्टल का बेस URL"
 
-#: playlist.py:2810
+#: playlist.py:2882
 msgid "Base URL of the Xtream Codes server"
 msgstr "Xtream Codes सर्वर का बेस URL"
 
@@ -433,11 +433,11 @@ msgstr "{account} की जाँच हो रही है..."
 msgid "Choose Audio Track"
 msgstr "Choose Audio Track"
 
-#: playlist.py:2580
+#: playlist.py:2649
 msgid "Choose EPG XML file"
 msgstr "EPG XML फ़ाइल चुनें"
 
-#: playlist.py:2686
+#: playlist.py:2758
 msgid "Choose M3U file"
 msgstr "M3U फ़ाइल चुनें"
 
@@ -484,6 +484,11 @@ msgstr "विवरण कॉपी करें"
 #: main.py:1951
 msgid "Copy Log and Debug Information"
 msgstr "Copy Log and Debug Information"
+
+#: playlist.py:2632
+#: playlist.py:2739
+msgid "Copy URL"
+msgstr "URL कॉपी करें"
 
 #: main.py:6243
 msgid "Could not check this account.\n\n{error}"
@@ -550,6 +555,7 @@ msgid "Could not open folder:\n{error}"
 msgstr "फ़ोल्डर नहीं खोला जा सका:\n{error}"
 
 #: main.py:6273
+#: playlist.py:2555
 msgid "Could not open the clipboard."
 msgstr "क्लिपबोर्ड नहीं खोला जा सका।"
 
@@ -641,8 +647,8 @@ msgstr "निष्क्रिय"
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "कास्ट डिवाइस से डिस्कनेक्ट किया गया। दूसरा डिवाइस चुनने के लिए कास्ट मेनू खोलें।"
 
-#: playlist.py:2809
-#: playlist.py:2926
+#: playlist.py:2881
+#: playlist.py:2998
 msgid "Display name"
 msgstr "प्रदर्शन नाम"
 
@@ -715,7 +721,7 @@ msgstr "EPG"
 
 #: main.py:1776
 #: main.py:1885
-#: playlist.py:2535
+#: playlist.py:2591
 msgid "EPG Manager"
 msgstr "EPG प्रबंधक"
 
@@ -764,11 +770,11 @@ msgstr "बीता समय: {time}"
 msgid "Ended"
 msgstr "समाप्त"
 
-#: playlist.py:2588
+#: playlist.py:2657
 msgid "Enter EPG XML URL"
 msgstr "EPG XML URL दर्ज करें"
 
-#: playlist.py:2694
+#: playlist.py:2766
 msgid "Enter M3U URL"
 msgstr "M3U URL दर्ज करें"
 
@@ -929,7 +935,7 @@ msgstr "पूर्ण स्क्रीन"
 msgid "Full ffmpeg log:\n{path}"
 msgstr "पूर्ण ffmpeg लॉग:\n{path}"
 
-#: playlist.py:2577
+#: playlist.py:2646
 msgid "GZip XML"
 msgstr "GZip XML"
 
@@ -989,7 +995,7 @@ msgstr "EPG डेटा आयात हो रहा है…"
 msgid "In Progress"
 msgstr "प्रगति पर"
 
-#: playlist.py:2806
+#: playlist.py:2878
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "प्रदाता का XMLTV गाइड स्वतः शामिल करें"
 
@@ -1050,20 +1056,20 @@ msgstr "प्लेलिस्ट लोड हो रही हैं..."
 msgid "Logs"
 msgstr "Logs"
 
-#: playlist.py:2683
+#: playlist.py:2755
 msgid "M3U files"
 msgstr "M3U फ़ाइलें"
 
 #: account_info.py:388
-#: playlist.py:2930
+#: playlist.py:3002
 msgid "MAC address"
 msgstr "MAC पता"
 
-#: playlist.py:2979
+#: playlist.py:3051
 msgid "MAC address must contain six octets (e.g., 00:1A:79:12:34:56)."
 msgstr "MAC पते में छह ऑक्टेट होने चाहिए (जैसे, 00:1A:79:12:34:56)।"
 
-#: playlist.py:2930
+#: playlist.py:3002
 msgid "MAC address presented to the portal"
 msgstr "पोर्टल को प्रस्तुत किया गया MAC पता"
 
@@ -1256,19 +1262,19 @@ msgstr "Open the Accessible IPTV Client project on GitHub"
 msgid "Opening"
 msgstr "खुल रहा है"
 
-#: playlist.py:2809
+#: playlist.py:2881
 msgid "Optional nickname for this Xtream Codes account"
 msgstr "इस Xtream Codes खाते के लिए वैकल्पिक उपनाम"
 
-#: playlist.py:2926
+#: playlist.py:2998
 msgid "Optional nickname for this portal account"
 msgstr "इस पोर्टल खाते के लिए वैकल्पिक उपनाम"
 
-#: playlist.py:2929
+#: playlist.py:3001
 msgid "Optional portal account password"
 msgstr "वैकल्पिक पोर्टल खाता पासवर्ड"
 
-#: playlist.py:2928
+#: playlist.py:3000
 msgid "Optional portal account username"
 msgstr "वैकल्पिक पोर्टल खाता उपयोगकर्ता नाम"
 
@@ -1325,7 +1331,7 @@ msgstr "युग्मन विफल: {error}"
 msgid "Pairing finished but no credentials returned."
 msgstr "युग्मन समाप्त हुआ लेकिन कोई क्रेडेंशियल नहीं लौटाई गई।"
 
-#: playlist.py:2812
+#: playlist.py:2884
 msgid "Password"
 msgstr "पासवर्ड"
 
@@ -1403,11 +1409,11 @@ msgstr "प्लेलिस्ट"
 
 #: main.py:1775
 #: main.py:1884
-#: playlist.py:2615
+#: playlist.py:2684
 msgid "Playlist Manager"
 msgstr "प्लेलिस्ट प्रबंधक"
 
-#: playlist.py:2813
+#: playlist.py:2885
 msgid "Playlist type"
 msgstr "प्लेलिस्ट प्रकार"
 
@@ -1422,12 +1428,12 @@ msgstr "प्लेलिस्ट दृश्य"
 msgid "Please try another channel or try again later."
 msgstr "कृपया दूसरा चैनल आज़माएँ या बाद में पुनः प्रयास करें।"
 
-#: playlist.py:2975
+#: playlist.py:3047
 msgid "Portal URL is required."
 msgstr "पोर्टल URL आवश्यक है।"
 
-#: playlist.py:2810
-#: playlist.py:2927
+#: playlist.py:2882
+#: playlist.py:2999
 msgid "Portal base URL"
 msgstr "पोर्टल बेस URL"
 
@@ -1465,7 +1471,7 @@ msgstr "पसंदीदा ऑडियो ट्रैक..."
 msgid "Preferred audio track: {name}"
 msgstr "पसंदीदा ऑडियो ट्रैक: {name}"
 
-#: playlist.py:2814
+#: playlist.py:2886
 msgid "Preferred stream container format"
 msgstr "पसंदीदा स्ट्रीम कंटेनर प्रारूप"
 
@@ -1496,7 +1502,7 @@ msgstr "प्रगति: {percent}%"
 
 #: account_info.py:111
 #: main.py:1030
-#: playlist.py:2736
+#: playlist.py:2808
 msgid "Provider"
 msgstr "प्रदाता"
 
@@ -1516,7 +1522,7 @@ msgid "Provider quality (copy, MP4)"
 msgstr "प्रदाता गुणवत्ता (कॉपी, MP4)"
 
 #: main.py:1035
-#: playlist.py:2741
+#: playlist.py:2813
 msgid "Provider – {name}"
 msgstr "प्रदाता – {name}"
 
@@ -1524,7 +1530,7 @@ msgstr "प्रदाता – {name}"
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
-#: playlist.py:2923
+#: playlist.py:2995
 msgid "Randomise MAC"
 msgstr "MAC यादृच्छिक करें"
 
@@ -1612,8 +1618,8 @@ msgstr "ताज़ा करें"
 msgid "Refreshing stream..."
 msgstr "स्ट्रीम ताज़ा हो रही है..."
 
-#: playlist.py:2548
-#: playlist.py:2671
+#: playlist.py:2604
+#: playlist.py:2742
 msgid "Remove Selected"
 msgstr "चयनित हटाएँ"
 
@@ -1622,8 +1628,8 @@ msgid "Remove from Favorites"
 msgstr "पसंदीदा से हटाएँ"
 
 #: playlist.py:2509
-#: playlist.py:2549
-#: playlist.py:2670
+#: playlist.py:2605
+#: playlist.py:2741
 msgid "Rename Selected"
 msgstr "चयनित का नाम बदलें"
 
@@ -1745,7 +1751,7 @@ msgstr "स्थिति जाँचने के लिए एक खात�
 msgid "Select the audio output device for the built-in player."
 msgstr "इनबिल्ट प्लेयर के लिए ऑडियो आउटपुट डिवाइस चुनें।"
 
-#: playlist.py:2813
+#: playlist.py:2885
 msgid "Select the playlist format to download"
 msgstr "डाउनलोड करने के लिए प्लेलिस्ट प्रारूप चुनें"
 
@@ -1829,7 +1835,7 @@ msgid "Stalker Portal"
 msgstr "Stalker Portal"
 
 #: main.py:1034
-#: playlist.py:2740
+#: playlist.py:2812
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
@@ -1926,7 +1932,7 @@ msgstr "स्ट्रीम कट गई। यह ऑफ़लाइन ह�
 msgid "Stream lost"
 msgstr "स्ट्रीम खो गई"
 
-#: playlist.py:2814
+#: playlist.py:2886
 msgid "Stream output"
 msgstr "स्ट्रीम आउटपुट"
 
@@ -2016,13 +2022,17 @@ msgstr "ट्रैक {id}"
 msgid "Trial account"
 msgstr "परीक्षण खाता"
 
-#: playlist.py:2918
+#: playlist.py:2990
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "पोर्टल का XMLTV गाइड स्वतः जोड़ने का प्रयास करें"
 
 #: account_info.py:382
 msgid "Type"
 msgstr "प्रकार"
+
+#: playlist.py:2552
+msgid "URL copied to the clipboard."
+msgstr "URL क्लिपबोर्ड पर कॉपी हो गई।"
 
 #: updater.py:257
 msgid "Unable to download manifest. Please check your connection."
@@ -2160,17 +2170,17 @@ msgid "Updating {app}"
 msgstr "{app} अपडेट हो रहा है"
 
 #: account_info.py:386
-#: playlist.py:2811
+#: playlist.py:2883
 msgid "Username"
 msgstr "उपयोगकर्ता नाम"
 
-#: playlist.py:2842
+#: playlist.py:2914
 msgid "Username, password, and URL are required."
 msgstr "उपयोगकर्ता नाम, पासवर्ड और URL आवश्यक हैं।"
 
-#: playlist.py:2842
-#: playlist.py:2975
-#: playlist.py:2979
+#: playlist.py:2914
+#: playlist.py:3047
+#: playlist.py:3051
 msgid "Validation"
 msgstr "सत्यापन"
 
@@ -2224,7 +2234,7 @@ msgstr "अभी क्या चल रहा है"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "जब किसी चैनल में एक से अधिक ऑडियो ट्रैक होते हैं, तो अंतर्निहित प्लेयर स्वयं ही आपके पसंदीदा ट्रैक पर स्विच कर सकता है।"
 
-#: playlist.py:2576
+#: playlist.py:2645
 msgid "XML files"
 msgstr "XML फ़ाइलें"
 
@@ -2232,16 +2242,16 @@ msgstr "XML फ़ाइलें"
 msgid "Xtream Codes"
 msgstr "Xtream Codes"
 
-#: playlist.py:2812
+#: playlist.py:2884
 msgid "Xtream Codes password"
 msgstr "Xtream Codes पासवर्ड"
 
-#: playlist.py:2811
+#: playlist.py:2883
 msgid "Xtream Codes username"
 msgstr "Xtream Codes उपयोगकर्ता नाम"
 
 #: main.py:1032
-#: playlist.py:2738
+#: playlist.py:2810
 msgid "Xtream Codes – {name}"
 msgstr "Xtream Codes – {name}"
 
@@ -2298,15 +2308,15 @@ msgstr "{kind} – {who}"
 msgid "{kind} – {who} (detected)"
 msgstr "{kind} – {who} (पता चला)"
 
-#: playlist.py:2779
-#: playlist.py:2893
+#: playlist.py:2851
+#: playlist.py:2965
 msgid "{label} field"
 msgstr "{label} फ़ील्ड"
 
-#: playlist.py:2773
-#: playlist.py:2775
-#: playlist.py:2887
-#: playlist.py:2889
+#: playlist.py:2845
+#: playlist.py:2847
+#: playlist.py:2959
+#: playlist.py:2961
 msgid "{label} label"
 msgstr "{label} लेबल"
 

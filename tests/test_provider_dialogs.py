@@ -122,7 +122,7 @@ def test_provider_names_are_isolated_until_manager_is_accepted(wx_app):
 
 
 def test_playlist_selected_actions_live_in_the_context_menu(manager, monkeypatch):
-    """Rename/remove do not clutter the manager; Shift+F10 exposes both actions."""
+    """Rename/remove do not clutter the manager; Shift+F10 exposes all actions."""
     assert not hasattr(manager, "rename_btn")
     assert not hasattr(manager, "remove_btn")
     labels = []
@@ -137,7 +137,64 @@ def test_playlist_selected_actions_live_in_the_context_menu(manager, monkeypatch
             return wx.DefaultPosition
 
     manager._on_source_context_menu(_ContextEvent())
-    assert labels == ["Rename Selected", "Remove Selected"]
+    assert labels == ["Copy URL", "Rename Selected", "Remove Selected"]
+
+
+def test_playlist_manager_copies_the_source_url(wx_app, monkeypatch):
+    """Copy URL puts the selected playlist URL on the clipboard."""
+    dlg = PlaylistManagerDialog(None, ["https://example.com/list.m3u", "C:\\playlists\\local.m3u"])
+    copied = []
+    monkeypatch.setattr(playlist, "_copy_text_to_clipboard", lambda text: copied.append(text) or True)
+    monkeypatch.setattr(playlist.wx, "MessageBox", lambda *args, **kwargs: None)
+    try:
+        dlg.lb.SetSelection(0)
+        dlg._copy_selected_url(None)
+        assert copied == ["https://example.com/list.m3u"]
+        # A local file path is not a URL; nothing is copied for it.
+        dlg.lb.SetSelection(1)
+        dlg._copy_selected_url(None)
+        assert copied == ["https://example.com/list.m3u"]
+        # Provider accounts copy the portal base URL.
+        dlg.playlist_sources.append({"type": "xtream", "base_url": "https://portal.example"})
+        dlg.lb.Append("provider")
+        dlg.lb.SetSelection(2)
+        dlg._copy_selected_url(None)
+        assert copied[-1] == "https://portal.example"
+    finally:
+        dlg.Destroy()
+
+
+def test_epg_manager_copy_url(wx_app, monkeypatch):
+    """The EPG manager exposes Copy URL in its context menu; file rows have none."""
+    dlg = playlist.EPGManagerDialog(None, ["https://epg.example/plar.xml", "C:\\epg\\guide.xml"])
+    copied = []
+    monkeypatch.setattr(playlist, "_copy_text_to_clipboard", lambda text: copied.append(text) or True)
+    monkeypatch.setattr(playlist.wx, "MessageBox", lambda *args, **kwargs: None)
+    states = []
+
+    def popup(menu):
+        states.extend((item.GetItemLabelText(), item.IsEnabled()) for item in menu.GetMenuItems())
+
+    monkeypatch.setattr(dlg.lb, "PopupMenu", popup)
+
+    class _ContextEvent:
+        def GetPosition(self):
+            return wx.DefaultPosition
+
+    try:
+        dlg.lb.SetSelection(0)
+        dlg._on_source_context_menu(_ContextEvent())
+        assert states == [("Copy URL", True)]
+        dlg._copy_selected_url(None)
+        assert copied == ["https://epg.example/plar.xml"]
+
+        dlg.lb.SetSelection(1)
+        dlg._on_source_context_menu(_ContextEvent())
+        assert states[-1] == ("Copy URL", False)
+        dlg._copy_selected_url(None)
+        assert copied == ["https://epg.example/plar.xml"]
+    finally:
+        dlg.Destroy()
 
 
 def test_stalker_dialog_marks_credentials_optional(stalker):

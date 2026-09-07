@@ -2528,8 +2528,64 @@ class _SourceNamesMixin:
     def GetNames(self):
         return dict(self.source_names)
 
+    def _selected_source_url(self):
+        """The URL of the selected source row, or None when there is none to copy."""
+        index = self.lb.GetSelection()
+        if index == wx.NOT_FOUND:
+            return None
+        sources = getattr(self, "playlist_sources", None)
+        if sources is None:
+            sources = self.epg_sources
+        if index >= len(sources):
+            return None
+        source = sources[index]
+        url = str(source.get("base_url") or "").strip() if isinstance(source, dict) else str(source).strip()
+        if url.startswith("http://") or url.startswith("https://"):
+            return url
+        return None
+
+    def _copy_selected_url(self, _event=None):
+        url = self._selected_source_url()
+        if not url:
+            return
+        if _copy_text_to_clipboard(url):
+            wx.MessageBox(_("URL copied to the clipboard."), self.GetTitle(),
+                          wx.OK | wx.ICON_INFORMATION)
+        else:
+            wx.MessageBox(_("Could not open the clipboard."), self.GetTitle(),
+                          wx.OK | wx.ICON_ERROR)
+
+    def _select_row_under(self, event):
+        """Select the list row the context menu was opened on (right-click)."""
+        position = event.GetPosition()
+        if position == wx.DefaultPosition:
+            return
+        try:
+            index = self.lb.HitTest(self.lb.ScreenToClient(position))
+            if isinstance(index, tuple):
+                index = index[0]
+            if index != wx.NOT_FOUND:
+                self.lb.SetSelection(index)
+        except Exception:
+            _logger.debug("_SourceNamesMixin._select_row_under: ignored exception", exc_info=True)
+
 
 if WX_AVAILABLE:
+    def _copy_text_to_clipboard(text):
+        """Put ``text`` on the clipboard; False when the clipboard is unavailable."""
+        try:
+            if not wx.TheClipboard.Open():
+                return False
+            try:
+                wx.TheClipboard.SetData(wx.TextDataObject(text))
+                wx.TheClipboard.Flush()
+            finally:
+                wx.TheClipboard.Close()
+            return True
+        except Exception:
+            _logger.debug("playlist._copy_text_to_clipboard: ignored exception", exc_info=True)
+            return False
+
     class EPGManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, epg_sources, source_names=None):
             super().__init__(parent, title=_("EPG Manager"), size=(600, 300))
@@ -2567,6 +2623,19 @@ if WX_AVAILABLE:
             self.add_url_btn.Bind(wx.EVT_BUTTON, self.OnAddURL)
             self.remove_btn.Bind(wx.EVT_BUTTON, self.OnRemove)
             self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
+            # Copy URL (and Shift+F10 / Applications key) without leaving the keyboard.
+            self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+
+        def _on_source_context_menu(self, event):
+            self._select_row_under(event)
+            menu = wx.Menu()
+            copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
+            copy_item.Enable(self._selected_source_url() is not None)
+            menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
+            try:
+                self.lb.PopupMenu(menu)
+            finally:
+                menu.Destroy()
 
         def _format_source_label(self, src):
             return self.source_names.get(source_name_key(src), src)
@@ -2667,10 +2736,13 @@ if WX_AVAILABLE:
 
             has_selection = self.lb.GetSelection() != wx.NOT_FOUND
             menu = wx.Menu()
+            copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
+            copy_item.Enable(self._selected_source_url() is not None)
             rename_item = menu.Append(wx.ID_ANY, _("Rename Selected"))
             remove_item = menu.Append(wx.ID_ANY, _("Remove Selected"))
             rename_item.Enable(has_selection)
             remove_item.Enable(has_selection)
+            menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
             menu.Bind(wx.EVT_MENU, self.OnRename, rename_item)
             menu.Bind(wx.EVT_MENU, self.OnRemove, remove_item)
             try:
