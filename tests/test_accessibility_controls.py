@@ -113,11 +113,27 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
 
         def start(self, *args, **kwargs):
             started.append((args, kwargs))
-            return types.SimpleNamespace(out_path=str(tmp_path / "programme.mkv"))
+            return types.SimpleNamespace(out_path=str(tmp_path / "programme.mkv"), id=7)
+
+    dialogs = []
+
+    class Dialog:
+        def __init__(self, parent, rec, **kwargs):
+            dialogs.append((parent, rec, kwargs))
+            self.rec = rec
+
+        def Show(self):
+            pass
+
+        def Raise(self):
+            pass
 
     frame = types.SimpleNamespace(
         config={"recording_format": "provider_mkv"},
         recorder=Recorder(),
+        _catchup_downloads={},
+        _maybe_shutdown_after_recordings=lambda: None,
+        _catchup_download_finished=lambda *_args: None,
         _parse_epg_time=lambda value: {
             "start": datetime.datetime(2026, 1, 1, 10, tzinfo=datetime.timezone.utc),
             "end": datetime.datetime(2026, 1, 1, 10, 30, tzinfo=datetime.timezone.utc),
@@ -129,6 +145,7 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
         _note_recording_started=lambda: None,
         _recording_format_label=lambda _fmt: "Provider quality",
     )
+    monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
     monkeypatch.setattr(main, "channel_http_headers", lambda _channel: {})
     monkeypatch.setattr(main.wx, "MessageBox", lambda *_args, **_kwargs: None)
@@ -144,6 +161,136 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
     assert args[1] == "The Programme - News"
     assert kwargs["duration"] == 1800.0
     assert kwargs["metadata"]["catchup"] is True
+    # Stats lines in the log are what the progress dialog reads.
+    assert kwargs["show_stats"] is True
+    # The progress window replaces the old "download started" message box.
+    assert len(dialogs) == 1
+    assert dialogs[0][1].id == 7
+    assert frame._catchup_downloads[7].rec.id == 7
+    assert dialogs[0][2]["duration"] == 1800.0
+
+
+def test_catchup_download_finish_reports_and_closes(monkeypatch, tmp_path):
+    boxes = []
+    monkeypatch.setattr(main.wx, "MessageBox", lambda msg, *a, **k: boxes.append(msg))
+    destroyed = []
+
+    class Dialog:
+        def __init__(self):
+            self.closed = False
+
+        def notify_recording_finished(self):
+            self.Destroy()
+
+        def Destroy(self):
+            destroyed.append(True)
+
+    dlg = Dialog()
+    rec = types.SimpleNamespace(
+        id=3, out_path=str(tmp_path / "done.mkv"), stopped_by_user=False,
+        stderr_tail=[], title="The Programme")
+    frame = types.SimpleNamespace(
+        _catchup_downloads={3: dlg},
+        _maybe_shutdown_after_recordings=lambda: None,
+        _recording_failure_detail=lambda _rec: "detail",
+    )
+
+    # The recorder's watcher thread calls this; wx.CallAfter is monkeypatched
+    # to run synchronously so the UI-thread side is observed directly.
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+    main.IPTVClient._catchup_download_finished(frame, rec, 0)
+
+    # The progress window was closed and the completion box reported.
+    assert destroyed == [True]
+    assert frame._catchup_downloads == {}
+    assert boxes and "done.mkv" in boxes[0]
+
+
+def test_catchup_download_suppressed_on_exit(monkeypatch, tmp_path):
+    boxes = []
+    monkeypatch.setattr(main.wx, "MessageBox", lambda msg, *a, **k: boxes.append(msg))
+    closed = []
+
+    class Dialog:
+        def notify_recording_finished(self):
+            closed.append(True)
+
+    rec = types.SimpleNamespace(
+        id=5, out_path=str(tmp_path / "x.mkv"), stopped_by_user=False, stderr_tail=[])
+    frame = types.SimpleNamespace(
+        _catchup_downloads={5: Dialog()},
+        _maybe_shutdown_after_recordings=lambda: None,
+        _suppress_recording_notifications=True,
+    )
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+
+    main.IPTVClient._catchup_download_finished(frame, rec, 0)
+
+    # The app is exiting: no box, no dialog work, bookkeeping dropped.
+    assert boxes == []
+    assert closed == []
+    assert frame._catchup_downloads == {}
+
+
+def test_close_warns_while_a_download_is_running(monkeypatch):
+    answers = []
+    monkeypatch.setattr(main.wx, "MessageBox", lambda *a, **k: answers.append(a) or main.wx.NO)
+
+    frame = types.SimpleNamespace(
+        minimize_to_tray=False,
+        _update_install_pending=False,
+        _exit_forced=False,
+        _catchup_downloads={1: object()},
+    )
+    vetoed = []
+
+    class Event:
+        def CanVeto(self):
+            return True
+
+        def Veto(self):
+            vetoed.append(True)
+
+    main.IPTVClient.on_close(frame, Event())
+
+    assert len(answers) == 1
+    assert vetoed == [True]
+
+
+def test_close_without_downloads_does_not_warn(monkeypatch):
+    answers = []
+    monkeypatch.setattr(main.wx, "MessageBox", lambda *a, **k: answers.append(a) or main.wx.NO)
+
+    # Everything on_close touches after the warning gate, stubbed out.
+    frame = types.SimpleNamespace(
+        minimize_to_tray=False,
+        _update_install_pending=False,
+        _exit_forced=False,
+        _catchup_downloads={},
+        _search_token=0,
+        _populate_token=0,
+        caster=None,
+        tray_icon=None,
+        _internal_player_frame=None,
+    )
+    for name in ("_stop_epg_poll_timer", "_cancel_epg_autostart_timer",
+                 "_stop_dvr_scheduler", "_release_recordings_on_exit"):
+        setattr(frame, name, lambda *a, **k: None)
+    frame._epg_executor = types.SimpleNamespace(shutdown=lambda wait: None)
+    destroyed = []
+    frame.Destroy = lambda: destroyed.append(True)
+
+    class Event:
+        def CanVeto(self):
+            return True
+
+        def Veto(self):
+            raise AssertionError("must not veto a normal exit")
+
+    main.IPTVClient.on_close(frame, Event())
+
+    assert answers == []
+    assert destroyed == [True]
 
 
 def test_channel_context_scheduling_offers_the_upcoming_week(monkeypatch):

@@ -57,6 +57,7 @@ from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
 import recorder
 from recorder import RECORDING_FORMATS
+from recorder import format_duration, format_size, parse_ffmpeg_progress
 import dvr
 import favorites
 import power
@@ -843,6 +844,8 @@ class IPTVClient(wx.Frame):
         # Set when we are exiting on purpose (an update, or our own shutdown), so
         # on_close does not bounce the window into the tray instead of closing.
         self._exit_forced = False
+        # Live catch-up download progress dialogs, by recorder id.
+        self._catchup_downloads: Dict[int, "CatchupDownloadDialog"] = {}
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -1713,16 +1716,31 @@ class IPTVClient(wx.Frame):
         if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
             self.playlist_scope_combo.SetAccessibleName(_("Playlist view"))
         self.playlist_scope_combo.Bind(wx.EVT_CHAR_HOOK, self.on_playlist_scope_key)
+        # Screen-reader names on MSW come from the static label created
+        # immediately before each control: the tree/list/edit accessibles
+        # ignore SetName/SetAccessibleName, but a wx.StaticText whose auto id
+        # is exactly control id - 1 is announced. Verified with real MSAA/UIA
+        # reads in tools/smoke_accessible_names_nvda.py; keep the pair
+        # adjacent with no other window created in between.
+        self.categories_label = wx.StaticText(p, label=_("Categories"))
         self.group_list = _AccessibleCategoryTree(p)
         self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
         self.group_list.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_group_activated)
         self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
         self._fill_playlist_scope_combo()
         vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
+        vs_l.Add(self.categories_label, 0, wx.LEFT, 5)
         vs_l.Add(self.group_list, 1, wx.EXPAND | wx.ALL, 5)
+        self.search_label = wx.StaticText(p, label=_("Search"))
         self.filter_box = wx.TextCtrl(p, style=wx.TE_PROCESS_ENTER)
+        # Name the field for screen readers as well: harmless on MSW and it is
+        # what GTK honors for the accessible name.
+        self.filter_box.SetName(_("Search"))
+        if hasattr(self.filter_box, "SetAccessibleName"):
+            self.filter_box.SetAccessibleName(_("Search"))
         # Virtual list control (native SysListView32) so 50k-300k channels stay responsive
         # for the UI and NVDA alike — only visible rows are realized. Backed by self.displayed.
+        self.channels_label = wx.StaticText(p, label=_("Channels"))
         self.channel_list = _VirtualChannelList(p, self)
         # Key bindings (original + added robust handlers)
         self.channel_list.Bind(wx.EVT_CHAR_HOOK, self.on_channel_key)  # original
@@ -1739,7 +1757,9 @@ class IPTVClient(wx.Frame):
         # the virtual channel list: channels -> EPG -> stream URL.
         self.epg_display.Bind(wx.EVT_CHAR_HOOK, self._on_epg_display_key)
         self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
+        vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
+        vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.epg_display, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
@@ -2761,7 +2781,7 @@ class IPTVClient(wx.Frame):
 
     def _choose_recordings_folder(self, *_args):
         current = get_recordings_dir(self.config)
-        dlg = wx.DirDialog(self, _("Choose recordings folder"), defaultPath=current)
+        dlg = wx.DirDialog(self, _("Set download folder"), defaultPath=current)
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 self.config["recordings_dir"] = dlg.GetPath()
@@ -2817,7 +2837,7 @@ class IPTVClient(wx.Frame):
         menu.AppendSeparator()
         open_item = menu.Append(wx.ID_ANY, _("Open Recordings Folder"))
         menu.Bind(wx.EVT_MENU, self._open_recordings_folder, open_item)
-        folder_item = menu.Append(wx.ID_ANY, _("Recordings Folder..."))
+        folder_item = menu.Append(wx.ID_ANY, _("Set Download Folder..."))
         menu.Bind(wx.EVT_MENU, self._choose_recordings_folder, folder_item)
         menu.AppendSeparator()
         self._shutdown_after_item = menu.AppendCheckItem(
@@ -3566,6 +3586,19 @@ class IPTVClient(wx.Frame):
             wx.CallAfter(self.show_tray_icon)
             event.Veto()
         else:
+            # Warn before an exit that would stop a running download. The tray
+            # path above keeps the app (and the download) alive, so it needs no
+            # warning; recordings keep their own detached-finalize behaviour.
+            if (event.CanVeto() and not self._update_install_pending
+                    and self._catchup_downloads):
+                answer = wx.MessageBox(
+                    _("A download is still in progress.\n\n"
+                      "If you exit now it will stop, and only the part captured "
+                      "so far is kept.\n\nExit anyway?"),
+                    _("Download in progress"), wx.YES_NO | wx.ICON_QUESTION)
+                if answer != wx.YES:
+                    event.Veto()
+                    return
             self._search_token += 1
             self._populate_token += 1
             # Ensure poll timer stopped on exit
@@ -5770,8 +5803,9 @@ class IPTVClient(wx.Frame):
                 key=key,
                 metadata={"catchup": True, "programme_start": show.get("start", ""),
                           "programme_end": show.get("end", "")},
-                on_finish=self._on_recording_finished,
+                on_finish=self._catchup_download_finished,
                 duration=duration,
+                show_stats=True,
             )
         except Exception as err:
             # Stream URLs go to the debug log verbatim (credentials included):
@@ -5784,9 +5818,44 @@ class IPTVClient(wx.Frame):
             "Catch-up download started for %s -> %s",
             url, rec.out_path)
         self._note_recording_started()
-        wx.MessageBox(_("Catch-up download started ({fmt}):\n{path}").format(
-            fmt=self._recording_format_label(fmt), path=rec.out_path),
-            _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+        # A modeless progress window replaces the old "download started" box:
+        # progress, elapsed, ETA, size and Cancel live there from now on.
+        dlg = CatchupDownloadDialog(self, rec, duration=duration,
+                                    on_cancel=lambda: self._cancel_catchup_download(rec.id))
+        self._catchup_downloads[rec.id] = dlg
+        dlg.Show()
+        dlg.Raise()
+
+    def _cancel_catchup_download(self, rec_id: int):
+        """Stop one catch-up download; ffmpeg finalizes the file cleanly."""
+        self._catchup_downloads.pop(rec_id, None)
+        self.recorder.stop(rec_id, wait=False)
+
+    def _catchup_download_finished(self, rec, rc):
+        """Recorder watcher thread: close the progress window, then report."""
+        dlg = self._catchup_downloads.pop(rec.id, None)
+
+        def finish():
+            if getattr(self, "_suppress_recording_notifications", False):
+                return  # the app is exiting; nothing to report
+            if dlg is not None:
+                dlg.notify_recording_finished()
+            if rc == 0:
+                if rec.stopped_by_user:
+                    wx.MessageBox(_("Download canceled. Partial file:\n{path}").format(path=rec.out_path),
+                                  _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+                else:
+                    wx.MessageBox(_("Download complete:\n{path}").format(path=rec.out_path),
+                                  _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+            elif not rec.stopped_by_user:
+                detail = "\n".join(rec.stderr_tail[-6:]) or self._recording_failure_detail(rec)
+                wx.MessageBox(_("Download failed (code {code}):\n{path}\n\n{detail}").format(
+                    code=rc, path=rec.out_path, detail=detail),
+                    _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+
+        # Everything below touches the UI: marshal onto the main thread.
+        wx.CallAfter(self._maybe_shutdown_after_recordings)
+        wx.CallAfter(finish)
 
     def show_cast_dialog(self, _event):
         caster = self._ensure_caster()
@@ -6162,33 +6231,144 @@ class AccountInfoDialog(wx.Dialog):
         event.Skip()
 
 
+class CatchupDownloadDialog(wx.Dialog):
+    """Live progress for one catch-up download.
+
+    ffmpeg reports the media time it has written through periodic stats lines
+    in the per-recording log, so the dialog tails that log once a second: a
+    progress bar against the programme window, elapsed time, ETA, file size and
+    a Cancel button that finalizes the file cleanly. The window is deliberately
+    modeless: the user can keep browsing while the download runs.
+    """
+
+    UPDATE_INTERVAL_MS = 1000
+
+    def __init__(self, parent, rec, *, duration: float, on_cancel):
+        title = _("Downloading {name}").format(name=rec.title)
+        super().__init__(parent, title=title, style=wx.DEFAULT_DIALOG_STYLE)
+        self._rec = rec
+        self._duration = max(1.0, float(duration))
+        self._on_cancel_cb = on_cancel
+        self._started = time.time()
+        self._timer = wx.Timer(self)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.status_text = wx.StaticText(self, label=_("Preparing download..."))
+        self.status_text.Wrap(420)
+        sizer.Add(self.status_text, 0, wx.ALL, 12)
+
+        self.gauge = wx.Gauge(self, range=100, size=(-1, 18))
+        sizer.Add(self.gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+
+        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=14)
+        grid.AddGrowableCol(1)
+        self.elapsed_value = wx.StaticText(self, label="")
+        self.remaining_value = wx.StaticText(self, label="")
+        self.size_value = wx.StaticText(self, label="")
+        grid.Add(wx.StaticText(self, label=_("Elapsed")), 0, wx.ALIGN_RIGHT)
+        grid.Add(self.elapsed_value, 1)
+        grid.Add(wx.StaticText(self, label=_("Time remaining")), 0, wx.ALIGN_RIGHT)
+        grid.Add(self.remaining_value, 1)
+        grid.Add(wx.StaticText(self, label=_("Downloaded")), 0, wx.ALIGN_RIGHT)
+        grid.Add(self.size_value, 1)
+        sizer.Add(grid, 0, wx.ALL | wx.EXPAND, 12)
+
+        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel"))
+        sizer.Add(self.cancel_btn, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 12)
+        self.SetSizerAndFit(sizer)
+        self.CenterOnParent()
+
+        # Every control gets a screen-reader name; labels are static text.
+        self.status_text.SetName(_("Download status"))
+        self.gauge.SetName(_("Download progress"))
+        for ctrl, label in (
+            (self.elapsed_value, _("Elapsed")),
+            (self.remaining_value, _("Time remaining")),
+            (self.size_value, _("Downloaded")),
+        ):
+            ctrl.SetName(label)
+            if hasattr(ctrl, "SetAccessibleName"):
+                ctrl.SetAccessibleName(label)
+
+        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel_download())
+        self.Bind(wx.EVT_TIMER, self._on_tick, self._timer)
+        self._timer.Start(self.UPDATE_INTERVAL_MS)
+        self._on_tick(None)
+        # The title already carries the name; announce the state change so a
+        # screen reader says it without waiting for the next tick.
+
+    def _on_tick(self, _event):
+        if not self or not self._rec:
+            return
+        written = parse_ffmpeg_progress(self._rec.log_path)
+        elapsed = max(0.0, time.time() - self._started)
+        if written is not None:
+            pct = int(round(100.0 * min(written, self._duration) / self._duration))
+            self.gauge.SetValue(pct)
+            self.status_text.SetLabel(_("Downloading {name}").format(name=self._rec.title))
+            self.remaining_value.SetLabel(
+                format_duration(max(0.0, self._duration - written)))
+        else:
+            self.gauge.Pulse()
+            self.status_text.SetLabel(_("Downloading {name}").format(name=self._rec.title))
+            self.remaining_value.SetLabel("--:--")
+        self.elapsed_value.SetLabel(format_duration(elapsed))
+        try:
+            size = os.path.getsize(self._rec.out_path)
+        except OSError:
+            size = 0
+        self.size_value.SetLabel(format_size(size))
+
+    def _cancel_download(self):
+        self._timer.Stop()
+        cb, self._on_cancel_cb = self._on_cancel_cb, None
+        if cb is not None:
+            cb()
+        self.Destroy()
+
+    def notify_recording_finished(self):
+        """Stop the updates and close the window (finish callback, UI thread)."""
+        try:
+            self._timer.Stop()
+        except Exception:
+            LOG.debug("CatchupDownloadDialog.notify_recording_finished: timer stop ignored", exc_info=True)
+        try:
+            self.Destroy()
+        except Exception:
+            LOG.debug("CatchupDownloadDialog.notify_recording_finished: ignored exception", exc_info=True)
+
+
 class CatchupDialog(wx.Dialog):
+    """Choose one catch-up programme, then open or download it.
+
+    The two actions live in the list's context menu (right-click / Apps key),
+    matching the channel list; Enter or double-click opens the selection.
+    """
+
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
         title = channel_name or _("Catch-up")
         super().__init__(parent, title=_("Catch-up: {name}").format(name=title), size=(520, 360))
         self.programmes = programmes
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        intro = wx.StaticText(panel, label=_("Select a programme to play from catch-up:"))
+        intro = wx.StaticText(panel, label=_(
+            "Select a programme, then open or download it from the context menu."))
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
         for prog in programmes:
             self.listbox.Append(self._format_programme(prog))
         if programmes:
             self.listbox.SetSelection(0)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
-        download_btn = wx.Button(panel, label=_("Download"))
         cancel_btn = wx.Button(panel, id=wx.ID_CANCEL)
-        btn_sizer.Add(ok_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(download_btn, 0, wx.ALL, 5)
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
         sizer.Add(intro, 0, wx.ALL, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
         panel.SetSizer(sizer)
+        self.listbox.SetName(_("Catch-up programmes"))
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_listbox_activate)
-        ok_btn.Bind(wx.EVT_BUTTON, self._on_ok)
-        download_btn.Bind(wx.EVT_BUTTON, self._on_download)
+        self.listbox.Bind(wx.EVT_KEY_DOWN, self._on_key)
+        self.listbox.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
         self.SetMinSize((420, 320))
         self.Layout()
         self.CenterOnParent()
@@ -6209,19 +6389,41 @@ class CatchupDialog(wx.Dialog):
         if self.programmes:
             self.EndModal(wx.ID_OK)
 
-    def _on_ok(self, event):
-        if self.listbox.GetSelection() == wx.NOT_FOUND and self.programmes:
-            self.listbox.SetSelection(0)
-        if self.listbox.GetSelection() == wx.NOT_FOUND:
-            return
-        self.EndModal(wx.ID_OK)
+    def _on_key(self, event):
+        key = event.GetKeyCode()
+        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self._on_listbox_activate(None)
+        elif key == wx.WXK_MENU:
+            # The keyboard's context-menu key must work without a mouse.
+            self._show_context_menu(keyboard=True)
+        else:
+            event.Skip()
 
-    def _on_download(self, _event):
+    def _on_context_menu(self, _event):
+        self._show_context_menu(keyboard=False)
+
+    def _show_context_menu(self, keyboard: bool):
         if self.listbox.GetSelection() == wx.NOT_FOUND and self.programmes:
             self.listbox.SetSelection(0)
-        if self.listbox.GetSelection() == wx.NOT_FOUND:
-            return
-        self.EndModal(wx.ID_SAVE)
+        menu = wx.Menu()
+        open_item = menu.Append(wx.ID_ANY, _("Open"))
+        menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_OK), open_item)
+        download_item = menu.Append(wx.ID_ANY, _("Download"))
+        menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_SAVE), download_item)
+        pos = wx.DefaultPosition
+        if keyboard:
+            selection = self.listbox.GetSelection()
+            if selection != wx.NOT_FOUND:
+                try:
+                    rect = self.listbox.GetItemRect(selection)
+                    if rect.width or rect.height:
+                        pos = self.listbox.ClientToScreen(rect.GetBottomLeft())
+                except Exception:
+                    LOG.debug("CatchupDialog._show_context_menu: ignored exception", exc_info=True)
+        try:
+            self.listbox.PopupMenu(menu, pos)
+        finally:
+            menu.Destroy()
 
     def get_selection(self) -> Optional[Dict[str, str]]:
         idx = self.listbox.GetSelection()
@@ -6783,6 +6985,12 @@ class _VirtualChannelList(wx.ListCtrl):
             style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL,
             name="Channels",
         )
+        # The constructor's name= never reaches NVDA on SysListView32; the
+        # explicit accessible name does, so the list is announced as a name
+        # instead of a bare "list". Same rule as _AccessibleCategoryTree.
+        self.SetName(_("Channels"))
+        if hasattr(self, "SetAccessibleName"):
+            self.SetAccessibleName(_("Channels"))
         self._frame = frame
         self.InsertColumn(0, "")
         self.SetItemCount(0)

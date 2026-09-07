@@ -71,6 +71,10 @@ _LOG_TAIL_WINDOW_BYTES = 262144
 # ``-loglevel level+info`` prefixes every line with its severity.
 _PROBLEM_LINE_RE = re.compile(r"^\[(?:panic|fatal|error|warning)\]", re.IGNORECASE)
 
+# Stats lines written when a recording runs with ``show_stats``: the dialog
+# tails the log for the newest ``time=HH:MM:SS.xx`` to report real progress.
+_FFMPEG_TIME_RE = re.compile(r"time=(\d+):(\d+):(\d+(?:\.\d+)?)")
+
 
 def format_uses_faststart(fmt: str) -> bool:
     return fmt in FASTSTART_FORMATS
@@ -86,6 +90,61 @@ def finalize_timeout_seconds(fmt: str, out_path: str) -> float:
             size = 0
         timeout += float(size) / FINALIZE_REWRITE_BYTES_PER_SECOND
     return min(timeout, FINALIZE_TIMEOUT_CAP_SECONDS)
+
+
+def parse_ffmpeg_progress(log_path: str) -> Optional[float]:
+    """Media seconds ffmpeg has written so far, from the newest ``time=`` line.
+
+    Only recordings started with ``show_stats`` have those lines; anything else
+    (or an unreadable log) returns None and the caller falls back to an
+    indeterminate display.
+    """
+    if not log_path:
+        return None
+    try:
+        with open(log_path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - _LOG_TAIL_WINDOW_BYTES))
+            data = handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    last = None
+    for match in _FFMPEG_TIME_RE.finditer(data):
+        last = match
+    if last is None:
+        return None
+    hours, minutes, seconds = last.groups()
+    try:
+        return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+    except ValueError:
+        return None
+
+
+def format_duration(seconds: Optional[float]) -> str:
+    """h:mm:ss / m:ss for a duration, or a placeholder when it is unknown."""
+    if not seconds or seconds <= 0:
+        return "--:--"
+    total = int(round(seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def format_size(num_bytes: Optional[float]) -> str:
+    """Human-readable byte size, or a placeholder when it is unknown."""
+    if not num_bytes or num_bytes <= 0:
+        return "--"
+    value = float(num_bytes)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1024 or unit == "TB":
+            if unit == "B":
+                return f"{int(value)} {unit}"
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return "--"
 
 
 def recording_log_path(out_dir: str, out_path: str) -> str:
@@ -177,12 +236,19 @@ def build_ffmpeg_command(
     headers: Optional[Dict[str, object]] = None,
     *,
     duration: Optional[float] = None,
+    show_stats: bool = False,
 ) -> List[str]:
     """Construct the full ffmpeg argument list for one recording."""
     if fmt not in RECORDING_FORMATS:
         fmt = DEFAULT_RECORDING_FORMAT
 
-    cmd: List[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "level+info", "-nostats", "-y"]
+    cmd: List[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "level+info", "-y"]
+    if show_stats:
+        # Write periodic stats lines into the log so a progress dialog can tail
+        # them for the captured time. One line per second keeps logs small.
+        cmd += ["-stats_period", "1"]
+    else:
+        cmd += ["-nostats"]
     # Reconnect/robustness for long-running HTTP(S) live captures.
     cmd += [
         "-rw_timeout", "15000000",
@@ -293,6 +359,7 @@ class RecordingManager:
         metadata: Optional[Dict[str, object]] = None,
         on_finish: Optional[Callable[[Recording, int], None]] = None,
         duration: Optional[float] = None,
+        show_stats: bool = False,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
@@ -301,7 +368,8 @@ class RecordingManager:
 
         os.makedirs(out_dir, exist_ok=True)
         out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt))
-        cmd = build_ffmpeg_command(get_ffmpeg_path(), url, out_path, fmt, headers, duration=duration)
+        cmd = build_ffmpeg_command(get_ffmpeg_path(), url, out_path, fmt, headers,
+                                   duration=duration, show_stats=show_stats)
         LOG.info("Starting recording: %s -> %s (%s)", display_name, out_path, fmt)
 
         # ffmpeg writes its diagnostics straight into the log file rather than into a
