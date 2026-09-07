@@ -288,3 +288,50 @@ class TestNowPlayingSuffix:
         client = self._client_with_labels({"b": " — News"}, favorite_names=["B"])
         label = client._decorate_channel_label("B", {"name": "B"})
         assert label.index("(Favorite)") < label.index("News")
+
+
+class TestNowPlayingMatching:
+    """Channels whose playlist name differs from the EPG name must still match."""
+
+    def _client_with_epg(self, channels):
+        from main import IPTVClient  # noqa: F401  (bound below)
+        client = _client()
+        client.view_mode = "live"
+        client.config = {"epg_enabled": True}
+        client.all_channels = [
+            {"name": "TVP 1 HD", "tvg-id": "", "tvg-name": ""},
+            {"name": "Renamed Feed", "tvg-id": "Epg-2.TV", "tvg-name": ""},
+            {"name": "Totally Unrelated", "tvg-id": "", "tvg-name": "Discovery Channel"},
+        ]
+        for name in ("_build_now_playing_labels", "_programme_label"):
+            setattr(client, name, _bind(IPTVClient, name, client))
+        return client
+
+    def test_noise_words_do_not_block_the_match(self):
+        client = self._client_with_epg(None)
+        channels = {
+            "epg-1": {"display_name": "TVP 1",
+                      "now": {"title": "News", "start": "20260907200000", "end": "20260907210000"},
+                      "next": {"title": "Film", "start": "20260907210000", "end": "20260907230000"}},
+        }
+        labels = client._build_now_playing_labels(channels)
+        assert labels["tvp 1"].startswith(" — News (")
+        assert "Next: Film (" in labels["tvp 1"]
+
+    def test_tvg_id_beats_the_display_name(self):
+        client = self._client_with_epg(None)
+        channels = {
+            "epg-2": {"display_name": "Totally Different",
+                      "now": {"title": "Show A", "start": "20260907200000", "end": "20260907210000"}},
+        }
+        labels = client._build_now_playing_labels(channels)
+        assert labels["renamed feed"].startswith(" — Show A (")
+
+    def test_tvg_name_matches_when_the_name_does_not(self):
+        client = self._client_with_epg(None)
+        channels = {
+            "epg-3": {"display_name": "Discovery Channel",
+                      "now": {"title": "Doc", "start": "20260907200000", "end": "20260907210000"}},
+        }
+        labels = client._build_now_playing_labels(channels)
+        assert labels["totally unrelated"].startswith(" — Doc (")

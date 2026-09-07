@@ -675,3 +675,36 @@ def test_legacy_programme_table_is_migrated_and_descriptions_backfill(tmp_path):
     db.close()
     assert count == 1
     assert now_next[0]["description"] == "Backfilled description."
+
+
+def test_get_all_now_next_returns_now_and_next_per_channel(tmp_path):
+    path = tmp_path / "epg.db"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    db = EPGDatabase(str(path))
+    db.insert_channel("ch1", "Channel 1")
+    db.insert_channel("ch2", "Channel 2")
+    db.insert_programme("ch1", "Now Show",
+                        _xmltv_time(now - datetime.timedelta(minutes=30)),
+                        _xmltv_time(now + datetime.timedelta(minutes=30)), "Now description.")
+    db.insert_programme("ch1", "Next Show",
+                        _xmltv_time(now + datetime.timedelta(minutes=30)),
+                        _xmltv_time(now + datetime.timedelta(minutes=90)))
+    # A later programme must not shadow the earliest next one.
+    db.insert_programme("ch1", "Later Show",
+                        _xmltv_time(now + datetime.timedelta(minutes=90)),
+                        _xmltv_time(now + datetime.timedelta(minutes=120)))
+    # Channel 2 has only a future programme: no "now" entry.
+    db.insert_programme("ch2", "Only Next",
+                        _xmltv_time(now + datetime.timedelta(minutes=15)),
+                        _xmltv_time(now + datetime.timedelta(minutes=75)))
+    db.commit()
+    try:
+        result = db.get_all_now_next()
+    finally:
+        db.close()
+    ch1 = result["ch1"]
+    assert ch1["display_name"] == "Channel 1"
+    assert ch1["now"]["title"] == "Now Show"
+    assert ch1["next"]["title"] == "Next Show"
+    assert "now" not in result["ch2"]
+    assert result["ch2"]["next"]["title"] == "Only Next"

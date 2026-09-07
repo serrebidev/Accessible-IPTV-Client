@@ -2087,20 +2087,60 @@ class EPGDatabase:
         
         c = self.conn.cursor()
         rows = c.execute("""
-            SELECT title, start, end 
-            FROM programmes 
+            SELECT title, start, end, description
+            FROM programmes
             WHERE channel_id = ? AND end >= ? AND start <= ?
             ORDER BY start ASC
         """, (ch_id, start_str, end_str)).fetchall()
-        
+
         results = []
-        for title, s, e in rows:
+        for title, s, e, description in rows:
             results.append({
                 "title": title,
                 "start": s,
-                "end": e
+                "end": e,
+                "description": description or "",
             })
         return results
+
+    def get_all_now_next(self) -> Dict[str, Dict[str, object]]:
+        """On-air and next programme for every EPG channel in one indexed pass.
+
+        Returns ``{channel_id: {"display_name": str, "now": row, "next": row}}``
+        where each row is ``{title, start, end}`` in UTC "YYYYMMDDHHMMSS"
+        strings; either entry may be missing. Keyed by channel id so callers can
+        match playlist channels through tvg-id first and fall back to names.
+        Feeds the channel-row labels, so it must stay a single covering-index
+        range scan (no per-channel queries).
+        """
+        c = self.conn.cursor()
+        now = self._utcnow()
+        now_str = now.strftime("%Y%m%d%H%M%S")
+        # A programme airing now cannot have started more than ~a day ago; this
+        # floor lets SQLite range-scan idx_programmes_start_cover. The horizon
+        # bounds the "next" side of the scan.
+        floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
+        horizon_str = (now + datetime.timedelta(hours=6)).strftime("%Y%m%d%H%M%S")
+        rows = c.execute("""
+            SELECT p.title, p.start, p.end, c.id, c.display_name
+            FROM programmes p
+            JOIN channels c ON c.id = p.channel_id
+            WHERE p.start >= ? AND p.start <= ? AND p.end > ?
+            ORDER BY p.start ASC
+        """, (floor_str, horizon_str, now_str)).fetchall()
+
+        out: Dict[str, Dict[str, object]] = {}
+        for title, start, end, channel_id, display_name in rows:
+            entry = out.setdefault(channel_id, {"display_name": display_name or ""})
+            row = {"title": title, "start": start, "end": end}
+            if start <= now_str:
+                # Airing now; on overlapping entries prefer the most recent start.
+                if "now" not in entry or start > entry["now"]["start"]:
+                    entry["now"] = row
+            elif "next" not in entry:
+                # Rows arrive ordered by start, so the first future one wins.
+                entry["next"] = row
+        return out
 
     # =========================
     # Streaming importer with detailed debug

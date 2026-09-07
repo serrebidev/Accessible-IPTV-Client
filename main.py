@@ -45,7 +45,8 @@ from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
     epg_database_has_usable_data
 )
-from playlist import source_name_key, normalize_source_names
+from playlist import (source_name_key, normalize_source_names,
+                      strip_noise_words, _expand_tvg_id_candidates)
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
     StalkerPortalClient, StalkerPortalConfig,
@@ -464,8 +465,8 @@ def _extinf_name_comma(line: str) -> int:
         elif char == ",":
             return index
     return line.find(",")
-_AUTO_UPDATE_CHECK_INTERVAL_SECONDS = 12 * 60 * 60
 _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
+_AUTO_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000  # hourly
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
 _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
 
@@ -814,6 +815,7 @@ class IPTVClient(wx.Frame):
         self._update_check_inflight = False
         self._update_install_pending = False
         self._auto_update_check_scheduled = False
+        self._update_check_timer: Optional[wx.Timer] = None
         self._playlist_load_token = 0
         self._pending_epg_autostart = False
         self._pending_epg_autostart_token = 0
@@ -934,27 +936,46 @@ class IPTVClient(wx.Frame):
         return caster
 
     def _schedule_auto_update_check(self):
+        """Check for updates once at startup, then once every hour."""
         if getattr(self, "_auto_update_check_scheduled", False):
             return
         if not self.auto_check_updates:
             return
-        if not self._should_run_auto_update_check():
-            return
         self._auto_update_check_scheduled = True
+        # Startup check, a few seconds in so playlist loading is not disturbed.
         wx.CallLater(
             _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS,
             lambda: self._start_update_check(interactive=False),
         )
+        # And then steady hourly checks for the rest of the session.
+        self._start_update_check_timer()
 
-    def _should_run_auto_update_check(self) -> bool:
+    def _start_update_check_timer(self):
         try:
-            last_check = float(self.config.get("update_last_auto_check_epoch", 0) or 0)
+            if getattr(self, "_update_check_timer", None):
+                return
+            self._update_check_timer = wx.Timer(self)
+            self.Bind(wx.EVT_TIMER, self._on_update_check_timer, self._update_check_timer)
+            self._update_check_timer.Start(_AUTO_UPDATE_CHECK_INTERVAL_MS, wx.TIMER_CONTINUOUS)
         except Exception:
-            last_check = 0.0
-        now = time.time()
-        if last_check <= 0 or last_check > now + 300:
-            return True
-        return (now - last_check) >= _AUTO_UPDATE_CHECK_INTERVAL_SECONDS
+            self._update_check_timer = None
+
+    def _stop_update_check_timer(self):
+        try:
+            if getattr(self, "_update_check_timer", None):
+                self._update_check_timer.Stop()
+                try:
+                    self.Unbind(wx.EVT_TIMER, handler=self._on_update_check_timer,
+                                source=self._update_check_timer)
+                except Exception:
+                    LOG.debug("IPTVClient._stop_update_check_timer: ignored exception", exc_info=True)
+                self._update_check_timer = None
+        except Exception:
+            self._update_check_timer = None
+
+    def _on_update_check_timer(self, _event):
+        if self.auto_check_updates:
+            self._start_update_check(interactive=False)
 
     def _record_auto_update_check_attempt(self):
         try:
@@ -1152,34 +1173,111 @@ class IPTVClient(wx.Frame):
         try:
             db = EPGDatabase(get_db_path(), readonly=True)
             try:
-                rows = db.get_all_now_playing()
+                channels = db.get_all_now_next()
             finally:
                 db.close()
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        mapping: Dict[str, str] = {}
-        for row in rows:
-            title = (row.get("title") or "").strip()
-            name_key = canonicalize_name(row.get("channel_name") or "")
-            if not title or not name_key or name_key in mapping:
-                continue
-            text = title
-            try:
-                start = utc_to_local(datetime.datetime.strptime(
-                    row["start"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
-                end = utc_to_local(datetime.datetime.strptime(
-                    row["end"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
-                text = "{title} ({start}–{end})".format(
-                    title=title, start=start.strftime("%H:%M"), end=end.strftime("%H:%M"))
-            except Exception:
-                LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
-            mapping[name_key] = " — " + text
+        mapping = self._build_now_playing_labels(channels)
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
             self._now_playing_labels = mapping
         if changed:
             wx.CallAfter(self._refresh_channel_row_texts)
+
+    def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
+        """Match every playlist channel to its EPG channel, fuzzily.
+
+        Exact normalized names miss a lot of channels ("TVP 1 HD" against a
+        "TVP 1" guide entry, renamed feeds, ...), so the lookup walks the same
+        signals the EPG view uses: tvg-id first (expanded variants included),
+        then normalized names with noise words stripped. The returned map is
+        keyed by the playlist channel's normalized name, which is what the row
+        renderer has at hand.
+        """
+        # EPG-side indexes.
+        by_id = channels
+        by_id_lower = {str(cid).lower(): cid for cid in channels}
+        name_index: Dict[str, str] = {}
+        stripped_index: Dict[str, str] = {}
+        for channel_id, entry in channels.items():
+            display = entry.get("display_name") or ""
+            for key, index in (
+                (canonicalize_name(display), name_index),
+                (canonicalize_name(strip_noise_words(display)), stripped_index),
+            ):
+                if key and key not in index:
+                    index[key] = channel_id
+
+        def match(channel: Dict[str, str]) -> Optional[Dict[str, object]]:
+            # 1) tvg-id, including the common XMLTV id variants, case-insensitive
+            #    and tolerant of one extra dotted segment ("chan.tv" vs "chan").
+            raw_id = str(channel.get("tvg-id") or "").strip()
+            candidates = _expand_tvg_id_candidates(raw_id)
+            candidates.append(raw_id)
+            if "." in raw_id:
+                candidates.append(raw_id.rsplit(".", 1)[0])
+            for candidate in candidates:
+                channel_id = by_id_lower.get(candidate.strip().lower())
+                if channel_id is not None:
+                    return by_id[channel_id]
+            # 2) names: exact normalized, then noise-stripped, for the channel
+            #    name and then the tvg-name.
+            for source in (channel.get("name"), channel.get("tvg-name")):
+                text = str(source or "").strip()
+                if not text:
+                    continue
+                for key, index in (
+                    (canonicalize_name(text), name_index),
+                    (canonicalize_name(strip_noise_words(text)), stripped_index),
+                ):
+                    channel_id = index.get(key)
+                    if channel_id is not None:
+                        return by_id[channel_id]
+            return None
+
+        mapping: Dict[str, str] = {}
+        playlist_channels = getattr(self, "all_channels", None) or []
+        for channel in playlist_channels:
+            name_key = canonicalize_name(channel.get("name", ""))
+            if not name_key or name_key in mapping:
+                continue
+            entry = match(channel)
+            if not entry:
+                continue
+            suffix = ""
+            now_show = entry.get("now")
+            if now_show:
+                text = self._programme_label(now_show, with_end=True)
+                if text:
+                    suffix = " — " + text
+            next_show = entry.get("next")
+            if next_show:
+                text = self._programme_label(next_show, with_end=False)
+                if text:
+                    suffix += " — " + _("Next: {programme}").format(programme=text)
+            if suffix:
+                mapping[name_key] = suffix
+        return mapping
+
+    def _programme_label(self, show: Dict[str, str], *, with_end: bool) -> str:
+        """"Title (HH:MM–HH:MM)" (or "Title (HH:MM)"), for the row suffixes."""
+        title = (show.get("title") or "").strip()
+        if not title:
+            return ""
+        try:
+            start = utc_to_local(datetime.datetime.strptime(
+                show["start"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+            if not with_end:
+                return "{title} ({start})".format(title=title, start=start.strftime("%H:%M"))
+            end = utc_to_local(datetime.datetime.strptime(
+                show["end"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+            return "{title} ({start}–{end})".format(
+                title=title, start=start.strftime("%H:%M"), end=end.strftime("%H:%M"))
+        except Exception:
+            LOG.debug("IPTVClient._programme_label: ignored exception", exc_info=True)
+            return title
 
     def _refresh_channel_row_texts(self):
         """Re-render the virtual rows so the next focus reads the new labels."""
@@ -3639,6 +3737,10 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         try:
+            self._stop_update_check_timer()
+        except Exception:
+            LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
+        try:
             self._cancel_epg_autostart_timer()
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
@@ -3690,6 +3792,10 @@ class IPTVClient(wx.Frame):
             # Ensure poll timer stopped on exit
             try:
                 self._stop_now_playing_timer()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            try:
+                self._stop_update_check_timer()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
@@ -7078,17 +7184,31 @@ class ChannelEPGDialog(wx.Dialog):
             self.list_ctrl.Select(0)
             self.list_ctrl.Focus(0)
 
+        # Tab from the list lands here: the description of the highlighted
+        # programme, read-only, updated as the selection moves.
+        self.description_label = wx.StaticText(panel, label=_("Description"))
+        self.description_field = wx.TextCtrl(
+            panel, size=(-1, 110), style=wx.TE_READONLY | wx.TE_MULTILINE)
+        self.description_field.SetName(_("Episode description"))
+        self.description_field.SetAccessibleName(_("Episode description"))
+
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
         close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
-        
+
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-        
+
         panel.SetSizer(sizer)
         schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
+        self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, lambda _evt: self._update_description())
+        self.list_ctrl.Bind(wx.EVT_CHAR_HOOK, self._on_list_key)
+        self.description_field.Bind(wx.EVT_CHAR_HOOK, self._on_description_key)
+        self._update_description()
         
         self.Layout()
         self.CenterOnParent()
@@ -7123,6 +7243,25 @@ class ChannelEPGDialog(wx.Dialog):
         if idx == -1 or idx >= len(self.programmes):
             return None
         return self.programmes[idx]
+
+    def _on_list_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB and not event.ShiftDown():
+            self.description_field.SetFocus()
+            return
+        event.Skip()
+
+    def _on_description_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+            self.list_ctrl.SetFocus()
+            return
+        event.Skip()
+
+    def _update_description(self):
+        prog = self._selected_programme()
+        description = (prog.get("description") or "").strip() if prog else ""
+        text = description or _("No description available for this programme.")
+        if self.description_field.GetValue() != text:
+            self.description_field.SetValue(text)
 
     def _on_schedule(self, _event):
         if not self.schedule_callback:
