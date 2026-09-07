@@ -134,26 +134,21 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
         _catchup_downloads={},
         _maybe_shutdown_after_recordings=lambda: None,
         _catchup_download_finished=lambda *_args: None,
-        _parse_epg_time=lambda value: {
-            "start": datetime.datetime(2026, 1, 1, 10, tzinfo=datetime.timezone.utc),
-            "end": datetime.datetime(2026, 1, 1, 10, 30, tzinfo=datetime.timezone.utc),
-        }[value],
-        _resolve_show_url=lambda _channel, _show: ("https://catchup.example/programme", True),
-        _channel_display_name=lambda _channel: "News",
-        _channel_record_key=lambda _channel: "news",
-        _on_recording_finished=lambda *_args: None,
         _note_recording_started=lambda: None,
-        _recording_format_label=lambda _fmt: "Provider quality",
     )
     monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
-    monkeypatch.setattr(main, "channel_http_headers", lambda _channel: {})
     monkeypatch.setattr(main.wx, "MessageBox", lambda *_args, **_kwargs: None)
 
-    main.IPTVClient._download_catchup_programme(
+    main.IPTVClient._start_catchup_recording(
         frame,
-        {"name": "News"},
+        "https://catchup.example/programme",
+        "The Programme - News",
+        "catchup:abc",
         {"start": "start", "end": "end", "show_title": "The Programme"},
+        1800.0,
+        "provider_mkv",
+        {},
     )
 
     args, kwargs = started[0]
@@ -163,11 +158,62 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
     assert kwargs["metadata"]["catchup"] is True
     # Stats lines in the log are what the progress dialog reads.
     assert kwargs["show_stats"] is True
+    # A download is a throwaway capture: the recorder must write to a .part
+    # file so nothing partial ever lands in the recordings folder.
+    assert kwargs["keep_partial"] is False
     # The progress window replaces the old "download started" message box.
     assert len(dialogs) == 1
-    assert dialogs[0][1].id == 7
-    assert frame._catchup_downloads[7].rec.id == 7
-    assert dialogs[0][2]["duration"] == 1800.0
+
+
+def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):
+    """When the provider hosts a direct file, that URL is what gets recorded."""
+
+    class Recorder:
+        def is_recording(self, _key):
+            return False
+
+    class FakeThread:
+        def __init__(self, target=None, args=(), daemon=None):
+            self.target, self.args = target, args
+
+        def start(self):
+            self.target(*self.args)
+
+    frame = types.SimpleNamespace(
+        config={"recording_format": "provider_mkv"},
+        recorder=Recorder(),
+        _catchup_downloads={},
+        _parse_epg_time=lambda value: {
+            "start": datetime.datetime(2026, 1, 1, 10, tzinfo=datetime.timezone.utc),
+            "end": datetime.datetime(2026, 1, 1, 10, 30, tzinfo=datetime.timezone.utc),
+        }[value],
+        _resolve_show_url=lambda _channel, _show: ("https://catchup.example/index.m3u8?tok=1", True),
+        _channel_display_name=lambda _channel: "News",
+        _channel_record_key=lambda _channel: "news",
+    )
+    for name in ("_download_catchup_programme", "_begin_catchup_download",
+                 "_start_catchup_recording"):
+        setattr(frame, name, getattr(main.IPTVClient, name).__get__(frame))
+    queued = []
+    monkeypatch.setattr(main.threading, "Thread", FakeThread)
+    monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
+    monkeypatch.setattr(main.catchup_direct, "direct_download_url",
+                        lambda *_args, **_kwargs: "https://catchup.example/index-123-1800.mp4?tok=1")
+    callafter = []
+    monkeypatch.setattr(main.wx, "CallAfter", lambda cb, *a: callafter.append((cb, a)))
+
+    main.IPTVClient._download_catchup_programme(
+        frame,
+        {"name": "News"},
+        {"start": "start", "end": "end", "show_title": "The Programme"},
+    )
+
+    # The probe handed the fast direct file to the UI-thread starter.
+    assert len(callafter) == 1
+    callback, cb_args = callafter[0]
+    assert callback == frame._start_catchup_recording
+    assert cb_args[0] == "https://catchup.example/index-123-1800.mp4?tok=1"
+    assert cb_args[2].startswith("catchup:")
 
 
 def test_catchup_download_finish_reports_and_closes(monkeypatch, tmp_path):

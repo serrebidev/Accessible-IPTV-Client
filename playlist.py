@@ -1277,10 +1277,15 @@ class EPGDatabase:
                 title TEXT,
                 start TEXT,
                 end TEXT,
+                description TEXT,
                 FOREIGN KEY(channel_id) REFERENCES channels(id),
                 UNIQUE(channel_id, start, end)
             )
         """)
+        # Migration: databases created before descriptions were stored lack the column.
+        existing_cols = {row[1] for row in c.execute("PRAGMA table_info(programmes)").fetchall()}
+        if "description" not in existing_cols:
+            c.execute("ALTER TABLE programmes ADD COLUMN description TEXT")
         # Indexes crucial for fast lookups
         # idx_programmes_channel_start_end is a left-prefix superset of (channel_id, start),
         # so the standalone (channel_id, start) index is redundant — drop it to speed bulk
@@ -1403,10 +1408,19 @@ class EPGDatabase:
         except Exception as e:
             _logger.debug("Norm-name repair failed: %s", e)
 
-    def insert_programme(self, channel_id: str, title: str, start_utc: str, end_utc: str):
+    def insert_programme(self, channel_id: str, title: str, start_utc: str, end_utc: str,
+                         description: str = ""):
         c = self.conn.cursor()
-        c.execute("INSERT OR IGNORE INTO programmes (channel_id, title, start, end) VALUES (?, ?, ?, ?)",
-                  (channel_id, title, start_utc, end_utc))
+        # Upsert so a re-import can backfill an empty description without ever
+        # clobbering one that is already there (the WHERE keeps repeated imports
+        # write-free for fully populated rows).
+        c.execute("""
+            INSERT INTO programmes (channel_id, title, start, end, description)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(channel_id, start, end) DO UPDATE SET description = excluded.description
+            WHERE excluded.description IS NOT NULL AND excluded.description != ''
+              AND (programmes.description IS NULL OR programmes.description = '')
+        """, (channel_id, title, start_utc, end_utc, description))
 
     def prune_old_programmes(self, days: int = 7):
         utcnow = self._utcnow()
@@ -1852,19 +1866,20 @@ class EPGDatabase:
         now_int = int(now_str)
 
         rows = c.execute(
-            "SELECT title, start, end FROM programmes WHERE channel_id = ? AND end > ? ORDER BY start ASC LIMIT 6",
+            "SELECT title, start, end, description FROM programmes WHERE channel_id = ? AND end > ? ORDER BY start ASC LIMIT 6",
             (channel_id, now_str)
         ).fetchall()
 
         current_shows = []
         next_shows = []
         
-        for title, start, end in rows:
+        for title, start, end, description in rows:
             st_i = int(start)
             en_i = int(end)
             payload = {
                 'channel_id': channel_id,
                 'title': title,
+                'description': description or "",
                 'start': datetime.datetime.strptime(start, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc),
                 'end': datetime.datetime.strptime(end, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
             }
@@ -2030,45 +2045,36 @@ class EPGDatabase:
         return result
 
     def get_recent_programmes(self, channel: Dict[str, str], hours: int = 48, limit: int = 60) -> List[Dict[str, str]]:
-        matches, _ = self.get_matching_channel_ids(channel)
-        if not matches:
+        # One best-matching EPG channel, exactly like the "what's on" view uses.
+        # The old top-5 fuzzy match mixed programmes from several EPG channels,
+        # which surfaced wrong episodes for channels whose names are close.
+        ch_id = self.resolve_best_channel_id(channel)
+        if not ch_id:
             return []
         now = self._utcnow()
         now_str = now.strftime("%Y%m%d%H%M%S")
         cutoff = (now - datetime.timedelta(hours=hours)).strftime("%Y%m%d%H%M%S")
         c = self.conn.cursor()
+        rows = c.execute(
+            """
+            SELECT title, start, end
+            FROM programmes
+            WHERE channel_id = ? AND end <= ? AND end >= ?
+            ORDER BY start DESC
+            LIMIT ?
+            """,
+            (ch_id, now_str, cutoff, limit)
+        ).fetchall()
         results: List[Dict[str, str]] = []
-        seen: Set[Tuple[str, str, str]] = set()
-        ordered = sorted(matches, key=lambda m: -m.get('score', 0))[:5]
-        per_match = max(1, limit // max(1, len(ordered)))
-        for m in ordered:
-            ch_id = m.get('id')
-            if not ch_id:
-                continue
-            rows = c.execute(
-                """
-                SELECT title, start, end
-                FROM programmes
-                WHERE channel_id = ? AND end <= ? AND end >= ?
-                ORDER BY start DESC
-                LIMIT ?
-                """,
-                (ch_id, now_str, cutoff, per_match)
-            ).fetchall()
-            for title, start, end in rows:
-                key = (ch_id, start, end)
-                if key in seen:
-                    continue
-                seen.add(key)
-                results.append({
-                    "channel_id": ch_id,
-                    "channel_name": m.get('display_name') or channel.get("name", ""),
-                    "title": title,
-                    "start": start,
-                    "end": end
-                })
-        results.sort(key=lambda r: r["start"], reverse=True)
-        return results[:limit]
+        for title, start, end in rows:
+            results.append({
+                "channel_id": ch_id,
+                "channel_name": channel.get("name", ""),
+                "title": title,
+                "start": start,
+                "end": end
+            })
+        return results
 
     def get_schedule(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> List[Dict[str, str]]:
         # Use the smart resolution logic (prefer data availability)
@@ -2296,6 +2302,11 @@ class EPGDatabase:
                                 ch_id = elem.get("channel", "")
                                 title_elem = elem.find("./title")
                                 title_txt = title_elem.text.strip() if title_elem is not None and title_elem.text else ""
+                                desc_txt = ""
+                                for desc_elem in elem.findall("./desc"):
+                                    if desc_elem.text and desc_elem.text.strip():
+                                        desc_txt = desc_elem.text.strip()
+                                        break
                                 st_raw = elem.get("start", "")
                                 en_raw = elem.get("stop") or elem.get("end", "")
 
@@ -2307,7 +2318,7 @@ class EPGDatabase:
                                 if st_utc and en_utc and ch_id:
                                     if DEBUG and sample_ok < 8:
                                         _logger.debug("EPG SAMPLE OK src=%s ...", src); sample_ok += 1
-                                    self.insert_programme(ch_id, title_txt, st_utc, en_utc)
+                                    self.insert_programme(ch_id, title_txt, st_utc, en_utc, desc_txt)
                                     prog_count += 1
                                     inserted_since_commit += 1
                                     if inserted_since_commit >= BATCH:

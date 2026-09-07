@@ -630,3 +630,48 @@ def test_gz_download_with_resume_detects_truncated_resume_via_content_range(monk
         assert os.path.getsize(temp_path) == split + len(short_remainder)
     finally:
         _remove_if_exists(temp_path)
+
+
+def test_programme_descriptions_round_trip(tmp_path):
+    path = tmp_path / "epg.db"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    db = EPGDatabase(str(path))
+    db.insert_channel("ch1", "Channel 1")
+    db.insert_programme(
+        "ch1", "Show",
+        _xmltv_time(now - datetime.timedelta(minutes=30)),
+        _xmltv_time(now + datetime.timedelta(minutes=30)),
+        "A great episode.",
+    )
+    db.commit()
+    now_next = db.get_now_next_by_id("ch1")
+    db.close()
+    assert now_next is not None
+    assert now_next[0]["description"] == "A great episode."
+
+
+def test_legacy_programme_table_is_migrated_and_descriptions_backfill(tmp_path):
+    """Databases from before descriptions existed keep working and gain the column."""
+    path = tmp_path / "epg.db"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    start = _xmltv_time(now - datetime.timedelta(minutes=30))
+    end = _xmltv_time(now + datetime.timedelta(minutes=30))
+    conn = _create_epg_schema(path)
+    conn.execute("CREATE UNIQUE INDEX ux_programmes ON programmes (channel_id, start, end)")
+    conn.execute("INSERT INTO channels (id, display_name) VALUES ('ch1', 'Channel 1')")
+    conn.execute(
+        "INSERT INTO programmes (channel_id, title, start, end) VALUES ('ch1', 'Show', ?, ?)",
+        (start, end),
+    )
+    conn.commit()
+    conn.close()
+
+    db = EPGDatabase(str(path))
+    # Same slot, now with a description: the upsert must backfill, not duplicate.
+    db.insert_programme("ch1", "Show", start, end, "Backfilled description.")
+    db.commit()
+    now_next = db.get_now_next_by_id("ch1")
+    count = db.conn.execute("SELECT COUNT(*) FROM programmes").fetchone()[0]
+    db.close()
+    assert count == 1
+    assert now_next[0]["description"] == "Backfilled description."

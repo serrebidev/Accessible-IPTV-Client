@@ -57,7 +57,8 @@ from http_headers import channel_http_headers
 from external_player import ExternalPlayerLauncher
 import recorder
 from recorder import RECORDING_FORMATS
-from recorder import format_duration, format_size, parse_ffmpeg_progress
+from recorder import format_duration, format_size, parse_ffmpeg_progress, written_size
+import catchup_direct
 import dvr
 import favorites
 import power
@@ -5094,18 +5095,31 @@ class IPTVClient(wx.Frame):
         def localfmt(dt):
             local = utc_to_local(dt)
             return local.strftime('%H:%M')
+        def description(show):
+            return (show.get('description') or "").strip() if show else ""
         msg = ""
         if now:
             msg += _("Now: {title} ({start} – {end})").format(
                 title=now['title'], start=localfmt(now['start']), end=localfmt(now['end']))
+            desc = description(now)
+            if desc:
+                msg += "\n" + desc
         elif nxt:
             msg += _("Starts at {start}: {title}").format(
                 start=localfmt(nxt['start']), title=nxt['title'])
+            desc = description(nxt)
+            if desc:
+                msg += "\n" + desc
         else:
             msg += _("No program currently airing.")
         if nxt:
             msg += "\n" + _("Next: {title} ({start} – {end})").format(
                 title=nxt['title'], start=localfmt(nxt['start']), end=localfmt(nxt['end']))
+            if now:
+                # The description of the current show was already shown above.
+                desc = description(nxt)
+                if desc:
+                    msg += "\n" + desc
         return msg
 
     def _fetch_and_cache_epg(self, channel, cname):
@@ -5497,6 +5511,8 @@ class IPTVClient(wx.Frame):
             on_audio_preference=self._on_player_audio_preference,
             on_last_track_changed=self._on_player_last_audio_track_changed,
             last_audio_track=str(self.config.get("last_audio_track") or ""),
+            audio_output_device=str(self.config.get("audio_output_device") or ""),
+            on_audio_device=self._on_player_audio_device,
         )
         self._internal_player_frame = frame
         return frame
@@ -5527,6 +5543,15 @@ class IPTVClient(wx.Frame):
         self.config["last_audio_track"] = name
         save_config(self.config)
         LOG.info("Last used audio track set to %s", name)
+
+    def _on_player_audio_device(self, device_id: str) -> None:
+        """Persist the audio output device chosen in the built-in player."""
+        device_id = (device_id or "").strip()
+        if self.config.get("audio_output_device", "") == device_id:
+            return
+        self.config["audio_output_device"] = device_id
+        save_config(self.config)
+        LOG.info("Audio output device set to %s", device_id or "system default")
 
     def _show_audio_preference_dialog(self, _event=None):
         dlg = AudioTrackPreferenceDialog(
@@ -5797,15 +5822,48 @@ class IPTVClient(wx.Frame):
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
             return
         fmt = normalize_recording_format(self.config.get("recording_format"))
+        # The fast direct-URL probe does network work; keep it off the GUI
+        # thread. If no direct file exists we fall back to the HLS URL.
+        threading.Thread(
+            target=self._begin_catchup_download,
+            args=(channel, url, display_name, key, show, duration, fmt),
+            daemon=True,
+        ).start()
+
+    def _begin_catchup_download(self, channel, hls_url, display_name, key, show,
+                                duration, fmt):
+        """Worker thread: probe for the fast direct file, then start on the UI thread."""
+        headers = channel_http_headers(channel)
+        url = hls_url
+        try:
+            start_epoch = int(self._parse_epg_time(show.get("start", "")).timestamp())
+            direct = catchup_direct.direct_download_url(
+                hls_url, start_epoch, int(duration), headers)
+            if direct:
+                LOG.info("Catch-up: using fast direct download URL")
+                url = direct
+        except Exception:
+            LOG.debug("Catch-up direct URL probe failed; using the HLS URL", exc_info=True)
+        wx.CallAfter(self._start_catchup_recording, url, display_name, key, show,
+                     duration, fmt, headers)
+
+    def _start_catchup_recording(self, url, display_name, key, show, duration,
+                                 fmt, headers):
+        """UI thread: start the recorder and open the progress window."""
+        if self.recorder.is_recording(key):  # re-checked: the probe ran async
+            wx.MessageBox(_("This catch-up programme is already downloading."),
+                          _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+            return
         try:
             rec = self.recorder.start(
-                url, display_name, fmt, channel_http_headers(channel), get_recordings_dir(self.config),
+                url, display_name, fmt, headers, get_recordings_dir(self.config),
                 key=key,
                 metadata={"catchup": True, "programme_start": show.get("start", ""),
                           "programme_end": show.get("end", "")},
                 on_finish=self._catchup_download_finished,
                 duration=duration,
                 show_stats=True,
+                keep_partial=False,
             )
         except Exception as err:
             # Stream URLs go to the debug log verbatim (credentials included):
@@ -5842,7 +5900,9 @@ class IPTVClient(wx.Frame):
                 dlg.notify_recording_finished()
             if rc == 0:
                 if rec.stopped_by_user:
-                    wx.MessageBox(_("Download canceled. Partial file:\n{path}").format(path=rec.out_path),
+                    # The partial output was discarded by the recorder: ffmpeg
+                    # cannot resume it, so it would only be unplayable junk.
+                    wx.MessageBox(_("Download canceled. The incomplete file was discarded."),
                                   _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
                 else:
                     wx.MessageBox(_("Download complete:\n{path}").format(path=rec.out_path),
@@ -6235,10 +6295,13 @@ class CatchupDownloadDialog(wx.Dialog):
     """Live progress for one catch-up download.
 
     ffmpeg reports the media time it has written through periodic stats lines
-    in the per-recording log, so the dialog tails that log once a second: a
-    progress bar against the programme window, elapsed time, ETA, file size and
-    a Cancel button that finalizes the file cleanly. The window is deliberately
-    modeless: the user can keep browsing while the download runs.
+    in the per-recording log, so the dialog tails that log once a second. All
+    figures sit in one read-only text field, so a screen reader reads them as
+    a single, ordered block (NVDA+B, or the arrow keys inside the field)
+    instead of a scattered grid of labels. Closing the window or pressing
+    Cancel asks for confirmation first, because a canceled download cannot be
+    resumed. The window is deliberately modeless: the user can keep browsing
+    while the download runs.
     """
 
     UPDATE_INTERVAL_MS = 1000
@@ -6250,6 +6313,7 @@ class CatchupDownloadDialog(wx.Dialog):
         self._duration = max(1.0, float(duration))
         self._on_cancel_cb = on_cancel
         self._started = time.time()
+        self._last_details = ""
         self._timer = wx.Timer(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -6260,18 +6324,12 @@ class CatchupDownloadDialog(wx.Dialog):
         self.gauge = wx.Gauge(self, range=100, size=(-1, 18))
         sizer.Add(self.gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
 
-        grid = wx.FlexGridSizer(cols=2, vgap=4, hgap=14)
-        grid.AddGrowableCol(1)
-        self.elapsed_value = wx.StaticText(self, label="")
-        self.remaining_value = wx.StaticText(self, label="")
-        self.size_value = wx.StaticText(self, label="")
-        grid.Add(wx.StaticText(self, label=_("Elapsed")), 0, wx.ALIGN_RIGHT)
-        grid.Add(self.elapsed_value, 1)
-        grid.Add(wx.StaticText(self, label=_("Time remaining")), 0, wx.ALIGN_RIGHT)
-        grid.Add(self.remaining_value, 1)
-        grid.Add(wx.StaticText(self, label=_("Downloaded")), 0, wx.ALIGN_RIGHT)
-        grid.Add(self.size_value, 1)
-        sizer.Add(grid, 0, wx.ALL | wx.EXPAND, 12)
+        # One read-only field instead of a grid of labels: the numbers are
+        # announced in a fixed, meaningful order, and stay reviewable at will.
+        self.details_field = wx.TextCtrl(
+            self, size=(-1, 96),
+            style=wx.TE_READONLY | wx.TE_MULTILINE | wx.BORDER_NONE)
+        sizer.Add(self.details_field, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel"))
         sizer.Add(self.cancel_btn, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 12)
@@ -6281,16 +6339,11 @@ class CatchupDownloadDialog(wx.Dialog):
         # Every control gets a screen-reader name; labels are static text.
         self.status_text.SetName(_("Download status"))
         self.gauge.SetName(_("Download progress"))
-        for ctrl, label in (
-            (self.elapsed_value, _("Elapsed")),
-            (self.remaining_value, _("Time remaining")),
-            (self.size_value, _("Downloaded")),
-        ):
-            ctrl.SetName(label)
-            if hasattr(ctrl, "SetAccessibleName"):
-                ctrl.SetAccessibleName(label)
+        self.details_field.SetName(_("Download details"))
+        self.details_field.SetAccessibleName(_("Download details"))
 
         self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel_download())
+        self.Bind(wx.EVT_CLOSE, self._on_close)
         self.Bind(wx.EVT_TIMER, self._on_tick, self._timer)
         self._timer.Start(self.UPDATE_INTERVAL_MS)
         self._on_tick(None)
@@ -6306,25 +6359,45 @@ class CatchupDownloadDialog(wx.Dialog):
             pct = int(round(100.0 * min(written, self._duration) / self._duration))
             self.gauge.SetValue(pct)
             self.status_text.SetLabel(_("Downloading {name}").format(name=self._rec.title))
-            self.remaining_value.SetLabel(
-                format_duration(max(0.0, self._duration - written)))
+            remaining = max(0.0, self._duration - written)
         else:
             self.gauge.Pulse()
             self.status_text.SetLabel(_("Downloading {name}").format(name=self._rec.title))
-            self.remaining_value.SetLabel("--:--")
-        self.elapsed_value.SetLabel(format_duration(elapsed))
-        try:
-            size = os.path.getsize(self._rec.out_path)
-        except OSError:
-            size = 0
-        self.size_value.SetLabel(format_size(size))
+            pct = None
+            remaining = None
+        lines = [
+            _("Progress: {percent}%").format(percent="--" if pct is None else pct),
+            _("Elapsed: {time}").format(time=format_duration(elapsed)),
+            _("Time remaining: {time}").format(time=format_duration(remaining)),
+            _("Downloaded: {size}").format(size=format_size(written_size(self._rec))),
+        ]
+        details = "\n".join(lines)
+        if details != self._last_details:
+            self._last_details = details
+            self.details_field.SetValue(details)
 
-    def _cancel_download(self):
+    def _confirm_cancel(self) -> bool:
+        answer = wx.MessageBox(
+            _("Do you really want to cancel this download? "
+              "It cannot be resumed afterwards."),
+            _("Cancel Download"), wx.YES_NO | wx.ICON_QUESTION)
+        return answer == wx.YES
+
+    def _cancel_download(self, confirmed: bool = False):
+        if not confirmed and not self._confirm_cancel():
+            return
         self._timer.Stop()
         cb, self._on_cancel_cb = self._on_cancel_cb, None
         if cb is not None:
             cb()
         self.Destroy()
+
+    def _on_close(self, event):
+        # Alt+F4 / window close button: same confirmation as Cancel.
+        if self._confirm_cancel():
+            self._cancel_download(confirmed=True)
+        else:
+            event.Veto()
 
     def notify_recording_finished(self):
         """Stop the updates and close the window (finish callback, UI thread)."""
@@ -6643,7 +6716,12 @@ class ShutdownCountdownDialog(wx.Dialog):
 
 
 class ScheduledRecordingsDialog(wx.Dialog):
-    """Dialog showing all DVR schedule entries."""
+    """Dialog showing all DVR schedule entries.
+
+    Cancel and Delete live in the list's context menu (right-click or the
+    keyboard's menu key); Escape and Alt+F4 close the window, so there is no
+    Close button.
+    """
 
     def __init__(self, parent, scheduler: dvr.DVRScheduler):
         super().__init__(parent, title=_("Scheduled Recordings"), size=(850, 430))
@@ -6664,23 +6742,49 @@ class ScheduledRecordingsDialog(wx.Dialog):
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         refresh_btn = wx.Button(panel, label=_("Refresh"))
-        cancel_btn = wx.Button(panel, label=_("Cancel Selected"))
-        delete_btn = wx.Button(panel, label=_("Delete Selected"))
-        close_btn = wx.Button(panel, id=wx.ID_CLOSE, label=_("Close"))
         btn_sizer.Add(refresh_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(cancel_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(delete_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(close_btn, 0)
 
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         panel.SetSizer(sizer)
 
         refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
-        cancel_btn.Bind(wx.EVT_BUTTON, self._on_cancel_selected)
-        delete_btn.Bind(wx.EVT_BUTTON, self._on_delete_selected)
-        close_btn.Bind(wx.EVT_BUTTON, lambda _event: self.Close())
+        self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False))
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.Bind(wx.EVT_CLOSE, self._on_close)
+
+    def _on_char_hook(self, event):
+        key = event.GetKeyCode()
+        if key == wx.WXK_ESCAPE:
+            self.Close()
+        elif key == wx.WXK_MENU:
+            self._show_context_menu(keyboard=True)
+        else:
+            event.Skip()
+
+    def _show_context_menu(self, keyboard: bool):
+        menu = wx.Menu()
+        refresh_item = menu.Append(wx.ID_ANY, _("Refresh"))
+        menu.Bind(wx.EVT_MENU, lambda _event: self.refresh(), refresh_item)
+        menu.AppendSeparator()
+        cancel_item = menu.Append(wx.ID_ANY, _("Cancel"))
+        menu.Bind(wx.EVT_MENU, self._on_cancel_selected, cancel_item)
+        delete_item = menu.Append(wx.ID_ANY, _("Delete"))
+        menu.Bind(wx.EVT_MENU, self._on_delete_selected, delete_item)
+        pos = wx.DefaultPosition
+        if keyboard:
+            idx = self.list_ctrl.GetFirstSelected()
+            if idx != -1:
+                try:
+                    rect = self.list_ctrl.GetItemRect(idx)
+                    if rect.width or rect.height:
+                        pos = self.list_ctrl.ClientToScreen(rect.GetBottomLeft())
+                except Exception:
+                    LOG.debug("ScheduledRecordingsDialog._show_context_menu: ignored exception", exc_info=True)
+        try:
+            self.list_ctrl.PopupMenu(menu, pos)
+        finally:
+            menu.Destroy()
 
         self.refresh()
         self.CenterOnParent()

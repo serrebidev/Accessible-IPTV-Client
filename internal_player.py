@@ -179,6 +179,54 @@ def _detect_system_http_proxy() -> Optional[str]:
     return None
 
 
+class AudioDeviceDialog(wx.Dialog):
+    """Pick one audio output device for the built-in player."""
+
+    def __init__(self, parent, devices, current: str = ""):
+        super().__init__(parent, title=_("Audio Output Device"), size=(520, 320))
+        self.devices: List[Tuple[str, str]] = [("", _("System default"))]
+        seen = {""}
+        for device_id, description in devices:
+            device_id = str(device_id or "").strip()
+            if not device_id or device_id in seen:
+                continue
+            seen.add(device_id)
+            self.devices.append((device_id, str(description or device_id)))
+
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        hint = wx.StaticText(panel, label=_(
+            "Select the audio output device for the built-in player."))
+        sizer.Add(hint, 0, wx.ALL, 10)
+        self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
+        for _device_id, description in self.devices:
+            self.listbox.Append(description)
+        selected = 0
+        for index, (device_id, _description) in enumerate(self.devices):
+            if device_id == (current or ""):
+                selected = index
+                break
+        if self.devices:
+            self.listbox.SetSelection(selected)
+        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        btns = wx.BoxSizer(wx.HORIZONTAL)
+        ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("OK"))
+        cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Cancel"))
+        btns.Add(ok_btn, 0, wx.ALL, 5)
+        btns.Add(cancel_btn, 0, wx.ALL, 5)
+        sizer.Add(btns, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
+        panel.SetSizer(sizer)
+        self.listbox.SetName(_("Audio output devices"))
+        self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, lambda _evt: self.EndModal(wx.ID_OK))
+        self.CenterOnParent()
+
+    def get_selection(self) -> str:
+        idx = self.listbox.GetSelection()
+        if idx == wx.NOT_FOUND or idx >= len(self.devices):
+            return ""
+        return self.devices[idx][0]
+
+
 class InternalPlayerFrame(wx.Frame):
     """Embedded IPTV player with buffering resilience and keyboard controls."""
 
@@ -197,6 +245,8 @@ class InternalPlayerFrame(wx.Frame):
         on_audio_preference: Optional[Callable[[str], None]] = None,
         on_last_track_changed: Optional[Callable[[str], None]] = None,
         last_audio_track: str = "",
+        audio_output_device: str = "",
+        on_audio_device: Optional[Callable[[str], None]] = None,
     ) -> None:
         _prepare_vlc_runtime()
         if vlc is None:
@@ -299,6 +349,9 @@ class InternalPlayerFrame(wx.Frame):
         self._audio_preference_attempts = 0
         self._max_audio_preference_attempts = 20  # ~10s at the 500ms status timer
         self._audio_preference_item_id: Optional[int] = None
+        # Persisted audio output device (libVLC device id; "" = system default).
+        self._audio_output_device = (audio_output_device or "").strip()
+        self._on_audio_device_cb = on_audio_device
 
         instance_opts = [
             "--quiet",
@@ -320,6 +373,7 @@ class InternalPlayerFrame(wx.Frame):
         if not self.player:
             self.instance.release()
             raise InternalPlayerUnavailableError(_("Could not create libVLC media player object."))
+        self._apply_audio_output_device()
 
         try:
             current = self.player.audio_get_volume()
@@ -371,6 +425,7 @@ class InternalPlayerFrame(wx.Frame):
         self.fullscreen_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.fullscreen_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
 
+        self.volume_label = wx.StaticText(self.controls_panel, label=_("Volume"))
         self.volume_slider = wx.Slider(
             self.controls_panel,
             value=self._volume_value,
@@ -380,6 +435,8 @@ class InternalPlayerFrame(wx.Frame):
         )
         self.volume_slider.SetName(_("Volume Control"))
         self.volume_slider.Bind(wx.EVT_SLIDER, self._on_volume_slider)
+        # The slider's own MSW accessible ignores SetName; the static text
+        # created immediately before it carries the "Volume" name to the OS.
 
         self.audio_track_choice = wx.Choice(self.controls_panel)
         self.audio_track_choice.SetName(_("Choose Audio Track"))
@@ -394,6 +451,7 @@ class InternalPlayerFrame(wx.Frame):
         controls.Add(self.stop_btn, 0, wx.ALL, 5)
         controls.Add(self.cast_btn, 0, wx.ALL, 5)
         controls.Add(self.fullscreen_btn, 0, wx.ALL, 5)
+        controls.Add(self.volume_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
         # Expand horizontally; avoid mixing ALIGN_* with EXPAND to prevent wx assertions.
         controls.Add(self.volume_slider, 1, wx.ALL | wx.EXPAND, 5)
         controls.Add(self.audio_track_choice, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -439,6 +497,7 @@ class InternalPlayerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU_OPEN, self._on_any_menu_open)
         self.Bind(wx.EVT_MENU, self._on_audio_track_menu_select)
         playback_menu.AppendSubMenu(self.audio_track_menu, _("Audio Track") + "\tA")
+        m_audio_device = playback_menu.Append(wx.ID_ANY, _("Audio Output Device...") + "\tD")
         playback_menu.AppendSeparator()
         m_cast = playback_menu.Append(wx.ID_ANY, _("Cast...") + "\tCtrl+C")
         m_full = playback_menu.Append(wx.ID_ANY, _("Toggle Full Screen") + "\tF11")
@@ -448,6 +507,7 @@ class InternalPlayerFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_pause(), m_play_pause)
         self.Bind(wx.EVT_MENU, lambda _evt: self.stop(manual=True), m_stop)
+        self.Bind(wx.EVT_MENU, self._on_audio_device_menu, m_audio_device)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_cast(), m_cast)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_fullscreen(), m_full)
         self.Bind(wx.EVT_MENU, lambda _evt: self._hide_player(), m_hide)
@@ -455,6 +515,57 @@ class InternalPlayerFrame(wx.Frame):
 
         menu_bar.Append(playback_menu, _("&Playback"))
         self.SetMenuBar(menu_bar)
+
+    # ------------------------------------------------------------------ audio device
+    def _apply_audio_output_device(self) -> None:
+        """Point libVLC at the persisted output device, when one is set."""
+        device_id = (self._audio_output_device or "").strip()
+        if not device_id:
+            return
+        try:
+            self.player.audio_output_device_set(device_id)
+        except Exception:
+            LOG.debug("InternalPlayerFrame._apply_audio_output_device: ignored exception", exc_info=True)
+
+    def _list_audio_output_devices(self) -> List[Tuple[str, str]]:
+        pairs: List[Tuple[str, str]] = []
+        try:
+            enumerated = self.player.audio_output_device_enum() or []
+        except Exception:
+            LOG.debug("InternalPlayerFrame._list_audio_output_devices: ignored exception", exc_info=True)
+            return pairs
+        for item in enumerated:
+            try:
+                device_id, description = item.device, item.description
+            except AttributeError:
+                try:
+                    device_id, description = item
+                except Exception:
+                    continue
+            if device_id:
+                pairs.append((str(device_id), str(description or device_id)))
+        return pairs
+
+    def _on_audio_device_menu(self, _event=None) -> None:
+        devices = self._list_audio_output_devices()
+        if not devices:
+            wx.MessageBox(_("No audio output devices were found."),
+                          _("Audio Output Device"), wx.OK | wx.ICON_INFORMATION)
+            return
+        dlg = AudioDeviceDialog(self, devices, self._audio_output_device)
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                device_id = dlg.get_selection()
+                if device_id != self._audio_output_device:
+                    self._audio_output_device = device_id
+                    self._apply_audio_output_device()
+                    if self._on_audio_device_cb:
+                        try:
+                            self._on_audio_device_cb(device_id)
+                        except Exception:
+                            LOG.debug("InternalPlayerFrame._on_audio_device_menu: callback ignored", exc_info=True)
+        finally:
+            dlg.Destroy()
 
     # ------------------------------------------------------------------ public
     def play(
@@ -561,6 +672,7 @@ class InternalPlayerFrame(wx.Frame):
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         LOG.debug("Calling player.play()...")
         try:
+            self._apply_audio_output_device()
             self.player.play()
         except Exception as err:
             raise InternalPlayerUnavailableError(_("Could not start playback: {error}").format(error=err))

@@ -493,3 +493,96 @@ def test_recording_log_keeps_the_stream_url(tmp_path):
     body = log.read_text(encoding="utf-8")
     assert url in body
     assert "<headers>" not in body
+
+
+def test_settle_partial_output_renames_only_a_clean_download(tmp_path):
+    """A finished download takes its real name; anything else is discarded."""
+    manager = recorder.RecordingManager()
+    final = tmp_path / "out.mkv"
+    partial = tmp_path / "out.mkv.part"
+    partial.write_bytes(b"123")
+    rec = recorder.Recording(1, "key", "url", "Title", "provider_mkv",
+                             str(final), None, partial_path=str(partial))
+
+    manager._settle_partial_output(rec, 0)
+    assert final.exists() and not partial.exists()
+
+    # A user-cancelled run leaves nothing behind: ffmpeg cannot resume it.
+    partial.write_bytes(b"123")
+    rec.stopped_by_user = True
+    manager._settle_partial_output(rec, 0)
+    assert not partial.exists()
+
+    # A timed-out finalize would be unplayable too.
+    rec.stopped_by_user = False
+    rec.finalize_timed_out = True
+    partial.write_bytes(b"123")
+    manager._settle_partial_output(rec, 0)
+    assert not partial.exists()
+
+
+def test_download_style_recording_hides_its_partial_file(tmp_path):
+    """keep_partial=False: the .part file only becomes the real file on success."""
+    ffmpeg = _available_ffmpeg()
+    if not ffmpeg:
+        pytest.skip("ffmpeg is not available")
+    source = tmp_path / "source.ts"
+    _make_source_ts(ffmpeg, source)
+    with _looping_ts_server(source) as url:
+        finished = threading.Event()
+        result = {}
+
+        def on_finish(rec, rc):
+            result["rec"] = rec
+            result["rc"] = rc
+            finished.set()
+
+        manager = recorder.RecordingManager()
+        try:
+            rec = manager.start(
+                url, "Download Style", "provider_mkv", {}, str(tmp_path),
+                key="dl-style", on_finish=on_finish, duration=2.0,
+                keep_partial=False,
+            )
+            assert rec.partial_path == rec.out_path + ".part"
+            assert rec.written_path == rec.partial_path
+            assert finished.wait(30)
+            assert result["rc"] == 0
+            assert os.path.exists(rec.out_path)
+            assert not os.path.exists(rec.partial_path)
+        finally:
+            manager.stop_all(wait=True)
+
+
+def test_canceled_download_leaves_no_partial_file(tmp_path):
+    """ffmpeg cannot resume a partial file, so cancelling discards it entirely."""
+    ffmpeg = _available_ffmpeg()
+    if not ffmpeg:
+        pytest.skip("ffmpeg is not available")
+    source = tmp_path / "source.ts"
+    _make_source_ts(ffmpeg, source)
+    with _looping_ts_server(source) as url:
+        finished = threading.Event()
+        result = {}
+
+        def on_finish(rec, rc):
+            result["rec"] = rec
+            result["rc"] = rc
+            finished.set()
+
+        manager = recorder.RecordingManager()
+        try:
+            rec = manager.start(
+                url, "Canceled Download", "provider_mkv", {}, str(tmp_path),
+                key="dl-cancel", on_finish=on_finish, duration=30.0,
+                keep_partial=False,
+            )
+            final, partial = rec.out_path, rec.partial_path
+            time.sleep(1.5)  # let ffmpeg write something first
+            manager.stop(rec.id, wait=True)
+            assert finished.wait(30)
+            assert result["rec"].stopped_by_user
+            assert not os.path.exists(partial)
+            assert not os.path.exists(final)
+        finally:
+            manager.stop_all(wait=True)

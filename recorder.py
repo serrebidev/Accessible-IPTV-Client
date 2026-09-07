@@ -37,6 +37,19 @@ RECORDING_FORMATS: "Dict[str, tuple]" = {
 
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 
+# ffmpeg infers the output muxer from the filename extension. Download-style
+# captures write to a ``.part`` sibling while running, so the muxer has to be
+# forced explicitly (mapping: recording extension -> ffmpeg muxer name).
+FORMAT_MUXERS = {
+    "mkv": "matroska",
+    "mp4": "mp4",
+    "m4a": "ipod",
+    "mp3": "mp3",
+    "flac": "flac",
+    "wav": "wav",
+    "opus": "oga",
+}
+
 # Formats whose muxer rewrites the whole output file when it closes. ``+faststart``
 # moves the MP4 moov atom in front of the media data, which means ffmpeg reads back
 # and rewrites every byte it just captured.
@@ -90,6 +103,14 @@ def finalize_timeout_seconds(fmt: str, out_path: str) -> float:
             size = 0
         timeout += float(size) / FINALIZE_REWRITE_BYTES_PER_SECOND
     return min(timeout, FINALIZE_TIMEOUT_CAP_SECONDS)
+
+
+def written_size(rec: "Recording") -> int:
+    """Bytes ffmpeg has written so far for ``rec`` (0 when unknown)."""
+    try:
+        return os.path.getsize(rec.written_path)
+    except OSError:
+        return 0
 
 
 def parse_ffmpeg_progress(log_path: str) -> Optional[float]:
@@ -237,6 +258,7 @@ def build_ffmpeg_command(
     *,
     duration: Optional[float] = None,
     show_stats: bool = False,
+    force_format: Optional[str] = None,
 ) -> List[str]:
     """Construct the full ffmpeg argument list for one recording."""
     if fmt not in RECORDING_FORMATS:
@@ -295,6 +317,10 @@ def build_ffmpeg_command(
     if format_uses_faststart(fmt):
         cmd += ["-movflags", "+faststart"]
 
+    if force_format:
+        # The output name may not have a recognizable extension (``.part``),
+        # so tell ffmpeg which muxer to use.
+        cmd += ["-f", force_format]
     cmd.append(out_path)
     return cmd
 
@@ -304,13 +330,18 @@ class Recording:
 
     def __init__(self, rec_id: int, key: str, url: str, title: str, fmt: str, out_path: str,
                  process: "subprocess.Popen", metadata: Optional[Dict[str, object]] = None,
-                 log_path: str = "", command: Optional[List[str]] = None):
+                 log_path: str = "", command: Optional[List[str]] = None,
+                 partial_path: str = ""):
         self.id = rec_id
         self.key = key  # stable channel identity (resolved URL can change per resolve)
         self.url = url
         self.title = title
         self.fmt = fmt
         self.out_path = out_path
+        # For download-style captures (``keep_partial=False``) ffmpeg actually
+        # writes to this sibling ``.part`` path and the file is renamed to
+        # ``out_path`` only when it completes cleanly.
+        self.partial_path = partial_path
         self.process = process
         self.started_at = time.time()
         self.stderr_tail: List[str] = []
@@ -323,6 +354,11 @@ class Recording:
         # which is the one case where the output file is expected to be unplayable.
         self.finalize_timed_out = False
         self.detached = False
+
+    @property
+    def written_path(self) -> str:
+        """The path ffmpeg is actually writing to (the .part file if any)."""
+        return self.partial_path or self.out_path
 
 
 class RecordingManager:
@@ -360,6 +396,7 @@ class RecordingManager:
         on_finish: Optional[Callable[[Recording, int], None]] = None,
         duration: Optional[float] = None,
         show_stats: bool = False,
+        keep_partial: bool = True,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
@@ -368,8 +405,16 @@ class RecordingManager:
 
         os.makedirs(out_dir, exist_ok=True)
         out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt))
-        cmd = build_ffmpeg_command(get_ffmpeg_path(), url, out_path, fmt, headers,
-                                   duration=duration, show_stats=show_stats)
+        # ffmpeg cannot resume a partial file, so for download-style captures the
+        # output goes to a ``.part`` sibling and is renamed into place only when
+        # the download completes; a canceled or failed run leaves nothing behind.
+        # Live captures keep their name from the start (stopping one intentionally
+        # keeps what was captured so far).
+        partial_path = "" if keep_partial else out_path + ".part"
+        force_format = FORMAT_MUXERS.get(format_extension(fmt)) if partial_path else None
+        cmd = build_ffmpeg_command(get_ffmpeg_path(), url, partial_path or out_path, fmt, headers,
+                                   duration=duration, show_stats=show_stats,
+                                   force_format=force_format)
         LOG.info("Starting recording: %s -> %s (%s)", display_name, out_path, fmt)
 
         # ffmpeg writes its diagnostics straight into the log file rather than into a
@@ -401,7 +446,7 @@ class RecordingManager:
             rec_id = self._next_id
             self._next_id += 1
             rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process,
-                            metadata, log_path=log_path, command=cmd)
+                            metadata, log_path=log_path, command=cmd, partial_path=partial_path)
             self._recordings[rec_id] = rec
 
         if not log_path:
@@ -491,6 +536,7 @@ class RecordingManager:
             # Deliberately not rewritten: the log keeps the stream URL and
             # credentials so a failed capture can be diagnosed from it.
             rec.stderr_tail = read_log_problems(rec.log_path)
+        self._settle_partial_output(rec, rc)
         with self._lock:
             self._recordings.pop(rec.id, None)
         LOG.info("Recording finished: %s (rc=%s, log=%s)", rec.out_path, rc, rec.log_path or "-")
@@ -499,6 +545,28 @@ class RecordingManager:
                 on_finish(rec, rc if rc is not None else -1)
             except Exception:
                 LOG.exception("Recording on_finish callback failed")
+
+    def _settle_partial_output(self, rec: Recording, rc: int) -> None:
+        """Rename a download's ``.part`` output into place, or discard it.
+
+        Used when ``keep_partial=False``: only a clean, finished capture is
+        worth a file in the recordings folder. ffmpeg cannot resume a partial
+        file, so anything else (canceled, failed, or finalized under duress)
+        would be unplayable junk and is deleted instead.
+        """
+        if not rec.partial_path:
+            return
+        keep = rc == 0 and not rec.stopped_by_user and not rec.finalize_timed_out
+        if keep:
+            try:
+                os.replace(rec.partial_path, rec.out_path)
+                return
+            except OSError:
+                LOG.exception("Could not finalize download output %s", rec.out_path)
+        try:
+            os.remove(rec.partial_path)
+        except OSError:
+            LOG.debug("RecordingManager._settle_partial_output: ignored exception", exc_info=True)
 
     def _graceful_stop(self, rec: Recording, *, wait: bool = False, detach: bool = False) -> None:
         proc = rec.process
@@ -543,7 +611,7 @@ class RecordingManager:
             # budget is derived from the file rather than fixed. Terminating early here
             # is what produced unplayable MP4s: ffmpeg had rewritten the mdat header but
             # had not yet written the moov atom, so nothing could open the result.
-            timeout = finalize_timeout_seconds(rec.fmt, rec.out_path)
+            timeout = finalize_timeout_seconds(rec.fmt, rec.written_path)
             try:
                 proc.wait(timeout=timeout)
                 return
