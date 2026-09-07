@@ -75,12 +75,13 @@ class _KeyEvent:
         self.skipped = True
 
 
-def test_shift_tab_from_epg_returns_to_the_channel_list():
+def test_shift_tab_from_the_url_field_returns_to_the_channel_list():
+    """There is no EPG info field any more: the rows announce the programme."""
     channels, url = _FocusTarget(), _FocusTarget()
     frame = types.SimpleNamespace(channel_list=channels, url_display=url)
     event = _KeyEvent(main.wx.WXK_TAB, shift=True)
 
-    main.IPTVClient._on_epg_display_key(frame, event)
+    main.IPTVClient._on_url_display_key(frame, event)
 
     assert channels.focused is True
     assert url.focused is False

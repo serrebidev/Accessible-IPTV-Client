@@ -28,7 +28,7 @@ for index, group in ((1, "First"), (2, "Second")):
     assert wx.Window.FindFocus() == frame.playlist_scope_combo
 
 controls = [frame.playlist_scope_combo, frame.group_list, frame.filter_box,
-            frame.channel_list, frame.epg_display, frame.url_display]
+            frame.channel_list, frame.url_display]
 for reverse in (False, True):
     for index, control in enumerate(controls):
         control.SetFocus()

@@ -172,7 +172,7 @@ def _client(favorite_names=(), all_names=("A", "B", "C"), group="All Channels",
     )
     for name in ("_favorite_channels", "_invalidate_favorites_cache", "_source_for_group",
                  "_favorites_group_label", "_update_favorites_group_row",
-                 "_decorate_channel_label", "_is_favorite",
+                 "_decorate_channel_label", "_is_favorite", "_now_playing_suffix",
                  "scoped_all_channels", "scoped_channels_by_group"):
         setattr(client, name, _bind(IPTVClient, name, client))
     return client
@@ -256,3 +256,35 @@ class TestRowLabels:
     def test_no_marker_at_all_without_favorites(self):
         client = _client()
         assert client._decorate_channel_label("A", {"name": "A"}) == "A"
+
+
+class TestNowPlayingSuffix:
+    def _client_with_labels(self, labels, **kwargs):
+        client = _client(**kwargs)
+        client.view_mode = "live"
+        client.config = {"epg_enabled": True}
+        client._now_playing_labels = labels
+        return client
+
+    def test_the_on_air_programme_is_appended_to_the_row(self):
+        client = self._client_with_labels({"a": " — News (20:00–21:00)"})
+        assert client._decorate_channel_label("A", {"name": "A"}) == "A — News (20:00–21:00)"
+
+    def test_unknown_channels_are_untouched(self):
+        client = self._client_with_labels({"a": " — News"})
+        assert client._decorate_channel_label("B", {"name": "B"}) == "B"
+
+    def test_vod_rows_never_carry_a_live_programme(self):
+        client = self._client_with_labels({"a": " — News"})
+        client.view_mode = "vod"
+        assert client._decorate_channel_label("A", {"name": "A"}) == "A"
+
+    def test_no_suffix_when_epg_is_disabled(self):
+        client = self._client_with_labels({"a": " — News"})
+        client.config = {"epg_enabled": False}
+        assert client._decorate_channel_label("A", {"name": "A"}) == "A"
+
+    def test_the_favorite_marker_comes_before_the_programme(self):
+        client = self._client_with_labels({"b": " — News"}, favorite_names=["B"])
+        label = client._decorate_channel_label("B", {"name": "B"})
+        assert label.index("(Favorite)") < label.index("News")

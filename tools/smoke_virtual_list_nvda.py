@@ -24,6 +24,9 @@ def pump(app, seconds):
 def test_virtual_channel_list(parent):
     class FakeFrame:
         displayed = []
+        # Row text must survive a frame double with no favorites/EPG support.
+        def _now_playing_suffix(self, channel):
+            return ""
     frame = FakeFrame()
     lst = main._VirtualChannelList(parent, frame)
 

@@ -754,8 +754,6 @@ class IPTVClient(wx.Frame):
     ]
     PLAYER_MENU_ATTRS = dict(PLAYER_KEYS)
 
-    _CACHE_SHOW_STALE_SECS = 600
-    _CACHE_REFRESH_AFTER_SECS = 180
     _SEARCH_LARGE_RESULT_THRESHOLD = 1500
     _SEARCH_PREVIEW_COUNT = 200
     _SEARCH_BATCH_SIZE = 800
@@ -805,8 +803,6 @@ class IPTVClient(wx.Frame):
         self.show_player_on_enter = self._bool_pref(self.config.get("show_player_on_enter", True), default=True)
         self.auto_check_updates = self._bool_pref(self.config.get("auto_check_updates", True), default=True)
         self.epg_importing = False
-        self.epg_cache = {}
-        self.epg_cache_lock = threading.Lock()
         self.refresh_timer = None
         self.minimize_to_tray = bool(self.config.get("minimize_to_tray", False))
         self.tray_icon = None
@@ -852,11 +848,14 @@ class IPTVClient(wx.Frame):
         self._populate_token = 0
         self._search_token = 0
 
-        # Timer for polling DB during EPG import so UI shows incoming data.
-        self._epg_poll_timer: Optional[wx.Timer] = None
-        # Track in-flight EPG fetches to avoid hammering get_now_next while importer is busy
-        self._epg_fetch_inflight = set()
-        self._epg_inflight_lock = threading.Lock()
+        # Bulk on-air programme labels for the channel rows, keyed by
+        # canonicalized EPG channel name; values are " — Title (HH:MM–HH:MM)"
+        # suffixes appended to the row text so arrowing through the list
+        # announces what is on, no Tab to a separate field required.
+        self._now_playing_labels: Dict[str, str] = {}
+        self._now_playing_lock = threading.Lock()
+        self._now_playing_timer: Optional[wx.Timer] = None
+        self._now_playing_refreshed_at = 0.0
         
         # Caching map: canonical_name -> db_channel_id
         self._epg_match_cache: Dict[str, Optional[str]] = {}
@@ -866,6 +865,8 @@ class IPTVClient(wx.Frame):
         self._db_tune_lock = threading.Lock()
         self._db_tune_started = False
         self._build_ui()
+        self._start_now_playing_timer()
+        threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
         self.Centre()
 
         self.group_list.Append(_("Loading playlists..."))
@@ -1107,21 +1108,113 @@ class IPTVClient(wx.Frame):
         self._invalidate_favorites_cache()
 
     def _decorate_channel_label(self, name: str, channel: Dict[str, str]) -> str:
-        """Row text for a channel, marking favorites outside the Favorites category.
+        """Row text for a channel, marking favorites and the on-air programme.
 
-        A screen reader reads the row text, so the marker is a word rather than a
-        star glyph: NVDA says nothing at all for most symbols at the default
-        punctuation level. Inside the Favorites category every row would carry it,
-        which is pure noise, so it is left off there.
+        A screen reader reads the row text, so the favorite marker is a word
+        rather than a star glyph: NVDA says nothing at all for most symbols at
+        the default punctuation level. Inside the Favorites category every row
+        would carry it, which is pure noise, so it is left off there. The
+        current episode is appended at the end — like Televizo or IPTV Extreme
+        Pro do — so arrowing through the list announces what is playing
+        without a trip to a separate EPG field.
         """
-        if not self._favorite_key_set or self.current_group == favorites.FAVORITES_GROUP:
-            return name
+        label = name
+        favorite_set = getattr(self, "_favorite_key_set", None)
+        if favorite_set and self.current_group != favorites.FAVORITES_GROUP:
+            try:
+                if favorites.channel_key(channel) in favorite_set:
+                    label = _("{name} (Favorite)").format(name=name)
+            except Exception:
+                LOG.debug("IPTVClient._decorate_channel_label: ignored exception", exc_info=True)
+        return label + self._now_playing_suffix(channel)
+
+    def _now_playing_suffix(self, channel: Dict[str, str]) -> str:
+        """" — Title (HH:MM–HH:MM)" for the on-air programme, from the bulk cache."""
+        # getattr guards: non-GUI test doubles stand in for the frame.
+        if getattr(self, "view_mode", "live") != "live":
+            return ""
+        if not getattr(self, "config", {}).get("epg_enabled", True):
+            return ""
+        with getattr(self, "_now_playing_lock", threading.Lock()):
+            cache = getattr(self, "_now_playing_labels", {})
+            if not cache:
+                return ""
+            return cache.get(canonicalize_name(channel.get("name", "")), "")
+
+    def _refresh_now_playing_labels(self):
+        """One bulk query: the on-air programme of every EPG channel, for row labels."""
+        if not getattr(self, "config", {}).get("epg_enabled", True):
+            return
+        now = time.time()
+        if now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
+            return
+        self._now_playing_refreshed_at = now
         try:
-            if favorites.channel_key(channel) in self._favorite_key_set:
-                return _("{name} (Favorite)").format(name=name)
+            db = EPGDatabase(get_db_path(), readonly=True)
+            try:
+                rows = db.get_all_now_playing()
+            finally:
+                db.close()
         except Exception:
-            LOG.debug("IPTVClient._decorate_channel_label: ignored exception", exc_info=True)
-        return name
+            LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
+            return
+        mapping: Dict[str, str] = {}
+        for row in rows:
+            title = (row.get("title") or "").strip()
+            name_key = canonicalize_name(row.get("channel_name") or "")
+            if not title or not name_key or name_key in mapping:
+                continue
+            text = title
+            try:
+                start = utc_to_local(datetime.datetime.strptime(
+                    row["start"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+                end = utc_to_local(datetime.datetime.strptime(
+                    row["end"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+                text = "{title} ({start}–{end})".format(
+                    title=title, start=start.strftime("%H:%M"), end=end.strftime("%H:%M"))
+            except Exception:
+                LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
+            mapping[name_key] = " — " + text
+        with self._now_playing_lock:
+            changed = mapping != self._now_playing_labels
+            self._now_playing_labels = mapping
+        if changed:
+            wx.CallAfter(self._refresh_channel_row_texts)
+
+    def _refresh_channel_row_texts(self):
+        """Re-render the virtual rows so the next focus reads the new labels."""
+        try:
+            count = self.channel_list.GetItemCount()
+            if count:
+                self.channel_list.RefreshItems(0, count - 1)
+        except Exception:
+            LOG.debug("IPTVClient._refresh_channel_row_texts: ignored exception", exc_info=True)
+
+    def _start_now_playing_timer(self):
+        try:
+            if self._now_playing_timer or not self.config.get("epg_enabled", True):
+                return
+            self._now_playing_timer = wx.Timer(self)
+            self.Bind(wx.EVT_TIMER, self._on_now_playing_timer, self._now_playing_timer)
+            self._now_playing_timer.Start(60000, wx.TIMER_CONTINUOUS)
+        except Exception:
+            self._now_playing_timer = None
+
+    def _stop_now_playing_timer(self):
+        try:
+            if self._now_playing_timer:
+                self._now_playing_timer.Stop()
+                try:
+                    self.Unbind(wx.EVT_TIMER, handler=self._on_now_playing_timer,
+                                source=self._now_playing_timer)
+                except Exception:
+                    LOG.debug("IPTVClient._stop_now_playing_timer: ignored exception", exc_info=True)
+                self._now_playing_timer = None
+        except Exception:
+            self._now_playing_timer = None
+
+    def _on_now_playing_timer(self, _event):
+        threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
 
     def _toggle_favorite_selected(self, *_args):
         channel = self._selected_channel()
@@ -1176,7 +1269,6 @@ class IPTVClient(wx.Frame):
         self._populate_token += 1
         IPTVClient._replace_displayed(self, entries)
         if not entries:
-            self.epg_display.SetValue("")
             self.url_display.SetValue("")
             # Nothing left to focus here, so hand the user back to the categories.
             self._refresh_group_ui()
@@ -1752,17 +1844,16 @@ class IPTVClient(wx.Frame):
         self.channel_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, lambda _evt: self.play_selected())
         self.channel_list.Bind(wx.EVT_CONTEXT_MENU, self._on_channel_context_menu)
 
-        self.epg_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.url_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
         # Keep the documented Tab loop reversible for text controls as well as
-        # the virtual channel list: channels -> EPG -> stream URL.
-        self.epg_display.Bind(wx.EVT_CHAR_HOOK, self._on_epg_display_key)
+        # the virtual channel list: channels -> stream URL. There is no EPG
+        # info field any more: the on-air programme is announced as part of
+        # each channel row, so Tab is no longer needed to hear what is playing.
         self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
         vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
-        vs_r.Add(self.epg_display, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
         hs.Add(vs_l, 1, wx.EXPAND)
         hs.Add(vs_r, 2, wx.EXPAND)
@@ -2033,15 +2124,9 @@ class IPTVClient(wx.Frame):
             return  # swallow to prevent beep/focus issues
         event.Skip()
 
-    def _on_epg_display_key(self, event):
-        if event.GetKeyCode() == wx.WXK_TAB:
-            (self.channel_list if event.ShiftDown() else self.url_display).SetFocus()
-            return
-        event.Skip()
-
     def _on_url_display_key(self, event):
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
-            self.epg_display.SetFocus()
+            self.channel_list.SetFocus()
             return
         event.Skip()
 
@@ -3547,10 +3632,10 @@ class IPTVClient(wx.Frame):
             self._release_recordings_on_exit()
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
-        # Mirror on_close cleanup so the EPG poll timer can't fire into a destroyed frame
-        # and executor threads don't leak when exiting from the tray.
+        # Mirror on_close cleanup so the now-playing timer can't fire into a
+        # destroyed frame and executor threads don't leak when exiting from the tray.
         try:
-            self._stop_epg_poll_timer()
+            self._stop_now_playing_timer()
         except Exception:
             LOG.debug("IPTVClient.exit_from_tray: ignored exception", exc_info=True)
         try:
@@ -3604,7 +3689,7 @@ class IPTVClient(wx.Frame):
             self._populate_token += 1
             # Ensure poll timer stopped on exit
             try:
-                self._stop_epg_poll_timer()
+                self._stop_now_playing_timer()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
@@ -3662,7 +3747,7 @@ class IPTVClient(wx.Frame):
         # Kept for compatibility; EVT_KEY_DOWN handler above is the reliable path
         key = event.GetKeyCode()
         if key == wx.WXK_TAB:
-            (self.filter_box if event.ShiftDown() else self.epg_display).SetFocus()
+            (self.filter_box if event.ShiftDown() else self.url_display).SetFocus()
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected()
         elif key in (wx.WXK_LEFT, wx.WXK_RIGHT):
@@ -3726,7 +3811,6 @@ class IPTVClient(wx.Frame):
         for ch in channels:
             self.displayed.append({"type": "channel", "data": ch})
         self.channel_list.set_virtual_count()
-        self.epg_display.SetValue("")
 
     def _replace_search_results_chunked(
         self,
@@ -3822,7 +3906,6 @@ class IPTVClient(wx.Frame):
         search_token = self._search_token
         source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
-        self.epg_display.SetValue("")
         self.url_display.SetValue("")
 
         if not txt:
@@ -4093,7 +4176,6 @@ class IPTVClient(wx.Frame):
                 self.group_list.Thaw()
             except Exception:
                 LOG.debug("IPTVClient._load_vod_catalog: ignored exception", exc_info=True)
-        self.epg_display.SetValue("")
         self.url_display.SetValue("")
 
         clients = dict(self.provider_clients)
@@ -4150,7 +4232,6 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
             if not self.vod_group_order:
                 self.group_list.Append(_("No Video on Demand content found."))
-                self.epg_display.SetValue("")
                 self.url_display.SetValue("")
                 return
             for label in self.vod_group_order:
@@ -4192,7 +4273,6 @@ class IPTVClient(wx.Frame):
                 self.channel_list.SetFocus()
             self.on_highlight()
         else:
-            self.epg_display.SetValue("")
             self.url_display.SetValue("")
 
     def _vod_open_series(self, series: Dict):
@@ -4220,7 +4300,6 @@ class IPTVClient(wx.Frame):
         ])
         self.channel_list.SetSelection(0)
         self.url_display.SetValue("")
-        self.epg_display.SetValue("")
         token = self._vod_load_token
 
         def worker():
@@ -4248,8 +4327,7 @@ class IPTVClient(wx.Frame):
         IPTVClient._replace_displayed(self, displayed)
         if not episodes:
             self.channel_list.SetSelection(0)
-            self.epg_display.SetValue(_("No episodes found for this series."))
-            self.url_display.SetValue("")
+            self.url_display.SetValue(_("No episodes found for this series."))
             return
         # Select the first episode (not the Back row) so playback is one keypress away.
         self.channel_list.SetSelection(1)
@@ -4367,9 +4445,6 @@ class IPTVClient(wx.Frame):
             return
         self.epg_importing = True
 
-        # Start a short poll timer so UI can show EPG as it arrives for the selected channel.
-        wx.CallAfter(self._start_epg_poll_timer)
-
         def do_import():
             _lower_current_thread_priority()
             success = False
@@ -4394,10 +4469,6 @@ class IPTVClient(wx.Frame):
 
     def finish_import_background(self, success: bool = False):
         self.epg_importing = False
-        # Stop import-specific polling and restart steady refresh timer
-        self._stop_epg_poll_timer()
-        with self.epg_cache_lock:
-            self.epg_cache.clear()
         # Clear match cache as IDs/channels may have changed in the DB
         with self._epg_match_lock:
             self._epg_match_cache.clear()
@@ -4408,8 +4479,10 @@ class IPTVClient(wx.Frame):
                 save_config(self.config)
             except Exception:
                 LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
+        # The rows read the on-air programme, so refresh the bulk labels now
+        # that new EPG data may have arrived.
+        threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
         self.on_highlight()
-        self._start_epg_poll_timer()
 
     def show_manager(self, _):
         dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"))
@@ -4931,7 +5004,6 @@ class IPTVClient(wx.Frame):
         ])
 
         if not source:
-            self.epg_display.SetValue("")
             self.url_display.SetValue("")
             self._maybe_autostart_epg_import()
             return
@@ -4958,51 +5030,7 @@ class IPTVClient(wx.Frame):
         except Exception:
             return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
-    def _ensure_utc_dt(self, value: Optional[datetime.datetime]) -> Optional[datetime.datetime]:
-        if not isinstance(value, datetime.datetime):
-            return None
-        if value.tzinfo is None:
-            return value.replace(tzinfo=datetime.timezone.utc)
-        return value.astimezone(datetime.timezone.utc)
-
-    def _epg_cache_needs_refresh(self, now_show, next_show, cached_at: Optional[datetime.datetime]) -> bool:
-        now_utc = self._utc_now()
-
-        cached_utc = None
-        if isinstance(cached_at, datetime.datetime):
-            if cached_at.tzinfo is None:
-                try:
-                    # Assume legacy entries were stored as local time; best-effort convert to UTC.
-                    cached_utc = cached_at.replace(tzinfo=datetime.timezone.utc)
-                except Exception:
-                    cached_utc = None
-            else:
-                cached_utc = cached_at.astimezone(datetime.timezone.utc)
-
-        if cached_utc is None:
-            return True
-
-        if (now_utc - cached_utc).total_seconds() >= self._CACHE_REFRESH_AFTER_SECS:
-            return True
-
-        if not now_show and not next_show:
-            # No guide yet; re-query soon so a subsequent provider import can populate it.
-            if (now_utc - cached_utc).total_seconds() >= 30:
-                return True
-
-        if now_show:
-            end_utc = self._ensure_utc_dt(now_show.get('end'))
-            if end_utc and now_utc >= end_utc - datetime.timedelta(seconds=15):
-                return True
-        if not now_show and next_show:
-            start_utc = self._ensure_utc_dt(next_show.get('start'))
-            if start_utc and now_utc >= start_utc - datetime.timedelta(seconds=15):
-                return True
-
-        return False
-
     def on_highlight(self):
-        # Allow viewing cached or currently available EPG even while an import is running.
         self._update_recording_menu_state()
         i = self.channel_list.GetSelection()
         if i < 0 or i >= len(self.displayed):
@@ -5011,66 +5039,15 @@ class IPTVClient(wx.Frame):
         item = self.displayed[i]
         if item["type"] == "vod_series":
             self.url_display.SetValue("")
-            self.epg_display.SetValue(
-                _("Series: {name} — press Enter to browse episodes.").format(
-                    name=item["data"].get("name", "")))
             return
-        if item["type"] == "vod_back":
-            self.url_display.SetValue("")
-            self.epg_display.SetValue(_("Press Enter to go back."))
-            return
-        if item["type"] == "vod_info":
+        if item["type"] in ("vod_back", "vod_info"):
             self.url_display.SetValue("")
             return
         if item["type"] == "channel":
             ch = item["data"]
             self.url_display.SetValue(ch.get("url", ""))
-            cname = ch.get("name", "")
-
-            # VOD movie/episode rows have no live EPG; skip the DB lookups.
-            if getattr(self, "view_mode", "live") == "vod":
-                self.epg_display.SetValue("")
-                return
-
-            if not self.config.get("epg_enabled", True):
-                self.epg_display.SetValue(_("EPG is disabled in configuration."))
-                return
-
-            self._start_epg_poll_timer()
-
-            # If this channel is exempt (likely has no EPG), show a clear message and do not fetch.
-            if self._channel_is_epg_exempt(ch):
-                self.epg_display.SetValue(_("No EPG data for this channel."))
-                return
-
-            key = canonicalize_name(cname)
-            with self.epg_cache_lock:
-                cached = self.epg_cache.get(key)
-            if cached:
-                now_show, next_show, ts = cached
-                needs_refresh = self._epg_cache_needs_refresh(now_show, next_show, ts)
-                if needs_refresh:
-                    with self._epg_inflight_lock:
-                        if key not in self._epg_fetch_inflight:
-                            threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
-                msg = self._epg_msg_from_tuple(now_show, next_show)
-                if needs_refresh:
-                    msg += "\n\n" + _("Updating EPG...")
-                # If an import is running, indicate that data may still be arriving.
-                if self.epg_importing:
-                    msg = msg + "\n\n" + _("Note: EPG import in progress — newer program data may still arrive.")
-                self.epg_display.SetValue(msg)
-            else:
-                # No cached entry: fetch what exists now (reader connection to DB).
-                with self._epg_inflight_lock:
-                    already = canonicalize_name(cname) in self._epg_fetch_inflight
-                    if not already:
-                        threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
-                # Provide placeholder while we wait for DB read.
-                placeholder = _("Loading EPG for this channel…")
-                if self.epg_importing:
-                    placeholder += "\n\n" + _("EPG import in progress — displaying available data as it arrives.")
-                self.epg_display.SetValue(placeholder)
+            # VOD movie/episode rows have no live EPG; the on-air label is
+            # live-only, so nothing more to do here.
         elif item["type"] == "epg":
             self.url_display.SetValue("")
             r = item["data"]
@@ -5080,15 +5057,6 @@ class IPTVClient(wx.Frame):
                 if canonicalize_name(ch.get("name", "")) == target_norm:
                     url = ch.get("url", "")
                     break
-            msg = _("Show: {show} | Channel: {channel} | Start: {start} | End: {end}").format(
-                show=r.get('show_title', ''),
-                channel=r.get('channel_name', ''),
-                start=self._fmt_time(r.get('start', '')),
-                end=self._fmt_time(r.get('end', '')),
-            )
-            if self.epg_importing:
-                msg = msg + "\n\n" + _("Note: EPG import in progress — data may still be updating.")
-            self.epg_display.SetValue(msg)
             self.url_display.SetValue(url)
 
     def _epg_msg_from_tuple(self, now, nxt):
@@ -5121,148 +5089,6 @@ class IPTVClient(wx.Frame):
                 if desc:
                     msg += "\n" + desc
         return msg
-
-    def _fetch_and_cache_epg(self, channel, cname):
-        key = canonicalize_name(cname)
-        with self._epg_inflight_lock:
-            if key in self._epg_fetch_inflight:
-                return
-            self._epg_fetch_inflight.add(key)
-
-        def _do_work():
-            try:
-                if self._channel_is_epg_exempt(channel):
-                    return None, None
-                
-                db = EPGDatabase(get_db_path(), readonly=True)
-                try:
-                    # Check match cache first
-                    with self._epg_match_lock:
-                        cached_id = self._epg_match_cache.get(key)
-                    if cached_id is None:
-                        # Resolve outside the lock so workers don't serialize on DB I/O
-                        cached_id = db.resolve_best_channel_id(channel)
-                        # Cache even if None to avoid repeated expensive misses
-                        with self._epg_match_lock:
-                            self._epg_match_cache[key] = cached_id or ""
-                    
-                    # If we have a valid ID (and it's not the empty string marker for 'no match')
-                    if cached_id:
-                        return db.get_now_next_by_id(cached_id)
-                    return None
-                finally:
-                    db.close()
-            except Exception:
-                return None
-
-        def _on_done(future):
-            try:
-                now_next = future.result()
-            except Exception:
-                now_next = None
-            
-            with self._epg_inflight_lock:
-                try:
-                    self._epg_fetch_inflight.discard(key)
-                except Exception:
-                    LOG.debug("IPTVClient._fetch_and_cache_epg._on_done: ignored exception", exc_info=True)
-
-            if not now_next:
-                now_show, next_show = None, None
-            else:
-                now_show, next_show = now_next
-
-            with self.epg_cache_lock:
-                self.epg_cache[key] = (now_show, next_show, self._utc_now())
-            
-            wx.CallAfter(self._update_epg_display_if_selected, channel, now_show, next_show)
-
-        # Submit to executor instead of spawning raw thread
-        self._epg_executor.submit(_do_work).add_done_callback(_on_done)
-
-    def _update_epg_display_if_selected(self, channel, now_show, next_show):
-        try:
-            i = self.channel_list.GetSelection()
-            if 0 <= i < len(self.displayed):
-                item = self.displayed[i]
-                if item["type"] == "channel" and canonicalize_name(item["data"].get("name", "")) == canonicalize_name(channel.get("name", "")):
-                    if self._channel_is_epg_exempt(channel) and not (now_show or next_show):
-                        msg = _("No EPG data for this channel.")
-                    else:
-                        msg = self._epg_msg_from_tuple(now_show, next_show)
-                    if self.epg_importing:
-                        msg = msg + "\n\n" + _("Note: EPG import in progress — newer program data may still arrive.")
-                    self.epg_display.SetValue(msg)
-        except Exception:
-            # The frame may already be destroyed when a queued EPG callback fires.
-            LOG.debug("IPTVClient._update_epg_display_if_selected: ignored exception", exc_info=True)
-
-    def _start_epg_poll_timer(self):
-        try:
-            if self._epg_poll_timer:
-                return
-            self._epg_poll_timer = wx.Timer(self)
-            # Bind with timer as source so we can unbind cleanly later
-            self.Bind(wx.EVT_TIMER, self._on_epg_poll_timer, self._epg_poll_timer)
-            # Poll less aggressively to avoid repeated expensive matching while importer churns.
-            self._epg_poll_timer.Start(8000, wx.TIMER_CONTINUOUS)  # 8s
-        except Exception:
-            self._epg_poll_timer = None
-
-    def _stop_epg_poll_timer(self):
-        try:
-            if self._epg_poll_timer:
-                try:
-                    self._epg_poll_timer.Stop()
-                except Exception:
-                    LOG.debug("IPTVClient._stop_epg_poll_timer: ignored exception", exc_info=True)
-                # Unbind the specific handler for this timer source to avoid removing other EVT_TIMER bindings.
-                try:
-                    # Unbind signature: Unbind(event, source=timer, handler=callable)
-                    self.Unbind(wx.EVT_TIMER, handler=self._on_epg_poll_timer, source=self._epg_poll_timer)
-                except Exception:
-                    # Fallback: attempt to unbind by event only (best-effort)
-                    try:
-                        self.Unbind(wx.EVT_TIMER, handler=self._on_epg_poll_timer)
-                    except Exception:
-                        LOG.debug("IPTVClient._stop_epg_poll_timer: ignored exception", exc_info=True)
-                self._epg_poll_timer = None
-        except Exception:
-            self._epg_poll_timer = None
-
-    def _on_epg_poll_timer(self, event):
-        # Only refresh the currently highlighted channel (cheap, targeted).
-        try:
-            # Skip background polling when the window is hidden/minimised to avoid idle CPU use.
-            if not self.IsShownOnScreen() or self.IsIconized():
-                return
-            i = self.channel_list.GetSelection()
-            if i < 0 or i >= len(self.displayed):
-                return
-            item = self.displayed[i]
-            if item["type"] != "channel":
-                return
-            ch = item["data"]
-            # Skip channels that likely have no EPG to avoid repeated DB probes/log spam.
-            if self._channel_is_epg_exempt(ch):
-                return
-            cname = ch.get("name", "")
-            key = canonicalize_name(cname)
-            with self.epg_cache_lock:
-                cached = self.epg_cache.get(key)
-            if cached:
-                now_show, next_show, ts = cached
-                if not self._epg_cache_needs_refresh(now_show, next_show, ts):
-                    return
-            else:
-                now_show = next_show = ts = None
-            # Only spawn a refresh if one isn't already running for this channel.
-            with self._epg_inflight_lock:
-                already = key in self._epg_fetch_inflight
-            if not already:
-                threading.Thread(target=self._fetch_and_cache_epg, args=(ch, cname), daemon=True).start()
-        except Exception:
-            LOG.debug("IPTVClient._on_epg_poll_timer: ignored exception", exc_info=True)
 
     def _find_channel_for_epg(self, show: Dict[str, str]) -> Optional[Dict[str, str]]:
         return self._find_matching_channel_for_program(show)
