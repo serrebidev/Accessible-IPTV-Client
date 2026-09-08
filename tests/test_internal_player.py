@@ -463,10 +463,6 @@ class TestClosingTheShownPlayerStopsPlayback:
         assert destroyed == [True]
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
-
-
 class TestLibVlcStateName:
     """python-vlc's State is a ctypes int, not a stdlib enum.
 
@@ -517,3 +513,129 @@ class TestLibVlcStateName:
         name = internal_player.InternalPlayerFrame._state_name(
             self._CtypesStyleState("Playing"))
         assert internal_player.InternalPlayerFrame._localized_state(name) == "Playing"
+
+
+class TestReconnectKeepsVideoHidden:
+    """A background channel must not pop a video window open when it reconnects.
+
+    The restart paths only know the URL, so they call play(..., _retry=True)
+    without video_visible - and that parameter defaults to True. A reconnect
+    therefore used to re-enable video on a stream started with it off, and
+    libVLC spawned its own "VLC (Direct3D11 output)" window over the app.
+    """
+
+    def _stub_frame(self):
+        media_options = []
+
+        class _Media:
+            def add_option(self, opt):
+                media_options.append(opt)
+
+        frame = types.SimpleNamespace(
+            _destroyed=False,
+            _manual_stop=False,
+            _current_stream_kind="live",
+            _current_headers=None,
+            _current_url="",
+            _current_title="",
+            _wanted_audio_track_name=None,
+            _audio_reapply_pending=False,
+            _video_visible=True,
+            _reconnect_attempts=3,
+            _xtream_refresh_count=1,
+            _last_restart_reason="stall",
+            _gave_up=False,
+            _last_bitrate_mbps=None,
+            _last_position_ms=None,
+            _last_state_name=None,
+            _stall_ticks=0,
+            _buffer_start_ts=None,
+            _early_buffer_fix_applied=False,
+            _has_seen_playing=False,
+            _detected_content_ts=False,
+            _play_start_monotonic=0.0,
+            _pending_restart=True,
+            _pending_xtream_refresh=True,
+            _is_paused=True,
+            _buffering_events=[],
+            media_options=media_options,
+            hwnd_calls=[],
+            window_attached=[],
+            instance=types.SimpleNamespace(media_new=lambda _u: _Media()),
+        )
+        frame._begin_new_stream_audio_state = lambda: None
+        frame._normalise_stream_url = lambda u, h: (u, h)
+        frame._resolve_stream_url = lambda u, headers=None: (u, None)
+        frame._detect_stream_content_type = lambda *a, **kw: None
+        frame._last_resolved_url = ""
+        frame._compute_buffer_profile = lambda *a, **kw: (2.0, None, None)
+        frame._apply_cache_options = lambda *a, **kw: None
+        frame._apply_stream_headers = lambda *a, **kw: None
+        frame._apply_audio_output_device = lambda: None
+        frame._schedule_volume_apply = lambda: None
+        frame._update_status_label = lambda *a, **kw: None
+        frame._ensure_player_window = lambda: frame.window_attached.append(True)
+        frame.player = types.SimpleNamespace(
+            stop=lambda: None,
+            set_media=lambda _m: None,
+            play=lambda: None,
+            set_nsobject=lambda _v: None,
+            set_xwindow=lambda _v: None,
+            set_hwnd=lambda v: frame.hwnd_calls.append(v),
+        )
+        frame.SetTitle = lambda _t: None
+        frame.play_pause_btn = types.SimpleNamespace(
+            SetLabel=lambda _l: None, SetFocus=lambda: None)
+        frame._status_timer = types.SimpleNamespace(Start=lambda _ms: None)
+        return frame
+
+    def _play(self, frame, **kw):
+        internal_player.InternalPlayerFrame.play(
+            frame, "http://example/stream.ts", "Chan", **kw)
+
+    def test_hidden_stream_is_remembered_and_survives_a_reconnect(self, monkeypatch):
+        # Neutralise the visible-play focus hop so a regression fails on the
+        # assertions below rather than on wx wanting an app.
+        monkeypatch.setattr(internal_player.wx, "CallAfter", lambda *a, **kw: None)
+        frame = self._stub_frame()
+        self._play(frame, video_visible=False)
+        assert frame._video_visible is False
+        assert ":no-video" in frame.media_options
+        assert frame.hwnd_calls == [0], "video window must be detached"
+        assert frame.window_attached == []
+
+        frame.media_options.clear()
+        frame.hwnd_calls.clear()
+        self._play(frame, _retry=True)          # what the restart paths call
+        assert ":no-video" in frame.media_options, "reconnect re-enabled video"
+        assert ":vout=dummy" in frame.media_options
+        assert frame.hwnd_calls == [0]
+        assert frame.window_attached == [], "no video window may be attached"
+
+    def test_a_visible_stream_still_reconnects_with_video(self, monkeypatch):
+        # A visible play hands focus back via wx.CallAfter, which needs an app.
+        monkeypatch.setattr(internal_player.wx, "CallAfter", lambda *a, **kw: None)
+        frame = self._stub_frame()
+        self._play(frame, video_visible=True)
+        assert frame._video_visible is True
+        assert ":no-video" not in frame.media_options
+
+        frame.media_options.clear()
+        frame.window_attached.clear()
+        self._play(frame, _retry=True)
+        assert ":no-video" not in frame.media_options
+        assert frame.window_attached == [True]
+
+    def test_a_new_stream_overrides_the_remembered_visibility(self, monkeypatch):
+        """Opening the same player visibly after a hidden play must show video."""
+        monkeypatch.setattr(internal_player.wx, "CallAfter", lambda *a, **kw: None)
+        frame = self._stub_frame()
+        self._play(frame, video_visible=False)
+        frame.media_options.clear()
+        self._play(frame, video_visible=True)   # not a retry: the caller decides
+        assert frame._video_visible is True
+        assert ":no-video" not in frame.media_options
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

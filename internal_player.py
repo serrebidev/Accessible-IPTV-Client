@@ -372,6 +372,9 @@ class InternalPlayerFrame(wx.Frame):
 
         # Audio track selection state
         self._wanted_audio_track_name: Optional[str] = None
+        # Whether the stream now playing was started with video. Reconnects
+        # inherit it so a background channel never pops a video window open.
+        self._video_visible = True
         self._audio_track_label = ""
         self._audio_reapply_pending = False
         # The track the user last chose by hand (menu, choice control, or cycle
@@ -647,6 +650,13 @@ class InternalPlayerFrame(wx.Frame):
             self._manual_stop = False
             if stream_kind is None:
                 stream_kind = self._current_stream_kind
+            # A reconnect must keep the video off if the stream was started with
+            # it off. The restart paths cannot pass video_visible (they only know
+            # the URL), and the parameter defaults to True, so without this a
+            # channel playing in the background would come back with video
+            # enabled and libVLC would spawn its own "VLC (Direct3D11 output)"
+            # window over the app.
+            video_visible = self._video_visible
             # Re-apply a previously chosen audio track once the stream resumes.
             self._audio_reapply_pending = bool(self._wanted_audio_track_name)
         else:
@@ -654,6 +664,7 @@ class InternalPlayerFrame(wx.Frame):
             self._xtream_refresh_count = 0
             self._last_restart_reason = ""
             self._gave_up = False
+            self._video_visible = bool(video_visible)
             self._begin_new_stream_audio_state()
         if stream_kind is None:
             stream_kind = "live"
