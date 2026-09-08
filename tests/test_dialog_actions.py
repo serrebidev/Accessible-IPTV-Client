@@ -222,26 +222,57 @@ def test_stream_url_field_can_be_hidden(host):
     assert ctrl.IsShown()
 
 
-def test_hidden_stream_url_field_sends_tab_back_to_search():
+def test_hidden_stream_url_field_lets_tab_wrap_by_normal_traversal():
+    """Tab out of the channel list must be undoable with Shift+Tab.
+
+    Shift+Tab from the search box goes to the categories tree, so sending Tab
+    there put the user two controls away from the channel they left. With the
+    URL field hidden the channel list is simply the last control: hand Tab to
+    normal traversal, whose wrap to the playlist-scope combo is exactly what
+    Shift+Tab from that combo reverses -- verified against NVDA, which
+    announces the original row ("list item 2 of 5") on the way back.
+    """
+    focus = []
+    navigations = []
     client = types.SimpleNamespace(
         show_channel_url=False,
+        channel_list=types.SimpleNamespace(
+            Navigate=lambda flags: navigations.append(flags)),
         url_display=types.SimpleNamespace(SetFocus=lambda: focus.append("url")),
         filter_box=types.SimpleNamespace(SetFocus=lambda: focus.append("search")),
         play_selected=lambda *a, **kw: None,
     )
-    focus = []
     event = types.SimpleNamespace(
         GetKeyCode=lambda: wx.WXK_TAB,
         ShiftDown=lambda: False,
         Skip=lambda *a: None,
     )
     IPTVClient.on_channel_key(client, event)
-    assert focus == ["search"]
+    assert focus == []
+    assert navigations == [
+        wx.NavigationKeyEvent.IsForward | wx.NavigationKeyEvent.FromTab]
 
-    focus.clear()
+    navigations.clear()
     client.show_channel_url = True
     IPTVClient.on_channel_key(client, event)
     assert focus == ["url"]
+    assert navigations == []
+
+
+def test_shift_tab_from_channel_list_still_goes_to_search():
+    focus = []
+    client = types.SimpleNamespace(
+        show_channel_url=False,
+        filter_box=types.SimpleNamespace(SetFocus=lambda: focus.append("search")),
+        play_selected=lambda *a, **kw: None,
+    )
+    event = types.SimpleNamespace(
+        GetKeyCode=lambda: wx.WXK_TAB,
+        ShiftDown=lambda: True,
+        Skip=lambda *a: None,
+    )
+    IPTVClient.on_channel_key(client, event)
+    assert focus == ["search"]
 
 
 # --------------------------------------------------------------------------- #

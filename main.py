@@ -4223,11 +4223,20 @@ class IPTVClient(wx.Frame):
         if key == wx.WXK_TAB:
             if event.ShiftDown():
                 self.filter_box.SetFocus()
+            elif self.show_channel_url:
+                self.url_display.SetFocus()
             else:
-                # With the stream-URL field switched off there is nothing after
-                # the channel list, so Tab wraps back to the search box.
-                target = self.url_display if self.show_channel_url else self.filter_box
-                target.SetFocus()
+                # With the stream-URL field switched off the channel list is
+                # the last control, so hand Tab to normal traversal and let it
+                # wrap to the top of the ring (the playlist-scope combo).
+                # Jumping straight to the search box instead broke
+                # reversibility: Shift+Tab from search goes to the categories
+                # tree, so Tab then Shift+Tab left the user two controls away
+                # from the channel they started on. Traversal's own wrap is
+                # exactly what Shift+Tab from the combo undoes, landing back on
+                # the same channel with its selection intact.
+                self.channel_list.Navigate(
+                    wx.NavigationKeyEvent.IsForward | wx.NavigationKeyEvent.FromTab)
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected()
         elif key in (wx.WXK_LEFT, wx.WXK_RIGHT):
