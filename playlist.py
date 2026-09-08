@@ -2566,6 +2566,30 @@ def normalize_source_names(names):
 
 
 class _SourceNamesMixin:
+    def _focus_source_list(self):
+        """Open with the list of sources focused, not the first toolbar button.
+
+        wxMSW hands a freshly shown dialog's focus to the first control in tab
+        order, which here is "Add File" - so a screen-reader user landed on a
+        button and had to Tab past the whole button row to hear what sources
+        they actually have. Setting it in the constructor is not enough for the
+        same reason, hence the CallAfter: it runs once the modal loop is up and
+        wx has finished its own initial focus assignment.
+        """
+        def focus():
+            try:
+                if self.lb.GetCount() and self.lb.GetSelection() == wx.NOT_FOUND:
+                    self.lb.SetSelection(0)
+                self.lb.SetFocus()
+            except Exception:
+                _logger.debug("_SourceNamesMixin._focus_source_list: ignored exception", exc_info=True)
+
+        try:
+            self.lb.SetFocus()
+        except Exception:
+            _logger.debug("_SourceNamesMixin._focus_source_list: ignored exception", exc_info=True)
+        wx.CallAfter(focus)
+
     def OnRename(self, _event):
         index = self.lb.GetSelection()
         if index == wx.NOT_FOUND:
@@ -2696,6 +2720,7 @@ if WX_AVAILABLE:
             self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
             # Copy URL (and Shift+F10 / Applications key) without leaving the keyboard.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+            self._focus_source_list()
 
         def _on_source_context_menu(self, event):
             self._select_row_under(event)
@@ -2792,6 +2817,7 @@ if WX_AVAILABLE:
             # dialog quieter for keyboard and screen-reader users. EVT_CONTEXT_MENU
             # also covers Shift+F10 and the Applications key.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+            self._focus_source_list()
 
         def _on_source_context_menu(self, event):
             position = event.GetPosition()

@@ -272,6 +272,14 @@ def _prepare_windows_installed_data() -> None:
 
 
 def get_config_read_candidates():
+    # The file we would *write* always comes first. Read order and write target
+    # used to be derived independently, and on a portable build unpacked into a
+    # read-only folder (Program Files, say) they disagreed: the config was read
+    # from the app directory but every save landed in %APPDATA%, so renaming a
+    # playlist - or any other setting change - looked fine until the next start
+    # and then quietly reverted to the stale app-directory copy.
+    write_target = _config_write_target(create=False)
+
     if _is_windows_platform():
         user_config = os.path.join(get_user_config_dir(create=False), CONFIG_FILE)
         app_dir = get_app_dir()
@@ -295,7 +303,7 @@ def get_config_read_candidates():
 
         if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
             candidates.append(os.path.join(sys._MEIPASS, CONFIG_FILE))
-        return _dedupe_paths(candidates)
+        return _dedupe_paths([write_target] + candidates)
 
     # Revised priority to ensure the app-local config file is honored:
     # 1) App Dir (next to the code/executable)
@@ -318,15 +326,20 @@ def get_config_read_candidates():
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         candidates.append(os.path.join(sys._MEIPASS, CONFIG_FILE))
 
-    return _dedupe_paths(candidates)
+    return _dedupe_paths([write_target] + candidates)
 
 
 def get_config_write_target():
+    return _config_write_target(create=True)
+
+
+def _config_write_target(create: bool = True):
+    """Where a save would land. ``create=False`` keeps it side-effect free."""
     global _CONFIG_PATH
 
     if _is_windows_platform():
         if not is_windows_portable_build():
-            return os.path.join(get_user_config_dir(), CONFIG_FILE)
+            return os.path.join(get_user_config_dir(create=create), CONFIG_FILE)
 
         # Prefer writing back to the file that was loaded (matches the read
         # order), so a config loaded from CWD is not orphaned by creating a
@@ -347,7 +360,7 @@ def get_config_write_target():
         if cwd:
             if _is_writable_dir(cwd):
                 return os.path.join(cwd, CONFIG_FILE)
-        return os.path.join(get_user_config_dir(), CONFIG_FILE)
+        return os.path.join(get_user_config_dir(create=create), CONFIG_FILE)
 
     # Prefer writing back to the file that was loaded, to avoid surprises.
     if _CONFIG_PATH:
@@ -367,7 +380,7 @@ def get_config_write_target():
     if cwd and _is_writable_dir(cwd):
         return os.path.join(cwd, CONFIG_FILE)
 
-    return os.path.join(get_user_config_dir(), CONFIG_FILE)
+    return os.path.join(get_user_config_dir(create=create), CONFIG_FILE)
 
 
 def _apply_internal_player_bounds(cfg: Dict) -> None:
@@ -451,6 +464,7 @@ def load_config() -> Dict:
         "epg_enabled": True,
         "epg_auto_import_interval_hours": 6.0,
         "show_player_on_enter": True,
+        "show_channel_url": True,
         "language": "auto",
         "recordings_dir": "",
         "recording_format": DEFAULT_RECORDING_FORMAT,

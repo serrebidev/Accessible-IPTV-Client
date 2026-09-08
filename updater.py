@@ -78,6 +78,60 @@ def popen_hidden(cmd, **kwargs):
         return subprocess.Popen(cmd, creationflags=base_flags, **kwargs)
 
 
+# --- "an update is being installed" marker ---------------------------------
+#
+# The Windows installer deletes and rewrites the app's ``_internal`` directory,
+# so for the length of the install the executable on disk cannot start: it dies
+# with "Failed to load Python DLL ... python314.dll". The app closes before the
+# installer runs, so a user who reopens it by hand in that window walks straight
+# into that error. The marker lets the next successful start say what happened,
+# and it lives in the per-user config directory because the install directory is
+# exactly what gets replaced.
+
+UPDATE_PENDING_FILE = "update_pending.json"
+
+
+def update_pending_path(directory: str) -> str:
+    return os.path.join(directory or "", UPDATE_PENDING_FILE)
+
+
+def write_update_pending(directory: str, version: str) -> Optional[str]:
+    """Record that an update to ``version`` is being installed right now."""
+    path = update_pending_path(directory)
+    payload = {
+        "version": str(version or ""),
+        "started": datetime.datetime.now(datetime.timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
+    }
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+    except OSError:
+        LOG.debug("write_update_pending: could not write %s", path, exc_info=True)
+        return None
+    return path
+
+
+def read_update_pending(directory: str) -> Optional[dict]:
+    path = update_pending_path(directory)
+    try:
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def clear_update_pending(directory: str) -> None:
+    try:
+        os.remove(update_pending_path(directory))
+    except OSError:
+        LOG.debug("clear_update_pending: nothing to remove", exc_info=True)
+
+
 @dataclass
 class UpdateManifest:
     version: str

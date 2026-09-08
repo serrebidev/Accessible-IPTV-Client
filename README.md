@@ -38,11 +38,12 @@ Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files,
 - A preferred audio track for the built-in player, under **Options > Preferred Audio Track** — pick an audio description track automatically wherever a channel offers one, or name the track/language you want.
 - XMLTV EPG support (`.xml` and `.xml.gz`), including large multi-million-row guides.
 - Catch-up/timeshift playback for channels that support it.
+- A **Show Stream URL** switch under **Options** for the read-only stream-URL field beneath the channel list; turn it off and Tab goes straight from the channel list back to Search.
 - Account status under **File > Account Info** — expiry date, days remaining, trial flag and connection limits for Xtream Codes and Stalker Portal accounts, including accounts detected automatically from a playlist or stream URL.
 - Casting support, plus optional system tray minimize.
-- Recording and DVR scheduling, with an optional **Recordings > Shut Down the Computer When Recordings Finish** for overnight captures.
+- Recording and DVR scheduling, with an optional **Recordings > Shut Down the Computer When Recordings Finish** for overnight captures. The built-in player has its own **Record** button (**Ctrl+R**) for what you are watching, and **Schedule Recording** is on the context menu of every EPG programme.
 - Multilingual interface (14 languages) with automatic OS-language detection and a manual selector under **Options > Language**.
-- Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update.
+- Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update, restarts the app by itself when the install finishes, and reports the result on the next start.
 
 ## Download and install
 

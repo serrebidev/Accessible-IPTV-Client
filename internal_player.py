@@ -240,6 +240,7 @@ class InternalPlayerFrame(wx.Frame):
         variant_max_mbps: Optional[float] = None,
         on_close: Optional[Callable[[], None]] = None,
         on_cast: Optional[Callable[[str, str, Dict[str, object]], None]] = None,
+        on_record: Optional[Callable[[], None]] = None,
         preferred_audio_tracks: Optional[Sequence[str]] = None,
         prefer_audio_description: bool = False,
         on_audio_preference: Optional[Callable[[str], None]] = None,
@@ -254,6 +255,8 @@ class InternalPlayerFrame(wx.Frame):
         super().__init__(parent, title=_("Built-in IPTV Player"), size=(960, 540))
         self._on_close_cb = on_close
         self._on_cast_cb = on_cast
+        self._on_record_cb = on_record
+        self._is_recording = False
         self._allow_close = False
         base_value = self._coerce_seconds(base_buffer_seconds, fallback=0.0)
         self._last_bitrate_mbps: Optional[float] = None
@@ -413,6 +416,14 @@ class InternalPlayerFrame(wx.Frame):
         self.stop_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
         self.stop_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
 
+        # Record sits right after Stop: starting a recording of what you are
+        # already watching should not mean going back to the channel list.
+        self.record_btn = wx.Button(self.controls_panel, label=_("Record"))
+        self.record_btn.SetName(_("Record"))
+        self.record_btn.Bind(wx.EVT_BUTTON, self._on_record)
+        self.record_btn.Bind(wx.EVT_NAVIGATION_KEY, self._on_navigation_key)
+        self.record_btn.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
+
         self.cast_btn = wx.Button(self.controls_panel, label=_("Cast"))
         self.cast_btn.SetName(_("Cast to Device"))
         self.cast_btn.Bind(wx.EVT_BUTTON, self._on_cast)
@@ -449,6 +460,7 @@ class InternalPlayerFrame(wx.Frame):
 
         controls.Add(self.play_pause_btn, 0, wx.ALL, 5)
         controls.Add(self.stop_btn, 0, wx.ALL, 5)
+        controls.Add(self.record_btn, 0, wx.ALL, 5)
         controls.Add(self.cast_btn, 0, wx.ALL, 5)
         controls.Add(self.fullscreen_btn, 0, wx.ALL, 5)
         controls.Add(self.volume_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
@@ -470,6 +482,7 @@ class InternalPlayerFrame(wx.Frame):
         self._controls_focus_order = [
             self.play_pause_btn,
             self.stop_btn,
+            self.record_btn,
             self.cast_btn,
             self.fullscreen_btn,
             self.volume_slider,
@@ -491,6 +504,7 @@ class InternalPlayerFrame(wx.Frame):
         playback_menu = wx.Menu()
         m_play_pause = playback_menu.Append(wx.ID_ANY, _("Play/Pause") + "\tCtrl+P")
         m_stop = playback_menu.Append(wx.ID_ANY, _("Stop") + "\tCtrl+S")
+        self.record_menu_item = playback_menu.Append(wx.ID_ANY, _("Record") + "\tCtrl+R")
         playback_menu.AppendSeparator()
         self.audio_track_menu = wx.Menu()
         self._audio_track_menu_map: Dict[int, int] = {}
@@ -507,6 +521,7 @@ class InternalPlayerFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_pause(), m_play_pause)
         self.Bind(wx.EVT_MENU, lambda _evt: self.stop(manual=True), m_stop)
+        self.Bind(wx.EVT_MENU, self._on_record, self.record_menu_item)
         self.Bind(wx.EVT_MENU, self._on_audio_device_menu, m_audio_device)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_cast(), m_cast)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_fullscreen(), m_full)
@@ -1520,6 +1535,37 @@ class InternalPlayerFrame(wx.Frame):
             self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
         except Exception:
             LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
+
+    def _on_record(self, _event: Optional[wx.Event] = None) -> None:
+        """Start (or stop) recording the channel that is playing right now."""
+        if not self._on_record_cb:
+            wx.MessageBox(_("Recording is not available from this window."),
+                          _("Record"), wx.OK | wx.ICON_INFORMATION)
+            return
+        try:
+            self._on_record_cb()
+        except Exception as exc:
+            LOG.error("Record callback failed: %s", exc)
+
+    def set_recording_state(self, active: bool) -> None:
+        """Reflect the recorder's state on the button and the menu item.
+
+        The button is a toggle, so its label has to say what pressing it does
+        now; a screen reader reads the same text, so the accessible name is
+        updated with it.
+        """
+        active = bool(active)
+        self._is_recording = active
+        label = _("Stop Recording") if active else _("Record")
+        try:
+            self.record_btn.SetLabel(label)
+            self.record_btn.SetName(label)
+            item = getattr(self, "record_menu_item", None)
+            if item is not None:
+                item.SetItemLabel(label + "\tCtrl+R")
+            self.controls_panel.Layout()
+        except Exception:
+            LOG.debug("InternalPlayerFrame.set_recording_state: ignored exception", exc_info=True)
 
     def _on_cast(self, _event: Optional[wx.Event] = None) -> None:
         if not self._on_cast_cb:

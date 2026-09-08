@@ -279,3 +279,36 @@ def test_build_manifest_includes_optional_installer_metadata():
         "download_url": "https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe",
         "sha256": "b" * 64,
     }
+
+
+# --------------------------------------------------------------------------- #
+# "an update is being installed" marker
+#
+# The Windows installer deletes and rewrites the app's _internal directory, so
+# an app opened by hand during the install dies with "Failed to load Python DLL
+# ... python314.dll". The marker is how the next successful start reports what
+# happened to the update that was running when we exited.
+# --------------------------------------------------------------------------- #
+def test_update_pending_marker_round_trip(tmp_path):
+    directory = str(tmp_path / "config")
+    assert updater.read_update_pending(directory) is None
+
+    path = updater.write_update_pending(directory, "1.121.0")
+    assert path and os.path.exists(path)
+
+    pending = updater.read_update_pending(directory)
+    assert pending["version"] == "1.121.0"
+    assert pending["started"].endswith("Z")
+
+    updater.clear_update_pending(directory)
+    assert updater.read_update_pending(directory) is None
+
+
+def test_update_pending_marker_survives_garbage(tmp_path):
+    directory = str(tmp_path)
+    with open(updater.update_pending_path(directory), "w", encoding="utf-8") as handle:
+        handle.write("not json at all")
+    assert updater.read_update_pending(directory) is None
+    # Clearing something unreadable must not raise either.
+    updater.clear_update_pending(directory)
+    updater.clear_update_pending(directory)

@@ -164,3 +164,44 @@ def test_installed_windows_migration_does_not_overwrite_existing_user_data(monke
 
     assert (user_dir / "iptvclient.conf").read_text(encoding="utf-8") == '{"playlists": ["current"]}'
     assert (user_dir / "epg.db").read_bytes() == b"current-db"
+
+
+def test_portable_windows_reads_the_config_it_would_write(monkeypatch, tmp_path):
+    """Read order and write target must never disagree.
+
+    A portable build unpacked into a read-only folder (Program Files) read its
+    config from the app directory but saved to %APPDATA%. Renaming a playlist -
+    or changing any other setting - looked fine until the next start and then
+    reverted to the stale app-directory copy.
+    """
+    roaming, app_dir, cwd_dir = _configure_portable_windows_frozen(monkeypatch, tmp_path)
+    user_dir = roaming / options.APP_DATA_DIR_NAME
+    user_dir.mkdir(parents=True)
+
+    (app_dir / options.CONFIG_FILE).write_text(
+        '{"playlists": ["stale-app-dir"]}', encoding="utf-8")
+    (user_dir / options.CONFIG_FILE).write_text(
+        '{"playlists": ["renamed"]}', encoding="utf-8")
+
+    read_only = {str(app_dir), str(cwd_dir)}
+    monkeypatch.setattr(options, "_is_writable_dir", lambda path: str(path) not in read_only)
+
+    assert not options.is_windows_installed_build()
+    assert Path(options.get_config_write_target()) == user_dir / options.CONFIG_FILE
+
+    candidates = [Path(candidate) for candidate in options.get_config_read_candidates()]
+    assert candidates[0] == user_dir / options.CONFIG_FILE
+
+    cfg = options.load_config()
+    assert cfg["playlists"] == ["renamed"]
+
+
+def test_config_read_candidates_do_not_create_the_user_config_dir(monkeypatch, tmp_path):
+    """Deriving the write target for the read order must stay side-effect free."""
+    roaming, app_dir, cwd_dir = _configure_portable_windows_frozen(monkeypatch, tmp_path)
+    user_dir = roaming / options.APP_DATA_DIR_NAME
+    read_only = {str(app_dir), str(cwd_dir)}
+    monkeypatch.setattr(options, "_is_writable_dir", lambda path: str(path) not in read_only)
+
+    options.get_config_read_candidates()
+    assert not user_dir.exists()

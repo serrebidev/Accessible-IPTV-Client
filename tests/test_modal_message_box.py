@@ -9,7 +9,9 @@ Regression cover for two reports:
   Alt+F4 and Escape). The fix defers finish notifications until no modal box
   is open.
 * The About dialog's HyperlinkCtrl links did not respond to Enter or Space,
-  so pressing them activated the default OK button and closed the dialog.
+  so pressing them activated the default OK button and closed the dialog. The
+  first fix answered *every* key, so Tab and the arrow keys opened a browser
+  window each while merely moving through the dialog.
 """
 import os
 import sys
@@ -110,3 +112,70 @@ def test_about_dialog_links_activate_on_enter_and_space(wx_app, monkeypatch):
         assert len(opened) == 6
     finally:
         dlg.Destroy()
+
+
+def test_about_dialog_links_ignore_navigation_keys(wx_app, monkeypatch):
+    """Tab (and any other key) must move focus, not open a browser window."""
+    opened = []
+    monkeypatch.setattr(wx, "LaunchDefaultBrowser", lambda url, *a, **kw: opened.append(url) or True)
+
+    dlg = appmod.AccessibleAboutDialog(None)
+    try:
+        links = [w for w in dlg.GetChildren()[0].GetChildren() if isinstance(w, wx.adv.HyperlinkCtrl)]
+        assert links
+        for key in (wx.WXK_TAB, wx.WXK_DOWN, wx.WXK_RIGHT, wx.WXK_ESCAPE, ord("A")):
+            for link in links:
+                key_event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+                key_event.SetKeyCode(key)
+                link.GetEventHandler().ProcessEvent(key_event)
+        assert opened == []
+    finally:
+        dlg.Destroy()
+
+
+# --------------------------------------------------------------------------- #
+# Every box in main.py counts towards the modal depth
+# --------------------------------------------------------------------------- #
+def test_message_box_helper_marks_a_box_as_open(monkeypatch):
+    """A box opened anywhere in main.py has to defer finish notifications.
+
+    ``_stop_recording_for_channel`` opens "Stopping recording for X..." with a
+    plain box, not through the frame's own helper, so the frame's instance
+    counter never saw it and the finish callback still opened a second box
+    inside the first one's message loop.
+    """
+    seen = []
+
+    def fake_box(*_args, **_kwargs):
+        seen.append(appmod.modal_box_is_open())
+        return wx.OK
+
+    monkeypatch.setattr(wx, "MessageBox", fake_box)
+    assert appmod.modal_box_is_open() is False
+    appmod.message_box("hello", "caption", wx.OK)
+    assert seen == [True]
+    assert appmod.modal_box_is_open() is False
+
+
+def test_stop_recording_box_defers_the_finish_notification(frame, monkeypatch):
+    shown = []
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.frame = frame
+    client._modal_box_depth = 0
+
+    rec = types.SimpleNamespace(out_path="C:/x/rec.mp4", title="Demo")
+
+    def fake_box(message, *_args, **_kwargs):
+        shown.append(message)
+        if message.startswith("Stopping"):
+            # The recorder's watcher thread lands here, mid-message-loop.
+            appmod.IPTVClient._report_recording_saved(client, rec)
+        return wx.OK
+
+    monkeypatch.setattr(wx, "MessageBox", fake_box)
+    appmod.message_box("Stopping recording for News...", "Recording", wx.OK)
+    assert shown == ["Stopping recording for News..."]  # nothing opened inside
+
+    appmod.IPTVClient._drain_deferred_notifications(client)
+    assert len(shown) == 2
+    assert shown[1].splitlines()[1] == "C:/x/rec.mp4"
