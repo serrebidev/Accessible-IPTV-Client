@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.119.2 - 2026-09-07
+
+- About links respond to Enter/Space, stacked modal boxes no longer disable the main window, digit channel names match EPG again, audio-description preference works and survives restarts, old EPG databases get a clear repair path
+
 ## v1.119.1 - 2026-09-07
 
 - View EPG and catch-up download windows no longer fail silently on open; all dialog constructors swept; uncaught UI exceptions logged
