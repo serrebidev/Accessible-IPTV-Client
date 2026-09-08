@@ -590,22 +590,48 @@ class InternalPlayerFrame(wx.Frame):
             LOG.debug("InternalPlayerFrame._apply_audio_output_device: ignored exception", exc_info=True)
 
     def _list_audio_output_devices(self) -> List[Tuple[str, str]]:
+        """Every libVLC audio output device, as (id, description) pairs.
+
+        libvlc_audio_output_device_enum returns the head of a linked list, and
+        python-vlc hands it over as a raw ctypes pointer. A pointer has no
+        __iter__ but does have __getitem__, so ``for item in enumerated`` fell
+        back to the old iteration protocol and walked p[0], p[1], p[2]... clean
+        off the end of the one struct that is really there. That reads unmapped
+        memory and takes the whole process down - opening Audio Output Device
+        from the player menu crashed the app rather than raising. Walk .next
+        until NULL instead, and release the list afterwards.
+
+        libVLC also hands back ``bytes``, so the ids and descriptions have to be
+        decoded: str() on bytes yields "b'...'", which would never match the
+        saved device id.
+        """
         pairs: List[Tuple[str, str]] = []
         try:
-            enumerated = self.player.audio_output_device_enum() or []
+            head = self.player.audio_output_device_enum()
         except Exception:
             LOG.debug("InternalPlayerFrame._list_audio_output_devices: ignored exception", exc_info=True)
             return pairs
-        for item in enumerated:
+        if not head:
+            return pairs
+        try:
+            node = head
+            while node:
+                entry = node.contents
+                device_id = self._decode_track_name(entry.device)
+                description = self._decode_track_name(entry.description)
+                # The empty id is libVLC's "system default"; the dialog offers
+                # its own entry for that, so skip it here.
+                if device_id:
+                    pairs.append((device_id, description or device_id))
+                node = entry.next
+        except Exception:
+            LOG.debug("InternalPlayerFrame._list_audio_output_devices: ignored exception", exc_info=True)
+        finally:
             try:
-                device_id, description = item.device, item.description
-            except AttributeError:
-                try:
-                    device_id, description = item
-                except Exception:
-                    continue
-            if device_id:
-                pairs.append((str(device_id), str(description or device_id)))
+                vlc.libvlc_audio_output_device_list_release(head)
+            except Exception:
+                LOG.debug("InternalPlayerFrame._list_audio_output_devices: release failed",
+                          exc_info=True)
         return pairs
 
     def _on_audio_device_menu(self, _event=None) -> None:

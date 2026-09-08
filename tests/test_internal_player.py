@@ -637,5 +637,80 @@ class TestReconnectKeepsVideoHidden:
         assert ":no-video" not in frame.media_options
 
 
+class TestAudioOutputDeviceEnumeration:
+    """Opening Audio Output Device from the player menu used to crash the app.
+
+    libvlc_audio_output_device_enum returns the head of a linked list as a raw
+    ctypes pointer. A pointer has no __iter__ but does have __getitem__, so
+    ``for item in enumerated`` fell back to the old iteration protocol and
+    walked p[0], p[1], p[2]... past the one struct that exists, reading unmapped
+    memory and killing the process outright - no traceback, no log line.
+    """
+
+    class _Node:
+        """One libvlc_audio_output_device_t, reached through .contents."""
+        def __init__(self, device, description, nxt=None):
+            self.device = device
+            self.description = description
+            self.next = nxt
+
+    class _Ptr:
+        """A ctypes-pointer stand-in: indexable, so `for` would run away."""
+        def __init__(self, node):
+            self.contents = node
+            self.reads = []
+
+        def __bool__(self):
+            return self.contents is not None
+
+        def __getitem__(self, index):
+            # The real pointer happily returns garbage here; blow up instead so
+            # a regression is a loud test failure rather than a silent pass.
+            raise AssertionError(
+                "indexed the device pointer at [%r] - this is what crashed" % index)
+
+    def _frame(self, head, released):
+        frame = types.SimpleNamespace(
+            player=types.SimpleNamespace(audio_output_device_enum=lambda: head))
+        frame._decode_track_name = internal_player.InternalPlayerFrame._decode_track_name
+        return frame
+
+    def _run(self, head, monkeypatch):
+        released = []
+        monkeypatch.setattr(internal_player.vlc, "libvlc_audio_output_device_list_release",
+                            lambda h: released.append(h), raising=False)
+        frame = self._frame(head, released)
+        pairs = internal_player.InternalPlayerFrame._list_audio_output_devices(frame)
+        return pairs, released
+
+    def test_walks_the_linked_list_instead_of_indexing_the_pointer(self, monkeypatch):
+        tail = self._Node(b"{guid-2}", b"Speakers (Realtek(R) Audio)")
+        head = self._Ptr(self._Node(b"", b"Default", self._Ptr(tail)))
+        pairs, released = self._run(head, monkeypatch)
+        # The empty id is libVLC's "system default"; the dialog supplies its own.
+        assert pairs == [("{guid-2}", "Speakers (Realtek(R) Audio)")]
+        assert released == [head], "the device list must be released"
+
+    def test_ids_and_names_are_decoded_not_bytes_reprs(self, monkeypatch):
+        head = self._Ptr(self._Node(b"{guid}", "Lautsprecher (Realtek)".encode("utf-8")))
+        pairs, _released = self._run(head, monkeypatch)
+        device_id, description = pairs[0]
+        assert device_id == "{guid}"
+        assert description == "Lautsprecher (Realtek)"
+        assert not device_id.startswith("b'"), "a bytes repr can never match a saved id"
+
+    def test_no_devices_is_empty_not_a_crash(self, monkeypatch):
+        pairs, released = self._run(self._Ptr(None), monkeypatch)
+        assert pairs == []
+        assert released == [], "nothing was enumerated, so nothing to release"
+
+    def test_a_failing_enum_is_survivable(self):
+        def boom():
+            raise OSError("libVLC said no")
+        frame = types.SimpleNamespace(
+            player=types.SimpleNamespace(audio_output_device_enum=boom))
+        assert internal_player.InternalPlayerFrame._list_audio_output_devices(frame) == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
