@@ -77,6 +77,38 @@ class TestCoerceStringListBytes:
         assert out == ["\ufffd\ufffd"]
 
 
+class TestChannelAudioTrackStore:
+    """The per-channel audio-track memory has to survive a hand-edited config."""
+
+    def test_non_dict_values_become_an_empty_map(self):
+        for junk in (None, "bbc one", ["bbc one"], 7):
+            assert options.coerce_channel_audio_tracks(junk) == {}
+
+    def test_blank_keys_and_values_are_dropped(self):
+        out = options.coerce_channel_audio_tracks(
+            {"bbc one": "English AD", "": "x", "  ": "y", "itv": "  ", "sky": None})
+        assert out == {"bbc one": "English AD"}
+
+    def test_bytes_names_are_decoded_so_the_config_can_be_written(self):
+        # A bytes value in here used to make save_config throw, silently losing
+        # every other preference change in that same write.
+        out = options.coerce_channel_audio_tracks({"tvp": "Ścieżka 2".encode("utf-8")})
+        assert out == {"tvp": "Ścieżka 2"}
+
+    def test_the_oldest_entries_are_evicted_first(self):
+        limit = options.MAX_REMEMBERED_CHANNEL_AUDIO_TRACKS
+        stored = {f"channel {i}": f"track {i}" for i in range(limit + 10)}
+        out = options.coerce_channel_audio_tracks(stored)
+        assert len(out) == limit
+        assert "channel 0" not in out
+        assert out[f"channel {limit + 9}"] == f"track {limit + 9}"
+
+    def test_normalizing_a_config_fills_the_key_in(self):
+        cfg = {}
+        options.normalize_channel_and_audio_settings(cfg)
+        assert cfg["channel_audio_tracks"] == {}
+
+
 class TestEPGSchemaCheck:
     def _make_db(self, tmp_path, with_description: bool):
         import sqlite3

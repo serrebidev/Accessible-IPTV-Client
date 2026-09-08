@@ -20,6 +20,57 @@ function Write-Log {
     Add-Content -Path $logPath -Value "$stamp $Message"
 }
 
+function Start-AppAfterUpdate {
+    param(
+        [string]$ExePath,
+        [string]$WorkDir,
+        [string]$Arguments = ""
+    )
+
+    # A silent restart failure is the worst outcome there is for a screen-reader
+    # user: the update succeeded, the app is simply gone, and nothing on screen
+    # says why. So every attempt is verified - a process that dies within a few
+    # seconds counts as a failure, not a success - and the last resort hands the
+    # launch to Explorer, which starts the app from the shell instead of from
+    # this helper's own process tree.
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        $app = $null
+        try {
+            $startArgs = @{
+                FilePath         = $ExePath
+                WorkingDirectory = $WorkDir
+                PassThru         = $true
+            }
+            if ($Arguments) { $startArgs['ArgumentList'] = $Arguments }
+            $app = Start-Process @startArgs
+        } catch {
+            Write-Log "Restart attempt $attempt could not launch the app: $($_.Exception.Message)"
+        }
+        if ($app) {
+            # Long enough to get past DLL loading, where a broken install dies.
+            for ($tick = 0; $tick -lt 20 -and -not $app.HasExited; $tick++) {
+                Start-Sleep -Milliseconds 250
+            }
+            if (-not $app.HasExited) {
+                Write-Log "App restarted (PID $($app.Id))."
+                return $true
+            }
+            Write-Log "Restart attempt $attempt exited immediately with code $($app.ExitCode)."
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    try {
+        Write-Log "Falling back to Explorer to start the app."
+        Start-Process -FilePath "explorer.exe" -ArgumentList "`"$ExePath`""
+        return $true
+    } catch {
+        Write-Log "Explorer fallback failed: $($_.Exception.Message)"
+    }
+    Write-Log "Could not restart the app after the update."
+    return $false
+}
+
 Write-Log "Updater started. Waiting for PID $ParentPid."
 
 $deadline = (Get-Date).AddSeconds(30)
@@ -86,13 +137,10 @@ if ($InstallerPath) {
     $exePath = Join-Path $InstallDir $ExeName
     if (Test-Path -LiteralPath $exePath) {
         Write-Log "Restarting app after installer update: $exePath"
-        if ($RestartArgs) {
-            Start-Process -FilePath $exePath -WorkingDirectory $InstallDir -ArgumentList $RestartArgs
-        } else {
-            Start-Process -FilePath $exePath -WorkingDirectory $InstallDir
-        }
+        $restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
         Write-Log "Installer updater completed."
-        exit 0
+        if ($restarted) { exit 0 }
+        exit 2
     }
 
     Write-Log "Executable not found after installer update: $exePath"
@@ -154,7 +202,7 @@ try {
     }
 } catch {
     Write-Log "Failed to move staging into place: $($_.Exception.Message)"
-    if (Test-Path -LiteralPath $BackupDir -and -not (Test-Path -LiteralPath $InstallDir)) {
+    if ((Test-Path -LiteralPath $BackupDir) -and -not (Test-Path -LiteralPath $InstallDir)) {
         try {
             Move-Item -LiteralPath $BackupDir -Destination $InstallDir -Force
             Write-Log "Rollback completed."
@@ -166,14 +214,7 @@ try {
 }
 
 $exePath = Join-Path $InstallDir $ExeName
-if (Test-Path -LiteralPath $exePath) {
-    Write-Log "Restarting app: $exePath"
-    if ($RestartArgs) {
-        Start-Process -FilePath $exePath -WorkingDirectory $InstallDir -ArgumentList $RestartArgs
-    } else {
-        Start-Process -FilePath $exePath -WorkingDirectory $InstallDir
-    }
-} else {
+if (-not (Test-Path -LiteralPath $exePath)) {
     Write-Log "Executable not found after update: $exePath"
     if (Test-Path -LiteralPath $BackupDir) {
         try {
@@ -187,6 +228,10 @@ if (Test-Path -LiteralPath $exePath) {
     exit 1
 }
 
+# Clear the backup before restarting, not after. A recursive delete of a
+# directory tree right beside the install is heavy disk work, and it used to run
+# while the freshly started app was still loading its own DLLs out of that same
+# install directory.
 if (Test-Path -LiteralPath $BackupDir) {
     try {
         Write-Log "Removing backup directory: $BackupDir"
@@ -197,5 +242,9 @@ if (Test-Path -LiteralPath $BackupDir) {
     }
 }
 
+Write-Log "Restarting app: $exePath"
+$restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
+
 Write-Log "Updater completed."
-exit 0
+if ($restarted) { exit 0 }
+exit 2

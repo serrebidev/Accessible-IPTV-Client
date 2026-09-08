@@ -116,6 +116,20 @@ def audio_track_matches(name: Optional[str], keyword: Optional[str]) -> bool:
     return joined_wanted in "".join(tokens)
 
 
+def _dedupe_keywords(keywords: Sequence[str]) -> List[str]:
+    """Strip blanks and case-insensitive repeats, keeping the first of each."""
+    out: List[str] = []
+    seen = set()
+    for keyword in keywords:
+        text = str(keyword or "").strip()
+        folded = text.lower()
+        if not text or folded in seen:
+            continue
+        seen.add(folded)
+        out.append(text)
+    return out
+
+
 def preferred_audio_keywords(
     keywords: Optional[Sequence[str]] = None,
     *,
@@ -126,16 +140,10 @@ def preferred_audio_keywords(
     The user's own wording comes first: somebody who typed "German AD" wants that
     ahead of the generic audio-description guesses.
     """
-    out: List[str] = []
-    seen = set()
-    for keyword in list(keywords or []) + (list(AUDIO_DESCRIPTION_KEYWORDS) if prefer_audio_description else []):
-        text = str(keyword or "").strip()
-        folded = text.lower()
-        if not text or folded in seen:
-            continue
-        seen.add(folded)
-        out.append(text)
-    return out
+    return _dedupe_keywords(
+        list(keywords or [])
+        + (list(AUDIO_DESCRIPTION_KEYWORDS) if prefer_audio_description else [])
+    )
 
 
 def select_preferred_audio_track(
@@ -150,6 +158,36 @@ def select_preferred_audio_track(
             if audio_track_matches(name, keyword):
                 return tid
     return None
+
+
+def active_audio_track_index(
+    tracks: Sequence[Tuple[int, str]],
+    current_id: Optional[int],
+    wanted_name: Optional[str] = None,
+) -> int:
+    """Which track the audio-track control and menu should sit on.
+
+    The track that was asked for wins over the one libVLC reports. libVLC keeps
+    answering ``audio_get_track()`` with the previous id for a moment after a
+    switch, and on some streams reports an id that is not in the description
+    list at all - both of which used to leave the control parked on the first
+    track. Tabbing to a control that says "Track 1" while the audio description
+    is playing reads as "the preference was ignored", so the intent has to win.
+    """
+    if not tracks:
+        return 0
+    wanted = str(wanted_name or "").strip()
+    if wanted:
+        for index, (_track_id, name) in enumerate(tracks):
+            if name == wanted:
+                return index
+    if current_id is not None:
+        for index, (track_id, _name) in enumerate(tracks):
+            if track_id == current_id:
+                return index
+        LOG.debug("libVLC reports audio track %s, which is not in %s",
+                  current_id, [track_id for track_id, _name in tracks])
+    return 0
 
 
 _VLC_RUNTIME_PREPARED = False
@@ -246,6 +284,7 @@ class InternalPlayerFrame(wx.Frame):
         on_audio_preference: Optional[Callable[[str], None]] = None,
         on_last_track_changed: Optional[Callable[[str], None]] = None,
         last_audio_track: str = "",
+        channel_audio_track: str = "",
         audio_output_device: str = "",
         on_audio_device: Optional[Callable[[str], None]] = None,
     ) -> None:
@@ -339,6 +378,11 @@ class InternalPlayerFrame(wx.Frame):
         # hotkey). It leads the match list on every later stream, so one manual
         # pick carries across channels and sessions.
         self._last_manual_audio_track = str(last_audio_track or "").strip()
+        # The track this particular channel was last watched with. It is the
+        # most specific signal there is - the user picked it while listening to
+        # this very channel - so it leads the match list, ahead of the
+        # audio-description guesses and the global hand-picked track.
+        self._channel_audio_track = str(channel_audio_track or "").strip()
         # Preferred-track state. libVLC does not publish the track list until a
         # moment after playback starts, so the preference is retried for a few
         # timer ticks rather than checked once and abandoned.
@@ -1906,10 +1950,8 @@ class InternalPlayerFrame(wx.Frame):
         if not tracks:
             choice.SetName(_("No audio tracks available"))
             return
-        try:
-            selected = self._audio_track_choice_ids.index(current)
-        except ValueError:
-            selected = 0
+        selected = active_audio_track_index(
+            tracks, current, getattr(self, "_wanted_audio_track_name", ""))
         choice.SetSelection(selected)
         choice.SetName(_("Audio Track: {name}").format(name=tracks[selected][1]))
 
@@ -1950,6 +1992,7 @@ class InternalPlayerFrame(wx.Frame):
         # its keyword.
         if manual:
             self._last_manual_audio_track = name
+            self._channel_audio_track = name
             if self._on_last_track_changed_cb:
                 try:
                     self._on_last_track_changed_cb(name)
@@ -1967,7 +2010,10 @@ class InternalPlayerFrame(wx.Frame):
         if len(tracks) < 2:
             self._update_status_label(_("Audio: {name}").format(name=tracks[0][1]))
             return
-        nxt = self._next_audio_track_id(tracks, self._current_audio_track_id())
+        active = active_audio_track_index(
+            tracks, self._current_audio_track_id(),
+            getattr(self, "_wanted_audio_track_name", ""))
+        nxt = self._next_audio_track_id(tracks, tracks[active][0])
         if nxt is not None:
             self._select_audio_track(nxt, manual=True)
 
@@ -1990,10 +2036,12 @@ class InternalPlayerFrame(wx.Frame):
             empty = menu.Append(wx.ID_ANY, _("No audio tracks available"))
             empty.Enable(False)
             return
-        current = self._current_audio_track_id()
-        for tid, name in tracks:
+        active = active_audio_track_index(
+            tracks, self._current_audio_track_id(),
+            getattr(self, "_wanted_audio_track_name", ""))
+        for index, (tid, name) in enumerate(tracks):
             item = menu.AppendRadioItem(wx.ID_ANY, name)
-            item.Check(tid == current)
+            item.Check(index == active)
             self._audio_track_menu_map[item.GetId()] = tid
         # Let the user pin the track they are listening to, so every channel that
         # offers one by the same name starts on it from now on.
@@ -2013,11 +2061,11 @@ class InternalPlayerFrame(wx.Frame):
     def _remember_current_audio_track(self) -> None:
         """Store the name of the playing track as the preferred one."""
         name = ""
-        current = self._current_audio_track_id()
-        for tid, tname in self._get_audio_tracks():
-            if tid == current:
-                name = tname
-                break
+        tracks = self._get_audio_tracks()
+        if tracks:
+            name = tracks[active_audio_track_index(
+                tracks, self._current_audio_track_id(),
+                getattr(self, "_wanted_audio_track_name", ""))][1]
         if not name:
             name = self._audio_track_label
         if not name:
@@ -2029,6 +2077,7 @@ class InternalPlayerFrame(wx.Frame):
         # Pinning "always prefer this" is a deliberate pick too: it leads the
         # match list on later streams exactly like choosing the track directly.
         self._last_manual_audio_track = name
+        self._channel_audio_track = name
         if self._on_last_track_changed_cb:
             try:
                 self._on_last_track_changed_cb(name)
@@ -2062,35 +2111,59 @@ class InternalPlayerFrame(wx.Frame):
         """Set the hand-picked track from saved settings (main window only)."""
         self._last_manual_audio_track = str(name or "").strip()
 
+    def set_channel_audio_track(self, name: str) -> None:
+        """Tell the player which track this channel was last watched with.
+
+        Called by the main window just before ``play()`` for every stream, with
+        "" when nothing is remembered - otherwise the previous channel's track
+        would leak into the next one.
+        """
+        name = str(name or "").strip()
+        if name == getattr(self, "_channel_audio_track", ""):
+            return
+        self._channel_audio_track = name
+        # Only re-arm when the user has not already chosen a track by hand for
+        # the stream that is playing; a deliberate pick is never overridden.
+        if self._wanted_audio_track_name is None:
+            self._arm_audio_preference()
+
     def _begin_new_stream_audio_state(self) -> None:
         """Reset per-stream audio state, keeping the hand-picked track."""
         # The hand-picked track carries across streams: only the per-stream
         # selection state resets here.
         self._last_manual_audio_track = str(
             getattr(self, "_last_manual_audio_track", "") or "").strip()
+        self._channel_audio_track = str(
+            getattr(self, "_channel_audio_track", "") or "").strip()
         self._wanted_audio_track_name = None
         self._audio_track_label = ""
         self._audio_reapply_pending = False
         self._arm_audio_preference()
 
     def _preferred_audio_keywords(self) -> List[str]:
-        # The audio-description checkbox outranks everything else: a user who
-        # ticks it needs the AD track and nothing else, on every stream.
-        # Next comes the hand-picked track (chosen while listening to a real
-        # stream, which beats any saved keyword), then the user's own wording,
-        # then the built-in guesses.
+        # Most specific signal first. The track this channel was last watched
+        # with was picked by hand while listening to this very channel, so it
+        # beats every broader rule - including the audio-description checkbox,
+        # which is a default for channels the user has not decided about.
+        # After it: the audio-description guesses (when the checkbox is on and
+        # nothing else applies), otherwise the track hand-picked on some other
+        # channel - chosen while listening, so it beats a saved keyword - and
+        # then the user's own wording.
+        keywords: List[str] = []
+        channel_track = str(getattr(self, "_channel_audio_track", "") or "").strip()
+        if channel_track:
+            keywords.append(channel_track)
         if self._prefer_audio_description:
-            return list(AUDIO_DESCRIPTION_KEYWORDS)
-        keywords = preferred_audio_keywords(
-            self._preferred_audio_tracks,
-            prefer_audio_description=False,
-        )
-        manual = str(getattr(self, "_last_manual_audio_track", "") or "").strip()
-        if manual:
-            lowered = manual.lower()
-            keywords = [k for k in keywords if str(k).lower() != lowered]
-            keywords.insert(0, manual)
-        return keywords
+            keywords.extend(AUDIO_DESCRIPTION_KEYWORDS)
+        else:
+            manual = str(getattr(self, "_last_manual_audio_track", "") or "").strip()
+            if manual:
+                keywords.append(manual)
+            keywords.extend(preferred_audio_keywords(
+                self._preferred_audio_tracks,
+                prefer_audio_description=False,
+            ))
+        return _dedupe_keywords(keywords)
 
     def _arm_audio_preference(self) -> None:
         self._audio_preference_attempts = 0

@@ -8,6 +8,11 @@ Regression cover for two reports:
   left the main window permanently disabled ("unavailable" to NVDA, dead to
   Alt+F4 and Escape). The fix defers finish notifications until no modal box
   is open.
+* A second "Update available" prompt arriving while an update was already
+  downloading stacked a modal dialog on top of the app-modal progress dialog.
+  Answering "No" to it unwound wxMSW's disabler nesting in the wrong order and
+  left the main window disabled with nothing owning it - the app could only be
+  closed from Task Manager. The fix lets only one update flow be on screen.
 * The About dialog's HyperlinkCtrl links did not respond to Enter or Space,
   so pressing them activated the default OK button and closed the dialog. The
   first fix answered *every* key, so Tab and the arrow keys opened a browser
@@ -179,3 +184,72 @@ def test_stop_recording_box_defers_the_finish_notification(frame, monkeypatch):
     appmod.IPTVClient._drain_deferred_notifications(client)
     assert len(shown) == 2
     assert shown[1].splitlines()[1] == "C:/x/rec.mp4"
+
+
+def _update_client(**state):
+    """An IPTVClient carrying only the update-flow state, no wx window."""
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client._update_check_inflight = False
+    client._update_install_pending = False
+    client._update_prompt_open = False
+    client._update_in_progress = False
+    client._update_progress_dlg = None
+    for key, value in state.items():
+        setattr(client, key, value)
+    return client
+
+
+class TestOnlyOneUpdateFlowAtATime:
+    def test_an_idle_client_is_not_busy(self):
+        assert appmod.IPTVClient._update_flow_busy(_update_client()) is False
+
+    @pytest.mark.parametrize("flag", [
+        "_update_prompt_open", "_update_in_progress", "_update_install_pending",
+    ])
+    def test_each_stage_of_the_flow_counts_as_busy(self, flag):
+        client = _update_client(**{flag: True})
+        assert appmod.IPTVClient._update_flow_busy(client) is True
+
+    def test_an_open_progress_dialog_counts_as_busy(self):
+        client = _update_client(_update_progress_dlg=object())
+        assert appmod.IPTVClient._update_flow_busy(client) is True
+
+    def test_the_second_prompt_is_dropped_instead_of_stacked(self, monkeypatch):
+        # This is the hang: wx.MessageDialog must never be constructed on top of
+        # the app-modal progress dialog.
+        def explode(*_args, **_kwargs):
+            raise AssertionError("a second update dialog was opened")
+
+        monkeypatch.setattr(wx, "MessageDialog", explode)
+        client = _update_client(_update_in_progress=True)
+        appmod.IPTVClient._prompt_update(client, "1.2.0", "1.1.0", "notes", {})
+
+    def test_a_background_check_is_not_even_started_while_busy(self, monkeypatch):
+        started = []
+        monkeypatch.setattr(appmod.threading, "Thread",
+                            lambda *a, **k: started.append(a) or types.SimpleNamespace(
+                                start=lambda: None))
+        boxes = []
+        monkeypatch.setattr(appmod, "message_box",
+                            lambda message, *a, **k: boxes.append(message))
+
+        client = _update_client(_update_in_progress=True)
+        appmod.IPTVClient._start_update_check(client, interactive=False)
+        assert started == [] and boxes == []
+
+        appmod.IPTVClient._start_update_check(client, interactive=True)
+        assert started == []
+        assert boxes and "already in progress" in boxes[0]
+
+    def test_the_gate_reopens_when_the_download_ends(self):
+        client = _update_client(_update_in_progress=True,
+                                _update_progress_dlg=None)
+        appmod.IPTVClient._destroy_update_progress(client)
+        assert appmod.IPTVClient._update_flow_busy(client) is False
+
+    def test_the_gate_stays_shut_while_the_installer_is_being_launched(self):
+        # The success path shows its own modal "the update is installing" box,
+        # and that box runs a nested event loop a queued prompt could land in.
+        client = _update_client(_update_in_progress=True)
+        appmod.IPTVClient._destroy_update_progress(client, end_flow=False)
+        assert appmod.IPTVClient._update_flow_busy(client) is True

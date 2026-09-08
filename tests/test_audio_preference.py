@@ -144,6 +144,7 @@ def _stub_frame(tracks, current_id=0, keywords=("audio description",), prefer_ad
     frame._max_audio_preference_attempts = 3
     frame._preferred_audio_tracks = list(keywords)
     frame._prefer_audio_description = prefer_ad
+    frame._channel_audio_track = ""
     frame._get_audio_tracks = lambda: list(tracks)
     frame._current_audio_track_id = lambda: current_id
     frame._select_audio_track = frame.selected.append
@@ -292,3 +293,131 @@ class TestLastManualTrackIsRemembered:
 
         assert frame._last_manual_audio_track == "Deutsch"
         assert frame._preferred_audio_tracks == ["Deutsch"]
+
+
+class TestPerChannelTrackIsRemembered:
+    """The track a channel was last watched with comes back with that channel."""
+
+    def test_the_channel_track_leads_the_match_list(self):
+        frame = _stub_frame([], keywords=("english",))
+        frame._channel_audio_track = "Polski"
+        assert internal_player.InternalPlayerFrame._preferred_audio_keywords(frame)[0] == "Polski"
+
+    def test_it_outranks_the_audio_description_default(self):
+        # Ticking "prefer audio description" is a default for channels the user
+        # has not decided about; a track hand-picked on *this* channel is a
+        # decision, so it has to win.
+        frame = _stub_frame([], keywords=(), prefer_ad=True)
+        frame._channel_audio_track = "Polski"
+        keywords = internal_player.InternalPlayerFrame._preferred_audio_keywords(frame)
+        assert keywords[0] == "Polski"
+        assert "audio description" in keywords, "AD is still the fallback"
+
+    def test_audio_description_still_wins_on_an_undecided_channel(self):
+        frame = _stub_frame([(0, "English"), (1, "English AD")], keywords=(), prefer_ad=True)
+        _apply(frame)
+        assert frame.selected == [1]
+
+    def test_the_remembered_track_is_picked_over_the_first_one(self):
+        frame = _stub_frame(
+            [(0, "English"), (1, "Polski"), (2, "English AD")],
+            keywords=(), prefer_ad=True)
+        frame._channel_audio_track = "Polski"
+        _apply(frame)
+        assert frame.selected == [1]
+
+    def test_a_manual_pick_becomes_this_channel_track(self):
+        frame = types.SimpleNamespace()
+        frame.selected = []
+        frame._wanted_audio_track_name = None
+        frame._audio_track_label = ""
+        frame._audio_reapply_pending = False
+        frame._last_manual_audio_track = ""
+        frame._channel_audio_track = ""
+        frame._on_last_track_changed_cb = None
+        frame._get_audio_tracks = lambda: [(0, "English"), (1, "Polski")]
+        frame.player = types.SimpleNamespace(
+            audio_set_track=lambda tid: frame.selected.append(tid))
+        frame._update_status_label = lambda *a, **k: None
+        frame._refresh_audio_track_choice = lambda: None
+
+        internal_player.InternalPlayerFrame._select_audio_track(frame, 1, manual=True)
+
+        assert frame._channel_audio_track == "Polski"
+
+    def test_an_automatic_match_does_not_become_the_channel_track(self):
+        frame = _stub_frame([(0, "English"), (1, "Audio Description")])
+        frame.player = types.SimpleNamespace(
+            audio_set_track=lambda tid: frame.selected.append(tid))
+        frame._select_audio_track = types.MethodType(
+            internal_player.InternalPlayerFrame._select_audio_track, frame)
+        frame._update_status_label = lambda *a, **k: None
+        frame._refresh_audio_track_choice = lambda: None
+
+        _apply(frame)
+
+        assert frame.selected == [1]
+        assert frame._channel_audio_track == ""
+
+    def test_switching_channels_replaces_the_remembered_track(self):
+        frame = _stub_frame([], keywords=())
+        frame._channel_audio_track = "Polski"
+        frame._arm_audio_preference = lambda: None
+        internal_player.InternalPlayerFrame.set_channel_audio_track(frame, "")
+        assert frame._channel_audio_track == "", (
+            "the previous channel's track leaked into the next one")
+
+    def test_a_new_stream_keeps_the_channel_track(self):
+        frame = _stub_frame([], keywords=())
+        frame._channel_audio_track = "Polski"
+        frame._arm_audio_preference = lambda: None
+        internal_player.InternalPlayerFrame._begin_new_stream_audio_state(frame)
+        assert frame._channel_audio_track == "Polski"
+
+
+class TestWhichTrackTheControlsShow:
+    """libVLC's reported track id is a hint; what we asked for is the answer."""
+
+    TRACKS = [(0, "English"), (1, "English AD")]
+
+    def test_the_requested_track_wins_over_a_stale_libvlc_id(self):
+        # libVLC keeps answering audio_get_track() with the old id for a moment
+        # after a switch. That used to park the control on "English" while the
+        # audio description was playing.
+        assert internal_player.active_audio_track_index(
+            self.TRACKS, 0, "English AD") == 1
+
+    def test_an_unknown_libvlc_id_does_not_fall_back_to_the_first_track(self):
+        assert internal_player.active_audio_track_index(
+            self.TRACKS, 99, "English AD") == 1
+
+    def test_libvlc_is_used_when_nothing_was_requested(self):
+        assert internal_player.active_audio_track_index(self.TRACKS, 1, "") == 1
+        assert internal_player.active_audio_track_index(self.TRACKS, 0, None) == 0
+
+    def test_an_unknown_id_and_no_request_falls_back_to_the_first_track(self):
+        assert internal_player.active_audio_track_index(self.TRACKS, 99, "") == 0
+        assert internal_player.active_audio_track_index(self.TRACKS, None, "") == 0
+
+    def test_a_requested_track_that_is_gone_falls_back_to_libvlc(self):
+        assert internal_player.active_audio_track_index(
+            self.TRACKS, 1, "Deutsch") == 1
+
+    def test_no_tracks(self):
+        assert internal_player.active_audio_track_index([], 3, "English AD") == 0
+
+    def test_the_choice_control_announces_the_requested_track(self):
+        choice = _FakeChoice()
+        frame = types.SimpleNamespace(
+            audio_track_choice=choice,
+            _audio_track_choice_ids=[],
+            _audio_track_choice_signature=(),
+            _wanted_audio_track_name="English AD",
+            _get_audio_tracks=lambda: list(self.TRACKS),
+            _current_audio_track_id=lambda: 0,  # stale
+        )
+
+        internal_player.InternalPlayerFrame._refresh_audio_track_choice(frame)
+
+        assert choice.selection == 1
+        assert "English AD" in choice.name

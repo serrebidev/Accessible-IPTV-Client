@@ -33,7 +33,7 @@ from options import (
     get_db_path, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
     get_recordings_dir, get_dvr_schedule_path, get_logs_dir, get_epg_log_path,
-    normalize_recording_format,
+    normalize_recording_format, coerce_channel_audio_tracks,
     is_windows_installed_build, get_user_config_dir
 )
 # Same normalization the EPG database indexes with - importing it from anywhere
@@ -919,6 +919,13 @@ class IPTVClient(wx.Frame):
         self._internal_player_frame: Optional[object] = None
         self._update_check_inflight = False
         self._update_install_pending = False
+        # True from the moment the "Update available" prompt opens until the
+        # download finishes, fails or is cancelled. A second update prompt on
+        # top of the app-modal progress dialog left the main window disabled
+        # with no dialog owning it - a dead app that only Task Manager could
+        # close - so only one update flow is ever allowed to be on screen.
+        self._update_prompt_open = False
+        self._update_in_progress = False
         self._auto_update_check_scheduled = False
         self._update_check_timer: Optional[wx.Timer] = None
         self._playlist_load_token = 0
@@ -956,6 +963,8 @@ class IPTVClient(wx.Frame):
         # knows which channel to record.
         self._internal_player_channel: Optional[Dict[str, str]] = None
         self._internal_player_stream_kind = "live"
+        # ...and which channel the audio track picked in the player belongs to.
+        self._internal_player_audio_key = ""
         # Live catch-up download progress dialogs, by recorder id.
         self._catchup_downloads: Dict[int, "CatchupDownloadDialog"] = {}
         # Auto-retry bookkeeping for failed catch-up downloads, keyed by the
@@ -3367,7 +3376,19 @@ class IPTVClient(wx.Frame):
     def on_check_updates(self, _):
         self._start_update_check(interactive=True)
 
+    def _update_flow_busy(self) -> bool:
+        """True while an update prompt or download already owns the screen."""
+        return bool(getattr(self, "_update_prompt_open", False)
+                    or getattr(self, "_update_in_progress", False)
+                    or getattr(self, "_update_install_pending", False)
+                    or getattr(self, "_update_progress_dlg", None) is not None)
+
     def _start_update_check(self, interactive: bool):
+        if self._update_flow_busy():
+            if interactive:
+                message_box(_("An update is already in progress."), _("Updates"),
+                            wx.OK | wx.ICON_INFORMATION)
+            return
         if self._update_check_inflight:
             if interactive:
                 message_box(_("Update check is already running."), _("Updates"), wx.OK | wx.ICON_INFORMATION)
@@ -3425,6 +3446,16 @@ class IPTVClient(wx.Frame):
             self._update_check_inflight = False
 
     def _prompt_update(self, latest_version: str, current_version: str, notes: str, release: Dict):
+        # The check that produced this prompt was started before the running
+        # update claimed the screen (the hourly timer fires regardless of what
+        # the user is doing), so the guard has to be here as well as in
+        # _start_update_check. Dropping the prompt is right: the download
+        # already under way is for this same release or a newer one, and the
+        # next check will offer whatever is left.
+        if self._update_flow_busy():
+            LOG.info("Skipping update prompt for v%s: an update is already in progress",
+                     latest_version)
+            return
         summary = updater.summarize_release_notes(notes)
         message = (
             _("Update available: v{latest} (current v{current}).").format(
@@ -3433,13 +3464,17 @@ class IPTVClient(wx.Frame):
             + _("Download and install now? The app will restart after the update.")
         )
         dlg = wx.MessageDialog(self, message, _("Update Available"), wx.YES_NO | wx.ICON_INFORMATION)
+        self._update_prompt_open = True
         try:
-            if dlg.ShowModal() == wx.ID_YES:
-                self._start_update_download(release)
+            answer = dlg.ShowModal()
         finally:
             dlg.Destroy()
+            self._update_prompt_open = False
+        if answer == wx.ID_YES:
+            self._start_update_download(release)
 
     def _start_update_download(self, release: Dict):
+        self._update_in_progress = True
         self._update_cancel = threading.Event()
         self._update_progress_dlg = wx.ProgressDialog(
             _("Updating {app}").format(app=app_meta.APP_DISPLAY_NAME),
@@ -3477,7 +3512,7 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("IPTVClient._apply_update_progress: ignored exception", exc_info=True)
 
-    def _destroy_update_progress(self):
+    def _destroy_update_progress(self, *, end_flow: bool = True):
         dlg = getattr(self, "_update_progress_dlg", None)
         if dlg is not None:
             try:
@@ -3485,6 +3520,12 @@ class IPTVClient(wx.Frame):
             except Exception:
                 LOG.debug("IPTVClient._destroy_update_progress: ignored exception", exc_info=True)
         self._update_progress_dlg = None
+        # Failure and cancel come through here, so this is where the gate
+        # reopens. The success path passes end_flow=False: it still has a modal
+        # "the update is installing" box to show, and its nested event loop
+        # would otherwise let a queued update prompt stack on top of it.
+        if end_flow:
+            self._update_in_progress = False
 
     def _download_update_worker(self, release: Dict):
         temp_root = None
@@ -3666,11 +3707,12 @@ class IPTVClient(wx.Frame):
         # Warn *before* launching the helper: the helper only waits 30 seconds
         # for this process to exit before killing it, and this box has to be
         # read and dismissed inside that window.
-        self._destroy_update_progress()
+        self._destroy_update_progress(end_flow=False)
         self._warn_update_is_installing()
         try:
             updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
         except OSError as exc:
+            self._update_in_progress = False
             updater.clear_update_pending(get_user_config_dir())
             message_box(
                 _("Update failed to start: {error}").format(error=exc),
@@ -3707,11 +3749,12 @@ class IPTVClient(wx.Frame):
         # Warn *before* launching the helper: the helper only waits 30 seconds
         # for this process to exit before killing it, and this box has to be
         # read and dismissed inside that window.
-        self._destroy_update_progress()
+        self._destroy_update_progress(end_flow=False)
         self._warn_update_is_installing()
         try:
             updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
         except OSError as exc:
+            self._update_in_progress = False
             updater.clear_update_pending(get_user_config_dir())
             message_box(
                 _("Update failed to start: {error}").format(error=exc),
@@ -5750,6 +5793,7 @@ class IPTVClient(wx.Frame):
     def _on_internal_player_closed(self) -> None:
         self._internal_player_frame = None
         self._internal_player_channel = None
+        self._internal_player_audio_key = ""
         self._internal_player_stream_kind = "live"
 
     def _ensure_internal_player(self) -> object:
@@ -5777,11 +5821,59 @@ class IPTVClient(wx.Frame):
             on_audio_preference=self._on_player_audio_preference,
             on_last_track_changed=self._on_player_last_audio_track_changed,
             last_audio_track=str(self.config.get("last_audio_track") or ""),
+            channel_audio_track=self._remembered_channel_audio_track(
+                getattr(self, "_internal_player_audio_key", "")),
             audio_output_device=str(self.config.get("audio_output_device") or ""),
             on_audio_device=self._on_player_audio_device,
         )
         self._internal_player_frame = frame
         return frame
+
+    @staticmethod
+    def _channel_audio_key(channel: Optional[Dict[str, str]]) -> str:
+        """Identity a channel keeps its remembered audio track under.
+
+        Deliberately not :meth:`_channel_record_key`: that one includes the
+        stream URL and the whole provider-data blob, which would bloat the
+        config and lose the memory whenever a provider re-issues URLs. The
+        display name is what stays the same for the user, and sharing it across
+        playlists is a feature - the same channel from a second provider starts
+        on the track already chosen for it.
+        """
+        if not isinstance(channel, dict):
+            return ""
+        name = (channel.get("name")
+                or channel.get("tvg-name")
+                or channel.get("tvg_name")
+                or channel.get("tvg-id")
+                or channel.get("tvg_id")
+                or "")
+        return str(name).strip().casefold()
+
+    def _remembered_channel_audio_track(self, key: str) -> str:
+        """The audio track this channel was last watched with, or ""."""
+        if not key:
+            return ""
+        stored = self.config.get("channel_audio_tracks")
+        if not isinstance(stored, dict):
+            return ""
+        return str(stored.get(key) or "").strip()
+
+    def _remember_channel_audio_track(self, key: str, name: str) -> bool:
+        """Store this channel's track. True when the config actually changed."""
+        if not key or not name:
+            return False
+        stored = self.config.get("channel_audio_tracks")
+        if not isinstance(stored, dict):
+            stored = {}
+        if stored.get(key) == name:
+            return False
+        # Re-insert at the end so the eviction in coerce_channel_audio_tracks
+        # drops the channels nobody has watched in a long time first.
+        stored.pop(key, None)
+        stored[key] = name
+        self.config["channel_audio_tracks"] = coerce_channel_audio_tracks(stored)
+        return True
 
     def _on_player_audio_preference(self, track_name: str) -> None:
         """Remember the audio track the user pinned from the player's menu."""
@@ -5800,13 +5892,22 @@ class IPTVClient(wx.Frame):
         LOG.info("Preferred audio track set to %s", name)
 
     def _on_player_last_audio_track_changed(self, track_name: str) -> None:
-        """Persist the track the user last chose by hand (survives restarts)."""
+        """Persist the track the user last chose by hand (survives restarts).
+
+        Stored twice: against the channel that is playing, so it comes back the
+        next time that channel is opened, and globally, so a channel with no
+        memory of its own still starts on the track the user last chose.
+        """
         name = (track_name or "").strip()
         if not name:
             return
-        if self.config.get("last_audio_track") == name:
+        changed = self._remember_channel_audio_track(
+            getattr(self, "_internal_player_audio_key", ""), name)
+        if self.config.get("last_audio_track") != name:
+            self.config["last_audio_track"] = name
+            changed = True
+        if not changed:
             return
-        self.config["last_audio_track"] = name
         save_config(self.config)
         LOG.info("Last used audio track set to %s", name)
 
@@ -5924,6 +6025,15 @@ class IPTVClient(wx.Frame):
                 # player has to know which one it is now showing.
                 self._internal_player_channel = channel
                 self._internal_player_stream_kind = stream_kind
+                # The remembered track is per channel, so it has to be handed
+                # over before play() arms the preference - and handed over even
+                # when it is empty, or the previous channel's track would leak
+                # into this one.
+                self._internal_player_audio_key = self._channel_audio_key(channel)
+                setter = getattr(frame, "set_channel_audio_track", None)
+                if callable(setter):
+                    setter(self._remembered_channel_audio_track(
+                        self._internal_player_audio_key))
                 frame.play(
                     url,
                     display_title,

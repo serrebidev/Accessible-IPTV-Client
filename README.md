@@ -126,7 +126,7 @@ Channels that carry an audio description track usually start on the ordinary one
 - The text field takes your own track names or languages, most wanted first, separated by commas.
 - In the player, **Playback > Audio Track > Always Prefer This Audio Track** pins whatever you are listening to right now.
 
-The chosen track is re-applied after a reconnect, and a track you pick by hand always wins for the channel you are watching. Press **A** in the player to cycle tracks as before.
+A track you pick by hand is remembered **for that channel** and comes back the next time you open it, ahead of every other rule including the audio-description checkbox — so a channel where you want the Polish track keeps the Polish track, while every other channel still starts on its audio description. The last track you picked anywhere is the fallback for channels you have never chosen one for. The choice is re-applied after a reconnect, and the **Choose Audio Track** control you reach with Tab always reads out the track that is actually playing. Press **A** in the player to cycle tracks as before.
 
 ## Shutting down after recordings
 

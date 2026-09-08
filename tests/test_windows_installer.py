@@ -53,3 +53,40 @@ def test_update_helper_supports_elevated_installer_mode_and_portable_config():
     assert "Preserved portable configuration in install directory." in helper
     assert "Migrated roaming configuration to portable install directory." in helper
     assert "Migrated configuration from backup to roaming profile." not in helper
+
+
+def test_update_helper_verifies_the_restart_and_retries():
+    """A restart that silently fails leaves a blind user with no app and no clue.
+
+    The helper used to fire Start-Process and exit without ever looking at the
+    result, so "Restarting app" in the log meant nothing more than "the call did
+    not throw". Every attempt is now checked, retried, and finally handed to
+    Explorer, which starts the app outside this helper's process tree.
+    """
+    helper = (ROOT / "update_helper.ps1").read_text(encoding="utf-8")
+
+    assert "function Start-AppAfterUpdate" in helper
+    assert "PassThru         = $true" in helper
+    assert "$app.HasExited" in helper
+    assert "explorer.exe" in helper
+    assert "Could not restart the app after the update." in helper
+    # Both update paths go through it; neither fires and forgets any more.
+    assert helper.count("Start-AppAfterUpdate -ExePath") == 2
+    assert "Start-Process -FilePath $exePath -WorkingDirectory $InstallDir" not in helper
+
+
+def test_update_helper_clears_the_backup_before_restarting():
+    """The recursive delete used to run while the new app was loading its DLLs."""
+    helper = (ROOT / "update_helper.ps1").read_text(encoding="utf-8")
+
+    removal = helper.index("Removing backup directory")
+    restart = helper.index('Write-Log "Restarting app: $exePath"')
+    assert removal < restart
+
+
+def test_update_helper_rollback_condition_is_valid_powershell():
+    """`Test-Path -LiteralPath $x -and ...` binds -and as a positional argument."""
+    helper = (ROOT / "update_helper.ps1").read_text(encoding="utf-8")
+
+    assert "(Test-Path -LiteralPath $BackupDir) -and -not" in helper
+    assert "Test-Path -LiteralPath $BackupDir -and" not in helper
