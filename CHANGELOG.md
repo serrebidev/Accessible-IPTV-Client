@@ -1,6 +1,11 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.123.1 - 2026-09-08
+
+- Stop the Audio Output Device menu from crashing the player
+- Keep the video off when a background stream reconnects
+
 ## v1.123.0 - 2026-09-08
 
 - Install an update without a second confirmation and stop announcing success
