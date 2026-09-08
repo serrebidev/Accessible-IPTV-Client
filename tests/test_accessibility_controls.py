@@ -240,6 +240,7 @@ def test_catchup_download_finish_reports_and_closes(monkeypatch, tmp_path):
         _catchup_downloads={3: dlg},
         _maybe_shutdown_after_recordings=lambda: None,
         _recording_failure_detail=lambda _rec: "detail",
+        _show_or_queue_message_box=lambda msg, cap, style: boxes.append(msg),
     )
 
     # The recorder's watcher thread calls this; wx.CallAfter is monkeypatched

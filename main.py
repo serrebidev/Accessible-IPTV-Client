@@ -480,6 +480,32 @@ _AUTO_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000  # hourly
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
 _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
 
+# Catch-up downloads: providers refuse bursts of connections with 403s and
+# flaky networks drop streams, so a failed download is retried automatically
+# (with the delay doubled per attempt) instead of making the user start over.
+# User cancellations are never retried; the budget is small on purpose.
+_CATCHUP_RETRY_MAX_ATTEMPTS = 3
+_CATCHUP_RETRY_BASE_DELAY_SECONDS = 2.0
+_CATCHUP_RETRYABLE_RE = re.compile(
+    r"403\b|429\b|50[0-9]\b|connection (?:reset|refused|closed)|timed? ?out|"
+    r"temporarily unavailable|no route to host|server returned", re.IGNORECASE)
+
+
+def _catchup_failure_is_retryable(rc: int, stderr_lines, *, stopped_by_user: bool = False) -> bool:
+    """True when a finished download failed for a reason retrying can fix."""
+    if stopped_by_user or not rc:
+        return False
+    text = "\n".join(stderr_lines or [])
+    return bool(_CATCHUP_RETRYABLE_RE.search(text))
+
+
+def _schedule_retry(fn, delay_seconds: float):
+    """Run ``fn`` once after ``delay_seconds`` on a daemon thread."""
+    timer = threading.Timer(delay_seconds, fn)
+    timer.daemon = True
+    timer.start()
+    return timer
+
 # EPG-style placeholders some providers embed in catchup-source templates.
 # ${start}/${timestamp} (teleelevidenie), {utc}/{lutc}, and the long variants
 # all appear in the wild; Kodi's IPTV Simple documents the {S} family.
@@ -855,6 +881,11 @@ class IPTVClient(wx.Frame):
         self._exit_forced = False
         # Live catch-up download progress dialogs, by recorder id.
         self._catchup_downloads: Dict[int, "CatchupDownloadDialog"] = {}
+        # Auto-retry bookkeeping for failed catch-up downloads, keyed by the
+        # *original* recorder id so the attempt budget survives retries (each
+        # retry gets a fresh recorder id).
+        self._catchup_retry_state: Dict[int, int] = {}
+        self._catchup_retry_timers: Dict[int, threading.Timer] = {}
 
         # batch-population state to avoid UI hangs
         self._populate_token = 0
@@ -5871,8 +5902,12 @@ class IPTVClient(wx.Frame):
         ).start()
 
     def _begin_catchup_download(self, channel, hls_url, display_name, key, show,
-                                duration, fmt):
-        """Worker thread: probe for the fast direct file, then start on the UI thread."""
+                                duration, fmt, retry_of: Optional[int] = None):
+        """Worker thread: probe for the fast direct file, then start on the UI thread.
+
+        ``retry_of`` is the recorder id of a failed attempt this run replaces;
+        the retry budget travels with it so attempts cannot multiply.
+        """
         headers = channel_http_headers(channel)
         url = hls_url
         try:
@@ -5885,12 +5920,19 @@ class IPTVClient(wx.Frame):
         except Exception:
             LOG.debug("Catch-up direct URL probe failed; using the HLS URL", exc_info=True)
         wx.CallAfter(self._start_catchup_recording, url, display_name, key, show,
-                     duration, fmt, headers)
+                     duration, fmt, headers, channel, hls_url, retry_of)
 
     def _start_catchup_recording(self, url, display_name, key, show, duration,
-                                 fmt, headers):
+                                 fmt, headers, channel=None, hls_url=None,
+                                 retry_of: Optional[int] = None):
         """UI thread: start the recorder and open the progress window."""
+        if retry_of is not None:
+            # A retry replaces the previous attempt: close its progress window
+            # (it is showing the error and countdown) and carry the budget over.
+            self._close_catchup_dialog(retry_of)
         if self.recorder.is_recording(key):  # re-checked: the probe ran async
+            if retry_of is not None:
+                self._catchup_retry_state.pop(retry_of, None)
             wx.MessageBox(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
             return
@@ -5899,7 +5941,10 @@ class IPTVClient(wx.Frame):
                 url, display_name, fmt, headers, get_recordings_dir(self.config),
                 key=key,
                 metadata={"catchup": True, "programme_start": show.get("start", ""),
-                          "programme_end": show.get("end", "")},
+                          "programme_end": show.get("end", ""),
+                          "channel": dict(channel) if channel else {},
+                          "hls_url": hls_url or url,
+                          "duration": duration},
                 on_finish=self._catchup_download_finished,
                 duration=duration,
                 show_stats=True,
@@ -5908,10 +5953,18 @@ class IPTVClient(wx.Frame):
         except Exception as err:
             # Stream URLs go to the debug log verbatim (credentials included):
             # the log exists for troubleshooting, and the URL is the diagnosis.
+            if retry_of is not None:
+                self._catchup_retry_state.pop(retry_of, None)
             LOG.error("Catch-up download failed to start for %s: %s", url, err)
             wx.MessageBox(_("Could not start catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
             return
+        if retry_of is not None:
+            # The budget belongs to the programme, not the recorder id: pass it
+            # on so the next failure still counts against the original budget.
+            attempts = self._catchup_retry_state.pop(retry_of, None)
+            if attempts is not None:
+                self._catchup_retry_state[rec.id] = attempts
         LOG.info(
             "Catch-up download started for %s -> %s",
             url, rec.out_path)
@@ -5926,6 +5979,10 @@ class IPTVClient(wx.Frame):
 
     def _cancel_catchup_download(self, rec_id: int):
         """Stop one catch-up download; ffmpeg finalizes the file cleanly."""
+        self._catchup_retry_state.pop(rec_id, None)
+        timer = self._catchup_retry_timers.pop(rec_id, None)
+        if timer is not None:
+            timer.cancel()
         self._catchup_downloads.pop(rec_id, None)
         self.recorder.stop(rec_id, wait=False)
 
@@ -5936,26 +5993,106 @@ class IPTVClient(wx.Frame):
         def finish():
             if getattr(self, "_suppress_recording_notifications", False):
                 return  # the app is exiting; nothing to report
-            if dlg is not None:
-                dlg.notify_recording_finished()
             if rc == 0:
+                state = getattr(self, "_catchup_retry_state", None)
+                if state is not None:
+                    state.pop(rec.id, None)
+                if dlg is not None:
+                    dlg.notify_recording_finished()
                 if rec.stopped_by_user:
                     # The partial output was discarded by the recorder: ffmpeg
                     # cannot resume it, so it would only be unplayable junk.
-                    wx.MessageBox(_("Download canceled. The incomplete file was discarded."),
-                                  _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+                    self._show_or_queue_message_box(
+                        _("Download canceled. The incomplete file was discarded."),
+                        _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
                 else:
-                    wx.MessageBox(_("Download complete:\n{path}").format(path=rec.out_path),
-                                  _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
-            elif not rec.stopped_by_user:
-                detail = "\n".join(rec.stderr_tail[-6:]) or self._recording_failure_detail(rec)
-                wx.MessageBox(_("Download failed (code {code}):\n{path}\n\n{detail}").format(
+                    self._show_or_queue_message_box(
+                        _("Download complete:\n{path}").format(path=rec.out_path),
+                        _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+                return
+            if rec.stopped_by_user:
+                if dlg is not None:
+                    dlg.notify_recording_finished()
+                return
+            # Failure: show the error inline in the still-open window first,
+            # then decide whether an automatic retry makes sense.
+            if dlg is not None:
+                dlg.show_failure(rc)
+            detail = "\n".join(rec.stderr_tail[-6:]) or self._recording_failure_detail(rec)
+            # Providers refuse bursts of downloads with 403s and flaky
+            # networks drop connections: retry those a few times with a
+            # growing delay instead of making the user start over.
+            if self._maybe_retry_catchup_download(
+                    rec, rc, channel=rec.metadata.get("channel") or {},
+                    show={"start": rec.metadata.get("programme_start", ""),
+                          "end": rec.metadata.get("programme_end", "")},
+                    duration=rec.metadata.get("duration") or 0.0,
+                    fmt=rec.fmt):
+                if dlg is not None:
+                    # Keep the window open: it now shows the error and the
+                    # countdown, and its Cancel button aborts the waiting retry.
+                    self._catchup_downloads[rec.id] = dlg
+                    attempts = self._catchup_retry_state.get(rec.id, 1)
+                    dlg.show_retry_pending(
+                        attempts, _CATCHUP_RETRY_MAX_ATTEMPTS,
+                        _CATCHUP_RETRY_BASE_DELAY_SECONDS * (2 ** (attempts - 1)))
+                return
+            if dlg is not None:
+                dlg.notify_recording_finished()
+            self._show_or_queue_message_box(
+                _("Download failed (code {code}):\n{path}\n\n{detail}").format(
                     code=rc, path=rec.out_path, detail=detail),
-                    _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+                _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
 
         # Everything below touches the UI: marshal onto the main thread.
         wx.CallAfter(self._maybe_shutdown_after_recordings)
         wx.CallAfter(finish)
+
+    def _maybe_retry_catchup_download(self, rec, rc, *, channel, show, duration, fmt) -> bool:
+        """Queue one more attempt for a transient failure; True when scheduled.
+
+        The retry re-runs the whole probe flow (so a fresh direct URL is
+        derived - the failed one may be provider-stale), and the progress
+        window stays open showing the error and the countdown, where its
+        Cancel button can still abort the waiting retry.
+        """
+        if not _catchup_failure_is_retryable(rc, rec.stderr_tail or [],
+                                             stopped_by_user=rec.stopped_by_user):
+            return False
+        state = getattr(self, "_catchup_retry_state", None)
+        if state is None:
+            state = self._catchup_retry_state = {}
+        attempts = state.get(rec.id, 0)
+        if attempts >= _CATCHUP_RETRY_MAX_ATTEMPTS:
+            state.pop(rec.id, None)
+            return False
+        state[rec.id] = attempts + 1
+        delay = _CATCHUP_RETRY_BASE_DELAY_SECONDS * (2 ** attempts)
+        retry_of = rec.id
+        metadata = getattr(rec, "metadata", None) or {}
+        hls_url = metadata.get("hls_url") or getattr(rec, "url", "")
+
+        def retry():
+            timer = self._catchup_retry_timers.pop(retry_of, None)
+            if timer is not None:
+                timer.cancel()
+            if getattr(self, "_suppress_recording_notifications", False):
+                return  # the app is exiting; do not start new work
+            LOG.info("Catch-up download retry %d for %s", attempts + 1, rec.title)
+            self._begin_catchup_download(
+                channel, hls_url, rec.title, rec.key, show, duration, fmt,
+                retry_of=retry_of)
+
+        timer = _schedule_retry(retry, delay)
+        if timer is not None:
+            self._catchup_retry_timers[retry_of] = timer
+        return True
+
+    def _close_catchup_dialog(self, rec_id: int):
+        """UI thread: close a catch-up progress window, if still open."""
+        dlg = self._catchup_downloads.pop(rec_id, None)
+        if dlg is not None:
+            dlg.notify_recording_finished()
 
     def show_cast_dialog(self, _event):
         caster = self._ensure_caster()
@@ -6354,6 +6491,7 @@ class CatchupDownloadDialog(wx.Dialog):
         self._on_cancel_cb = on_cancel
         self._started = time.time()
         self._last_details = ""
+        self._frozen = False  # set once the download has ended (failure/retry)
         self._timer = wx.Timer(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -6389,8 +6527,47 @@ class CatchupDownloadDialog(wx.Dialog):
         # The title already carries the name; announce the state change so a
         # screen reader says it without waiting for the next tick.
 
+    _ERROR_LINE_RE = re.compile(
+        r"\[(?:error|fatal|panic|warning)\]|HTTP error|failed|refused|reset|timed? ?out",
+        re.IGNORECASE)
+
+    def _first_error_line(self) -> str:
+        """The first diagnostic line ffmpeg wrote, for the inline error view."""
+        try:
+            with open(self._rec.log_path, "rb") as handle:
+                data = handle.read().decode("utf-8", errors="replace")
+        except OSError:
+            return ""
+        for line in data.splitlines():
+            line = line.strip()
+            if line and self._ERROR_LINE_RE.search(line):
+                return line
+        return ""
+
+    def show_failure(self, exit_code: int) -> None:
+        """Freeze the live view and show the failure inline (UI thread)."""
+        self._frozen = True
+        self.gauge.SetValue(0)
+        self.status_text.SetLabel(_("Download failed (code {code}).").format(code=exit_code))
+        lines = [_("ffmpeg exit code: {code}").format(code=exit_code)]
+        first_error = self._first_error_line()
+        if first_error:
+            lines.append(first_error)
+        else:
+            lines.append(_("No error details were reported."))
+        self.details_field.SetValue("\n".join(lines))
+
+    def show_retry_pending(self, attempt: int, total: int, delay_seconds: float) -> None:
+        """Announce an automatic retry; the window stays open for Cancel."""
+        self._frozen = True
+        self.gauge.Pulse()
+        self.status_text.SetLabel(_(
+            "Download failed - retrying (attempt {attempt} of {total}) "
+            "in {seconds} seconds...").format(
+                attempt=attempt, total=total, seconds=int(round(delay_seconds))))
+
     def _on_tick(self, _event):
-        if not self or not self._rec:
+        if not self or not self._rec or self._frozen:
             return
         written = parse_ffmpeg_progress(self._rec.log_path)
         elapsed = max(0.0, time.time() - self._started)
