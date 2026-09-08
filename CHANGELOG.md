@@ -1,6 +1,11 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.123.0 - 2026-09-08
+
+- Install an update without a second confirmation and stop announcing success
+- Apply the remembered audio track again by reading libVLC's state correctly
+
 ## v1.122.1 - 2026-09-08
 
 - Make Tab and Shift+Tab reverse each other when the stream URL is hidden
