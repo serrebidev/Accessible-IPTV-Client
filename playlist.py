@@ -338,6 +338,14 @@ def _ordered_channel_tokens(*names: str) -> List[str]:
         'channel', 'tv', 'the', 'and', 'for', 'with', 'on', 'in', 'f',
         'geo', 'geoblocked', 'blocked', 'not', 'only'
     ])
+    # NOISE_WORDS strips digits (and 'hd'/'sd') from normalized names so the
+    # norm_name column can match loosely. As *tokens* for the fuzzy matcher
+    # they are the only thing distinguishing "TV 6 HD" from "TV 4 HD" -
+    # without them both names have no tokens at all and match nothing. Keep
+    # digits and quality tags here; resolutions like "720p" stay excluded.
+    bad -= {str(d) for d in range(10)}
+    bad.discard('hd')
+    bad.discard('sd')
     out: List[str] = []
     seen: Set[str] = set()
     for name in names:
@@ -351,7 +359,13 @@ def _ordered_channel_tokens(*names: str) -> List[str]:
             paren_words.extend(re.findall(r'\w+', p))
         for raw in words + paren_words:
             w = raw.lower()
-            if len(w) <= 1 or w in bad or w.isdigit():
+            # Single letters are noise, but single DIGITS are channel
+            # identity: "TV 6 HD" and "TV 6" share only the "6" after noise
+            # stripping ("tv" is noise, "hd" a quality tag), so dropping
+            # digit tokens left such names with no tokens at all and the EPG
+            # matcher skipped every candidate. Resolutions ("720p", "4k")
+            # stay excluded.
+            if (len(w) <= 1 and not w.isdigit()) or w in bad:
                 continue
             if re.fullmatch(r'\d{3,4}p', w) or re.fullmatch(r'\d+k', w):
                 continue
@@ -1259,6 +1273,23 @@ class EPGDatabase:
                 self._repair_norm_names()
             except Exception:
                 _logger.debug("EPGDatabase._open: ignored exception", exc_info=True)
+        else:
+            # Read-only opens cannot migrate, but queries in this build expect
+            # the description column (EPG schedule, View EPG, catch-up lists).
+            # A database created by an older app version lacks it, and until
+            # the next import opens the file read-write every EPG view died
+            # with "no such column: description". Verify and tell the caller
+            # plainly so the UI can offer a one-click repair instead of an
+            # opaque sqlite error.
+            self._missing_columns = self._check_schema()
+
+    def _check_schema(self) -> List[str]:
+        """Columns this build's queries require but the database lacks."""
+        try:
+            cols = {row[1] for row in self.conn.execute("PRAGMA table_info(programmes)").fetchall()}
+        except Exception:
+            return []
+        return [name for name in ("description",) if name not in cols]
 
     def _create_tables(self):
         c = self.conn.cursor()

@@ -200,7 +200,9 @@ def test_player_preference(parent):
                        prefer_audio_description=True,
                        on_audio_preference=saved.append)
     try:
-        assert player._preferred_audio_keywords()[0] == "English AD"
+        # The audio-description checkbox outranks everything: it must lead
+        # the keyword list even when a hand-picked track name exists.
+        assert player._preferred_audio_keywords()[0] == "audio description"
         player.set_preferred_audio_tracks(["Deutsch"], prefer_audio_description=False)
         assert player._preferred_audio_keywords() == ["Deutsch"]
         assert player._audio_preference_pending is True

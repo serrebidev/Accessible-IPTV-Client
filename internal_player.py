@@ -1779,6 +1779,31 @@ class InternalPlayerFrame(wx.Frame):
 
     # -------------------------------------------------------------- audio track
     @staticmethod
+    def _decode_track_name(raw) -> str:
+        """Turn a libVLC track description entry into a str.
+
+        libVLC hands back ``bytes`` for non-ASCII track names (Polish names,
+        German "Hoerfilm"), and letting ``str()`` render that produces the
+        bytes repr (``b'...'``) - a name that can never match a saved
+        preference, cannot be shown in the track menu, and (stored as bytes in
+        the JSON config) breaks ``json.dump`` so the whole preference write
+        silently fails. Decode defensively; a mojibake fallback is still better
+        than a bytes repr.
+        """
+        if raw is None:
+            return ""
+        if isinstance(raw, bytes):
+            try:
+                return raw.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                try:
+                    return raw.decode("utf-8", "replace").strip()
+                except Exception:
+                    return ""
+        return str(raw).strip()
+
+
+    @staticmethod
     def _normalise_audio_tracks(description) -> List[Tuple[int, str]]:
         """Turn a libVLC track description into filtered (id, name) pairs."""
         tracks: List[Tuple[int, str]] = []
@@ -1794,7 +1819,7 @@ class InternalPlayerFrame(wx.Frame):
             name = ""
             try:
                 if len(entry) > 1 and entry[1]:
-                    name = str(entry[1]).strip()
+                    name = InternalPlayerFrame._decode_track_name(entry[1])
             except Exception:
                 name = ""
             if not name:
@@ -2003,11 +2028,16 @@ class InternalPlayerFrame(wx.Frame):
         self._arm_audio_preference()
 
     def _preferred_audio_keywords(self) -> List[str]:
-        # The hand-picked track comes first: the user chose it listening to a
-        # real stream, which beats any saved keyword and every built-in guess.
+        # The audio-description checkbox outranks everything else: a user who
+        # ticks it needs the AD track and nothing else, on every stream.
+        # Next comes the hand-picked track (chosen while listening to a real
+        # stream, which beats any saved keyword), then the user's own wording,
+        # then the built-in guesses.
+        if self._prefer_audio_description:
+            return list(AUDIO_DESCRIPTION_KEYWORDS)
         keywords = preferred_audio_keywords(
             self._preferred_audio_tracks,
-            prefer_audio_description=self._prefer_audio_description,
+            prefer_audio_description=False,
         )
         manual = str(getattr(self, "_last_manual_audio_track", "") or "").strip()
         if manual:

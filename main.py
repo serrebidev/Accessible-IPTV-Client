@@ -173,6 +173,16 @@ class AccessibleAboutDialog(wx.Dialog):
         ):
             link = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
             link.SetName(label)
+            # wxMSW's HyperlinkCtrl has no key handling of its own: with the
+            # dialog's default OK button present, Enter and Space closed the
+            # About dialog instead of opening the link. Route both keys (and
+            # the accessible action) to the browser.
+            def _open_link(_event=None, _url=url):
+                wx.LaunchDefaultBrowser(_url)
+            link.Bind(wx.EVT_CHAR_HOOK, _open_link)
+            link.Bind(wx.EVT_KEY_DOWN, _open_link)
+            link.Bind(wx.EVT_BUTTON, _open_link)
+            link.Bind(wx.EVT_LEFT_DCLICK, _open_link)
             layout.Add(link, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         # Create buttons on the panel and handle both exit paths explicitly.
@@ -2299,6 +2309,10 @@ class IPTVClient(wx.Frame):
         def fetch_and_show():
             try:
                 db = EPGDatabase(get_db_path(), readonly=True)
+                if getattr(db, "_missing_columns", None):
+                    db.close()
+                    wx.CallAfter(self._offer_epg_schema_repair)
+                    return
                 now = datetime.datetime.now(datetime.timezone.utc)
                 start_dt = now - datetime.timedelta(hours=4)
                 end_dt = now + datetime.timedelta(hours=24)
@@ -2310,6 +2324,21 @@ class IPTVClient(wx.Frame):
                 wx.CallAfter(lambda err=e: wx.MessageBox(_("Error fetching EPG: {error}").format(error=err), _("Error"), wx.OK | wx.ICON_ERROR))
 
         threading.Thread(target=fetch_and_show, daemon=True).start()
+
+    def _offer_epg_schema_repair(self):
+        """The EPG database predates this build's schema; offer to rebuild it.
+
+        A read-only open cannot add missing columns, so an old database used
+        to die with "no such column" in every EPG view until an import ran.
+        One clear dialog with a working fix beats that.
+        """
+        answer = wx.MessageBox(
+            _("The EPG database was created by an older version and is missing "
+              "newer fields. Import the guide again to update it?\n\n"
+              "(Without this, the EPG views cannot show programme descriptions.)"),
+            _("EPG Database Update Needed"), wx.YES_NO | wx.ICON_QUESTION)
+        if answer == wx.YES:
+            threading.Thread(target=self._refresh_epg, daemon=True).start()
 
     def _schedule_channel_recording(self, channel: Dict[str, str]):
         """Let a channel-row user choose an upcoming EPG programme to record."""
@@ -2841,6 +2870,78 @@ class IPTVClient(wx.Frame):
                 LOG.debug("IPTVClient._release_recordings_on_exit: ignored exception",
                           exc_info=True)
 
+    # -------------------------------------------------------------- #
+    # Modal-box-safe notifications                                    #
+    #                                                                #
+    # Recording finish callbacks fire from the recorder's watcher
+    # thread via wx.CallAfter, so they can land while the user is
+    # still reading the "Stopping recording..." box. A second
+    # wx.MessageBox opened inside a modal box's message loop
+    # desynchronizes wxMSW's parent-enable bookkeeping and leaves the
+    # main frame permanently disabled ("unavailable" to NVDA, dead to
+    # Alt+F4 and Escape). So: never open a notification box while a
+    # modal box is up - queue it and show it once the modal closes.
+    # -------------------------------------------------------------- #
+    _DEFERRED_NOTIFICATION_LIMIT = 8
+
+    def _deferred_notifications(self) -> List[Tuple[str, str, int]]:
+        # Must return the *stored* list, not a fresh default: callers append
+        # to the return value, so a new default each call would drop entries.
+        queue = getattr(self, "_deferred_notification_queue", None)
+        if queue is None:
+            queue = []
+            self._deferred_notification_queue = queue
+        return queue
+
+    def _modal_box_is_open(self) -> bool:
+        """True while any wx message box is showing in this app."""
+        return bool(getattr(self, "_modal_box_depth", 0))
+
+    def _show_or_queue_message_box(self, message: str, caption: str, style: int) -> None:
+        """Show a wx.MessageBox now, or queue it while a modal box is open."""
+        if self._modal_box_is_open():
+            queue = self._deferred_notifications()
+            if len(queue) < self._DEFERRED_NOTIFICATION_LIMIT:
+                queue.append((message, caption, style))
+            else:
+                LOG.warning("Dropping deferred notification %r: queue full", caption)
+            return
+        self._show_message_box(message, caption, style)
+
+    def _show_message_box(self, message: str, caption: str, style: int) -> None:
+        """Open a wx.MessageBox, tracking the modal depth it creates."""
+        depth = getattr(self, "_modal_box_depth", 0)
+        self._modal_box_depth = depth + 1
+        try:
+            wx.MessageBox(message, caption, style, parent=self.frame if hasattr(self, "frame") else None)
+        finally:
+            self._modal_box_depth = depth
+
+    def _drain_deferred_notifications(self) -> None:
+        """Show notifications queued while a modal box was open (FIFO)."""
+        queue = self._deferred_notifications()
+        while queue and not self._modal_box_is_open():
+            message, caption, style = queue.pop(0)
+            self._show_message_box(message, caption, style)
+
+    def _report_recording_saved(self, rec) -> None:
+        """Recording finished cleanly: notify, or queue the box if one is up."""
+        self._show_or_queue_message_box(
+            _("Recording saved:\n{path}").format(path=rec.out_path),
+            _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
+
+    def _report_recording_warning(self, rec, rc: int) -> None:
+        self._show_or_queue_message_box(
+            _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
+                code=rc, detail=self._recording_failure_detail(rec), path=rec.out_path),
+            _("Recording Warning"), wx.OK | wx.ICON_WARNING)
+
+    def _report_recording_error(self, rec, rc: int) -> None:
+        self._show_or_queue_message_box(
+            _("Recording of {name} ended unexpectedly (code {code}).\n\n{detail}").format(
+                name=rec.title, code=rc, detail=self._recording_failure_detail(rec)),
+            _("Recording Error"), wx.OK | wx.ICON_ERROR)
+
     def _on_recording_finished(self, rec, rc):
         job_id = None
         try:
@@ -2861,20 +2962,15 @@ class IPTVClient(wx.Frame):
         # Called from the recorder's watcher thread, so the check has to be
         # marshalled onto the UI thread like the report below.
         wx.CallAfter(self._maybe_shutdown_after_recordings)
+
         def report():
             if rc == 0:
-                wx.MessageBox(_("Recording saved:\n{path}").format(path=rec.out_path),
-                              _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
+                self._report_recording_saved(rec)
             elif rec.stopped_by_user:
-                wx.MessageBox(
-                    _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
-                        code=rc, detail=self._recording_failure_detail(rec), path=rec.out_path),
-                    _("Recording Warning"), wx.OK | wx.ICON_WARNING)
+                self._report_recording_warning(rec, rc)
             else:
-                wx.MessageBox(
-                    _("Recording of {name} ended unexpectedly (code {code}).\n\n{detail}").format(
-                        name=rec.title, code=rc, detail=self._recording_failure_detail(rec)),
-                    _("Recording Error"), wx.OK | wx.ICON_ERROR)
+                self._report_recording_error(rec, rc)
+            self._drain_deferred_notifications()
         wx.CallAfter(report)
 
     def _recording_failure_detail(self, rec) -> str:

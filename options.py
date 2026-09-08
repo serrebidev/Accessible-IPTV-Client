@@ -572,6 +572,12 @@ def coerce_string_list(value) -> list:
     Hand-edited config files are the reason this exists: a user who writes a bare
     string, a number or a null into ``preferred_audio_tracks`` should get a working
     app and a sane value back, not a crash on the next startup.
+
+    Values must survive ``json.dump``: a ``bytes`` item (libVLC once handed back
+    track names as bytes and one got stored here) used to make the *whole*
+    ``save_config`` throw, silently discarding every preference change in that
+    write. Bytes are decoded instead of dropped, so a track pinned while the
+    bug was live is preserved as readable text.
     """
     if value is None:
         return []
@@ -586,6 +592,11 @@ def coerce_string_list(value) -> list:
     for item in items:
         if item is None or isinstance(item, (dict, list, tuple, set)):
             continue
+        if isinstance(item, (bytes, bytearray)):
+            try:
+                item = bytes(item).decode("utf-8", "replace")
+            except Exception:
+                continue
         text = str(item).strip()
         if not text or text in seen:
             continue
