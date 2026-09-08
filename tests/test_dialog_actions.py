@@ -336,3 +336,98 @@ def test_player_record_state_follows_the_recorder():
 def test_player_record_state_is_a_no_op_without_a_player():
     client = types.SimpleNamespace(_internal_player_frame=None)
     IPTVClient._sync_internal_player_record_state(client)  # must not raise
+
+
+# --------------------------------------------------------------------------- #
+# The update flow asks once and then gets on with it
+# --------------------------------------------------------------------------- #
+def _update_client(**overrides):
+    """An IPTVClient stand-in carrying only the update-flow state."""
+    client = types.SimpleNamespace(
+        _update_progress_dlg=None,
+        _update_in_progress=True,
+        _update_install_pending=False,
+        closed=[],
+        boxes=[],
+        Close=lambda: client.closed.append(True),
+    )
+    for key, value in overrides.items():
+        setattr(client, key, value)
+    return client
+
+
+def test_install_handoff_reuses_the_progress_dialog_instead_of_a_new_box():
+    """No click stands between the download finishing and the install starting.
+
+    The old flow put a modal "the update is installing" box here, which had to
+    be read and dismissed inside the 30 seconds update_helper.ps1 waits before
+    it kills this process.
+    """
+    pulses = []
+    client = _update_client(
+        _update_progress_dlg=types.SimpleNamespace(
+            Pulse=lambda msg: pulses.append(msg)))
+    appmod.IPTVClient._show_update_installing_progress(client)
+    assert len(pulses) == 1
+    # It still says the app will come back by itself, and that opening it by
+    # hand mid-install fails - just without demanding a keypress to say so.
+    assert "close and start again by itself" in pulses[0]
+    assert "do not open it yourself" in pulses[0]
+    assert not hasattr(appmod.IPTVClient, "_warn_update_is_installing")
+
+
+def test_install_handoff_survives_a_missing_progress_dialog():
+    client = _update_client(_update_progress_dlg=None)
+    appmod.IPTVClient._show_update_installing_progress(client)  # must not raise
+
+
+def test_close_for_update_install_lingers_before_quitting(monkeypatch):
+    """The message needs to be on screen long enough for NVDA to speak it,
+    and the app still has to quit well inside the helper's 30s window."""
+    scheduled = []
+    monkeypatch.setattr(
+        appmod.wx, "CallLater",
+        lambda ms, fn: scheduled.append((ms, fn)))
+    handoffs = []
+    client = _update_client(_finish_update_handoff=lambda: handoffs.append(True))
+    appmod.IPTVClient._close_for_update_install(client)
+
+    assert len(scheduled) == 1
+    delay, callback = scheduled[0]
+    assert delay == appmod._UPDATE_HANDOFF_LINGER_MS
+    assert 0 < delay < 30_000, "must quit before update_helper.ps1 kills us"
+    assert not client.closed, "closing before the linger would hide the message"
+
+    callback()
+    assert handoffs == [True]
+
+
+def test_finish_update_handoff_keeps_the_gate_shut_then_closes():
+    destroyed = []
+    client = _update_client(
+        _destroy_update_progress=lambda **kw: destroyed.append(kw))
+    appmod.IPTVClient._finish_update_handoff(client)
+    # end_flow=False: the update carries on in the helper after we are gone, so
+    # a queued prompt must not be able to start a second one.
+    assert destroyed == [{"end_flow": False}]
+    assert client.closed == [True]
+
+
+def test_finished_update_is_silent_on_success_and_loud_on_failure(monkeypatch, tmp_path):
+    boxes = []
+    monkeypatch.setattr(appmod, "message_box",
+                        lambda *a, **kw: boxes.append(a[1] if len(a) > 1 else ""))
+    monkeypatch.setattr(appmod, "get_user_config_dir", lambda create=False: str(tmp_path))
+
+    pending = {"version": appmod.app_meta.APP_VERSION}
+    monkeypatch.setattr(appmod.updater, "read_update_pending", lambda _d: dict(pending))
+    monkeypatch.setattr(appmod.updater, "clear_update_pending", lambda _d: None)
+
+    # Came back on the version we were aiming for: nothing to say.
+    appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
+    assert boxes == []
+
+    # Came back on the old version: the install did not land, so say so.
+    pending["version"] = "9999.0.0"
+    appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
+    assert len(boxes) == 1

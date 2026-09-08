@@ -543,6 +543,10 @@ _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
 _AUTO_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000  # hourly
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
 _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
+# How long the progress dialog stays up saying the app is about to close
+# for the installer, so a screen reader has time to speak it. Must stay
+# well inside the 30 seconds update_helper.ps1 waits before killing us.
+_UPDATE_HANDOFF_LINGER_MS = 2500
 
 # Catch-up downloads: providers refuse bursts of connections with 403s and
 # flaky networks drop streams, so a failed download is retried automatically
@@ -3521,9 +3525,9 @@ class IPTVClient(wx.Frame):
                 LOG.debug("IPTVClient._destroy_update_progress: ignored exception", exc_info=True)
         self._update_progress_dlg = None
         # Failure and cancel come through here, so this is where the gate
-        # reopens. The success path passes end_flow=False: it still has a modal
-        # "the update is installing" box to show, and its nested event loop
-        # would otherwise let a queued update prompt stack on top of it.
+        # reopens. The success path passes end_flow=False: the update carries
+        # on in the helper after this window goes away, and reopening the gate
+        # would let a queued update prompt start a second one on top of it.
         if end_flow:
             self._update_in_progress = False
 
@@ -3704,15 +3708,15 @@ class IPTVClient(wx.Frame):
             "-ExeName",
             exe_name,
         ]
-        # Warn *before* launching the helper: the helper only waits 30 seconds
-        # for this process to exit before killing it, and this box has to be
-        # read and dismissed inside that window.
-        self._destroy_update_progress(end_flow=False)
-        self._warn_update_is_installing()
+        # Say what is about to happen in the progress dialog that is already on
+        # screen rather than in a box the user has to dismiss. The helper only
+        # waits 30 seconds for this process to exit before killing it, and a
+        # modal warning left unread used to eat that entire window.
+        self._show_update_installing_progress()
         try:
             updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
         except OSError as exc:
-            self._update_in_progress = False
+            self._destroy_update_progress()
             updater.clear_update_pending(get_user_config_dir())
             message_box(
                 _("Update failed to start: {error}").format(error=exc),
@@ -3721,7 +3725,7 @@ class IPTVClient(wx.Frame):
             )
             return
         self._update_install_pending = True
-        self.Close()
+        self._close_for_update_install()
     def _launch_update_helper(
         self,
         helper_bat: str,
@@ -3746,15 +3750,15 @@ class IPTVClient(wx.Frame):
             "-ExeName",
             exe_name,
         ]
-        # Warn *before* launching the helper: the helper only waits 30 seconds
-        # for this process to exit before killing it, and this box has to be
-        # read and dismissed inside that window.
-        self._destroy_update_progress(end_flow=False)
-        self._warn_update_is_installing()
+        # Say what is about to happen in the progress dialog that is already on
+        # screen rather than in a box the user has to dismiss. The helper only
+        # waits 30 seconds for this process to exit before killing it, and a
+        # modal warning left unread used to eat that entire window.
+        self._show_update_installing_progress()
         try:
             updater.popen_hidden(cmd, cwd=os.path.dirname(helper_bat))
         except OSError as exc:
-            self._update_in_progress = False
+            self._destroy_update_progress()
             updater.clear_update_pending(get_user_config_dir())
             message_box(
                 _("Update failed to start: {error}").format(error=exc),
@@ -3763,29 +3767,41 @@ class IPTVClient(wx.Frame):
             )
             return
         self._update_install_pending = True
+        self._close_for_update_install()
+
+    def _show_update_installing_progress(self) -> None:
+        """Carry the download dialog straight into the install, no click.
+
+        The installer deletes and rewrites the app directory, so while it runs
+        the executable on disk cannot start at all - it fails with "Failed to
+        load Python DLL ... python314.dll". Saying so still matters; making the
+        user dismiss a box to say it does not, and that dismissal used to have
+        to happen inside the 30 seconds update_helper.ps1 waits for us to quit.
+        """
+        dlg = getattr(self, "_update_progress_dlg", None)
+        if dlg is None:
+            return
+        try:
+            dlg.Pulse(
+                _("Installing the update. {app} will close and start again by "
+                  "itself - please do not open it yourself in the "
+                  "meantime.").format(app=app_meta.APP_DISPLAY_NAME))
+        except Exception:
+            LOG.debug("IPTVClient._show_update_installing_progress: ignored exception",
+                      exc_info=True)
+
+    def _close_for_update_install(self) -> None:
+        """Quit for the installer, leaving the message up long enough to read."""
+        wx.CallLater(_UPDATE_HANDOFF_LINGER_MS, self._finish_update_handoff)
+
+    def _finish_update_handoff(self) -> None:
+        # end_flow=False: the update is not over, it carries on in the helper,
+        # so the gate stays shut until this process actually exits.
+        self._destroy_update_progress(end_flow=False)
         self.Close()
 
-    def _warn_update_is_installing(self) -> None:
-        """Say, before we quit, that reopening the app by hand will not work.
-
-        The installer deletes and rewrites the app directory, so during the
-        install the executable on disk cannot start at all - it fails with
-        "Failed to load Python DLL ... python314.dll". The app has closed by
-        then and nothing else is on screen, so the obvious thing to do is to
-        click the shortcut again, which lands exactly in that window.
-        """
-        self._show_message_box(
-            _("The update is installing now.\n\n"
-              "{app} will close and then start again by itself once the update "
-              "has finished. Please do not open it yourself before that: while "
-              "the installer is running the program files are incomplete and "
-              "starting it would fail.").format(app=app_meta.APP_DISPLAY_NAME),
-            _("Installing Update"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
-
     def _report_finished_update(self) -> None:
-        """Say how the update that was in progress at our last exit turned out."""
+        """Report an update that was in progress at our last exit, if it failed."""
         config_dir = get_user_config_dir(create=False)
         pending = updater.read_update_pending(config_dir)
         if not pending:
@@ -3806,12 +3822,9 @@ class IPTVClient(wx.Frame):
                 wx.OK | wx.ICON_WARNING,
             )
             return
-        message_box(
-            _("{app} was updated to v{version} and is ready to use.").format(
-                app=app_meta.APP_DISPLAY_NAME, version=current),
-            _("Update Complete"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
+        # Success speaks for itself - the app is simply running again, on the
+        # new version. Only a failed update needs to interrupt anyone.
+        LOG.info("Update to v%s completed", current)
 
     @staticmethod
     def _bool_pref(value, default: bool = False) -> bool:
