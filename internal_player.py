@@ -1659,18 +1659,32 @@ class InternalPlayerFrame(wx.Frame):
         label = f"{real_prefix}{(' ' if real_prefix else '')}{buf_txt}{bitrate_txt}{vol_txt}{audio_txt}"
         self.status_label.SetLabel(label.strip())
 
+    @staticmethod
+    def _state_name(state) -> str:
+        """libVLC's state as a bare word: "Playing", "Buffering", "Error"...
+
+        python-vlc's State enum is a ctypes int, not a stdlib enum, and on
+        3.0.21203 it has no ``.name`` at all - ``str(state)`` gives
+        "State.Playing". Lower-casing that yields "state.playing", which never
+        equalled "playing", so every state-driven behaviour in the timer went
+        silently dead: the remembered audio track was never applied, stall and
+        buffering recovery never ran, and the status label read out the raw
+        "State.playing". Take the part after the dot so both shapes work.
+        """
+        if state is None:
+            return "Unknown"
+        name = getattr(state, "name", None)
+        if not isinstance(name, str) or not name:
+            name = str(state)
+        return name.rsplit(".", 1)[-1].strip() or "Unknown"
+
     def _on_timer(self, _event: wx.TimerEvent) -> None:
         self._refresh_audio_track_choice()
         try:
             state = self.player.get_state()
         except Exception:
             state = None
-        state_name = "Unknown"
-        if state is not None:
-            try:
-                state_name = state.name  # type: ignore[attr-defined]
-            except Exception:
-                state_name = str(state)
+        state_name = self._state_name(state)
         state_key = state_name.lower()
         now = time.monotonic()
 

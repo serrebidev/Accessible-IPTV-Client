@@ -465,3 +465,55 @@ class TestClosingTheShownPlayerStopsPlayback:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestLibVlcStateName:
+    """python-vlc's State is a ctypes int, not a stdlib enum.
+
+    On python-vlc 3.0.21203 ``vlc.State.Playing`` has no ``.name`` at all and
+    ``str()`` gives "State.Playing". The timer used to lower-case that straight
+    into ``state_key``, producing "state.playing", so every ``state_key ==
+    "playing"`` test failed. That silently disabled the remembered audio track,
+    the audio-description preference, buffering/stall recovery, and left the
+    status label reading out the raw "State.playing".
+    """
+
+    class _CtypesStyleState:
+        """Stands in for python-vlc's State: no .name, str() is prefixed."""
+        def __init__(self, name):
+            self._name = name
+
+        def __str__(self):
+            return "State.%s" % self._name
+
+    def test_prefixed_state_reduces_to_a_bare_word(self):
+        name = internal_player.InternalPlayerFrame._state_name(
+            self._CtypesStyleState("Playing"))
+        assert name == "Playing"
+        assert name.lower() == "playing", "must equal what _on_timer compares against"
+
+    def test_every_state_the_timer_branches_on_survives_the_prefix(self):
+        for word in ("Playing", "Buffering", "Stopped", "Ended", "Error",
+                     "Opening", "Paused", "NothingSpecial"):
+            got = internal_player.InternalPlayerFrame._state_name(
+                self._CtypesStyleState(word))
+            assert got == word, "%s came back as %r" % (word, got)
+
+    def test_a_real_enum_with_name_still_works(self):
+        """Other python-vlc builds do expose .name; both shapes must work."""
+        state = types.SimpleNamespace(name="Buffering")
+        assert internal_player.InternalPlayerFrame._state_name(state) == "Buffering"
+
+    def test_missing_state_is_not_mistaken_for_a_real_one(self):
+        assert internal_player.InternalPlayerFrame._state_name(None) == "Unknown"
+        # A blank name must not produce "" and match an empty comparison.
+        assert internal_player.InternalPlayerFrame._state_name(
+            types.SimpleNamespace(name="")) != ""
+
+    def test_status_label_shows_a_translated_word_not_the_raw_enum(self):
+        raw = str(self._CtypesStyleState("Playing"))
+        assert internal_player.InternalPlayerFrame._localized_state(raw) != "Playing", (
+            "guard: the raw prefixed string is what used to reach the label")
+        name = internal_player.InternalPlayerFrame._state_name(
+            self._CtypesStyleState("Playing"))
+        assert internal_player.InternalPlayerFrame._localized_state(name) == "Playing"
