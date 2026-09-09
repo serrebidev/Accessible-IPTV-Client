@@ -108,6 +108,24 @@ class TestChannelAudioTrackStore:
         options.normalize_channel_and_audio_settings(cfg)
         assert cfg["channel_audio_tracks"] == {}
 
+    def test_track_indices_coerce(self):
+        out = options.coerce_channel_audio_track_indices({
+            "tvp": 2, "floaty": 1.0, "negative": -1, "huge": 10 ** 6,
+            "bool": True, "junk": "two", "bytes-key": 3,
+        })
+        # bools are ints in Python but never a slot index.
+        assert out == {"tvp": 2, "floaty": 1, "bytes-key": 3}
+
+    def test_track_indices_junk_collapses_to_empty(self):
+        assert options.coerce_channel_audio_track_indices(None) == {}
+        assert options.coerce_channel_audio_track_indices({"a": "x"}) == {}
+        assert options.coerce_channel_audio_track_indices({"a": [1]}) == {}
+
+    def test_normalizing_a_config_fills_the_indices_key_in(self):
+        cfg = {}
+        options.normalize_channel_and_audio_settings(cfg)
+        assert cfg["channel_audio_track_indices"] == {}
+
 
 class TestEPGSchemaCheck:
     def _make_db(self, tmp_path, with_description: bool):

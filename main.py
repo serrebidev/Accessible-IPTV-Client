@@ -34,6 +34,7 @@ from options import (
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
     get_recordings_dir, get_dvr_schedule_path, get_logs_dir, get_epg_log_path,
     normalize_recording_format, coerce_channel_audio_tracks,
+    coerce_channel_audio_track_indices, MAX_AUDIO_TRACKS,
     is_windows_installed_build, get_user_config_dir
 )
 # Same normalization the EPG database indexes with - importing it from anywhere
@@ -989,6 +990,9 @@ class IPTVClient(wx.Frame):
         self._now_playing_lock = threading.Lock()
         self._now_playing_timer: Optional[wx.Timer] = None
         self._now_playing_refreshed_at = 0.0
+        # On-air episode description per canonical channel name, refreshed
+        # with the row labels; the episode description field reads from it.
+        self._now_playing_descriptions: Dict[str, str] = {}
         
         # Caching map: canonical_name -> db_channel_id
         self._epg_match_cache: Dict[str, Optional[str]] = {}
@@ -1312,23 +1316,22 @@ class IPTVClient(wx.Frame):
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
         mapping = self._build_now_playing_labels(channels)
+        descriptions = self._build_now_playing_descriptions(channels)
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
             self._now_playing_labels = mapping
+            desc_changed = descriptions != self._now_playing_descriptions
+            self._now_playing_descriptions = descriptions
         if changed:
             wx.CallAfter(self._refresh_channel_row_texts)
+        elif desc_changed:
+            # Only the description cache moved; refresh the field for the
+            # row the user is sitting on.
+            wx.CallAfter(self.on_highlight)
 
-    def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
-        """Match every playlist channel to its EPG channel, fuzzily.
-
-        Exact normalized names miss a lot of channels ("TVP 1 HD" against a
-        "TVP 1" guide entry, renamed feeds, ...), so the lookup walks the same
-        signals the EPG view uses: tvg-id first (expanded variants included),
-        then normalized names with noise words stripped. The returned map is
-        keyed by the playlist channel's normalized name, which is what the row
-        renderer has at hand.
-        """
-        # EPG-side indexes.
+    @staticmethod
+    def _epg_channel_indexes(channels: Dict[str, Dict[str, object]]):
+        """(by_id, by_id_lower, name_index, stripped_index) for EPG matching."""
         by_id = channels
         by_id_lower = {str(cid).lower(): cid for cid in channels}
         name_index: Dict[str, str] = {}
@@ -1341,33 +1344,50 @@ class IPTVClient(wx.Frame):
             ):
                 if key and key not in index:
                     index[key] = channel_id
+        return by_id, by_id_lower, name_index, stripped_index
 
-        def match(channel: Dict[str, str]) -> Optional[Dict[str, object]]:
-            # 1) tvg-id, including the common XMLTV id variants, case-insensitive
-            #    and tolerant of one extra dotted segment ("chan.tv" vs "chan").
-            raw_id = str(channel.get("tvg-id") or "").strip()
-            candidates = _expand_tvg_id_candidates(raw_id)
-            candidates.append(raw_id)
-            if "." in raw_id:
-                candidates.append(raw_id.rsplit(".", 1)[0])
-            for candidate in candidates:
-                channel_id = by_id_lower.get(candidate.strip().lower())
+    @staticmethod
+    def _match_epg_channel(channel, by_id, by_id_lower, name_index, stripped_index):
+        """The EPG entry for a playlist channel, or None.
+
+        1) tvg-id, including the common XMLTV id variants, case-insensitive
+        and tolerant of one extra dotted segment ("chan.tv" vs "chan").
+        2) names: exact normalized, then noise-stripped, for the channel
+        name and then the tvg-name.
+        """
+        raw_id = str(channel.get("tvg-id") or "").strip()
+        candidates = _expand_tvg_id_candidates(raw_id)
+        candidates.append(raw_id)
+        if "." in raw_id:
+            candidates.append(raw_id.rsplit(".", 1)[0])
+        for candidate in candidates:
+            channel_id = by_id_lower.get(candidate.strip().lower())
+            if channel_id is not None:
+                return by_id[channel_id]
+        for source in (channel.get("name"), channel.get("tvg-name")):
+            text = str(source or "").strip()
+            if not text:
+                continue
+            for key, index in (
+                (canonicalize_name(text), name_index),
+                (canonicalize_name(strip_noise_words(text)), stripped_index),
+            ):
+                channel_id = index.get(key)
                 if channel_id is not None:
                     return by_id[channel_id]
-            # 2) names: exact normalized, then noise-stripped, for the channel
-            #    name and then the tvg-name.
-            for source in (channel.get("name"), channel.get("tvg-name")):
-                text = str(source or "").strip()
-                if not text:
-                    continue
-                for key, index in (
-                    (canonicalize_name(text), name_index),
-                    (canonicalize_name(strip_noise_words(text)), stripped_index),
-                ):
-                    channel_id = index.get(key)
-                    if channel_id is not None:
-                        return by_id[channel_id]
-            return None
+        return None
+
+    def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
+        """Match every playlist channel to its EPG channel, fuzzily.
+
+        Exact normalized names miss a lot of channels ("TVP 1 HD" against a
+        "TVP 1" guide entry, renamed feeds, ...), so the lookup walks the same
+        signals the EPG view uses: tvg-id first (expanded variants included),
+        then normalized names with noise words stripped. The returned map is
+        keyed by the playlist channel's normalized name, which is what the row
+        renderer has at hand.
+        """
+        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
 
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
@@ -1375,7 +1395,8 @@ class IPTVClient(wx.Frame):
             name_key = canonicalize_name(channel.get("name", ""))
             if not name_key or name_key in mapping:
                 continue
-            entry = match(channel)
+            entry = self._match_epg_channel(
+                channel, by_id, by_id_lower, name_index, stripped_index)
             if not entry:
                 continue
             suffix = ""
@@ -1391,6 +1412,34 @@ class IPTVClient(wx.Frame):
                     suffix += " — " + _("Next: {programme}").format(programme=text)
             if suffix:
                 mapping[name_key] = suffix
+        return mapping
+
+    def _build_now_playing_descriptions(
+            self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
+        """On-air episode description per canonical playlist channel name.
+
+        Same fuzzy channel match as the row labels, but carries the long
+        description text for the Tab-reachable description field instead of
+        the short row suffix. Channels with no match or no on-air
+        description are simply absent; the field shows a placeholder.
+        """
+        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
+        mapping: Dict[str, str] = {}
+        playlist_channels = getattr(self, "all_channels", None) or []
+        for channel in playlist_channels:
+            name_key = canonicalize_name(channel.get("name", ""))
+            if not name_key or name_key in mapping:
+                continue
+            entry = self._match_epg_channel(
+                channel, by_id, by_id_lower, name_index, stripped_index)
+            if not entry:
+                continue
+            now_show = entry.get("now")
+            if not now_show:
+                continue
+            text = (now_show.get("description") or "").strip()
+            if text:
+                mapping[name_key] = text
         return mapping
 
     def _programme_label(self, show: Dict[str, str], *, with_end: bool) -> str:
@@ -2085,15 +2134,24 @@ class IPTVClient(wx.Frame):
         if hasattr(self.url_display, "SetAccessibleName"):
             self.url_display.SetAccessibleName(_("Stream URL"))
         # Keep the documented Tab loop reversible for text controls as well as
-        # the virtual channel list: channels -> stream URL. There is no EPG
-        # info field any more: the on-air programme is announced as part of
-        # each channel row, so Tab is no longer needed to hear what is playing.
+        # the virtual channel list: channels -> stream URL -> episode
+        # description. The on-air programme is announced as part of each
+        # channel row; this field carries the longer description text, so
+        # spotting an interesting episode while scrolling costs one Tab.
         self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
+        self.episode_description_field = wx.TextCtrl(
+            p, size=(-1, 70), style=wx.TE_READONLY | wx.TE_MULTILINE)
+        self.episode_description_field.SetName(_("Episode description"))
+        if hasattr(self.episode_description_field, "SetAccessibleName"):
+            self.episode_description_field.SetAccessibleName(_("Episode description"))
+        self.episode_description_field.Bind(
+            wx.EVT_CHAR_HOOK, self._on_episode_description_key)
         vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
+        vs_r.Add(self.episode_description_field, 0, wx.EXPAND | wx.ALL, 5)
         self._apply_channel_url_visibility()
         hs.Add(vs_l, 1, wx.EXPAND)
         hs.Add(vs_r, 2, wx.EXPAND)
@@ -2375,7 +2433,31 @@ class IPTVClient(wx.Frame):
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
             self.channel_list.SetFocus()
             return
+        if event.GetKeyCode() == wx.WXK_TAB and not event.HasAnyModifiers():
+            self.episode_description_field.SetFocus()
+            return
         event.Skip()
+
+    def _on_episode_description_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+            self.url_display.SetFocus()
+            return
+        event.Skip()
+
+    def _set_episode_description(self, text: str) -> None:
+        """Update the Tab-reachable episode description field, when present.
+
+        Empty descriptions get the shared "no description" placeholder so
+        the field always reads as something deliberate, never silent.
+        """
+        field = getattr(self, "episode_description_field", None)
+        if field is None:
+            return
+        text = (text or "").strip()
+        if not text:
+            text = _("No description available for this programme.")
+        if field.GetValue() != text:
+            field.SetValue(text)
 
     def _on_channel_context_menu(self, event):
         if not self.displayed:
@@ -5537,19 +5619,25 @@ class IPTVClient(wx.Frame):
         i = self.channel_list.GetSelection()
         if i < 0 or i >= len(self.displayed):
             self.url_display.SetValue("")
+            self._set_episode_description("")
             return
         item = self.displayed[i]
         if item["type"] == "vod_series":
             self.url_display.SetValue("")
+            self._set_episode_description("")
             return
         if item["type"] in ("vod_back", "vod_info"):
             self.url_display.SetValue("")
+            self._set_episode_description("")
             return
         if item["type"] == "channel":
             ch = item["data"]
             self.url_display.SetValue(ch.get("url", ""))
-            # VOD movie/episode rows have no live EPG; the on-air label is
-            # live-only, so nothing more to do here.
+            # The description field reads the on-air programme of the
+            # highlighted channel from the bulk now-playing cache.
+            self._set_episode_description(getattr(
+                self, "_now_playing_descriptions", {}).get(
+                canonicalize_name(ch.get("name", "")), ""))
         elif item["type"] == "epg":
             self.url_display.SetValue("")
             r = item["data"]
@@ -5560,6 +5648,7 @@ class IPTVClient(wx.Frame):
                     url = ch.get("url", "")
                     break
             self.url_display.SetValue(url)
+            self._set_episode_description(r.get("description") or "")
 
     def _epg_msg_from_tuple(self, now, nxt):
         def localfmt(dt):
@@ -5840,7 +5929,6 @@ class IPTVClient(wx.Frame):
             on_close=self._on_internal_player_closed,
             preferred_audio_tracks=list(self.config.get("preferred_audio_tracks") or []),
             prefer_audio_description=self._bool_pref(self.config.get("prefer_audio_description", False)),
-            on_audio_preference=self._on_player_audio_preference,
             on_last_track_changed=self._on_player_last_audio_track_changed,
             last_audio_track=str(self.config.get("last_audio_track") or ""),
             channel_audio_track=self._remembered_channel_audio_track(
@@ -5881,39 +5969,60 @@ class IPTVClient(wx.Frame):
             return ""
         return str(stored.get(key) or "").strip()
 
-    def _remember_channel_audio_track(self, key: str, name: str) -> bool:
-        """Store this channel's track. True when the config actually changed."""
+    def _remembered_channel_audio_track_index(self, key: str):
+        """The track *slot* this channel was last watched with, or None.
+
+        Kept beside the name memory because providers rename or renumber
+        tracks between connections: when the remembered name no longer
+        matches, the slot still points at the same audio. Optional[int] on
+        purpose - None means "no memory", which is not the same as slot 0.
+        """
+        if not key:
+            return None
+        stored = self.config.get("channel_audio_track_indices")
+        if not isinstance(stored, dict):
+            return None
+        index = stored.get(key)
+        if isinstance(index, bool) or not isinstance(index, int):
+            return None
+        if index < 0 or index >= MAX_AUDIO_TRACKS:
+            return None
+        return index
+
+    def _remember_channel_audio_track(self, key: str, name: str, index=None) -> bool:
+        """Store this channel's track name (and slot). True when config changed.
+
+        The slot rides along with every write so both memories stay in step:
+        the name answers "which track did I pick", the slot survives the
+        provider renaming it.
+        """
         if not key or not name:
             return False
         stored = self.config.get("channel_audio_tracks")
         if not isinstance(stored, dict):
             stored = {}
-        if stored.get(key) == name:
+        slots = self.config.get("channel_audio_track_indices")
+        if not isinstance(slots, dict):
+            slots = {}
+        name_changed = stored.get(key) != name
+        index_changed = slots.get(key) != index
+        if not name_changed and not index_changed:
             return False
         # Re-insert at the end so the eviction in coerce_channel_audio_tracks
         # drops the channels nobody has watched in a long time first.
         stored.pop(key, None)
         stored[key] = name
+        if index is None:
+            slots.pop(key, None)
+        else:
+            slots.pop(key, None)
+            slots[key] = index
         self.config["channel_audio_tracks"] = coerce_channel_audio_tracks(stored)
+        self.config["channel_audio_track_indices"] = coerce_channel_audio_track_indices(slots)
         return True
 
-    def _on_player_audio_preference(self, track_name: str) -> None:
-        """Remember the audio track the user pinned from the player's menu."""
-        name = (track_name or "").strip()
-        if not name:
-            return
-        keywords = [
-            keyword for keyword in (self.config.get("preferred_audio_tracks") or [])
-            if str(keyword).lower() != name.lower()
-        ]
-        self.config["preferred_audio_tracks"] = [name] + keywords
-        # "Always Prefer This Audio Track" is a hand-pick as well; remember it
-        # as the last used track so it also leads later streams.
-        self._on_player_last_audio_track_changed(name)
-        save_config(self.config)
-        LOG.info("Preferred audio track set to %s", name)
-
-    def _on_player_last_audio_track_changed(self, track_name: str) -> None:
+    def _on_player_last_audio_track_changed(
+            self, track_name: str, track_index=None) -> None:
         """Persist the track the user last chose by hand (survives restarts).
 
         Stored twice: against the channel that is playing, so it comes back the
@@ -5924,7 +6033,8 @@ class IPTVClient(wx.Frame):
         if not name:
             return
         changed = self._remember_channel_audio_track(
-            getattr(self, "_internal_player_audio_key", ""), name)
+            getattr(self, "_internal_player_audio_key", ""), name,
+            track_index)
         if self.config.get("last_audio_track") != name:
             self.config["last_audio_track"] = name
             changed = True
@@ -6055,6 +6165,10 @@ class IPTVClient(wx.Frame):
                 setter = getattr(frame, "set_channel_audio_track", None)
                 if callable(setter):
                     setter(self._remembered_channel_audio_track(
+                        self._internal_player_audio_key))
+                index_setter = getattr(frame, "set_channel_audio_track_index", None)
+                if callable(index_setter):
+                    index_setter(self._remembered_channel_audio_track_index(
                         self._internal_player_audio_key))
                 frame.play(
                     url,
@@ -6994,8 +7108,10 @@ class CatchupDownloadDialog(wx.Dialog):
 class CatchupDialog(wx.Dialog):
     """Choose one catch-up programme, then open or download it.
 
-    The two actions live in the list's context menu (right-click / Apps key),
-    matching the channel list; Enter or double-click opens the selection.
+    The two actions live only in the list's context menu (right-click / Apps
+    key) and on Enter (open): no Open or Download buttons sit in the Tab
+    chain. Tab from the list reaches a read-only description of the
+    highlighted programme instead, like the EPG dialog.
     """
 
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
@@ -7012,33 +7128,39 @@ class CatchupDialog(wx.Dialog):
             self.listbox.Append(self._format_programme(prog))
         if programmes:
             self.listbox.SetSelection(0)
+        # Tab from the list lands here: the description of the highlighted
+        # programme, read-only, updated as the selection moves. Same pattern
+        # as the EPG dialog, and one less reason to open the EPG by hand.
+        self.description_label = wx.StaticText(panel, label=_("Description"))
+        self.description_field = wx.TextCtrl(
+            panel, size=(-1, 90), style=wx.TE_READONLY | wx.TE_MULTILINE)
+        self.description_field.SetName(_("Episode description"))
+
+        # Open and Download deliberately keep no buttons in the Tab chain:
+        # Enter opens the highlighted programme and the context menu
+        # (right-click / Applications key) downloads it. Only Close remains.
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # An explicit default Open button: it gives the mouse a target, and it
-        # is what wxMSW fires when Enter is pressed anywhere in the dialog, so
-        # Enter on a programme reaches the player through the normal route.
-        self.open_btn = wx.Button(panel, id=wx.ID_OK, label=_("Open"))
-        self.download_btn = wx.Button(panel, label=_("Download"))
-        cancel_btn = wx.Button(panel, id=wx.ID_CANCEL)
-        btn_sizer.Add(self.open_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self.download_btn, 0, wx.ALL, 5)
+        cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
         sizer.Add(intro, 0, wx.ALL, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
+        sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
         panel.SetSizer(sizer)
         self.listbox.SetName(_("Catch-up programmes"))
+        self.listbox.Bind(wx.EVT_LISTBOX, lambda _evt: self._update_description())
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_listbox_activate)
         # EVT_CHAR_HOOK, not EVT_KEY_DOWN: a dialog consumes Enter before the
         # focused control ever sees a key-down, which is why pressing Enter on
         # a catch-up programme used to do nothing at all.
         self.listbox.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.listbox.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
-        self.open_btn.Bind(wx.EVT_BUTTON, self._on_listbox_activate)
-        self.download_btn.Bind(wx.EVT_BUTTON, lambda _evt: self.EndModal(wx.ID_SAVE))
-        self.open_btn.SetDefault()
-        self.SetMinSize((420, 320))
+        self.description_field.Bind(wx.EVT_CHAR_HOOK, self._on_description_key)
+        self.SetMinSize((420, 380))
         self.Layout()
         self.CenterOnParent()
+        self._update_description()
 
     def _format_programme(self, prog: Dict[str, str]) -> str:
         try:
@@ -7055,6 +7177,20 @@ class CatchupDialog(wx.Dialog):
     def _on_listbox_activate(self, _):
         if self.programmes:
             self.EndModal(wx.ID_OK)
+
+    def _on_description_key(self, event):
+        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+            self.listbox.SetFocus()
+            return
+        event.Skip()
+
+    def _update_description(self):
+        idx = self.listbox.GetSelection()
+        prog = self.programmes[idx] if 0 <= idx < len(self.programmes) else None
+        description = (prog.get("description") or "").strip() if prog else ""
+        text = description or _("No description available for this programme.")
+        if self.description_field.GetValue() != text:
+            self.description_field.SetValue(text)
 
     def _on_key(self, event):
         key = event.GetKeyCode()

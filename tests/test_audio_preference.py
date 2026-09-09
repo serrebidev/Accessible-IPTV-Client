@@ -159,6 +159,54 @@ def _apply(frame):
 
 
 class TestApplyingThePreference:
+    def test_a_renamed_track_comes_back_by_its_position(self):
+        # The TVP 2 bug: the remembered name no longer matches after a
+        # reconnect, so the stream stayed on its first track. The remembered
+        # slot still points at the same audio.
+        frame = _stub_frame([(0, "Stereo"), (1, "Newly Named Track"), (2, "Other")],
+                            keywords=())
+        frame._audio_track_fallback_index = 1
+        _apply(frame)
+        assert frame.selected == [1]
+
+    def test_no_remembered_slot_leaves_the_stream_alone(self):
+        frame = _stub_frame([(0, "Stereo"), (1, "Something")], keywords=())
+        frame._audio_track_fallback_index = None
+        _apply(frame)
+        assert frame.selected == []
+
+    def test_ad_preference_takes_the_last_named_description_track(self):
+        frame = _stub_frame([(0, "English"), (1, "Polski"), (2, "AD (eng)"),
+                             (3, "AD (pol)")], keywords=(), prefer_ad=True)
+        frame._audio_track_fallback_index = None
+        _apply(frame)
+        assert frame.selected == [3]
+
+    def test_ad_preference_guesses_the_last_track_when_none_is_named(self):
+        # Providers append the audio description track after the ordinary
+        # ones, so on a stream whose labels say nothing useful the highest
+        # number is the best guess there is.
+        frame = _stub_frame([(0, "Track 1"), (1, "Track 2"), (2, "Track 3")],
+                            keywords=(), prefer_ad=True)
+        frame._audio_track_fallback_index = None
+        _apply(frame)
+        assert frame.selected == [2]
+
+    def test_ad_guess_never_fires_without_the_preference(self):
+        frame = _stub_frame([(0, "Track 1"), (1, "Track 2")], keywords=())
+        frame._audio_track_fallback_index = None
+        _apply(frame)
+        assert frame.selected == []
+
+    def test_ad_guess_defers_to_a_remembered_slot(self):
+        # current_id=1 so the remembered slot 0 actually requires a switch;
+        # on the slot the stream already plays, no switch is correct.
+        frame = _stub_frame([(0, "Track 1"), (1, "Track 2")],
+                            current_id=1, keywords=(), prefer_ad=True)
+        frame._audio_track_fallback_index = 0
+        _apply(frame)
+        assert frame.selected == [0]
+
     def test_switches_to_the_matching_track(self):
         frame = _stub_frame([(0, "English"), (1, "Audio Description")])
         _apply(frame)
@@ -236,7 +284,7 @@ class TestLastManualTrackIsRemembered:
         frame._audio_track_label = ""
         frame._audio_reapply_pending = False
         frame._last_manual_audio_track = ""
-        frame._on_last_track_changed_cb = lambda name: frame.status.append(name)
+        frame._on_last_track_changed_cb = lambda name, index=None: frame.status.append(name)
         frame._get_audio_tracks = lambda: [(0, "English"), (1, "Polski")]
         frame.player = types.SimpleNamespace(
             audio_set_track=lambda tid: frame.selected.append(tid))
@@ -279,21 +327,6 @@ class TestLastManualTrackIsRemembered:
         assert frame._wanted_audio_track_name is None
         assert frame._audio_track_label == ""
         assert frame._audio_reapply_pending is False
-
-    def test_always_prefer_this_also_sets_the_last_manual_track(self):
-        frame = _stub_frame([], keywords=())
-        frame._preferred_audio_tracks = []
-        frame._on_audio_preference_cb = lambda name: None
-        frame._on_last_track_changed_cb = lambda name: None
-        frame._update_status_label = lambda *a, **k: None
-        frame._current_audio_track_id = lambda: 2
-        frame._get_audio_tracks = lambda: [(0, "English"), (2, "Deutsch")]
-
-        internal_player.InternalPlayerFrame._remember_current_audio_track(frame)
-
-        assert frame._last_manual_audio_track == "Deutsch"
-        assert frame._preferred_audio_tracks == ["Deutsch"]
-
 
 class TestPerChannelTrackIsRemembered:
     """The track a channel was last watched with comes back with that channel."""

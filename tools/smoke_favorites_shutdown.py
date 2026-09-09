@@ -198,7 +198,7 @@ def test_player_preference(parent):
     saved = []
     player = frame_cls(parent, preferred_audio_tracks=["English AD"],
                        prefer_audio_description=True,
-                       on_audio_preference=saved.append)
+                       on_last_track_changed=lambda name, index=None: saved.append(name))
     try:
         # The audio-description checkbox outranks everything: it must lead
         # the keyword list even when a hand-picked track name exists.

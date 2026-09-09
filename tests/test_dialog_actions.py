@@ -89,24 +89,37 @@ def test_catchup_enter_opens_the_selected_programme(host):
         dlg.Destroy()
 
 
-def test_catchup_has_a_default_open_button(host):
-    """The default button is what wxMSW fires for Enter anywhere in the dialog."""
+def test_catchup_buttons_are_out_of_the_tab_chain(host):
+    """No Open/Download buttons: Enter opens, the context menu downloads."""
     dlg = CatchupDialog(host, "Sky Mix", _CATCHUP_PROGRAMMES)
     try:
-        assert dlg.open_btn.GetId() == wx.ID_OK
-        assert dlg.GetDefaultItem() is dlg.open_btn
+        assert not hasattr(dlg, "open_btn")
+        assert not hasattr(dlg, "download_btn")
+        buttons = [w for w in dlg.GetChildren() if isinstance(w, wx.Button)]
+        panel = [w for w in dlg.GetChildren() if isinstance(w, wx.Panel)][0]
+        buttons += [w for w in panel.GetChildren() if isinstance(w, wx.Button)]
+        labels = [b.GetLabel() for b in buttons]
+        assert all("Open" != label for label in labels), labels
+        assert all("Download" != label for label in labels), labels
     finally:
         dlg.Destroy()
 
 
-def test_catchup_download_button_reports_the_download_action(host):
-    dlg = CatchupDialog(host, "Sky Mix", _CATCHUP_PROGRAMMES)
-    ended = []
-    dlg.EndModal = lambda code: ended.append(code)  # type: ignore[assignment]
+def test_catchup_selection_shows_in_the_description_field(host):
+    """Tab from the list lands on the highlighted programme's description."""
+    programmes = [
+        dict(_CATCHUP_PROGRAMMES[0], description="News with a full description."),
+        dict(_CATCHUP_PROGRAMMES[1], description=""),
+    ]
+    dlg = CatchupDialog(host, "Sky Mix", programmes)
     try:
-        event = wx.CommandEvent(wx.wxEVT_BUTTON, dlg.download_btn.GetId())
-        dlg.download_btn.GetEventHandler().ProcessEvent(event)
-        assert ended == [wx.ID_SAVE]
+        dlg.listbox.SetSelection(0)
+        dlg._update_description()
+        assert dlg.description_field.GetValue() == "News with a full description."
+        dlg.listbox.SetSelection(1)
+        dlg._update_description()
+        assert dlg.description_field.GetValue() != "News with a full description."
+        assert dlg.description_field.GetName() == "Episode description"
     finally:
         dlg.Destroy()
 

@@ -14,6 +14,64 @@ param(
 Set-Location $env:TEMP
 $logPath = Join-Path $env:TEMP "AccessibleIPTVClient_update.log"
 
+# The app closes before the installer runs, so for the length of the update
+# nothing was on screen: the window vanished, the installer worked silently, and
+# a screen-reader user was left with no idea whether anything was happening or
+# whether the app was ever coming back. This helper owns a small status window
+# instead. It cannot be in the app itself (the app has to exit for the install
+# to start), so it is shown here, kept up through the installer and the restart,
+# and closed only once the new app has actually started.
+function Show-UpdateStatus {
+    param([string]$Message)
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+    } catch {
+        Write-Log "Could not load WinForms for the status window: $($_.Exception.Message)"
+        return $null
+    }
+    $screen = [System.Windows.Forms.Screen]::PrimaryScreen
+    $workArea = $screen.WorkingArea
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Updating Accessible IPTV Client"
+    $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
+    $form.Location = New-Object System.Drawing.Point(($workArea.Left + 60), ($workArea.Top + 60))
+    $form.Size = New-Object System.Drawing.Size(420, 150)
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.ShowInTaskbar = $true
+    $form.TopMost = $true
+
+    $statusLabel = New-Object System.Windows.Forms.Label
+    $statusLabel.Name = "StatusLabel"
+    $statusLabel.Text = $Message
+    $statusLabel.AutoSize = $false
+    $statusLabel.SetBounds(16, 16, 372, 60)
+    $statusLabel.TabIndex = 0
+    $form.Controls.Add($statusLabel)
+
+    try { $form.Show(); [System.Windows.Forms.Application]::DoEvents() } catch { }
+    return $form
+}
+
+function Update-StatusMessage {
+    param($Window, [string]$Message)
+    if (-not $Window) { return }
+    try {
+        $Window.Controls["StatusLabel"].Text = $Message
+        [System.Windows.Forms.Application]::DoEvents()
+    } catch {
+        Write-Log "Status window update failed: $($_.Exception.Message)"
+    }
+}
+
+function Close-StatusWindow {
+    param($Window)
+    if (-not $Window) { return }
+    try { $Window.Close(); $Window.Dispose() } catch { }
+}
+
 function Write-Log {
     param([string]$Message)
     $stamp = (Get-Date).ToString("o")
@@ -71,6 +129,8 @@ function Start-AppAfterUpdate {
     return $false
 }
 
+$statusWindow = Show-UpdateStatus -Message "Preparing the update. Accessible IPTV Client is closing; the installation starts as soon as it has."
+
 Write-Log "Updater started. Waiting for PID $ParentPid."
 
 $deadline = (Get-Date).AddSeconds(30)
@@ -112,6 +172,7 @@ try {
 if ($InstallerPath) {
     if (-not (Test-Path -LiteralPath $InstallerPath)) {
         Write-Log "Installer missing: $InstallerPath"
+        Close-StatusWindow -Window $statusWindow
         exit 1
     }
 
@@ -127,28 +188,40 @@ if ($InstallerPath) {
         $proc = Start-Process -FilePath $InstallerPath -ArgumentList $installerArgs -Verb RunAs -Wait -PassThru
         if ($proc.ExitCode -ne 0) {
             Write-Log "Installer failed with exit code $($proc.ExitCode)."
+            Close-StatusWindow -Window $statusWindow
             exit $proc.ExitCode
         }
     } catch {
         Write-Log "Failed to launch installer: $($_.Exception.Message)"
+        Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+        Start-Sleep -Seconds 10
+        Close-StatusWindow -Window $statusWindow
         exit 1
     }
 
+    Update-StatusMessage -Window $statusWindow -Message "Installing the update. This can take a minute; please leave this window alone."
+
     $exePath = Join-Path $InstallDir $ExeName
     if (Test-Path -LiteralPath $exePath) {
+        Update-StatusMessage -Window $statusWindow -Message "Starting the updated Accessible IPTV Client..."
         Write-Log "Restarting app after installer update: $exePath"
         $restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
         Write-Log "Installer updater completed."
+        Close-StatusWindow -Window $statusWindow
         if ($restarted) { exit 0 }
         exit 2
     }
 
+    Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+    Start-Sleep -Seconds 10
+    Close-StatusWindow -Window $statusWindow
     Write-Log "Executable not found after installer update: $exePath"
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $StagingDir)) {
     Write-Log "Staging directory missing: $StagingDir"
+    Close-StatusWindow -Window $statusWindow
     exit 1
 }
 
@@ -156,6 +229,8 @@ $parentDir = Split-Path -Parent $InstallDir
 if ($parentDir -and -not (Test-Path -LiteralPath $parentDir)) {
     New-Item -ItemType Directory -Path $parentDir | Out-Null
 }
+
+Update-StatusMessage -Window $statusWindow -Message "Installing the update. This can take a minute; please leave this window alone."
 
 if (Test-Path -LiteralPath $BackupDir) {
     Remove-Item -LiteralPath $BackupDir -Recurse -Force
@@ -167,9 +242,12 @@ try {
         Write-Log "Moved current install to backup: $BackupDir"
     }
 } catch {
-    Write-Log "Failed to move install to backup: $($_.Exception.Message)"
-    exit 1
-}
+        Write-Log "Failed to move install to backup: $($_.Exception.Message)"
+        Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+        Start-Sleep -Seconds 10
+        Close-StatusWindow -Window $statusWindow
+        exit 1
+    }
 
 try {
     Move-Item -LiteralPath $StagingDir -Destination $InstallDir -Force
@@ -210,11 +288,17 @@ try {
             Write-Log "Rollback failed: $($_.Exception.Message)"
         }
     }
+    Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+    Start-Sleep -Seconds 10
+    Close-StatusWindow -Window $statusWindow
     exit 1
 }
 
 $exePath = Join-Path $InstallDir $ExeName
 if (-not (Test-Path -LiteralPath $exePath)) {
+    Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+    Start-Sleep -Seconds 10
+    Close-StatusWindow -Window $statusWindow
     Write-Log "Executable not found after update: $exePath"
     if (Test-Path -LiteralPath $BackupDir) {
         try {
@@ -225,6 +309,7 @@ if (-not (Test-Path -LiteralPath $exePath)) {
             Write-Log "Rollback failed: $($_.Exception.Message)"
         }
     }
+    Close-StatusWindow -Window $statusWindow
     exit 1
 }
 
@@ -242,9 +327,11 @@ if (Test-Path -LiteralPath $BackupDir) {
     }
 }
 
+Update-StatusMessage -Window $statusWindow -Message "Starting the updated Accessible IPTV Client..."
 Write-Log "Restarting app: $exePath"
 $restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
 
 Write-Log "Updater completed."
+Close-StatusWindow -Window $statusWindow
 if ($restarted) { exit 0 }
 exit 2

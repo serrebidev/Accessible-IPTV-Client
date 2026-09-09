@@ -706,5 +706,9 @@ def test_get_all_now_next_returns_now_and_next_per_channel(tmp_path):
     assert ch1["display_name"] == "Channel 1"
     assert ch1["now"]["title"] == "Now Show"
     assert ch1["next"]["title"] == "Next Show"
+    # Descriptions ride along for the episode-description field; a programme
+    # stored without one yields an empty string, never a missing key.
+    assert ch1["now"]["description"] == "Now description."
+    assert ch1["next"]["description"] == ""
     assert "now" not in result["ch2"]
     assert result["ch2"]["next"]["title"] == "Only Next"

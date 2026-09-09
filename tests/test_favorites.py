@@ -305,6 +305,9 @@ class TestNowPlayingMatching:
         ]
         for name in ("_build_now_playing_labels", "_programme_label"):
             setattr(client, name, _bind(IPTVClient, name, client))
+        for name in ("_epg_channel_indexes", "_match_epg_channel"):
+            # Static methods: callable directly, no instance binding.
+            setattr(client, name, getattr(IPTVClient, name))
         return client
 
     def test_noise_words_do_not_block_the_match(self):
@@ -335,3 +338,43 @@ class TestNowPlayingMatching:
         }
         labels = client._build_now_playing_labels(channels)
         assert labels["totally unrelated"].startswith(" — Doc (")
+
+
+class TestNowPlayingDescriptions:
+    """The description map behind the channel list's Tab-reachable field."""
+
+    def _client_with_epg(self):
+        from main import IPTVClient
+        client = _client()
+        client.view_mode = "live"
+        client.config = {"epg_enabled": True}
+        client.all_channels = [
+            {"name": "TVP 1 HD", "tvg-id": "", "tvg-name": ""},
+            {"name": "No Guide", "tvg-id": "", "tvg-name": ""},
+        ]
+        setattr(client, "_build_now_playing_descriptions",
+                lambda *a, **k: IPTVClient._build_now_playing_descriptions(client, *a, **k))
+        for name in ("_epg_channel_indexes", "_match_epg_channel"):
+            # Static methods: callable directly, no instance binding.
+            setattr(client, name, getattr(IPTVClient, name))
+        return client
+
+    def test_descriptions_carry_the_on_air_text(self):
+        client = self._client_with_epg()
+        channels = {
+            "epg-1": {"display_name": "TVP 1",
+                      "now": {"title": "News", "start": "20260907200000",
+                              "end": "20260907210000",
+                              "description": "The evening news with everything that matters."}},
+        }
+        desc = client._build_now_playing_descriptions(channels)
+        assert desc == {"tvp 1": "The evening news with everything that matters."}
+
+    def test_empty_descriptions_are_absent(self):
+        client = self._client_with_epg()
+        channels = {
+            "epg-1": {"display_name": "TVP 1",
+                      "now": {"title": "News", "start": "20260907200000",
+                              "end": "20260907210000", "description": ""}},
+        }
+        assert client._build_now_playing_descriptions(channels) == {}

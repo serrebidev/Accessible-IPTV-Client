@@ -476,6 +476,7 @@ def load_config() -> Dict:
         "prefer_audio_description": False,
         "last_audio_track": "",
         "channel_audio_tracks": {},
+        "channel_audio_track_indices": {},
     }
     resolve_internal_player_settings(default)
     for p in get_config_read_candidates():
@@ -625,6 +626,10 @@ def coerce_string_list(value) -> list:
 # entries are dropped first, so the channels actually being watched stay.
 MAX_REMEMBERED_CHANNEL_AUDIO_TRACKS = 500
 
+# A sane upper bound for a track slot index. Real streams carry a handful of
+# audio tracks; anything larger is config junk and is discarded.
+MAX_AUDIO_TRACKS = 64
+
 
 def coerce_channel_audio_tracks(value) -> dict:
     """Coerce the per-channel audio-track memory into a clean ``{key: name}`` map.
@@ -659,6 +664,36 @@ def coerce_channel_audio_tracks(value) -> dict:
     return out
 
 
+def coerce_channel_audio_track_indices(value) -> dict:
+    """Coerce the per-channel audio-track *slot* memory into ``{key: int}``.
+
+    Same contract as :func:`coerce_channel_audio_tracks`: a hand-edited config
+    must not crash startup. Indices are clamped to the usable slot range, and
+    the map is trimmed to the same budget as the name memory so one cannot
+    outlive the other by much.
+    """
+    if not isinstance(value, dict):
+        return {}
+    out = {}
+    for key, index in value.items():
+        if not isinstance(key, str) or not key.strip():
+            continue
+        if isinstance(index, bool):
+            continue
+        if isinstance(index, float):
+            if not index.is_integer():
+                continue
+            index = int(index)
+        if not isinstance(index, int):
+            continue
+        if 0 <= index < MAX_AUDIO_TRACKS:
+            out[key.strip()] = index
+    if len(out) > MAX_REMEMBERED_CHANNEL_AUDIO_TRACKS:
+        keep = list(out.items())[-MAX_REMEMBERED_CHANNEL_AUDIO_TRACKS:]
+        out = dict(keep)
+    return out
+
+
 def coerce_bool(value, default: bool = False) -> bool:
     """Read a boolean the way a hand-edited config file might have written it."""
     if isinstance(value, bool):
@@ -681,6 +716,7 @@ def normalize_channel_and_audio_settings(cfg: Dict) -> None:
     cfg["favorites"] = coerce_string_list(cfg.get("favorites"))
     cfg["preferred_audio_tracks"] = coerce_string_list(cfg.get("preferred_audio_tracks"))
     cfg["channel_audio_tracks"] = coerce_channel_audio_tracks(cfg.get("channel_audio_tracks"))
+    cfg["channel_audio_track_indices"] = coerce_channel_audio_track_indices(cfg.get("channel_audio_track_indices"))
     cfg["prefer_audio_description"] = coerce_bool(cfg.get("prefer_audio_description"), False)
     cfg["shutdown_after_recordings"] = coerce_bool(cfg.get("shutdown_after_recordings"), False)
 

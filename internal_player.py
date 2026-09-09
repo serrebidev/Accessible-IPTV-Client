@@ -80,6 +80,9 @@ AUDIO_DESCRIPTION_KEYWORDS = (
     "ad",
 )
 
+# Lower-cased view of AUDIO_DESCRIPTION_KEYWORDS for membership tests; defined
+# after the tuple itself.
+_AD_KEYWORD_SET = {k.lower() for k in AUDIO_DESCRIPTION_KEYWORDS}
 # Below this length a keyword only matches a whole word: "ad" must not fire on
 # "Radio", and a two-letter language code must not fire on an unrelated track.
 _COMPOUND_MATCH_MIN_CHARS = 6
@@ -149,14 +152,52 @@ def preferred_audio_keywords(
 def select_preferred_audio_track(
     tracks: Sequence[Tuple[int, str]],
     keywords: Optional[Sequence[str]] = None,
+    *,
+    fallback_index: Optional[int] = None,
+    prefer_ad: bool = False,
 ) -> Optional[int]:
-    """The id of the first track matching the highest-priority keyword, if any."""
-    if not tracks or not keywords:
+    """The id of the first track matching the highest-priority keyword, if any.
+
+    When no keyword matches, ``fallback_index`` restores a remembered track by
+    its *position*: providers rename or renumber tracks between connections,
+    so a stored name such as "Track 3" can miss a stream whose third slot is
+    now called something else. The position still points at the same audio.
+    ``None`` (no memory for this channel yet) skips the attempt.
+
+    Last resort for streams with the audio-description preference on and more
+    than one track: a track whose name advertises audio description wins, and
+    among those the last one listed. When none is named, the last track of the
+    stream is the best guess anyway, because providers append the description
+    track after the ordinary ones - the highest number is where it lives.
+    """
+    if not tracks:
         return None
-    for keyword in keywords:
-        for tid, name in tracks:
-            if audio_track_matches(name, keyword):
-                return tid
+    for keyword in keywords or ():
+        matches = [tid for tid, name in tracks
+                   if audio_track_matches(name, keyword)]
+        if not matches:
+            continue
+        if len(matches) > 1 and str(keyword).strip().lower() in _AD_KEYWORD_SET:
+            # Providers append the audio description track after the ordinary
+            # ones, so between several named description tracks the highest
+            # number is the one to take.
+            return matches[-1]
+        return matches[0]
+    if fallback_index is not None:
+        try:
+            index = int(fallback_index)
+        except (TypeError, ValueError):
+            index = -1
+        if 0 <= index < len(tracks):
+            return tracks[index][0]
+    if prefer_ad and len(tracks) > 1:
+        described = [
+            (tid, name) for tid, name in tracks
+            if audio_track_matches(name, "audio description")
+        ]
+        if described:
+            return described[-1][0]
+        return tracks[-1][0]
     return None
 
 
@@ -281,7 +322,6 @@ class InternalPlayerFrame(wx.Frame):
         on_record: Optional[Callable[[], None]] = None,
         preferred_audio_tracks: Optional[Sequence[str]] = None,
         prefer_audio_description: bool = False,
-        on_audio_preference: Optional[Callable[[str], None]] = None,
         on_last_track_changed: Optional[Callable[[str], None]] = None,
         last_audio_track: str = "",
         channel_audio_track: str = "",
@@ -368,10 +408,12 @@ class InternalPlayerFrame(wx.Frame):
         self._min_buffer_event_seconds = 1.25
 
         # Volume throttling state
-        self._last_status_prefix = "Idle"
-
-        # Audio track selection state
+        self._last_status_prefix = "Idle"        # Audio track selection state
         self._wanted_audio_track_name: Optional[str] = None
+        # Slot index of the track chosen for the current channel, or None
+        # when the channel has no memory yet. Names drift between
+        # connections; the slot usually does not.
+        self._audio_track_fallback_index: Optional[int] = None
         # Whether the stream now playing was started with video. Reconnects
         # inherit it so a background channel never pops a video window open.
         self._video_visible = True
@@ -389,16 +431,12 @@ class InternalPlayerFrame(wx.Frame):
         # Preferred-track state. libVLC does not publish the track list until a
         # moment after playback starts, so the preference is retried for a few
         # timer ticks rather than checked once and abandoned.
-        self._on_audio_preference_cb = on_audio_preference
-        # Fires on hand-picked tracks only, so main can persist just the last
-        # used track without rewriting the keyword preference list.
         self._on_last_track_changed_cb = on_last_track_changed
         self._preferred_audio_tracks: List[str] = [str(k) for k in (preferred_audio_tracks or [])]
         self._prefer_audio_description = bool(prefer_audio_description)
         self._audio_preference_pending = False
         self._audio_preference_attempts = 0
         self._max_audio_preference_attempts = 20  # ~10s at the 500ms status timer
-        self._audio_preference_item_id: Optional[int] = None
         # Persisted audio output device (libVLC device id; "" = system default).
         self._audio_output_device = (audio_output_device or "").strip()
         self._on_audio_device_cb = on_audio_device
@@ -2023,10 +2061,19 @@ class InternalPlayerFrame(wx.Frame):
 
     def _select_audio_track(self, track_id: int, manual: bool = False) -> None:
         name = ""
-        for tid, tname in self._get_audio_tracks():
+        track_index = 0
+        tracks = self._get_audio_tracks()
+        for index, (tid, tname) in enumerate(tracks):
             if tid == track_id:
                 name = tname
+                track_index = index
                 break
+        if tracks:
+            # Remember the position as well as the name: a provider that
+            # renumbers or renames its tracks between connections still has
+            # the same audio in the same slot, and a name-only memory used to
+            # miss it and leave the stream on its first track.
+            self._audio_track_fallback_index = track_index
         try:
             self.player.audio_set_track(track_id)
         except Exception:
@@ -2046,7 +2093,7 @@ class InternalPlayerFrame(wx.Frame):
             self._channel_audio_track = name
             if self._on_last_track_changed_cb:
                 try:
-                    self._on_last_track_changed_cb(name)
+                    self._on_last_track_changed_cb(name, track_index)
                 except Exception:
                     LOG.debug("InternalPlayerFrame._select_audio_track: ignored exception", exc_info=True)
         self._audio_reapply_pending = False
@@ -2094,52 +2141,11 @@ class InternalPlayerFrame(wx.Frame):
             item = menu.AppendRadioItem(wx.ID_ANY, name)
             item.Check(index == active)
             self._audio_track_menu_map[item.GetId()] = tid
-        # Let the user pin the track they are listening to, so every channel that
-        # offers one by the same name starts on it from now on.
-        if self._on_audio_preference_cb is not None:
-            menu.AppendSeparator()
-            remember = menu.Append(wx.ID_ANY, _("Always Prefer This Audio Track"))
-            self._audio_preference_item_id = remember.GetId()
 
     def _on_audio_track_menu_select(self, event: wx.CommandEvent) -> None:
-        if self._audio_preference_item_id is not None and event.GetId() == self._audio_preference_item_id:
-            self._remember_current_audio_track()
-            return
         track_id = self._audio_track_menu_map.get(event.GetId())
         if track_id is not None:
             self._select_audio_track(track_id, manual=True)
-
-    def _remember_current_audio_track(self) -> None:
-        """Store the name of the playing track as the preferred one."""
-        name = ""
-        tracks = self._get_audio_tracks()
-        if tracks:
-            name = tracks[active_audio_track_index(
-                tracks, self._current_audio_track_id(),
-                getattr(self, "_wanted_audio_track_name", ""))][1]
-        if not name:
-            name = self._audio_track_label
-        if not name:
-            self._update_status_label(_("No audio tracks available"))
-            return
-        self._preferred_audio_tracks = [name] + [
-            keyword for keyword in self._preferred_audio_tracks if keyword.lower() != name.lower()
-        ]
-        # Pinning "always prefer this" is a deliberate pick too: it leads the
-        # match list on later streams exactly like choosing the track directly.
-        self._last_manual_audio_track = name
-        self._channel_audio_track = name
-        if self._on_last_track_changed_cb:
-            try:
-                self._on_last_track_changed_cb(name)
-            except Exception:
-                LOG.debug("InternalPlayerFrame._remember_current_audio_track: ignored exception", exc_info=True)
-        if self._on_audio_preference_cb is not None:
-            try:
-                self._on_audio_preference_cb(name)
-            except Exception:
-                LOG.debug("InternalPlayerFrame._remember_current_audio_track: ignored exception", exc_info=True)
-        self._update_status_label(_("Preferred audio track: {name}").format(name=name))
 
     # ------------------------------------------------------ preferred track
     def set_preferred_audio_tracks(
@@ -2173,10 +2179,31 @@ class InternalPlayerFrame(wx.Frame):
         if name == getattr(self, "_channel_audio_track", ""):
             return
         self._channel_audio_track = name
+        # No name means a channel with no memory: drop the old slot memory
+        # with it, or the previous channel's slot would leak into this one.
+        if not name:
+            self._audio_track_fallback_index = None
         # Only re-arm when the user has not already chosen a track by hand for
         # the stream that is playing; a deliberate pick is never overridden.
         if self._wanted_audio_track_name is None:
             self._arm_audio_preference()
+
+    def set_channel_audio_track_index(self, index) -> None:
+        """Which track slot this channel was last watched on, when known.
+
+        Names drift between connections while the slot does not, so the
+        remembered position is the match that survives a rename. ``None``
+        clears the memory. Only used when no name-based rule fires first.
+        """
+        if index is None:
+            self._audio_track_fallback_index = None
+            return
+        try:
+            index = int(index)
+        except (TypeError, ValueError):
+            return
+        if index >= 0:
+            self._audio_track_fallback_index = index
 
     def _begin_new_stream_audio_state(self) -> None:
         """Reset per-stream audio state, keeping the hand-picked track."""
@@ -2233,7 +2260,10 @@ class InternalPlayerFrame(wx.Frame):
         if self._current_audio_track_id() is None:
             return
         keywords = self._preferred_audio_keywords()
-        if not keywords:
+        fallback_index = getattr(self, "_audio_track_fallback_index", None)
+        if not keywords and fallback_index is None:
+            # Nothing name-based to match and nothing remembered by position:
+            # keep whatever track the stream starts on.
             self._audio_preference_pending = False
             return
         self._audio_preference_attempts += 1
@@ -2242,7 +2272,10 @@ class InternalPlayerFrame(wx.Frame):
             if self._audio_preference_attempts >= self._max_audio_preference_attempts:
                 self._audio_preference_pending = False
             return
-        track_id = select_preferred_audio_track(tracks, keywords)
+        track_id = select_preferred_audio_track(
+            tracks, keywords,
+            fallback_index=fallback_index,
+            prefer_ad=self._prefer_audio_description)
         if track_id is None:
             # Track lists can still be growing a second into playback, so keep
             # looking until the attempt budget runs out before giving up.

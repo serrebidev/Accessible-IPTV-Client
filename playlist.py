@@ -2086,24 +2086,39 @@ class EPGDatabase:
         now_str = now.strftime("%Y%m%d%H%M%S")
         cutoff = (now - datetime.timedelta(hours=hours)).strftime("%Y%m%d%H%M%S")
         c = self.conn.cursor()
-        rows = c.execute(
-            """
-            SELECT title, start, end
-            FROM programmes
-            WHERE channel_id = ? AND end <= ? AND end >= ?
-            ORDER BY start DESC
-            LIMIT ?
-            """,
-            (ch_id, now_str, cutoff, limit)
-        ).fetchall()
+        # The description feeds the catch-up dialog's episode description field;
+        # older databases without the column degrade to an empty description.
+        try:
+            rows = c.execute(
+                """
+                SELECT title, start, end, description
+                FROM programmes
+                WHERE channel_id = ? AND end <= ? AND end >= ?
+                ORDER BY start DESC
+                LIMIT ?
+                """,
+                (ch_id, now_str, cutoff, limit)
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = c.execute(
+                """
+                SELECT title, start, end, NULL
+                FROM programmes
+                WHERE channel_id = ? AND end <= ? AND end >= ?
+                ORDER BY start DESC
+                LIMIT ?
+                """,
+                (ch_id, now_str, cutoff, limit)
+            ).fetchall()
         results: List[Dict[str, str]] = []
-        for title, start, end in rows:
+        for title, start, end, description in rows:
             results.append({
                 "channel_id": ch_id,
                 "channel_name": channel.get("name", ""),
                 "title": title,
                 "start": start,
-                "end": end
+                "end": end,
+                "description": description or ""
             })
         return results
 
@@ -2138,11 +2153,13 @@ class EPGDatabase:
         """On-air and next programme for every EPG channel in one indexed pass.
 
         Returns ``{channel_id: {"display_name": str, "now": row, "next": row}}``
-        where each row is ``{title, start, end}`` in UTC "YYYYMMDDHHMMSS"
-        strings; either entry may be missing. Keyed by channel id so callers can
-        match playlist channels through tvg-id first and fall back to names.
-        Feeds the channel-row labels, so it must stay a single covering-index
-        range scan (no per-channel queries).
+        where each row is ``{title, start, end, description}`` in UTC
+        "YYYYMMDDHHMMSS" strings (description may be empty); either entry may
+        be missing. Keyed by channel id so callers can match playlist channels
+        through tvg-id first and fall back to names. Feeds the channel-row
+        labels and the on-air description field, so it must stay a single
+        covering-index range scan (no per-channel queries); the description
+        rides along as an extra column and costs no extra lookups.
         """
         c = self.conn.cursor()
         now = self._utcnow()
@@ -2153,7 +2170,7 @@ class EPGDatabase:
         floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
         horizon_str = (now + datetime.timedelta(hours=6)).strftime("%Y%m%d%H%M%S")
         rows = c.execute("""
-            SELECT p.title, p.start, p.end, c.id, c.display_name
+            SELECT p.title, p.start, p.end, c.id, c.display_name, p.description
             FROM programmes p
             JOIN channels c ON c.id = p.channel_id
             WHERE p.start >= ? AND p.start <= ? AND p.end > ?
@@ -2161,9 +2178,10 @@ class EPGDatabase:
         """, (floor_str, horizon_str, now_str)).fetchall()
 
         out: Dict[str, Dict[str, object]] = {}
-        for title, start, end, channel_id, display_name in rows:
+        for title, start, end, channel_id, display_name, description in rows:
             entry = out.setdefault(channel_id, {"display_name": display_name or ""})
-            row = {"title": title, "start": start, "end": end}
+            row = {"title": title, "start": start, "end": end,
+                   "description": description or ""}
             if start <= now_str:
                 # Airing now; on overlapping entries prefer the most recent start.
                 if "now" not in entry or start > entry["now"]["start"]:
