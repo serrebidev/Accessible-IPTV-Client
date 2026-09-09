@@ -1,6 +1,14 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.125.0 - 2026-09-09
+
+- Say when an EPG import has finished
+- Let catch-up downloads use the fast direct file again
+- Stop the app freezing when the player is closed during an EPG import
+- Restore Hungarian gettext source references
+- Update Hungarian translation
+
 ## v1.124.1 - 2026-09-08
 
 - Add standard list rename and delete shortcuts
