@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.124.1 - 2026-09-08
+
+- Add standard list rename and delete shortcuts
+
 ## v1.124.0 - 2026-09-08
 
 - Survive-rename audio memory, cleaner catch-up Tab order, and an episode description field
