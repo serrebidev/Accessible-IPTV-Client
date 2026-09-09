@@ -1,6 +1,11 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.125.1 - 2026-09-09
+
+- Refine Hungarian EPG import messages
+- Keep en.po msgstrs empty
+
 ## v1.125.0 - 2026-09-09
 
 - Say when an EPG import has finished
