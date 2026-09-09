@@ -4,6 +4,7 @@ Tests for internal player recovery, buffering, and reconnection.
 import pytest
 import os
 import sys
+import threading
 import time
 import types
 from enum import IntEnum
@@ -420,47 +421,121 @@ class TestStreamTypeDetection:
 
 
 class TestClosingTheShownPlayerStopsPlayback:
-    """Closing the player window must stop the channel, not hide it."""
+    """Closing the player window must stop the channel, not hide it.
 
-    @staticmethod
-    def _stub_frame():
+    It must also not block the GUI thread while doing so: libVLC's stop and
+    release calls wait on its own threads, and during a heavy EPG import that
+    wait froze the whole application.
+    """
+
+    IPF = internal_player.InternalPlayerFrame
+    BOUND = (
+        "_quiesce", "_release_vlc", "_release_vlc_in_background",
+        "_await_vlc_teardown", "_finish_destroy", "_exit_player",
+    )
+
+    @classmethod
+    def _stub_frame(cls, block_release=None):
         frame = types.SimpleNamespace()
         frame.events = []
+        frame.stopped = []
         frame._allow_close = False
         frame._destroyed = False
-        frame.stopped = []
-        frame._status_timer = types.SimpleNamespace(Stop=lambda: None)
+        frame._manual_stop = False
+        frame._pending_restart = False
+        frame._pending_xtream_refresh = False
+        frame._current_url = "http://example.invalid/stream.m3u8"
+        frame._teardown_guard = threading.Lock()
+        frame._vlc_released = False
+        frame._teardown_thread = None
+        frame._VLC_TEARDOWN_JOIN_SECONDS = 5.0
+        frame._status_timer = types.SimpleNamespace(
+            Stop=lambda: frame.events.append("timer stopped"))
+
+        def stop():
+            if block_release is not None:
+                block_release.wait(5.0)
+            frame.stopped.append("player.stop")
+
         frame.player = types.SimpleNamespace(
-            stop=lambda: frame.stopped.append("player.stop"),
-            release=lambda: frame.stopped.append("release"),
+            stop=stop,
+            release=lambda: frame.stopped.append("player.release"),
         )
-        frame.instance = types.SimpleNamespace(release=lambda: None)
+        frame.instance = types.SimpleNamespace(
+            release=lambda: frame.stopped.append("instance.release"))
         frame._on_close_cb = lambda: frame.events.append("closed")
-        frame._exit_player = types.MethodType(
-            internal_player.InternalPlayerFrame._exit_player, frame)
-        frame._hide_player = lambda: frame.events.append("hidden")
-        frame.Destroy = lambda: True
+        frame.Hide = lambda: frame.events.append("hidden window")
+        frame._hide_player = lambda: frame.events.append("kept playing")
+        frame.destroyed = []
+        frame._finish_destroy = lambda: frame.destroyed.append(True) or True
+        for name in cls.BOUND:
+            if not hasattr(frame, name):
+                setattr(frame, name, types.MethodType(getattr(cls.IPF, name), frame))
         return frame
+
+    @staticmethod
+    def _join(frame, timeout=5.0):
+        thread = frame._teardown_thread
+        assert thread is not None, "close did not start a teardown thread"
+        thread.join(timeout)
+        assert not thread.is_alive()
 
     def test_close_stops_playback_instead_of_hiding(self):
         frame = self._stub_frame()
         event = types.SimpleNamespace(CanVeto=lambda: True, Skip=lambda: None)
 
-        internal_player.InternalPlayerFrame._on_close(frame, event)
+        self.IPF._on_close(frame, event)
+        self._join(frame)
 
-        assert frame.stopped == ["player.stop"]
-        assert frame.events == ["closed"]
+        assert frame.stopped == ["player.stop", "player.release", "instance.release"]
+        assert "closed" in frame.events
+        assert "kept playing" not in frame.events
 
-    def test_explicit_exit_still_stops_and_destroys(self):
+    def test_close_does_not_wait_for_libvlc_on_the_gui_thread(self):
+        """The window is handed back before libVLC has finished letting go."""
+        gate = threading.Event()
+        frame = self._stub_frame(block_release=gate)
+        event = types.SimpleNamespace(CanVeto=lambda: True, Skip=lambda: None)
+
+        self.IPF._on_close(frame, event)
+
+        # libVLC is still inside stop(), yet the close has already returned and
+        # the app has been told the player is gone.
+        assert frame.stopped == []
+        assert "hidden window" in frame.events
+        assert "closed" in frame.events
+        gate.set()
+        self._join(frame)
+        assert frame.stopped == ["player.stop", "player.release", "instance.release"]
+
+    def test_explicit_exit_still_stops_and_destroys(self, monkeypatch):
         frame = self._stub_frame()
-        destroyed = []
-        frame.Destroy = lambda: destroyed.append(True) or True
+        # The worker hands the wx destroy back to the GUI thread; there is no
+        # event loop here, so run what it posts inline.
+        monkeypatch.setattr(internal_player.wx, "CallAfter",
+                            lambda fn, *a, **k: fn(*a, **k), raising=False)
 
-        internal_player.InternalPlayerFrame._exit_player(frame)
+        self.IPF._exit_player(frame)
+        self._join(frame)
 
-        assert frame.stopped == ["player.stop"]
-        assert frame.events == ["closed"]
-        assert destroyed == [True]
+        assert frame.stopped == ["player.stop", "player.release", "instance.release"]
+        assert "closed" in frame.events
+        assert frame.destroyed == [True]
+
+    def test_quit_during_teardown_waits_and_releases_once(self):
+        """Destroy() joins an in-flight teardown rather than double-releasing."""
+        gate = threading.Event()
+        frame = self._stub_frame(block_release=gate)
+        frame.Destroy = types.MethodType(
+            lambda self: (self._quiesce(), self._await_vlc_teardown(),
+                          self._release_vlc(), True)[-1], frame)
+
+        self.IPF._exit_player(frame)
+        gate.set()
+        assert frame.Destroy() is True
+        self._join(frame)
+
+        assert frame.stopped == ["player.stop", "player.release", "instance.release"]
 
 
 class TestLibVlcStateName:

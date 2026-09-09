@@ -12,6 +12,7 @@ from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple
 
 import wx
 
+from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
 
 
@@ -310,6 +311,9 @@ class InternalPlayerFrame(wx.Frame):
     """Embedded IPTV player with buffering resilience and keyboard controls."""
 
     _HANDLE_CHECK_INTERVAL = 0.1
+    # How long a quit waits for a close-time libVLC teardown that is still
+    # running. Leaking an instance at process exit beats hanging the shutdown.
+    _VLC_TEARDOWN_JOIN_SECONDS = 15.0
 
     def __init__(
         self,
@@ -349,6 +353,11 @@ class InternalPlayerFrame(wx.Frame):
         self._is_paused = False
         self._destroyed = False
         self._handle_guard = threading.Lock()
+        # libVLC teardown state. ``_release_vlc`` is idempotent and may run on
+        # a worker thread, so the flag it guards needs a lock of its own.
+        self._teardown_guard = threading.Lock()
+        self._vlc_released = False
+        self._teardown_thread: Optional[threading.Thread] = None
         self._fullscreen = False
         self._volume_value = 80
         self._volume_last_ts = 0.0
@@ -891,50 +900,13 @@ class InternalPlayerFrame(wx.Frame):
         return base, merged
 
     def _parse_stream_modifiers(self, url: str) -> Tuple[str, Dict[str, object]]:
-        if not url:
-            return "", {}
-        base, sep, tail = url.partition("|")
-        headers: Dict[str, object] = {}
-        extras: List[str] = []
-        if sep:
-            for part in tail.split("|"):
-                token = part.strip()
-                if not token or "=" not in token:
-                    continue
-                key, value = token.split("=", 1)
-                key = key.strip().lower()
-                value = urllib.parse.unquote_plus(value.strip())
-                if not value:
-                    continue
-                if key in ("user-agent", "ua", "http-user-agent"):
-                    headers["user-agent"] = value
-                elif key in ("referer", "referrer", "http-referrer", "http-referer"):
-                    headers["referer"] = value
-                elif key in ("origin", "http-origin"):
-                    headers["origin"] = value
-                elif key in ("cookie", "http-cookie"):
-                    headers["cookie"] = value
-                elif key in ("authorization", "auth", "http-authorization"):
-                    headers["authorization"] = value
-                elif key in ("bearer", "token"):
-                    headers["authorization"] = f"Bearer {value}"
-                elif key in ("x-forwarded-for", "xff"):
-                    headers["x-forwarded-for"] = value
-                elif key in ("accept", "http-accept"):
-                    headers["accept"] = value
-                elif key in ("range", "http-range"):
-                    headers["range"] = value
-                elif key in ("host", "http-host"):
-                    extras.append(f"Host: {value}")
-                else:
-                    extras.append(f"{self._normalize_header_name(key)}: {value}")
-        if extras:
-            headers["_extra"] = extras
-        return base.strip(), headers
+        # Shared with the catch-up downloader, which has to strip the same tail
+        # before it can probe or hand the URL to ffmpeg.
+        return split_stream_modifiers(url)
 
     @staticmethod
     def _normalize_header_name(key: str) -> str:
-        return "-".join(part.capitalize() for part in key.split("-") if part)
+        return normalize_header_name(key)
 
     @staticmethod
     def _dedupe_headers_list(headers: Optional[List[str]]) -> List[str]:
@@ -2333,15 +2305,98 @@ class InternalPlayerFrame(wx.Frame):
         except Exception:
             LOG.debug("InternalPlayerFrame._hide_player: ignored exception", exc_info=True)
 
-    def _exit_player(self) -> None:
-        # Stop playback and destroy window explicitly.
+    def _quiesce(self) -> None:
+        """Mark the player closed so nothing schedules more work on it."""
+        self._destroyed = True
         self._allow_close = True
+        # Without this the status timer's last tick - or an in-flight restart -
+        # could reconnect the very stream we are tearing down.
+        self._manual_stop = True
+        self._pending_restart = False
+        self._pending_xtream_refresh = False
+        self._current_url = None
         try:
             self._status_timer.Stop()
         except Exception:
-            LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
+            LOG.debug("InternalPlayerFrame._quiesce: ignored exception", exc_info=True)
+
+    def _release_vlc(self) -> None:
+        """Stop playback and hand libVLC back. Blocking, idempotent, never raises.
+
+        Every call here waits on libVLC's own threads, which is exactly why it
+        must not run on the GUI thread while the machine is busy.
+        """
+        with self._teardown_guard:
+            if self._vlc_released:
+                return
+            self._vlc_released = True
+        steps = (
+            ("player.stop", getattr(self, "player", None), "stop"),
+            ("player.release", getattr(self, "player", None), "release"),
+            ("instance.release", getattr(self, "instance", None), "release"),
+        )
+        for label, target, method in steps:
+            call = getattr(target, method, None) if target is not None else None
+            if not callable(call):
+                continue
+            try:
+                call()
+            except Exception:
+                LOG.debug("InternalPlayerFrame._release_vlc: %s ignored exception",
+                          label, exc_info=True)
+
+    def _release_vlc_in_background(self) -> None:
+        """Run :meth:`_release_vlc` off the GUI thread, then destroy the frame."""
+        def worker() -> None:
+            self._release_vlc()
+            try:
+                wx.CallAfter(self._finish_destroy)
+            except Exception:
+                LOG.debug("InternalPlayerFrame._release_vlc_in_background: ignored exception",
+                          exc_info=True)
+
+        thread = threading.Thread(target=worker, name="VLCTeardown", daemon=True)
+        self._teardown_thread = thread
+        thread.start()
+
+    def _await_vlc_teardown(self) -> None:
+        """Wait, with a bound, for a background teardown already under way."""
+        thread = self._teardown_thread
+        if thread is None or thread is threading.current_thread():
+            return
+        thread.join(self._VLC_TEARDOWN_JOIN_SECONDS)
+        if thread.is_alive():
+            LOG.warning("libVLC teardown did not finish within %.0fs; continuing.",
+                        self._VLC_TEARDOWN_JOIN_SECONDS)
+
+    def _finish_destroy(self) -> bool:
+        """Destroy the wx frame now that libVLC has let go of the video surface."""
         try:
-            self.player.stop()
+            return wx.Frame.Destroy(self)
+        except Exception:
+            # Already gone - the app quit while the teardown was still running.
+            LOG.debug("InternalPlayerFrame._finish_destroy: ignored exception", exc_info=True)
+            return False
+
+    def _exit_player(self) -> None:
+        """Close the player window without blocking the rest of the app.
+
+        libVLC's stop and release calls are synchronous: they wait for the
+        demuxer and the HTTP access thread to unwind, and that wait grows with
+        how busy the machine is - an EPG import saturating the disk and the
+        network is exactly that. Running them on the GUI thread stops the
+        message pump, so the whole application goes unresponsive (Windows greys
+        it out and NVDA reports nothing) until libVLC is finished. Hand the
+        window back at once instead and tear libVLC down on a worker thread; wx
+        destroys the frame only once libVLC no longer owns the video panel.
+        """
+        if self._destroyed:
+            return
+        self._quiesce()
+        # Hidden before the callback, so focus is back on the channel list the
+        # moment the user presses the close key.
+        try:
+            self.Hide()
         except Exception:
             LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
         if self._on_close_cb:
@@ -2349,7 +2404,7 @@ class InternalPlayerFrame(wx.Frame):
                 self._on_close_cb()
             except Exception:
                 LOG.debug("InternalPlayerFrame._exit_player: ignored exception", exc_info=True)
-        self.Destroy()
+        self._release_vlc_in_background()
 
     def _on_close(self, event: wx.CloseEvent) -> None:
         # Closing the window means "stop this channel". When the app hid the
@@ -2359,37 +2414,26 @@ class InternalPlayerFrame(wx.Frame):
         if not self._allow_close and event.CanVeto():
             self._exit_player()
             return
-        self._status_timer.Stop()
-        try:
-            self.player.stop()
-        except Exception:
-            LOG.debug("InternalPlayerFrame._on_close: ignored exception", exc_info=True)
+        # A close that cannot be vetoed is wx destroying this frame as soon as
+        # the handler returns, so libVLC has to be finished with the video
+        # surface before we let it through.
+        self._quiesce()
+        self._await_vlc_teardown()
+        self._release_vlc()
         if self._on_close_cb:
             try:
                 self._on_close_cb()
             except Exception:
                 LOG.debug("InternalPlayerFrame._on_close: ignored exception", exc_info=True)
-        self._destroyed = True
         event.Skip()
 
     def Destroy(self) -> bool:
-        if self._destroyed:
-            return super().Destroy()
-        self._destroyed = True
-        self._allow_close = True
-        self._status_timer.Stop()
-        try:
-            self.player.stop()
-        except Exception:
-            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
-        try:
-            self.player.release()
-        except Exception:
-            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
-        try:
-            self.instance.release()
-        except Exception:
-            LOG.debug("InternalPlayerFrame.Destroy: ignored exception", exc_info=True)
+        # Called by the app on quit, and by wx while tearing the window
+        # hierarchy down. Both destroy the video panel straight after, so a
+        # teardown started by _exit_player has to be joined first.
+        self._quiesce()
+        self._await_vlc_teardown()
+        self._release_vlc()
         return super().Destroy()
 
 
