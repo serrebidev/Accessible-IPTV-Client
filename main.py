@@ -55,7 +55,7 @@ from providers import (
 )
 import vod
 import account_info
-from http_headers import channel_http_headers
+from http_headers import channel_http_headers, merge_headers, split_stream_modifiers
 from external_player import ExternalPlayerLauncher
 import recorder
 from recorder import RECORDING_FORMATS
@@ -914,6 +914,10 @@ class IPTVClient(wx.Frame):
         self.show_channel_url = self._bool_pref(self.config.get("show_channel_url", True), default=True)
         self.auto_check_updates = self._bool_pref(self.config.get("auto_check_updates", True), default=True)
         self.epg_importing = False
+        # True while the import that is running was asked for by hand (File >
+        # Import EPG to DB). A hand-started import owes the user a "finished"
+        # box; the automatic background refresh must stay silent.
+        self._epg_import_notify = False
         self.refresh_timer = None
         self.minimize_to_tray = bool(self.config.get("minimize_to_tray", False))
         self.tray_icon = None
@@ -2558,8 +2562,14 @@ class IPTVClient(wx.Frame):
               "newer fields. Import the guide again to update it?\n\n"
               "(Without this, the EPG views cannot show programme descriptions.)"),
             _("EPG Database Update Needed"), wx.YES_NO | wx.ICON_QUESTION)
-        if answer == wx.YES:
-            threading.Thread(target=self._refresh_epg, daemon=True).start()
+        if answer != wx.YES:
+            return
+        # Was ``threading.Thread(target=self._refresh_epg)`` - a method that has
+        # never existed, so accepting the repair raised AttributeError and did
+        # nothing at all. The importer already owns its own worker thread.
+        if not self.start_epg_import_background(force=True, notify=True):
+            message_box(_("The EPG import could not be started."), _("Import Failed"),
+                        wx.OK | wx.ICON_WARNING)
 
     def _schedule_channel_recording(self, channel: Dict[str, str]):
         """Let a channel-row user choose an upcoming EPG programme to record."""
@@ -5019,15 +5029,22 @@ class IPTVClient(wx.Frame):
         self._pending_epg_autostart = False
         self._schedule_epg_autostart(self._pending_epg_autostart_token)
 
-    def start_epg_import_background(self, *, force: bool = False):
+    def start_epg_import_background(self, *, force: bool = False, notify: bool = False):
+        """Kick off an EPG import on a worker thread.
+
+        Returns True when an import was actually started. ``notify`` asks for a
+        message box when it finishes - only the hand-started import from the
+        File menu sets it, so the periodic automatic refresh stays quiet.
+        """
         sources = list(self.epg_sources)
         if not sources or not self.config.get("epg_enabled", True):
-            return
+            return False
         if self.epg_importing:
-            return
+            return False
         if not force and not self._should_auto_import_epg(sources):
-            return
+            return False
         self.epg_importing = True
+        self._epg_import_notify = bool(notify)
 
         def do_import():
             _lower_current_thread_priority()
@@ -5050,9 +5067,12 @@ class IPTVClient(wx.Frame):
             finally:
                 wx.CallAfter(self.finish_import_background, success)
         threading.Thread(target=do_import, daemon=True).start()
+        return True
 
     def finish_import_background(self, success: bool = False):
         self.epg_importing = False
+        notify = self._epg_import_notify
+        self._epg_import_notify = False
         # Clear match cache as IDs/channels may have changed in the DB
         with self._epg_match_lock:
             self._epg_match_cache.clear()
@@ -5067,6 +5087,28 @@ class IPTVClient(wx.Frame):
         # that new EPG data may have arrived.
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
         self.on_highlight()
+        if notify:
+            # Reported last, so the guide is already reloaded behind the box.
+            self._report_epg_import_finished(success)
+
+    def _report_epg_import_finished(self, success: bool) -> None:
+        """Tell the user how the import they started by hand turned out.
+
+        An import runs for anything from seconds to the better part of an hour
+        with no window of its own, so without this the only way to know it had
+        ended was to go looking for new programme data.
+        """
+        if success:
+            self._show_or_queue_message_box(
+                _("The EPG import has finished. The programme guide is up to date."),
+                _("Import Complete"), wx.OK | wx.ICON_INFORMATION)
+            return
+        self._show_or_queue_message_box(
+            _("The EPG import did not finish. The programme guide may be "
+              "incomplete or unchanged.") + chr(10) + chr(10) + _(
+                "Check that the EPG sources in File > EPG Manager are reachable, "
+                "then try again."),
+            _("Import Failed"), wx.OK | wx.ICON_WARNING)
 
     def show_manager(self, _):
         dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"))
@@ -5136,8 +5178,21 @@ class IPTVClient(wx.Frame):
             message_box(_("No EPG sources configured. Please add one in File > EPG Manager."), _("No Sources"), wx.OK | wx.ICON_WARNING)
             return
 
-        message_box(_("EPG import will start in the background."), _("Import Started"), wx.OK | wx.ICON_INFORMATION)
-        self.start_epg_import_background(force=True)
+        if not self.config.get("epg_enabled", True):
+            message_box(_("EPG is not enabled."), _("EPG Not Available"), wx.OK | wx.ICON_WARNING)
+            return
+
+        # Start first, announce second: the announcement promises a completion
+        # message, so it must not be shown for an import that never began.
+        if not self.start_epg_import_background(force=True, notify=True):
+            message_box(_("The EPG import could not be started."), _("Import Failed"),
+                        wx.OK | wx.ICON_WARNING)
+            return
+
+        message_box(
+            _("EPG import will start in the background. You can keep using the "
+              "app; a message will tell you when the import has finished."),
+            _("Import Started"), wx.OK | wx.ICON_INFORMATION)
 
     def show_whats_on_now(self, _event):
         """Show dialog with all currently airing programs."""
@@ -6386,12 +6441,19 @@ class IPTVClient(wx.Frame):
         ``retry_of`` is the recorder id of a failed attempt this run replaces;
         the retry budget travels with it so attempts cannot multiply.
         """
-        headers = channel_http_headers(channel)
-        url = hls_url
+        # A catch-up URL built from a ``catchup="append"`` template carries the
+        # channel's M3U ``|User-Agent=...`` tail. Players understand that pipe;
+        # a HEAD probe and ffmpeg do not - it goes out as part of the query
+        # string, so every direct-file probe fails and the download quietly
+        # falls back to the HLS playlist, which paces itself in real time.
+        # Strip the tail and keep the headers it was carrying.
+        fetch_url, url_headers = split_stream_modifiers(hls_url)
+        headers = merge_headers(channel_http_headers(channel), url_headers)
+        url = fetch_url
         try:
             start_epoch = int(self._parse_epg_time(show.get("start", "")).timestamp())
             direct = catchup_direct.direct_download_url(
-                hls_url, start_epoch, int(duration), headers)
+                fetch_url, start_epoch, int(duration), headers)
             if direct:
                 LOG.info("Catch-up: using fast direct download URL")
                 url = direct
