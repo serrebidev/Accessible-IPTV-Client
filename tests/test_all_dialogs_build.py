@@ -124,6 +124,19 @@ def test_scheduled_recordings_dialog_builds(host):
         dlg.Destroy()
 
 
+def test_scheduled_recordings_delete_shortcut(host, monkeypatch):
+    scheduler = types.SimpleNamespace(list_jobs=lambda: [])
+    dlg = ScheduledRecordingsDialog(host, scheduler)
+    calls = []
+    monkeypatch.setattr(dlg, "_on_delete_selected", lambda event: calls.append(event))
+    event = types.SimpleNamespace(GetKeyCode=lambda: wx.WXK_DELETE, Skip=lambda: None)
+    try:
+        dlg._on_char_hook(event)
+        assert calls == [event]
+    finally:
+        dlg.Destroy()
+
+
 def test_whats_on_now_dialog_builds(host):
     progs = [
         {"title": "Evening News", "start": "20260907190000", "end": "20260907200000",

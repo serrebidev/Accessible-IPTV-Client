@@ -11,6 +11,7 @@ Skipped when wxPython or a usable display is unavailable.
 """
 import os
 import sys
+import types
 from typing import Any
 
 import pytest
@@ -138,6 +139,20 @@ def test_playlist_selected_actions_live_in_the_context_menu(manager, monkeypatch
 
     manager._on_source_context_menu(_ContextEvent())
     assert labels == ["Copy URL", "Rename Selected", "Remove Selected"]
+
+
+def test_source_manager_f2_and_delete_invoke_selected_actions(manager, monkeypatch):
+    """Source lists follow the standard Windows F2 and Delete conventions."""
+    calls = []
+    monkeypatch.setattr(manager, "OnRename", lambda event: calls.append(("rename", event)))
+    monkeypatch.setattr(manager, "OnRemove", lambda event: calls.append(("remove", event)))
+
+    rename_event = types.SimpleNamespace(GetKeyCode=lambda: wx.WXK_F2, Skip=lambda: None)
+    delete_event = types.SimpleNamespace(GetKeyCode=lambda: wx.WXK_DELETE, Skip=lambda: None)
+    manager._on_source_shortcut(rename_event)
+    manager._on_source_shortcut(delete_event)
+
+    assert calls == [("rename", rename_event), ("remove", delete_event)]
 
 
 def test_playlist_manager_copies_the_source_url(wx_app, monkeypatch):

@@ -7489,6 +7489,8 @@ class ScheduledRecordingsDialog(wx.Dialog):
         key = event.GetKeyCode()
         if key == wx.WXK_ESCAPE:
             self.Close()
+        elif key == wx.WXK_DELETE:
+            self._on_delete_selected(event)
         elif key == wx.WXK_MENU:
             self._show_context_menu(keyboard=True)
         else:
@@ -7501,7 +7503,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
         menu.AppendSeparator()
         cancel_item = menu.Append(wx.ID_ANY, _("Cancel"))
         menu.Bind(wx.EVT_MENU, self._on_cancel_selected, cancel_item)
-        delete_item = menu.Append(wx.ID_ANY, _("Delete"))
+        delete_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
         menu.Bind(wx.EVT_MENU, self._on_delete_selected, delete_item)
         pos = wx.DefaultPosition
         if keyboard:

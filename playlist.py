@@ -2584,6 +2584,16 @@ def normalize_source_names(names):
 
 
 class _SourceNamesMixin:
+    def _on_source_shortcut(self, event):
+        """Provide the standard Windows rename and remove list shortcuts."""
+        key = event.GetKeyCode()
+        if key == wx.WXK_F2:
+            self.OnRename(event)
+        elif key == wx.WXK_DELETE:
+            self.OnRemove(event)
+        else:
+            event.Skip()
+
     def _focus_source_list(self):
         """Open with the list of sources focused, not the first toolbar button.
 
@@ -2738,6 +2748,7 @@ if WX_AVAILABLE:
             self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
             # Copy URL (and Shift+F10 / Applications key) without leaving the keyboard.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+            self.lb.Bind(wx.EVT_CHAR_HOOK, self._on_source_shortcut)
             self._focus_source_list()
 
         def _on_source_context_menu(self, event):
@@ -2835,6 +2846,7 @@ if WX_AVAILABLE:
             # dialog quieter for keyboard and screen-reader users. EVT_CONTEXT_MENU
             # also covers Shift+F10 and the Applications key.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
+            self.lb.Bind(wx.EVT_CHAR_HOOK, self._on_source_shortcut)
             self._focus_source_list()
 
         def _on_source_context_menu(self, event):
@@ -2853,8 +2865,8 @@ if WX_AVAILABLE:
             menu = wx.Menu()
             copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
             copy_item.Enable(self._selected_source_url() is not None)
-            rename_item = menu.Append(wx.ID_ANY, _("Rename Selected"))
-            remove_item = menu.Append(wx.ID_ANY, _("Remove Selected"))
+            rename_item = menu.Append(wx.ID_ANY, _("Rename Selected") + "\tF2")
+            remove_item = menu.Append(wx.ID_ANY, _("Remove Selected") + "\tDel")
             rename_item.Enable(has_selection)
             remove_item.Enable(has_selection)
             menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
