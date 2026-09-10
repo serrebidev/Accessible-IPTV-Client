@@ -235,41 +235,89 @@ def test_stream_url_field_can_be_hidden(host):
     assert ctrl.IsShown()
 
 
+def _tab_ring_client(show_channel_url, focus, navigations):
+    return types.SimpleNamespace(
+        show_channel_url=show_channel_url,
+        channel_list=types.SimpleNamespace(
+            SetFocus=lambda: focus.append("channels"),
+            Navigate=lambda flags: navigations.append(flags)),
+        episode_description_field=types.SimpleNamespace(
+            SetFocus=lambda: focus.append("description"),
+            Navigate=lambda flags: navigations.append(flags)),
+        url_display=types.SimpleNamespace(
+            SetFocus=lambda: focus.append("url"),
+            Navigate=lambda flags: navigations.append(flags)),
+        filter_box=types.SimpleNamespace(SetFocus=lambda: focus.append("search")),
+        play_selected=lambda *a, **kw: None,
+        _navigate_forward=IPTVClient._navigate_forward,
+    )
+
+
+def _tab_event(shift=False):
+    return types.SimpleNamespace(
+        GetKeyCode=lambda: wx.WXK_TAB,
+        ShiftDown=lambda: shift,
+        HasAnyModifiers=lambda: shift,
+        Skip=lambda *a: None,
+    )
+
+
+def test_tab_from_the_channel_list_reaches_the_episode_description():
+    """The description is the next stop whether or not the URL field is on."""
+    for show_url in (False, True):
+        focus, navigations = [], []
+        client = _tab_ring_client(show_url, focus, navigations)
+        IPTVClient.on_channel_key(client, _tab_event())
+        assert focus == ["description"]
+        assert navigations == []
+
+
+def test_shift_tab_from_the_episode_description_returns_to_the_channel_list():
+    """The reported bug: with the URL field off Shift+Tab went nowhere.
+
+    It focused the hidden stream-URL control, and SetFocus on a hidden window
+    does nothing, so the user was stranded in the description field.
+    """
+    for show_url in (False, True):
+        focus, navigations = [], []
+        client = _tab_ring_client(show_url, focus, navigations)
+        IPTVClient._on_episode_description_key(client, _tab_event(shift=True))
+        assert focus == ["channels"]
+        assert navigations == []
+
+
+def test_tab_from_the_episode_description_reaches_the_url_field_when_shown():
+    focus, navigations = [], []
+    client = _tab_ring_client(True, focus, navigations)
+    IPTVClient._on_episode_description_key(client, _tab_event())
+    assert focus == ["url"]
+    assert navigations == []
+
+
 def test_hidden_stream_url_field_lets_tab_wrap_by_normal_traversal():
-    """Tab out of the channel list must be undoable with Shift+Tab.
+    """Tab out of the last control must be undoable with Shift+Tab.
 
     Shift+Tab from the search box goes to the categories tree, so sending Tab
     there put the user two controls away from the channel they left. With the
-    URL field hidden the channel list is simply the last control: hand Tab to
-    normal traversal, whose wrap to the playlist-scope combo is exactly what
-    Shift+Tab from that combo reverses -- verified against NVDA, which
+    URL field hidden the episode description is simply the last control: hand
+    Tab to normal traversal, whose wrap to the playlist-scope combo is exactly
+    what Shift+Tab from that combo reverses -- verified against NVDA, which
     announces the original row ("list item 2 of 5") on the way back.
     """
-    focus = []
-    navigations = []
-    client = types.SimpleNamespace(
-        show_channel_url=False,
-        channel_list=types.SimpleNamespace(
-            Navigate=lambda flags: navigations.append(flags)),
-        url_display=types.SimpleNamespace(SetFocus=lambda: focus.append("url")),
-        filter_box=types.SimpleNamespace(SetFocus=lambda: focus.append("search")),
-        play_selected=lambda *a, **kw: None,
-    )
-    event = types.SimpleNamespace(
-        GetKeyCode=lambda: wx.WXK_TAB,
-        ShiftDown=lambda: False,
-        Skip=lambda *a: None,
-    )
-    IPTVClient.on_channel_key(client, event)
+    focus, navigations = [], []
+    client = _tab_ring_client(False, focus, navigations)
+    IPTVClient._on_episode_description_key(client, _tab_event())
     assert focus == []
     assert navigations == [
         wx.NavigationKeyEvent.IsForward | wx.NavigationKeyEvent.FromTab]
 
+    focus.clear()
     navigations.clear()
     client.show_channel_url = True
-    IPTVClient.on_channel_key(client, event)
-    assert focus == ["url"]
-    assert navigations == []
+    IPTVClient._on_url_display_key(client, _tab_event())
+    assert focus == []
+    assert navigations == [
+        wx.NavigationKeyEvent.IsForward | wx.NavigationKeyEvent.FromTab]
 
 
 def test_shift_tab_from_channel_list_still_goes_to_search():
