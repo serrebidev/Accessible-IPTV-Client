@@ -1,6 +1,16 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.126.0 - 2026-09-10
+
+- Shorten the row actions to Rename, Delete and Catch-up
+- Confirm before deleting a playlist
+- Keep a window on screen for the whole install
+- Drop the catch-up dialog's Close button
+- Make the episode description Tab ring reversible
+- Translate every string that was still English
+- Pin the channels -> description -> URL Tab ring
+
 ## v1.125.1 - 2026-09-09
 
 - Refine Hungarian EPG import messages
