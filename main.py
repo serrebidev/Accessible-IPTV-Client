@@ -2543,7 +2543,7 @@ class IPTVClient(wx.Frame):
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._view_channel_epg(ch), epg_item)
 
         if self._channel_has_catchup(channel):
-            catch_item = menu.Append(wx.ID_ANY, _("Play Catch-up…"))
+            catch_item = menu.Append(wx.ID_ANY, _("Catch-up"))
             menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._open_catchup_dialog(ch), catch_item)
         try:
             self.channel_list.PopupMenu(menu)

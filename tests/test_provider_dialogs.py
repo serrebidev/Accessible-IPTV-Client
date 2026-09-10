@@ -138,7 +138,47 @@ def test_playlist_selected_actions_live_in_the_context_menu(manager, monkeypatch
             return wx.DefaultPosition
 
     manager._on_source_context_menu(_ContextEvent())
-    assert labels == ["Copy URL", "Rename Selected", "Remove Selected"]
+    assert labels == ["Copy URL", "Rename", "Delete"]
+
+
+def test_deleting_a_playlist_asks_first(wx_app, monkeypatch):
+    """Del and the context menu both drop a whole playlist; make it deliberate."""
+    dlg = PlaylistManagerDialog(None, ["http://example.test/one.m3u",
+                                       "http://example.test/two.m3u"])
+    try:
+        asked = []
+        monkeypatch.setattr(dlg, "_confirm_remove",
+                            lambda label: asked.append(label) or False)
+        dlg.lb.SetSelection(0)
+        dlg.OnRemove(None)
+        assert asked == ["http://example.test/one.m3u"]
+        assert len(dlg.playlist_sources) == 2
+        assert dlg.lb.GetCount() == 2
+        # The row the user was on stays selected, so Del twice by accident is
+        # still one question about one playlist.
+        assert dlg.lb.GetSelection() == 0
+
+        asked.clear()
+        monkeypatch.setattr(dlg, "_confirm_remove",
+                            lambda label: asked.append(label) or True)
+        dlg.OnRemove(None)
+        assert asked == ["http://example.test/one.m3u"]
+        assert dlg.playlist_sources == ["http://example.test/two.m3u"]
+        assert dlg.lb.GetCount() == 1
+        assert dlg.lb.GetSelection() == 0
+    finally:
+        dlg.Destroy()
+
+
+def test_deleting_a_playlist_with_nothing_selected_asks_nothing(wx_app, monkeypatch):
+    dlg = PlaylistManagerDialog(None, [])
+    try:
+        monkeypatch.setattr(dlg, "_confirm_remove",
+                            lambda label: pytest.fail("asked with no selection"))
+        dlg.OnRemove(None)
+        assert dlg.playlist_sources == []
+    finally:
+        dlg.Destroy()
 
 
 def test_source_manager_f2_and_delete_invoke_selected_actions(manager, monkeypatch):

@@ -2629,7 +2629,7 @@ class _SourceNamesMixin:
         current = (source.get("name", "") if isinstance(source, dict)
                    else self.source_names.get(source_name_key(source), ""))
         with wx.TextEntryDialog(self, _("Name"),
-                                _("Rename Selected"), value=current) as dlg:
+                                _("Rename"), value=current) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return
             name = dlg.GetValue().strip()
@@ -2724,8 +2724,8 @@ if WX_AVAILABLE:
             btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
             self.add_file_btn = wx.Button(panel, label=_("Add File"))
             self.add_url_btn = wx.Button(panel, label=_("Add URL"))
-            self.remove_btn = wx.Button(panel, label=_("Remove Selected"))
-            self.rename_btn = wx.Button(panel, label=_("Rename Selected"))
+            self.remove_btn = wx.Button(panel, label=_("Delete"))
+            self.rename_btn = wx.Button(panel, label=_("Rename"))
             for btn in (self.add_file_btn, self.add_url_btn, self.rename_btn, self.remove_btn):
                 btn_sizer.Add(btn, 0, wx.ALL, 2)
             main_sizer.Add(btn_sizer, 0, wx.EXPAND)
@@ -2865,8 +2865,8 @@ if WX_AVAILABLE:
             menu = wx.Menu()
             copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
             copy_item.Enable(self._selected_source_url() is not None)
-            rename_item = menu.Append(wx.ID_ANY, _("Rename Selected") + "\tF2")
-            remove_item = menu.Append(wx.ID_ANY, _("Remove Selected") + "\tDel")
+            rename_item = menu.Append(wx.ID_ANY, _("Rename") + "\tF2")
+            remove_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
             rename_item.Enable(has_selection)
             remove_item.Enable(has_selection)
             menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
