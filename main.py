@@ -7185,9 +7185,9 @@ class CatchupDialog(wx.Dialog):
     """Choose one catch-up programme, then open or download it.
 
     The two actions live only in the list's context menu (right-click / Apps
-    key) and on Enter (open): no Open or Download buttons sit in the Tab
-    chain. Tab from the list reaches a read-only description of the
-    highlighted programme instead, like the EPG dialog.
+    key) and on Enter (open): no buttons at all sit in the Tab chain. Tab from
+    the list reaches a read-only description of the highlighted programme, and
+    Tab again comes straight back to the list. Escape closes the dialog.
     """
 
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
@@ -7198,7 +7198,7 @@ class CatchupDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         intro = wx.StaticText(panel, label=_(
             "Select a programme, then press Enter to open it, or use the "
-            "context menu to download it."))
+            "context menu to download it. Press Escape to close."))
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
         for prog in programmes:
             self.listbox.Append(self._format_programme(prog))
@@ -7212,17 +7212,15 @@ class CatchupDialog(wx.Dialog):
             panel, size=(-1, 90), style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.description_field.SetName(_("Episode description"))
 
-        # Open and Download deliberately keep no buttons in the Tab chain:
-        # Enter opens the highlighted programme and the context menu
-        # (right-click / Applications key) downloads it. Only Close remains.
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
+        # There is no Close button. It was the third stop in a three-control
+        # Tab ring and did nothing Escape does not already do, so Tab from the
+        # description landed on a button whose only job was to be tabbed past
+        # on the way back to the list. Escape is handled below, for every
+        # control in the dialog.
         sizer.Add(intro, 0, wx.ALL, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
         panel.SetSizer(sizer)
         self.listbox.SetName(_("Catch-up programmes"))
         self.listbox.Bind(wx.EVT_LISTBOX, lambda _evt: self._update_description())
@@ -7233,10 +7231,21 @@ class CatchupDialog(wx.Dialog):
         self.listbox.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.listbox.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
         self.description_field.Bind(wx.EVT_CHAR_HOOK, self._on_description_key)
+        # With no wxID_CANCEL button left, wx has nothing to click for Escape,
+        # so close the dialog here. The bind is on the dialog: an unhandled
+        # char hook from any child bubbles up to it.
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_dialog_key)
+        self.SetEscapeId(wx.ID_CANCEL)
         self.SetMinSize((420, 380))
         self.Layout()
         self.CenterOnParent()
         self._update_description()
+
+    def _on_dialog_key(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+            return
+        event.Skip()
 
     def _format_programme(self, prog: Dict[str, str]) -> str:
         try:
@@ -7255,7 +7264,10 @@ class CatchupDialog(wx.Dialog):
             self.EndModal(wx.ID_OK)
 
     def _on_description_key(self, event):
-        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+        # Both directions go back to the list: it and the description are the
+        # only two controls, so Tab is a two-stop ring, not a walk past a
+        # button on the way round.
+        if event.GetKeyCode() == wx.WXK_TAB:
             self.listbox.SetFocus()
             return
         event.Skip()
@@ -7270,7 +7282,12 @@ class CatchupDialog(wx.Dialog):
 
     def _on_key(self, event):
         key = event.GetKeyCode()
-        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+        if key == wx.WXK_TAB:
+            # Forwards to the description, backwards to it as well: the ring
+            # holds two controls, so either Tab direction reaches the same
+            # place and the pair stays reversible.
+            self.description_field.SetFocus()
+        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self._on_listbox_activate(None)
         elif key == wx.WXK_WINDOWS_MENU:
             # The keyboard's context-menu key must work without a mouse.
