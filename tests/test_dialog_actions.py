@@ -492,3 +492,109 @@ def test_finished_update_is_silent_on_success_and_loud_on_failure(monkeypatch, t
     pending["version"] = "9999.0.0"
     appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
     assert len(boxes) == 1
+
+
+
+# --------------------------------------------------------------------------- #
+# The catch-up dialog has no buttons at all
+# --------------------------------------------------------------------------- #
+def test_catchup_dialog_has_no_close_button(host):
+    """Close was a Tab stop that only did what Escape already does."""
+    dlg = CatchupDialog(host, "BBC One", [
+        {"start": "20260101120000", "end": "20260101130000",
+         "title": "News", "description": "The one o'clock news."},
+    ])
+    try:
+        buttons = [w for w in dlg.GetChildren()[0].GetChildren()
+                   if isinstance(w, wx.Button)]
+        assert buttons == []
+    finally:
+        dlg.Destroy()
+
+
+def test_catchup_dialog_tab_ring_is_two_controls(host):
+    dlg = CatchupDialog(host, "BBC One", [
+        {"start": "20260101120000", "end": "20260101130000", "title": "News"},
+    ])
+    try:
+        tab = types.SimpleNamespace(
+            GetKeyCode=lambda: wx.WXK_TAB,
+            ShiftDown=lambda: False,
+            HasAnyModifiers=lambda: False,
+            Skip=lambda *a: None,
+        )
+        dlg._on_key(tab)
+        assert dlg.FindFocus() is dlg.description_field
+        dlg._on_description_key(tab)
+        assert dlg.FindFocus() is dlg.listbox
+
+        shift_tab = types.SimpleNamespace(
+            GetKeyCode=lambda: wx.WXK_TAB,
+            ShiftDown=lambda: True,
+            HasAnyModifiers=lambda: True,
+            Skip=lambda *a: None,
+        )
+        dlg.description_field.SetFocus()
+        dlg._on_description_key(shift_tab)
+        assert dlg.FindFocus() is dlg.listbox
+    finally:
+        dlg.Destroy()
+
+
+def test_catchup_dialog_escape_still_closes_it(host, monkeypatch):
+    dlg = CatchupDialog(host, "BBC One", [])
+    try:
+        ended = []
+        monkeypatch.setattr(dlg, "EndModal", lambda code: ended.append(code))
+        skipped = []
+        dlg._on_dialog_key(types.SimpleNamespace(
+            GetKeyCode=lambda: wx.WXK_ESCAPE,
+            Skip=lambda *a: skipped.append(True)))
+        assert ended == [wx.ID_CANCEL]
+        assert skipped == []
+    finally:
+        dlg.Destroy()
+
+
+# --------------------------------------------------------------------------- #
+# The update hand-off waits for the helper's own window
+# --------------------------------------------------------------------------- #
+def test_update_handoff_waits_for_the_helper_window(monkeypatch, tmp_path):
+    """Closing on a timer left the screen empty while PowerShell started up."""
+    ready = tmp_path / "update_window_ready"
+    later = []
+    monkeypatch.setattr(appmod.wx, "CallLater",
+                        lambda ms, fn, *a: later.append((ms, fn)))
+    pulses = []
+    client = types.SimpleNamespace(
+        _show_update_installing_progress=lambda: pulses.append(True),
+        _finish_update_handoff=lambda: None,
+    )
+
+    IPTVClient._close_for_update_install(client, str(ready))
+    # Nothing scheduled to close yet: the helper has not reported in.
+    assert later and later[-1][0] == appmod._UPDATE_HANDOFF_POLL_MS
+    assert pulses == [True]
+
+    ready.write_text("", encoding="utf-8")
+    later[-1][1]()
+    assert later[-1][0] == appmod._UPDATE_HANDOFF_LINGER_MS
+    assert later[-1][1] == client._finish_update_handoff
+
+
+def test_update_handoff_gives_up_on_a_helper_that_never_reports(monkeypatch, tmp_path):
+    later = []
+    monkeypatch.setattr(appmod.wx, "CallLater",
+                        lambda ms, fn, *a: later.append((ms, fn)))
+    clock = [0.0]
+    monkeypatch.setattr(appmod.time, "monotonic", lambda: clock[0])
+    client = types.SimpleNamespace(
+        _show_update_installing_progress=lambda: None,
+        _finish_update_handoff=lambda: None,
+    )
+
+    IPTVClient._close_for_update_install(client, str(tmp_path / "never"))
+    assert later[-1][0] == appmod._UPDATE_HANDOFF_POLL_MS
+    clock[0] = appmod._UPDATE_HANDOFF_MAX_WAIT_SECONDS + 1
+    later[-1][1]()
+    assert later[-1][0] == appmod._UPDATE_HANDOFF_LINGER_MS

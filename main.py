@@ -548,6 +548,10 @@ _MANUAL_UPDATE_HTTP_TIMEOUT_SECONDS = 15.0
 # for the installer, so a screen reader has time to speak it. Must stay
 # well inside the 30 seconds update_helper.ps1 waits before killing us.
 _UPDATE_HANDOFF_LINGER_MS = 2500
+# How long to hold the app's own progress dialog open waiting for the update
+# helper to report that its status window is showing, and how often to look.
+_UPDATE_HANDOFF_MAX_WAIT_SECONDS = 15.0
+_UPDATE_HANDOFF_POLL_MS = 250
 
 # Catch-up downloads: providers refuse bursts of connections with 403s and
 # flaky networks drop streams, so a failed download is retried automatically
@@ -3808,6 +3812,7 @@ class IPTVClient(wx.Frame):
         installer_path: str,
         exe_name: str,
     ):
+        ready_path = self._update_handoff_ready_path(helper_bat)
         cmd = [
             "cmd",
             "/d",
@@ -3821,6 +3826,8 @@ class IPTVClient(wx.Frame):
             installer_path,
             "-ExeName",
             exe_name,
+            "-ReadyFile",
+            ready_path,
         ]
         # Say what is about to happen in the progress dialog that is already on
         # screen rather than in a box the user has to dismiss. The helper only
@@ -3839,7 +3846,7 @@ class IPTVClient(wx.Frame):
             )
             return
         self._update_install_pending = True
-        self._close_for_update_install()
+        self._close_for_update_install(ready_path)
     def _launch_update_helper(
         self,
         helper_bat: str,
@@ -3848,6 +3855,7 @@ class IPTVClient(wx.Frame):
         backup_dir: str,
         exe_name: str,
     ):
+        ready_path = self._update_handoff_ready_path(helper_bat)
         cmd = [
             "cmd",
             "/d",
@@ -3863,6 +3871,8 @@ class IPTVClient(wx.Frame):
             backup_dir,
             "-ExeName",
             exe_name,
+            "-ReadyFile",
+            ready_path,
         ]
         # Say what is about to happen in the progress dialog that is already on
         # screen rather than in a box the user has to dismiss. The helper only
@@ -3881,7 +3891,7 @@ class IPTVClient(wx.Frame):
             )
             return
         self._update_install_pending = True
-        self._close_for_update_install()
+        self._close_for_update_install(ready_path)
 
     def _show_update_installing_progress(self) -> None:
         """Carry the download dialog straight into the install, no click.
@@ -3904,9 +3914,37 @@ class IPTVClient(wx.Frame):
             LOG.debug("IPTVClient._show_update_installing_progress: ignored exception",
                       exc_info=True)
 
-    def _close_for_update_install(self) -> None:
-        """Quit for the installer, leaving the message up long enough to read."""
-        wx.CallLater(_UPDATE_HANDOFF_LINGER_MS, self._finish_update_handoff)
+    @staticmethod
+    def _update_handoff_ready_path(helper_bat: str) -> str:
+        """Where the helper reports that its own status window is on screen."""
+        return os.path.join(os.path.dirname(helper_bat), "update_window_ready")
+
+    def _close_for_update_install(self, ready_path: Optional[str] = None) -> None:
+        """Quit for the installer - but not before the helper's window is up.
+
+        The app has to exit for the install to run, so its own progress dialog
+        cannot survive the update; the helper owns a status window that can.
+        Closing on a fixed timer raced that window into existence: PowerShell
+        needs a second or two to start and load WinForms, and for the whole of
+        that gap there was nothing on screen and nothing for a screen reader to
+        read. So wait for the helper to say its window is showing, then linger
+        the usual moment on top of it, so the two windows overlap instead of
+        leaving a hole between them. The wait is capped: a helper that never
+        reports in must not strand the user in a dialog that will not close.
+        """
+        deadline = time.monotonic() + _UPDATE_HANDOFF_MAX_WAIT_SECONDS
+
+        def wait_for_helper_window():
+            if (ready_path and not os.path.exists(ready_path)
+                    and time.monotonic() < deadline):
+                # Keep pulsing: an un-updated progress dialog is the thing that
+                # goes grey and stops answering while we sit here.
+                self._show_update_installing_progress()
+                wx.CallLater(_UPDATE_HANDOFF_POLL_MS, wait_for_helper_window)
+                return
+            wx.CallLater(_UPDATE_HANDOFF_LINGER_MS, self._finish_update_handoff)
+
+        wait_for_helper_window()
 
     def _finish_update_handoff(self) -> None:
         # end_flow=False: the update is not over, it carries on in the helper,

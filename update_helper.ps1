@@ -8,7 +8,8 @@ param(
     [string]$InstallerPath = "",
     [Parameter(Mandatory = $true)]
     [string]$ExeName,
-    [string]$RestartArgs = ""
+    [string]$RestartArgs = "",
+    [string]$ReadyFile = ""
 )
 
 Set-Location $env:TEMP
@@ -21,11 +22,20 @@ $logPath = Join-Path $env:TEMP "AccessibleIPTVClient_update.log"
 # instead. It cannot be in the app itself (the app has to exit for the install
 # to start), so it is shown here, kept up through the installer and the restart,
 # and closed only once the new app has actually started.
+#
+# A WinForms window only stays alive while something pumps its messages, and
+# this script spends nearly all of its time waiting - for the app to exit, for
+# the installer to finish, for the restarted app to prove it survived. Plain
+# Start-Sleep pumps nothing, so the window used to go unresponsive within
+# seconds: Windows ghosts it, paints it blank and stops it answering the screen
+# reader, which is exactly the "the window disappears" the update was supposed
+# to stop. Every wait below therefore goes through Wait-Pumped.
 function Show-UpdateStatus {
     param([string]$Message)
     try {
         Add-Type -AssemblyName System.Windows.Forms
         Add-Type -AssemblyName System.Drawing
+        [System.Windows.Forms.Application]::EnableVisualStyles()
     } catch {
         Write-Log "Could not load WinForms for the status window: $($_.Exception.Message)"
         return $null
@@ -37,7 +47,7 @@ function Show-UpdateStatus {
     $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
     $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
     $form.Location = New-Object System.Drawing.Point(($workArea.Left + 60), ($workArea.Top + 60))
-    $form.Size = New-Object System.Drawing.Size(420, 150)
+    $form.Size = New-Object System.Drawing.Size(440, 190)
     $form.MaximizeBox = $false
     $form.MinimizeBox = $false
     $form.ShowInTaskbar = $true
@@ -47,11 +57,25 @@ function Show-UpdateStatus {
     $statusLabel.Name = "StatusLabel"
     $statusLabel.Text = $Message
     $statusLabel.AutoSize = $false
-    $statusLabel.SetBounds(16, 16, 372, 60)
+    $statusLabel.SetBounds(16, 16, 392, 76)
     $statusLabel.TabIndex = 0
     $form.Controls.Add($statusLabel)
 
-    try { $form.Show(); [System.Windows.Forms.Application]::DoEvents() } catch { }
+    # A marquee bar is the one thing that says "still working" without any
+    # text to re-read, and it keeps the window visibly alive between steps.
+    $progress = New-Object System.Windows.Forms.ProgressBar
+    $progress.Name = "StatusProgress"
+    $progress.Style = [System.Windows.Forms.ProgressBarStyle]::Marquee
+    $progress.MarqueeAnimationSpeed = 30
+    $progress.SetBounds(16, 100, 392, 20)
+    $progress.TabIndex = 1
+    $form.Controls.Add($progress)
+
+    try {
+        $form.Show()
+        $form.Activate()
+        [System.Windows.Forms.Application]::DoEvents()
+    } catch { }
     return $form
 }
 
@@ -60,10 +84,37 @@ function Update-StatusMessage {
     if (-not $Window) { return }
     try {
         $Window.Controls["StatusLabel"].Text = $Message
+        # The title carries the same text so NVDA+T reports where the update
+        # has got to, and so the taskbar button is not just "Updating...".
+        $Window.Text = "Accessible IPTV Client - $Message"
+        $Window.Refresh()
         [System.Windows.Forms.Application]::DoEvents()
     } catch {
         Write-Log "Status window update failed: $($_.Exception.Message)"
     }
+}
+
+# Sleep while keeping the status window painting and answering.
+function Wait-Pumped {
+    param([int]$Milliseconds, $Window)
+    $deadline = (Get-Date).AddMilliseconds($Milliseconds)
+    while ((Get-Date) -lt $deadline) {
+        if ($Window) {
+            try { [System.Windows.Forms.Application]::DoEvents() } catch { }
+        }
+        Start-Sleep -Milliseconds 50
+    }
+}
+
+# Wait for a process, pumping the status window, up to an optional cap.
+function Wait-ForProcessExit {
+    param($Process, $Window, [int]$TimeoutSeconds = 0)
+    $deadline = if ($TimeoutSeconds -gt 0) { (Get-Date).AddSeconds($TimeoutSeconds) } else { $null }
+    while (-not $Process.HasExited) {
+        if ($deadline -and (Get-Date) -ge $deadline) { return $false }
+        Wait-Pumped -Milliseconds 200 -Window $Window
+    }
+    return $true
 }
 
 function Close-StatusWindow {
@@ -82,7 +133,8 @@ function Start-AppAfterUpdate {
     param(
         [string]$ExePath,
         [string]$WorkDir,
-        [string]$Arguments = ""
+        [string]$Arguments = "",
+        $Window = $null
     )
 
     # A silent restart failure is the worst outcome there is for a screen-reader
@@ -107,7 +159,7 @@ function Start-AppAfterUpdate {
         if ($app) {
             # Long enough to get past DLL loading, where a broken install dies.
             for ($tick = 0; $tick -lt 20 -and -not $app.HasExited; $tick++) {
-                Start-Sleep -Milliseconds 250
+                Wait-Pumped -Milliseconds 250 -Window $Window
             }
             if (-not $app.HasExited) {
                 Write-Log "App restarted (PID $($app.Id))."
@@ -115,7 +167,7 @@ function Start-AppAfterUpdate {
             }
             Write-Log "Restart attempt $attempt exited immediately with code $($app.ExitCode)."
         }
-        Start-Sleep -Seconds 2
+        Wait-Pumped -Milliseconds 2000 -Window $Window
     }
 
     try {
@@ -131,18 +183,31 @@ function Start-AppAfterUpdate {
 
 $statusWindow = Show-UpdateStatus -Message "Preparing the update. Accessible IPTV Client is closing; the installation starts as soon as it has."
 
+# The app holds its own progress dialog open until this file appears, so the
+# two windows overlap and the screen is never empty. Written only once the
+# window really is showing - PowerShell plus WinForms takes a second or two to
+# start, and that gap is what used to look like the update window vanishing.
+if ($ReadyFile) {
+    try {
+        New-Item -ItemType File -Path $ReadyFile -Force | Out-Null
+        Write-Log "Signalled the app that the status window is up: $ReadyFile"
+    } catch {
+        Write-Log "Could not write the ready file: $($_.Exception.Message)"
+    }
+}
+
 Write-Log "Updater started. Waiting for PID $ParentPid."
 
 $deadline = (Get-Date).AddSeconds(30)
 while ((Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) {
-    Start-Sleep -Milliseconds 500
+    Wait-Pumped -Milliseconds 500 -Window $statusWindow
 }
 
 $parentProcess = Get-Process -Id $ParentPid -ErrorAction SilentlyContinue
 if ($parentProcess) {
     Write-Log "Process $ParentPid did not exit within timeout; terminating it."
     Stop-Process -Id $ParentPid -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 1000
+    Wait-Pumped -Milliseconds 1000 -Window $statusWindow
 }
 
 # Kill any processes running from the install directory.
@@ -164,7 +229,7 @@ try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
         }
     }
-    Start-Sleep -Milliseconds 500
+    Wait-Pumped -Milliseconds 500 -Window $statusWindow
 } catch {
     Write-Log "Warning: Failed to scan/kill zombie processes: $($_.Exception.Message)"
 }
@@ -177,6 +242,7 @@ if ($InstallerPath) {
     }
 
     Write-Log "Launching installer update: $InstallerPath"
+    Update-StatusMessage -Window $statusWindow -Message "Installing the update. This can take a minute; please leave this window alone."
     $installerArgs = @(
         "/VERYSILENT",
         "/SUPPRESSMSGBOXES",
@@ -185,27 +251,34 @@ if ($InstallerPath) {
         "/DIR=`"$InstallDir`""
     )
     try {
-        $proc = Start-Process -FilePath $InstallerPath -ArgumentList $installerArgs -Verb RunAs -Wait -PassThru
+        # -PassThru without -Wait, then a pumped wait: -Wait blocks this whole
+        # thread, and a blocked thread cannot keep the status window alive for
+        # the minute or so the installer takes. The message it shows is set
+        # before the launch, not after, for the same reason.
+        $proc = Start-Process -FilePath $InstallerPath -ArgumentList $installerArgs -Verb RunAs -PassThru
+        [void](Wait-ForProcessExit -Process $proc -Window $statusWindow)
+        # Settle the process object so ExitCode is populated before it is read.
+        try { $proc.WaitForExit() } catch { }
         if ($proc.ExitCode -ne 0) {
             Write-Log "Installer failed with exit code $($proc.ExitCode)."
+            Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
+            Wait-Pumped -Milliseconds 10000 -Window $statusWindow
             Close-StatusWindow -Window $statusWindow
             exit $proc.ExitCode
         }
     } catch {
         Write-Log "Failed to launch installer: $($_.Exception.Message)"
         Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
-        Start-Sleep -Seconds 10
+        Wait-Pumped -Milliseconds 10000 -Window $statusWindow
         Close-StatusWindow -Window $statusWindow
         exit 1
     }
-
-    Update-StatusMessage -Window $statusWindow -Message "Installing the update. This can take a minute; please leave this window alone."
 
     $exePath = Join-Path $InstallDir $ExeName
     if (Test-Path -LiteralPath $exePath) {
         Update-StatusMessage -Window $statusWindow -Message "Starting the updated Accessible IPTV Client..."
         Write-Log "Restarting app after installer update: $exePath"
-        $restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
+        $restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs -Window $statusWindow
         Write-Log "Installer updater completed."
         Close-StatusWindow -Window $statusWindow
         if ($restarted) { exit 0 }
@@ -213,7 +286,7 @@ if ($InstallerPath) {
     }
 
     Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
-    Start-Sleep -Seconds 10
+    Wait-Pumped -Milliseconds 10000 -Window $statusWindow
     Close-StatusWindow -Window $statusWindow
     Write-Log "Executable not found after installer update: $exePath"
     exit 1
@@ -244,7 +317,7 @@ try {
 } catch {
         Write-Log "Failed to move install to backup: $($_.Exception.Message)"
         Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
-        Start-Sleep -Seconds 10
+        Wait-Pumped -Milliseconds 10000 -Window $statusWindow
         Close-StatusWindow -Window $statusWindow
         exit 1
     }
@@ -289,7 +362,7 @@ try {
         }
     }
     Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
-    Start-Sleep -Seconds 10
+    Wait-Pumped -Milliseconds 10000 -Window $statusWindow
     Close-StatusWindow -Window $statusWindow
     exit 1
 }
@@ -297,7 +370,7 @@ try {
 $exePath = Join-Path $InstallDir $ExeName
 if (-not (Test-Path -LiteralPath $exePath)) {
     Update-StatusMessage -Window $statusWindow -Message "The update did not finish. Please try again from the Help menu in the application."
-    Start-Sleep -Seconds 10
+    Wait-Pumped -Milliseconds 10000 -Window $statusWindow
     Close-StatusWindow -Window $statusWindow
     Write-Log "Executable not found after update: $exePath"
     if (Test-Path -LiteralPath $BackupDir) {
@@ -329,7 +402,7 @@ if (Test-Path -LiteralPath $BackupDir) {
 
 Update-StatusMessage -Window $statusWindow -Message "Starting the updated Accessible IPTV Client..."
 Write-Log "Restarting app: $exePath"
-$restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs
+$restarted = Start-AppAfterUpdate -ExePath $exePath -WorkDir $InstallDir -Arguments $RestartArgs -Window $statusWindow
 
 Write-Log "Updater completed."
 Close-StatusWindow -Window $statusWindow
