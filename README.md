@@ -8,7 +8,7 @@ A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work we
 
 ## Screenshots
 
-The main window: playlist groups on the left, the channel list on the right, and the now/next guide entry plus the stream URL for the selected channel underneath.
+The main window: playlist groups on the left, the channel list on the right, and the on-air episode description plus the optional stream URL for the selected channel underneath.
 
 ![Main window of Accessible IPTV Client. The left pane lists channel groups such as Education, Entertainment, Movies and News with channel counts. The right pane lists the channels in the selected group. Below it, a panel shows the currently airing and next programme with times, and another shows the selected channel's stream URL.](docs/screenshots/main-window.png)
 
@@ -26,7 +26,7 @@ The built-in player (libVLC) with keyboard-reachable controls, or hand the strea
 
 Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files, URLs, Xtream Codes logins, and Stalker Portal details.
 
-![The Playlist Manager dialog. Buttons across the top read Add File, Add URL, Add Xtream Codes, Add Stalker Portal and Remove Selected. A list below holds one playlist URL, and OK and Cancel buttons sit at the bottom.](docs/screenshots/playlist-manager.png)
+![The Playlist Manager dialog. Buttons across the top read Add File, Add URL, Add Xtream Codes, Add Stalker Portal and Delete. A list below holds one playlist URL, and OK and Cancel buttons sit at the bottom.](docs/screenshots/playlist-manager.png)
 
 ## Features
 
@@ -38,7 +38,7 @@ Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files,
 - A preferred audio track for the built-in player, under **Options > Preferred Audio Track** — pick an audio description track automatically wherever a channel offers one, or name the track/language you want.
 - XMLTV EPG support (`.xml` and `.xml.gz`), including large multi-million-row guides.
 - Catch-up/timeshift playback for channels that support it.
-- A **Show Stream URL** switch under **Options** for the read-only stream-URL field beneath the channel list; turn it off and Tab goes straight from the channel list back to Search.
+- Tab from the channel list reaches the on-air **episode description** for the highlighted channel, and Shift+Tab comes straight back to it. A **Show Stream URL** switch under **Options** puts the read-only stream-URL field one Tab further on; turn it off and the description is the last control before Tab wraps round.
 - Account status under **File > Account Info** — expiry date, days remaining, trial flag and connection limits for Xtream Codes and Stalker Portal accounts, including accounts detected automatically from a playlist or stream URL.
 - Casting support, plus optional system tray minimize.
 - Recording and DVR scheduling, with an optional **Recordings > Shut Down the Computer When Recordings Finish** for overnight captures. The built-in player has its own **Record** button (**Ctrl+R**) for what you are watching, and **Schedule Recording** is on the context menu of every EPG programme.

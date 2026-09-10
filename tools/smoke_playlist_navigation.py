@@ -27,8 +27,10 @@ for index, group in ((1, "First"), (2, "Second")):
     assert frame.channel_list.GetCount() == 1
     assert wx.Window.FindFocus() == frame.playlist_scope_combo
 
+# Creation order is tab order: the episode description comes before the
+# optional stream-URL field, so Tab reaches what the viewer wants first.
 controls = [frame.playlist_scope_combo, frame.group_list, frame.filter_box,
-            frame.channel_list, frame.url_display, frame.episode_description_field]
+            frame.channel_list, frame.episode_description_field, frame.url_display]
 for reverse in (False, True):
     for index, control in enumerate(controls):
         control.SetFocus()

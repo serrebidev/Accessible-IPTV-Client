@@ -2133,16 +2133,12 @@ class IPTVClient(wx.Frame):
         self.channel_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, lambda _evt: self.play_selected())
         self.channel_list.Bind(wx.EVT_CONTEXT_MENU, self._on_channel_context_menu)
 
-        self.url_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.url_display.SetName(_("Stream URL"))
-        if hasattr(self.url_display, "SetAccessibleName"):
-            self.url_display.SetAccessibleName(_("Stream URL"))
-        # Keep the documented Tab loop reversible for text controls as well as
-        # the virtual channel list: channels -> stream URL -> episode
-        # description. The on-air programme is announced as part of each
-        # channel row; this field carries the longer description text, so
-        # spotting an interesting episode while scrolling costs one Tab.
-        self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
+        # Tab order after the channel list is episode description -> stream
+        # URL. The description comes first because it is what a viewer
+        # actually wants after hearing a channel row; the URL is a diagnostic
+        # that most users keep switched off entirely. wx builds tab order from
+        # creation order, so the description control is created first and the
+        # sizer follows the same sequence.
         self.episode_description_field = wx.TextCtrl(
             p, size=(-1, 70), style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.episode_description_field.SetName(_("Episode description"))
@@ -2150,12 +2146,17 @@ class IPTVClient(wx.Frame):
             self.episode_description_field.SetAccessibleName(_("Episode description"))
         self.episode_description_field.Bind(
             wx.EVT_CHAR_HOOK, self._on_episode_description_key)
+        self.url_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
+        self.url_display.SetName(_("Stream URL"))
+        if hasattr(self.url_display, "SetAccessibleName"):
+            self.url_display.SetAccessibleName(_("Stream URL"))
+        self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
         vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
-        vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.episode_description_field, 0, wx.EXPAND | wx.ALL, 5)
+        vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
         self._apply_channel_url_visibility()
         hs.Add(vs_l, 1, wx.EXPAND)
         hs.Add(vs_r, 2, wx.EXPAND)
@@ -2435,18 +2436,37 @@ class IPTVClient(wx.Frame):
 
     def _on_url_display_key(self, event):
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
-            self.channel_list.SetFocus()
+            self.episode_description_field.SetFocus()
             return
         if event.GetKeyCode() == wx.WXK_TAB and not event.HasAnyModifiers():
-            self.episode_description_field.SetFocus()
+            # Last control of the ring: hand Tab to normal traversal so it
+            # wraps to the playlist-scope combo, which Shift+Tab undoes.
+            self._navigate_forward(self.url_display)
             return
         event.Skip()
 
     def _on_episode_description_key(self, event):
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
-            self.url_display.SetFocus()
+            # Straight back to the channel the description belongs to. Going
+            # to the stream-URL field instead was both the wrong direction
+            # now that the description comes first, and a dead end whenever
+            # the URL field is switched off: SetFocus on a hidden control
+            # does nothing at all, so Shift+Tab simply stopped working.
+            self.channel_list.SetFocus()
+            return
+        if event.GetKeyCode() == wx.WXK_TAB and not event.HasAnyModifiers():
+            if self.show_channel_url:
+                self.url_display.SetFocus()
+            else:
+                self._navigate_forward(self.episode_description_field)
             return
         event.Skip()
+
+    @staticmethod
+    def _navigate_forward(ctrl) -> None:
+        """Hand Tab back to wx traversal from the last control in the ring."""
+        ctrl.Navigate(wx.NavigationKeyEvent.IsForward
+                      | wx.NavigationKeyEvent.FromTab)
 
     def _set_episode_description(self, text: str) -> None:
         """Update the Tab-reachable episode description field, when present.
@@ -3419,7 +3439,9 @@ class IPTVClient(wx.Frame):
         """Show or hide the stream-URL field and re-lay-out its column.
 
         Hiding it also takes it out of tab traversal, which is the point: with
-        the field off, Tab out of the channel list goes straight back to Search.
+        the field off the episode description is the last control in the ring,
+        and Tab from it wraps to the top instead of landing on a URL nobody
+        asked to see.
         """
         ctrl = getattr(self, "url_display", None)
         if ctrl is None:
@@ -4328,20 +4350,12 @@ class IPTVClient(wx.Frame):
         if key == wx.WXK_TAB:
             if event.ShiftDown():
                 self.filter_box.SetFocus()
-            elif self.show_channel_url:
-                self.url_display.SetFocus()
             else:
-                # With the stream-URL field switched off the channel list is
-                # the last control, so hand Tab to normal traversal and let it
-                # wrap to the top of the ring (the playlist-scope combo).
-                # Jumping straight to the search box instead broke
-                # reversibility: Shift+Tab from search goes to the categories
-                # tree, so Tab then Shift+Tab left the user two controls away
-                # from the channel they started on. Traversal's own wrap is
-                # exactly what Shift+Tab from the combo undoes, landing back on
-                # the same channel with its selection intact.
-                self.channel_list.Navigate(
-                    wx.NavigationKeyEvent.IsForward | wx.NavigationKeyEvent.FromTab)
+                # The episode description is always present, so it is always
+                # the next stop; Shift+Tab from there comes straight back
+                # here. The stream-URL field, which the user can switch off,
+                # sits one Tab further on.
+                self.episode_description_field.SetFocus()
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected()
         elif key in (wx.WXK_LEFT, wx.WXK_RIGHT):
