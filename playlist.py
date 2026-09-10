@@ -2925,9 +2925,37 @@ if WX_AVAILABLE:
 
         def OnRemove(self, _):
             i = self.lb.GetSelection()
-            if i != wx.NOT_FOUND:
-                self.playlist_sources.pop(i)
-                self.lb.Delete(i)
+            if i == wx.NOT_FOUND:
+                return
+            # Delete sits on the Del key and one row below Rename in the
+            # context menu, so a slip loses a whole playlist - credentials,
+            # name and all - with nothing to undo it. Name the playlist in the
+            # question so the answer is about the right one.
+            if not self._confirm_remove(self._format_source_label(
+                    self.playlist_sources[i])):
+                self.lb.SetSelection(i)
+                self.lb.SetFocus()
+                return
+            self.playlist_sources.pop(i)
+            self.lb.Delete(i)
+            if self.lb.GetCount():
+                self.lb.SetSelection(min(i, self.lb.GetCount() - 1))
+            self.lb.SetFocus()
+
+        def _confirm_remove(self, label):
+            """Ask before dropping a playlist; default to keeping it."""
+            dlg = wx.MessageDialog(
+                self,
+                _("Delete the playlist \u201c{name}\u201d?\n\n"
+                  "This removes it from the list of playlists. It cannot be "
+                  "undone.").format(name=label),
+                _("Delete Playlist"),
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+            )
+            try:
+                return dlg.ShowModal() == wx.ID_YES
+            finally:
+                dlg.Destroy()
 
         def _format_source_label(self, src):
             if isinstance(src, dict):
