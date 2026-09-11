@@ -1,6 +1,10 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.132.1 - 2026-09-11
+
+- Preserve focus during recording handoffs (#15)
+
 ## v1.132.0 - 2026-09-11
 
 - AI-drafted translations of the user guide in all 13 languages
