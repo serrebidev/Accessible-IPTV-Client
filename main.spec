@@ -49,6 +49,14 @@ for _root, _dirs, _files in os.walk('locale'):
         if _fn.endswith('.mo'):
             locale_datas.append((os.path.join(_root, _fn), _root))
 
+# The offline User Guide, one Markdown file per language. user_guide.guide_dir()
+# reads it from sys._MEIPASS/docs/help, and F1 help has nothing to show without it.
+_help_dir = os.path.join(_spec_dir, 'docs', 'help')
+help_datas = [(os.path.join(_help_dir, _fn), os.path.join('docs', 'help'))
+              for _fn in sorted(os.listdir(_help_dir)) if _fn.endswith('.md')]
+if not any(os.path.basename(src) == 'en.md' for src, _dest in help_datas):
+    raise SystemExit('main.spec: docs/help/en.md (the English user guide) is missing')
+
 # Hidden imports for networking and casting stacks
 hidden_imports = [
     'pychromecast',
@@ -95,7 +103,7 @@ a = Analysis(
         ('ffmpeg.exe', '.'),
         ('update_helper.bat', '.'),
         ('update_helper.ps1', '.'),
-    ] + locale_datas,
+    ] + locale_datas + help_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},

@@ -214,6 +214,16 @@ def compiled_catalogues() -> list[tuple[str, str]]:
     return sorted(found, key=lambda item: item[1])
 
 
+def user_guide_files() -> list[tuple[str, str]]:
+    """``(absolute source, file name)`` for every language of the in-app User Guide."""
+    help_root = os.path.join(REPO_ROOT, "docs", "help")
+    return sorted(
+        (os.path.join(help_root, name), name)
+        for name in os.listdir(help_root)
+        if name.endswith(".md")
+    )
+
+
 class Staged:
     """The package payload, kept in memory so file modes never depend on the host FS.
 
@@ -261,7 +271,14 @@ def build_payload(version: str) -> Staged:
         raise RuntimeError("No compiled .mo catalogues were found under locale/.")
     for absolute, relative in catalogues:
         staged.add_file(f"{lib_dir}/locale/{relative}", absolute)
-    log(f"staged {len(app_source_files())} modules and {len(catalogues)} catalogues")
+    # user_guide.guide_dir() looks for docs/help next to the modules.
+    guides = user_guide_files()
+    if not any(name == "en.md" for _source, name in guides):
+        raise RuntimeError("docs/help/en.md (the English user guide) was not found.")
+    for absolute, name in guides:
+        staged.add_file(f"{lib_dir}/docs/help/{name}", absolute)
+    log(f"staged {len(app_source_files())} modules, {len(catalogues)} catalogues "
+        f"and {len(guides)} user guide(s)")
 
     staged.add_text(f"usr/bin/{PACKAGE}", LAUNCHER, mode=0o755)
     staged.add_text(f"usr/share/applications/{PACKAGE}.desktop", DESKTOP_ENTRY)

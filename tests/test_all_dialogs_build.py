@@ -179,7 +179,6 @@ def test_exception_logging_hooks_install(monkeypatch):
         try:
             raise ValueError("thread explosion")
         except ValueError:
-            import traceback
 
             exc_tb = sys.exc_info()[2]
             threading.excepthook(

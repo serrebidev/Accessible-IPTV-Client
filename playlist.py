@@ -2559,6 +2559,7 @@ if WX_AVAILABLE:
     class EPGImportDialog(wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, total_sources):
             super().__init__(parent, title=_("Importing EPG"), size=(400, 150))
+            self.help_topic = "import-epg"
             self.total_sources = total_sources
             self._build_ui()
             self.CenterOnParent()
@@ -2753,6 +2754,7 @@ if WX_AVAILABLE:
     class EPGManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, epg_sources, source_names=None):
             super().__init__(parent, title=_("EPG Manager"), size=(600, 300))
+            self.help_topic = "epg-manager"
             self.epg_sources = epg_sources.copy()
             self.source_names = normalize_source_names(source_names)
             self._build_ui()
@@ -2840,6 +2842,7 @@ if WX_AVAILABLE:
     class PlaylistManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, playlist_sources, source_names=None):
             super().__init__(parent, title=_("Playlist Manager"), size=(600, 300))
+            self.help_topic = "playlist-manager"
             self.playlist_sources = [dict(src) if isinstance(src, dict) else src
                                      for src in playlist_sources]
             self.source_names = normalize_source_names(source_names)
@@ -2991,6 +2994,7 @@ if WX_AVAILABLE:
 
         def __init__(self, parent):
             super().__init__(parent, title=_("Add Xtream Codes Account"))
+            self.help_topic = "xtream-codes"
             self._build_ui()
             self.CenterOnParent()
 
@@ -3105,6 +3109,7 @@ if WX_AVAILABLE:
     class StalkerPortalDialog(wx.Dialog):
         def __init__(self, parent):
             super().__init__(parent, title=_("Add Stalker Portal Account"))
+            self.help_topic = "stalker-portal"
             self._build_ui()
             self.CenterOnParent()
 

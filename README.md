@@ -42,6 +42,7 @@ Sources are managed in the Playlist Manager (**Ctrl+M**), which takes M3U files,
 - Account status under **File > Account Info** — expiry date, days remaining, trial flag and connection limits for Xtream Codes and Stalker Portal accounts, including accounts detected automatically from a playlist or stream URL.
 - Casting support, plus optional system tray minimize.
 - Recording and DVR scheduling, with an optional **Recordings > Shut Down the Computer When Recordings Finish** for overnight captures. The built-in player has its own **Record** button (**Ctrl+R**) for what you are watching, and **Schedule Recording** is on the context menu of every EPG programme.
+- A built-in, offline **User Guide** under **Help > User Guide**. Press **F1** anywhere — on a menu item, in a dialog, in the built-in player or on a control in the main window — and it opens at the section about what you are using. It is a plain read-only document with a table of contents and Find, so it reads well with a screen reader.
 - Multilingual interface (14 languages) with automatic OS-language detection and a manual selector under **Options > Language**.
 - Built-in updater on Windows that verifies SHA-256 and Authenticode before applying an update, restarts the app by itself when the install finishes, and reports the result on the next start.
 
@@ -91,6 +92,10 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 4. Launch it: `python main.py`
 
 ## Keyboard shortcuts
+
+### Anywhere
+
+- **F1** — User Guide, opened at the section about the focused control, dialog or menu item
 
 ### Main window
 
@@ -172,6 +177,8 @@ To contribute a new language:
 2. Run `python tools/i18n_tools.py compile`.
 3. Add `(code, "Native name")` to `_LANGUAGE_LABELS` in `i18n.py` so it appears in the menu.
 4. Open a pull request. Keep every `{placeholder}` exactly as it appears in the English source.
+
+The User Guide is translated separately from the interface: it lives in `docs/help/<lang>.md`, one Markdown file per language, with English (`en.md`) as the reference and the fallback. To translate it, copy `en.md` to your language code, translate the text and keep every `{#topic-id}` exactly as it is — F1 help opens sections by those ids. A section you leave out falls back to the English one. The notes at the top of `en.md` explain the rest.
 
 Hungarian translation and screen-reader testing contributed by the community (see issue [#2](https://github.com/serrebidev/Accessible-IPTV-Client/issues/2)).
 

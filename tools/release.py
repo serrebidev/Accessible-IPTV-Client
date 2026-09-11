@@ -239,7 +239,7 @@ def _remove_tree(path: str) -> None:
         if result.returncode == 0 and not os.path.exists(path):
             return
 
-    def _on_error(func, failed_path, _exc_info):
+    def _on_error(func, failed_path, _exc):
         try:
             os.chmod(failed_path, stat.S_IWRITE)
         except Exception:
@@ -248,7 +248,11 @@ def _remove_tree(path: str) -> None:
             pass
         func(failed_path)
 
-    shutil.rmtree(path, onerror=_on_error)
+    # onexc replaced the deprecated onerror in Python 3.12; 3.11 is still supported.
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_on_error)
+    else:
+        shutil.rmtree(path, onerror=_on_error)
 
 
 def clean_build_artifacts():
@@ -450,6 +454,17 @@ def validate_no_bundled_config(dist_dir=None):
         raise RuntimeError(
             "Refusing to ship a bundled iptvclient.conf. Remove it from PyInstaller datas: "
             + ", ".join(matches)
+        )
+
+
+def validate_bundled_user_guide(dist_dir=None):
+    """The in-app User Guide must ship: without it F1 can only say it is missing."""
+    dist_dir = dist_dir or os.path.join(REPO_ROOT, "dist", "iptvclient")
+    guide = os.path.join(dist_dir, "_internal", "docs", "help", "en.md")
+    if not os.path.isfile(guide):
+        raise RuntimeError(
+            f"{os.path.relpath(guide, REPO_ROOT)} is missing from the build; "
+            "check help_datas in main.spec."
         )
 
 
@@ -799,6 +814,7 @@ def main():
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
         validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
         validate_no_bundled_config()
+        validate_bundled_user_guide()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         installer_path = build_installer(next_version)
@@ -818,6 +834,7 @@ def main():
         exe_path = os.path.join(REPO_ROOT, "dist", "iptvclient", app_meta.EXE_NAME)
         validate_ffmpeg_binary(os.path.join(REPO_ROOT, "dist", "iptvclient", "_internal", FFMPEG_NAME))
         validate_no_bundled_config()
+        validate_bundled_user_guide()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
         installer_path = None

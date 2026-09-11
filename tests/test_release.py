@@ -39,6 +39,15 @@ def test_update_changelog_refuses_duplicate_version(tmp_path):
         release.update_changelog("1.2.3", "- fix: duplicate", path=path)
 
 
+def test_build_without_the_user_guide_is_refused(tmp_path):
+    with pytest.raises(RuntimeError, match=r"help_datas"):
+        release.validate_bundled_user_guide(str(tmp_path))
+    guide = tmp_path / "_internal" / "docs" / "help" / "en.md"
+    guide.parent.mkdir(parents=True)
+    guide.write_text("# User Guide {#user-guide}\n", encoding="utf-8")
+    release.validate_bundled_user_guide(str(tmp_path))
+
+
 def test_release_commit_stages_changelog(monkeypatch):
     commands = []
     monkeypatch.setattr(release, "run", lambda command, **_kwargs: commands.append(command))

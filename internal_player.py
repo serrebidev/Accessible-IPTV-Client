@@ -14,6 +14,7 @@ import wx
 
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
+import user_guide
 
 
 def _prime_vlc_search_path() -> None:
@@ -101,6 +102,8 @@ def _detect_system_http_proxy() -> Optional[str]:
 class AudioDeviceDialog(wx.Dialog):
     """Pick one audio output device for the built-in player."""
 
+    help_topic = "audio-output-device"
+
     def __init__(self, parent, devices, current: str = ""):
         super().__init__(parent, title=_("Audio Output Device"), size=(520, 320))
         self.devices: List[Tuple[str, str]] = [("", _("System default"))]
@@ -149,6 +152,7 @@ class AudioDeviceDialog(wx.Dialog):
 class InternalPlayerFrame(wx.Frame):
     """Embedded IPTV player with buffering resilience and keyboard controls."""
 
+    help_topic = "built-in-player"
     _HANDLE_CHECK_INTERVAL = 0.1
     # How long a quit waits for a close-time libVLC teardown that is still
     # running. Leaking an instance at process exit beats hanging the shutdown.
@@ -403,6 +407,11 @@ class InternalPlayerFrame(wx.Frame):
         self.audio_track_choice.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
         self._audio_track_choice_ids: List[int] = []
         self._audio_track_choice_signature: Tuple[Tuple[int, str], ...] = ()
+        # F1 on these opens their own guide sections; the rest of the player
+        # falls back to the frame's built-in-player topic.
+        user_guide.set_help_topic(self.audio_track_choice, "audio-tracks")
+        user_guide.set_help_topic(self.record_btn, "recordings")
+        user_guide.set_help_topic(self.cast_btn, "casting")
 
         controls.Add(self.play_pause_btn, 0, wx.ALL, 5)
         controls.Add(self.stop_btn, 0, wx.ALL, 5)
@@ -456,7 +465,7 @@ class InternalPlayerFrame(wx.Frame):
         self._audio_track_menu_map: Dict[int, int] = {}
         self.Bind(wx.EVT_MENU_OPEN, self._on_any_menu_open)
         self.Bind(wx.EVT_MENU, self._on_audio_track_menu_select)
-        playback_menu.AppendSubMenu(self.audio_track_menu, _("Audio Track") + "\tA")
+        audio_track_item = playback_menu.AppendSubMenu(self.audio_track_menu, _("Audio Track") + "\tA")
         m_audio_device = playback_menu.Append(wx.ID_ANY, _("Audio Output Device...") + "\tD")
         playback_menu.AppendSeparator()
         m_cast = playback_menu.Append(wx.ID_ANY, _("Cast...") + "\tCtrl+C")
@@ -476,6 +485,12 @@ class InternalPlayerFrame(wx.Frame):
 
         menu_bar.Append(playback_menu, _("&Playback"))
         self.SetMenuBar(menu_bar)
+        # F1 on an open Playback menu item opens the guide section about it.
+        user_guide.set_menu_help(self, playback_menu, "built-in-player")
+        user_guide.set_menu_help(self, audio_track_item, "audio-tracks")
+        user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
+        user_guide.set_menu_help(self, self.record_menu_item, "recordings")
+        user_guide.set_menu_help(self, m_cast, "casting")
 
     # ------------------------------------------------------------------ audio device
     def _apply_audio_output_device(self) -> None:

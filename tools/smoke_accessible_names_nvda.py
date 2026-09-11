@@ -48,7 +48,7 @@ try:
     import comtypes.client
     from comtypes import GUID
     import ctypes
-    from ctypes import POINTER, Structure, byref, c_long, c_short, c_void_p, windll, cast
+    from ctypes import POINTER, Structure, byref, c_long, c_short, c_void_p, windll
 
     oleacc = comtypes.client.GetModule("oleacc.dll")
     IID_IAccessible = GUID("{618736E0-3C3D-11CF-810C-00AA00389B71}")

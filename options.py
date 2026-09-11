@@ -815,6 +815,7 @@ if _HAS_WX:
     class CustomPlayerDialog(wx.Dialog):  # type: ignore[misc]
         def __init__(self, parent, initial_path):
             super().__init__(parent, title=_("Select Custom Player"))
+            self.help_topic = "media-player"
             self.path = initial_path or ""
             sizer = wx.BoxSizer(wx.VERTICAL)
             self.txt = wx.TextCtrl(self, value=self.path)

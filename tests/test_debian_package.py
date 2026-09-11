@@ -100,6 +100,13 @@ def test_payload_ships_the_app_and_every_catalogue(data_entries):
     assert len(catalogues) >= 13, f"expected a catalogue per language, got {catalogues}"
 
 
+def test_payload_ships_the_user_guide_next_to_the_modules(data_entries):
+    # user_guide.guide_dir() looks for docs/help beside the modules; without it
+    # F1 and Help > User Guide can only report that the guide is missing.
+    assert "usr/lib/accessible-iptv-client/docs/help/en.md" in data_entries
+    assert "usr/lib/accessible-iptv-client/user_guide.py" in data_entries
+
+
 def test_payload_omits_windows_only_files(data_entries):
     for name in data_entries:
         assert not name.endswith((".exe", ".bat", ".ps1", ".spec")), f"{name} should not ship on Debian"

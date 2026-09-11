@@ -148,6 +148,12 @@ def get_language() -> str:
     return _active_code
 
 
+def resolved_language() -> str:
+    """Two-letter code of the language actually in use ("auto" resolved; "en" for English)."""
+    candidates = _resolve_candidates(_active_code)
+    return candidates[0] if candidates else "en"
+
+
 def gettext(message: str) -> str:
     """Translate ``message`` using the active catalogue (falls back to the source text)."""
     return _translation.gettext(message)

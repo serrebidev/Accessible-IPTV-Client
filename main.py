@@ -71,6 +71,7 @@ import catchup_direct
 import dvr
 import favorites
 import power
+import user_guide
 
 TELEGRAM_SUPPORT_URL = "https://t.me/SerrebiProjects"
 PROJECT_GITHUB_URL = "https://github.com/{owner}/Accessible-IPTV-Client".format(
@@ -208,6 +209,8 @@ class InternalPlayerUnavailableError(RuntimeError):
 class AccessibleAboutDialog(wx.Dialog):
     """A keyboard-first About dialog whose support links are real tab stops."""
 
+    help_topic = "support"
+
     def __init__(self, parent):
         from app_meta import APP_DISPLAY_NAME, APP_VERSION
 
@@ -292,6 +295,370 @@ class AccessibleAboutDialog(wx.Dialog):
             self.EndModal(result)
         else:
             self.Destroy()
+
+
+class UserGuideDialog(wx.Dialog):
+    """The offline User Guide: its table of contents, the text, and Find.
+
+    The whole guide sits in one read-only rich-edit box, so a screen reader can
+    read straight through it and the arrow keys, selection and copying behave
+    as in any document. Topics is the table of contents: arrowing through it
+    moves the text to that section without taking focus away, and Enter goes
+    into the text. TE_RICH2 matters here: its caret positions are Python string
+    offsets, which is what section starts and Find results are. A plain EDIT
+    control counts every line break twice and lands each jump a little early.
+    """
+
+    help_topic = user_guide.HELP_TOPIC
+
+    def __init__(self, parent, topic: str = "", language: Optional[str] = None):
+        super().__init__(
+            parent,
+            title=_("User Guide"),
+            size=(820, 580),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
+        )
+        # OSError when not even the English guide is installed; the caller says so.
+        self.guide, section = user_guide.open_topic(language or i18n.resolved_language(), topic)
+        self._folded_text = self._fold(self.guide.text)
+        panel = wx.Panel(self)
+
+        # Each label is created immediately before its control: on MSW that
+        # adjacent static text is what names a list or edit box aloud.
+        topics_label = wx.StaticText(panel, label=_("Topics"))
+        self.topics_list = wx.ListBox(
+            panel, choices=[s.title for s in self.guide.sections], style=wx.LB_SINGLE)
+        self.topics_list.SetName(_("Topics"))
+        text_label = wx.StaticText(panel, label=_("Guide text"))
+        self.text = wx.TextCtrl(
+            panel, value=self.guide.text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
+        self.text.SetName(_("Guide text"))
+        find_label = wx.StaticText(panel, label=_("Find"))
+        self.find_box = wx.TextCtrl(panel)
+        self.find_box.SetName(_("Find"))
+        self.find_btn = wx.Button(panel, label=_("Find Next"))
+        self.close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
+
+        left = wx.BoxSizer(wx.VERTICAL)
+        left.Add(topics_label, 0, wx.BOTTOM, 4)
+        left.Add(self.topics_list, 1, wx.EXPAND)
+        right = wx.BoxSizer(wx.VERTICAL)
+        right.Add(text_label, 0, wx.BOTTOM, 4)
+        right.Add(self.text, 1, wx.EXPAND)
+        body = wx.BoxSizer(wx.HORIZONTAL)
+        body.Add(left, 1, wx.EXPAND | wx.RIGHT, 10)
+        body.Add(right, 3, wx.EXPAND)
+        bottom = wx.BoxSizer(wx.HORIZONTAL)
+        bottom.Add(find_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        bottom.Add(self.find_box, 1, wx.ALIGN_CENTER_VERTICAL)
+        bottom.Add(self.find_btn, 0, wx.LEFT, 6)
+        bottom.Add(self.close_btn, 0, wx.LEFT, 24)
+        layout = wx.BoxSizer(wx.VERTICAL)
+        layout.Add(body, 1, wx.EXPAND | wx.ALL, 10)
+        layout.Add(bottom, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        panel.SetSizer(layout)
+        self.SetMinSize((520, 380))
+        self.CentreOnParent()
+
+        self.topics_list.Bind(wx.EVT_LISTBOX, self._on_topic_highlighted)
+        self.topics_list.Bind(wx.EVT_LISTBOX_DCLICK, lambda _event: self._enter_selected_topic())
+        # EVT_CHAR_HOOK: a dialog takes Enter before a list's key-down sees it.
+        self.topics_list.Bind(wx.EVT_CHAR_HOOK, self._on_topics_key)
+        self.topics_list.Bind(wx.EVT_SET_FOCUS, self._on_topics_focus)
+        self.find_btn.Bind(wx.EVT_BUTTON, lambda _event: self.find(forward=True))
+        self.close_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish())
+        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish())
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
+        self.SetEscapeId(wx.ID_CANCEL)
+
+        self._show_section(section, focus=False)
+        # wxMSW gives a new dialog's focus to its first control once the modal
+        # loop is running, so a SetFocus made here would not last.
+        wx.CallAfter(self._focus_text)
+
+    @staticmethod
+    def _fold(text: str) -> str:
+        """Lower-case ``text`` without changing its length, so Find offsets stay exact."""
+        # str.lower() can lengthen a string (a Turkish dotted capital I becomes
+        # two code points), which would shift every match after it.
+        return "".join(ch.lower() if len(ch.lower()) == 1 else ch for ch in text)
+
+    def _focus_text(self) -> None:
+        if not self:
+            return
+        self.text.SetFocus()
+
+    def _selected_section(self) -> Optional[user_guide.Section]:
+        index = self.topics_list.GetSelection()
+        if 0 <= index < len(self.guide.sections):
+            return self.guide.sections[index]
+        return None
+
+    def _show_section(self, section: Optional[user_guide.Section], focus: bool) -> None:
+        """Put the caret on the heading of ``section``, scrolled to the top."""
+        if section is None:
+            return
+        try:
+            index = self.guide.sections.index(section)
+        except ValueError:
+            index = wx.NOT_FOUND
+        if index != wx.NOT_FOUND and self.topics_list.GetSelection() != index:
+            self.topics_list.SetSelection(index)
+        self.text.SetInsertionPoint(section.start)
+        self.text.ShowPosition(section.start)
+        if focus:
+            self.text.SetFocus()
+
+    def show_topic(self, topic: str) -> None:
+        """Jump to ``topic`` (the start of the guide when this language lacks it)."""
+        section = self.guide.find(topic) or (self.guide.sections[0] if self.guide.sections else None)
+        self._show_section(section, focus=True)
+
+    def _on_topic_highlighted(self, _event) -> None:
+        # Arrowing through Topics only moves the text; focus stays in the list
+        # so the next topic can be heard. Enter (or Tab) goes into the text.
+        self._show_section(self._selected_section(), focus=False)
+
+    def _enter_selected_topic(self) -> None:
+        self._show_section(self._selected_section(), focus=True)
+
+    def _on_topics_key(self, event) -> None:
+        if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self._enter_selected_topic()
+            return
+        event.Skip()
+
+    def _on_topics_focus(self, event) -> None:
+        # Back in Topics after reading on: highlight the section the caret is in.
+        self._sync_topic_to_caret()
+        event.Skip()
+
+    def _sync_topic_to_caret(self) -> None:
+        section = self.guide.section_at(self.text.GetSelection()[0])
+        if section is None:
+            return
+        index = self.guide.sections.index(section)
+        if self.topics_list.GetSelection() != index:
+            self.topics_list.SetSelection(index)
+
+    def find(self, forward: bool = True) -> bool:
+        """Select the next (or previous) match of the Find text, wrapping round."""
+        query = self.find_box.GetValue().strip()
+        needle = self._fold(query)
+        if not needle:
+            self.find_box.SetFocus()
+            return False
+        start, end = self.text.GetSelection()
+        if forward:
+            index = self._folded_text.find(needle, end)
+            if index == -1:
+                index = self._folded_text.find(needle)
+        else:
+            index = self._folded_text.rfind(needle, 0, start)
+            if index == -1:
+                index = self._folded_text.rfind(needle)
+        if index == -1:
+            message_box(_("Cannot find \"{text}\".").format(text=query), _("User Guide"),
+                        wx.OK | wx.ICON_INFORMATION, self)
+            return False
+        self.text.SetFocus()
+        self.text.SetSelection(index, index + len(needle))
+        self.text.ShowPosition(index)
+        self._sync_topic_to_caret()
+        return True
+
+    def _on_char_hook(self, event) -> None:
+        key = event.GetKeyCode()
+        modifiers = event.GetModifiers()
+        if key == ord("F") and modifiers == wx.MOD_CONTROL:
+            self.find_box.SetFocus()
+            self.find_box.SelectAll()
+            return
+        if key == wx.WXK_F3 and modifiers in (wx.MOD_NONE, wx.MOD_SHIFT):
+            self.find(forward=not event.ShiftDown())
+            return
+        if (key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER)
+                and wx.Window.FindFocus() is self.find_box):
+            self.find(forward=True)
+            return
+        event.Skip()
+
+    def _finish(self) -> None:
+        if self.IsModal():
+            self.EndModal(wx.ID_CANCEL)
+        else:
+            self.Destroy()
+
+
+# The guide window on screen, so F1 inside it moves it instead of opening another.
+_OPEN_USER_GUIDE: Optional[UserGuideDialog] = None
+_LAST_HELP_REQUEST = 0.0
+# One F1 press reaches us twice on Windows: as a key (the app-wide char hook)
+# and as WM_HELP (wx.EVT_HELP). Whichever comes first answers it.
+_HELP_REPEAT_SECONDS = 0.5
+
+
+def show_user_guide(parent=None, topic: str = "") -> None:
+    """Open the User Guide at ``topic``, or move the open one there."""
+    global _OPEN_USER_GUIDE
+    if _OPEN_USER_GUIDE is not None:
+        try:
+            _OPEN_USER_GUIDE.show_topic(topic or user_guide.HELP_TOPIC)
+            _OPEN_USER_GUIDE.Raise()
+            return
+        except RuntimeError:
+            LOG.debug("show_user_guide: the open guide is gone", exc_info=True)
+            _OPEN_USER_GUIDE = None
+    try:
+        dlg = UserGuideDialog(parent, topic)
+    except OSError as exc:
+        LOG.warning("The user guide could not be opened: %s", exc)
+        message_box(_("The user guide could not be opened: {error}").format(error=exc),
+                    _("User Guide"), wx.OK | wx.ICON_ERROR, parent)
+        return
+    _OPEN_USER_GUIDE = dlg
+    try:
+        dlg.ShowModal()
+    finally:
+        _OPEN_USER_GUIDE = None
+        dlg.Destroy()
+
+
+def _help_parent(window):
+    """The window the guide opens over: where F1 was pressed, when it can host it.
+
+    Download progress windows and the shutdown countdown destroy themselves,
+    which would take a guide opened over them down mid-read, so those hand the
+    guide to the main window. A hidden owner would hide the guide with it.
+    """
+    try:
+        top = wx.GetTopLevelParent(window) if window is not None else None
+        if top is not None and top.IsShown() and getattr(top, "can_host_help", True):
+            return top
+        app = wx.GetApp()
+        main = app.GetTopWindow() if isinstance(app, wx.App) else None
+        if main is not None and main.IsShown():
+            return main
+    except (RuntimeError, TypeError):
+        LOG.debug("_help_parent: no usable window", exc_info=True)
+    return None
+
+
+def request_context_help(window=None, menu_item_id: Optional[int] = None) -> bool:
+    """F1: open the guide at the section about ``window`` or a menu item on it.
+
+    Returns False when the request was dropped: the second half of one F1
+    press, or a message box on screen (a modal opened inside a box's own loop
+    leaves the main window disabled; see message_box).
+    """
+    global _LAST_HELP_REQUEST
+    now = time.monotonic()
+    if now - _LAST_HELP_REQUEST < _HELP_REPEAT_SECONDS or modal_box_is_open():
+        return False
+    _LAST_HELP_REQUEST = now
+    topic = None
+    if menu_item_id is not None:
+        topic = user_guide.topic_for_menu_item(window, menu_item_id)
+    if not topic:
+        topic = user_guide.topic_for_window(window)
+    if menu_item_id is not None:
+        # A menu is open, and it has to be closed from outside this WM_HELP
+        # handler: a popup menu ignores EndMenu called from inside it, keeps
+        # the keyboard, and the guide opens underneath it where Escape and
+        # every other key go to the menu instead.
+        wx.CallAfter(_end_menu_then_show, _help_parent(window), topic)
+    else:
+        wx.CallAfter(show_user_guide, _help_parent(window), topic)
+    return True
+
+
+_MENU_WAIT_TRIES = 40  # 50 ms apart: two seconds at most
+
+
+def _menu_mode_active() -> bool:
+    """True while Windows has this thread in a menu (menu bar or popup)."""
+    if not sys.platform.startswith("win"):
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class GUITHREADINFO(ctypes.Structure):
+            _fields_ = [
+                ("cbSize", wintypes.DWORD), ("flags", wintypes.DWORD),
+                ("hwndActive", wintypes.HWND), ("hwndFocus", wintypes.HWND),
+                ("hwndCapture", wintypes.HWND), ("hwndMenuOwner", wintypes.HWND),
+                ("hwndMoveSize", wintypes.HWND), ("hwndCaret", wintypes.HWND),
+                ("rcCaret", wintypes.RECT),
+            ]
+
+        info = GUITHREADINFO()
+        info.cbSize = ctypes.sizeof(info)
+        thread_id = ctypes.windll.kernel32.GetCurrentThreadId()
+        if not ctypes.windll.user32.GetGUIThreadInfo(thread_id, ctypes.byref(info)):
+            return False
+        return bool(info.flags & (0x4 | 0x10))  # GUI_INMENUMODE | GUI_POPUPMENUMODE
+    except Exception:
+        LOG.debug("_menu_mode_active: ignored exception", exc_info=True)
+        return False
+
+
+def _close_open_menu() -> None:
+    """End the menu F1 was pressed in, so the guide does not open underneath it."""
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.user32.EndMenu()
+    except Exception:
+        LOG.debug("_close_open_menu: ignored exception", exc_info=True)
+
+
+def _end_menu_then_show(parent, topic: str) -> None:
+    _close_open_menu()
+    _show_when_menus_closed(parent, topic)
+
+
+def _show_when_menus_closed(parent, topic: str, tries: int = 0) -> None:
+    """Open the guide once the menu loop is over; opened inside it, it never gets the keyboard."""
+    if _menu_mode_active() and tries < _MENU_WAIT_TRIES:
+        wx.CallLater(50, _show_when_menus_closed, parent, topic, tries + 1)
+        return
+    show_user_guide(parent, topic)
+
+
+def _on_app_char_hook(event) -> None:
+    # Last stop of every key press nobody handled, in any window of the app.
+    if event.GetKeyCode() == wx.WXK_F1 and not event.HasAnyModifiers():
+        request_context_help(wx.Window.FindFocus())
+        return
+    event.Skip()
+
+
+def _on_app_help(event) -> None:
+    # Windows sends WM_HELP for F1: to the focused control (the event's id is
+    # its own), or, with a menu open, to the menu's window carrying the
+    # highlighted item's id. Linux never sends it; the char hook covers F1 there.
+    window = event.GetEventObject()
+    item_id = None
+    try:
+        if window is not None and event.GetId() != window.GetId():
+            item_id = event.GetId()
+    except RuntimeError:
+        LOG.debug("_on_app_help: window is gone", exc_info=True)
+        window = None
+    request_context_help(window if window is not None else wx.Window.FindFocus(), item_id)
+
+
+def install_help_hooks(app) -> None:
+    """Make F1 open context help anywhere in the app (idempotent)."""
+    if app is None or getattr(app, "_user_guide_hooks_installed", False):
+        return
+    setattr(app, "_user_guide_hooks_installed", True)
+    app.Bind(wx.EVT_CHAR_HOOK, _on_app_char_hook)
+    app.Bind(wx.EVT_HELP, _on_app_help)
 
 
 class _AccessibleCategoryTree(wx.TreeCtrl):
@@ -1125,6 +1492,7 @@ class IPTVClient(wx.Frame):
         self._db_tune_lock = threading.Lock()
         self._db_tune_started = False
         self._build_ui()
+        install_help_hooks(wx.GetApp())
         self._start_now_playing_timer()
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
         self.Centre()
@@ -2282,6 +2650,14 @@ class IPTVClient(wx.Frame):
         if hasattr(self.url_display, "SetAccessibleName"):
             self.url_display.SetAccessibleName(_("Stream URL"))
         self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
+        # F1 opens the User Guide at the section about the focused control.
+        user_guide.set_help_topic(self, "main-window")
+        user_guide.set_help_topic(self.playlist_scope_combo, "playlist-view")
+        user_guide.set_help_topic(self.group_list, lambda: self._list_help_topic("categories"))
+        user_guide.set_help_topic(self.filter_box, "search")
+        user_guide.set_help_topic(self.channel_list, lambda: self._list_help_topic("channel-list"))
+        user_guide.set_help_topic(self.episode_description_field, "episode-description")
+        user_guide.set_help_topic(self.url_display, "episode-description")
         vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
         vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
         vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
@@ -2382,6 +2758,8 @@ class IPTVClient(wx.Frame):
                 menu.AppendSeparator()
 
                 help_menu = wx.Menu()
+                guide_item = help_menu.Append(wx.ID_ANY, _("User Guide") + "\tF1")
+                help_menu.Bind(wx.EVT_MENU, self._on_user_guide_menu, guide_item)
                 logs_item = help_menu.Append(wx.ID_ANY, _("Open Logs Folder"))
                 copy_debug_item = help_menu.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
                 about_item = help_menu.Append(wx.ID_ABOUT, _("About..."))
@@ -2483,6 +2861,11 @@ class IPTVClient(wx.Frame):
             mb.Append(rm, _("Recordings"))
             # Help menu
             hm = wx.Menu()
+            # F1 is shown as the shortcut, but the app-wide char hook answers
+            # F1 before this accelerator can, with the context topic; choosing
+            # the item itself opens the guide at its beginning.
+            self.user_guide_item = hm.Append(wx.ID_ANY, _("User Guide") + "\tF1")
+            hm.AppendSeparator()
             self.check_updates_item = hm.Append(wx.ID_ANY, _("Check for Updates..."))
             self.open_logs_item = hm.Append(wx.ID_ANY, _("Open Logs Folder"))
             self.copy_diagnostic_item = hm.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
@@ -2490,6 +2873,31 @@ class IPTVClient(wx.Frame):
             m_about = hm.Append(wx.ID_ABOUT, _("About..."))
             mb.Append(hm, _("Help"))
             self.SetMenuBar(mb)
+            # F1 on an open menu item opens the guide section about that item.
+            # Whole menus first, then the items that have a section of their own.
+            user_guide.set_menu_help(self, fm, "main-window")
+            user_guide.set_menu_help(self, pm, "player-from-main-window")
+            user_guide.set_menu_help(self, vm, "video-on-demand")
+            user_guide.set_menu_help(self, om, "options")
+            user_guide.set_menu_help(self, hm, "troubleshooting")
+            user_guide.set_menu_help(self, m_mgr, "playlist-manager")
+            user_guide.set_menu_help(self, m_epg, "epg-manager")
+            user_guide.set_menu_help(self, m_imp, "import-epg")
+            user_guide.set_menu_help(self, m_now, "whats-on-now")
+            user_guide.set_menu_help(self, m_acct, "account-info")
+            user_guide.set_menu_help(self, m_cast, "casting")
+            user_guide.set_menu_help(self, pm_cast, "casting")
+            user_guide.set_menu_help(self, self.favorite_menu_item, "favorites")
+            user_guide.set_menu_help(self, self.goto_favorites_item, "favorites")
+            user_guide.set_menu_help(self, self.show_downloads_item, "catch-up-downloads")
+            user_guide.set_menu_help(self, player_menu, "media-player")
+            user_guide.set_menu_help(self, self.audio_preference_item, "preferred-audio-track")
+            user_guide.set_menu_help(self, lang_menu, "language")
+            user_guide.set_menu_help(self, self.min_to_tray_item, "system-tray")
+            user_guide.set_menu_help(self, self.auto_check_updates_item, "updates")
+            user_guide.set_menu_help(self, self.user_guide_item, "using-help")
+            user_guide.set_menu_help(self, self.check_updates_item, "updates")
+            user_guide.set_menu_help(self, m_about, "support")
             self.Bind(wx.EVT_MENU, self.show_manager, m_mgr)
             self.Bind(wx.EVT_MENU, self.show_epg_manager, m_epg)
             self.Bind(wx.EVT_MENU, self.import_epg, m_imp)
@@ -2512,6 +2920,7 @@ class IPTVClient(wx.Frame):
             self.Bind(wx.EVT_MENU, self._open_logs_folder, self.open_logs_item)
             self.Bind(wx.EVT_MENU, self._copy_diagnostic_information, self.copy_diagnostic_item)
             self.Bind(wx.EVT_MENU, self._show_about_dialog, m_about)
+            self.Bind(wx.EVT_MENU, self._on_user_guide_menu, self.user_guide_item)
             self.Bind(wx.EVT_MENU_OPEN, self.on_menu_open)
             self._sync_player_menu_from_config()
             self.min_to_tray_item.Check(self.minimize_to_tray)
@@ -3728,7 +4137,8 @@ class IPTVClient(wx.Frame):
         schedule_item = menu.Append(wx.ID_ANY, _("Scheduled Recordings..."))
         menu.Bind(wx.EVT_MENU, self._show_scheduled_recordings, schedule_item)
         menu.AppendSeparator()
-        menu.AppendSubMenu(self._build_recording_format_menu(), _("Recording Format"))
+        format_menu = self._build_recording_format_menu()
+        menu.AppendSubMenu(format_menu, _("Recording Format"))
         padding_item = menu.Append(wx.ID_ANY, _("Schedule Padding..."))
         menu.Bind(wx.EVT_MENU, self._show_recording_padding_dialog, padding_item)
         menu.AppendSeparator()
@@ -3741,6 +4151,11 @@ class IPTVClient(wx.Frame):
             wx.ID_ANY, _("Shut Down the Computer When Recordings Finish"))
         self._shutdown_after_item.Check(self._shutdown_after_recordings)
         menu.Bind(wx.EVT_MENU, self._on_toggle_shutdown_after_recordings, self._shutdown_after_item)
+        user_guide.set_menu_help(self, menu, "recordings")
+        user_guide.set_menu_help(self, format_menu, "recording-formats")
+        user_guide.set_menu_help(self, schedule_item, "scheduled-recordings")
+        user_guide.set_menu_help(self, padding_item, "schedule-padding")
+        user_guide.set_menu_help(self, self._shutdown_after_item, "shutdown-after-recordings")
         self._recording_menu_items = (start_item, stop_item, stop_all_item)
         self._update_recording_menu_state()
 
@@ -3762,6 +4177,22 @@ class IPTVClient(wx.Frame):
             items[2].Enable(self.recorder.has_active())
         except Exception:
             LOG.debug("IPTVClient._update_recording_menu_state: ignored exception", exc_info=True)
+
+    def _on_user_guide_menu(self, _event=None):
+        """Help > User Guide: the guide from its beginning.
+
+        F1 is the item's accelerator too. The app-wide char hook normally takes
+        F1 first and opens the context topic; should a control swallow the key
+        and let the accelerator fire instead, F1 is still held down right now.
+        """
+        if wx.GetKeyState(wx.WXK_F1):
+            request_context_help(wx.Window.FindFocus())
+            return
+        show_user_guide(self, user_guide.DEFAULT_TOPIC)
+
+    def _list_help_topic(self, live_topic: str) -> str:
+        """F1 topic for the category and channel lists, which also browse VOD."""
+        return "video-on-demand" if getattr(self, "view_mode", "live") == "vod" else live_topic
 
     def _show_about_dialog(self, _event=None):
         """Show the accessible, keyboard-navigable About dialog."""
@@ -7268,6 +7699,8 @@ class IPTVClient(wx.Frame):
 
 
 class CastDiscoveryDialog(wx.Dialog):
+    help_topic = "casting"
+
     def __init__(self, parent, caster):
         super().__init__(parent, title=_("Select Device to Cast"), size=(450, 350))
         self.parent_frame = parent
@@ -7444,6 +7877,8 @@ class AccountInfoDialog(wx.Dialog):
     Each lookup is a blocking HTTP request, so it runs on a worker thread and
     results are matched against a request token before being displayed.
     """
+
+    help_topic = "account-info"
 
     def __init__(self, parent, accounts: List[account_info.Account]):
         super().__init__(
@@ -7643,6 +8078,9 @@ class CatchupDownloadDialog(wx.Dialog):
     """
 
     UPDATE_INTERVAL_MS = 1000
+    help_topic = "catch-up-downloads"
+    # Destroys itself when the download ends, so F1 help opens over the main window.
+    can_host_help = False
 
     def __init__(self, parent, rec, *, duration: float, on_cancel):
         title = _("Downloading {name}").format(name=rec.title)
@@ -7838,6 +8276,8 @@ class CatchupDialog(wx.Dialog):
     Tab again comes straight back to the list. Escape closes the dialog.
     """
 
+    help_topic = "catch-up"
+
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
                  initial_start: str = ""):
         title = channel_name or _("Catch-up")
@@ -7992,6 +8432,7 @@ class AudioTrackPreferenceDialog(wx.Dialog):
     """
 
     _WRAP_WIDTH = 430
+    help_topic = "preferred-audio-track"
 
     def __init__(self, parent, keywords=None, prefer_audio_description: bool = False):
         super().__init__(parent, title=_("Preferred Audio Track"))
@@ -8046,6 +8487,7 @@ class RecordingPaddingDialog(wx.Dialog):
     """Accessible settings for scheduled-recording lead-in and lead-out."""
 
     MAX_PADDING_MINUTES = 180
+    help_topic = "schedule-padding"
 
     def __init__(self, parent, before_minutes=0, after_minutes=2):
         super().__init__(parent, title=_("Schedule Padding"), style=wx.DEFAULT_DIALOG_STYLE)
@@ -8119,6 +8561,9 @@ class ShutdownCountdownDialog(wx.Dialog):
     """
 
     COUNTDOWN_SECONDS = 60
+    help_topic = "shutdown-after-recordings"
+    # Closes itself when the countdown ends, so F1 help opens over the main window.
+    can_host_help = False
 
     def __init__(self, parent, on_cancel, on_shutdown, seconds: Optional[int] = None):
         super().__init__(parent, title=_("Shut Down After Recordings"),
@@ -8200,6 +8645,8 @@ class ScheduledRecordingsDialog(wx.Dialog):
     keyboard's menu key); Escape and Alt+F4 close the window, so there is no
     Close button.
     """
+
+    help_topic = "scheduled-recordings"
 
     def __init__(self, parent, scheduler: dvr.DVRScheduler):
         super().__init__(parent, title=_("Scheduled Recordings"), size=(850, 430))
@@ -8341,6 +8788,8 @@ class ScheduledRecordingsDialog(wx.Dialog):
 
 class WhatsOnNowDialog(wx.Dialog):
     """Dialog showing all currently airing programs across all channels."""
+
+    help_topic = "whats-on-now"
     
     def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None):
         super().__init__(parent, title=_("What's on Now"), size=(700, 500))
@@ -8743,6 +9192,8 @@ class _VirtualWhatsOnList(wx.ListCtrl):
 
 
 class ChannelEPGDialog(wx.Dialog):
+    help_topic = "channel-epg"
+
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
                  schedule_callback=None, channel: Optional[Dict[str, str]] = None):
         super().__init__(parent, title=_("EPG: {channel}").format(channel=channel_name), size=(600, 450))

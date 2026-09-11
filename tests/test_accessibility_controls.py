@@ -242,7 +242,6 @@ def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):
     for name in ("_download_catchup_programme", "_begin_catchup_download",
                  "_start_catchup_recording"):
         setattr(frame, name, getattr(main.IPTVClient, name).__get__(frame))
-    queued = []
     monkeypatch.setattr(main.threading, "Thread", FakeThread)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
     monkeypatch.setattr(main.catchup_direct, "direct_download_url",

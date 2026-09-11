@@ -20,7 +20,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 wx = pytest.importorskip("wx")
 
 import main as appmod  # noqa: E402
-import recorder as recorder_mod  # noqa: E402
 
 CatchupDownloadDialog: Any = appmod.CatchupDownloadDialog
 
