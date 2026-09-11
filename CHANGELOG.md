@@ -1,6 +1,14 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.130.0 - 2026-09-11
+
+- Watch and record a channel on one provider connection
+- Catch-up cancel, return after download errors, and Del on favorites
+- View EPG finds a channel by its own name before fuzzy ties
+- Let a one-stream provider release the stream before ffmpeg asks
+- Clear leftover update staging folders from Temp
+
 ## v1.129.0 - 2026-09-11
 
 - View EPG starts at the programme on air now, without buttons
