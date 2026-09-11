@@ -11,6 +11,7 @@ The active format is a persistent setting chosen elsewhere; this module just tur
 format key + URL + per-channel HTTP headers into a running ffmpeg process and tracks it.
 """
 
+import datetime
 import logging
 import os
 import re
@@ -397,6 +398,7 @@ class RecordingManager:
         duration: Optional[float] = None,
         show_stats: bool = False,
         keep_partial: bool = True,
+        file_time: Optional[datetime.datetime] = None,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
@@ -404,7 +406,8 @@ class RecordingManager:
             fmt = DEFAULT_RECORDING_FORMAT
 
         os.makedirs(out_dir, exist_ok=True)
-        out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt))
+        out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt),
+                                            when=file_time)
         # ffmpeg cannot resume a partial file, so for download-style captures the
         # output goes to a ``.part`` sibling and is renamed into place only when
         # the download completes; a canceled or failed run leaves nothing behind.
@@ -480,9 +483,13 @@ class RecordingManager:
         return len(active)
 
     # -- internals ---------------------------------------------------------
-    def _unique_output_path(self, out_dir: str, display_name: str, ext: str) -> str:
+    def _unique_output_path(self, out_dir: str, display_name: str, ext: str,
+                            when: Optional[datetime.datetime] = None) -> str:
         base = sanitize_filename(display_name)
-        stamp = time.strftime("%Y-%m-%d %H-%M-%S")
+        # A download of something that already aired is named for when it
+        # aired, to the minute as the EPG lists it; a live capture for the
+        # moment it started.
+        stamp = when.strftime("%Y-%m-%d %H-%M") if when else time.strftime("%Y-%m-%d %H-%M-%S")
         candidate = os.path.join(out_dir, f"{base} - {stamp}.{ext}")
         counter = 2
         while os.path.exists(candidate):

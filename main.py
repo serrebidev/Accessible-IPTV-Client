@@ -6708,6 +6708,13 @@ class IPTVClient(wx.Frame):
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
             return
         try:
+            # The file is named for when the programme aired, as the EPG lists
+            # it, not for whenever it happened to be downloaded.
+            aired = utc_to_local(datetime.datetime.strptime(
+                show.get("start", ""), "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+        except (TypeError, ValueError):
+            aired = None
+        try:
             rec = self.recorder.start(
                 url, display_name, fmt, headers, get_recordings_dir(self.config),
                 key=key,
@@ -6720,6 +6727,7 @@ class IPTVClient(wx.Frame):
                 duration=duration,
                 show_stats=True,
                 keep_partial=False,
+                file_time=aired,
             )
         except Exception as err:
             # Stream URLs go to the debug log verbatim (credentials included):

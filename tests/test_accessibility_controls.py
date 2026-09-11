@@ -165,6 +165,51 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
     assert kwargs["keep_partial"] is False
     # The progress window replaces the old "download started" message box.
     assert len(dialogs) == 1
+    # No parseable programme start: the recorder falls back to the clock.
+    assert kwargs["file_time"] is None
+
+
+def test_catchup_download_is_named_for_the_programme_start(monkeypatch, tmp_path):
+    """The file's date is when the programme aired, as the EPG shows it."""
+    started = []
+
+    class Recorder:
+        def is_recording(self, _key):
+            return False
+
+        def start(self, *args, **kwargs):
+            started.append(kwargs)
+            return types.SimpleNamespace(out_path=str(tmp_path / "x.mkv"), id=8)
+
+    class Dialog:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def Show(self):
+            pass
+
+        def Raise(self):
+            pass
+
+    frame = types.SimpleNamespace(
+        config={"recording_format": "provider_mkv"},
+        recorder=Recorder(),
+        _catchup_downloads={},
+        _catchup_download_finished=lambda *_args: None,
+        _note_recording_started=lambda: None,
+    )
+    monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
+    monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
+
+    main.IPTVClient._start_catchup_recording(
+        frame, "https://catchup.example/p", "Ojciec Mateusz 35 - TVP 1", "catchup:x",
+        {"start": "20260910183000", "end": "20260910192500"}, 3300.0, "provider_mkv", {})
+
+    aired = started[0]["file_time"]
+    # EPG times are UTC; the name uses local time, like the EPG dialogs.
+    assert aired.utcoffset() is not None
+    assert aired.astimezone(datetime.timezone.utc) == datetime.datetime(
+        2026, 9, 10, 18, 30, tzinfo=datetime.timezone.utc)
 
 
 def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):

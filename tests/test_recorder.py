@@ -219,6 +219,20 @@ def test_unique_output_path_uses_timestamp_and_collision_suffix(tmp_path, monkey
     assert os.path.basename(second) == "A B C - 2026-06-18 12-34-56 (2).mkv"
 
 
+def test_unique_output_path_can_be_named_for_when_the_programme_aired(tmp_path):
+    """A catch-up download carries the programme's start, not the download time."""
+    import datetime
+    # The exact name below is the air time; the clock would give today's date.
+    manager = recorder.RecordingManager()
+    aired = datetime.datetime(2026, 9, 10, 20, 30)
+    first = manager._unique_output_path(str(tmp_path), "Ojciec Mateusz 35 - TVP 1", "mkv", when=aired)
+    assert os.path.basename(first) == "Ojciec Mateusz 35 - TVP 1 - 2026-09-10 20-30.mkv"
+    open(first, "w", encoding="utf-8").close()
+    # Downloading the same episode again does not overwrite the first copy.
+    again = manager._unique_output_path(str(tmp_path), "Ojciec Mateusz 35 - TVP 1", "mkv", when=aired)
+    assert os.path.basename(again) == "Ojciec Mateusz 35 - TVP 1 - 2026-09-10 20-30 (2).mkv"
+
+
 def test_normalize_recording_format_clamps():
     assert options.normalize_recording_format("audio_flac") == "audio_flac"
     assert options.normalize_recording_format("bogus") == options.DEFAULT_RECORDING_FORMAT
