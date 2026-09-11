@@ -420,6 +420,155 @@ class TestStreamTypeDetection:
             assert is_audio is True
 
 
+class TestPlaybackHealthWatchdog:
+    """Audio progress must not conceal a frozen television picture."""
+
+    IPF = internal_player.InternalPlayerFrame
+
+    class _Media:
+        FIELDS = (
+            "read_bytes", "decoded_video", "displayed_pictures",
+            "decoded_audio", "played_abuffers",
+        )
+
+        def __init__(self):
+            self.available = True
+            self.values = (1000, 100, 100, 100, 100)
+
+        def get_stats(self, target):
+            if not self.available:
+                return False
+            for name, value in zip(self.FIELDS, self.values):
+                setattr(target, name, value)
+            return True
+
+    class _Player:
+        def __init__(self, media):
+            self.media = media
+            self.position = 1000
+            self.advance_position = True
+
+        def get_media(self):
+            return self.media
+
+        def get_time(self):
+            if self.advance_position:
+                self.position += 500
+            return self.position
+
+    @classmethod
+    def _frame(cls, *, video_visible=True):
+        media = cls._Media()
+        player = cls._Player(media)
+        frame = types.SimpleNamespace(
+            player=player,
+            media=media,
+            _current_stream_kind="live",
+            _video_visible=video_visible,
+            _has_seen_playing=True,
+            _play_start_monotonic=1.0,
+            _av_last_stats=None,
+            _av_last_video_progress_ts=None,
+            _av_last_audio_progress_ts=None,
+            _av_last_network_progress_ts=None,
+            _av_video_progress_samples=0,
+            _av_audio_progress_samples=0,
+            _av_min_progress_samples=2,
+            _av_startup_grace_seconds=12.0,
+            _av_stall_threshold_seconds=10.0,
+            _last_position_ms=None,
+            _stall_ticks=0,
+            _stall_threshold=8,
+            restarts=[],
+        )
+        frame._reset_av_watchdog = types.MethodType(cls.IPF._reset_av_watchdog, frame)
+        frame._read_av_progress_stats = types.MethodType(cls.IPF._read_av_progress_stats, frame)
+        frame._counter_group_progressed = cls.IPF._counter_group_progressed
+        frame._monitor_av_progress = types.MethodType(cls.IPF._monitor_av_progress, frame)
+        frame._schedule_restart = lambda reason, adjust_buffer=False: frame.restarts.append(
+            (reason, adjust_buffer)
+        )
+        return frame
+
+    @classmethod
+    def _sample(cls, frame, now, values, state="playing"):
+        frame.media.values = values
+        cls.IPF._monitor_playback_progress(frame, now, state)
+
+    def test_audio_progress_does_not_mask_frozen_video(self):
+        frame = self._frame()
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 21.0, (1200, 120, 120, 120, 120))
+
+        # Audio and network continue, but no video frame is decoded/displayed.
+        self._sample(frame, 25.0, (1300, 120, 120, 130, 130))
+        self._sample(frame, 31.1, (1400, 120, 120, 140, 140))
+
+        assert frame.restarts == [("playback stalled", True)]
+
+    def test_video_progress_does_not_mask_frozen_audio(self):
+        frame = self._frame()
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 21.0, (1200, 120, 120, 120, 120))
+
+        self._sample(frame, 31.1, (1400, 140, 140, 120, 120))
+
+        assert frame.restarts == [("playback stalled", True)]
+
+    def test_progress_in_both_components_keeps_stream_healthy(self):
+        frame = self._frame()
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 21.0, (1200, 120, 120, 120, 120))
+        self._sample(frame, 40.0, (1400, 140, 140, 140, 140))
+
+        assert frame.restarts == []
+
+    def test_one_off_radio_artwork_does_not_arm_video_watchdog(self):
+        frame = self._frame()
+        self._sample(frame, 20.0, (1000, 1, 1, 100, 100))
+        self._sample(frame, 20.5, (1100, 1, 1, 110, 110))
+        self._sample(frame, 21.0, (1200, 1, 1, 120, 120))
+        self._sample(frame, 40.0, (1400, 1, 1, 140, 140))
+
+        assert frame.restarts == []
+        assert frame._av_video_progress_samples == 0
+
+    def test_hidden_video_is_not_monitored(self):
+        frame = self._frame(video_visible=False)
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 21.0, (1200, 120, 120, 120, 120))
+        self._sample(frame, 31.1, (1400, 120, 120, 140, 140))
+
+        assert frame.restarts == []
+        assert frame._av_video_progress_samples == 0
+
+    def test_position_watchdog_remains_fallback_when_stats_unavailable(self):
+        frame = self._frame()
+        frame.media.available = False
+        frame.player.advance_position = False
+
+        for tick in range(frame._stall_threshold + 1):
+            self.IPF._monitor_playback_progress(frame, 20.0 + tick * 0.5, "playing")
+
+        assert frame.restarts == [("playback stalled", True)]
+
+    def test_leaving_playing_state_resets_all_health_clocks(self):
+        frame = self._frame()
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+
+        self.IPF._monitor_playback_progress(frame, 21.0, "buffering")
+
+        assert frame._av_last_stats is None
+        assert frame._av_video_progress_samples == 0
+        assert frame._av_audio_progress_samples == 0
+        assert frame._last_position_ms is None
+
+
 class TestClosingTheShownPlayerStopsPlayback:
     """Closing the player window must stop the channel, not hide it.
 
@@ -639,6 +788,8 @@ class TestReconnectKeepsVideoHidden:
             instance=types.SimpleNamespace(media_new=lambda _u: _Media()),
         )
         frame._begin_new_stream_audio_state = lambda: None
+        frame._reset_av_watchdog = types.MethodType(
+            internal_player.InternalPlayerFrame._reset_av_watchdog, frame)
         frame._normalise_stream_url = lambda u, h: (u, h)
         frame._resolve_stream_url = lambda u, headers=None: (u, None)
         frame._detect_stream_content_type = lambda *a, **kw: None
