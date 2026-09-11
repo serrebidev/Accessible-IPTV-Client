@@ -1574,15 +1574,27 @@ class EPGDatabase:
                     'ts_offset': 0
                 }
 
-        if tvg_name:
-            norm_tvg_name = canonicalize_name(strip_noise_words(tvg_name))
-            rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm_tvg_name,)).fetchall()
-            playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        # Exact normalized-name hits: the tvg-name first, then the channel's own
+        # name. The name matters because many playlists carry only a tvg-id the
+        # guide does not know plus a display name ("TVN HD" against a guide's
+        # "TVN"). Without it every "TVN ..." channel tied on one shared token and
+        # whichever came first in the guide - TVN 7 - won, so View EPG showed
+        # another channel's schedule while the channel list, which matches by
+        # name, was right.
+        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        seen_norms = set()
+        for source_text, base_score, base_why in ((tvg_name, 96, 'exact-tvg-name'),
+                                                  (name, 92, 'exact-name')):
+            norm = canonicalize_name(strip_noise_words(source_text)) if source_text else ""
+            if not norm or norm in seen_norms:
+                continue
+            seen_norms.add(norm)
+            rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm,)).fetchall()
             for r in rows:
                 candidate_numbers = _significant_channel_numbers(r[0], r[2])
                 existing = candidates.get(r[0])
-                score = 96
-                why = 'exact-tvg-name'
+                score = base_score
+                why = base_why
                 if playlist_numbers:
                     if candidate_numbers & playlist_numbers:
                         score += 12
@@ -1666,7 +1678,7 @@ class EPGDatabase:
 
                 # Keep strong exact matches even if the region metadata disagrees.
                 why = v.get("why") or ""
-                if why.startswith("exact-id") or why.startswith("exact-tvg-name"):
+                if why.startswith(("exact-id", "exact-tvg-name", "exact-name")):
                     lowered_score = max(1, v.get("score", 0) - 30)
                     v = dict(v)
                     v["score"] = lowered_score
