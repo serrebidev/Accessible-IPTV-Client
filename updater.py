@@ -4,7 +4,10 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
+import tempfile
+import time
 import urllib.error
 import urllib.request
 import zipfile
@@ -130,6 +133,49 @@ def clear_update_pending(directory: str) -> None:
         os.remove(update_pending_path(directory))
     except OSError:
         LOG.debug("clear_update_pending: nothing to remove", exc_info=True)
+
+
+# --- leftover update staging directories -----------------------------------
+#
+# Every update downloads into a fresh mkdtemp("iptvclient_update_") directory.
+# A failed or cancelled update deletes it, but a successful one cannot: the
+# helper that finishes the install runs from inside it. At ~95 MB each they
+# piled up in %TEMP% (25 of them, 2.4 GB, before this sweep existed). The next
+# start removes any old enough that no helper or installer can still be using it.
+
+UPDATE_TEMP_PREFIX = "iptvclient_update_"
+STALE_UPDATE_DIR_SECONDS = 60 * 60
+
+
+def sweep_stale_update_dirs(
+    temp_dir: Optional[str] = None,
+    max_age_seconds: float = STALE_UPDATE_DIR_SECONDS,
+    now: Optional[float] = None,
+) -> int:
+    """Delete leftover update staging directories. Returns how many were removed."""
+    root = temp_dir or tempfile.gettempdir()
+    cutoff = (time.time() if now is None else now) - max_age_seconds
+    try:
+        entries = list(os.scandir(root))
+    except OSError:
+        return 0
+    removed = 0
+    for entry in entries:
+        if not entry.name.startswith(UPDATE_TEMP_PREFIX):
+            continue
+        try:
+            if not entry.is_dir(follow_symlinks=False):
+                continue
+            if entry.stat(follow_symlinks=False).st_mtime > cutoff:
+                continue
+        except OSError:
+            continue
+        shutil.rmtree(entry.path, ignore_errors=True)
+        if os.path.exists(entry.path):
+            LOG.debug("sweep_stale_update_dirs: could not fully remove %s", entry.path)
+        else:
+            removed += 1
+    return removed
 
 
 @dataclass

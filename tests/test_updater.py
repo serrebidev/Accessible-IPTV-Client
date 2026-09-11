@@ -312,3 +312,38 @@ def test_update_pending_marker_survives_garbage(tmp_path):
     # Clearing something unreadable must not raise either.
     updater.clear_update_pending(directory)
     updater.clear_update_pending(directory)
+
+
+# --------------------------------------------------------------------------- #
+# Leftover update staging directories
+#
+# A successful update cannot delete its own mkdtemp directory (the helper runs
+# from inside it), so the next start sweeps the old ones out of %TEMP%.
+# --------------------------------------------------------------------------- #
+def test_sweep_stale_update_dirs_removes_only_old_update_dirs(tmp_path):
+    now = 1_000_000.0
+    old = tmp_path / (updater.UPDATE_TEMP_PREFIX + "old")
+    (old / "helper").mkdir(parents=True)
+    (old / "helper" / "update_helper.ps1").write_text("x", encoding="utf-8")
+    fresh = tmp_path / (updater.UPDATE_TEMP_PREFIX + "fresh")
+    fresh.mkdir()
+    unrelated = tmp_path / "iptv_remux_keep"
+    unrelated.mkdir()
+    stray_file = tmp_path / (updater.UPDATE_TEMP_PREFIX + "file")
+    stray_file.write_text("x", encoding="utf-8")
+    for path in (old, unrelated, stray_file):
+        os.utime(path, (now - 7200, now - 7200))
+    os.utime(fresh, (now - 60, now - 60))
+
+    removed = updater.sweep_stale_update_dirs(str(tmp_path), max_age_seconds=3600, now=now)
+
+    assert removed == 1
+    assert not old.exists()
+    # A helper may still be running from a recent one; never touch it.
+    assert fresh.exists()
+    assert unrelated.exists()
+    assert stray_file.exists()
+
+
+def test_sweep_stale_update_dirs_tolerates_missing_temp_dir(tmp_path):
+    assert updater.sweep_stale_update_dirs(str(tmp_path / "missing")) == 0

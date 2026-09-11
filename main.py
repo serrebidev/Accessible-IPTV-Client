@@ -1131,6 +1131,11 @@ class IPTVClient(wx.Frame):
 
     def _run_deferred_startup_tasks(self):
         self._report_finished_update()
+        # A successful update leaves its ~95 MB staging dir in %TEMP% (the
+        # helper runs from inside it); clear old ones off the UI thread.
+        threading.Thread(
+            target=updater.sweep_stale_update_dirs, daemon=True, name="UpdateTempSweep"
+        ).start()
         self._ensure_db_tuned_background()
         self._start_dvr_scheduler()
         self.start_playlist_load()
@@ -3918,7 +3923,7 @@ class IPTVClient(wx.Frame):
             if not updater.is_newer_version(app_meta.APP_VERSION, manifest.version):
                 raise updater.UpdateError(_("Update manifest version is not newer than the current app."))
 
-            temp_root = tempfile.mkdtemp(prefix="iptvclient_update_")
+            temp_root = tempfile.mkdtemp(prefix=updater.UPDATE_TEMP_PREFIX)
             if is_windows_installed_build():
                 if not manifest.installer_asset_filename or not manifest.installer_download_url or not manifest.installer_sha256:
                     raise updater.UpdateError(_("Update manifest is missing required fields."))
