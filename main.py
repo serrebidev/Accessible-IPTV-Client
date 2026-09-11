@@ -825,11 +825,19 @@ class TrayIcon(wx.adv.TaskBarIcon):
         menu = wx.Menu()
         menu.Append(self.TBMENU_RESTORE, _("Restore"))
         player_menu = wx.Menu()
-        player_menu.Append(self.TBMENU_PLAYER_SHOW, _("Show Player"))
-        player_menu.Append(self.TBMENU_PLAYER_TOGGLE, _("Play/Pause"))
-        player_menu.Append(self.TBMENU_PLAYER_STOP, _("Stop"))
+        player_items = (
+            player_menu.Append(self.TBMENU_PLAYER_SHOW, _("Show Player")),
+            player_menu.Append(self.TBMENU_PLAYER_TOGGLE, _("Play/Pause")),
+            player_menu.Append(self.TBMENU_PLAYER_STOP, _("Stop")),
+        )
         player_menu.AppendSeparator()
-        player_menu.Append(self.TBMENU_CAST, _("Cast / Connect..."))
+        player_items += (player_menu.Append(self.TBMENU_CAST, _("Cast / Connect...")),)
+        # Same rule as the menu bar's Player menu: with nothing loaded in the
+        # built-in player there is nothing for these to act on.
+        has_media = getattr(self.parent, "_internal_player_has_media", None)
+        loaded = bool(has_media()) if callable(has_media) else True
+        for item in player_items:
+            item.Enable(loaded)
         menu.AppendSubMenu(player_menu, _("Player Controls"))
         if self.on_record_stop is not None and self.parent and self.parent.recorder.has_active():
             menu.Append(self.TBMENU_RECORD_STOP, _("Stop Recording(s)"))
@@ -1765,6 +1773,7 @@ class IPTVClient(wx.Frame):
         # The config was just replaced, so anything cached out of it is re-read.
         self._sync_favorites_from_config()
         self._update_recording_menu_state()
+        self._sync_player_controls_menu()
         # The playlist list may have changed on disk; keep the scope picker in
         # step (its stored selection may also have been replaced or removed).
         self.playlist_scope = self.config.get("playlist_scope", ALL_PLAYLISTS_SCOPE)
@@ -2335,6 +2344,7 @@ class IPTVClient(wx.Frame):
             pm_toggle = pm.Append(wx.ID_ANY, _("Play/Pause") + "\tCtrl+Shift+P")
             pm_stop = pm.Append(wx.ID_ANY, _("Stop") + "\tCtrl+Shift+S")
             pm_cast = pm.Append(wx.ID_ANY, _("Cast / Connect...") + "\tCtrl+Shift+C")
+            self._player_control_items = (pm_show, pm_toggle, pm_stop, pm_cast)
             mb.Append(pm, _("Player"))
             # View menu: switch between Live TV / catch-up and Video on Demand.
             vm = wx.Menu()
@@ -4236,6 +4246,37 @@ class IPTVClient(wx.Frame):
         frame.Enable(True)
         frame.Show()
         frame.Raise()
+
+    def _internal_player_has_media(self) -> bool:
+        """True while the built-in player has a stream loaded.
+
+        Loaded means playing, paused or stopped with something to resume -
+        the same test Play/Pause uses. No player window, or one with nothing
+        in it, is nothing to show, pause, stop or cast.
+        """
+        frame = getattr(self, "_internal_player_frame", None)
+        if not frame:
+            return False
+        try:
+            if getattr(frame, "_destroyed", False):
+                return False
+            return bool(frame._current_url or frame._last_resolved_url)
+        except Exception:
+            return False
+
+    def _sync_player_controls_menu(self) -> None:
+        """Grey out the Player menu while there is nothing to control.
+
+        A command that silently does nothing reads, to a screen reader, just
+        like one that is broken; a greyed-out item is announced as
+        unavailable before the user ever presses it.
+        """
+        loaded = self._internal_player_has_media()
+        for item in getattr(self, "_player_control_items", ()):
+            try:
+                item.Enable(loaded)
+            except Exception:
+                LOG.debug("IPTVClient._sync_player_controls_menu: ignored exception", exc_info=True)
 
     def _on_filter_focus(self, event):
         self._filter_focus_gen = getattr(self, "_filter_focus_gen", 0) + 1
