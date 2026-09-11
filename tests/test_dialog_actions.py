@@ -417,24 +417,45 @@ def _update_client(**overrides):
     return client
 
 
-def test_install_handoff_reuses_the_progress_dialog_instead_of_a_new_box():
+def test_install_handoff_reuses_the_progress_dialog_instead_of_a_new_box(monkeypatch):
     """No click stands between the download finishing and the install starting.
 
     The old flow put a modal "the update is installing" box here, which had to
     be read and dismissed inside the 30 seconds update_helper.ps1 waits before
-    it kills this process.
+    it kills this process. The notice now arrives in a fresh progress dialog -
+    no button to press - because NVDA reads a progress dialog's text when it
+    appears, and says nothing when the text of an open one changes.
     """
-    pulses = []
-    client = _update_client(
-        _update_progress_dlg=types.SimpleNamespace(
-            Pulse=lambda msg: pulses.append(msg)))
+    events = []
+
+    class _Progress:
+        def __init__(self, title, message, **kwargs):
+            events.append(("open", message, kwargs.get("style", 0)))
+
+        def Pulse(self, msg=""):
+            events.append(("pulse", msg))
+
+    old = types.SimpleNamespace(Pulse=lambda msg="": events.append(("old-pulse", msg)),
+                                Destroy=lambda: events.append(("destroy-old",)))
+    monkeypatch.setattr(appmod.wx, "ProgressDialog", _Progress)
+    client = _update_client(_update_progress_dlg=old)
+    client._fresh_update_message = appmod.IPTVClient._fresh_update_message.__get__(client)
     appmod.IPTVClient._show_update_installing_progress(client)
-    assert len(pulses) == 1
+    opened = [event for event in events if event[0] == "open"]
+    assert len(opened) == 1
     # It still says the app will come back by itself, and that opening it by
     # hand mid-install fails - just without demanding a keypress to say so.
-    assert "close and start again by itself" in pulses[0]
-    assert "do not open it yourself" in pulses[0]
+    assert "close and start again by itself" in opened[0][1]
+    assert "do not open it yourself" in opened[0][1]
+    assert not opened[0][2] & appmod.wx.PD_CAN_ABORT
+    assert ("destroy-old",) in events
+    assert isinstance(client._update_progress_dlg, _Progress)
     assert not hasattr(appmod.IPTVClient, "_warn_update_is_installing")
+    # Every later poll only keeps the dialog alive: no second dialog, and no
+    # re-sent text to cut NVDA off and start it from the top.
+    events.clear()
+    appmod.IPTVClient._show_update_installing_progress(client)
+    assert events == [("pulse", "")]
 
 
 def test_install_handoff_survives_a_missing_progress_dialog():

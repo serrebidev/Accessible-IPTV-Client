@@ -3632,6 +3632,7 @@ class IPTVClient(wx.Frame):
             self._start_update_download(release)
 
     def _start_update_download(self, release: Dict):
+        self._update_progress_message = None
         self._update_in_progress = True
         self._update_cancel = threading.Event()
         self._update_progress_dlg = wx.ProgressDialog(
@@ -3653,16 +3654,31 @@ class IPTVClient(wx.Frame):
         cancel = getattr(self, "_update_cancel", None)
         return not (cancel is not None and cancel.is_set())
 
+    def _fresh_update_message(self, text: str) -> str:
+        """``text`` the first time the progress dialog is given it, "" after.
+
+        wx re-sets the dialog's text every time a message is passed, even an
+        unchanged one, and every re-set cuts NVDA off and starts it reading
+        from the top again. The download phase went out on each progress tick
+        and the install notice four times a second, so neither was ever heard
+        to the end. An empty message tells wx to keep the current one.
+        """
+        if text and text != getattr(self, "_update_progress_message", None):
+            self._update_progress_message = text
+            return text
+        return ""
+
     def _apply_update_progress(self, phase: str, fraction):
         dlg = getattr(self, "_update_progress_dlg", None)
         if not dlg:
             return
         try:
+            message = self._fresh_update_message(phase)
             if fraction is None:
-                keep_going, _skip = dlg.Pulse(phase)
+                keep_going, _skip = dlg.Pulse(message)
             else:
                 pct = int(max(0.0, min(1.0, float(fraction))) * 100)
-                keep_going, _skip = dlg.Update(pct, phase)
+                keep_going, _skip = dlg.Update(pct, message)
             if not keep_going:
                 cancel = getattr(self, "_update_cancel", None)
                 if cancel is not None:
@@ -3678,6 +3694,7 @@ class IPTVClient(wx.Frame):
             except Exception:
                 LOG.debug("IPTVClient._destroy_update_progress: ignored exception", exc_info=True)
         self._update_progress_dlg = None
+        self._update_progress_message = None
         # Failure and cancel come through here, so this is where the gate
         # reopens. The success path passes end_flow=False: the update carries
         # on in the helper after this window goes away, and reopening the gate
@@ -3937,15 +3954,35 @@ class IPTVClient(wx.Frame):
         load Python DLL ... python314.dll". Saying so still matters; making the
         user dismiss a box to say it does not, and that dismissal used to have
         to happen inside the 30 seconds update_helper.ps1 waits for us to quit.
+
+        The notice goes out in a fresh progress dialog, not as new text in the
+        download one: NVDA reads a progress dialog's text when the dialog
+        appears and says nothing when the text of one already on screen
+        changes, so the notice set on the download dialog was never spoken.
+        After that the dialog is only pulsed - re-sending the text would
+        restart NVDA mid-sentence.
         """
         dlg = getattr(self, "_update_progress_dlg", None)
         if dlg is None:
             return
+        message = _("Installing the update. {app} will close and start again by "
+                    "itself - please do not open it yourself in the "
+                    "meantime.").format(app=app_meta.APP_DISPLAY_NAME)
         try:
-            dlg.Pulse(
-                _("Installing the update. {app} will close and start again by "
-                  "itself - please do not open it yourself in the "
-                  "meantime.").format(app=app_meta.APP_DISPLAY_NAME))
+            if self._fresh_update_message(message):
+                # Built before the old one goes, so focus moves straight from
+                # one to the other. No Cancel: the helper is already on its way.
+                replacement = wx.ProgressDialog(
+                    _("Updating {app}").format(app=app_meta.APP_DISPLAY_NAME),
+                    message,
+                    maximum=100,
+                    parent=self,
+                    style=wx.PD_APP_MODAL | wx.PD_SMOOTH | wx.PD_ELAPSED_TIME,
+                )
+                self._update_progress_dlg = replacement
+                dlg.Destroy()
+                dlg = replacement
+            dlg.Pulse()
         except Exception:
             LOG.debug("IPTVClient._show_update_installing_progress: ignored exception",
                       exc_info=True)

@@ -43,7 +43,11 @@ function Show-UpdateStatus {
     $screen = [System.Windows.Forms.Screen]::PrimaryScreen
     $workArea = $screen.WorkingArea
     $form = New-Object System.Windows.Forms.Form
-    $form.Text = "Updating Accessible IPTV Client"
+    # The title carries the message from the start, not just from the first
+    # update. Nothing in this window can take focus, so the window itself is
+    # what NVDA reads when it appears - its title - and a generic title meant
+    # the first message ("Preparing the update...") was never spoken at all.
+    $form.Text = "Accessible IPTV Client - $Message"
     $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
     $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
     $form.Location = New-Object System.Drawing.Point(($workArea.Left + 60), ($workArea.Top + 60))
