@@ -1,6 +1,13 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.129.0 - 2026-09-11
+
+- View EPG starts at the programme on air now, without buttons
+- Say why a catch-up download failed instead of a raw code
+- Find the direct download without opening the archive stream
+- Recover stalled live audio or video (#12)
+
 ## v1.128.1 - 2026-09-11
 
 - Clearer Hungarian wording for the download-window hint
