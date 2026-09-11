@@ -1,6 +1,18 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.127.0 - 2026-09-11
+
+- Closing the player returns to the catch-up list
+- Grey out the Player menu while nothing is playing
+- Rename and Delete move to the EPG Manager's context menu
+- A fuller programme description replaces a shorter one on re-import
+- Run the Windows installer in English or Hungarian, following Windows
+- Support Teleelevidenie timeshift archive (#11)
+- Escape hides the download window; View > Show Downloads brings it back
+- NVDA reads the whole update message
+- More natural Hungarian wording for the delete-playlist question
+
 ## v1.126.0 - 2026-09-10
 
 - Shorten the row actions to Rename, Delete and Catch-up
