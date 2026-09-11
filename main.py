@@ -3094,44 +3094,136 @@ class IPTVClient(wx.Frame):
         fmt = normalize_recording_format(self.config.get("recording_format"))
         out_dir = get_recordings_dir(self.config)
         intent = self._recording_audio_intent(channel)
-        if intent is None:
+        # Recording the channel the built-in player is showing takes one
+        # provider connection, not two (issue #13): the player lets go of the
+        # stream, the recording opens it, and the player then watches the
+        # recording's own copy of it through a local relay.
+        share = self._player_is_showing(channel)
+        player_shown = False
+        if share:
+            frame = self._internal_player_frame
+            try:
+                player_shown = bool(frame.IsShown())
+            except Exception:
+                player_shown = False
+            frame.stop(manual=True)
+        if intent is None and not share:
             self._start_live_recording(key, url, name, fmt, headers, out_dir, None)
             return
-        # Keeping the right audio track means asking the stream which tracks
-        # it carries - network work, so off the UI thread, then back here.
+        # Waiting for the provider, and keeping the right audio track (asking
+        # the stream which tracks it carries), are network work: off the UI
+        # thread, then back here.
         pending.add(key)
 
         def probe():
-            choice = self._recording_audio_choice(url, headers, intent)
+            if share:
+                # The provider still counts the player's connection for a moment.
+                catchup_direct.settle_media_session()
+            choice = self._recording_audio_choice(url, headers, intent) if intent else None
+            if share and intent:
+                catchup_direct.settle_media_session()  # ...and the track probe's
             wx.CallAfter(finish, choice)
 
         def finish(choice):
             if key not in pending:
-                return  # Record was pressed again: canceled before it began
+                # Record was pressed again: canceled before it began.
+                if share:
+                    self._resume_direct_playback(channel, player_shown)
+                return
             pending.discard(key)
-            self._start_live_recording(key, url, name, fmt, headers, out_dir, choice)
+            self._start_live_recording(key, url, name, fmt, headers, out_dir, choice,
+                                       share_with=channel if share else None,
+                                       player_shown=player_shown)
             self._sync_internal_player_record_state()
 
         threading.Thread(target=probe, daemon=True).start()
 
-    def _start_live_recording(self, key, url, name, fmt, headers, out_dir, audio_choice):
-        """UI thread: start one live recording and say where it is going."""
+    def _start_live_recording(self, key, url, name, fmt, headers, out_dir, audio_choice,
+                              share_with=None, player_shown=False):
+        """UI thread: start one live recording and say where it is going.
+
+        ``share_with`` is the channel the built-in player was showing: the
+        player then watches this recording's copy of the stream instead of
+        keeping a second connection to the provider open.
+        """
         audio_track, audio_count = audio_choice if audio_choice else (None, 0)
         try:
             rec = self.recorder.start(
                 url, name, fmt, headers, out_dir,
                 key=key, on_finish=self._on_recording_finished,
                 audio_track=audio_track, audio_track_count=audio_count,
+                share_with_player=share_with is not None,
             )
         except Exception as err:
             message_box(_("Could not start recording:\n{error}").format(error=err),
                           _("Recording Error"), wx.OK | wx.ICON_ERROR)
+            if share_with is not None:
+                self._resume_direct_playback(share_with, player_shown)
             return
+        relay = getattr(rec, "relay", None)
+        if share_with is not None and relay is not None:
+            shared = getattr(self, "_shared_recordings", None)
+            if shared is None:
+                shared = self._shared_recordings = {}
+            shared[rec.id] = {"channel": share_with, "url": relay.url, "shown": player_shown}
+            self._launch_stream(relay.url, name, stream_kind="live", channel=share_with,
+                                show_internal_player=player_shown)
         self._note_recording_started()
         message_box(
             _("Recording started ({fmt}):\n{path}").format(
                 fmt=self._recording_format_label(fmt), path=rec.out_path),
             _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _player_is_showing(self, channel: Dict[str, str]) -> bool:
+        """True while the built-in player is playing this live channel."""
+        current = getattr(self, "_internal_player_channel", None)
+        if (not current or not channel
+                or getattr(self, "_internal_player_stream_kind", "live") != "live"
+                or not self._internal_player_has_media()):
+            return False
+        caster = getattr(self, "caster", None)
+        if caster is not None and caster.is_connected():
+            return False
+        return self._channel_record_key(current) == self._channel_record_key(channel)
+
+    def _end_shared_playback(self, shared: Dict[str, object]) -> None:
+        """UI thread: the recording the player was watching through has ended.
+
+        Back to the provider directly - once the recording's own connection
+        has been released, and only if the player is still on that recording
+        (the user may have stopped it or moved on to something else).
+        """
+        frame = getattr(self, "_internal_player_frame", None)
+        if (frame is None or getattr(frame, "_destroyed", False)
+                or getattr(frame, "_current_url", None) != shared["url"]
+                or getattr(frame, "_manual_stop", False)):
+            return
+        frame.stop(manual=True)
+
+        def resume():
+            catchup_direct.settle_media_session()
+            wx.CallAfter(self._resume_direct_playback, shared["channel"],
+                         shared["shown"], shared["url"])
+
+        threading.Thread(target=resume, daemon=True).start()
+
+    def _resume_direct_playback(self, channel: Dict[str, str], shown: bool,
+                                expected_url: Optional[str] = None) -> None:
+        """UI thread: play ``channel`` straight from the provider again."""
+        frame = getattr(self, "_internal_player_frame", None)
+        if (frame is None or getattr(frame, "_destroyed", False)
+                or getattr(self, "_suppress_recording_notifications", False)):
+            return
+        if expected_url is not None and getattr(frame, "_current_url", None) != expected_url:
+            return  # something else was started meanwhile
+        try:
+            url = self._resolve_live_url(channel)
+        except Exception:
+            LOG.debug("IPTVClient._resume_direct_playback: could not resolve", exc_info=True)
+            return
+        if url:
+            self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
+                                channel=channel, show_internal_player=shown)
 
     def _recording_audio_intent(self, channel: Dict[str, str], *, from_player: bool = True):
         """How a recording of ``channel`` picks its audio track, or None.
@@ -3478,6 +3570,10 @@ class IPTVClient(wx.Frame):
             )
         if getattr(self, "_suppress_recording_notifications", False):
             return
+        shared = (getattr(self, "_shared_recordings", None) or {}).pop(rec.id, None)
+        if shared:
+            # The player was watching this recording's copy of the stream.
+            wx.CallAfter(self._end_shared_playback, shared)
         # Called from the recorder's watcher thread, so the check has to be
         # marshalled onto the UI thread like the report below.
         wx.CallAfter(self._maybe_shutdown_after_recordings)

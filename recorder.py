@@ -262,12 +262,14 @@ def build_ffmpeg_command(
     force_format: Optional[str] = None,
     audio_track: Optional[int] = None,
     audio_track_count: int = 0,
+    copy_to_stdout: bool = False,
 ) -> List[str]:
     """Construct the full ffmpeg argument list for one recording.
 
     ``audio_track`` is the input audio stream to keep (its ``0:a:N`` position)
     and ``audio_track_count`` how many the input has; None leaves the choice
-    to ffmpeg, as before.
+    to ffmpeg, as before. ``copy_to_stdout`` adds a second output: an untouched
+    MPEG-TS copy of the input on stdout, for the built-in player to watch.
     """
     if fmt not in RECORDING_FORMATS:
         fmt = DEFAULT_RECORDING_FORMAT
@@ -341,6 +343,13 @@ def build_ffmpeg_command(
         # so tell ffmpeg which muxer to use.
         cmd += ["-f", force_format]
     cmd.append(out_path)
+    if copy_to_stdout:
+        # A second output from the SAME input: the stream as it arrives, for
+        # the built-in player (see recording_relay). Watching while recording
+        # then uses one provider connection instead of two. Output options
+        # apply per output, so an audio-only file still leaves the player
+        # its picture.
+        cmd += ["-map", "0:v?", "-map", "0:a?", "-c", "copy", "-f", "mpegts", "pipe:1"]
     return cmd
 
 
@@ -450,6 +459,9 @@ class Recording:
         # which is the one case where the output file is expected to be unplayable.
         self.finalize_timed_out = False
         self.detached = False
+        # The local relay the built-in player watches this recording through,
+        # when it was started with ``share_with_player``.
+        self.relay = None
 
     @property
     def written_path(self) -> str:
@@ -496,6 +508,7 @@ class RecordingManager:
         file_time: Optional[datetime.datetime] = None,
         audio_track: Optional[int] = None,
         audio_track_count: int = 0,
+        share_with_player: bool = False,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
@@ -515,7 +528,8 @@ class RecordingManager:
         cmd = build_ffmpeg_command(get_ffmpeg_path(), url, partial_path or out_path, fmt, headers,
                                    duration=duration, show_stats=show_stats,
                                    force_format=force_format, audio_track=audio_track,
-                                   audio_track_count=audio_track_count)
+                                   audio_track_count=audio_track_count,
+                                   copy_to_stdout=share_with_player)
         LOG.info("Starting recording: %s -> %s (%s)", display_name, out_path, fmt)
         if audio_track is not None:
             LOG.info("Recording audio track %d of %d", audio_track + 1, audio_track_count)
@@ -531,7 +545,7 @@ class RecordingManager:
             process = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE if share_with_player else subprocess.DEVNULL,
                 stderr=log_handle if log_handle else subprocess.PIPE,
                 creationflags=creation_flags,
             )
@@ -551,6 +565,9 @@ class RecordingManager:
             rec = Recording(rec_id, key or url, url, display_name, fmt, out_path, process,
                             metadata, log_path=log_path, command=cmd, partial_path=partial_path)
             self._recordings[rec_id] = rec
+        if share_with_player:
+            from recording_relay import RecordingRelay
+            rec.relay = RecordingRelay(process.stdout)
 
         if not log_path:
             threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()
@@ -638,6 +655,8 @@ class RecordingManager:
             except Exception:
                 LOG.debug("RecordingManager._watch: ignored exception", exc_info=True)
             _close_stdin(proc)
+        if rec.relay is not None:
+            rec.relay.close()
         rc = proc.returncode if proc else -1
         if rec.log_path:
             # Deliberately not rewritten: the log keeps the stream URL and

@@ -348,6 +348,7 @@ def _live_client(monkeypatch, choice, deferred):
         _recording_format_label=lambda fmt: fmt,
         _on_recording_finished=lambda *a: None,
         _sync_internal_player_record_state=lambda: None,
+        _player_is_showing=lambda _channel: False,
     )
     return _bind(client, "_record_channel", "_start_live_recording")
 

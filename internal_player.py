@@ -585,6 +585,10 @@ class InternalPlayerFrame(wx.Frame):
             # Re-apply a previously chosen audio track once the stream resumes.
             self._audio_reapply_pending = bool(self._wanted_audio_track_name)
         else:
+            # A new stream is playback the user asked for: an earlier Stop no
+            # longer applies. Left set, it silently switched off every
+            # reconnect for whatever was played next.
+            self._manual_stop = False
             self._reconnect_attempts = 0
             self._xtream_refresh_count = 0
             self._last_restart_reason = ""
