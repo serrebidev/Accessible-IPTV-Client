@@ -665,6 +665,42 @@ def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float 
     return expanded
 
 
+def _positive_timeshift_days(channel: Dict[str, str]) -> Optional[int]:
+    """Return a positive M3U ``timeshift`` window, expressed in days.
+
+    Some providers use the older ``timeshift=\"N\"`` attribute instead of the
+    newer catchup/catchup-days pair. The attribute says how much archive is
+    available, but not how its URL is built, so URL inference stays
+    provider-specific below.
+    """
+    value = channel.get("timeshift")
+    try:
+        days = int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        return None
+    return days if days > 0 else None
+
+
+def _implicit_catchup_source(channel: Dict[str, str]) -> str:
+    """Infer a catch-up template when a known provider only sends timeshift.
+
+    Teleelevidenie's current dynamic playlists mark archive-capable channels as
+    ``timeshift=\"3\"`` without the ``catchup-source`` template present in its
+    older playlists. Its HLS and TS endpoints both accept the same utc/lutc
+    query parameters, so the live container format does not affect this rule.
+    """
+    if _positive_timeshift_days(channel) is None:
+        return ""
+    raw_url = str(channel.get("url") or "").split("|", 1)[0].strip()
+    try:
+        host = (urllib.parse.urlparse(raw_url).hostname or "").lower().rstrip(".")
+    except (TypeError, ValueError):
+        return ""
+    if host == "teleelevidenie.com" or host.endswith(".teleelevidenie.com"):
+        return "?utc=${start}&lutc=${timestamp}"
+    return ""
+
+
 def set_linux_env():
     if platform.system() != "Linux":
         return
@@ -5794,6 +5830,8 @@ class IPTVClient(wx.Frame):
     def _channel_has_catchup(self, channel: Dict[str, str]) -> bool:
         if channel.get("catchup-source") or channel.get("catchup"):
             return True
+        if _implicit_catchup_source(channel):
+            return True
         if channel.get("provider-type") == "stalker":
             pdata = channel.get("provider-data") or {}
             return bool(pdata.get("allow_timeshift") or pdata.get("archive"))
@@ -5825,7 +5863,7 @@ class IPTVClient(wx.Frame):
         return self._resolve_live_url(channel), False
 
     def _within_catchup_window(self, channel: Dict[str, str], start_dt: datetime.datetime) -> bool:
-        days = channel.get("catchup-days")
+        days = channel.get("catchup-days") or _positive_timeshift_days(channel)
         if not days:
             return True
         try:
@@ -5868,7 +5906,9 @@ class IPTVClient(wx.Frame):
         return self._build_generic_catchup_url(channel, start_dt, end_dt)
 
     def _build_generic_catchup_url(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> str:
-        source = channel.get("catchup-source") or ""
+        # Explicit metadata wins. If it is absent, known providers may expose
+        # the equivalent information through their legacy timeshift attribute.
+        source = channel.get("catchup-source") or _implicit_catchup_source(channel)
         if not source:
             return ""
 

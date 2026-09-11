@@ -110,3 +110,54 @@ class TestGenericCatchupUrl:
         }
         url = main.IPTVClient._build_generic_catchup_url(client, channel, START, END)
         assert url == f"https://host/live/1234?utc={int(START.timestamp()) - 7200}"
+
+
+class TestLegacyTimeshiftMetadata:
+    def test_teleelevidenie_timeshift_enables_catchup(self):
+        client = _client()
+        channel = {
+            "url": "https://test.teleelevidenie.com/stream.m3u8",
+            "timeshift": "3",
+        }
+        assert main.IPTVClient._channel_has_catchup(client, channel) is True
+
+    def test_teleelevidenie_hls_timeshift_uses_utc_template(self):
+        client = _client()
+        live_url = "https://test.teleelevidenie.com/stream.m3u8"
+        channel = {"url": live_url, "timeshift": "3"}
+        url = main.IPTVClient._build_generic_catchup_url(client, channel, START, END)
+        assert url.startswith(f"{live_url}?utc={int(START.timestamp())}&lutc=")
+
+    def test_teleelevidenie_ts_uses_the_same_archive_technology(self):
+        client = _client()
+        live_url = "https://test.teleelevidenie.com/stream.ts"
+        channel = {"url": live_url, "timeshift": "3"}
+        url = main.IPTVClient._build_generic_catchup_url(client, channel, START, END)
+        assert url.startswith(f"{live_url}?utc={int(START.timestamp())}&lutc=")
+
+    def test_timeshift_is_used_as_the_archive_window(self):
+        client = _client()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        channel = {
+            "url": "https://test.teleelevidenie.com/stream.m3u8",
+            "timeshift": "3",
+        }
+        assert main.IPTVClient._within_catchup_window(
+            client, channel, now - datetime.timedelta(days=2)
+        ) is True
+        assert main.IPTVClient._within_catchup_window(
+            client, channel, now - datetime.timedelta(days=4)
+        ) is False
+
+    def test_unknown_provider_is_not_guessed_from_timeshift_alone(self):
+        client = _client()
+        channel = {"url": "https://unknown.example/live/channel.ts", "timeshift": "3"}
+        assert main.IPTVClient._channel_has_catchup(client, channel) is False
+        assert main.IPTVClient._build_generic_catchup_url(client, channel, START, END) == ""
+
+    def test_invalid_or_disabled_timeshift_does_not_enable_catchup(self):
+        client = _client()
+        base = {"url": "https://test.teleelevidenie.com/stream.m3u8"}
+        for value in ("", "0", "-1", "invalid", None):
+            channel = dict(base, timeshift=value)
+            assert main.IPTVClient._channel_has_catchup(client, channel) is False
