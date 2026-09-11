@@ -2696,6 +2696,31 @@ class _SourceNamesMixin:
         except Exception:
             _logger.debug("_SourceNamesMixin._select_row_under: ignored exception", exc_info=True)
 
+    def _on_source_context_menu(self, event):
+        """Copy URL, Rename and Delete for the selected source row.
+
+        Row actions live here rather than on buttons, so both managers Tab
+        through the same short ring: the add buttons, the list, OK and Cancel.
+        EVT_CONTEXT_MENU also covers Shift+F10 and the Applications key, and
+        F2 and Del work on the list directly (see _on_source_shortcut).
+        """
+        self._select_row_under(event)
+        has_selection = self.lb.GetSelection() != wx.NOT_FOUND
+        menu = wx.Menu()
+        copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
+        copy_item.Enable(self._selected_source_url() is not None)
+        rename_item = menu.Append(wx.ID_ANY, _("Rename") + "\tF2")
+        remove_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
+        rename_item.Enable(has_selection)
+        remove_item.Enable(has_selection)
+        menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
+        menu.Bind(wx.EVT_MENU, self.OnRename, rename_item)
+        menu.Bind(wx.EVT_MENU, self.OnRemove, remove_item)
+        try:
+            self.lb.PopupMenu(menu)
+        finally:
+            menu.Destroy()
+
 
 if WX_AVAILABLE:
     def _copy_text_to_clipboard(text):
@@ -2728,9 +2753,7 @@ if WX_AVAILABLE:
             btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
             self.add_file_btn = wx.Button(panel, label=_("Add File"))
             self.add_url_btn = wx.Button(panel, label=_("Add URL"))
-            self.remove_btn = wx.Button(panel, label=_("Delete"))
-            self.rename_btn = wx.Button(panel, label=_("Rename"))
-            for btn in (self.add_file_btn, self.add_url_btn, self.rename_btn, self.remove_btn):
+            for btn in (self.add_file_btn, self.add_url_btn):
                 btn_sizer.Add(btn, 0, wx.ALL, 2)
             main_sizer.Add(btn_sizer, 0, wx.EXPAND)
             self.lb = wx.ListBox(panel, style=wx.LB_SINGLE)
@@ -2748,23 +2771,11 @@ if WX_AVAILABLE:
             panel.SetSizer(main_sizer)
             self.add_file_btn.Bind(wx.EVT_BUTTON, self.OnAddFile)
             self.add_url_btn.Bind(wx.EVT_BUTTON, self.OnAddURL)
-            self.remove_btn.Bind(wx.EVT_BUTTON, self.OnRemove)
-            self.rename_btn.Bind(wx.EVT_BUTTON, self.OnRename)
-            # Copy URL (and Shift+F10 / Applications key) without leaving the keyboard.
+            # Rename and Delete sit on the selected row, as in the Playlist
+            # Manager: context menu (Shift+F10 / Applications key), F2 and Del.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
             self.lb.Bind(wx.EVT_CHAR_HOOK, self._on_source_shortcut)
             self._focus_source_list()
-
-        def _on_source_context_menu(self, event):
-            self._select_row_under(event)
-            menu = wx.Menu()
-            copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
-            copy_item.Enable(self._selected_source_url() is not None)
-            menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
-            try:
-                self.lb.PopupMenu(menu)
-            finally:
-                menu.Destroy()
 
         def _format_source_label(self, src):
             return self.source_names.get(source_name_key(src), src)
@@ -2793,9 +2804,15 @@ if WX_AVAILABLE:
 
         def OnRemove(self, _):
             i = self.lb.GetSelection()
-            if i != wx.NOT_FOUND:
-                self.epg_sources.pop(i)
-                self.lb.Delete(i)
+            if i == wx.NOT_FOUND:
+                return
+            self.epg_sources.pop(i)
+            self.lb.Delete(i)
+            # Stay on the list, on the row that moved up into the gap, so a
+            # delete from the context menu does not leave focus on nothing.
+            if self.lb.GetCount():
+                self.lb.SetSelection(min(i, self.lb.GetCount() - 1))
+            self.lb.SetFocus()
 
         def GetResult(self):
             return self.epg_sources
@@ -2852,34 +2869,6 @@ if WX_AVAILABLE:
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
             self.lb.Bind(wx.EVT_CHAR_HOOK, self._on_source_shortcut)
             self._focus_source_list()
-
-        def _on_source_context_menu(self, event):
-            position = event.GetPosition()
-            if position != wx.DefaultPosition:
-                try:
-                    index = self.lb.HitTest(self.lb.ScreenToClient(position))
-                    if isinstance(index, tuple):
-                        index = index[0]
-                    if index != wx.NOT_FOUND:
-                        self.lb.SetSelection(index)
-                except Exception:
-                    _logger.debug("PlaylistManagerDialog._on_source_context_menu: ignored exception", exc_info=True)
-
-            has_selection = self.lb.GetSelection() != wx.NOT_FOUND
-            menu = wx.Menu()
-            copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
-            copy_item.Enable(self._selected_source_url() is not None)
-            rename_item = menu.Append(wx.ID_ANY, _("Rename") + "\tF2")
-            remove_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
-            rename_item.Enable(has_selection)
-            remove_item.Enable(has_selection)
-            menu.Bind(wx.EVT_MENU, self._copy_selected_url, copy_item)
-            menu.Bind(wx.EVT_MENU, self.OnRename, rename_item)
-            menu.Bind(wx.EVT_MENU, self.OnRemove, remove_item)
-            try:
-                self.lb.PopupMenu(menu)
-            finally:
-                menu.Destroy()
 
         def OnAddFile(self, _event):
             wildcard = "|".join([

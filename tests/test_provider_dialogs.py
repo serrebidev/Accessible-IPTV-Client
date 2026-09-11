@@ -220,7 +220,10 @@ def test_playlist_manager_copies_the_source_url(wx_app, monkeypatch):
 
 
 def test_epg_manager_copy_url(wx_app, monkeypatch):
-    """The EPG manager exposes Copy URL in its context menu; file rows have none."""
+    """The EPG manager exposes Copy URL in its context menu; file rows have none.
+
+    Rename and Delete sit beside it, as in the Playlist Manager.
+    """
     dlg = playlist.EPGManagerDialog(None, ["https://epg.example/plar.xml", "C:\\epg\\guide.xml"])
     copied = []
     monkeypatch.setattr(playlist, "_copy_text_to_clipboard", lambda text: copied.append(text) or True)
@@ -239,13 +242,14 @@ def test_epg_manager_copy_url(wx_app, monkeypatch):
     try:
         dlg.lb.SetSelection(0)
         dlg._on_source_context_menu(_ContextEvent())
-        assert states == [("Copy URL", True)]
+        assert states == [("Copy URL", True), ("Rename", True), ("Delete", True)]
         dlg._copy_selected_url(None)
         assert copied == ["https://epg.example/plar.xml"]
 
         dlg.lb.SetSelection(1)
         dlg._on_source_context_menu(_ContextEvent())
-        assert states[-1] == ("Copy URL", False)
+        # A file row has no URL to copy, but can still be renamed or deleted.
+        assert states[-3:] == [("Copy URL", False), ("Rename", True), ("Delete", True)]
         dlg._copy_selected_url(None)
         assert copied == ["https://epg.example/plar.xml"]
     finally:
