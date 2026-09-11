@@ -164,6 +164,15 @@ def _next_hop(url: str, headers: Optional[Dict[str, object]],
             return None, False
 
 
+def settle_media_session() -> None:
+    """Wait until a one-stream provider has let go of a media request.
+
+    Call it after anything that requested the media itself (a verified
+    ``.mp4`` probe, an ffprobe of the stream) and before ffmpeg asks for it.
+    """
+    time.sleep(_MEDIA_SESSION_SETTLE_SECONDS)
+
+
 def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
                         headers: Optional[Dict[str, object]] = None,
                         timeout: float = 6.0) -> Optional[str]:
@@ -197,6 +206,7 @@ def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
     current = url
     touched_media = False
     seen = {url}
+    found = None
     for _hop in range(_MAX_REDIRECT_HOPS):
         target, is_media = _next_hop(current, headers, timeout)
         touched_media = touched_media or is_media
@@ -205,11 +215,14 @@ def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
         seen.add(target)
         found = probe_around(target)
         if found:
-            return found
+            break
         current = target
-    found = probe_around(url)
-    if found:
-        return found
-    if touched_media:
-        time.sleep(_MEDIA_SESSION_SETTLE_SECONDS)
-    return None
+    if not found:
+        found = probe_around(url)
+    # Verifying the file IS a request for the media (a HEAD, or a 1-byte GET
+    # where HEAD is refused), so the provider holds the account's one stream
+    # for a moment after it. ffmpeg starting straight after the probe was that
+    # second stream and got 403 on every attempt, retries included.
+    if found or touched_media:
+        settle_media_session()
+    return found

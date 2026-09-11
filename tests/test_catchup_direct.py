@@ -3,6 +3,7 @@
 import http.server
 import threading
 import time
+import urllib.request
 
 import pytest
 
@@ -15,9 +16,11 @@ class _OneStreamProvider(http.server.BaseHTTPRequestHandler):
     Modelled on teleelevidenie as measured: ``/play/...`` answers 302 to the
     archive's ``timeshift_abs-<utc>.ts``; any request to that stream holds the
     token, and while it is held the ``index-<utc>-<len>.mp4`` file is 403.
+    A request that reaches the ``.mp4`` holds the token for ``hold_seconds``.
     """
 
     busy_until = 0.0
+    hold_seconds = 0.0
     requests: list = []
 
     def log_message(self, format, *args):  # noqa: A002 - base class name
@@ -45,6 +48,7 @@ class _OneStreamProvider(http.server.BaseHTTPRequestHandler):
             if time.monotonic() < cls.busy_until:
                 self._reply(403, "text/plain")
             else:
+                cls.busy_until = time.monotonic() + cls.hold_seconds
                 self._reply(200, "video/mp4")
         else:
             self._reply(404, "text/plain")
@@ -75,6 +79,29 @@ def test_the_probe_never_opens_the_archive_stream(provider):
     found = catchup_direct.direct_download_url(url, 1789065000, 3300)
     assert found == provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
     assert not [r for r in _OneStreamProvider.requests if "timeshift_abs" in r[1]]
+
+
+def test_the_found_file_is_free_when_ffmpeg_asks_for_it(provider, monkeypatch):
+    """Still failing after the redirect fix: verifying the .mp4 is itself a
+    request for the media, and ffmpeg asked for it straight after - so it was
+    the account's second stream and got 403 on every attempt."""
+    monkeypatch.setattr(_OneStreamProvider, "hold_seconds", 0.3)
+    monkeypatch.setattr(catchup_direct, "_MEDIA_SESSION_SETTLE_SECONDS", 0.6)
+    url = provider + "/play/mpegts-c468-tabc?utc=1789065000&lutc=1789142000"
+    found = catchup_direct.direct_download_url(url, 1789065000, 3300)
+    assert found
+    # ffmpeg's request, made the moment the probe hands the URL over.
+    request = urllib.request.Request(found, method="HEAD")
+    with urllib.request.urlopen(request, timeout=5) as response:
+        assert response.status == 200
+
+
+def test_nothing_to_wait_for_when_the_media_was_never_asked(provider, monkeypatch):
+    settled = []
+    monkeypatch.setattr(catchup_direct, "settle_media_session", lambda: settled.append(True))
+    missing = provider + "/elsewhere/chan/index.m3u8?t=1"
+    assert catchup_direct.direct_download_url(missing, 1789065000, 3300) is None
+    assert settled == []
 
 
 def test_next_hop_reads_the_location_without_following_it(provider):
