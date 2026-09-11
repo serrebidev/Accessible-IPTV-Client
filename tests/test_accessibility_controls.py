@@ -237,6 +237,7 @@ def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):
         _resolve_show_url=lambda _channel, _show: ("https://catchup.example/index.m3u8?tok=1", True),
         _channel_display_name=lambda _channel: "News",
         _channel_record_key=lambda _channel: "news",
+        _recording_audio_intent=lambda _channel, **_kw: None,
     )
     for name in ("_download_catchup_programme", "_begin_catchup_download",
                  "_start_catchup_recording"):

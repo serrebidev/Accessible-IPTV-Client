@@ -260,8 +260,15 @@ def build_ffmpeg_command(
     duration: Optional[float] = None,
     show_stats: bool = False,
     force_format: Optional[str] = None,
+    audio_track: Optional[int] = None,
+    audio_track_count: int = 0,
 ) -> List[str]:
-    """Construct the full ffmpeg argument list for one recording."""
+    """Construct the full ffmpeg argument list for one recording.
+
+    ``audio_track`` is the input audio stream to keep (its ``0:a:N`` position)
+    and ``audio_track_count`` how many the input has; None leaves the choice
+    to ffmpeg, as before.
+    """
     if fmt not in RECORDING_FORMATS:
         fmt = DEFAULT_RECORDING_FORMAT
 
@@ -286,6 +293,11 @@ def build_ffmpeg_command(
     if duration and duration > 0:
         cmd += ["-t", str(float(duration))]
 
+    # An audio-only file holds one track, and left to itself ffmpeg keeps the
+    # one with the most channels - not the one the user listens to, and not
+    # the audio description. Name it.
+    pick_audio = ["-map", f"0:a:{int(audio_track)}"] if audio_track is not None else []
+
     if fmt == "provider_mp4":
         # Only video and audio: MP4 cannot carry the DVB teletext/subtitle and data
         # streams that IPTV transport streams routinely include, so "-map 0" with
@@ -303,17 +315,23 @@ def build_ffmpeg_command(
             "-c:a", "aac", "-b:a", "192k",
         ]
     elif fmt == "audio_wav":
-        cmd += ["-vn", "-c:a", "pcm_s16le"]
+        cmd += pick_audio + ["-vn", "-c:a", "pcm_s16le"]
     elif fmt == "audio_flac":
-        cmd += ["-vn", "-c:a", "flac"]
+        cmd += pick_audio + ["-vn", "-c:a", "flac"]
     elif fmt == "audio_mp3_v0":
-        cmd += ["-vn", "-c:a", "libmp3lame", "-q:a", "0"]
+        cmd += pick_audio + ["-vn", "-c:a", "libmp3lame", "-q:a", "0"]
     elif fmt == "audio_aac_m4a":
-        cmd += ["-vn", "-c:a", "aac", "-b:a", "256k"]
+        cmd += pick_audio + ["-vn", "-c:a", "aac", "-b:a", "256k"]
     elif fmt == "audio_opus":
-        cmd += ["-vn", "-c:a", "libopus", "-b:a", "160k"]
+        cmd += pick_audio + ["-vn", "-c:a", "libopus", "-b:a", "160k"]
     else:  # pragma: no cover - defensive, normalized upstream
         cmd += ["-map", "0", "-c", "copy"]
+
+    if audio_track is not None and RECORDING_FORMATS[fmt][2] == "video":
+        # Video formats keep every audio track; the chosen one becomes the
+        # default, so a player opening the file starts on it.
+        for index in range(max(int(audio_track_count), int(audio_track) + 1)):
+            cmd += [f"-disposition:a:{index}", "+default" if index == audio_track else "-default"]
 
     if format_uses_faststart(fmt):
         cmd += ["-movflags", "+faststart"]
@@ -324,6 +342,83 @@ def build_ffmpeg_command(
         cmd += ["-f", force_format]
     cmd.append(out_path)
     return cmd
+
+
+# Dispositions ffmpeg prints after an input stream, e.g. "(visual impaired)".
+_DISPOSITIONS = {
+    "default", "dub", "original", "comment", "lyrics", "karaoke", "forced",
+    "hearing impaired", "visual impaired", "clean effects", "attached pic",
+    "timed thumbnails", "non diegetic", "captions", "descriptions", "metadata",
+    "dependent", "still image", "multilayer",
+}
+_STREAM_LINE_RE = re.compile(r"^\s*Stream #\d+:\d+(?:\[[^\]]*\])?(?:\(([^)]*)\))?: (\w+): (.*)$")
+_STREAM_META_RE = re.compile(r"^\s+(title|comment)\s*:\s*(.*)$")
+_AUDIO_DESCRIPTION_DISPOSITIONS = {"visual impaired", "descriptions"}
+
+
+def parse_audio_streams(report: str) -> List[Dict[str, object]]:
+    """The audio streams in ffmpeg's ``-i`` report, in ``0:a:N`` order.
+
+    Each is ``{"language", "title", "dispositions"}``. DVB marks an audio
+    description track "visual impaired" (ffmpeg adds "descriptions"), which is
+    what finds it when its name says nothing; HLS renditions carry their name
+    as a "comment".
+    """
+    streams: List[Dict[str, object]] = []
+    current: Optional[Dict[str, object]] = None
+    for line in (report or "").splitlines():
+        match = _STREAM_LINE_RE.match(line)
+        if match:
+            current = None
+            if match.group(2) != "Audio":
+                continue
+            flags = set(re.findall(r"\(([a-z][a-z ]*)\)", match.group(3)))
+            current = {"language": (match.group(1) or "").strip(), "title": "",
+                       "dispositions": flags & _DISPOSITIONS}
+            streams.append(current)
+            continue
+        if current is not None and not current["title"]:
+            meta = _STREAM_META_RE.match(line)
+            if meta:
+                current["title"] = meta.group(2).strip()
+    return streams
+
+
+def audio_stream_label(position: int, stream: Dict[str, object]) -> str:
+    """A name for one probed stream, in the words the player's rules match."""
+    parts = [f"Track {position + 1}"]
+    if stream.get("language"):
+        parts.append(f"[{stream['language']}]")
+    if stream.get("title"):
+        parts.append(str(stream["title"]))
+    if set(stream.get("dispositions") or ()) & _AUDIO_DESCRIPTION_DISPOSITIONS:
+        parts.append("audio description")
+    return " - ".join(parts)
+
+
+def probe_audio_streams(url: str, headers: Optional[Dict[str, object]] = None,
+                        *, timeout: float = 20.0) -> List[Dict[str, object]]:
+    """Ask a stream which audio tracks it carries; [] when it cannot say in time.
+
+    A plain ``ffmpeg -i`` with no output: it opens the input, reports what it
+    found and exits. A network round trip, so never on the UI thread.
+    """
+    cmd = [get_ffmpeg_path(), "-hide_banner", "-nostdin",
+           "-rw_timeout", "10000000", "-analyzeduration", "3000000"]
+    if str(url).lower().startswith(("http://", "https://")):
+        # HTTP-only options: any other input (a file, udp://) rejects them
+        # outright ("Option user_agent not found") and lists nothing.
+        cmd += _header_input_args(headers)
+    cmd += ["-i", url]
+    creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
+    try:
+        result = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.PIPE, timeout=timeout,
+                                creationflags=creation_flags)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        LOG.info("Audio track probe failed for %s: %s", url, exc)
+        return []
+    return parse_audio_streams(result.stderr.decode("utf-8", errors="replace"))
 
 
 class Recording:
@@ -399,6 +494,8 @@ class RecordingManager:
         show_stats: bool = False,
         keep_partial: bool = True,
         file_time: Optional[datetime.datetime] = None,
+        audio_track: Optional[int] = None,
+        audio_track_count: int = 0,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
@@ -417,8 +514,11 @@ class RecordingManager:
         force_format = FORMAT_MUXERS.get(format_extension(fmt)) if partial_path else None
         cmd = build_ffmpeg_command(get_ffmpeg_path(), url, partial_path or out_path, fmt, headers,
                                    duration=duration, show_stats=show_stats,
-                                   force_format=force_format)
+                                   force_format=force_format, audio_track=audio_track,
+                                   audio_track_count=audio_track_count)
         LOG.info("Starting recording: %s -> %s (%s)", display_name, out_path, fmt)
+        if audio_track is not None:
+            LOG.info("Recording audio track %d of %d", audio_track + 1, audio_track_count)
 
         # ffmpeg writes its diagnostics straight into the log file rather than into a
         # pipe we drain. That keeps the complete stderr for every recording, and it

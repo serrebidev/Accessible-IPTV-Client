@@ -56,10 +56,17 @@ from providers import (
 import vod
 import account_info
 from http_headers import channel_http_headers, merge_headers, split_stream_modifiers
+from audio_tracks import (
+    active_audio_track_index,
+    names_audio_description,
+    ordered_preference_keywords,
+    select_preferred_audio_track,
+)
 from external_player import ExternalPlayerLauncher
 import recorder
 from recorder import RECORDING_FORMATS
 from recorder import format_duration, format_size, parse_ffmpeg_progress, written_size
+from recorder import audio_stream_label, probe_audio_streams
 import catchup_direct
 import dvr
 import favorites
@@ -2913,15 +2920,25 @@ class IPTVClient(wx.Frame):
             raise RuntimeError(_("Could not find a stream URL for this channel."))
         fmt = normalize_recording_format(job.get("format"))
         out_dir = get_recordings_dir(self.config)
+        headers = channel_http_headers(channel)
+        # This runs on the scheduler's own thread, so the stream can be asked
+        # here which audio tracks it carries. The player is not consulted from
+        # off the UI thread: the channel's remembered track and the audio
+        # preferences decide.
+        choice = self._recording_audio_choice(
+            url, headers, self._recording_audio_intent(channel, from_player=False))
+        audio_track, audio_count = choice if choice else (None, 0)
         rec = self.recorder.start(
             url,
             str(job.get("display_title") or job.get("title") or self._channel_display_name(channel)),
             fmt,
-            channel_http_headers(channel),
+            headers,
             out_dir,
             key="dvr:{id}".format(id=job.get("id")),
             metadata={"dvr_job_id": job.get("id")},
             on_finish=self._on_recording_finished,
+            audio_track=audio_track,
+            audio_track_count=audio_count,
         )
         self._note_recording_started()
         wx.CallAfter(
@@ -2961,6 +2978,17 @@ class IPTVClient(wx.Frame):
 
     def _record_channel(self, channel: Dict[str, str]):
         key = self._channel_record_key(channel)
+        pending = getattr(self, "_pending_recording_starts", None)
+        if pending is None:
+            pending = self._pending_recording_starts = set()
+        if key in pending:
+            # Pressed again while the stream is still being asked for its
+            # audio tracks: the toggle's "stop", just before it started.
+            pending.discard(key)
+            message_box(_("Stopping recording for {name}...").format(
+                name=self._channel_display_name(channel)),
+                _("Recording"), wx.OK | wx.ICON_INFORMATION)
+            return
         # Toggle: if this channel is already recording, stop it instead.
         if self.recorder.is_recording(key):
             self._stop_recording_for_channel(channel)
@@ -2984,10 +3012,35 @@ class IPTVClient(wx.Frame):
         name = self._channel_display_name(channel)
         fmt = normalize_recording_format(self.config.get("recording_format"))
         out_dir = get_recordings_dir(self.config)
+        intent = self._recording_audio_intent(channel)
+        if intent is None:
+            self._start_live_recording(key, url, name, fmt, headers, out_dir, None)
+            return
+        # Keeping the right audio track means asking the stream which tracks
+        # it carries - network work, so off the UI thread, then back here.
+        pending.add(key)
+
+        def probe():
+            choice = self._recording_audio_choice(url, headers, intent)
+            wx.CallAfter(finish, choice)
+
+        def finish(choice):
+            if key not in pending:
+                return  # Record was pressed again: canceled before it began
+            pending.discard(key)
+            self._start_live_recording(key, url, name, fmt, headers, out_dir, choice)
+            self._sync_internal_player_record_state()
+
+        threading.Thread(target=probe, daemon=True).start()
+
+    def _start_live_recording(self, key, url, name, fmt, headers, out_dir, audio_choice):
+        """UI thread: start one live recording and say where it is going."""
+        audio_track, audio_count = audio_choice if audio_choice else (None, 0)
         try:
             rec = self.recorder.start(
                 url, name, fmt, headers, out_dir,
                 key=key, on_finish=self._on_recording_finished,
+                audio_track=audio_track, audio_track_count=audio_count,
             )
         except Exception as err:
             message_box(_("Could not start recording:\n{error}").format(error=err),
@@ -2998,6 +3051,73 @@ class IPTVClient(wx.Frame):
             _("Recording started ({fmt}):\n{path}").format(
                 fmt=self._recording_format_label(fmt), path=rec.out_path),
             _("Recording"), wx.OK | wx.ICON_INFORMATION)
+
+    def _recording_audio_intent(self, channel: Dict[str, str], *, from_player: bool = True):
+        """How a recording of ``channel`` picks its audio track, or None.
+
+        The built-in player showing this channel is the best witness: the track
+        it is playing is the one the user is listening to, audio description
+        or not. Otherwise the player's own rules apply - the track remembered
+        for the channel, the audio-description preference, then the preferred
+        tracks. None when nothing asks for a particular track, which leaves the
+        choice to ffmpeg as before. ``from_player`` is False off the UI thread,
+        where the player must not be touched.
+        """
+        key = self._channel_audio_key(channel)
+        frame = getattr(self, "_internal_player_frame", None)
+        if (from_player and frame is not None and key
+                and key == getattr(self, "_internal_player_audio_key", "")
+                and self._internal_player_has_media()):
+            try:
+                tracks = frame._get_audio_tracks()
+                if tracks:
+                    index = active_audio_track_index(
+                        tracks, frame._current_audio_track_id(),
+                        getattr(frame, "_wanted_audio_track_name", ""))
+                    name = tracks[index][1]
+                    described = names_audio_description(name)
+                    # libVLC and ffmpeg name tracks differently, so the name
+                    # rarely matches; the position does, and a described track
+                    # is found by its flag even where the position differs.
+                    return {"keywords": (["audio description"] if described else []) + [name],
+                            "fallback_index": index, "prefer_ad": described}
+            except Exception:
+                LOG.debug("IPTVClient._recording_audio_intent: ignored exception", exc_info=True)
+        prefer_ad = self._bool_pref(self.config.get("prefer_audio_description", False))
+        keywords = ordered_preference_keywords(
+            self._remembered_channel_audio_track(key),
+            prefer_audio_description=prefer_ad,
+            last_manual=self.config.get("last_audio_track") or "",
+            preferred=self.config.get("preferred_audio_tracks") or [],
+        )
+        fallback = self._remembered_channel_audio_track_index(key)
+        if not keywords and fallback is None:
+            return None
+        return {"keywords": keywords, "fallback_index": fallback, "prefer_ad": prefer_ad}
+
+    @staticmethod
+    def _recording_audio_choice(url, headers, intent):
+        """Worker thread: (track to keep, tracks in the stream), or None.
+
+        None - keep ffmpeg's own pick - when nothing asks for a track, when the
+        stream cannot be asked, or when no track matches.
+        """
+        if not intent:
+            return None
+        fetch_url, url_headers = split_stream_modifiers(url)
+        streams = probe_audio_streams(fetch_url, merge_headers(headers, url_headers))
+        if not streams:
+            return None
+        labels = [audio_stream_label(position, stream) for position, stream in enumerate(streams)]
+        index = select_preferred_audio_track(
+            list(enumerate(labels)), intent.get("keywords") or [],
+            fallback_index=intent.get("fallback_index"),
+            prefer_ad=bool(intent.get("prefer_ad")))
+        LOG.info("Recording audio tracks %s; keeping %s", labels,
+                 "ffmpeg's default" if index is None else labels[index])
+        if index is None:
+            return None
+        return index, len(streams)
 
     def _stop_recording_for_channel(self, channel: Dict[str, str]):
         key = self._channel_record_key(channel)
@@ -6657,16 +6777,18 @@ class IPTVClient(wx.Frame):
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
             return
         fmt = normalize_recording_format(self.config.get("recording_format"))
+        audio_intent = self._recording_audio_intent(channel)
         # The fast direct-URL probe does network work; keep it off the GUI
         # thread. If no direct file exists we fall back to the HLS URL.
         threading.Thread(
             target=self._begin_catchup_download,
-            args=(channel, url, display_name, key, show, duration, fmt),
+            args=(channel, url, display_name, key, show, duration, fmt, None, audio_intent),
             daemon=True,
         ).start()
 
     def _begin_catchup_download(self, channel, hls_url, display_name, key, show,
-                                duration, fmt, retry_of: Optional[int] = None):
+                                duration, fmt, retry_of: Optional[int] = None,
+                                audio_intent=None):
         """Worker thread: probe for the fast direct file, then start on the UI thread.
 
         ``retry_of`` is the recorder id of a failed attempt this run replaces;
@@ -6690,12 +6812,16 @@ class IPTVClient(wx.Frame):
                 url = direct
         except Exception:
             LOG.debug("Catch-up direct URL probe failed; using the HLS URL", exc_info=True)
+        audio_choice = (self._recording_audio_choice(url, headers, audio_intent)
+                        if audio_intent else None)
         wx.CallAfter(self._start_catchup_recording, url, display_name, key, show,
-                     duration, fmt, headers, channel, hls_url, retry_of)
+                     duration, fmt, headers, channel, hls_url, retry_of,
+                     audio_intent, audio_choice)
 
     def _start_catchup_recording(self, url, display_name, key, show, duration,
                                  fmt, headers, channel=None, hls_url=None,
-                                 retry_of: Optional[int] = None):
+                                 retry_of: Optional[int] = None,
+                                 audio_intent=None, audio_choice=None):
         """UI thread: start the recorder and open the progress window."""
         if retry_of is not None:
             # A retry replaces the previous attempt: close its progress window
@@ -6722,12 +6848,15 @@ class IPTVClient(wx.Frame):
                           "programme_end": show.get("end", ""),
                           "channel": dict(channel) if channel else {},
                           "hls_url": hls_url or url,
-                          "duration": duration},
+                          "duration": duration,
+                          "audio_intent": audio_intent},
                 on_finish=self._catchup_download_finished,
                 duration=duration,
                 show_stats=True,
                 keep_partial=False,
                 file_time=aired,
+                audio_track=audio_choice[0] if audio_choice else None,
+                audio_track_count=audio_choice[1] if audio_choice else 0,
             )
         except Exception as err:
             # Stream URLs go to the debug log verbatim (credentials included):
@@ -6860,7 +6989,7 @@ class IPTVClient(wx.Frame):
             LOG.info("Catch-up download retry %d for %s", attempts + 1, rec.title)
             self._begin_catchup_download(
                 channel, hls_url, rec.title, rec.key, show, duration, fmt,
-                retry_of=retry_of)
+                retry_of=retry_of, audio_intent=metadata.get("audio_intent"))
 
         timer = _schedule_retry(retry, delay)
         if timer is not None:
