@@ -579,8 +579,15 @@ class InternalPlayerFrame(wx.Frame):
         headers: Optional[Dict[str, object]] = None,
         _retry: bool = False,
         video_visible: bool = True,
+        focus_controls: bool = True,
     ) -> None:
-        """Start playback of the given URL with buffering and recovery hooks."""
+        """Start playback of the given URL with buffering and recovery hooks.
+
+        ``focus_controls`` is false for automatic source hand-offs, such as
+        switching between a recording relay and the provider. Those hand-offs
+        can finish while a modal status box is being read; moving focus then
+        strands screen readers on the disabled player behind that box.
+        """
         if self._destroyed:
             raise InternalPlayerUnavailableError(_("Player window has been destroyed."))
         if not url:
@@ -699,7 +706,7 @@ class InternalPlayerFrame(wx.Frame):
         LOG.debug("Playback initiated, timer started")
         
         # Ensure focus returns to the controls for screen readers
-        if video_visible:
+        if video_visible and focus_controls:
             wx.CallAfter(self.play_pause_btn.SetFocus)
 
     def stop(self, _evt: Optional[wx.Event] = None, manual: bool = False) -> None:

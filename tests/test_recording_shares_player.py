@@ -105,6 +105,7 @@ def test_recording_the_playing_channel_opens_one_connection(monkeypatch):
     assert client.recorder.started[0]["share_with_player"] is True
     (url, kwargs), = client.launched
     assert kwargs["channel"] == TVP and kwargs["show_internal_player"] is True
+    assert kwargs["focus_player"] is False
     assert client._shared_recordings[7]["url"] == RELAY
 
 
@@ -116,14 +117,59 @@ def test_recording_another_channel_leaves_the_player_alone(monkeypatch):
     assert client.launched == []
 
 
-def test_the_player_goes_back_to_the_provider_when_the_recording_ends(monkeypatch):
+def test_the_player_goes_back_without_stealing_focus_when_the_recording_ends(monkeypatch):
     client = _client(monkeypatch, showing=True, frame=_Frame(url=RELAY))
-    client._end_shared_playback({"channel": TVP, "url": RELAY, "shown": False})
+    client._end_shared_playback({"channel": TVP, "url": RELAY, "shown": True})
     # The recording's connection is released before the player reconnects.
     assert client.events == ["player stop", "settle",
                              "play http://provider.invalid/live/tvp1.ts"]
     (_url, kwargs), = client.launched
-    assert kwargs["show_internal_player"] is False
+    assert kwargs["show_internal_player"] is True
+    assert kwargs["focus_player"] is False
+
+
+def test_relay_handoff_keeps_the_existing_focus_in_the_player():
+    """The source changes, but no focus call can escape an open message box."""
+    events = []
+    play_kwargs = []
+
+    class Frame:
+        def Enable(self, value):
+            events.append(("enable", value))
+
+        def Show(self):
+            events.append(("show", None))
+
+        def Raise(self):
+            events.append(("raise", None))
+
+        def SetFocus(self):
+            events.append(("focus", None))
+
+        def play(self, _url, _title, **kwargs):
+            events.append(("play", None))
+            play_kwargs.append(kwargs)
+
+    frame = Frame()
+    client = types.SimpleNamespace(
+        default_player="Built-in Player",
+        show_player_on_enter=True,
+        caster=None,
+        config={},
+        _ensure_internal_player=lambda: frame,
+        _channel_audio_key=lambda _channel: "tvp 1",
+        _sync_internal_player_record_state=lambda: None,
+    )
+    _bind(client, "_launch_stream")
+
+    client._launch_stream(
+        RELAY, "TVP 1", channel=TVP,
+        show_internal_player=True, focus_player=False)
+
+    assert ("enable", True) in events and ("show", None) in events
+    assert ("play", None) in events
+    assert ("raise", None) not in events and ("focus", None) not in events
+    assert play_kwargs[0]["focus_controls"] is False
 
 
 def test_no_hand_back_when_the_user_moved_on(monkeypatch):

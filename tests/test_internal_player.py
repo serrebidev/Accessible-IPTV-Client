@@ -862,6 +862,16 @@ class TestReconnectKeepsVideoHidden:
         assert frame._video_visible is True
         assert ":no-video" not in frame.media_options
 
+    def test_automatic_source_handoff_does_not_move_focus(self, monkeypatch):
+        """A relay/provider hand-off must not steal focus from a modal box."""
+        focus_hops = []
+        monkeypatch.setattr(
+            internal_player.wx, "CallAfter",
+            lambda callback, *a, **kw: focus_hops.append((callback, a, kw)))
+        frame = self._stub_frame()
+        self._play(frame, video_visible=True, focus_controls=False)
+        assert focus_hops == []
+
 
 class TestAudioOutputDeviceEnumeration:
     """Opening Audio Output Device from the player menu used to crash the app.

@@ -3576,7 +3576,7 @@ class IPTVClient(wx.Frame):
                 shared = self._shared_recordings = {}
             shared[rec.id] = {"channel": share_with, "url": relay.url, "shown": player_shown}
             self._launch_stream(relay.url, name, stream_kind="live", channel=share_with,
-                                show_internal_player=player_shown)
+                                show_internal_player=player_shown, focus_player=False)
         self._note_recording_started()
         message_box(
             _("Recording started ({fmt}):\n{path}").format(
@@ -3632,7 +3632,8 @@ class IPTVClient(wx.Frame):
             return
         if url:
             self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
-                                channel=channel, show_internal_player=shown)
+                                channel=channel, show_internal_player=shown,
+                                focus_player=False)
 
     def _recording_audio_intent(self, channel: Dict[str, str], *, from_player: bool = True):
         """How a recording of ``channel`` picks its audio track, or None.
@@ -7111,6 +7112,7 @@ class IPTVClient(wx.Frame):
         stream_kind: str = "live",
         channel: Optional[Dict[str, str]] = None,
         show_internal_player: Optional[bool] = None,
+        focus_player: bool = True,
     ):
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
@@ -7173,8 +7175,9 @@ class IPTVClient(wx.Frame):
                 if show_internal_player:
                     frame.Enable(True)
                     frame.Show()
-                    frame.Raise()
-                    frame.SetFocus()
+                    if focus_player:
+                        frame.Raise()
+                        frame.SetFocus()
                 else:
                     # Keep frame disabled and hidden to avoid accessibility focus.
                     frame.Enable(False)
@@ -7202,6 +7205,7 @@ class IPTVClient(wx.Frame):
                     stream_kind=stream_kind,
                     headers=stream_headers,
                     video_visible=show_internal_player,
+                    focus_controls=focus_player,
                 )
                 self._sync_internal_player_record_state()
                 if not show_internal_player:
