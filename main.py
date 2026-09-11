@@ -571,6 +571,11 @@ _CATCHUP_RETRYABLE_RE = re.compile(
     r"temporarily unavailable|no route to host|server returned", re.IGNORECASE)
 
 
+# How far ahead View EPG looks. It starts at the programme on air now: finished
+# programmes are what Catch-up is for, and cannot be recorded any more.
+_CHANNEL_EPG_HORIZON = datetime.timedelta(days=7)
+
+
 def _ffmpeg_error_tag(a, b, c, d) -> int:
     """FFmpeg's FFERRTAG: the negative code ffmpeg exits with for that error."""
     def byte(ch):
@@ -2682,10 +2687,11 @@ class IPTVClient(wx.Frame):
                     db.close()
                     wx.CallAfter(self._offer_epg_schema_repair)
                     return
+                # From the programme on air now to as far as the guide goes.
+                # Finished programmes belong to Catch-up; listed here they
+                # only offered recordings that could never happen.
                 now = datetime.datetime.now(datetime.timezone.utc)
-                start_dt = now - datetime.timedelta(hours=4)
-                end_dt = now + datetime.timedelta(hours=24)
-                programmes = db.get_schedule(channel, start_dt, end_dt)
+                programmes = db.get_schedule(channel, now, now + _CHANNEL_EPG_HORIZON)
                 db.close()
                 
                 wx.CallAfter(lambda: self._show_epg_dialog(channel, channel.get("name", ""), programmes))
@@ -8584,8 +8590,8 @@ class ChannelEPGDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.list_ctrl = wx.ListCtrl(panel, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
-        self.list_ctrl.InsertColumn(0, _("Time"), width=140)
-        self.list_ctrl.InsertColumn(1, _("Title"), width=400)
+        self.list_ctrl.InsertColumn(0, _("Time"), width=190)
+        self.list_ctrl.InsertColumn(1, _("Title"), width=360)
 
         self._populate_list(programmes)
         if programmes:
@@ -8599,19 +8605,15 @@ class ChannelEPGDialog(wx.Dialog):
             panel, size=(-1, 110), style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.description_field.SetName(_("Episode description"))
 
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(close_btn, 0)
-
+        # No buttons: Schedule Recording lives in the row's context menu, and
+        # Escape / Alt+F4 close the window, so Close was only a dead Tab stop.
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
         sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
 
         panel.SetSizer(sizer)
-        schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_dialog_key)
+        self.SetEscapeId(wx.ID_CANCEL)
         self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, lambda _evt: self._update_description())
         self.list_ctrl.Bind(wx.EVT_CHAR_HOOK, self._on_list_key)
         # Right-click / Shift+F10 / Applications key on a programme row.
@@ -8623,6 +8625,8 @@ class ChannelEPGDialog(wx.Dialog):
         self.CenterOnParent()
 
     def _populate_list(self, programmes):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        today = utc_to_local(now).date()
         for prog in programmes:
             try:
                 start = datetime.datetime.strptime(prog.get("start", ""), "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
@@ -8630,9 +8634,10 @@ class ChannelEPGDialog(wx.Dialog):
                 start_local = utc_to_local(start)
                 end_local = utc_to_local(end)
                 time_str = f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
-                
-                # Check if this program is currently airing
-                now = datetime.datetime.now(datetime.timezone.utc)
+                # The guide runs days ahead: date every row that is not today.
+                if start_local.date() != today:
+                    time_str = f"{start_local.strftime('%Y-%m-%d')} {time_str}"
+
                 is_now = start <= now <= end
                 
                 idx = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), time_str)
@@ -8685,8 +8690,15 @@ class ChannelEPGDialog(wx.Dialog):
             menu.Destroy()
 
     def _on_description_key(self, event):
-        if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
+        # Two controls, one ring: Tab either way goes back to the list.
+        if event.GetKeyCode() == wx.WXK_TAB:
             self.list_ctrl.SetFocus()
+            return
+        event.Skip()
+
+    def _on_dialog_key(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
             return
         event.Skip()
 

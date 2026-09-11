@@ -174,6 +174,43 @@ def test_channel_epg_context_menu_is_inert_without_a_callback(host, monkeypatch)
         dlg.Destroy()
 
 
+def test_channel_epg_dialog_has_no_buttons(host):
+    """Schedule Recording is in the context menu and Escape closes the window,
+    so the buttons were only extra Tab stops."""
+    dlg = ChannelEPGDialog(host, "Sky Mix", _EPG_PROGRAMMES,
+                           schedule_callback=lambda ch, prog: None)
+    try:
+        panel = [w for w in dlg.GetChildren() if isinstance(w, wx.Panel)][0]
+        assert [w for w in panel.GetChildren() if isinstance(w, wx.Button)] == []
+    finally:
+        dlg.Destroy()
+
+
+def test_channel_epg_dialog_escape_closes_it(host, monkeypatch):
+    dlg = ChannelEPGDialog(host, "Sky Mix", _EPG_PROGRAMMES)
+    try:
+        ended = []
+        monkeypatch.setattr(dlg, "EndModal", lambda code: ended.append(code))
+        dlg._on_dialog_key(types.SimpleNamespace(
+            GetKeyCode=lambda: wx.WXK_ESCAPE, Skip=lambda *a: None))
+        assert ended == [wx.ID_CANCEL]
+    finally:
+        dlg.Destroy()
+
+
+def test_channel_epg_dialog_tab_ring_is_two_controls(host):
+    dlg = ChannelEPGDialog(host, "Sky Mix", _EPG_PROGRAMMES)
+    try:
+        for shift in (False, True):
+            dlg.description_field.SetFocus()
+            dlg._on_description_key(types.SimpleNamespace(
+                GetKeyCode=lambda: wx.WXK_TAB, ShiftDown=lambda s=shift: s,
+                Skip=lambda *a: None))
+            assert dlg.FindFocus() is dlg.list_ctrl
+    finally:
+        dlg.Destroy()
+
+
 def test_whats_on_now_context_menu_offers_play_and_schedule(host, monkeypatch):
     scheduled = []
     dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES,

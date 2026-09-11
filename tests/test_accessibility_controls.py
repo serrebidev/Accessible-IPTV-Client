@@ -426,3 +426,41 @@ def test_channel_context_scheduling_offers_the_upcoming_week(monkeypatch):
     assert calls[0][0] is channel
     assert calls[0][2] - calls[0][1] == datetime.timedelta(days=7)
     assert shown[0] == (channel, "News", [{"title": "Tonight", "start": "20260101100000", "end": "20260101110000"}])
+
+
+def test_view_epg_starts_at_the_programme_on_air_now(monkeypatch):
+    """View EPG used to look four hours back, so at 18:00 it opened on a 13:00
+    programme that could only be "scheduled" into a recording that never ran."""
+    calls = []
+
+    class Database:
+        def __init__(self, _path, readonly=False):
+            assert readonly is True
+
+        def get_schedule(self, channel, start, end):
+            calls.append((start, end))
+            return []
+
+        def close(self):
+            return None
+
+    class ImmediateThread:
+        def __init__(self, target, daemon=False):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    frame = types.SimpleNamespace(_show_epg_dialog=lambda *args: None)
+    monkeypatch.setattr(main, "EPGDatabase", Database)
+    monkeypatch.setattr(main, "get_db_path", lambda: "epg.db")
+    monkeypatch.setattr(main.threading, "Thread", ImmediateThread)
+    monkeypatch.setattr(main.wx, "CallAfter", lambda callback, *args: callback(*args))
+
+    before = datetime.datetime.now(datetime.timezone.utc)
+    main.IPTVClient._view_channel_epg(frame, {"name": "TVP 1"})
+    after = datetime.datetime.now(datetime.timezone.utc)
+
+    (start, end), = calls
+    assert before <= start <= after
+    assert end - start == datetime.timedelta(days=7)
