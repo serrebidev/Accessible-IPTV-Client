@@ -236,6 +236,19 @@ class InternalPlayerFrame(wx.Frame):
         self._last_position_ms: Optional[int] = None
         self._stall_ticks = 0
         self._stall_threshold = 8
+        # One playback-health watchdog observes the presentation clock plus
+        # libVLC's independent audio/video counters.  A single "anything is
+        # moving" timestamp is not enough: audio can keep the VLC clock alive
+        # for minutes after video has frozen.
+        self._av_last_stats: Optional[Tuple[int, int, int, int, int]] = None
+        self._av_last_video_progress_ts: Optional[float] = None
+        self._av_last_audio_progress_ts: Optional[float] = None
+        self._av_last_network_progress_ts: Optional[float] = None
+        self._av_video_progress_samples = 0
+        self._av_audio_progress_samples = 0
+        self._av_min_progress_samples = 2
+        self._av_startup_grace_seconds = 12.0
+        self._av_stall_threshold_seconds = 10.0
         self._play_start_monotonic = 0.0
         self._restart_cooldown = 2.0
         self._reconnect_reset_window = 120.0
@@ -594,6 +607,7 @@ class InternalPlayerFrame(wx.Frame):
         self._last_state_name = None
         self._last_position_ms = None
         self._stall_ticks = 0
+        self._reset_av_watchdog()
         self._buffer_start_ts = None
         self._early_buffer_fix_applied = False
         self._has_seen_playing = False
@@ -1349,10 +1363,159 @@ class InternalPlayerFrame(wx.Frame):
         self._last_adjust_ts = now
         self._schedule_restart("detected choppy playback", adjust_buffer=True)
 
+    def _reset_av_watchdog(self) -> None:
+        self._av_last_stats = None
+        self._av_last_video_progress_ts = None
+        self._av_last_audio_progress_ts = None
+        self._av_last_network_progress_ts = None
+        self._av_video_progress_samples = 0
+        self._av_audio_progress_samples = 0
+
+    def _read_av_progress_stats(self) -> Optional[Tuple[int, int, int, int, int]]:
+        """Return network/video/audio progress counters from the current media.
+
+        libVLC exposes these counters on ``Media``, not ``MediaPlayer``.  Some
+        demuxers do not publish statistics, so callers must retain the older
+        presentation-clock watchdog as a fallback.
+        """
+        try:
+            media = self.player.get_media()
+            if media is None:
+                return None
+            stats = vlc.MediaStats()  # type: ignore[attr-defined]
+            if not media.get_stats(stats):
+                return None
+            return (
+                int(stats.read_bytes),
+                int(stats.decoded_video),
+                int(stats.displayed_pictures),
+                int(stats.decoded_audio),
+                int(stats.played_abuffers),
+            )
+        except Exception:
+            return None
+
+    @staticmethod
+    def _counter_group_progressed(current: Tuple[int, ...], previous: Tuple[int, ...]) -> bool:
+        # A backwards move means that libVLC reset or wrapped a counter.  Treat
+        # that as a fresh baseline instead of reporting a stall.
+        return any(now != before for now, before in zip(current, previous))
+
+    def _monitor_av_progress(self, now: float) -> bool:
+        """Monitor audio and video within one health model.
+
+        Return True once at least one reliable A/V signal is armed.  The
+        caller then suppresses the less precise ``get_time`` test, which may
+        stop or continue independently of what the user can actually see and
+        hear.
+        """
+        if self._current_stream_kind != "live":
+            self._reset_av_watchdog()
+            return False
+
+        current = self._read_av_progress_stats()
+        if current is None:
+            self._reset_av_watchdog()
+            return False
+
+        previous = self._av_last_stats
+        self._av_last_stats = current
+        network, decoded_video, displayed_video, decoded_audio, played_audio = current
+
+        if previous is None:
+            self._av_last_network_progress_ts = now
+            self._av_last_video_progress_ts = now
+            self._av_last_audio_progress_ts = now
+            return False
+
+        prev_network, prev_decoded_video, prev_displayed_video, prev_decoded_audio, prev_played_audio = previous
+        if self._counter_group_progressed((network,), (prev_network,)):
+            self._av_last_network_progress_ts = now
+
+        video_progressed = self._counter_group_progressed(
+            (decoded_video, displayed_video),
+            (prev_decoded_video, prev_displayed_video),
+        )
+        audio_progressed = self._counter_group_progressed(
+            (decoded_audio, played_audio),
+            (prev_decoded_audio, prev_played_audio),
+        )
+
+        # Video output is deliberately disabled when the player runs hidden.
+        # Requiring repeated progress before arming also avoids treating a
+        # radio station's one-off album-art frame as live television.
+        video_was_armed = self._av_video_progress_samples >= self._av_min_progress_samples
+        audio_was_armed = self._av_audio_progress_samples >= self._av_min_progress_samples
+        if self._video_visible and video_progressed:
+            self._av_video_progress_samples += 1
+            self._av_last_video_progress_ts = now
+        if audio_progressed:
+            self._av_audio_progress_samples += 1
+            self._av_last_audio_progress_ts = now
+
+        video_armed = bool(
+            self._video_visible
+            and self._av_video_progress_samples >= self._av_min_progress_samples
+        )
+        audio_armed = self._av_audio_progress_samples >= self._av_min_progress_samples
+        armed = video_armed or audio_armed
+        if (video_armed and not video_was_armed) or (audio_armed and not audio_was_armed):
+            LOG.debug(
+                "Playback health watchdog armed: video=%s, audio=%s",
+                video_armed,
+                audio_armed,
+            )
+
+        since_start = now - self._play_start_monotonic if self._play_start_monotonic else float("inf")
+        if not armed or since_start < self._av_startup_grace_seconds:
+            return armed
+
+        video_stalled = bool(
+            video_armed
+            and self._av_last_video_progress_ts is not None
+            and now - self._av_last_video_progress_ts >= self._av_stall_threshold_seconds
+        )
+        audio_stalled = bool(
+            audio_armed
+            and self._av_last_audio_progress_ts is not None
+            and now - self._av_last_audio_progress_ts >= self._av_stall_threshold_seconds
+        )
+        if not video_stalled and not audio_stalled:
+            return True
+
+        LOG.info(
+            "Playback health watchdog detected stalled media: video=%s, audio=%s, "
+            "network_recent=%s",
+            video_stalled,
+            audio_stalled,
+            bool(
+                self._av_last_network_progress_ts is not None
+                and now - self._av_last_network_progress_ts < self._av_stall_threshold_seconds
+            ),
+        )
+        self._reset_av_watchdog()
+        self._stall_ticks = 0
+        self._last_position_ms = None
+        self._schedule_restart("playback stalled", adjust_buffer=True)
+        return True
+
     def _monitor_playback_progress(self, now: float, state_key: str) -> None:
         if not self._has_seen_playing or state_key != "playing":
             if state_key != "playing":
                 self._stall_ticks = 0
+                self._last_position_ms = None
+                self._reset_av_watchdog()
+            return
+
+        if self._monitor_av_progress(now):
+            # Reliable media counters supersede the presentation clock.  Keep
+            # its baseline current so a temporary loss of stats does not look
+            # like an immediate position stall.
+            try:
+                self._last_position_ms = self.player.get_time()
+            except Exception:
+                self._last_position_ms = None
+            self._stall_ticks = 0
             return
         try:
             position = self.player.get_time()
