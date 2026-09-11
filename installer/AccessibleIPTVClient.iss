@@ -1,4 +1,4 @@
-#define MyAppName "AccessibleIPTVClient"
+﻿#define MyAppName "AccessibleIPTVClient"
 #define MyAppDisplayName "Accessible IPTV Client"
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
@@ -37,9 +37,23 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
+; Select the installer language from the current Windows UI language.
+; English remains the fallback for unsupported UI languages.
+LanguageDetectionMethod=uilanguage
+ShowLanguageDialog=no
+UsePreviousLanguage=no
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
+
+[CustomMessages]
+; Inno Setup's stock Hungarian LaunchProgram is "Indítás %1".
+; This override keeps the same meaning but uses natural Hungarian word order.
+hungarian.LaunchProgram=%1 indítása
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\_internal"
@@ -53,4 +67,4 @@ Name: "{group}\{#MyAppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; WorkingD
 Name: "{autodesktop}\{#MyAppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppDisplayName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppDisplayName}}"; Flags: nowait postinstall skipifsilent
