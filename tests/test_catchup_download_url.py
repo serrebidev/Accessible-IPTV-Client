@@ -149,5 +149,21 @@ class TestBeginCatchupDownload:
         assert args[0] == fast
 
 
+class TestFfmpegExitReason:
+    def test_the_reported_code_is_http_403(self):
+        """Windows showed ffmpeg's AVERROR_HTTP_FORBIDDEN as 3436169992."""
+        reason = main._ffmpeg_exit_reason(3436169992)
+        assert "403" in reason
+        assert reason == main._ffmpeg_exit_reason(-858797304)
+
+    def test_other_http_errors_have_words(self):
+        assert "404" in main._ffmpeg_exit_reason(main._ffmpeg_error_tag(0xF8, "4", "0", "4"))
+        assert "5xx" in main._ffmpeg_exit_reason(main._ffmpeg_error_tag(0xF8, "5", "X", "X"))
+
+    def test_unknown_codes_say_nothing(self):
+        assert main._ffmpeg_exit_reason(1) == ""
+        assert main._ffmpeg_exit_reason(None) == ""
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__]))

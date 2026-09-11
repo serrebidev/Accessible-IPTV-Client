@@ -571,6 +571,56 @@ _CATCHUP_RETRYABLE_RE = re.compile(
     r"temporarily unavailable|no route to host|server returned", re.IGNORECASE)
 
 
+def _ffmpeg_error_tag(a, b, c, d) -> int:
+    """FFmpeg's FFERRTAG: the negative code ffmpeg exits with for that error."""
+    def byte(ch):
+        return ch if isinstance(ch, int) else ord(ch)
+    return -(byte(a) | (byte(b) << 8) | (byte(c) << 16) | (byte(d) << 24))
+
+
+# ffmpeg exits with the AVERROR of whatever stopped it, and Windows reports that
+# as an unsigned 32-bit number: a refused download read "code 3436169992", which
+# is HTTP 403 Forbidden. These put the common ones into words.
+_FFMPEG_EXIT_REASONS = (
+    ((_ffmpeg_error_tag(0xF8, "4", "0", "3"),),
+     N_("The provider refused access (HTTP 403 Forbidden). Many providers allow "
+        "only one stream per account at a time: stop other playback or downloads "
+        "from this account and try again.")),
+    ((_ffmpeg_error_tag(0xF8, "4", "0", "1"),),
+     N_("The provider asked for a login (HTTP 401 Unauthorized). Check the "
+        "playlist's user name and password.")),
+    ((_ffmpeg_error_tag(0xF8, "4", "0", "4"),),
+     N_("The provider does not have this programme (HTTP 404 Not Found). It may "
+        "be older than the provider's archive.")),
+    ((_ffmpeg_error_tag(0xF8, "4", "0", "0"), _ffmpeg_error_tag(0xF8, "4", "2", "9"),
+      _ffmpeg_error_tag(0xF8, "4", "X", "X")),
+     N_("The provider rejected the request (HTTP 4xx error).")),
+    ((_ffmpeg_error_tag(0xF8, "5", "X", "X"),),
+     N_("The provider's server had an error (HTTP 5xx). Try again later.")),
+    ((_ffmpeg_error_tag("I", "N", "D", "A"),),
+     N_("The stream sent data that could not be read.")),
+    # ETIMEDOUT / ECONNREFUSED as the Windows CRT, Linux and Winsock number them.
+    ((-138, -110, -10060),
+     N_("The connection to the provider timed out.")),
+    ((-107, -111, -10061),
+     N_("The provider's server refused the connection.")),
+)
+
+
+def _ffmpeg_exit_reason(rc) -> str:
+    """Plain words for an ffmpeg exit code, or "" when it is not a known one."""
+    try:
+        code = int(rc)
+    except (TypeError, ValueError):
+        return ""
+    if code > 0x7FFFFFFF:
+        code -= 1 << 32
+    for codes, reason in _FFMPEG_EXIT_REASONS:
+        if code in codes:
+            return _(reason)
+    return ""
+
+
 def _catchup_failure_is_retryable(rc: int, stderr_lines, *, stopped_by_user: bool = False) -> bool:
     """True when a finished download failed for a reason retrying can fix."""
     if stopped_by_user or not rc:
@@ -6947,10 +6997,15 @@ class IPTVClient(wx.Frame):
                 return
             if dlg is not None:
                 dlg.notify_recording_finished()
+            reason = _ffmpeg_exit_reason(rc)
+            if reason:
+                message = _("Download failed:\n{path}\n\n{reason}\n\n{detail}").format(
+                    path=rec.out_path, reason=reason, detail=detail)
+            else:
+                message = _("Download failed (code {code}):\n{path}\n\n{detail}").format(
+                    code=rc, path=rec.out_path, detail=detail)
             self._show_or_queue_message_box(
-                _("Download failed (code {code}):\n{path}\n\n{detail}").format(
-                    code=rc, path=rec.out_path, detail=detail),
-                _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+                message, _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
 
         # Everything below touches the UI: marshal onto the main thread.
         wx.CallAfter(self._maybe_shutdown_after_recordings)
@@ -7497,6 +7552,9 @@ class CatchupDownloadDialog(wx.Dialog):
         self.gauge.SetValue(0)
         self.status_text.SetLabel(_("Download failed (code {code}).").format(code=exit_code))
         lines = [_("ffmpeg exit code: {code}").format(code=exit_code)]
+        reason = _ffmpeg_exit_reason(exit_code)
+        if reason:
+            lines.insert(0, reason)
         first_error = self._first_error_line()
         if first_error:
             lines.append(first_error)
