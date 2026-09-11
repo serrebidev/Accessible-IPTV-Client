@@ -6127,10 +6127,31 @@ class IPTVClient(wx.Frame):
         )
 
     def _on_internal_player_closed(self) -> None:
+        was_catchup = getattr(self, "_internal_player_stream_kind", "live") == "catchup"
+        catchup_return = getattr(self, "_catchup_return", None)
+        self._catchup_return = None
         self._internal_player_frame = None
         self._internal_player_channel = None
         self._internal_player_audio_key = ""
         self._internal_player_stream_kind = "live"
+        if was_catchup and catchup_return:
+            # The programme was picked from a channel's catch-up list, so
+            # closing the player goes back to that list, on that programme -
+            # usually the next episode is what comes next - instead of
+            # dropping the user at the top of the channel list.
+            wx.CallAfter(self._return_to_catchup_list, catchup_return)
+
+    def _return_to_catchup_list(self, catchup_return: Dict) -> None:
+        """Reopen the catch-up list a closed catch-up playback started from."""
+        try:
+            if (not self or self.IsBeingDeleted() or not self.IsShown()
+                    or getattr(self, "_suppress_recording_notifications", False)
+                    or self._modal_box_is_open()):
+                return
+        except RuntimeError:
+            return  # the frame is already gone: the app is quitting
+        self._open_catchup_dialog(catchup_return.get("channel") or {},
+                                  select_start=catchup_return.get("start", ""))
 
     def _ensure_internal_player(self) -> object:
         frame_class = _load_internal_player_frame_class()
@@ -6530,13 +6551,14 @@ class IPTVClient(wx.Frame):
         # Use generic launch method for external player
         self._launch_stream(url, title, stream_kind=stream_kind, channel=channel, show_internal_player=False)
 
-    def _open_catchup_dialog(self, channel: Dict[str, str]):
+    def _open_catchup_dialog(self, channel: Dict[str, str], select_start: str = ""):
         programmes = self._get_catchup_programmes(channel)
         if not programmes:
             message_box(_("No catch-up programmes are available for this channel."),
                           _("Catch-up"), wx.OK | wx.ICON_INFORMATION)
             return
-        dlg = CatchupDialog(self, channel.get("name", ""), programmes)
+        dlg = CatchupDialog(self, channel.get("name", ""), programmes,
+                            initial_start=select_start)
         try:
             action = dlg.ShowModal()
             if action not in (wx.ID_OK, wx.ID_SAVE):
@@ -6564,6 +6586,9 @@ class IPTVClient(wx.Frame):
                 return
             display = (selected.get("title") or channel.get("name", "IPTV Stream"))
             self._launch_stream(url, display, stream_kind="catchup", channel=channel)
+            # Read back by _on_internal_player_closed, and only for a catch-up
+            # stream, so a live channel played later never reopens this list.
+            self._catchup_return = {"channel": channel, "start": selected.get("start", "")}
         finally:
             dlg.Destroy()
 
@@ -7346,7 +7371,8 @@ class CatchupDialog(wx.Dialog):
     Tab again comes straight back to the list. Escape closes the dialog.
     """
 
-    def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]]):
+    def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
+                 initial_start: str = ""):
         title = channel_name or _("Catch-up")
         super().__init__(parent, title=_("Catch-up: {name}").format(name=title), size=(520, 360))
         self.programmes = programmes
@@ -7359,7 +7385,11 @@ class CatchupDialog(wx.Dialog):
         for prog in programmes:
             self.listbox.Append(self._format_programme(prog))
         if programmes:
-            self.listbox.SetSelection(0)
+            # Back from the player, the list opens on the programme that was
+            # playing rather than at the top.
+            initial = next((i for i, prog in enumerate(programmes)
+                            if initial_start and prog.get("start") == initial_start), 0)
+            self.listbox.SetSelection(initial)
         # Tab from the list lands here: the description of the highlighted
         # programme, read-only, updated as the selection moves. Same pattern
         # as the EPG dialog, and one less reason to open the EPG by hand.

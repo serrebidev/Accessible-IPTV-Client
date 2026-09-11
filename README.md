@@ -102,7 +102,7 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 - **Ctrl+Shift+R** — Start recording the selected channel
 - **Ctrl+Q** — Exit
 - **Enter** — Play selected channel
-- **Context Menu / Apps key** — Channel options (including Catch-up if available)
+- **Context Menu / Apps key** — Channel options (including Catch-up if available). Closing the built-in player on a catch-up programme returns to that channel's catch-up list.
 
 ### Built-in player
 
