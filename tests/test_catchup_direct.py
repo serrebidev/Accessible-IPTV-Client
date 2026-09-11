@@ -1,6 +1,87 @@
 """Tests for the fast direct-download URL derivation."""
 
+import http.server
+import threading
+import time
+
+import pytest
+
 import catchup_direct
+
+
+class _OneStreamProvider(http.server.BaseHTTPRequestHandler):
+    """A redirector plus an archive server that allows one stream per token.
+
+    Modelled on teleelevidenie as measured: ``/play/...`` answers 302 to the
+    archive's ``timeshift_abs-<utc>.ts``; any request to that stream holds the
+    token, and while it is held the ``index-<utc>-<len>.mp4`` file is 403.
+    """
+
+    busy_until = 0.0
+    requests: list = []
+
+    def log_message(self, format, *args):  # noqa: A002 - base class name
+        pass
+
+    def _reply(self, status, ctype="", location=""):
+        self.send_response(status)
+        if location:
+            self.send_header("Location", location)
+        if ctype:
+            self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", "0" if status != 200 else "1000")
+        self.end_headers()
+
+    def _answer(self):
+        cls = type(self)
+        path = self.path.split("?", 1)[0]
+        cls.requests.append((self.command, path))
+        if path.startswith("/play/"):
+            self._reply(302, location="/PL_TVP1_HD/timeshift_abs-1789065000.ts?token=abc")
+        elif path.startswith("/PL_TVP1_HD/timeshift_abs-"):
+            cls.busy_until = time.monotonic() + 30
+            self._reply(200, "video/mpeg")
+        elif path == "/PL_TVP1_HD/index-1789065000-3300.mp4" and "token=abc" in self.path:
+            if time.monotonic() < cls.busy_until:
+                self._reply(403, "text/plain")
+            else:
+                self._reply(200, "video/mp4")
+        else:
+            self._reply(404, "text/plain")
+
+    do_HEAD = _answer
+    do_GET = _answer
+
+
+@pytest.fixture
+def provider(monkeypatch):
+    monkeypatch.setattr(catchup_direct, "_MEDIA_SESSION_SETTLE_SECONDS", 0)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    _OneStreamProvider.busy_until = 0.0
+    _OneStreamProvider.requests = []
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _OneStreamProvider)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield "http://127.0.0.1:%d" % server.server_address[1]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_the_probe_never_opens_the_archive_stream(provider):
+    """The reported failure: resolving the redirect by following it opened the
+    stream, so the .mp4 probe - and then ffmpeg - were refused with 403."""
+    url = provider + "/play/mpegts-c468-tabc?utc=1789065000&lutc=1789142000"
+    found = catchup_direct.direct_download_url(url, 1789065000, 3300)
+    assert found == provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
+    assert not [r for r in _OneStreamProvider.requests if "timeshift_abs" in r[1]]
+
+
+def test_next_hop_reads_the_location_without_following_it(provider):
+    target, is_media = catchup_direct._next_hop(provider + "/play/x", {}, 5.0)
+    assert target == provider + "/PL_TVP1_HD/timeshift_abs-1789065000.ts?token=abc"
+    assert is_media is False
+    assert _OneStreamProvider.requests == [("HEAD", "/play/x")]
 
 
 def test_candidates_swap_a_dated_m3u8_for_its_mp4():

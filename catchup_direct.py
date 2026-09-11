@@ -12,10 +12,11 @@ and be unit-tested without a network (the candidate builder is pure).
 
 import logging
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 LOG = logging.getLogger(__name__)
 
@@ -117,22 +118,50 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
         return False
 
 
-def _resolve_redirects(url: str, headers: Optional[Dict[str, object]],
-                       timeout: float) -> str:
-    """The URL after following redirects, or ``url`` when that fails.
+# Redirect chains are short; anything longer is a loop.
+_MAX_REDIRECT_HOPS = 5
 
-    The redirect often lands on a host where the catch-up files live; the
-    candidate builder needs that final form (the community script does the
-    same ``GET`` + ``r.url`` dance).
+# Providers that allow one stream per account count a media request as a
+# session for a moment after it closes: teleelevidenie answered a request made
+# within ~1 s of closing its archive stream with 403, and one made 2 s later
+# with 200. When the probe had to touch the media itself, wait this long before
+# handing the URL to ffmpeg, or ffmpeg's own request is the one refused.
+_MEDIA_SESSION_SETTLE_SECONDS = 2.5
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *_args, **_kwargs):
+        return None
+
+
+def _next_hop(url: str, headers: Optional[Dict[str, object]],
+              timeout: float) -> Tuple[Optional[str], bool]:
+    """``(where url redirects to, whether the media itself answered)``.
+
+    Only one hop is taken, and the target is never requested. That is the
+    point: resolving the chain by *following* it opens the programme's stream
+    on the media server, and on a one-stream-per-account provider that open
+    session makes the very next request -- the direct-file probe, or ffmpeg --
+    come back 403 Forbidden. Redirectors answer HEAD with their Location, so
+    GET is only tried when HEAD is refused.
     """
-    try:
-        req = urllib.request.Request(url, headers=_clean_headers(headers))
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            final = resp.geturl()
-        return final or url
-    except Exception:
-        LOG.debug("catchup_direct._resolve_redirects: ignored exception", exc_info=True)
-        return url
+    opener = urllib.request.build_opener(_NoRedirect)
+    request_headers = _clean_headers(headers)
+    for method in ("HEAD", "GET"):
+        try:
+            req = urllib.request.Request(url, headers=request_headers, method=method)
+            with opener.open(req, timeout=timeout):
+                return None, True
+        except urllib.error.HTTPError as err:
+            if 300 <= err.code < 400:
+                location = err.headers.get("Location")
+                return (urllib.parse.urljoin(url, location) if location else None), False
+            if method == "HEAD" and err.code in (405, 501):
+                continue
+            return None, False
+        except Exception:
+            LOG.debug("catchup_direct._next_hop: ignored exception", exc_info=True)
+            return None, False
 
 
 def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
@@ -140,21 +169,47 @@ def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
                         timeout: float = 6.0) -> Optional[str]:
     """A verified fast direct URL for this catch-up programme, or None.
 
-    Network work (redirect follow + a HEAD probe per candidate); keep it off
+    Network work (one HEAD per redirect hop and per candidate); keep it off
     the GUI thread. ``headers`` are the channel's HTTP headers (user agent,
     referer, ...) so the probe is authenticated exactly like playback.
+
+    The redirect chain is walked lazily: each hop's Location is turned into
+    candidates and probed before that Location is requested, so a chain that
+    ends on the media server (teleelevidenie's ``/play/...`` -> archive
+    ``timeshift_abs-<utc>.ts``) finds the ``.mp4`` next to it without ever
+    opening the stream.
     """
     if not url or not start_epoch or not duration_seconds or duration_seconds <= 0:
         return None
     utc = int(start_epoch)
     duration = int(duration_seconds)
-    resolved = _resolve_redirects(url, headers, timeout)
     tried = set()
-    for base in (resolved, url):
+
+    def probe_around(base: str) -> Optional[str]:
         for candidate in candidate_direct_urls(base, utc, duration):
             if candidate in tried or candidate == base:
                 continue
             tried.add(candidate)
             if probe_direct_url(candidate, headers, timeout):
                 return candidate
+        return None
+
+    current = url
+    touched_media = False
+    seen = {url}
+    for _hop in range(_MAX_REDIRECT_HOPS):
+        target, is_media = _next_hop(current, headers, timeout)
+        touched_media = touched_media or is_media
+        if not target or target in seen:
+            break
+        seen.add(target)
+        found = probe_around(target)
+        if found:
+            return found
+        current = target
+    found = probe_around(url)
+    if found:
+        return found
+    if touched_media:
+        time.sleep(_MEDIA_SESSION_SETTLE_SECONDS)
     return None
