@@ -1442,15 +1442,19 @@ class EPGDatabase:
     def insert_programme(self, channel_id: str, title: str, start_utc: str, end_utc: str,
                          description: str = ""):
         c = self.conn.cursor()
-        # Upsert so a re-import can backfill an empty description without ever
-        # clobbering one that is already there (the WHERE keeps repeated imports
-        # write-free for fully populated rows).
+        # Upsert so a re-import can fill a description in: an empty one, or a
+        # short one the guide has since expanded. Guides often publish a
+        # series blurb first and the episode synopsis nearer the air date, and
+        # a second source can carry a fuller text than the first, so the
+        # longer text wins. The WHERE keeps repeated imports write-free when
+        # nothing longer arrived.
         c.execute("""
             INSERT INTO programmes (channel_id, title, start, end, description)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(channel_id, start, end) DO UPDATE SET description = excluded.description
             WHERE excluded.description IS NOT NULL AND excluded.description != ''
-              AND (programmes.description IS NULL OR programmes.description = '')
+              AND (programmes.description IS NULL
+                   OR length(excluded.description) > length(programmes.description))
         """, (channel_id, title, start_utc, end_utc, description))
 
     def prune_old_programmes(self, days: int = 7):
