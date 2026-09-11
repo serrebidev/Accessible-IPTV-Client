@@ -100,6 +100,7 @@ On Windows, installed builds keep your settings, EPG database, schedules, and ca
 - **Ctrl+Shift+A** — Account Info
 - **Ctrl+D** — Add the selected channel to Favorites, or remove it
 - **Ctrl+Shift+R** — Start recording the selected channel
+- **Ctrl+Shift+D** — Show the catch-up download windows (Escape in a download window hides it; the download continues)
 - **Ctrl+Q** — Exit
 - **Enter** — Play selected channel
 - **Context Menu / Apps key** — Channel options (including Catch-up if available). Closing the built-in player on a catch-up programme returns to that channel's catch-up list.

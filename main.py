@@ -1774,6 +1774,12 @@ class IPTVClient(wx.Frame):
         self._sync_favorites_from_config()
         self._update_recording_menu_state()
         self._sync_player_controls_menu()
+        item = getattr(self, "show_downloads_item", None)
+        if item is not None:
+            try:
+                item.Enable(bool(getattr(self, "_catchup_downloads", None)))
+            except Exception:
+                LOG.debug("IPTVClient.on_menu_open: ignored exception", exc_info=True)
         # The playlist list may have changed on disk; keep the scope picker in
         # step (its stored selection may also have been replaced or removed).
         self.playlist_scope = self.config.get("playlist_scope", ALL_PLAYLISTS_SCOPE)
@@ -2357,7 +2363,13 @@ class IPTVClient(wx.Frame):
             # activating it will do (see _sync_favorite_menu_item).
             self.favorite_menu_item = vm.Append(wx.ID_ANY, _("Add to Favorites") + "\tCtrl+D")
             self.goto_favorites_item = vm.Append(wx.ID_ANY, _("Go to Favorites"))
+            vm.AppendSeparator()
+            # Escape hides a download window without stopping the download,
+            # and a modeless window is easy to lose behind this one: this is
+            # the way back to it.
+            self.show_downloads_item = vm.Append(wx.ID_ANY, _("Show Downloads") + "\tCtrl+Shift+D")
             mb.Append(vm, _("View"))
+            self.Bind(wx.EVT_MENU, self._show_catchup_downloads, self.show_downloads_item)
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), self.view_vod_item)
             self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, self.favorite_menu_item)
@@ -2457,6 +2469,10 @@ class IPTVClient(wx.Frame):
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('R'), 4017),  # Start/stop recording
             (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('A'), 4018),  # Account info
             (wx.ACCEL_CTRL, ord('D'), 4019),  # Add/remove favorite
+            # Show Downloads. Here as well as on the View menu: Windows skips a
+            # menu accelerator whose item was greyed out when the menu last
+            # opened, and that is exactly the state before a first download.
+            (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('D'), 4020),
         ]
         atable = wx.AcceleratorTable(entries)
         self.SetAcceleratorTable(atable)
@@ -2474,6 +2490,7 @@ class IPTVClient(wx.Frame):
         self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
         self.Bind(wx.EVT_MENU, self.show_account_info, id=4018)
         self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, id=4019)
+        self.Bind(wx.EVT_MENU, self._show_catchup_downloads, id=4020)
 
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
@@ -4277,6 +4294,25 @@ class IPTVClient(wx.Frame):
                 item.Enable(loaded)
             except Exception:
                 LOG.debug("IPTVClient._sync_player_controls_menu: ignored exception", exc_info=True)
+
+    def _show_catchup_downloads(self, _event=None) -> None:
+        """Bring a catch-up download window back into view and focus.
+
+        With several downloads running, each use moves on to the next window,
+        the way Ctrl+F6 steps between documents.
+        """
+        dialogs = [dlg for dlg in list(getattr(self, "_catchup_downloads", {}).values()) if dlg]
+        if not dialogs:
+            return
+        current = -1
+        for index, dlg in enumerate(dialogs):
+            try:
+                if dlg.IsShown() and dlg.IsActive():
+                    current = index
+                    break
+            except Exception:
+                LOG.debug("IPTVClient._show_catchup_downloads: ignored exception", exc_info=True)
+        dialogs[(current + 1) % len(dialogs)].reveal()
 
     def _on_filter_focus(self, event):
         self._filter_focus_gen = getattr(self, "_filter_focus_gen", 0) + 1
@@ -7203,6 +7239,33 @@ class AccountInfoDialog(wx.Dialog):
         event.Skip()
 
 
+def _show_on_taskbar(window) -> None:
+    """Give an owned window its own taskbar button and Alt+Tab entry (Windows).
+
+    wx dialogs are owned by their parent, and Windows leaves owned windows
+    off the taskbar and out of Alt+Tab. For a long-running modeless window
+    that means a keyboard user who steps back to the main window has no way
+    back to it. WS_EX_APPWINDOW overrides that; it must be set before the
+    window is first shown.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        user32 = ctypes.WinDLL("user32")  # private handle: our argtypes only
+        get_style = getattr(user32, "GetWindowLongPtrW", None) or user32.GetWindowLongW
+        set_style = getattr(user32, "SetWindowLongPtrW", None) or user32.SetWindowLongW
+        get_style.restype = ctypes.c_ssize_t
+        get_style.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        set_style.restype = ctypes.c_ssize_t
+        set_style.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_ssize_t]
+        gwl_exstyle, ws_ex_appwindow = -20, 0x00040000
+        hwnd = ctypes.c_void_p(int(window.GetHandle()))
+        set_style(hwnd, gwl_exstyle, get_style(hwnd, gwl_exstyle) | ws_ex_appwindow)
+    except Exception:
+        LOG.debug("_show_on_taskbar: ignored exception", exc_info=True)
+
+
 class CatchupDownloadDialog(wx.Dialog):
     """Live progress for one catch-up download.
 
@@ -7213,7 +7276,8 @@ class CatchupDownloadDialog(wx.Dialog):
     instead of a scattered grid of labels. Closing the window or pressing
     Cancel asks for confirmation first, because a canceled download cannot be
     resumed. The window is deliberately modeless: the user can keep browsing
-    while the download runs.
+    while the download runs. Escape and Alt+F4 only hide it - the download
+    carries on - and View > Show Downloads brings it back.
     """
 
     UPDATE_INTERVAL_MS = 1000
@@ -7244,7 +7308,16 @@ class CatchupDownloadDialog(wx.Dialog):
             style=wx.TE_READONLY | wx.TE_MULTILINE | wx.BORDER_NONE)
         sizer.Add(self.details_field, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
-        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel"))
+        hint = wx.StaticText(self, label=_(
+            "Press Escape to hide this window; the download continues. "
+            "View > Show Downloads (Ctrl+Shift+D) brings it back."))
+        hint.Wrap(420)
+        sizer.Add(hint, 0, wx.LEFT | wx.RIGHT, 12)
+
+        # Not wx.ID_CANCEL: that id is what Escape presses, and Escape used to
+        # land on "cancel the download?" - a window that could not simply be
+        # closed. Escape hides the window now; this button stops the download.
+        self.cancel_btn = wx.Button(self, label=_("Cancel"))
         sizer.Add(self.cancel_btn, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 12)
         self.SetSizerAndFit(sizer)
         self.CenterOnParent()
@@ -7256,7 +7329,9 @@ class CatchupDownloadDialog(wx.Dialog):
 
         self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel_download())
         self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.Bind(wx.EVT_TIMER, self._on_tick, self._timer)
+        _show_on_taskbar(self)
         self._timer.Start(self.UPDATE_INTERVAL_MS)
         self._on_tick(None)
         # The title already carries the name; announce the state change so a
@@ -7343,12 +7418,39 @@ class CatchupDownloadDialog(wx.Dialog):
             cb()
         self.Destroy()
 
+    def _on_char_hook(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.hide_window()
+            return
+        event.Skip()
+
     def _on_close(self, event):
-        # Alt+F4 / window close button: same confirmation as Cancel.
-        if self._confirm_cancel():
-            self._cancel_download(confirmed=True)
-        else:
+        # Alt+F4 and the title bar's close button hide the window and leave
+        # the download running. Stopping it is the Cancel button's job, and
+        # that asks first. A close that cannot be vetoed is wx tearing the
+        # window down (the app is quitting), so let that one through.
+        if event.CanVeto():
             event.Veto()
+            self.hide_window()
+            return
+        self._timer.Stop()
+        event.Skip()
+
+    def hide_window(self):
+        """Hide without cancelling, and hand focus back to the main window."""
+        self.Hide()
+        parent = self.GetParent()
+        if parent:
+            try:
+                parent.Raise()
+            except Exception:
+                LOG.debug("CatchupDownloadDialog.hide_window: ignored exception", exc_info=True)
+
+    def reveal(self):
+        """Show the window again (hidden or merely behind) and focus it."""
+        self.Show()
+        self.Raise()
+        self.details_field.SetFocus()
 
     def notify_recording_finished(self):
         """Stop the updates and close the window (finish callback, UI thread)."""
