@@ -149,6 +149,7 @@ def _returning_client(opened, **overrides):
         IsBeingDeleted=lambda: False,
         IsShown=lambda: True,
         _modal_box_is_open=lambda: False,
+        _internal_player_has_media=lambda: False,
         _open_catchup_dialog=lambda channel, select_start="": opened.append((channel, select_start)),
     )
     values.update(overrides)
@@ -167,12 +168,147 @@ def test_return_opens_the_list_on_the_played_programme():
     {"IsShown": lambda: False},                        # minimized to the tray
     {"_suppress_recording_notifications": True},       # the app is quitting
     {"_modal_box_is_open": lambda: True},              # something else is asking
+    {"_internal_player_has_media": lambda: True},      # something is playing
 ])
 def test_return_stays_quiet_when_it_would_intrude(override):
     opened = []
     client = _returning_client(opened, **override)
     main.IPTVClient._return_to_catchup_list(client, {"channel": {}, "start": ""})
     assert opened == []
+
+
+def test_return_does_not_stack_on_another_dialog(monkeypatch):
+    opened = []
+    monkeypatch.setattr(main, "_modal_dialog_is_open", lambda: True)
+    client = _returning_client(opened)
+    main.IPTVClient._return_to_catchup_list(client, {"channel": {"name": "TVP 1"}, "start": ""})
+    assert opened == []
+
+
+# ------------------------------------------- Catch-up download error boxes
+#
+# Download closes the catch-up list to start, so a box about that download
+# used to leave the user at the channel list instead of on the programme.
+
+TVP = {"name": "TVP 1"}
+AIRED = "20260910183000"
+
+
+def _failed_download(stderr):
+    return types.SimpleNamespace(
+        id=7, out_path="C:/rec/news.mkv", stopped_by_user=False, stderr_tail=stderr,
+        title="News", fmt="provider_mkv",
+        metadata={"channel": dict(TVP), "programme_start": AIRED,
+                  "programme_end": "20260910192500", "duration": 3300.0})
+
+
+def _download_client(returned, **overrides):
+    values = dict(
+        _catchup_downloads={},
+        _maybe_shutdown_after_recordings=lambda: None,
+        _recording_failure_detail=lambda _rec: "",
+        _maybe_retry_catchup_download=lambda *a, **k: False,
+        _modal_box_is_open=lambda: False,
+        _show_or_queue_message_box=lambda *a: None,
+        _return_to_catchup_list=lambda target: returned.append(target),
+    )
+    values.update(overrides)
+    client = types.SimpleNamespace(**values)
+    client._return_to_catchup_after_download = types.MethodType(
+        main.IPTVClient._return_to_catchup_after_download, client)
+    return client
+
+
+def test_a_failed_download_goes_back_to_its_programme(monkeypatch):
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+    returned = []
+    client = _download_client(returned)
+    main.IPTVClient._catchup_download_finished(
+        client, _failed_download(["[error] Server returned 403 Forbidden"]), 1)
+    assert returned == [{"channel": TVP, "start": AIRED}]
+
+
+def test_a_failure_queued_behind_another_box_stays_put(monkeypatch):
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+    returned = []
+    client = _download_client(returned, _modal_box_is_open=lambda: True)
+    main.IPTVClient._catchup_download_finished(
+        client, _failed_download(["[error] boom"]), 1)
+    assert returned == []
+
+
+def test_a_download_being_retried_does_not_go_back_yet(monkeypatch):
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+    returned = []
+    client = _download_client(returned, _maybe_retry_catchup_download=lambda *a, **k: True)
+    main.IPTVClient._catchup_download_finished(
+        client, _failed_download(["[error] Server returned 403 Forbidden"]), 1)
+    assert returned == []
+
+
+def test_a_download_that_cannot_be_prepared_goes_back_too(monkeypatch):
+    monkeypatch.setattr(main.wx, "MessageBox", lambda *a, **k: main.wx.OK)
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+    returned = []
+
+    def refuse(_channel, _show):
+        raise main.ProviderError("no archive")
+
+    client = _download_client(
+        returned,
+        _parse_epg_time=lambda _value: main.datetime.datetime(2026, 9, 10, 18, 30),
+        _resolve_show_url=refuse,
+    )
+    main.IPTVClient._download_catchup_programme(
+        client, dict(TVP), {"start": AIRED, "end": "20260910192500"})
+    assert returned == [{"channel": TVP, "start": AIRED}]
+
+
+# ------------------------------------------- Cancelling a download retry
+#
+# Reported: answering Yes to "really cancel?" still let the retry run. The
+# question easily outlasts the 2-second retry delay, so by then the timer had
+# fired and Cancel had nothing left to stop.
+
+def _retrying_client():
+    client = main.IPTVClient.__new__(main.IPTVClient)
+    client._catchup_retry_state = {}
+    client._catchup_retry_timers = {}
+    client._catchup_downloads = {}
+    client.recorder = types.SimpleNamespace(
+        stop=lambda *a, **k: None, is_recording=lambda _key: False,
+        start=lambda *a, **k: pytest.fail("a cancelled retry started a download"))
+    return client
+
+
+def test_cancel_before_the_retry_fires_starts_nothing(monkeypatch):
+    client = _retrying_client()
+    rec = types.SimpleNamespace(
+        id=4, key="catchup:k", url="http://u/direct.mp4", title="News", fmt="provider_mkv",
+        stopped_by_user=False, stderr_tail=["[error] Server returned 403 Forbidden"],
+        metadata={"hls_url": "http://u/index.m3u8"})
+    scheduled = []
+    monkeypatch.setattr(main, "_schedule_retry", lambda fn, delay: scheduled.append(fn) or None)
+    assert main.IPTVClient._maybe_retry_catchup_download(
+        client, rec, rc=1, channel=dict(TVP),
+        show={"start": AIRED, "end": "20260910192500"}, duration=60.0, fmt="provider_mkv")
+
+    main.IPTVClient._cancel_catchup_download(client, 4)
+    begun = []
+    monkeypatch.setattr(client, "_begin_catchup_download", lambda *a, **k: begun.append(a))
+    scheduled[0]()
+
+    assert begun == []
+
+
+def test_cancel_while_the_retry_is_probing_starts_nothing():
+    client = _retrying_client()
+    # Cancel already dropped attempt 4's budget; the probe then reports back.
+    main.IPTVClient._start_catchup_recording(
+        client, "http://u/direct.mp4", "News - TVP 1", "catchup:k",
+        {"start": AIRED, "end": "20260910192500"}, 60.0, "provider_mkv", {},
+        dict(TVP), "http://u/index.m3u8", 4)
+    assert client._catchup_downloads == {}
 
 
 def test_catchup_list_opens_on_the_given_programme(wx_app):

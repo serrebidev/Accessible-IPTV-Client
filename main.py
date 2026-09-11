@@ -167,6 +167,15 @@ def modal_box_is_open() -> bool:
     return _MODAL_BOX_DEPTH > 0
 
 
+def _modal_dialog_is_open() -> bool:
+    """True while any wx dialog is running modally."""
+    try:
+        return any(isinstance(window, wx.Dialog) and window.IsModal()
+                   for window in wx.GetTopLevelWindows())
+    except Exception:
+        return False
+
+
 def set_modal_box_closed_hook(hook) -> None:
     """Register the callback that flushes notifications queued behind a box."""
     global _MODAL_BOX_CLOSED_HOOK
@@ -2566,7 +2575,18 @@ class IPTVClient(wx.Frame):
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected(show_internal_player=self.show_player_on_enter)
             return  # swallow to prevent beep/focus issues
+        if key in (wx.WXK_DELETE, wx.WXK_NUMPAD_DELETE) and not event.HasAnyModifiers():
+            if self._remove_favorite_selected():
+                return
         event.Skip()
+
+    def _remove_favorite_selected(self) -> bool:
+        """Del: take the selected channel out of Favorites. False if it is not one."""
+        channel = self._selected_channel()
+        if not channel or not self._is_favorite(channel):
+            return False
+        self._toggle_favorite(channel)
+        return True
 
     def _on_url_display_key(self, event):
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
@@ -6363,12 +6383,28 @@ class IPTVClient(wx.Frame):
         try:
             if (not self or self.IsBeingDeleted() or not self.IsShown()
                     or getattr(self, "_suppress_recording_notifications", False)
-                    or self._modal_box_is_open()):
+                    or self._modal_box_is_open()
+                    # A catch-up list for another channel, say: a second
+                    # modal dialog on top of it would stack.
+                    or _modal_dialog_is_open()
+                    # Something is playing: do not pull the list over it.
+                    or self._internal_player_has_media()):
                 return
         except RuntimeError:
             return  # the frame is already gone: the app is quitting
         self._open_catchup_dialog(catchup_return.get("channel") or {},
                                   select_start=catchup_return.get("start", ""))
+
+    def _return_to_catchup_after_download(self, channel, start: str) -> None:
+        """After a box about a catch-up download: back to that channel's list.
+
+        Download closes the catch-up list to start, so dismissing a box about
+        that download used to leave the user at the channel list instead of on
+        the programme they were trying to save.
+        """
+        if channel:
+            wx.CallAfter(self._return_to_catchup_list,
+                         {"channel": channel, "start": start or ""})
 
     def _ensure_internal_player(self) -> object:
         frame_class = _load_internal_player_frame_class()
@@ -6821,10 +6857,12 @@ class IPTVClient(wx.Frame):
         except ProviderError as err:
             message_box(_("Provider error: {error}").format(error=err), _("Catch-up Download"),
                           wx.OK | wx.ICON_ERROR)
+            self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
         except Exception as err:
             message_box(_("Unable to prepare catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+            self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
 
         title = show.get("show_title") or show.get("title") or self._channel_display_name(channel)
@@ -6836,6 +6874,7 @@ class IPTVClient(wx.Frame):
         if self.recorder.is_recording(key):
             message_box(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+            self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
         fmt = normalize_recording_format(self.config.get("recording_format"))
         audio_intent = self._recording_audio_intent(channel)
@@ -6873,8 +6912,13 @@ class IPTVClient(wx.Frame):
                 url = direct
         except Exception:
             LOG.debug("Catch-up direct URL probe failed; using the HLS URL", exc_info=True)
-        audio_choice = (self._recording_audio_choice(url, headers, audio_intent)
-                        if audio_intent else None)
+        audio_choice = None
+        if audio_intent:
+            audio_choice = self._recording_audio_choice(url, headers, audio_intent)
+            # Reading the tracks opened the stream. A one-stream provider holds
+            # that session for a moment after it closes, and ffmpeg asking again
+            # inside it is refused with 403 - on every retry, too.
+            catchup_direct.settle_media_session()
         wx.CallAfter(self._start_catchup_recording, url, display_name, key, show,
                      duration, fmt, headers, channel, hls_url, retry_of,
                      audio_intent, audio_choice)
@@ -6884,6 +6928,13 @@ class IPTVClient(wx.Frame):
                                  retry_of: Optional[int] = None,
                                  audio_intent=None, audio_choice=None):
         """UI thread: start the recorder and open the progress window."""
+        if retry_of is not None and retry_of not in getattr(self, "_catchup_retry_state", {}):
+            # Cancel was pressed while this retry was being prepared - the
+            # "really cancel?" question easily outlasts the retry delay, and
+            # the probe takes seconds. The user said stop: start nothing.
+            LOG.info("Catch-up download retry for %s was cancelled", display_name)
+            self._close_catchup_dialog(retry_of)
+            return
         if retry_of is not None:
             # A retry replaces the previous attempt: close its progress window
             # (it is showing the error and countdown) and carry the budget over.
@@ -6893,6 +6944,7 @@ class IPTVClient(wx.Frame):
                 self._catchup_retry_state.pop(retry_of, None)
             message_box(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+            self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
         try:
             # The file is named for when the programme aired, as the EPG lists
@@ -6927,6 +6979,7 @@ class IPTVClient(wx.Frame):
             LOG.error("Catch-up download failed to start for %s: %s", url, err)
             message_box(_("Could not start catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+            self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
         if retry_of is not None:
             # The budget belongs to the programme, not the recorder id: pass it
@@ -7015,8 +7068,16 @@ class IPTVClient(wx.Frame):
             else:
                 message = _("Download failed (code {code}):\n{path}\n\n{detail}").format(
                     code=rc, path=rec.out_path, detail=detail)
+            # Shown now, not queued behind another box: once it is dismissed,
+            # go back to the catch-up list on this programme so it can be tried
+            # again, instead of dropping the user at the channel list.
+            shown_now = not self._modal_box_is_open()
             self._show_or_queue_message_box(
                 message, _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+            if shown_now:
+                metadata = getattr(rec, "metadata", None) or {}
+                self._return_to_catchup_after_download(
+                    metadata.get("channel") or {}, metadata.get("programme_start", ""))
 
         # Everything below touches the UI: marshal onto the main thread.
         wx.CallAfter(self._maybe_shutdown_after_recordings)
@@ -7052,6 +7113,8 @@ class IPTVClient(wx.Frame):
                 timer.cancel()
             if getattr(self, "_suppress_recording_notifications", False):
                 return  # the app is exiting; do not start new work
+            if retry_of not in self._catchup_retry_state:
+                return  # Cancel was pressed while this retry was waiting
             LOG.info("Catch-up download retry %d for %s", attempts + 1, rec.title)
             self._begin_catchup_download(
                 channel, hls_url, rec.title, rec.key, show, duration, fmt,

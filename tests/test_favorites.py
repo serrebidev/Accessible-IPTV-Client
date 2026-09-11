@@ -378,3 +378,60 @@ class TestNowPlayingDescriptions:
                               "end": "20260907210000", "description": ""}},
         }
         assert client._build_now_playing_descriptions(channels) == {}
+
+
+# --------------------------------------------------------------------------- #
+# Del removes a favorite
+#
+# Reported: a favorite could not be deleted with the Del key; only Ctrl+D or
+# the context menu took it out of Favorites.
+# --------------------------------------------------------------------------- #
+class TestDeleteKey:
+    @staticmethod
+    def _deleting_client(selected, favorite_names):
+        from main import IPTVClient
+
+        client = _client(favorite_names=favorite_names)
+        client.toggled = []
+        client._selected_channel = lambda: {"name": selected}
+        client._toggle_favorite = lambda channel: client.toggled.append(channel["name"])
+        client._remove_favorite_selected = _bind(IPTVClient, "_remove_favorite_selected", client)
+        return client
+
+    @staticmethod
+    def _press(client, key, modifiers=False):
+        from main import IPTVClient
+
+        skipped = []
+        event = SimpleNamespace(GetKeyCode=lambda: key, HasAnyModifiers=lambda: modifiers,
+                                Skip=lambda: skipped.append(True))
+        IPTVClient._on_channel_key_down(client, event)
+        return skipped
+
+    def test_del_removes_a_favorite(self):
+        import main
+
+        client = self._deleting_client("B", ["B"])
+        assert self._press(client, main.wx.WXK_DELETE) == []
+        assert client.toggled == ["B"]
+
+    def test_the_numpad_del_key_too(self):
+        import main
+
+        client = self._deleting_client("B", ["B"])
+        assert self._press(client, main.wx.WXK_NUMPAD_DELETE) == []
+        assert client.toggled == ["B"]
+
+    def test_del_on_an_ordinary_channel_is_left_alone(self):
+        import main
+
+        client = self._deleting_client("A", ["B"])
+        assert self._press(client, main.wx.WXK_DELETE) == [True]
+        assert client.toggled == []
+
+    def test_shift_del_is_not_taken(self):
+        import main
+
+        client = self._deleting_client("B", ["B"])
+        assert self._press(client, main.wx.WXK_DELETE, modifiers=True) == [True]
+        assert client.toggled == []

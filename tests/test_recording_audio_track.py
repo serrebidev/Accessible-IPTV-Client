@@ -396,6 +396,9 @@ def test_scheduled_recording_keeps_the_chosen_track(monkeypatch):
 def test_catchup_download_probes_the_url_it_will_record(monkeypatch):
     monkeypatch.setattr(main.catchup_direct, "direct_download_url",
                         lambda *a, **k: "http://h/direct.ts")
+    settled = []
+    monkeypatch.setattr(main.catchup_direct, "settle_media_session",
+                        lambda: settled.append(True))
     handed = []
     monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: handed.append(a))
     probed = []
@@ -411,6 +414,9 @@ def test_catchup_download_probes_the_url_it_will_record(monkeypatch):
     assert probed == ["http://h/direct.ts"]
     args, = handed
     assert args[-2:] == (intent, (1, 3))
+    # Reading the tracks opened the stream: a one-stream provider must let go
+    # of it before ffmpeg asks, or ffmpeg is refused with 403.
+    assert settled == [True]
 
 
 def test_a_catchup_retry_keeps_the_same_track_rule(monkeypatch):
