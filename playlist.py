@@ -1874,8 +1874,35 @@ class EPGDatabase:
         if not matches:
             return None
 
-        # Sort by score initially
-        matches = sorted(matches, key=lambda m: -m.get('score', 0))
+        # Noise-stripped DB names deliberately make broad candidate groups, but
+        # can also make siblings such as "Sport 1" and "Sport Extra 1" score
+        # identically.  Use the full canonical display name only to break such
+        # ties.  It must not override an exact id, a higher score, or schedule
+        # availability: those are stronger signals and retain their existing
+        # ordering.
+        canonical_tvg_name = canonicalize_name(channel.get("tvg-name") or "")
+        canonical_name = canonicalize_name(channel.get("name") or "")
+
+        def identity_tiebreak(match: dict) -> int:
+            why = str(match.get("why") or "")
+            if why.startswith("exact-id"):
+                return 0
+            if why.startswith("expanded-tvg-id"):
+                return 1
+            display = canonicalize_name(match.get("display_name") or "")
+            if display and display == canonical_tvg_name:
+                return 2
+            if display and display == canonical_name:
+                return 3
+            return 4
+
+        # Keep exact names ahead of loose candidates with the same score so an
+        # arbitrary SQLite row order cannot decide which sibling reaches the
+        # schedule-availability probe.
+        matches = sorted(
+            matches,
+            key=lambda m: (-m.get('score', 0), identity_tiebreak(m)),
+        )
 
         # Probe schedule availability for top-N and reorder
         try:
@@ -1893,7 +1920,8 @@ class EPGDatabase:
                 avail,
                 key=lambda t: (
                     not t[1],  # False (Has Data) < True (No Data) -> Data first
-                    -(int(t[0].get('score', 0)))
+                    -(int(t[0].get('score', 0))),
+                    identity_tiebreak(t[0]),
                 )
             )
             best = ordered[0][0]
@@ -3351,4 +3379,3 @@ def _derive_playlist_region(channel: Dict[str, str]) -> str:
         return tied[0]
     tied.sort(key=lambda code: order.get(code, 1_000_000))
     return tied[0]
-

@@ -53,3 +53,54 @@ def test_a_known_tvg_id_still_wins_over_the_name(tmp_path):
         assert db.resolve_best_channel_id({"name": "TVN HD", "tvg-id": "tvn-pl"}) == "tvn-pl"
     finally:
         db.close()
+
+
+def test_full_name_breaks_a_loose_match_tie_between_numbered_siblings(tmp_path):
+    """Noise words must not make Sport 1 and Sport Extra 1 interchangeable."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        # Put Extra first to reproduce the order in the reported guide. Both
+        # names collapse to "polsat sport" and both carry significant number 1.
+        db.insert_channel("Polsat Sport Extra 1", "Polsat Sport Extra 1")
+        db.insert_channel("Polsat Sport 1", "Polsat Sport 1")
+        db.commit()
+
+        common = {"tvg-id": "PolsatSport.pl", "group": "Sport"}
+        assert db.resolve_best_channel_id({
+            **common,
+            "name": "Polsat Sport 1 HD",
+            "tvg-name": "Polsat Sport 1 HD",
+        }) == "Polsat Sport 1"
+        assert db.resolve_best_channel_id({
+            **common,
+            "name": "Polsat Sport Extra 1 HD",
+            "tvg-name": "Polsat Sport Extra 1 HD",
+        }) == "Polsat Sport Extra 1"
+    finally:
+        db.close()
+
+
+def test_full_name_tiebreak_does_not_override_a_higher_score(tmp_path):
+    db = _guide(tmp_path)
+    try:
+        db.get_matching_channel_ids = lambda _channel: ([
+            {"id": "loose", "display_name": "Other", "score": 49, "why": "fuzzy"},
+            {"id": "exact", "display_name": "Wanted HD", "score": 48, "why": "exact-name"},
+        ], "")
+        db._has_any_schedule_from_now = lambda _channel_id: True
+        assert db.resolve_best_channel_id({"name": "Wanted HD"}) == "loose"
+    finally:
+        db.close()
+
+
+def test_full_name_tiebreak_does_not_override_schedule_availability(tmp_path):
+    db = _guide(tmp_path)
+    try:
+        db.get_matching_channel_ids = lambda _channel: ([
+            {"id": "loose", "display_name": "Other", "score": 48, "why": "fuzzy"},
+            {"id": "exact", "display_name": "Wanted HD", "score": 48, "why": "exact-name"},
+        ], "")
+        db._has_any_schedule_from_now = lambda channel_id: channel_id == "loose"
+        assert db.resolve_best_channel_id({"name": "Wanted HD"}) == "loose"
+    finally:
+        db.close()
