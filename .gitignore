@@ -29,3 +29,11 @@ test_zombie_env/
 
 # Claude Code local settings
 .claude/
+
+# Local agent scratch, generated beside the repo and never committed
+AGENTS.local.md
+.freebuff/
+
+# Stray root copy of the update manifest. The real one is generated into
+# dist/release/ by tools/release.py and uploaded as a release asset.
+/AccessibleIPTVClient-update.json
