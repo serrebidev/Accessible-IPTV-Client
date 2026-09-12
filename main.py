@@ -4622,6 +4622,9 @@ class IPTVClient(wx.Frame):
         exe_name: str,
     ):
         ready_path = self._update_handoff_ready_path(helper_bat)
+        helper_language = i18n.resolved_language()
+        if helper_language not in ("en", *i18n.SHIPPED_CATALOGS):
+            helper_language = "en"
         cmd = [
             "cmd",
             "/d",
@@ -4637,6 +4640,8 @@ class IPTVClient(wx.Frame):
             exe_name,
             "-ReadyFile",
             ready_path,
+            "-Language",
+            helper_language,
         ]
         # Say what is about to happen in the progress dialog that is already on
         # screen rather than in a box the user has to dismiss. The helper only
@@ -4665,6 +4670,9 @@ class IPTVClient(wx.Frame):
         exe_name: str,
     ):
         ready_path = self._update_handoff_ready_path(helper_bat)
+        helper_language = i18n.resolved_language()
+        if helper_language not in ("en", *i18n.SHIPPED_CATALOGS):
+            helper_language = "en"
         cmd = [
             "cmd",
             "/d",
@@ -4682,6 +4690,8 @@ class IPTVClient(wx.Frame):
             exe_name,
             "-ReadyFile",
             ready_path,
+            "-Language",
+            helper_language,
         ]
         # Say what is about to happen in the progress dialog that is already on
         # screen rather than in a box the user has to dismiss. The helper only
