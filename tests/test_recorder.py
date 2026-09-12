@@ -412,7 +412,8 @@ def test_stopping_an_mp4_recording_leaves_a_playable_file(tmp_path):
             # credentials included: masking them would make 403/timeout
             # failures impossible to diagnose from the log.
             assert os.path.isfile(rec.log_path)
-            log = open(rec.log_path, encoding="utf-8", errors="replace").read()
+            with open(rec.log_path, encoding="utf-8", errors="replace") as handle:
+                log = handle.read()
             assert "Input #0" in log
             assert url in log
         finally:

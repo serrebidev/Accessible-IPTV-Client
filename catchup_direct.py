@@ -101,6 +101,10 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
             length = resp.headers.get("Content-Length")
             return length != "0"
     except urllib.error.HTTPError as err:
+        # HTTPError doubles as an open response object holding a socket.
+        # Close it now, or it leaks until GC and -W error reports the
+        # ResourceWarning as an unraisable blamed on whichever test runs next.
+        err.close()
         if err.code not in (403, 404, 405, 410, 501):
             return False
         # Some servers reject HEAD outright; a 1-byte ranged GET settles it.
@@ -110,6 +114,11 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
             req = urllib.request.Request(url, headers=ranged)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return _headers_look_like_media(resp.headers)
+        except urllib.error.HTTPError as err:
+            # Same leak as the outer handler: close before GC reports it.
+            err.close()
+            LOG.debug("catchup_direct.probe_direct_url: ignored exception", exc_info=True)
+            return False
         except Exception:
             LOG.debug("catchup_direct.probe_direct_url: ignored exception", exc_info=True)
             return False
@@ -153,6 +162,8 @@ def _next_hop(url: str, headers: Optional[Dict[str, object]],
             with opener.open(req, timeout=timeout):
                 return None, True
         except urllib.error.HTTPError as err:
+            # Same leak as probe_direct_url: close the response promptly.
+            err.close()
             if 300 <= err.code < 400:
                 location = err.headers.get("Location")
                 return (urllib.parse.urljoin(url, location) if location else None), False
