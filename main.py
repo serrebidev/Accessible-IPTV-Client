@@ -3471,7 +3471,7 @@ class IPTVClient(wx.Frame):
         )
         self._note_recording_started()
         wx.CallAfter(
-            message_box,
+            self._show_or_queue_message_box,
             _("Scheduled recording started:\n{title}").format(
                 title=job.get("display_title") or job.get("title") or ""),
             _("Scheduled Recording"),
@@ -8949,8 +8949,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
         key = event.GetKeyCode()
         if key == wx.WXK_ESCAPE:
             self.Close()
-        elif key == wx.WXK_DELETE:
-            self._on_delete_selected(event)
+        elif key in (wx.WXK_DELETE, wx.WXK_NUMPAD_DELETE):
+            # An empty list has nothing the user could select or delete. Keep
+            # the shortcut silent instead of opening a redundant "select a
+            # recording" information box.
+            if self.list_ctrl.GetItemCount():
+                self._on_delete_selected(event)
         elif key == wx.WXK_MENU:
             self._show_context_menu(keyboard=True)
         else:

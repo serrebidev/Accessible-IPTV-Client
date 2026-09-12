@@ -375,8 +375,10 @@ def test_pressing_record_again_during_the_probe_cancels_it(monkeypatch):
 
 def test_scheduled_recording_keeps_the_chosen_track(monkeypatch):
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: "C:/rec")
-    monkeypatch.setattr(main.wx, "CallAfter", lambda *a, **k: None)
+    deferred = []
+    monkeypatch.setattr(main.wx, "CallAfter", lambda *a, **k: deferred.append((a, k)))
     asked = []
+    queued_notification = lambda *a, **k: None
     client = types.SimpleNamespace(
         config={},
         recorder=_Recorder(),
@@ -386,12 +388,15 @@ def test_scheduled_recording_keeps_the_chosen_track(monkeypatch):
         _recording_audio_choice=lambda url, headers, intent: (2, 3),
         _note_recording_started=lambda: None,
         _on_recording_finished=lambda *a: None,
+        _show_or_queue_message_box=queued_notification,
     )
     main.IPTVClient._start_scheduled_recording(
         client, {"id": "j1", "title": "News", "format": "audio_mp3_v0", "channel": dict(TVP)})
     assert asked == [{"from_player": False}]
     (_args, kwargs), = client.recorder.started
     assert (kwargs["audio_track"], kwargs["audio_track_count"]) == (2, 3)
+    assert len(deferred) == 1
+    assert deferred[0][0][0] is queued_notification
 
 
 def test_catchup_download_probes_the_url_it_will_record(monkeypatch):
