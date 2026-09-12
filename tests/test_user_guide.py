@@ -19,7 +19,6 @@ import user_guide  # noqa: E402
 
 HELP_DIR = os.path.join(ROOT, "docs", "help")
 APP_SOURCES = ("main.py", "internal_player.py", "playlist.py", "options.py")
-_ANCHOR = re.compile(r"\{#([a-z0-9-]+)\}")
 _TOPIC_PATTERNS = (
     re.compile(r'help_topic\s*=\s*"([a-z0-9-]+)"'),
     re.compile(r'set_help_topic\(\s*[^,()]+,\s*"([a-z0-9-]+)"'),
@@ -68,9 +67,26 @@ def test_the_examples_from_the_feature_request_are_wired():
         assert topic in used, topic
 
 
+def _guide_anchors(path):
+    """The topic ids the loader really sees.
+
+    user_guide.load_guide() strips HTML comments and takes an anchor only from
+    the end of a heading, so the translator notes at the top of every guide -
+    which have to name {#topic-id} to explain it - are not topic ids.
+    """
+    body = user_guide._COMMENT_RE.sub("", _read(path))
+    return [
+        match.group(1)
+        for line in body.splitlines()
+        if user_guide._HEADING_RE.match(line)
+        for match in [user_guide._ANCHOR_RE.search(line)]
+        if match
+    ]
+
+
 @pytest.mark.parametrize("language", user_guide.available_languages(HELP_DIR))
 def test_topic_ids_are_unique(language):
-    anchors = _ANCHOR.findall(_read(os.path.join(HELP_DIR, f"{language}.md")))
+    anchors = _guide_anchors(os.path.join(HELP_DIR, f"{language}.md"))
     duplicates = sorted({a for a in anchors if anchors.count(a) > 1})
     assert not duplicates, f"{language}.md repeats topic ids: {duplicates}"
 
@@ -79,7 +95,7 @@ def test_topic_ids_are_unique(language):
     "language", [code for code in user_guide.available_languages(HELP_DIR) if code != "en"])
 def test_translated_guides_only_use_english_topic_ids(language):
     english = set(_english().topics())
-    translated = set(_ANCHOR.findall(_read(os.path.join(HELP_DIR, f"{language}.md"))))
+    translated = set(_guide_anchors(os.path.join(HELP_DIR, f"{language}.md")))
     unknown = sorted(translated - english)
     assert not unknown, f"{language}.md has topic ids en.md does not: {unknown}"
 
