@@ -404,10 +404,11 @@ def test_catchup_download_probes_the_url_it_will_record(monkeypatch):
     monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: handed.append(a))
     probed = []
     client = types.SimpleNamespace(
+        config={},
         _recording_audio_choice=lambda url, headers, intent: probed.append(url) or (1, 3),
         _start_catchup_recording=lambda *a: None,
     )
-    _bind(client, "_begin_catchup_download", "_parse_epg_time")
+    _bind(client, "_begin_catchup_download", "_parse_epg_time", "_padded_catchup_window")
     intent = {"keywords": AD_KEYWORDS, "fallback_index": None, "prefer_ad": True}
     client._begin_catchup_download(TVP, "http://h/archive.m3u8", "Show - TVP 1", "catchup:x",
                                    {"start": "20260910183000", "end": "20260910192500"},

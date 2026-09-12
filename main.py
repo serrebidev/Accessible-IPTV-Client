@@ -44,7 +44,7 @@ import app_meta
 import updater
 from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
-    epg_database_has_usable_data
+    epg_database_has_programmes, epg_database_has_usable_data
 )
 from playlist import (source_name_key, normalize_source_names,
                       _expand_tvg_id_candidates)
@@ -942,6 +942,12 @@ _UPDATE_HANDOFF_POLL_MS = 250
 # User cancellations are never retried; the budget is small on purpose.
 _CATCHUP_RETRY_MAX_ATTEMPTS = 3
 _CATCHUP_RETRY_BASE_DELAY_SECONDS = 2.0
+
+# A catch-up download counts as complete when ffmpeg wrote at least this
+# share of the programme length. Stats rounding and streams that end a
+# second early are normal; anything shorter means the provider closed the
+# connection mid-file and the download is retried rather than celebrated.
+_CATCHUP_SHORT_COMPLETION_RATIO = 0.95
 _CATCHUP_RETRYABLE_RE = re.compile(
     r"403\b|429\b|50[0-9]\b|connection (?:reset|refused|closed)|timed? ?out|"
     r"temporarily unavailable|no route to host|server returned", re.IGNORECASE)
@@ -1004,7 +1010,13 @@ def _ffmpeg_exit_reason(rc) -> str:
 
 def _catchup_failure_is_retryable(rc: int, stderr_lines, *, stopped_by_user: bool = False) -> bool:
     """True when a finished download failed for a reason retrying can fix."""
-    if stopped_by_user or not rc:
+    if stopped_by_user:
+        return False
+    # rc == 0.0 (a float) is the truncation sentinel from
+    # _handle_truncated_catchup_download: the process really exited clean but
+    # the transfer came up short, so the success rule must not short-circuit
+    # here. rc == 0 (int) stays a genuine clean exit.
+    if not rc and not (isinstance(rc, float) and rc == 0.0):
         return False
     text = "\n".join(stderr_lines or [])
     return bool(_CATCHUP_RETRYABLE_RE.search(text))
@@ -3157,6 +3169,20 @@ class IPTVClient(wx.Frame):
 
     def _schedule_channel_recording(self, channel: Dict[str, str]):
         """Let a channel-row user choose an upcoming EPG programme to record."""
+        db_path = get_db_path()
+        if not epg_database_has_programmes(db_path):
+            # The guide database is empty or missing, so a week-long query can
+            # only ever come back empty. Explain how to fix that rather than
+            # showing an empty "no programme" window that reads like the
+            # feature itself found nothing.
+            message_box(
+                _("No programme guide has been imported yet, so there is "
+                  "nothing to schedule from.\n\nImport a guide first (File > "
+                  "EPG Manager, then File > Import EPG to DB), then "
+                  "try scheduling again."),
+                _("Schedule Recording"), wx.OK | wx.ICON_WARNING)
+            return
+
         def fetch_and_show():
             try:
                 db = EPGDatabase(get_db_path(), readonly=True)
@@ -3345,6 +3371,19 @@ class IPTVClient(wx.Frame):
             return
 
         self._ensure_dvr_scheduler(start=True).add_job(job)
+        if not epg_database_has_usable_data(get_db_path()):
+            # The guide is not imported (or not current), so this is the only
+            # programme the user could see and the schedule can offer no
+            # picture of what is coming. Say so: an empty Scheduled Recordings
+            # window otherwise looks like the schedule silently failed.
+            message_box(
+                _("Recording scheduled.\n\nThe programme guide has not been "
+                  "imported yet, so the Scheduled Recordings window may not "
+                  "list anything, and this may be the only episode you can "
+                  "schedule. Import the guide from File > Import EPG to DB to "
+                  "see and schedule upcoming programmes."),
+                _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
+            return
         message_box(
             _("Scheduled recording:\n{title}\n{time}").format(
                 title=job.get("display_title") or job.get("title") or "",
@@ -3450,6 +3489,19 @@ class IPTVClient(wx.Frame):
                 LOG.debug("IPTVClient._stop_scheduled_recording: ignored exception", exc_info=True)
         self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
 
+    def _upcoming_dvr_jobs(self) -> List[Dict[str, object]]:
+        """Scheduled DVR jobs that would be lost if the app closed now."""
+        scheduler = getattr(self, "dvr_scheduler", None)
+        if scheduler is None:
+            return []
+        try:
+            jobs = scheduler.list_jobs(include_done=False)
+        except Exception:
+            LOG.debug("IPTVClient._upcoming_dvr_jobs: ignored exception", exc_info=True)
+            return []
+        return [job for job in jobs
+                if job.get("status") in {dvr.STATUS_SCHEDULED, dvr.STATUS_RECORDING,
+                                         dvr.STATUS_STOPPING}]
     def _cancel_scheduled_recording(self, job_id: str) -> bool:
         job = self._ensure_dvr_scheduler().get_job(job_id)
         if not job:
@@ -4003,6 +4055,14 @@ class IPTVClient(wx.Frame):
     def _recording_failure_detail(self, rec) -> str:
         """What ffmpeg said, plus where the rest of what it said was written."""
         lines = list(rec.stderr_tail[-6:]) or [_("No ffmpeg details were reported.")]
+        counts = getattr(rec, "problem_counts", None)
+        if counts and any(counts.values()):
+            lines.insert(0, _(
+                "{warnings} warnings, {errors} errors and {fatals} fatal "
+                "errors were logged in total.").format(
+                    warnings=counts.get("warnings", 0),
+                    errors=counts.get("errors", 0),
+                    fatals=counts.get("fatals", 0)))
         log_path = getattr(rec, "log_path", "")
         if log_path and os.path.exists(log_path):
             lines.append("")
@@ -4813,9 +4873,16 @@ class IPTVClient(wx.Frame):
                 wx.OK | wx.ICON_WARNING,
             )
             return
-        # Success speaks for itself - the app is simply running again, on the
-        # new version. Only a failed update needs to interrupt anyone.
+        # Success: say so once, then let the pending marker go. A screen
+        # reader user otherwise has to infer completion from the fact that
+        # the app came back at all, or go and check the version by hand.
         LOG.info("Update to v%s completed", current)
+        message_box(
+            _("{app} was successfully updated to v{version}.").format(
+                app=app_meta.APP_DISPLAY_NAME, version=current),
+            _("Update Complete"),
+            wx.OK | wx.ICON_INFORMATION,
+        )
 
     @staticmethod
     def _bool_pref(value, default: bool = False) -> bool:
@@ -5195,19 +5262,47 @@ class IPTVClient(wx.Frame):
             wx.CallAfter(self.show_tray_icon)
             event.Veto()
         else:
-            # Warn before an exit that would stop a running download. The tray
-            # path above keeps the app (and the download) alive, so it needs no
-            # warning; recordings keep their own detached-finalize behaviour.
+            # Warn before an exit that would stop a running download or drop
+            # scheduled recordings. The tray path above keeps the app (and
+            # anything it is doing) alive, so it needs no warning; finished
+            # recordings keep their own detached-finalize behaviour.
             if (event.CanVeto() and not self._update_install_pending
-                    and self._catchup_downloads):
-                answer = message_box(
-                    _("A download is still in progress.\n\n"
-                      "If you exit now it will stop, and only the part captured "
-                      "so far is kept.\n\nExit anyway?"),
-                    _("Download in progress"), wx.YES_NO | wx.ICON_QUESTION)
-                if answer != wx.YES:
-                    event.Veto()
-                    return
+                    and not self._exit_forced):
+                pending_jobs = self._upcoming_dvr_jobs()
+                if pending_jobs:
+                    names = ", ".join(
+                        str(job.get("display_title") or job.get("title") or "?")
+                        for job in pending_jobs[:3])
+                    if len(pending_jobs) > 3:
+                        names = _("{first} and {count} more").format(
+                            first=names, count=len(pending_jobs) - 3)
+                    if self.recorder.has_active():
+                        warning = _(
+                            "A recording is in progress and {count} recording "
+                            "is still scheduled.\n\n{names}\n\nThe app must "
+                            "stay open to start them. Exit anyway?").format(
+                                count=len(pending_jobs), names=names)
+                    else:
+                        warning = _(
+                            "{count} recording is scheduled but has not started "
+                            "yet.\n\n{names}\n\nThe app must stay open to start "
+                            "it. Exit anyway?").format(
+                                count=len(pending_jobs), names=names)
+                    if message_box(
+                            warning,
+                            _("Scheduled recordings"),
+                            wx.YES_NO | wx.ICON_WARNING) != wx.YES:
+                        event.Veto()
+                        return
+                elif self._catchup_downloads:
+                    answer = message_box(
+                        _("A download is still in progress.\n\n"
+                          "If you exit now it will stop, and only the part captured "
+                          "so far is kept.\n\nExit anyway?"),
+                        _("Download in progress"), wx.YES_NO | wx.ICON_QUESTION)
+                    if answer != wx.YES:
+                        event.Veto()
+                        return
             self._search_token += 1
             self._populate_token += 1
             set_modal_box_closed_hook(None)
@@ -7386,21 +7481,54 @@ class IPTVClient(wx.Frame):
         finally:
             dlg.Destroy()
 
-    def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str]):
-        """Save a completed catch-up programme using its finite EPG time window."""
+    def _padded_catchup_window(self, show):
+        """Programme window widened by the Schedule Padding minutes.
+
+        Scheduled recordings start ``pre`` minutes early and run ``post``
+        minutes past the end; a catch-up download asks the provider for the
+        same window. Returns ``(start_dt, end_dt)`` or None when the show's
+        times cannot be parsed.
+        """
         try:
             start_dt = self._parse_epg_time(show.get("start", ""))
             end_dt = self._parse_epg_time(show.get("end", ""))
-            duration = max(1.0, (end_dt - start_dt).total_seconds())
+        except (TypeError, ValueError):
+            return None
+        config = self.config or {}
+        pre_minutes = max(0, int(config.get("recording_pre_padding_minutes", 0) or 0))
+        post_minutes = max(0, int(config.get("recording_post_padding_minutes", 2) or 0))
+        return (start_dt - datetime.timedelta(minutes=pre_minutes),
+                end_dt + datetime.timedelta(minutes=post_minutes))
+
+    def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str]):
+        """Save a completed catch-up programme using its finite EPG time window."""
+        try:
+            padded = self._padded_catchup_window(show)
+            if padded is None:
+                raise ValueError("programme times missing")
+            padded_start, padded_end = padded
+            pre_minutes = max(0, int(self.config.get("recording_pre_padding_minutes", 0) or 0))
+            post_minutes = max(0, int(self.config.get("recording_post_padding_minutes", 2) or 0))
+            if pre_minutes or post_minutes:
+                LOG.info("Catch-up download window padded by %d+%d minutes for %s",
+                         pre_minutes, post_minutes, show.get("start", ""))
+            duration = max(1.0, (padded_end - padded_start).total_seconds())
+            # Availability and the catch-up window are checked against the
+            # programme itself: a padded end can still lie in the future for a
+            # show that just finished, and pre-padding must not make a show
+            # look older than the archive window allows.
             url, is_catchup = self._resolve_show_url(channel, show)
             if not is_catchup:
                 raise ProviderError(_("This programme is not available as catch-up content yet."))
+            # Then ask the provider for the padded window, falling back to the
+            # programme-exact URL when the padded one cannot be built.
+            url = self._resolve_catchup_url(channel, padded_start, padded_end) or url
         except ProviderError as err:
             message_box(_("Provider error: {error}").format(error=err), _("Catch-up Download"),
                           wx.OK | wx.ICON_ERROR)
             self._return_to_catchup_after_download(channel, show.get("start", ""))
             return
-        except Exception as err:
+        except (TypeError, ValueError) as err:
             message_box(_("Unable to prepare catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
             self._return_to_catchup_after_download(channel, show.get("start", ""))
@@ -7444,15 +7572,35 @@ class IPTVClient(wx.Frame):
         fetch_url, url_headers = split_stream_modifiers(hls_url)
         headers = merge_headers(channel_http_headers(channel), url_headers)
         url = fetch_url
+        # Probe the padded window first (some backends slice the archive on
+        # demand), then the programme-exact one (teleelevidenie stores only
+        # per-programme files). Whichever answers is the fast download; a
+        # programme-exact file simply means the padding minutes are not
+        # available on the fast path.
         try:
-            start_epoch = int(self._parse_epg_time(show.get("start", "")).timestamp())
-            direct = catchup_direct.direct_download_url(
-                fetch_url, start_epoch, int(duration), headers)
+            prog_start = self._parse_epg_time(show.get("start", ""))
+            prog_end = self._parse_epg_time(show.get("end", ""))
+            windows = [(int(prog_start.timestamp()),
+                        int((prog_end - prog_start).total_seconds()))]
+            padded = self._padded_catchup_window(show)
+            if padded is not None:
+                padded_start, padded_end = padded
+                if (int(padded_start.timestamp()), int((padded_end - padded_start).total_seconds())) \
+                        != windows[0]:
+                    windows.insert(0, (int(padded_start.timestamp()),
+                                       int((padded_end - padded_start).total_seconds())))
+            direct = None
+            for start_epoch, window_seconds in windows:
+                direct = catchup_direct.direct_download_url(
+                    fetch_url, start_epoch, window_seconds, headers)
+                if direct:
+                    break
             if direct:
                 LOG.info("Catch-up: using fast direct download URL")
                 url = direct
-        except Exception:
-            LOG.debug("Catch-up direct URL probe failed; using the HLS URL", exc_info=True)
+        except (TypeError, ValueError):
+            LOG.debug("Catch-up direct URL probe skipped: programme window is not valid",
+                      exc_info=True)
         audio_choice = None
         if audio_intent:
             audio_choice = self._recording_audio_choice(url, headers, audio_intent)
@@ -7494,6 +7642,13 @@ class IPTVClient(wx.Frame):
                 show.get("start", ""), "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
         except (TypeError, ValueError):
             aired = None
+        # The programme length the completion check compares against: the
+        # padded window minus the padding minutes that stretched it.
+        config = getattr(self, "config", None) or {}
+        pad_seconds = 60.0 * (
+            max(0, int(config.get("recording_pre_padding_minutes", 0) or 0))
+            + max(0, int(config.get("recording_post_padding_minutes", 2) or 0)))
+        expected_media = max(1.0, float(duration or 0.0) - pad_seconds)
         try:
             rec = self.recorder.start(
                 url, display_name, fmt, headers, get_recordings_dir(self.config),
@@ -7503,6 +7658,7 @@ class IPTVClient(wx.Frame):
                           "channel": dict(channel) if channel else {},
                           "hls_url": hls_url or url,
                           "duration": duration,
+                          "expected_media_seconds": expected_media,
                           "audio_intent": audio_intent},
                 on_finish=self._catchup_download_finished,
                 duration=duration,
@@ -7556,6 +7712,21 @@ class IPTVClient(wx.Frame):
         def finish():
             if getattr(self, "_suppress_recording_notifications", False):
                 return  # the app is exiting; nothing to report
+            # A provider closing the connection mid-file makes ffmpeg exit
+            # 0 as if the file were complete. Check how much media was
+            # really written and route a short transfer into the retry
+            # flow instead of reporting a success that is missing minutes.
+            truncated = rc == 0 and self._catchup_download_is_truncated(rec)
+            if truncated and self._handle_truncated_catchup_download(rec):
+                if dlg is not None:
+                    # Keep the window open: it now shows the retry
+                    # countdown, and its Cancel button aborts the wait.
+                    self._catchup_downloads[rec.id] = dlg
+                    attempts = self._catchup_retry_state.get(rec.id, 1)
+                    dlg.show_retry_pending(
+                        attempts, _CATCHUP_RETRY_MAX_ATTEMPTS,
+                        _CATCHUP_RETRY_BASE_DELAY_SECONDS * (2 ** (attempts - 1)))
+                return
             if rc == 0:
                 state = getattr(self, "_catchup_retry_state", None)
                 if state is not None:
@@ -7568,6 +7739,19 @@ class IPTVClient(wx.Frame):
                     self._show_or_queue_message_box(
                         _("Download canceled. The incomplete file was discarded."),
                         _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
+                elif truncated:
+                    # No retry was scheduled (budget spent): the partial file
+                    # was kept, so say what it holds instead of calling it
+                    # complete.
+                    self._show_or_queue_message_box(
+                        _("Download ended early:\n{path}\n\nOnly {written} of {expected} "
+                          "arrived before the provider closed the connection. "
+                          "The incomplete file was kept.").format(
+                              path=rec.out_path,
+                              written=format_duration(rec.media_written_seconds),
+                              expected=format_duration(
+                                  (rec.metadata or {}).get("expected_media_seconds"))),
+                        _("Catch-up Download"), wx.OK | wx.ICON_WARNING)
                 else:
                     self._show_or_queue_message_box(
                         _("Download complete:\n{path}").format(path=rec.out_path),
@@ -7665,6 +7849,70 @@ class IPTVClient(wx.Frame):
         if timer is not None:
             self._catchup_retry_timers[retry_of] = timer
         return True
+
+    def _catchup_download_is_truncated(self, rec) -> bool:
+        """True when a "clean" download actually stopped early.
+
+        A provider that closes the HTTP connection mid-file makes ffmpeg end
+        with exit code 0 as if the file were complete, so the exit code alone
+        cannot tell a short transfer from a full one. The newest ``time=``
+        stats line (catch-up downloads run with ``show_stats``) reports how
+        much media was really produced; compare it with the programme length
+        from the EPG. The slack absorbs rounding in ffmpeg's stats and streams
+        that genuinely end a little before the EPG window closes.
+        """
+        if getattr(rec, "stopped_by_user", False):
+            return False
+        written = getattr(rec, "media_written_seconds", None)
+        if written is None:
+            return False
+        metadata = getattr(rec, "metadata", None) or {}
+        try:
+            expected = float(metadata.get("expected_media_seconds") or 0.0)
+        except (TypeError, ValueError):
+            return False
+        if expected <= 0:
+            return False
+        return written < expected * _CATCHUP_SHORT_COMPLETION_RATIO
+
+    def _handle_truncated_catchup_download(self, rec) -> bool:
+        """Route a truncated-but-clean download into the retry flow.
+
+        Returns True when a retry was scheduled; the caller keeps the progress
+        window open so its Cancel button can abort the waiting attempt.
+        """
+        written = rec.media_written_seconds or 0.0
+        expected = (rec.metadata or {}).get("expected_media_seconds") or 0.0
+        LOG.warning(
+            "Catch-up download for %s ended early: ffmpeg wrote %s of the "
+            "expected %s (provider closed the connection mid-file). %s",
+            rec.title, format_duration(written), format_duration(expected),
+            rec.log_path or "No recording log.")
+        # Feed the retryability check the fact it cannot see anywhere else:
+        # the exit code is a clean 0, so the short transfer is named here.
+        rec.stderr_tail = list(rec.stderr_tail or []) + [
+            "[error] ffmpeg wrote {written} but the programme is {expected} "
+            "long: connection closed mid-file".format(
+                written=format_duration(written), expected=format_duration(expected))]
+        scheduled = self._maybe_retry_catchup_download(
+            rec, 0.0, channel=(rec.metadata or {}).get("channel") or {},
+            show={"start": (rec.metadata or {}).get("programme_start", ""),
+                  "end": (rec.metadata or {}).get("programme_end", "")},
+            duration=(rec.metadata or {}).get("duration") or 0.0,
+            fmt=rec.fmt)
+        if scheduled:
+            # The watcher already renamed the .part file into place before
+            # this check ran: it holds a fraction of the programme and the
+            # retry will produce a complete file, so drop the short one
+            # instead of leaving two entries in the recordings folder. When
+            # no retry was scheduled (budget spent) the partial file stays:
+            # a fraction of the programme beats nothing at all.
+            try:
+                os.remove(rec.out_path)
+            except OSError:
+                LOG.debug("Could not remove the truncated download %s", rec.out_path,
+                          exc_info=True)
+        return scheduled
 
     def _close_catchup_dialog(self, rec_id: int):
         """UI thread: close a catch-up progress window, if still open."""
@@ -8692,6 +8940,11 @@ class ScheduledRecordingsDialog(wx.Dialog):
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
+        # Fill the list on open: the Refresh button stays for manual updates,
+        # but an empty window on a dialog that was never populated reads like
+        # "you have no recordings scheduled" even when you do.
+        self.refresh()
+
     def _on_char_hook(self, event):
         key = event.GetKeyCode()
         if key == wx.WXK_ESCAPE:
@@ -8727,7 +8980,6 @@ class ScheduledRecordingsDialog(wx.Dialog):
         finally:
             menu.Destroy()
 
-        self.refresh()
         self.CenterOnParent()
 
     def _status_label(self, status: str) -> str:

@@ -87,7 +87,10 @@ class TestBeginCatchupDownload:
     @staticmethod
     def _client(monkeypatch, probed, started, direct=None):
         client = types.SimpleNamespace()
+        client.config = {}
         client._parse_epg_time = types.MethodType(main.IPTVClient._parse_epg_time, client)
+        client._padded_catchup_window = types.MethodType(
+            main.IPTVClient._padded_catchup_window, client)
         client._begin_catchup_download = types.MethodType(
             main.IPTVClient._begin_catchup_download, client)
         client._start_catchup_recording = lambda *a, **k: None
@@ -115,15 +118,21 @@ class TestBeginCatchupDownload:
             self._channel(), CATCHUP, "Show - Chan 1", "catchup:x",
             self.SHOW, 3600.0, "provider_mp4")
 
-        (url, start_epoch, duration, headers), = probed
-        assert "|" not in url
-        assert url.endswith("?utc=1757000000&lutc=1757003600")
-        assert duration == 3600
-        # The window comes from the EPG entry, not from whatever the URL says.
-        assert start_epoch == calendar.timegm(
-            time.strptime(self.SHOW["start"], "%Y%m%d%H%M%S"))
-        # The user agent survives as a real header instead of query junk.
-        assert headers["user-agent"] == UA
+        # The padded window is probed first (post-padding is on by default),
+        # then the programme-exact one.
+        assert len(probed) == 2
+        padded_url, padded_start, padded_duration, padded_headers = probed[0]
+        exact_url, exact_start, exact_duration, exact_headers = probed[1]
+        for url, headers in ((padded_url, padded_headers), (exact_url, exact_headers)):
+            assert "|" not in url
+            assert url.endswith("?utc=1757000000&lutc=1757003600")
+            # The user agent survives as a real header instead of query junk.
+            assert headers["user-agent"] == UA
+        # The windows come from the EPG entry, not from whatever the URL says.
+        # Pre-padding defaults to 0: the padded start equals the programme's.
+        prog_start = calendar.timegm(time.strptime(self.SHOW["start"], "%Y%m%d%H%M%S"))
+        assert exact_start == prog_start and exact_duration == 3600
+        assert padded_start == prog_start and padded_duration == 3720
 
     def test_the_recorder_gets_the_stripped_url_when_no_direct_file_exists(self, monkeypatch):
         probed, started = [], []

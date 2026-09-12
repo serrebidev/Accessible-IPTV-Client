@@ -191,6 +191,36 @@ def read_log_problems(path: str, limit: int = STDERR_TAIL_LINES) -> List[str]:
     return [line for line in lines if _PROBLEM_LINE_RE.match(line)][-limit:]
 
 
+def count_log_problems(path: str) -> Dict[str, int]:
+    """Count warning/error/fatal lines in a recording log, over the whole file.
+
+    A capture that struggled can log hundreds of reconnect warnings spread
+    across a long run, and the tail window the finish dialog reads shows only
+    the last dozen. This scans every line so the total is easy to find: it is
+    what the app logs and reports when the recording ends, and it can be
+    compared across the log files in ``<recordings>/logs``. Lines that are
+    neither warnings nor errors do not count.
+    """
+    counts = {"warnings": 0, "errors": 0, "fatals": 0}
+    if not path:
+        return counts
+    try:
+        with open(path, "rb") as handle:
+            for raw in handle:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                if line.startswith("[warning]"):
+                    counts["warnings"] += 1
+                elif line.startswith("[error]"):
+                    counts["errors"] += 1
+                elif line.startswith("[fatal]"):
+                    counts["fatals"] += 1
+    except OSError:
+        return counts
+    return counts
+
+
 def get_ffmpeg_path():
     """Resolve ffmpeg lazily so importing recorder stays cheap at startup."""
     from stream_proxy import get_ffmpeg_path as _get_ffmpeg_path
@@ -462,6 +492,15 @@ class Recording:
         # The local relay the built-in player watches this recording through,
         # when it was started with ``share_with_player``.
         self.relay = None
+        # Filled in when ffmpeg exits: how many warnings/errors/fatals the
+        # whole recording log holds, so a capture that struggled is easy to
+        # spot without reading the log yourself.
+        self.problem_counts: Optional[Dict[str, int]] = None
+        # Filled in when ffmpeg exits: how much media the newest ``time=``
+        # stats line reported. A truncated transfer (the provider closes the
+        # connection mid-file) still exits 0, so this is what tells a
+        # short-but-"clean" download apart from a complete one.
+        self.media_written_seconds: Optional[float] = None
 
     @property
     def written_path(self) -> str:
@@ -662,6 +701,17 @@ class RecordingManager:
             # Deliberately not rewritten: the log keeps the stream URL and
             # credentials so a failed capture can be diagnosed from it.
             rec.stderr_tail = read_log_problems(rec.log_path)
+            rec.problem_counts = count_log_problems(rec.log_path)
+            if any(rec.problem_counts.values()):
+                LOG.info(
+                    "Recording log problem summary for %s: %d warnings, "
+                    "%d errors, %d fatal errors (full detail in %s)",
+                    rec.out_path, rec.problem_counts["warnings"],
+                    rec.problem_counts["errors"], rec.problem_counts["fatals"],
+                    rec.log_path)
+        # How much media ffmpeg had actually written when it exited, from the
+        # newest ``time=`` stats line (None when the log carries none).
+        rec.media_written_seconds = parse_ffmpeg_progress(rec.log_path) if rec.log_path else None
         self._settle_partial_output(rec, rc)
         with self._lock:
             self._recordings.pop(rec.id, None)

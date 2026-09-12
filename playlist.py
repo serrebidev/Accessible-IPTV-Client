@@ -940,6 +940,27 @@ PRAGMA_READONLY = [
 ]
 
 
+def epg_database_has_programmes(db_path: str) -> bool:
+    """True when the EPG database exists and holds at least one programme.
+
+    Cheap: one read-only query, no joins and no date filtering. Use this when
+    the question is only "is there guide data to schedule against" - the
+    fresher ``epg_database_has_usable_data`` does more work on purpose.
+    """
+    if not db_path or not os.path.exists(db_path):
+        return False
+    try:
+        uri = f"file:{urllib.parse.quote(db_path)}?mode=ro&cache=shared"
+        conn = sqlite3.connect(uri, uri=True, timeout=2.0)
+        try:
+            row = conn.execute("SELECT 1 FROM programmes LIMIT 1").fetchone()
+            return row is not None
+        finally:
+            conn.close()
+    except Exception:
+        return False
+
+
 def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.datetime] = None) -> bool:
     """Return True when the EPG DB has current/future joined channel data."""
     if not db_path or not os.path.exists(db_path):
@@ -2165,6 +2186,18 @@ class EPGDatabase:
                 "description": description or ""
             })
         return results
+
+    def count_programmes(self) -> int:
+        """Number of stored programmes, or -1 when the count is unavailable.
+
+        One aggregate query over the programmes table: no row fetching, no
+        joins. Used for freshness reporting, never on a UI hot path.
+        """
+        try:
+            row = self.conn.execute("SELECT COUNT(*) FROM programmes").fetchone()
+            return int(row[0]) if row else -1
+        except Exception:
+            return -1
 
     def get_schedule(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> List[Dict[str, str]]:
         # Use the smart resolution logic (prefer data availability)

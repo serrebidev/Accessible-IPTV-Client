@@ -116,7 +116,7 @@ def test_shutdown_countdown_dialog_builds(host):
 
 
 def test_scheduled_recordings_dialog_builds(host):
-    scheduler = types.SimpleNamespace(list_jobs=lambda: [])
+    scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [])
     dlg = ScheduledRecordingsDialog(host, scheduler)
     try:
         assert dlg.list_ctrl.GetColumnCount() == 5
@@ -124,8 +124,34 @@ def test_scheduled_recordings_dialog_builds(host):
         dlg.Destroy()
 
 
+def test_scheduled_recordings_dialog_populates_on_open(host):
+    """The list is filled when the window opens; Refresh stays for manual use."""
+    job = {"id": "j1", "status": "scheduled", "title": "News",
+           "channel_name": "TVP 1", "display_title": "News - TVP 1",
+           "start_ts": 0, "stop_ts": 3600, "format": "provider_mkv"}
+    scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [job])
+
+    class Parent(wx.Frame):
+        def _schedule_window_label(self, _job):
+            return "1970-01-01 00:00 - 1970-01-01 01:00"
+
+        def _recording_format_label(self, _fmt):
+            return "MKV"
+
+    parent = Parent(host)
+    try:
+        dlg = ScheduledRecordingsDialog(parent, scheduler)
+        try:
+            assert dlg.list_ctrl.GetItemCount() == 1
+            assert dlg.list_ctrl.GetItemText(0, 1) == "News"
+        finally:
+            dlg.Destroy()
+    finally:
+        parent.Destroy()
+
+
 def test_scheduled_recordings_delete_shortcut(host, monkeypatch):
-    scheduler = types.SimpleNamespace(list_jobs=lambda: [])
+    scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [])
     dlg = ScheduledRecordingsDialog(host, scheduler)
     calls = []
     monkeypatch.setattr(dlg, "_on_delete_selected", lambda event: calls.append(event))

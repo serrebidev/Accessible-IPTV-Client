@@ -70,6 +70,79 @@ class TestInlineErrors:
             dlg.Destroy()
 
 
+class TestTruncatedDownloads:
+    """A provider closing the connection mid-file must not read as success.
+
+    ffmpeg exits 0 when the upstream ends early, so the newest ``time=``
+    stats line is what tells a short transfer from a complete one.
+    """
+
+    @staticmethod
+    def _client():
+        client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+        client.config = {}
+        return client
+
+    @staticmethod
+    def _rec(tmp_path, written, expected, **extra):
+        fields = dict(
+            id=41, title="Fakty. - TVN HD", key="catchup:x", url="http://d/x.mp4",
+            fmt="audio_mp3_v0", out_path=str(tmp_path / "out.mp3"),
+            stopped_by_user=False, media_written_seconds=written,
+            stderr_tail=[], log_path=str(tmp_path / "out.log"),
+            metadata={"expected_media_seconds": expected,
+                      "programme_start": "20260912190000",
+                      "programme_end": "20260912193000",
+                      "channel": {}, "duration": 1920.0})
+        fields.update(extra)
+        rec = types.SimpleNamespace(**fields)
+        (tmp_path / "out.mp3").write_bytes(b"x")  # the watcher renamed it in
+        return rec
+
+    def test_short_clean_download_is_truncated(self, tmp_path):
+        client = self._client()
+        rec = self._rec(tmp_path, written=1115.0, expected=1920.0)
+        assert appmod.IPTVClient._catchup_download_is_truncated(client, rec) is True
+
+    def test_full_download_is_not_truncated(self, tmp_path):
+        client = self._client()
+        rec = self._rec(tmp_path, written=1918.0, expected=1920.0)
+        assert appmod.IPTVClient._catchup_download_is_truncated(client, rec) is False
+
+    def test_unknown_progress_never_counts_as_short(self, tmp_path):
+        """Live-style inputs write no time= lines; treat them as complete."""
+        client = self._client()
+        rec = self._rec(tmp_path, written=None, expected=1920.0)
+        assert appmod.IPTVClient._catchup_download_is_truncated(client, rec) is False
+
+    def test_user_stopped_download_is_not_truncated(self, tmp_path):
+        client = self._client()
+        rec = self._rec(tmp_path, written=300.0, expected=1920.0, stopped_by_user=True)
+        assert appmod.IPTVClient._catchup_download_is_truncated(client, rec) is False
+
+    def test_short_download_schedules_retry_and_removes_partial(self, tmp_path, monkeypatch):
+        client = self._client()
+        client._catchup_retry_state = {}
+        client._catchup_retry_timers = {}
+        rec = self._rec(tmp_path, written=1115.0, expected=1920.0)
+        monkeypatch.setattr(appmod, "_schedule_retry", lambda fn, delay: None)
+        scheduled = appmod.IPTVClient._handle_truncated_catchup_download(client, rec)
+        assert scheduled is True
+        assert not os.path.exists(rec.out_path)  # the short file is dropped
+        assert client._catchup_retry_state
+
+    def test_short_download_without_budget_keeps_the_file(self, tmp_path, monkeypatch):
+        client = self._client()
+        client._catchup_retry_state = {41: appmod._CATCHUP_RETRY_MAX_ATTEMPTS}
+        client._catchup_retry_timers = {}
+        rec = self._rec(tmp_path, written=1115.0, expected=1920.0)
+        scheduled = appmod.IPTVClient._handle_truncated_catchup_download(client, rec)
+        assert scheduled is False
+        assert os.path.exists(rec.out_path)  # something beats nothing
+        # The synthetic failure line names the real cause:
+        assert any("connection closed mid-file" in line for line in rec.stderr_tail)
+
+
 class TestRetryPolicy:
     def test_transient_failure_is_retryable(self):
         assert appmod._catchup_failure_is_retryable(1, ["[error] Server returned 403 Forbidden"]) is True

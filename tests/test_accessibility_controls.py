@@ -137,6 +137,7 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
         _maybe_shutdown_after_recordings=lambda: None,
         _catchup_download_finished=lambda *_args: None,
         _note_recording_started=lambda: None,
+        _catchup_download_is_truncated=lambda _rec: False,
     )
     monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
@@ -197,6 +198,7 @@ def test_catchup_download_is_named_for_the_programme_start(monkeypatch, tmp_path
         _catchup_downloads={},
         _catchup_download_finished=lambda *_args: None,
         _note_recording_started=lambda: None,
+        _catchup_download_is_truncated=lambda _rec: False,
     )
     monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
@@ -235,12 +237,13 @@ def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):
             "end": datetime.datetime(2026, 1, 1, 10, 30, tzinfo=datetime.timezone.utc),
         }[value],
         _resolve_show_url=lambda _channel, _show: ("https://catchup.example/index.m3u8?tok=1", True),
+        _resolve_catchup_url=lambda _channel, _start, _end: None,
         _channel_display_name=lambda _channel: "News",
         _channel_record_key=lambda _channel: "news",
         _recording_audio_intent=lambda _channel, **_kw: None,
     )
     for name in ("_download_catchup_programme", "_begin_catchup_download",
-                 "_start_catchup_recording"):
+                 "_start_catchup_recording", "_padded_catchup_window"):
         setattr(frame, name, getattr(main.IPTVClient, name).__get__(frame))
     monkeypatch.setattr(main.threading, "Thread", FakeThread)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
@@ -287,6 +290,7 @@ def test_catchup_download_finish_reports_and_closes(monkeypatch, tmp_path):
         _maybe_shutdown_after_recordings=lambda: None,
         _recording_failure_detail=lambda _rec: "detail",
         _show_or_queue_message_box=lambda msg, cap, style: boxes.append(msg),
+        _catchup_download_is_truncated=lambda _rec: False,
     )
 
     # The recorder's watcher thread calls this; wx.CallAfter is monkeypatched
@@ -335,6 +339,36 @@ def test_close_warns_while_a_download_is_running(monkeypatch):
         _update_install_pending=False,
         _exit_forced=False,
         _catchup_downloads={1: object()},
+        _upcoming_dvr_jobs=lambda: [],
+        recorder=types.SimpleNamespace(has_active=lambda: False),
+    )
+    vetoed = []
+
+    class Event:
+        def CanVeto(self):
+            return True
+
+        def Veto(self):
+            vetoed.append(True)
+
+    main.IPTVClient.on_close(frame, Event())
+
+    assert len(answers) == 1
+    assert vetoed == [True]
+
+
+def test_close_warns_while_a_recording_is_scheduled(monkeypatch):
+    answers = []
+    monkeypatch.setattr(main.wx, "MessageBox", lambda *a, **k: answers.append(a) or main.wx.NO)
+
+    frame = types.SimpleNamespace(
+        minimize_to_tray=False,
+        _update_install_pending=False,
+        _exit_forced=False,
+        _catchup_downloads={},
+        _upcoming_dvr_jobs=lambda: [
+            {"display_title": "News - TVP 1", "title": "News"}],
+        recorder=types.SimpleNamespace(has_active=lambda: False),
     )
     vetoed = []
 
@@ -361,11 +395,13 @@ def test_close_without_downloads_does_not_warn(monkeypatch):
         _update_install_pending=False,
         _exit_forced=False,
         _catchup_downloads={},
+        _upcoming_dvr_jobs=lambda: [],
         _search_token=0,
         _populate_token=0,
         caster=None,
         tray_icon=None,
         _internal_player_frame=None,
+        recorder=types.SimpleNamespace(has_active=lambda: False),
     )
     for name in ("_stop_epg_poll_timer", "_cancel_epg_autostart_timer",
                  "_stop_dvr_scheduler", "_release_recordings_on_exit"):
@@ -417,6 +453,7 @@ def test_channel_context_scheduling_offers_the_upcoming_week(monkeypatch):
     )
     monkeypatch.setattr(main, "EPGDatabase", Database)
     monkeypatch.setattr(main, "get_db_path", lambda: "epg.db")
+    monkeypatch.setattr(main, "epg_database_has_programmes", lambda _path: True)
     monkeypatch.setattr(main.threading, "Thread", ImmediateThread)
     monkeypatch.setattr(main.wx, "CallAfter", lambda callback, *args: callback(*args))
 
@@ -425,6 +462,22 @@ def test_channel_context_scheduling_offers_the_upcoming_week(monkeypatch):
     assert calls[0][0] is channel
     assert calls[0][2] - calls[0][1] == datetime.timedelta(days=7)
     assert shown[0] == (channel, "News", [{"title": "Tonight", "start": "20260101100000", "end": "20260101110000"}])
+
+
+def test_channel_scheduling_explains_when_no_guide_is_imported(monkeypatch):
+    """With no EPG at all, scheduling from a channel explains the fix instead
+    of opening a guide window that can only ever be empty."""
+    boxes = []
+    monkeypatch.setattr(main, "message_box",
+                        lambda *a, **kw: boxes.append(a) or main.wx.OK)
+    threads = []
+    monkeypatch.setattr(main.threading, "Thread", lambda *a, **kw: threads.append(a))
+    monkeypatch.setattr(main, "epg_database_has_programmes", lambda _path: False)
+
+    main.IPTVClient._schedule_channel_recording(types.SimpleNamespace(), {"name": "News"})
+
+    assert len(boxes) == 1
+    assert threads == []
 
 
 def test_view_epg_starts_at_the_programme_on_air_now(monkeypatch):

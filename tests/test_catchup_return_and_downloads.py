@@ -204,6 +204,7 @@ def _failed_download(stderr):
 
 def _download_client(returned, **overrides):
     values = dict(
+        config={},
         _catchup_downloads={},
         _maybe_shutdown_after_recordings=lambda: None,
         _recording_failure_detail=lambda _rec: "",
@@ -214,6 +215,8 @@ def _download_client(returned, **overrides):
     )
     values.update(overrides)
     client = types.SimpleNamespace(**values)
+    for name in ("_padded_catchup_window",):
+        setattr(client, name, main.IPTVClient.__dict__[name].__get__(client, main.IPTVClient))
     client._return_to_catchup_after_download = types.MethodType(
         main.IPTVClient._return_to_catchup_after_download, client)
     return client

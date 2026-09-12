@@ -269,6 +269,7 @@ The program can record any channel to a file while you watch something else, or 
 - Recordings > Stop Recording stops the highlighted channel's recording, and Stop All Recordings stops them all.
 - Recordings > Open Recordings Folder opens the folder the files are saved in.
 - Recordings > Set Download Folder chooses that folder. Catch-up downloads go there too.
+- Every recording writes a log file into the logs folder inside the recordings folder. When a recording ends, the program reports how many warnings and errors the log contains, so a capture that struggled is easy to spot; open the log for the details.
 
 Recording what you are watching in the built-in player uses the same connection to the provider, so it works even with accounts that allow only one stream at a time.
 
@@ -293,11 +294,13 @@ Recordings > Scheduled Recordings lists every scheduled, running and finished re
 - Delete removes the highlighted recording from the list; a running one is stopped first after asking you.
 - Escape closes the window.
 
-Scheduled recordings start by themselves while the program is running, even when it is minimized to the system tray.
+Scheduled recordings start by themselves while the program is running, even when it is minimized to the system tray. The window refreshes by itself when you open it and whenever a recording starts, finishes or is cancelled, so the Refresh command is rarely needed.
+
+The program asks before it closes while a recording is scheduled, because the schedule only runs while the program is open. If you close it anyway, the scheduled recording will not start.
 
 ### Schedule padding {#schedule-padding}
 
-Programmes rarely start and end exactly on time. Recordings > Schedule Padding sets how many minutes before a programme a scheduled recording starts, and how many minutes after it ends it keeps recording. Manual recordings are not affected.
+Programmes rarely start and end exactly on time. Recordings > Schedule Padding sets how many minutes before a programme a scheduled recording starts, and how many minutes after it ends it keeps recording. Manual recordings are not affected. Catch-up downloads use the same minutes: the archive window requested from the provider is widened by them whenever the provider can serve it, and the download is retried when the file arrives shorter than the programme.
 
 ### Shutting down after recordings {#shutdown-after-recordings}
 

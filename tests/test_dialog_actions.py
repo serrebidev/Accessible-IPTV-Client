@@ -542,14 +542,45 @@ def test_finished_update_is_silent_on_success_and_loud_on_failure(monkeypatch, t
     monkeypatch.setattr(appmod.updater, "read_update_pending", lambda _d: dict(pending))
     monkeypatch.setattr(appmod.updater, "clear_update_pending", lambda _d: None)
 
-    # Came back on the version we were aiming for: nothing to say.
+    # Came back on the version we were aiming for: one confirmation, then the
+    # pending marker is consumed either way.
     appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
-    assert boxes == []
+    assert boxes == ["Update Complete"]
 
     # Came back on the old version: the install did not land, so say so.
     pending["version"] = "9999.0.0"
     appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
-    assert len(boxes) == 1
+    assert boxes == ["Update Complete", "Update Not Completed"]
+
+
+def test_update_success_confirmation_names_the_new_version(monkeypatch, tmp_path):
+    """Issue #19: after a restart the user must hear that the update landed."""
+    bodies = []
+    monkeypatch.setattr(appmod, "message_box", lambda *a, **kw: bodies.append(a))
+    monkeypatch.setattr(appmod, "get_user_config_dir", lambda create=False: str(tmp_path))
+    monkeypatch.setattr(appmod.updater, "read_update_pending",
+                        lambda _d: {"version": appmod.app_meta.APP_VERSION})
+    monkeypatch.setattr(appmod.updater, "clear_update_pending", lambda _d: None)
+
+    appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
+
+    assert len(bodies) == 1
+    message, title, style = bodies[0]
+    assert title == "Update Complete"
+    assert appmod.app_meta.APP_VERSION in message
+    assert appmod.app_meta.APP_DISPLAY_NAME in message
+    assert style == appmod.wx.OK | appmod.wx.ICON_INFORMATION
+
+
+def test_update_report_only_runs_when_a_pending_marker_exists(monkeypatch, tmp_path):
+    """A plain start (or a check that found nothing new) must show nothing."""
+    boxes = []
+    monkeypatch.setattr(appmod, "message_box", lambda *a, **kw: boxes.append(a))
+    monkeypatch.setattr(appmod, "get_user_config_dir", lambda create=False: str(tmp_path))
+    monkeypatch.setattr(appmod.updater, "read_update_pending", lambda _d: None)
+
+    appmod.IPTVClient._report_finished_update(types.SimpleNamespace())
+    assert boxes == []
 
 
 

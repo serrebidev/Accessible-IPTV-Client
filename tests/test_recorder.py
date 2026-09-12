@@ -373,6 +373,29 @@ def test_read_log_problems_keeps_only_warnings_and_errors(tmp_path):
     assert recorder.read_log_problems("") == []
 
 
+def test_count_log_problems_counts_every_severity_across_the_whole_log(tmp_path):
+    """The finish report needs totals, not just the last dozen tail lines."""
+    log = tmp_path / "rec.log"
+    lines = ["# header", "[info] Input #0, mpegts"]
+    lines += ["[warning] HTTP error 403 Forbidden"] * 40
+    lines += ["[error] Error opening input file https://example.invalid/live.ts"]
+    lines += ["[fatal] Error opening input files: Server returned 403 Forbidden"]
+    log.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    assert recorder.count_log_problems(str(log)) == {
+        "warnings": 40, "errors": 1, "fatals": 1}
+    # A clean capture reports zeros rather than being indistinguishable
+    # from a missing log.
+    clean = tmp_path / "clean.log"
+    clean.write_text("[info] all fine\n", encoding="utf-8")
+    assert recorder.count_log_problems(str(clean)) == {
+        "warnings": 0, "errors": 0, "fatals": 0}
+    assert recorder.count_log_problems(str(tmp_path / "absent.log")) == {
+        "warnings": 0, "errors": 0, "fatals": 0}
+    assert recorder.count_log_problems("") == {
+        "warnings": 0, "errors": 0, "fatals": 0}
+
+
 def test_stopping_an_mp4_recording_leaves_a_playable_file(tmp_path):
     """The regression test for the bug: a stopped MP4 must have its moov atom.
 
