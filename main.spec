@@ -128,13 +128,17 @@ a = Analysis(
         ('init.mp4', '.'),
     ] + platform_datas + locale_datas + help_datas,
     hiddenimports=hidden_imports,
-    hookspath=[],
+    hookspath=[os.path.join(SPECPATH, 'pyinstaller_hooks')],
     hooksconfig={},
     runtime_hooks=[],
     # caster_extras (vendored from Caster) lazily imports Caster's own GUI
     # module and its WASAPI capture library for screen and PC-audio casting,
     # which this app does not use. Excluded so they are not reported missing.
-    excludes=['caster', 'pyaudiowpatch'],
+    # Optional imports in rich, dotenv and pydantic pull in IPython (and with it
+    # jedi, parso and black) and pydantic.mypy pulls in mypy: developer tools the
+    # app never runs, which bloated the bundle.
+    excludes=['caster', 'pyaudiowpatch',
+              'IPython', 'jedi', 'parso', 'black', 'mypy', 'matplotlib_inline'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
