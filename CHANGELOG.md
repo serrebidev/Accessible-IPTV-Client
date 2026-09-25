@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.142.3 - 2026-09-25
+
+### Other changes
+
+- Stop bundling IPython, jedi and mypy and silence pycparser warnings
+
 ## v1.142.2 - 2026-09-25
 
 ### Bug fixes
