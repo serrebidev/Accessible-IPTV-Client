@@ -1,7 +1,5 @@
 import types
 
-import wx
-
 from internal_player import InternalPlayerFrame
 
 
@@ -20,13 +18,12 @@ def test_subtitle_tracks_decode_names_and_include_off_choice():
 
 def test_announcement_level_suppresses_automatic_status(monkeypatch):
     events = []
-    monkeypatch.setattr(wx.Accessible, "NotifyEvent", lambda *args: events.append(args))
     label = types.SimpleNamespace(value="", GetLabel=lambda: label.value,
                                   SetLabel=lambda value: setattr(label, "value", value))
     frame = types.SimpleNamespace(
         _last_bitrate_mbps=None, _last_buffer_seconds=2.0, _volume_value=50,
         _last_status_prefix="", _audio_track_label="", status_label=label,
-        announcement_level=1)
+        announcement_level=1, _speak=events.append)
     InternalPlayerFrame._update_status_label(frame, "Buffering", priority=3)
     assert not events
     InternalPlayerFrame._update_status_label(frame, "Stream lost", priority=1)

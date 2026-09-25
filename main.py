@@ -17,6 +17,7 @@ import time
 import subprocess
 import hashlib
 import concurrent.futures
+import live_announce
 
 # The macOS app bundles ffmpeg and libVLC (tools/build_macos.sh). An app opened
 # from Finder has no Homebrew on PATH, so point ffmpeg lookups and python-vlc
@@ -1654,6 +1655,10 @@ class IPTVClient(wx.Frame):
         self._db_tune_started = False
         self._build_ui()
         self._info_status_bar = self.CreateStatusBar()
+        # Hidden text the screen reader reads for announcements made while this
+        # window is in front; the status bar itself is not read on a live-region change.
+        self._announcer = wx.StaticText(self._info_status_bar, label="")
+        self._announcer.Hide()
         install_help_hooks(wx.GetApp())
         self._start_now_playing_timer()
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
@@ -2250,18 +2255,21 @@ class IPTVClient(wx.Frame):
 
     def _show_playing_info(self, text: str) -> None:
         frame = getattr(self, "_internal_player_frame", None)
-        target = (frame.status_label if frame is not None and frame.IsShown()
-                  else getattr(self, "_info_status_bar", None))
-        if target is None:
+        if frame is not None and frame.IsShown():
+            frame.status_label.SetLabel(text)
+            frame._speak(frame.status_label)
             return
-        if isinstance(target, wx.StatusBar):
-            target.SetStatusText(text)
-        else:
-            target.SetName(text)
-        try:
-            wx.Accessible.NotifyEvent(wx.ACC_EVENT_SYSTEM_ALERT, target, wx.OBJID_CLIENT, 0)
-        except Exception:
-            LOG.debug("Could not announce programme information", exc_info=True)
+        status_bar = getattr(self, "_info_status_bar", None)
+        if status_bar is not None:
+            status_bar.SetStatusText(text)
+        self._speak(text)
+
+    def _speak(self, text: str) -> None:
+        announcer = getattr(self, "_announcer", None)
+        if announcer is None or not text:
+            return
+        announcer.SetLabel(text)
+        live_announce.notify(announcer)
 
     def _rebuild_favorites_view(self, removed_name: str = ""):
         """Refresh the Favorites category after a channel was removed from it."""

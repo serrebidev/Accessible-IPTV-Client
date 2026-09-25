@@ -18,6 +18,7 @@ from i18n import gettext as _
 import user_guide
 import shortcuts
 import subtitle_cues
+import live_announce
 
 
 def _prime_vlc_search_path() -> None:
@@ -1775,11 +1776,16 @@ class InternalPlayerFrame(wx.Frame):
             return
         self.status_label.SetLabel(label)
         if prefix and getattr(self, "announcement_level", 2) >= priority:
-            try:
-                wx.Accessible.NotifyEvent(wx.ACC_EVENT_SYSTEM_ALERT, self.status_label,
-                                          wx.OBJID_CLIENT, 0)
-            except Exception:
-                LOG.debug("Could not announce player status", exc_info=True)
+            self._speak(self.status_label)
+
+    def _speak(self, ctrl: wx.Window) -> None:
+        """Read ``ctrl`` aloud; through the main window when this one is not in front."""
+        if self.IsActive():
+            live_announce.notify(ctrl)
+            return
+        speak = getattr(self.GetParent(), "_speak", None)
+        if speak is not None:
+            speak(ctrl.GetLabel())
 
     @staticmethod
     def _state_name(state) -> str:
@@ -2314,17 +2320,7 @@ class InternalPlayerFrame(wx.Frame):
         text = self._subtitle_cues[index].text if index is not None else ""
         self.subtitle_label.SetLabel(text)
         if text and self._speak_subtitles and not self._is_paused:
-            self._announce_cue(text)
-
-    def _announce_cue(self, text: str) -> None:
-        if not self.IsShown():
-            # A hidden window's alerts are not read; the main window shows it instead.
-            self.GetParent()._show_playing_info(text)
-            return
-        try:
-            wx.Accessible.NotifyEvent(wx.ACC_EVENT_SYSTEM_ALERT, self.subtitle_label, wx.OBJID_CLIENT, 0)
-        except Exception:
-            LOG.debug("Could not announce subtitle cue", exc_info=True)
+            self._speak(self.subtitle_label)
 
     def _toggle_speak_subtitles(self) -> None:
         self._speak_subtitles = not self._speak_subtitles
