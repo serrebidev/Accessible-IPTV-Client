@@ -93,6 +93,8 @@ A csatornalista a kiválasztott kategória csatornáit vagy a keresés találata
 - Az Alkalmazásgomb, a Shift+F10 vagy a jobb egérgomb megnyitja a csatorna helyi menüjét. Innen érhető el a Lejátszás, a Hozzáadás a kedvencekhez vagy Eltávolítás a kedvencekből, a Rögzítés vagy Rögzítés leállítása, a Felvétel ütemezése, a Műsorújság megtekintése…, továbbá archívummal rendelkező csatornáknál a Műsorarchívum.
 - A Ctrl+D hozzáadja a kijelölt csatornát a kedvencekhez, illetve eltávolítja onnan. A Kedvencek kategóriában ugyanez a Delete billentyűvel is elvégezhető.
 - A Ctrl+Shift+R megkezdi a kijelölt csatorna rögzítését; ismételt megnyomása leállítja azt.
+- A Ctrl+G megnyomása után csatornaszámot adhat meg a kívánt adás elindításához. A Ctrl+0 az előző csatornára vált, a Ctrl+H pedig megnyitja a Legutóbb lejátszott csatornák listáját.
+- A Ctrl+Shift+I a fókusz áthelyezése nélkül bemondja az aktuális csatorna nevét, a jelenlegi és a következő műsor címét, kezdési és befejezési idejét, valamint a rögzítés állapotát.
 
 A kedvencként megjelölt csatornák neve mellett a „(kedvenc)” jelölés szerepel. Ha a műsorújság tartalmaz megfelelő adatot, minden sorban megjelenik az éppen adásban lévő műsor címe is. Ha a keresés műsorcímek között is talál egyezést, az eredménysor feltünteti a műsor címét és az azt sugárzó csatornát.
 
@@ -109,6 +111,8 @@ A Kedvencek segítségével a leggyakrabban használt csatornákat egy helyen é
 Egy kedvenc eltávolításához jelölje ki a csatornát, majd nyomja meg ismét a Ctrl+D billentyűkombinációt, vagy a Kedvencek kategóriában használja a Delete billentyűt.
 
 A program a kedvenceket a szolgáltató és a csatorna alapján azonosítja, nem pedig az adás internetes címe szerint. Ennek köszönhetően egy lejátszási lista frissítése után is megmaradnak. A program a kedvencekhez nem ment fiókadatokat.
+
+A Nézet > Legutóbb lejátszott csatornák menüpont a korábban hallgatott vagy nézett adók listáját nyitja meg. A Nézet > Előző csatorna (Ctrl+0) paranccsal visszatérhet ahhoz, amelyet közvetlenül a jelenlegi előtt választott.
 
 ## Igény szerinti videó {#video-on-demand}
 
@@ -218,6 +222,8 @@ A lejátszó fontosabb billentyűparancsai:
 - Ctrl+R: az éppen nézett adás rögzítésének elindítása, illetve leállítása.
 - Fel és Le nyílbillentyű: a hangerő módosítása 2 százalékpontos lépésekben. Ctrl+Fel és Ctrl+Le: 5 százalékpontos lépésekben változtatja a hangerőt.
 - A: a következő hangsáv kiválasztása.
+- S: váltás a feliratsávok között. A sorban a Kikapcsolva lehetőség is szerepel. Sávot a Lejátszás > Feliratok menüben választhat; külső állomány megnyitására a Feliratfájl betöltése parancs szolgál.
+- I: az aktuális csatorna nevének, a jelenlegi és a következő műsor címének, kezdési és befejezési idejének, valamint a rögzítés állapotának bemondása.
 - D: a hangkimeneti eszköz kiválasztása.
 - Ctrl+C: az adás átküldése másik eszközre.
 - F11: a teljes képernyős nézet be- vagy kikapcsolása. A teljes képernyős nézetből az Escape billentyűvel léphet ki.
@@ -231,6 +237,8 @@ Ugyanezek a parancsok a lejátszó Lejátszás menüjéből is elérhetők. Ha e
 Egy csatorna több hangsávot is tartalmazhat, például különböző nyelvű hangot vagy audionarrációt. Az A billentyű a következő hangsávra vált; ugyanezt a Lejátszás > Hangsáv menüből is megteheti. A Tab billentyűvel elérhető Hangsáv kiválasztása mező mindig az aktuálisan hallható sáv nevét jelzi.
 
 A program megjegyzi az adott csatornához kézzel kiválasztott hangsávot, és a következő lejátszáskor ismét azt választja ki. Az automatikus választási lehetőségekről az Előnyben részesített hangsáv című részben olvashat.
+
+Ha az adás tartalmaz feliratot, annak szövege a képen jelenik meg. Külső állomány megnyitására a Lejátszás > Feliratfájl betöltése parancs szolgál. A képernyőolvasó a feliratok szövegét jelenleg nem olvassa fel.
 
 ### Hangkimeneti eszköz {#audio-output-device}
 
@@ -294,11 +302,14 @@ Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancso
 A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt.
 
 - A kijelölt felvételnél az Alkalmazásgomb vagy a Shift+F10 megnyitja a helyi menüt, amelyből a Frissítés, a Mégse és a Törlés érhető el.
+- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut.
 - A listában egyszerre több felvétel is kijelölhető; a Ctrl+A az összes sort kiválasztja.
 - A Delete vagy a numerikus billentyűzet Delete billentyűje megerősítés után eltávolítja a kijelölt felvételeket. Ha a kijelöltek között folyamatban lévő rögzítés is van, a program előbb leállítja az érintett felvételeket.
 - Az Escape bezárja az ablakot.
 
 Az ütemezett felvételek külön beavatkozás nélkül elindulnak, amennyiben a program fut; ez akkor is igaz, ha a főablak a rendszertálcára van minimalizálva. Az ablak tartalma megnyitáskor, valamint minden rögzítés elindulásakor, befejezésekor vagy megszakításakor automatikusan frissül, ezért a Frissítés parancsra csak ritkán van szükség.
+
+Ha egy új felvétel időtartama részben vagy egészben egybeesik valamely korábban ütemezett rögzítésével, a program a hozzáadása előtt figyelmezteti Önt. A szolgáltató korlátozhatja az egyidejűleg használható adatfolyamok számát.
 
 A program kilépés előtt megerősítést kér, ha van még indításra váró ütemezett felvétel, mert ezek csak az alkalmazás futása közben indulhatnak el. Ha ennek ellenére kilép, a várakozó felvételek nem indulnak el.
 
@@ -339,6 +350,9 @@ A Beállítások menü a program működését szabályozó lehetőségeket tart
 - Lejátszó megjelenítése az Enter lenyomására: ha engedélyezve van, csatorna indításakor megjelenik a beépített lejátszó ablaka. Kikapcsolt állapotban a lejátszás elindul, miközben a fókusz a csatornalistán marad.
 - Adás-URL megjelenítése: engedélyezésekor a főablakban az Epizódleírás után megjelenik az Adás-URL mező.
 - Frissítések automatikus keresése: lásd a Frissítések című részt.
+- Automatikus bemondások: meghatározhatja a lejátszással és a csatornákkal kapcsolatos tájékoztatás részletességét. A választható szintek: Nincs, Csak hibák, Fontos események és Részletes állapotjelentés.
+- Billentyűparancsok: módosíthatja az egyes műveletekhez rendelt billentyűkombinációt. A program nem fogad el ütköző hozzárendeléseket. Mentés után indítsa újra az alkalmazást.
+- A Beállítások exportálása paranccsal titkosított biztonsági mentést készíthet a lejátszási listákról, a műsorújság-forrásokról, a kedvencekről és az egyéni beállításokról. Visszaállításukra a Beállítások importálása szolgál. Őrizze meg a mentés jelszavát: a szolgáltatói bejelentkezési adatok helyreállításához is szükség lesz rá.
 
 ### Nyelv {#language}
 
@@ -392,6 +406,8 @@ A főablakban:
 - Ctrl+Shift+R: a kijelölt csatorna rögzítésének elindítása vagy leállítása.
 - Ctrl+Shift+D: a folyamatban lévő archív műsorletöltések ablakainak megjelenítése.
 - Ctrl+Shift+J: a beépített lejátszó megjelenítése.
+- Ctrl+0: visszatérés az előző csatornához. Ctrl+H: választás a legutóbb lejátszott csatornák közül. Ctrl+G: csatornaszám megadása.
+- Ctrl+Shift+I: az aktuális és a következő műsor, valamint a rögzítés állapotának bemondása.
 - Ctrl+Shift+P: lejátszás vagy szünet a beépített lejátszóban.
 - Ctrl+Shift+S: a beépített lejátszó leállítása.
 - Ctrl+Shift+C: átküldés vagy kapcsolódás.
@@ -408,6 +424,7 @@ A beépített lejátszóban:
 - Ctrl+R: rögzítés indítása vagy leállítása.
 - Fel és Le nyílbillentyű: a hangerő módosítása 2 százalékpontos lépésekben; a Ctrl nyomva tartásával 5 százalékponttal változtathatja.
 - A: következő hangsáv.
+- S: váltás a feliratsávok között. I: tájékoztatás az éppen játszott műsorról.
 - D: hangkimeneti eszköz kiválasztása.
 - Ctrl+C: átküldés.
 - F11: teljes képernyő be- vagy kikapcsolása; az Escape visszatér az ablakos nézethez.
