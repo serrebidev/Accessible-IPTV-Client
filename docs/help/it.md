@@ -211,6 +211,7 @@ Tasti nel lettore:
 - Frecce su e giù: volume a passi del 2%. Ctrl+Su e Ctrl+Giù: passi del 5%.
 - A: traccia audio successiva.
 - S: traccia dei sottotitoli successiva, incluso Off. Riproduzione > Sottotitoli ti consente di scegliere una traccia o caricare un file di sottotitoli esterno.
+- Maiusc+S: attiva o disattiva la lettura dei sottotitoli.
 - I: annuncia il canale corrente, gli orari dei programmi, il programma successivo e lo stato della registrazione.
 - D: scegliere il dispositivo di uscita audio.
 - Ctrl+C: trasmettere a un dispositivo.
@@ -226,7 +227,7 @@ I canali possono portare più tracce audio, come altre lingue o audiodescrizione
 
 Una traccia scelta è ricordata per quel canale e torna la volta successiva. Per sceglierle in automatico vedere Traccia audio preferita.
 
-Il testo dei sottotitoli appare nel video quando lo stream lo fornisce. Riproduzione > Carica file sottotitoli accetta un file di sottotitoli esterno; la sintesi vocale dello screen reader per il testo dei sottotitoli non è disponibile.
+Il testo dei sottotitoli appare nel video quando lo stream lo fornisce. Riproduzione > Carica file sottotitoli accetta un file di sottotitoli esterno. Attiva Riproduzione > Leggi i sottotitoli ad alta voce (Maiusc+S) e lo screen reader leggerà ogni sottotitolo di un file SRT o WebVTT caricato non appena compare, anche con la finestra del lettore nascosta. Il sottotitolo corrente è mostrato anche come testo alla fine dei controlli del lettore. I sottotitoli inclusi nello stream stesso e i file ASS o SSA non possono ancora essere letti ad alta voce.
 
 ### Dispositivo di uscita audio {#audio-output-device}
 
@@ -410,7 +411,7 @@ Lettore integrato:
 - Ctrl+P: riprodurre o mettere in pausa.
 - Ctrl+S: fermare.
 - Ctrl+R: registrare.
-- S: Scorri le tracce dei sottotitoli. I: Annuncia cosa sta suonando.
+- S: Scorri le tracce dei sottotitoli. I: Annuncia cosa sta suonando. Maiusc+S: leggi i sottotitoli ad alta voce.
 - Su e Giù: volume a passi del 2%; con Ctrl, passi del 5%.
 - A: traccia audio successiva.
 - D: dispositivo di uscita audio.

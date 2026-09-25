@@ -7926,6 +7926,8 @@ class IPTVClient(wx.Frame):
             on_audio_device=self._on_player_audio_device,
             announcement_level=self.config.get("announcement_level", 2),
             shortcut_config=self.config,
+            speak_subtitles=self._bool_pref(self.config.get("speak_subtitles", False)),
+            on_speak_subtitles=self._on_player_speak_subtitles,
         )
         self._internal_player_frame = frame
         return frame
@@ -8033,6 +8035,10 @@ class IPTVClient(wx.Frame):
             return
         save_config(self.config)
         LOG.info("Last used audio track set to %s", name)
+
+    def _on_player_speak_subtitles(self, enabled: bool) -> None:
+        self.config["speak_subtitles"] = bool(enabled)
+        save_config(self.config)
 
     def _on_player_audio_device(self, device_id: str) -> None:
         """Persist the audio output device chosen in the built-in player."""

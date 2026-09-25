@@ -211,6 +211,7 @@ Klawisze w odtwarzaczu:
 - Strzałki góra i dół: głośność skokami po 2%. Ctrl+Góra i Ctrl+Dół: skoki po 5%.
 - A: następna ścieżka audio.
 - S: następna ścieżka napisów, łącznie z wyłączona. Odtwarzanie > Napisy umożliwia wybranie ścieżki lub załadowanie zewnętrznego pliku napisów.
+- Shift+S: włącz lub wyłącz odczytywanie napisów.
 - I: ogłasza bieżący kanał, godziny programów, następny program i stan nagrywania.
 - D: wybór urządzenia wyjścia audio.
 - Ctrl+C: przesyłanie na urządzenie.
@@ -226,7 +227,7 @@ Kanały mogą nieść wiele ścieżek audio, na przykład inne języki albo audi
 
 Wybrana ścieżka jest zapamiętywana dla tego kanału i wraca następnym razem. O automatycznym wyborze zobacz Preferowana ścieżka audio.
 
-Tekst napisów pojawi się w filmie, jeśli zostanie udostępniony w strumieniu. Odtwarzanie > Załaduj plik napisów akceptuje zewnętrzny plik napisów; Mowa czytnika ekranu dla tekstu napisów nie jest dostępna.
+Tekst napisów pojawia się w filmie, jeśli dostarcza go strumień. Odtwarzanie > Załaduj plik z napisami przyjmuje zewnętrzny plik napisów. Włącz Odtwarzanie > Odczytuj napisy (Shift+S), a czytnik ekranu odczyta każdy napis z wczytanego pliku SRT lub WebVTT w chwili jego pojawienia się, także przy ukrytym oknie odtwarzacza. Bieżący napis jest też wyświetlany jako tekst na końcu elementów sterujących odtwarzacza. Napisów dostarczanych w samym strumieniu oraz plików ASS lub SSA nie można jeszcze odczytywać.
 
 ### Urządzenie wyjścia audio {#audio-output-device}
 
@@ -410,7 +411,7 @@ Wbudowany odtwarzacz:
 - Ctrl+P: odtwarzanie albo wstrzymanie.
 - Ctrl+S: zatrzymanie.
 - Ctrl+R: nagrywanie.
-- S: Cykliczne ścieżki napisów. I: Ogłoś, co jest odtwarzane.
+- S: Cykliczne ścieżki napisów. I: Ogłoś, co jest odtwarzane. Shift+S: odczytuj napisy.
 - Góra i Dół: głośność skokami po 2%; z Ctrl, skoki po 5%.
 - A: następna ścieżka audio.
 - D: urządzenie wyjścia audio.

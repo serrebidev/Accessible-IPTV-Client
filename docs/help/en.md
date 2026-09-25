@@ -220,6 +220,7 @@ Keys in the player:
 - Up and Down arrows: volume in 2% steps. Ctrl+Up and Ctrl+Down: 5% steps.
 - A: next audio track.
 - S: next subtitle track, including Off. Playback > Subtitles lets you choose a track or load an external subtitle file.
+- Shift+S: speak subtitles on or off.
 - I: announce the current channel, programme times, next programme and recording status.
 - D: choose the audio output device.
 - Ctrl+C: cast to a device.
@@ -235,7 +236,7 @@ Channels can carry several audio tracks, such as other languages or audio descri
 
 A track you choose is remembered for that channel and comes back next time. See Preferred audio track for choosing tracks automatically.
 
-Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file; screen reader speech for subtitle text is not available.
+Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and your screen reader reads each subtitle of a loaded SRT or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. Subtitles that come with the stream itself, and ASS or SSA files, cannot be read aloud yet.
 
 ### Audio output device {#audio-output-device}
 
@@ -419,7 +420,7 @@ Built-in player:
 - Ctrl+P: play or pause.
 - Ctrl+S: stop.
 - Ctrl+R: record.
-- S: cycle subtitle tracks. I: announce what is playing.
+- S: cycle subtitle tracks. I: announce what is playing. Shift+S: speak subtitles.
 - Up and Down: volume in 2% steps; with Ctrl, 5% steps.
 - A: next audio track.
 - D: audio output device.

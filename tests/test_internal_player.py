@@ -798,6 +798,7 @@ class TestReconnectKeepsVideoHidden:
         frame._apply_cache_options = lambda *a, **kw: None
         frame._apply_stream_headers = lambda *a, **kw: None
         frame._apply_audio_output_device = lambda: None
+        frame._set_subtitle_cues = lambda _cues: None
         frame._schedule_volume_apply = lambda: None
         frame._update_status_label = lambda *a, **kw: None
         frame._ensure_player_window = lambda: frame.window_attached.append(True)

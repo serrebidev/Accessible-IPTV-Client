@@ -17,6 +17,7 @@ from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
 import user_guide
 import shortcuts
+import subtitle_cues
 
 
 def _prime_vlc_search_path() -> None:
@@ -178,6 +179,8 @@ class InternalPlayerFrame(wx.Frame):
         on_audio_device: Optional[Callable[[str], None]] = None,
         announcement_level: int = 2,
         shortcut_config: Optional[dict] = None,
+        speak_subtitles: bool = False,
+        on_speak_subtitles: Optional[Callable[[bool], None]] = None,
     ) -> None:
         _prepare_vlc_runtime()
         if vlc is None:
@@ -189,6 +192,11 @@ class InternalPlayerFrame(wx.Frame):
         self._is_recording = False
         self.announcement_level = max(0, min(3, int(announcement_level)))
         self._shortcuts = shortcuts.effective(shortcut_config or {}, "player")
+        self._speak_subtitles = bool(speak_subtitles)
+        self._on_speak_subtitles_cb = on_speak_subtitles
+        self._subtitle_cues: List[subtitle_cues.Cue] = []
+        self._cue_index: Optional[int] = None
+        self._subtitle_generation = 0
         self._allow_close = False
         base_value = self._coerce_seconds(base_buffer_seconds, fallback=0.0)
         self._last_bitrate_mbps: Optional[float] = None
@@ -431,6 +439,9 @@ class InternalPlayerFrame(wx.Frame):
         controls.AddStretchSpacer(1)
         self.status_label = wx.StaticText(self.controls_panel, label=_("Idle"))
         controls.Add(self.status_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        # Current subtitle cue from a loaded SRT/WebVTT file, for review and speech.
+        self.subtitle_label = wx.StaticText(self.controls_panel, label="")
+        controls.Add(self.subtitle_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         self.controls_panel.SetSizer(controls)
         self.controls_panel.Bind(wx.EVT_CHAR_HOOK, self._on_key_down)
         main_sizer.Add(self.controls_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
@@ -454,6 +465,8 @@ class InternalPlayerFrame(wx.Frame):
 
         self._status_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._on_timer, self._status_timer)
+        self._cue_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_cue_timer, self._cue_timer)
 
         wx.CallAfter(self._ensure_player_window)
         wx.CallAfter(self.play_pause_btn.SetFocus)
@@ -476,6 +489,9 @@ class InternalPlayerFrame(wx.Frame):
         self._subtitle_menu_map: Dict[int, int] = {}
         subtitle_item = playback_menu.AppendSubMenu(self.subtitle_menu, self._shortcut_label(_("Subtitles"), "subtitles"))
         m_load_subtitle = playback_menu.Append(wx.ID_ANY, _("Load Subtitle File..."))
+        self.speak_subtitles_item = playback_menu.AppendCheckItem(
+            wx.ID_ANY, self._shortcut_label(_("Speak Subtitles"), "speak_subtitles"))
+        self.speak_subtitles_item.Check(self._speak_subtitles)
         m_audio_device = playback_menu.Append(wx.ID_ANY, _("Audio Output Device...") + "\tD")
         playback_menu.AppendSeparator()
         m_cast = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Cast..."), "cast"))
@@ -491,6 +507,7 @@ class InternalPlayerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_audio_device_menu, m_audio_device)
         self.Bind(wx.EVT_MENU, self._on_subtitle_menu_select)
         self.Bind(wx.EVT_MENU, self._load_subtitle_file, m_load_subtitle)
+        self.Bind(wx.EVT_MENU, lambda _evt: self._toggle_speak_subtitles(), self.speak_subtitles_item)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_cast(), m_cast)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_fullscreen(), m_full)
         self.Bind(wx.EVT_MENU, lambda _evt: self.GetParent()._announce_what_is_playing(), m_info)
@@ -681,6 +698,7 @@ class InternalPlayerFrame(wx.Frame):
             media.add_option(":no-video")
             media.add_option(":vout=dummy")
             media.add_option(":intf=dummy")
+        self._set_subtitle_cues([])
         # Stop any existing playback quickly (don't wait for it to fully stop)
         try:
             self.player.stop()
@@ -736,6 +754,7 @@ class InternalPlayerFrame(wx.Frame):
             self._gave_up = False
         self._pending_restart = False
         self._status_timer.Stop()
+        self._set_subtitle_cues([])
         try:
             self.player.stop()
         except Exception:
@@ -1927,6 +1946,8 @@ class InternalPlayerFrame(wx.Frame):
             self._cycle_audio_track()
         elif action == "subtitles":
             self._cycle_subtitle()
+        elif action == "speak_subtitles":
+            self._toggle_speak_subtitles()
         elif action == "fullscreen":
             self._set_fullscreen(not self._fullscreen)
         elif action == "play_pause":
@@ -2192,10 +2213,11 @@ class InternalPlayerFrame(wx.Frame):
             if self.player.video_set_spu(track_id) == -1:
                 raise RuntimeError(_("Subtitle track unavailable"))
         except Exception as err:
-            self._update_status_label(str(err))
+            self._update_status_label(str(err), priority=1)
             return
-        name = next((name for tid, name in self._subtitle_tracks() if tid == track_id),
-                    _("Off") if track_id == -1 else _("Track {id}").format(id=track_id))
+        name = _("Off") if track_id == -1 else next(
+            (name for tid, name in self._subtitle_tracks() if tid == track_id),
+            _("Track {id}").format(id=track_id))
         self._update_status_label(_("Subtitles: {name}").format(name=name), priority=2)
 
     def _cycle_subtitle(self) -> None:
@@ -2223,8 +2245,10 @@ class InternalPlayerFrame(wx.Frame):
 
     def _on_subtitle_menu_select(self, event: wx.CommandEvent) -> None:
         track_id = self._subtitle_menu_map.get(event.GetId())
-        if track_id is not None:
-            self._select_subtitle(track_id)
+        if track_id is None:
+            event.Skip()
+            return
+        self._select_subtitle(track_id)
 
     def _load_subtitle_file(self, _event: wx.CommandEvent) -> None:
         with wx.FileDialog(self, _("Load Subtitle File"),
@@ -2237,9 +2261,83 @@ class InternalPlayerFrame(wx.Frame):
             if self.player.add_slave(vlc.MediaSlaveType.subtitle, Path(path).as_uri(), True) != 0:
                 raise RuntimeError(_("Could not load subtitle file."))
         except Exception as err:
-            self._update_status_label(str(err))
+            self._update_status_label(str(err), priority=1)
             return
-        self._update_status_label(_("Subtitle file loaded: {name}").format(name=Path(path).name))
+        self._update_status_label(_("Subtitle file loaded: {name}").format(name=Path(path).name), priority=2)
+        self._set_subtitle_cues([])
+        if Path(path).suffix.lower() not in subtitle_cues.SPEAKABLE_SUFFIXES:
+            if self._speak_subtitles:
+                self._update_status_label(_("Subtitle speech needs an SRT or WebVTT file."), priority=1)
+            return
+        generation = self._subtitle_generation
+
+        def _read() -> None:
+            try:
+                cues = subtitle_cues.load(path)
+            except (OSError, ValueError):
+                LOG.warning("Could not read subtitle cues from %s", path, exc_info=True)
+                cues = []
+            wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues)
+
+        threading.Thread(target=_read, name="subtitle-cues", daemon=True).start()
+
+    def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue]) -> None:
+        if self._destroyed or generation != self._subtitle_generation:
+            return
+        if not cues:
+            self._update_status_label(_("No subtitle text found in this file."), priority=1)
+        self._set_subtitle_cues(cues)
+
+    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue]) -> None:
+        self._subtitle_generation += 1
+        self._subtitle_cues = cues
+        self._cue_index = None
+        self.subtitle_label.SetLabel("")
+        if cues:
+            self._cue_timer.Start(150)
+        else:
+            self._cue_timer.Stop()
+
+    def _on_cue_timer(self, _event: Optional[wx.TimerEvent] = None) -> None:
+        try:
+            if self.player.video_get_spu() == -1:
+                index = None
+            else:
+                # SPU delay is in microseconds; a positive delay shows cues later.
+                ms = self.player.get_time() - self.player.video_get_spu_delay() // 1000
+                index = subtitle_cues.active(self._subtitle_cues, ms) if ms >= 0 else None
+        except Exception:
+            return
+        if index == self._cue_index:
+            return
+        self._cue_index = index
+        text = self._subtitle_cues[index].text if index is not None else ""
+        self.subtitle_label.SetLabel(text)
+        if text and self._speak_subtitles and not self._is_paused:
+            self._announce_cue(text)
+
+    def _announce_cue(self, text: str) -> None:
+        if not self.IsShown():
+            # A hidden window's alerts are not read; the main window shows it instead.
+            self.GetParent()._show_playing_info(text)
+            return
+        try:
+            wx.Accessible.NotifyEvent(wx.ACC_EVENT_SYSTEM_ALERT, self.subtitle_label, wx.OBJID_CLIENT, 0)
+        except Exception:
+            LOG.debug("Could not announce subtitle cue", exc_info=True)
+
+    def _toggle_speak_subtitles(self) -> None:
+        self._speak_subtitles = not self._speak_subtitles
+        self.speak_subtitles_item.Check(self._speak_subtitles)
+        if self._on_speak_subtitles_cb is not None:
+            self._on_speak_subtitles_cb(self._speak_subtitles)
+        if not self._speak_subtitles:
+            message = _("Subtitle speech off")
+        elif self._subtitle_cues:
+            message = _("Subtitle speech on")
+        else:
+            message = _("Subtitle speech on. Load an SRT or WebVTT file to hear subtitles.")
+        self._update_status_label(message, priority=2)
 
     def _on_audio_track_menu_open(self, _event: Optional[wx.MenuEvent] = None) -> None:
         menu = self.audio_track_menu
@@ -2261,8 +2359,10 @@ class InternalPlayerFrame(wx.Frame):
 
     def _on_audio_track_menu_select(self, event: wx.CommandEvent) -> None:
         track_id = self._audio_track_menu_map.get(event.GetId())
-        if track_id is not None:
-            self._select_audio_track(track_id, manual=True)
+        if track_id is None:
+            event.Skip()
+            return
+        self._select_audio_track(track_id, manual=True)
 
     # ------------------------------------------------------ preferred track
     def set_preferred_audio_tracks(

@@ -211,6 +211,7 @@ Teclas no reprodutor:
 - Setas para cima e para baixo: volume em passos de 2%. Ctrl+Acima e Ctrl+Abaixo: passos de 5%.
 - A: próxima faixa de áudio.
 - S: próxima faixa de legenda, incluindo Off. Reprodução > Legendas permite escolher uma faixa ou carregar um arquivo de legenda externo.
+- Shift+S: ativar ou desativar a leitura de legendas.
 - I: anuncia o canal atual, horários dos programas, próximo programa e status da gravação.
 - D: escolher o dispositivo de saída de áudio.
 - Ctrl+C: transmitir para um dispositivo.
@@ -226,7 +227,7 @@ Canais podem carregar várias faixas de áudio, como outros idiomas ou audiodesc
 
 Uma faixa que você escolhe é lembrada para aquele canal e volta na próxima vez. Para escolhê-las automaticamente, veja Faixa de áudio preferida.
 
-O texto da legenda aparece no vídeo quando o stream o fornece. Reproduzir > Carregar arquivo de legenda aceita um arquivo de legenda externo; a fala do leitor de tela para o texto da legenda não está disponível.
+O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e o seu leitor de tela lerá cada legenda de um arquivo SRT ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. Legendas que vêm no próprio stream e arquivos ASS ou SSA ainda não podem ser lidos em voz alta.
 
 ### Dispositivo de saída de áudio {#audio-output-device}
 
@@ -410,7 +411,7 @@ Reprodutor integrado:
 - Ctrl+P: reproduzir ou pausar.
 - Ctrl+S: parar.
 - Ctrl+R: gravar.
-- S: Percorra as faixas de legenda. I: Anuncie o que está tocando.
+- S: Percorra as faixas de legenda. I: Anuncie o que está tocando. Shift+S: ler legendas em voz alta.
 - Acima e Abaixo: volume em passos de 2%; com Ctrl, passos de 5%.
 - A: próxima faixa de áudio.
 - D: dispositivo de saída de áudio.

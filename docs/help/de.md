@@ -211,6 +211,7 @@ Tasten im Player:
 - Pfeil auf und ab: Lautstärke in 2%-Schritten. Ctrl+Pfeil auf/ab: 5%-Schritte.
 - A: nächste Tonspur.
 - S: nächster Untertiteltrack, einschließlich Aus. Mit „Wiedergabe“ > „Untertitel“ können Sie einen Titel auswählen oder eine externe Untertiteldatei laden.
+- Umschalt+S: Untertitel vorlesen ein oder aus.
 - I: Ansage des aktuellen Senders, der Programmzeiten, des nächsten Programms und des Aufnahmestatus.
 - D: das Audioausgabegerät wählen.
 - Ctrl+C: an ein Gerät übertragen.
@@ -226,7 +227,7 @@ Sender können mehrere Tonspuren mitführen, etwa andere Sprachen oder Audiodesk
 
 Eine gewählte Spur wird pro Sender gemerkt und kommt beim nächsten Mal wieder. Zum automatischen Wählen siehe Bevorzugte Audiospur.
 
-Untertiteltext erscheint im Video, wenn der Stream ihn bereitstellt. „Wiedergabe > Untertiteldatei laden“ akzeptiert eine externe Untertiteldatei; Für den Untertiteltext ist keine Sprachausgabe per Screenreader verfügbar.
+Untertiteltext erscheint im Video, wenn der Stream ihn liefert. Wiedergabe > Untertiteldatei laden akzeptiert eine externe Untertiteldatei. Schalten Sie Wiedergabe > Untertitel vorlesen (Umschalt+S) ein, dann liest Ihr Screenreader jeden Untertitel einer geladenen SRT- oder WebVTT-Datei vor, sobald er erscheint, auch bei ausgeblendetem Player-Fenster. Der aktuelle Untertitel steht außerdem als Text am Ende der Player-Steuerelemente. Untertitel, die der Stream selbst mitbringt, sowie ASS- oder SSA-Dateien können noch nicht vorgelesen werden.
 
 ### Audioausgabegerät {#audio-output-device}
 
@@ -410,7 +411,7 @@ Integrierter Player:
 - Ctrl+P: wiedergeben oder pausieren.
 - Ctrl+S: stoppen.
 - Ctrl+R: aufnehmen.
-- S: Durchlaufen Sie Untertitelspuren. I: Kündigen Sie an, was gerade gespielt wird.
+- S: Durchlaufen Sie Untertitelspuren. I: Kündigen Sie an, was gerade gespielt wird. Umschalt+S: Untertitel vorlesen.
 - Pfeil auf und ab: Lautstärke in 2%-Schritten; mit Ctrl 5%-Schritte.
 - A: nächste Tonspur.
 - D: Audioausgabegerät.

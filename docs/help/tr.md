@@ -210,6 +210,7 @@ Oynatıcıdaki tuşlar:
 - Yukarı ve Aşağı oklar: ses düzeyi %2 adımlarla. Ctrl+Yukarı ve Ctrl+Aşağı: %5 adımlarla.
 - A: sonraki ses parçası.
 - S: Kapalı dahil sonraki altyazı parçası. Oynatma > Altyazılar bir parça seçmenizi veya harici bir altyazı dosyası yüklemenizi sağlar.
+- Shift+S: altyazı seslendirmeyi açar veya kapatır.
 - I: mevcut kanalı, program zamanlarını, sonraki programı ve kayıt durumunu duyurur.
 - D: ses çıkış cihazını seçme.
 - Ctrl+C: bir cihaza yayınlama.
@@ -225,7 +226,7 @@ Kanallar birkaç ses parçası taşıyabilir: başka diller ya da sesli betimlem
 
 Seçtiğiniz bir parça o kanal için hatırlanır ve gelecek sefer geri gelir. Otomatik seçim için bkz. Tercih edilen ses parçası.
 
-Akış bunu sağladığında videoda altyazı metni görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder; Altyazı metni için ekran okuyucu konuşması mevcut değil.
+Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda ekran okuyucunuz, yüklenen SRT veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Akışın kendisiyle gelen altyazılar ve ASS veya SSA dosyaları henüz seslendirilemez.
 
 ### Ses çıkış cihazı {#audio-output-device}
 
@@ -409,7 +410,7 @@ Yerleşik oynatıcı:
 - Ctrl+P: oynatma ya da duraklatma.
 - Ctrl+S: durdurma.
 - Ctrl+R: kaydetme.
-- S: Altyazı parçaları arasında geçiş yapın. I: Neyin oynandığını duyurun.
+- S: Altyazı parçaları arasında geçiş yapın. I: Neyin oynandığını duyurun. Shift+S: altyazıları seslendir.
 - Yukarı ve Aşağı: ses düzeyi %2 adımlarla; Ctrl ile %5 adımlarla.
 - A: sonraki ses parçası.
 - D: ses çıkış cihazı.
