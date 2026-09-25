@@ -290,7 +290,7 @@ Para gravar um programa futuro, escolha Agendar gravação sobre um programa em 
 Gravações > Gravações agendadas… lista cada gravação agendada, em andamento e concluída com hora, título, canal, status e formato.
 
 - A tecla de menu de aplicativo ou Shift+F10 sobre uma gravação abre o menu dela: Atualizar, Cancelar e Eliminar.
-- O menu de gravação também oferece Record Daily, Record Weekly e Record Series. A gravação da série encontra futuros programas de guia com o mesmo título naquele canal enquanto o aplicativo está em execução.
+- Gravar diariamente, Gravar semanalmente e Gravar série ficam no menu de um programa em Exibir EPG e No ar agora, ao lado de Agendar gravação. A gravação de série encontra futuros programas do guia com o mesmo título naquele canal enquanto o aplicativo está aberto.
 - É possível selecionar mais de uma gravação; Ctrl+A seleciona todas as linhas.
 - Delete ou Delete do teclado numérico pede confirmação e depois remove as gravações selecionadas. Se alguma delas ainda estiver em andamento, o programa a para primeiro.
 - Escape fecha a janela.

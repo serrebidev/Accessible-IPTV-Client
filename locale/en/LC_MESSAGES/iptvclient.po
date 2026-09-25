@@ -30,6 +30,7 @@ msgid "(thumbprint {thumbprint})."
 msgstr ""
 
 #: main.py:2449
+#: settings_backup.py:18
 msgid "A backup password is required."
 msgstr ""
 
@@ -58,6 +59,11 @@ msgstr ""
 msgid "Accessibility"
 msgstr ""
 
+#: main.py:2535
+#: main.py:2551
+msgid "Accessible IPTV backup (*.aiptv)"
+msgstr ""
+
 #: account_info.py:381
 msgid "Account"
 msgstr ""
@@ -65,6 +71,7 @@ msgstr ""
 #: main.py:3042
 #: main.py:3180
 #: main.py:8955
+#: shortcuts.py:56
 msgid "Account Info"
 msgstr ""
 
@@ -131,6 +138,7 @@ msgstr ""
 
 #: main.py:2326
 #: main.py:3204
+#: shortcuts.py:57
 msgid "Add to Favorites"
 msgstr ""
 
@@ -179,6 +187,7 @@ msgstr ""
 
 #: internal_player.py:474
 #: main.py:2496
+#: shortcuts.py:73
 msgid "Audio Track"
 msgstr ""
 
@@ -263,6 +272,14 @@ msgstr ""
 #: playlist.py:3117
 #: playlist.py:3119
 msgid "Automatically add XMLTV URL"
+msgstr ""
+
+#: settings_backup.py:47
+msgid "Backup file is too large."
+msgstr ""
+
+#: settings_backup.py:61
+msgid "Backup settings are invalid."
 msgstr ""
 
 #: account_info.py:372
@@ -351,6 +368,7 @@ msgstr ""
 #: main.py:2489
 #: main.py:3048
 #: main.py:3192
+#: shortcuts.py:52
 msgid "Cast / Connect..."
 msgstr ""
 
@@ -365,6 +383,7 @@ msgstr ""
 
 #: internal_player.py:481
 #: main.py:2495
+#: shortcuts.py:70
 msgid "Cast..."
 msgstr ""
 
@@ -865,6 +884,7 @@ msgstr ""
 #: main.py:3038
 #: main.py:3176
 #: playlist.py:2832
+#: shortcuts.py:47
 msgid "EPG Manager"
 msgstr ""
 
@@ -987,6 +1007,7 @@ msgstr ""
 #: main.py:1430
 #: main.py:3159
 #: main.py:3185
+#: shortcuts.py:49
 msgid "Exit"
 msgstr ""
 
@@ -995,6 +1016,7 @@ msgid "Exit Full Screen"
 msgstr ""
 
 #: internal_player.py:486
+#: shortcuts.py:77
 msgid "Exit Player"
 msgstr ""
 
@@ -1025,6 +1047,10 @@ msgstr ""
 
 #: main.py:5438
 msgid "Extracting update..."
+msgstr ""
+
+#: shortcuts.py:115
+msgid "F1 is reserved for Help."
 msgstr ""
 
 #: main.py:9882
@@ -1143,6 +1169,7 @@ msgstr ""
 #: main.py:2481
 #: main.py:3067
 #: main.py:3208
+#: shortcuts.py:61
 msgid "Go to Channel Number..."
 msgstr ""
 
@@ -1170,6 +1197,7 @@ msgid "Help"
 msgstr ""
 
 #: internal_player.py:485
+#: shortcuts.py:76
 msgid "Hide Window"
 msgstr ""
 
@@ -1196,6 +1224,7 @@ msgstr ""
 
 #: main.py:3039
 #: main.py:3177
+#: shortcuts.py:48
 msgid "Import EPG to DB"
 msgstr ""
 
@@ -1246,6 +1275,14 @@ msgstr ""
 
 #: main.py:5620
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
+msgstr ""
+
+#: settings_backup.py:55
+msgid "Invalid backup salt."
+msgstr ""
+
+#: shortcuts.py:86
+msgid "Invalid keyboard shortcut."
 msgstr ""
 
 #: providers.py:141
@@ -1337,6 +1374,10 @@ msgstr ""
 
 #: playlist.py:3245
 msgid "MAC address presented to the portal"
+msgstr ""
+
+#: shortcuts.py:113
+msgid "Main-window shortcuts need Ctrl or Alt."
 msgstr ""
 
 #: account_info.py:479
@@ -1527,6 +1568,10 @@ msgstr ""
 msgid "Not Found"
 msgstr ""
 
+#: settings_backup.py:51
+msgid "Not an Accessible IPTV settings backup."
+msgstr ""
+
 #: account_info.py:471
 #: account_info.py:523
 msgid "Not reported by the server"
@@ -1668,6 +1713,8 @@ msgstr ""
 #: main.py:2490
 #: main.py:3046
 #: main.py:3190
+#: shortcuts.py:50
+#: shortcuts.py:67
 msgid "Play/Pause"
 msgstr ""
 
@@ -1701,6 +1748,7 @@ msgstr ""
 #: main.py:3037
 #: main.py:3175
 #: playlist.py:2921
+#: shortcuts.py:46
 msgid "Playlist Manager"
 msgstr ""
 
@@ -1783,6 +1831,7 @@ msgstr ""
 #: main.py:3065
 #: main.py:3206
 #: main.py:3656
+#: shortcuts.py:60
 msgid "Previous Channel"
 msgstr ""
 
@@ -1844,6 +1893,7 @@ msgstr ""
 #: main.py:2482
 #: main.py:3066
 #: main.py:3207
+#: shortcuts.py:62
 msgid "Recently Watched..."
 msgstr ""
 
@@ -1865,6 +1915,7 @@ msgstr ""
 #: main.py:4084
 #: main.py:8212
 #: main.py:8220
+#: shortcuts.py:69
 msgid "Record"
 msgstr ""
 
@@ -2173,8 +2224,16 @@ msgstr ""
 msgid "Settings Backup"
 msgstr ""
 
+#: settings_backup.py:27
+msgid "Settings are too large to back up."
+msgstr ""
+
 #: main.py:2569
 msgid "Settings imported. Restart the app to use them."
+msgstr ""
+
+#: shortcuts.py:119
+msgid "Shortcut conflicts with {command}."
 msgstr ""
 
 #: main.py:2527
@@ -2183,10 +2242,12 @@ msgstr ""
 
 #: main.py:3045
 #: main.py:3189
+#: shortcuts.py:59
 msgid "Show Built-in Player"
 msgstr ""
 
 #: main.py:3213
+#: shortcuts.py:58
 msgid "Show Downloads"
 msgstr ""
 
@@ -2239,6 +2300,7 @@ msgstr ""
 
 #: main.py:2488
 #: main.py:5016
+#: shortcuts.py:55
 msgid "Start Recording"
 msgstr ""
 
@@ -2269,6 +2331,8 @@ msgstr ""
 #: main.py:2491
 #: main.py:3047
 #: main.py:3191
+#: shortcuts.py:51
+#: shortcuts.py:68
 msgid "Stop"
 msgstr ""
 
@@ -2349,12 +2413,17 @@ msgstr ""
 msgid "Subtitle file loaded: {name}"
 msgstr ""
 
+#: internal_player.py:2231
+msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
+msgstr ""
+
 #: internal_player.py:2193
 msgid "Subtitle track unavailable"
 msgstr ""
 
 #: internal_player.py:477
 #: main.py:2497
+#: shortcuts.py:74
 msgid "Subtitles"
 msgstr ""
 
@@ -2508,6 +2577,7 @@ msgstr ""
 
 #: internal_player.py:390
 #: internal_player.py:482
+#: shortcuts.py:75
 msgid "Toggle Full Screen"
 msgstr ""
 
@@ -2571,6 +2641,10 @@ msgstr ""
 #: main.py:10384
 #: updater.py:773
 msgid "Unknown"
+msgstr ""
+
+#: shortcuts.py:108
+msgid "Unknown command."
 msgstr ""
 
 #: main.py:3802
@@ -2746,11 +2820,15 @@ msgstr ""
 
 #: main.py:2484
 #: main.py:2493
+#: shortcuts.py:54
+#: shortcuts.py:72
 msgid "Volume Down"
 msgstr ""
 
 #: main.py:2483
 #: main.py:2492
+#: shortcuts.py:53
+#: shortcuts.py:71
 msgid "Volume Up"
 msgstr ""
 
@@ -2759,6 +2837,8 @@ msgstr ""
 #: main.py:2498
 #: main.py:3040
 #: main.py:3179
+#: shortcuts.py:64
+#: shortcuts.py:78
 msgid "What Is Playing"
 msgstr ""
 
@@ -2772,6 +2852,7 @@ msgstr ""
 #: main.py:2486
 #: main.py:3178
 #: main.py:9973
+#: shortcuts.py:63
 msgid "What's on Now"
 msgstr ""
 
@@ -2781,6 +2862,10 @@ msgstr ""
 
 #: updater.py:148
 msgid "Windows did not get permission to install the update."
+msgstr ""
+
+#: settings_backup.py:59
+msgid "Wrong password or damaged backup."
 msgstr ""
 
 #: playlist.py:2876

@@ -299,7 +299,7 @@ To record a programme in the future, choose Schedule Recording on a programme in
 Recordings > Scheduled Recordings lists every scheduled, running and finished recording with its time, title, channel, status and format.
 
 - The Applications key or Shift+F10 on a recording opens its menu: Refresh, Cancel and Delete.
-- The recording menu also offers Record Daily, Record Weekly and Record Series. Series recording finds future guide programmes with the same title on that channel while the app is running.
+- Record Daily, Record Weekly and Record Series are on a programme's menu in View EPG and What's on Now, next to Schedule Recording. Series recording finds future guide programmes with the same title on that channel while the app is running.
 - More than one recording can be selected; Ctrl+A selects every row.
 - Delete or Numpad Delete asks for confirmation, then removes the selected recordings. If any selected recordings are still in progress, the program stops them first.
 - Escape closes the window.

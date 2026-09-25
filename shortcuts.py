@@ -1,7 +1,7 @@
 """Validated keyboard shortcuts shared by the main window and player."""
 
 import wx
-from i18n import gettext as _
+from i18n import gettext as _, N_
 
 MAIN = {
     "playlist_manager": ("Ctrl+M", 4001),
@@ -38,6 +38,45 @@ PLAYER = {
     "hide": "Ctrl+W",
     "exit": "Ctrl+Q",
     "what_is_playing": "I",
+}
+
+# Menu labels, so a conflict names the command the user knows, not the internal key.
+LABELS = {
+    "main": {
+        "playlist_manager": N_("Playlist Manager"),
+        "epg_manager": N_("EPG Manager"),
+        "import_epg": N_("Import EPG to DB"),
+        "exit": N_("Exit"),
+        "play_pause": N_("Play/Pause"),
+        "stop": N_("Stop"),
+        "cast": N_("Cast / Connect..."),
+        "volume_up": N_("Volume Up"),
+        "volume_down": N_("Volume Down"),
+        "record": N_("Start Recording"),
+        "account": N_("Account Info"),
+        "favorite": N_("Add to Favorites"),
+        "downloads": N_("Show Downloads"),
+        "show_player": N_("Show Built-in Player"),
+        "previous_channel": N_("Previous Channel"),
+        "channel_number": N_("Go to Channel Number..."),
+        "recent_channels": N_("Recently Watched..."),
+        "whats_on_now": N_("What's on Now"),
+        "what_is_playing": N_("What Is Playing"),
+    },
+    "player": {
+        "play_pause": N_("Play/Pause"),
+        "stop": N_("Stop"),
+        "record": N_("Record"),
+        "cast": N_("Cast..."),
+        "volume_up": N_("Volume Up"),
+        "volume_down": N_("Volume Down"),
+        "audio_track": N_("Audio Track"),
+        "subtitles": N_("Subtitles"),
+        "fullscreen": N_("Toggle Full Screen"),
+        "hide": N_("Hide Window"),
+        "exit": N_("Exit Player"),
+        "what_is_playing": N_("What Is Playing"),
+    },
 }
 
 
@@ -77,7 +116,8 @@ def set_shortcut(config: dict, context: str, action: str, value: str) -> None:
     current = effective(config, context)
     for other, existing in current.items():
         if other != action and parse(existing)[:2] == (flags, key):
-            raise ValueError(_("Shortcut conflicts with {command}.").format(command=other.replace("_", " ")))
+            raise ValueError(_("Shortcut conflicts with {command}.").format(
+                command=_(LABELS["main" if context == "main" else "player"][other])))
     saved = config.get("shortcuts")
     saved = dict(saved) if isinstance(saved, dict) else {}
     key_name = context + "." + action

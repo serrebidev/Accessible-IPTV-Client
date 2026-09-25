@@ -2532,7 +2532,7 @@ class IPTVClient(wx.Frame):
         if password is None:
             return
         with wx.FileDialog(self, _("Export Settings"),
-                           wildcard="Accessible IPTV backup (*.aiptv)|*.aiptv",
+                           wildcard=_("Accessible IPTV backup (*.aiptv)") + "|*.aiptv",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return
@@ -2548,7 +2548,7 @@ class IPTVClient(wx.Frame):
 
     def _import_settings(self, _event=None) -> None:
         with wx.FileDialog(self, _("Import Settings"),
-                           wildcard="Accessible IPTV backup (*.aiptv)|*.aiptv",
+                           wildcard=_("Accessible IPTV backup (*.aiptv)") + "|*.aiptv",
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return

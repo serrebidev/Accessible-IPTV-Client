@@ -30,6 +30,7 @@ msgid "(thumbprint {thumbprint})."
 msgstr "（指纹 {thumbprint}）。"
 
 #: main.py:2449
+#: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "需要备份密码。"
 
@@ -58,6 +59,11 @@ msgstr "关于..."
 msgid "Accessibility"
 msgstr "无障碍"
 
+#: main.py:2535
+#: main.py:2551
+msgid "Accessible IPTV backup (*.aiptv)"
+msgstr "Accessible IPTV 备份 (*.aiptv)"
+
 #: account_info.py:381
 msgid "Account"
 msgstr "账户"
@@ -65,6 +71,7 @@ msgstr "账户"
 #: main.py:3042
 #: main.py:3180
 #: main.py:8955
+#: shortcuts.py:56
 msgid "Account Info"
 msgstr "账户信息"
 
@@ -131,6 +138,7 @@ msgstr "添加 Xtream Codes 账户"
 
 #: main.py:2326
 #: main.py:3204
+#: shortcuts.py:57
 msgid "Add to Favorites"
 msgstr "添加到收藏"
 
@@ -179,6 +187,7 @@ msgstr "音频输出设备..."
 
 #: internal_player.py:474
 #: main.py:2496
+#: shortcuts.py:73
 msgid "Audio Track"
 msgstr "音轨"
 
@@ -264,6 +273,14 @@ msgstr "自动公告"
 #: playlist.py:3119
 msgid "Automatically add XMLTV URL"
 msgstr "自动添加 XMLTV URL"
+
+#: settings_backup.py:47
+msgid "Backup file is too large."
+msgstr "备份文件太大。"
+
+#: settings_backup.py:61
+msgid "Backup settings are invalid."
+msgstr "备份中的设置无效。"
 
 #: account_info.py:372
 msgid "Banned"
@@ -351,6 +368,7 @@ msgstr "投屏"
 #: main.py:2489
 #: main.py:3048
 #: main.py:3192
+#: shortcuts.py:52
 msgid "Cast / Connect..."
 msgstr "投屏 / 连接..."
 
@@ -365,6 +383,7 @@ msgstr "投屏到设备"
 
 #: internal_player.py:481
 #: main.py:2495
+#: shortcuts.py:70
 msgid "Cast..."
 msgstr "投屏..."
 
@@ -865,6 +884,7 @@ msgstr "需要更新节目单数据库"
 #: main.py:3038
 #: main.py:3176
 #: playlist.py:2832
+#: shortcuts.py:47
 msgid "EPG Manager"
 msgstr "EPG 管理器"
 
@@ -987,6 +1007,7 @@ msgstr "未找到可执行文件：{path}"
 #: main.py:1430
 #: main.py:3159
 #: main.py:3185
+#: shortcuts.py:49
 msgid "Exit"
 msgstr "退出"
 
@@ -995,6 +1016,7 @@ msgid "Exit Full Screen"
 msgstr "退出全屏"
 
 #: internal_player.py:486
+#: shortcuts.py:77
 msgid "Exit Player"
 msgstr "退出播放器"
 
@@ -1026,6 +1048,10 @@ msgstr "导出设置..."
 #: main.py:5438
 msgid "Extracting update..."
 msgstr "正在提取更新..."
+
+#: shortcuts.py:115
+msgid "F1 is reserved for Help."
+msgstr "F1 保留用于帮助。"
 
 #: main.py:9882
 msgid "Failed"
@@ -1143,6 +1169,7 @@ msgstr "前往频道号码"
 #: main.py:2481
 #: main.py:3067
 #: main.py:3208
+#: shortcuts.py:61
 msgid "Go to Channel Number..."
 msgstr "转到频道号..."
 
@@ -1170,6 +1197,7 @@ msgid "Help"
 msgstr "帮助"
 
 #: internal_player.py:485
+#: shortcuts.py:76
 msgid "Hide Window"
 msgstr "隐藏窗口"
 
@@ -1196,6 +1224,7 @@ msgstr "导入完成"
 
 #: main.py:3039
 #: main.py:3177
+#: shortcuts.py:48
 msgid "Import EPG to DB"
 msgstr "将 EPG 导入数据库"
 
@@ -1247,6 +1276,14 @@ msgstr "安装程序消息：{message}"
 #: main.py:5620
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "正在安装更新。{app} 将关闭并自动重新启动，在此期间请不要自行打开它。"
+
+#: settings_backup.py:55
+msgid "Invalid backup salt."
+msgstr "备份盐值无效。"
+
+#: shortcuts.py:86
+msgid "Invalid keyboard shortcut."
+msgstr "键盘快捷键无效。"
 
 #: providers.py:141
 msgid "Invalid response from Xtream player API"
@@ -1338,6 +1375,10 @@ msgstr "MAC 地址必须包含六个八位字节（例如 00:1A:79:12:34:56）�
 #: playlist.py:3245
 msgid "MAC address presented to the portal"
 msgstr "提交给门户的 MAC 地址"
+
+#: shortcuts.py:113
+msgid "Main-window shortcuts need Ctrl or Alt."
+msgstr "主窗口快捷键需要 Ctrl 或 Alt。"
 
 #: account_info.py:479
 msgid "Maximum connections"
@@ -1527,6 +1568,10 @@ msgstr "无"
 msgid "Not Found"
 msgstr "未找到"
 
+#: settings_backup.py:51
+msgid "Not an Accessible IPTV settings backup."
+msgstr "这不是 Accessible IPTV 设置备份。"
+
 #: account_info.py:471
 #: account_info.py:523
 msgid "Not reported by the server"
@@ -1668,6 +1713,8 @@ msgstr "播放或暂停"
 #: main.py:2490
 #: main.py:3046
 #: main.py:3190
+#: shortcuts.py:50
+#: shortcuts.py:67
 msgid "Play/Pause"
 msgstr "播放/暂停"
 
@@ -1701,6 +1748,7 @@ msgstr "播放列表"
 #: main.py:3037
 #: main.py:3175
 #: playlist.py:2921
+#: shortcuts.py:46
 msgid "Playlist Manager"
 msgstr "播放列表管理器"
 
@@ -1783,6 +1831,7 @@ msgstr "按 Esc 隐藏此窗口；下载会继续。视图 > 显示下载 (Ctrl+
 #: main.py:3065
 #: main.py:3206
 #: main.py:3656
+#: shortcuts.py:60
 msgid "Previous Channel"
 msgstr "上一个频道"
 
@@ -1844,6 +1893,7 @@ msgstr "最近观看"
 #: main.py:2482
 #: main.py:3066
 #: main.py:3207
+#: shortcuts.py:62
 msgid "Recently Watched..."
 msgstr "最近观看..."
 
@@ -1865,23 +1915,24 @@ msgstr "正在重新连接..."
 #: main.py:4084
 #: main.py:8212
 #: main.py:8220
+#: shortcuts.py:69
 msgid "Record"
 msgstr "录制"
 
 #: main.py:10200
 #: main.py:10495
 msgid "Record Daily"
-msgstr "记录每日"
+msgstr "每天录制"
 
 #: main.py:10202
 #: main.py:10497
 msgid "Record Series"
-msgstr "唱片系列"
+msgstr "录制系列"
 
 #: main.py:10201
 #: main.py:10496
 msgid "Record Weekly"
-msgstr "每周记录"
+msgstr "每周录制"
 
 #: main.py:4100
 #: main.py:4226
@@ -2173,9 +2224,17 @@ msgstr "设置下载文件夹"
 msgid "Settings Backup"
 msgstr "设置备份"
 
+#: settings_backup.py:27
+msgid "Settings are too large to back up."
+msgstr "设置太大，无法备份。"
+
 #: main.py:2569
 msgid "Settings imported. Restart the app to use them."
 msgstr "已导入设置。重新启动应用程序即可使用它们。"
+
+#: shortcuts.py:119
+msgid "Shortcut conflicts with {command}."
+msgstr "快捷键与“{command}”冲突。"
 
 #: main.py:2527
 msgid "Shortcut saved. Restart the app to use it."
@@ -2183,10 +2242,12 @@ msgstr "快捷方式已保存。重新启动应用程序即可使用它。"
 
 #: main.py:3045
 #: main.py:3189
+#: shortcuts.py:59
 msgid "Show Built-in Player"
 msgstr "显示内置播放器"
 
 #: main.py:3213
+#: shortcuts.py:58
 msgid "Show Downloads"
 msgstr "显示下载"
 
@@ -2239,6 +2300,7 @@ msgstr "Stalker Portal – {name}"
 
 #: main.py:2488
 #: main.py:5016
+#: shortcuts.py:55
 msgid "Start Recording"
 msgstr "开始录制"
 
@@ -2269,6 +2331,8 @@ msgstr "状态"
 #: main.py:2491
 #: main.py:3047
 #: main.py:3191
+#: shortcuts.py:51
+#: shortcuts.py:68
 msgid "Stop"
 msgstr "停止"
 
@@ -2349,12 +2413,17 @@ msgstr "订阅"
 msgid "Subtitle file loaded: {name}"
 msgstr "已加载字幕文件：{name}"
 
+#: internal_player.py:2231
+msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
+msgstr "字幕文件 (*.srt;*.ass;*.ssa;*.vtt)"
+
 #: internal_player.py:2193
 msgid "Subtitle track unavailable"
 msgstr "字幕轨道不可用"
 
 #: internal_player.py:477
 #: main.py:2497
+#: shortcuts.py:74
 msgid "Subtitles"
 msgstr "字幕"
 
@@ -2508,6 +2577,7 @@ msgstr "标题"
 
 #: internal_player.py:390
 #: internal_player.py:482
+#: shortcuts.py:75
 msgid "Toggle Full Screen"
 msgstr "切换全屏"
 
@@ -2572,6 +2642,10 @@ msgstr "来自 Xtream 服务器的意外账户响应"
 #: updater.py:773
 msgid "Unknown"
 msgstr "未知"
+
+#: shortcuts.py:108
+msgid "Unknown command."
+msgstr "未知命令。"
 
 #: main.py:3802
 msgid "Unknown time"
@@ -2746,11 +2820,15 @@ msgstr "音量控制"
 
 #: main.py:2484
 #: main.py:2493
+#: shortcuts.py:54
+#: shortcuts.py:72
 msgid "Volume Down"
 msgstr "调低音量"
 
 #: main.py:2483
 #: main.py:2492
+#: shortcuts.py:53
+#: shortcuts.py:71
 msgid "Volume Up"
 msgstr "调高音量"
 
@@ -2759,6 +2837,8 @@ msgstr "调高音量"
 #: main.py:2498
 #: main.py:3040
 #: main.py:3179
+#: shortcuts.py:64
+#: shortcuts.py:78
 msgid "What Is Playing"
 msgstr "正在播放什么"
 
@@ -2772,6 +2852,7 @@ msgstr "最新动态"
 #: main.py:2486
 #: main.py:3178
 #: main.py:9973
+#: shortcuts.py:63
 msgid "What's on Now"
 msgstr "正在播出"
 
@@ -2782,6 +2863,10 @@ msgstr "当频道提供多个音轨时，内置播放器可以自动切换到您
 #: updater.py:148
 msgid "Windows did not get permission to install the update."
 msgstr "Windows 未获得安装更新的权限。"
+
+#: settings_backup.py:59
+msgid "Wrong password or damaged backup."
+msgstr "密码错误或备份已损坏。"
 
 #: playlist.py:2876
 msgid "XML files"

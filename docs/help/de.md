@@ -290,7 +290,7 @@ Um eine künftige Sendung aufzunehmen, wählen Sie Aufnahme planen auf einer Sen
 Aufnahmen > Geplante Aufnahmen… listet jede geplante, laufende und fertige Aufnahme mit Zeit, Titel, Sender, Status und Format.
 
 - Die Anwendungstaste oder Shift+F10 auf einer Aufnahme öffnet ihr Menü: Aktualisieren, Abbrechen und Löschen.
-- Das Aufnahmemenü bietet außerdem „Täglich aufzeichnen“, „Wöchentlich aufzeichnen“ und „Serien aufzeichnen“. Die Serienaufzeichnung findet zukünftige Guide-Sendungen mit demselben Titel auf diesem Kanal, während die App läuft.
+- „Täglich aufnehmen“, „Wöchentlich aufnehmen“ und „Serie aufnehmen“ stehen im Menü einer Sendung in „EPG anzeigen“ und „Jetzt im Programm“, neben „Aufnahme planen“. Die Serienaufnahme findet künftige Sendungen mit demselben Titel auf diesem Sender, solange die App läuft.
 - Es lassen sich mehrere Aufnahmen markieren; Ctrl+A markiert alle Zeilen.
 - Entf oder Entf auf dem Ziffernblock fragt nach und entfernt dann die markierten Aufnahmen. Laufen davon noch welche, stoppt das Programm sie zuerst.
 - Escape schließt das Fenster.

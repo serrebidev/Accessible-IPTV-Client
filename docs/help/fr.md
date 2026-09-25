@@ -290,7 +290,7 @@ Pour enregistrer une émission à venir, choisissez Programmer l'enregistrement 
 Enregistrements > Enregistrements programmés… liste chaque enregistrement programmé, en cours et terminé avec son heure, son titre, sa chaîne, son état et son format.
 
 - La touche Applications ou Shift+F10 sur un enregistrement ouvre son menu : Actualiser, Annuler et Supprimer.
-- Le menu d'enregistrement propose également Record Daily, Record Weekly et Record Series. L'enregistrement de la série recherche les futurs programmes guides portant le même titre sur cette chaîne pendant que l'application est en cours d'exécution.
+- Enregistrer chaque jour, Enregistrer chaque semaine et Enregistrer la série se trouvent dans le menu d'un programme dans Afficher l'EPG et À l'affiche maintenant, à côté de Programmer l'enregistrement. L'enregistrement de la série recherche les futurs programmes du guide portant le même titre sur cette chaîne tant que l'application est ouverte.
 - Vous pouvez sélectionner plusieurs enregistrements ; Ctrl+A sélectionne toutes les lignes.
 - Suppr ou Suppr du pavé numérique demande une confirmation, puis retire les enregistrements sélectionnés. Si certains sont encore en cours, le programme les arrête d'abord.
 - Échap ferme la fenêtre.

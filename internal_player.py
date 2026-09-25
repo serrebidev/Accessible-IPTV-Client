@@ -2228,7 +2228,7 @@ class InternalPlayerFrame(wx.Frame):
 
     def _load_subtitle_file(self, _event: wx.CommandEvent) -> None:
         with wx.FileDialog(self, _("Load Subtitle File"),
-                           wildcard="Subtitle files (*.srt;*.ass;*.ssa;*.vtt)|*.srt;*.ass;*.ssa;*.vtt",
+                           wildcard=_("Subtitle files (*.srt;*.ass;*.ssa;*.vtt)") + "|*.srt;*.ass;*.ssa;*.vtt",
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return

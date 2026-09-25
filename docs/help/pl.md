@@ -290,7 +290,7 @@ Aby nagrać przyszłą audycję, wybierz Zaplanuj nagrywanie na audycji w Pokaż
 Nagrania > Zaplanowane nagrania... wypisuje każde zaplanowane, trwające i zakończone nagranie z czasem, tytułem, kanałem, statusem i formatem.
 
 - Klawisz aplikacji albo Shift+F10 na nagraniu otwiera jego menu: Odśwież, Anuluj i Usuń.
-- Menu nagrywania oferuje także opcję Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serie. Nagrywanie serii umożliwia odnalezienie przyszłych programów przewodników o tym samym tytule na tym kanale, gdy aplikacja jest uruchomiona.
+- Polecenia Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serię znajdują się w menu programu w oknach Pokaż EPG i Teraz w programie, obok Zaplanuj nagrywanie. Nagrywanie serii wyszukuje przyszłe programy z przewodnika o tym samym tytule na tym kanale, gdy aplikacja działa.
 - Można zaznaczyć więcej niż jedno nagranie; Ctrl+A zaznacza wszystkie wiersze.
 - Delete lub Delete na klawiaturze numerycznej prosi o potwierdzenie, a potem usuwa zaznaczone nagrania. Jeśli któreś z nich jeszcze trwa, program najpierw je zatrzymuje.
 - Escape zamyka okno.

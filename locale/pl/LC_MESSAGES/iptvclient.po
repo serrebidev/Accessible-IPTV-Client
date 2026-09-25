@@ -30,6 +30,7 @@ msgid "(thumbprint {thumbprint})."
 msgstr "(odcisk {thumbprint})."
 
 #: main.py:2449
+#: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "Wymagane jest hasło kopii zapasowej."
 
@@ -58,6 +59,11 @@ msgstr "O programie..."
 msgid "Accessibility"
 msgstr "Dostępność"
 
+#: main.py:2535
+#: main.py:2551
+msgid "Accessible IPTV backup (*.aiptv)"
+msgstr "Kopia zapasowa Accessible IPTV (*.aiptv)"
+
 #: account_info.py:381
 msgid "Account"
 msgstr "Konto"
@@ -65,6 +71,7 @@ msgstr "Konto"
 #: main.py:3042
 #: main.py:3180
 #: main.py:8955
+#: shortcuts.py:56
 msgid "Account Info"
 msgstr "Informacje o koncie"
 
@@ -131,6 +138,7 @@ msgstr "Dodaj konto Xtream Codes"
 
 #: main.py:2326
 #: main.py:3204
+#: shortcuts.py:57
 msgid "Add to Favorites"
 msgstr "Dodaj do ulubionych"
 
@@ -179,6 +187,7 @@ msgstr "Urządzenie wyjścia audio..."
 
 #: internal_player.py:474
 #: main.py:2496
+#: shortcuts.py:73
 msgid "Audio Track"
 msgstr "Ścieżka audio"
 
@@ -264,6 +273,14 @@ msgstr "Ogłoszenia automatyczne"
 #: playlist.py:3119
 msgid "Automatically add XMLTV URL"
 msgstr "Automatycznie dodaj adres URL XMLTV"
+
+#: settings_backup.py:47
+msgid "Backup file is too large."
+msgstr "Plik kopii zapasowej jest za duży."
+
+#: settings_backup.py:61
+msgid "Backup settings are invalid."
+msgstr "Ustawienia w kopii zapasowej są nieprawidłowe."
 
 #: account_info.py:372
 msgid "Banned"
@@ -351,6 +368,7 @@ msgstr "Przesyłaj"
 #: main.py:2489
 #: main.py:3048
 #: main.py:3192
+#: shortcuts.py:52
 msgid "Cast / Connect..."
 msgstr "Przesyłaj / Połącz..."
 
@@ -365,6 +383,7 @@ msgstr "Przesyłaj do urządzenia"
 
 #: internal_player.py:481
 #: main.py:2495
+#: shortcuts.py:70
 msgid "Cast..."
 msgstr "Przesyłaj..."
 
@@ -865,6 +884,7 @@ msgstr "Wymagana aktualizacja bazy danych EPG"
 #: main.py:3038
 #: main.py:3176
 #: playlist.py:2832
+#: shortcuts.py:47
 msgid "EPG Manager"
 msgstr "Menedżer EPG"
 
@@ -987,6 +1007,7 @@ msgstr "Nie znaleziono pliku wykonywalnego: {path}"
 #: main.py:1430
 #: main.py:3159
 #: main.py:3185
+#: shortcuts.py:49
 msgid "Exit"
 msgstr "Zakończ"
 
@@ -995,6 +1016,7 @@ msgid "Exit Full Screen"
 msgstr "Wyjdź z trybu pełnoekranowego"
 
 #: internal_player.py:486
+#: shortcuts.py:77
 msgid "Exit Player"
 msgstr "Zamknij odtwarzacz"
 
@@ -1026,6 +1048,10 @@ msgstr "Eksportuj ustawienia..."
 #: main.py:5438
 msgid "Extracting update..."
 msgstr "Wyodrębnianie aktualizacji..."
+
+#: shortcuts.py:115
+msgid "F1 is reserved for Help."
+msgstr "F1 jest zarezerwowany dla Pomocy."
 
 #: main.py:9882
 msgid "Failed"
@@ -1143,6 +1169,7 @@ msgstr "Przejdź do numeru kanału"
 #: main.py:2481
 #: main.py:3067
 #: main.py:3208
+#: shortcuts.py:61
 msgid "Go to Channel Number..."
 msgstr "Przejdź do numeru kanału..."
 
@@ -1170,6 +1197,7 @@ msgid "Help"
 msgstr "Pomoc"
 
 #: internal_player.py:485
+#: shortcuts.py:76
 msgid "Hide Window"
 msgstr "Ukryj okno"
 
@@ -1196,6 +1224,7 @@ msgstr "Import zakończony"
 
 #: main.py:3039
 #: main.py:3177
+#: shortcuts.py:48
 msgid "Import EPG to DB"
 msgstr "Importuj EPG do bazy danych"
 
@@ -1247,6 +1276,14 @@ msgstr "Komunikat instalatora: {message}"
 #: main.py:5620
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "Trwa instalowanie aktualizacji. {app} zamknie się i uruchomi ponownie samoczynnie — w tym czasie nie otwieraj go samodzielnie."
+
+#: settings_backup.py:55
+msgid "Invalid backup salt."
+msgstr "Nieprawidłowa sól kopii zapasowej."
+
+#: shortcuts.py:86
+msgid "Invalid keyboard shortcut."
+msgstr "Nieprawidłowy skrót klawiszowy."
 
 #: providers.py:141
 msgid "Invalid response from Xtream player API"
@@ -1338,6 +1375,10 @@ msgstr "Adres MAC musi zawierać sześć oktetów (np. 00:1A:79:12:34:56)."
 #: playlist.py:3245
 msgid "MAC address presented to the portal"
 msgstr "Adres MAC przedstawiany portalowi"
+
+#: shortcuts.py:113
+msgid "Main-window shortcuts need Ctrl or Alt."
+msgstr "Skróty okna głównego wymagają Ctrl lub Alt."
 
 #: account_info.py:479
 msgid "Maximum connections"
@@ -1527,6 +1568,10 @@ msgstr "Brak"
 msgid "Not Found"
 msgstr "Nie znaleziono"
 
+#: settings_backup.py:51
+msgid "Not an Accessible IPTV settings backup."
+msgstr "To nie jest kopia zapasowa ustawień Accessible IPTV."
+
 #: account_info.py:471
 #: account_info.py:523
 msgid "Not reported by the server"
@@ -1668,6 +1713,8 @@ msgstr "Odtwórz lub wstrzymaj"
 #: main.py:2490
 #: main.py:3046
 #: main.py:3190
+#: shortcuts.py:50
+#: shortcuts.py:67
 msgid "Play/Pause"
 msgstr "Odtwórz/Wstrzymaj"
 
@@ -1701,6 +1748,7 @@ msgstr "Playlista"
 #: main.py:3037
 #: main.py:3175
 #: playlist.py:2921
+#: shortcuts.py:46
 msgid "Playlist Manager"
 msgstr "Menedżer playlist"
 
@@ -1783,6 +1831,7 @@ msgstr "Naciśnij Escape, aby ukryć to okno; pobieranie będzie kontynuowane. W
 #: main.py:3065
 #: main.py:3206
 #: main.py:3656
+#: shortcuts.py:60
 msgid "Previous Channel"
 msgstr "Poprzedni kanał"
 
@@ -1844,6 +1893,7 @@ msgstr "Ostatnio oglądane"
 #: main.py:2482
 #: main.py:3066
 #: main.py:3207
+#: shortcuts.py:62
 msgid "Recently Watched..."
 msgstr "Ostatnio oglądane..."
 
@@ -1865,18 +1915,19 @@ msgstr "Ponowne łączenie..."
 #: main.py:4084
 #: main.py:8212
 #: main.py:8220
+#: shortcuts.py:69
 msgid "Record"
 msgstr "Nagraj"
 
 #: main.py:10200
 #: main.py:10495
 msgid "Record Daily"
-msgstr "Codziennie nagrywaj"
+msgstr "Nagrywaj codziennie"
 
 #: main.py:10202
 #: main.py:10497
 msgid "Record Series"
-msgstr "Seria rekordów"
+msgstr "Nagrywaj serię"
 
 #: main.py:10201
 #: main.py:10496
@@ -2173,9 +2224,17 @@ msgstr "Ustaw folder pobierania"
 msgid "Settings Backup"
 msgstr "Kopia zapasowa ustawień"
 
+#: settings_backup.py:27
+msgid "Settings are too large to back up."
+msgstr "Ustawienia są za duże, aby utworzyć kopię zapasową."
+
 #: main.py:2569
 msgid "Settings imported. Restart the app to use them."
 msgstr "Zaimportowano ustawienia. Uruchom ponownie aplikację, aby z nich korzystać."
+
+#: shortcuts.py:119
+msgid "Shortcut conflicts with {command}."
+msgstr "Skrót koliduje z poleceniem {command}."
 
 #: main.py:2527
 msgid "Shortcut saved. Restart the app to use it."
@@ -2183,10 +2242,12 @@ msgstr "Zapisano skrót. Uruchom ponownie aplikację, aby go użyć."
 
 #: main.py:3045
 #: main.py:3189
+#: shortcuts.py:59
 msgid "Show Built-in Player"
 msgstr "Pokaż wbudowany odtwarzacz"
 
 #: main.py:3213
+#: shortcuts.py:58
 msgid "Show Downloads"
 msgstr "Pokaż pobierane"
 
@@ -2239,6 +2300,7 @@ msgstr "Stalker Portal – {name}"
 
 #: main.py:2488
 #: main.py:5016
+#: shortcuts.py:55
 msgid "Start Recording"
 msgstr "Rozpocznij nagrywanie"
 
@@ -2269,6 +2331,8 @@ msgstr "Status"
 #: main.py:2491
 #: main.py:3047
 #: main.py:3191
+#: shortcuts.py:51
+#: shortcuts.py:68
 msgid "Stop"
 msgstr "Zatrzymaj"
 
@@ -2349,12 +2413,17 @@ msgstr "Subskrypcja"
 msgid "Subtitle file loaded: {name}"
 msgstr "Załadowano plik z napisami: {name}"
 
+#: internal_player.py:2231
+msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
+msgstr "Pliki napisów (*.srt;*.ass;*.ssa;*.vtt)"
+
 #: internal_player.py:2193
 msgid "Subtitle track unavailable"
 msgstr "Ścieżka napisów jest niedostępna"
 
 #: internal_player.py:477
 #: main.py:2497
+#: shortcuts.py:74
 msgid "Subtitles"
 msgstr "Napisy"
 
@@ -2508,6 +2577,7 @@ msgstr "Tytuł"
 
 #: internal_player.py:390
 #: internal_player.py:482
+#: shortcuts.py:75
 msgid "Toggle Full Screen"
 msgstr "Przełącz tryb pełnoekranowy"
 
@@ -2572,6 +2642,10 @@ msgstr "Nieoczekiwana odpowiedź o koncie z serwera Xtream"
 #: updater.py:773
 msgid "Unknown"
 msgstr "Nieznany"
+
+#: shortcuts.py:108
+msgid "Unknown command."
+msgstr "Nieznane polecenie."
 
 #: main.py:3802
 msgid "Unknown time"
@@ -2746,11 +2820,15 @@ msgstr "Regulacja głośności"
 
 #: main.py:2484
 #: main.py:2493
+#: shortcuts.py:54
+#: shortcuts.py:72
 msgid "Volume Down"
 msgstr "Zmniejsz głośność"
 
 #: main.py:2483
 #: main.py:2492
+#: shortcuts.py:53
+#: shortcuts.py:71
 msgid "Volume Up"
 msgstr "Zwiększ głośność"
 
@@ -2759,6 +2837,8 @@ msgstr "Zwiększ głośność"
 #: main.py:2498
 #: main.py:3040
 #: main.py:3179
+#: shortcuts.py:64
+#: shortcuts.py:78
 msgid "What Is Playing"
 msgstr "Co jest grane"
 
@@ -2772,6 +2852,7 @@ msgstr "Co nowego"
 #: main.py:2486
 #: main.py:3178
 #: main.py:9973
+#: shortcuts.py:63
 msgid "What's on Now"
 msgstr "Teraz w programie"
 
@@ -2782,6 +2863,10 @@ msgstr "Gdy kanał udostępnia więcej niż jedną ścieżkę audio, wbudowany o
 #: updater.py:148
 msgid "Windows did not get permission to install the update."
 msgstr "System Windows nie uzyskał zgody na zainstalowanie aktualizacji."
+
+#: settings_backup.py:59
+msgid "Wrong password or damaged backup."
+msgstr "Błędne hasło lub uszkodzona kopia zapasowa."
 
 #: playlist.py:2876
 msgid "XML files"

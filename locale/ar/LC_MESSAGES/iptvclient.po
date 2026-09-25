@@ -30,6 +30,7 @@ msgid "(thumbprint {thumbprint})."
 msgstr "(بصمة {thumbprint})."
 
 #: main.py:2449
+#: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "مطلوب كلمة مرور احتياطية."
 
@@ -58,6 +59,11 @@ msgstr "حول..."
 msgid "Accessibility"
 msgstr "إمكانية الوصول"
 
+#: main.py:2535
+#: main.py:2551
+msgid "Accessible IPTV backup (*.aiptv)"
+msgstr "نسخة احتياطية من Accessible IPTV (*.aiptv)"
+
 #: account_info.py:381
 msgid "Account"
 msgstr "الحساب"
@@ -65,6 +71,7 @@ msgstr "الحساب"
 #: main.py:3042
 #: main.py:3180
 #: main.py:8955
+#: shortcuts.py:56
 msgid "Account Info"
 msgstr "معلومات الحساب"
 
@@ -131,6 +138,7 @@ msgstr "إضافة حساب Xtream Codes"
 
 #: main.py:2326
 #: main.py:3204
+#: shortcuts.py:57
 msgid "Add to Favorites"
 msgstr "إضافة إلى المفضلة"
 
@@ -179,6 +187,7 @@ msgstr "جهاز إخراج الصوت..."
 
 #: internal_player.py:474
 #: main.py:2496
+#: shortcuts.py:73
 msgid "Audio Track"
 msgstr "المسار الصوتي"
 
@@ -264,6 +273,14 @@ msgstr "الإعلانات التلقائية"
 #: playlist.py:3119
 msgid "Automatically add XMLTV URL"
 msgstr "إضافة عنوان URL الخاص بـ XMLTV تلقائيًا"
+
+#: settings_backup.py:47
+msgid "Backup file is too large."
+msgstr "ملف النسخة الاحتياطية كبير جدًا."
+
+#: settings_backup.py:61
+msgid "Backup settings are invalid."
+msgstr "إعدادات النسخة الاحتياطية غير صالحة."
 
 #: account_info.py:372
 msgid "Banned"
@@ -351,6 +368,7 @@ msgstr "بث"
 #: main.py:2489
 #: main.py:3048
 #: main.py:3192
+#: shortcuts.py:52
 msgid "Cast / Connect..."
 msgstr "بث / اتصال..."
 
@@ -365,6 +383,7 @@ msgstr "البث إلى الجهاز"
 
 #: internal_player.py:481
 #: main.py:2495
+#: shortcuts.py:70
 msgid "Cast..."
 msgstr "بث..."
 
@@ -865,6 +884,7 @@ msgstr "مطلوب تحديث قاعدة بيانات دليل البرامج"
 #: main.py:3038
 #: main.py:3176
 #: playlist.py:2832
+#: shortcuts.py:47
 msgid "EPG Manager"
 msgstr "مدير EPG"
 
@@ -987,6 +1007,7 @@ msgstr "لم يتم العثور على الملف التنفيذي: {path}"
 #: main.py:1430
 #: main.py:3159
 #: main.py:3185
+#: shortcuts.py:49
 msgid "Exit"
 msgstr "خروج"
 
@@ -995,6 +1016,7 @@ msgid "Exit Full Screen"
 msgstr "الخروج من ملء الشاشة"
 
 #: internal_player.py:486
+#: shortcuts.py:77
 msgid "Exit Player"
 msgstr "الخروج من المشغّل"
 
@@ -1026,6 +1048,10 @@ msgstr "تصدير الإعدادات..."
 #: main.py:5438
 msgid "Extracting update..."
 msgstr "جارٍ استخراج التحديث..."
+
+#: shortcuts.py:115
+msgid "F1 is reserved for Help."
+msgstr "المفتاح F1 محجوز للتعليمات."
 
 #: main.py:9882
 msgid "Failed"
@@ -1143,6 +1169,7 @@ msgstr "انتقل إلى رقم القناة"
 #: main.py:2481
 #: main.py:3067
 #: main.py:3208
+#: shortcuts.py:61
 msgid "Go to Channel Number..."
 msgstr "انتقل إلى رقم القناة..."
 
@@ -1170,6 +1197,7 @@ msgid "Help"
 msgstr "مساعدة"
 
 #: internal_player.py:485
+#: shortcuts.py:76
 msgid "Hide Window"
 msgstr "إخفاء النافذة"
 
@@ -1196,6 +1224,7 @@ msgstr "اكتمل الاستيراد"
 
 #: main.py:3039
 #: main.py:3177
+#: shortcuts.py:48
 msgid "Import EPG to DB"
 msgstr "استيراد EPG إلى قاعدة البيانات"
 
@@ -1247,6 +1276,14 @@ msgstr "رسالة المثبت: {message}"
 #: main.py:5620
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "جارٍ تثبيت التحديث. سيتم إغلاق {app} ثم تشغيله تلقائيًا من جديد — يرجى عدم فتحه بنفسك في هذه الأثناء."
+
+#: settings_backup.py:55
+msgid "Invalid backup salt."
+msgstr "قيمة الملح في النسخة الاحتياطية غير صالحة."
+
+#: shortcuts.py:86
+msgid "Invalid keyboard shortcut."
+msgstr "اختصار لوحة مفاتيح غير صالح."
 
 #: providers.py:141
 msgid "Invalid response from Xtream player API"
@@ -1338,6 +1375,10 @@ msgstr "يجب أن يحتوي عنوان MAC على ستة مقاطع (مثل 0
 #: playlist.py:3245
 msgid "MAC address presented to the portal"
 msgstr "عنوان MAC المقدَّم إلى البوابة"
+
+#: shortcuts.py:113
+msgid "Main-window shortcuts need Ctrl or Alt."
+msgstr "اختصارات النافذة الرئيسية تحتاج إلى Ctrl أو Alt."
 
 #: account_info.py:479
 msgid "Maximum connections"
@@ -1527,6 +1568,10 @@ msgstr "لا يوجد"
 msgid "Not Found"
 msgstr "غير موجود"
 
+#: settings_backup.py:51
+msgid "Not an Accessible IPTV settings backup."
+msgstr "ليست نسخة احتياطية لإعدادات Accessible IPTV."
+
 #: account_info.py:471
 #: account_info.py:523
 msgid "Not reported by the server"
@@ -1668,6 +1713,8 @@ msgstr "تشغيل أو إيقاف مؤقت"
 #: main.py:2490
 #: main.py:3046
 #: main.py:3190
+#: shortcuts.py:50
+#: shortcuts.py:67
 msgid "Play/Pause"
 msgstr "تشغيل/إيقاف مؤقت"
 
@@ -1701,6 +1748,7 @@ msgstr "قائمة التشغيل"
 #: main.py:3037
 #: main.py:3175
 #: playlist.py:2921
+#: shortcuts.py:46
 msgid "Playlist Manager"
 msgstr "مدير قوائم التشغيل"
 
@@ -1783,6 +1831,7 @@ msgstr "اضغط Escape لإخفاء هذه النافذة؛ يستمر التن
 #: main.py:3065
 #: main.py:3206
 #: main.py:3656
+#: shortcuts.py:60
 msgid "Previous Channel"
 msgstr "القناة السابقة"
 
@@ -1844,6 +1893,7 @@ msgstr "تمت مشاهدته مؤخرًا"
 #: main.py:2482
 #: main.py:3066
 #: main.py:3207
+#: shortcuts.py:62
 msgid "Recently Watched..."
 msgstr "تمت مشاهدته مؤخرًا..."
 
@@ -1865,23 +1915,24 @@ msgstr "جارٍ إعادة الاتصال..."
 #: main.py:4084
 #: main.py:8212
 #: main.py:8220
+#: shortcuts.py:69
 msgid "Record"
 msgstr "تسجيل"
 
 #: main.py:10200
 #: main.py:10495
 msgid "Record Daily"
-msgstr "سجل يوميًا"
+msgstr "سجّل يوميًا"
 
 #: main.py:10202
 #: main.py:10497
 msgid "Record Series"
-msgstr "سلسلة السجلات"
+msgstr "سجّل المسلسل"
 
 #: main.py:10201
 #: main.py:10496
 msgid "Record Weekly"
-msgstr "سجل أسبوعيًا"
+msgstr "سجّل أسبوعيًا"
 
 #: main.py:4100
 #: main.py:4226
@@ -2173,9 +2224,17 @@ msgstr "تعيين مجلد التنزيل"
 msgid "Settings Backup"
 msgstr "النسخ الاحتياطي للإعدادات"
 
+#: settings_backup.py:27
+msgid "Settings are too large to back up."
+msgstr "الإعدادات أكبر من أن يتم نسخها احتياطيًا."
+
 #: main.py:2569
 msgid "Settings imported. Restart the app to use them."
 msgstr "تم استيراد الإعدادات. أعد تشغيل التطبيق لاستخدامها."
+
+#: shortcuts.py:119
+msgid "Shortcut conflicts with {command}."
+msgstr "الاختصار يتعارض مع {command}."
 
 #: main.py:2527
 msgid "Shortcut saved. Restart the app to use it."
@@ -2183,10 +2242,12 @@ msgstr "تم حفظ الاختصار. أعد تشغيل التطبيق لاست�
 
 #: main.py:3045
 #: main.py:3189
+#: shortcuts.py:59
 msgid "Show Built-in Player"
 msgstr "إظهار المشغّل المدمج"
 
 #: main.py:3213
+#: shortcuts.py:58
 msgid "Show Downloads"
 msgstr "إظهار التنزيلات"
 
@@ -2239,6 +2300,7 @@ msgstr "Stalker Portal – {name}"
 
 #: main.py:2488
 #: main.py:5016
+#: shortcuts.py:55
 msgid "Start Recording"
 msgstr "بدء التسجيل"
 
@@ -2269,6 +2331,8 @@ msgstr "الحالة"
 #: main.py:2491
 #: main.py:3047
 #: main.py:3191
+#: shortcuts.py:51
+#: shortcuts.py:68
 msgid "Stop"
 msgstr "إيقاف"
 
@@ -2349,12 +2413,17 @@ msgstr "الاشتراك"
 msgid "Subtitle file loaded: {name}"
 msgstr "تم تحميل ملف الترجمة: {name}"
 
+#: internal_player.py:2231
+msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
+msgstr "ملفات الترجمة (*.srt;*.ass;*.ssa;*.vtt)"
+
 #: internal_player.py:2193
 msgid "Subtitle track unavailable"
 msgstr "مسار الترجمة غير متاح"
 
 #: internal_player.py:477
 #: main.py:2497
+#: shortcuts.py:74
 msgid "Subtitles"
 msgstr "الترجمات"
 
@@ -2508,6 +2577,7 @@ msgstr "العنوان"
 
 #: internal_player.py:390
 #: internal_player.py:482
+#: shortcuts.py:75
 msgid "Toggle Full Screen"
 msgstr "تبديل ملء الشاشة"
 
@@ -2572,6 +2642,10 @@ msgstr "استجابة حساب غير متوقعة من خادم Xtream"
 #: updater.py:773
 msgid "Unknown"
 msgstr "غير معروف"
+
+#: shortcuts.py:108
+msgid "Unknown command."
+msgstr "أمر غير معروف."
 
 #: main.py:3802
 msgid "Unknown time"
@@ -2746,11 +2820,15 @@ msgstr "التحكم في مستوى الصوت"
 
 #: main.py:2484
 #: main.py:2493
+#: shortcuts.py:54
+#: shortcuts.py:72
 msgid "Volume Down"
 msgstr "خفض مستوى الصوت"
 
 #: main.py:2483
 #: main.py:2492
+#: shortcuts.py:53
+#: shortcuts.py:71
 msgid "Volume Up"
 msgstr "رفع مستوى الصوت"
 
@@ -2759,6 +2837,8 @@ msgstr "رفع مستوى الصوت"
 #: main.py:2498
 #: main.py:3040
 #: main.py:3179
+#: shortcuts.py:64
+#: shortcuts.py:78
 msgid "What Is Playing"
 msgstr "ما الذي يتم تشغيله"
 
@@ -2772,6 +2852,7 @@ msgstr "ما الجديد"
 #: main.py:2486
 #: main.py:3178
 #: main.py:9973
+#: shortcuts.py:63
 msgid "What's on Now"
 msgstr "ما يُعرض الآن"
 
@@ -2782,6 +2863,10 @@ msgstr "عندما توفر القناة أكثر من مسار صوتي، يم�
 #: updater.py:148
 msgid "Windows did not get permission to install the update."
 msgstr "لم يحصل Windows على إذن لتثبيت التحديث."
+
+#: settings_backup.py:59
+msgid "Wrong password or damaged backup."
+msgstr "كلمة المرور خاطئة أو النسخة الاحتياطية تالفة."
 
 #: playlist.py:2876
 msgid "XML files"

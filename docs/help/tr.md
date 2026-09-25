@@ -289,7 +289,7 @@ Gelecek bir programı kaydetmek için EPG'yi görüntüle..., Şimdi yayında ya
 Kayıtlar > Zamanlanmış kayıtlar... her zamanlanmış, süren ve bitmiş kaydı zamanı, başlığı, kanalı, durumu ve biçimiyle listeler.
 
 - Bir kayıtta Uygulamalar tuşu ya da Shift+F10 menüsünü açar: Yenile, İptal ve Sil.
-- Kayıt menüsü aynı zamanda Günlük Kayıt, Haftalık Kayıt ve Seri Kayıt seçeneklerini de sunar. Dizi kaydı, uygulama çalışırken o kanalda aynı başlığa sahip gelecekteki rehber programları bulur.
+- Her gün kaydet, Her hafta kaydet ve Diziyi kaydet, EPG'yi görüntüle ve Şimdi yayında pencerelerinde bir programın menüsünde, Kayıt zamanla seçeneğinin yanında bulunur. Dizi kaydı, uygulama çalışırken o kanalda aynı başlığa sahip gelecekteki rehber programlarını bulur.
 - Birden fazla kayıt seçilebilir; Ctrl+A tüm satırları seçer.
 - Delete ya da sayısal tuş takımındaki Delete onay ister, ardından seçili kayıtları kaldırır. Seçili kayıtlardan süren varsa program önce onları durdurur.
 - Escape pencereyi kapatır.

@@ -52,6 +52,8 @@ SOURCE_FILES = [
     "casting.py",
     "stream_proxy.py",
     "release_notes.py",
+    "shortcuts.py",
+    "settings_backup.py",
 ]
 
 # ``N_`` marks a string for extraction without translating it at that point

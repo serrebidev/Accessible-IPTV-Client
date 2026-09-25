@@ -30,6 +30,7 @@ msgid "(thumbprint {thumbprint})."
 msgstr "(थंबप्रिंट {thumbprint})।"
 
 #: main.py:2449
+#: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "बैकअप पासवर्ड ज़रूरी है।"
 
@@ -58,6 +59,11 @@ msgstr "के बारे में..."
 msgid "Accessibility"
 msgstr "सुगम्यता"
 
+#: main.py:2535
+#: main.py:2551
+msgid "Accessible IPTV backup (*.aiptv)"
+msgstr "Accessible IPTV बैकअप (*.aiptv)"
+
 #: account_info.py:381
 msgid "Account"
 msgstr "खाता"
@@ -65,6 +71,7 @@ msgstr "खाता"
 #: main.py:3042
 #: main.py:3180
 #: main.py:8955
+#: shortcuts.py:56
 msgid "Account Info"
 msgstr "खाता जानकारी"
 
@@ -131,6 +138,7 @@ msgstr "Xtream Codes खाता जोड़ें"
 
 #: main.py:2326
 #: main.py:3204
+#: shortcuts.py:57
 msgid "Add to Favorites"
 msgstr "पसंदीदा में जोड़ें"
 
@@ -179,6 +187,7 @@ msgstr "ऑडियो आउटपुट डिवाइस..."
 
 #: internal_player.py:474
 #: main.py:2496
+#: shortcuts.py:73
 msgid "Audio Track"
 msgstr "ऑडियो ट्रैक"
 
@@ -264,6 +273,14 @@ msgstr "स्वचालित घोषणाएँ"
 #: playlist.py:3119
 msgid "Automatically add XMLTV URL"
 msgstr "XMLTV URL स्वतः जोड़ें"
+
+#: settings_backup.py:47
+msgid "Backup file is too large."
+msgstr "बैकअप फ़ाइल बहुत बड़ी है।"
+
+#: settings_backup.py:61
+msgid "Backup settings are invalid."
+msgstr "बैकअप की सेटिंग्स अमान्य हैं।"
 
 #: account_info.py:372
 msgid "Banned"
@@ -351,6 +368,7 @@ msgstr "कास्ट करें"
 #: main.py:2489
 #: main.py:3048
 #: main.py:3192
+#: shortcuts.py:52
 msgid "Cast / Connect..."
 msgstr "कास्ट करें / कनेक्ट करें..."
 
@@ -365,6 +383,7 @@ msgstr "डिवाइस पर कास्ट करें"
 
 #: internal_player.py:481
 #: main.py:2495
+#: shortcuts.py:70
 msgid "Cast..."
 msgstr "कास्ट करें..."
 
@@ -865,6 +884,7 @@ msgstr "EPG डेटाबेस अपडेट आवश्यक"
 #: main.py:3038
 #: main.py:3176
 #: playlist.py:2832
+#: shortcuts.py:47
 msgid "EPG Manager"
 msgstr "EPG प्रबंधक"
 
@@ -987,6 +1007,7 @@ msgstr "निष्पादन योग्य फ़ाइल नहीं �
 #: main.py:1430
 #: main.py:3159
 #: main.py:3185
+#: shortcuts.py:49
 msgid "Exit"
 msgstr "बाहर निकलें"
 
@@ -995,6 +1016,7 @@ msgid "Exit Full Screen"
 msgstr "पूर्ण स्क्रीन से बाहर निकलें"
 
 #: internal_player.py:486
+#: shortcuts.py:77
 msgid "Exit Player"
 msgstr "प्लेयर से बाहर निकलें"
 
@@ -1026,6 +1048,10 @@ msgstr "सेटिंग एक्सपोर्ट करें..."
 #: main.py:5438
 msgid "Extracting update..."
 msgstr "अपडेट निकाला जा रहा है..."
+
+#: shortcuts.py:115
+msgid "F1 is reserved for Help."
+msgstr "F1 सहायता के लिए आरक्षित है।"
 
 #: main.py:9882
 msgid "Failed"
@@ -1143,6 +1169,7 @@ msgstr "चैनल नंबर पर जाएँ"
 #: main.py:2481
 #: main.py:3067
 #: main.py:3208
+#: shortcuts.py:61
 msgid "Go to Channel Number..."
 msgstr "चैनल नंबर पर जाएँ..."
 
@@ -1170,6 +1197,7 @@ msgid "Help"
 msgstr "सहायता"
 
 #: internal_player.py:485
+#: shortcuts.py:76
 msgid "Hide Window"
 msgstr "विंडो छिपाएँ"
 
@@ -1196,6 +1224,7 @@ msgstr "आयात पूर्ण"
 
 #: main.py:3039
 #: main.py:3177
+#: shortcuts.py:48
 msgid "Import EPG to DB"
 msgstr "EPG को डेटाबेस में आयात करें"
 
@@ -1247,6 +1276,14 @@ msgstr "इंस्टॉलर संदेश: {message}"
 #: main.py:5620
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "अपडेट इंस्टॉल हो रहा है। {app} बंद होगा और अपने आप फिर से शुरू हो जाएगा — तब तक कृपया इसे स्वयं न खोलें।"
+
+#: settings_backup.py:55
+msgid "Invalid backup salt."
+msgstr "बैकअप का सॉल्ट अमान्य है।"
+
+#: shortcuts.py:86
+msgid "Invalid keyboard shortcut."
+msgstr "अमान्य कीबोर्ड शॉर्टकट।"
 
 #: providers.py:141
 msgid "Invalid response from Xtream player API"
@@ -1338,6 +1375,10 @@ msgstr "MAC पते में छह ऑक्टेट होने चाह
 #: playlist.py:3245
 msgid "MAC address presented to the portal"
 msgstr "पोर्टल को प्रस्तुत किया गया MAC पता"
+
+#: shortcuts.py:113
+msgid "Main-window shortcuts need Ctrl or Alt."
+msgstr "मुख्य विंडो के शॉर्टकट में Ctrl या Alt होना चाहिए।"
 
 #: account_info.py:479
 msgid "Maximum connections"
@@ -1527,6 +1568,10 @@ msgstr "कोई नहीं"
 msgid "Not Found"
 msgstr "नहीं मिला"
 
+#: settings_backup.py:51
+msgid "Not an Accessible IPTV settings backup."
+msgstr "यह Accessible IPTV सेटिंग्स का बैकअप नहीं है।"
+
 #: account_info.py:471
 #: account_info.py:523
 msgid "Not reported by the server"
@@ -1668,6 +1713,8 @@ msgstr "चलाएँ या रोकें"
 #: main.py:2490
 #: main.py:3046
 #: main.py:3190
+#: shortcuts.py:50
+#: shortcuts.py:67
 msgid "Play/Pause"
 msgstr "चलाएँ/रोकें"
 
@@ -1701,6 +1748,7 @@ msgstr "प्लेलिस्ट"
 #: main.py:3037
 #: main.py:3175
 #: playlist.py:2921
+#: shortcuts.py:46
 msgid "Playlist Manager"
 msgstr "प्लेलिस्ट प्रबंधक"
 
@@ -1783,6 +1831,7 @@ msgstr "इस विंडो को छिपाने के लिए Escape
 #: main.py:3065
 #: main.py:3206
 #: main.py:3656
+#: shortcuts.py:60
 msgid "Previous Channel"
 msgstr "पिछला चैनल"
 
@@ -1844,6 +1893,7 @@ msgstr "हाल ही में देखा गया"
 #: main.py:2482
 #: main.py:3066
 #: main.py:3207
+#: shortcuts.py:62
 msgid "Recently Watched..."
 msgstr "हाल ही में देखा गया..."
 
@@ -1865,18 +1915,19 @@ msgstr "पुनः कनेक्ट हो रहा है..."
 #: main.py:4084
 #: main.py:8212
 #: main.py:8220
+#: shortcuts.py:69
 msgid "Record"
 msgstr "रिकॉर्ड करें"
 
 #: main.py:10200
 #: main.py:10495
 msgid "Record Daily"
-msgstr "रोजाना रिकॉर्ड करें"
+msgstr "रोज़ रिकॉर्ड करें"
 
 #: main.py:10202
 #: main.py:10497
 msgid "Record Series"
-msgstr "रिकॉर्ड सीरीज़"
+msgstr "सीरीज़ रिकॉर्ड करें"
 
 #: main.py:10201
 #: main.py:10496
@@ -2173,9 +2224,17 @@ msgstr "डाउनलोड फ़ोल्डर सेट करें"
 msgid "Settings Backup"
 msgstr "सेटिंग बैकअप"
 
+#: settings_backup.py:27
+msgid "Settings are too large to back up."
+msgstr "सेटिंग्स बैकअप के लिए बहुत बड़ी हैं।"
+
 #: main.py:2569
 msgid "Settings imported. Restart the app to use them."
 msgstr "सेटिंग इम्पोर्ट की गईं। उनका इस्तेमाल करने के लिए ऐप को फिर से शुरू करें।"
+
+#: shortcuts.py:119
+msgid "Shortcut conflicts with {command}."
+msgstr "शॉर्टकट {command} से टकराता है।"
 
 #: main.py:2527
 msgid "Shortcut saved. Restart the app to use it."
@@ -2183,10 +2242,12 @@ msgstr "शॉर्टकट सेव किया गया। इसका �
 
 #: main.py:3045
 #: main.py:3189
+#: shortcuts.py:59
 msgid "Show Built-in Player"
 msgstr "अंतर्निहित प्लेयर दिखाएँ"
 
 #: main.py:3213
+#: shortcuts.py:58
 msgid "Show Downloads"
 msgstr "डाउनलोड दिखाएँ"
 
@@ -2239,6 +2300,7 @@ msgstr "Stalker Portal – {name}"
 
 #: main.py:2488
 #: main.py:5016
+#: shortcuts.py:55
 msgid "Start Recording"
 msgstr "रिकॉर्डिंग प्रारंभ करें"
 
@@ -2269,6 +2331,8 @@ msgstr "स्थिति"
 #: main.py:2491
 #: main.py:3047
 #: main.py:3191
+#: shortcuts.py:51
+#: shortcuts.py:68
 msgid "Stop"
 msgstr "रोकें"
 
@@ -2349,12 +2413,17 @@ msgstr "सदस्यता"
 msgid "Subtitle file loaded: {name}"
 msgstr "उपशीर्षक फ़ाइल लोड की गई: {name}"
 
+#: internal_player.py:2231
+msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
+msgstr "उपशीर्षक फ़ाइलें (*.srt;*.ass;*.ssa;*.vtt)"
+
 #: internal_player.py:2193
 msgid "Subtitle track unavailable"
 msgstr "सबटाइटल ट्रैक उपलब्ध नहीं है"
 
 #: internal_player.py:477
 #: main.py:2497
+#: shortcuts.py:74
 msgid "Subtitles"
 msgstr "उपशीर्षक"
 
@@ -2508,6 +2577,7 @@ msgstr "शीर्षक"
 
 #: internal_player.py:390
 #: internal_player.py:482
+#: shortcuts.py:75
 msgid "Toggle Full Screen"
 msgstr "पूर्ण स्क्रीन टॉगल करें"
 
@@ -2572,6 +2642,10 @@ msgstr "Xtream सर्वर से अप्रत्याशित खा�
 #: updater.py:773
 msgid "Unknown"
 msgstr "अज्ञात"
+
+#: shortcuts.py:108
+msgid "Unknown command."
+msgstr "अज्ञात कमांड।"
 
 #: main.py:3802
 msgid "Unknown time"
@@ -2746,11 +2820,15 @@ msgstr "वॉल्यूम नियंत्रण"
 
 #: main.py:2484
 #: main.py:2493
+#: shortcuts.py:54
+#: shortcuts.py:72
 msgid "Volume Down"
 msgstr "आवाज़ कम करें"
 
 #: main.py:2483
 #: main.py:2492
+#: shortcuts.py:53
+#: shortcuts.py:71
 msgid "Volume Up"
 msgstr "आवाज़ बढ़ाएँ"
 
@@ -2759,6 +2837,8 @@ msgstr "आवाज़ बढ़ाएँ"
 #: main.py:2498
 #: main.py:3040
 #: main.py:3179
+#: shortcuts.py:64
+#: shortcuts.py:78
 msgid "What Is Playing"
 msgstr "क्या खेल रहा है"
 
@@ -2772,6 +2852,7 @@ msgstr "नया क्या है"
 #: main.py:2486
 #: main.py:3178
 #: main.py:9973
+#: shortcuts.py:63
 msgid "What's on Now"
 msgstr "अभी क्या चल रहा है"
 
@@ -2782,6 +2863,10 @@ msgstr "जब किसी चैनल में एक से अधिक �
 #: updater.py:148
 msgid "Windows did not get permission to install the update."
 msgstr "Windows को अपडेट इंस्टॉल करने की अनुमति नहीं मिली।"
+
+#: settings_backup.py:59
+msgid "Wrong password or damaged backup."
+msgstr "गलत पासवर्ड या क्षतिग्रस्त बैकअप।"
 
 #: playlist.py:2876
 msgid "XML files"

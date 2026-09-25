@@ -290,7 +290,7 @@ Para grabar un programa futuro, elija Programar grabación sobre un programa en 
 Grabaciones > Grabaciones programadas… enumera cada grabación programada, en curso y terminada con su hora, título, canal, estado y formato.
 
 - La tecla de aplicaciones o Shift+F10 sobre una grabación abre su menú: Actualizar, Cancelar y Eliminar.
-- El menú de grabación también ofrece Grabar diariamente, Grabar semanalmente y Grabar series. La grabación de series encuentra programas guía futuros con el mismo título en ese canal mientras la aplicación se está ejecutando.
+- Grabar a diario, Grabar semanalmente y Grabar serie están en el menú de un programa en Ver EPG y Qué hay ahora, junto a Programar grabación. La grabación de series busca futuros programas de la guía con el mismo título en ese canal mientras la aplicación está abierta.
 - Se puede seleccionar más de una grabación; Ctrl+A selecciona todas las filas.
 - Supr o Supr del teclado numérico pide confirmación y luego elimina las grabaciones seleccionadas. Si alguna de ellas sigue en curso, el programa la detiene primero.
 - Escape cierra la ventana.
