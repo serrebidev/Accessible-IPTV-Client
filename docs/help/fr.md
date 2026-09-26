@@ -121,7 +121,7 @@ Fichier > Gestionnaire de listes de lecture (Ctrl+M) liste vos sources de listes
 
 Sur une source de la liste, la touche Applications ou Shift+F10 ouvre son menu : Copier l'URL, Renommer (F2) et Supprimer (Suppr). Un nom que vous donnez à une source n'est qu'une étiquette ; il ne change pas la source.
 
-Actualiser (F5), dans le même menu, télécharge à nouveau cette liste et recharge les chaînes, puis annonce la fin. Une nouvelle liste doit d'abord être enregistrée avec OK. Les listes sont aussi actualisées à chaque démarrage du programme et toutes les trois heures.
+Actualiser (F5), dans le même menu, télécharge à nouveau cette liste et recharge les chaînes, puis annonce la fin. Une nouvelle liste doit d'abord être enregistrée avec OK. Les listes sont aussi actualisées à chaque démarrage du programme et toutes les trois heures. Seule la liste en surbrillance est actualisée ; les autres gardent leurs chaînes. Pour actualiser toutes les listes, appuyez d'abord sur Ctrl+A dans la liste.
 
 Choisissez OK pour conserver vos modifications, ou Annuler pour les abandonner. Les chaînes se rechargent après OK.
 

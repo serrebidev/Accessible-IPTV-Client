@@ -121,7 +121,7 @@ Arquivo > Gerenciador de listas de reprodução (Ctrl+M) lista suas fontes de li
 
 Sobre uma fonte da lista, a tecla de menu de aplicativo ou Shift+F10 abre o menu dela: Copiar URL, Renomear (F2) e Eliminar (Delete). Um nome que você dá a uma fonte é só um rótulo; ele não muda a fonte.
 
-Atualizar (F5) no mesmo menu baixa essa lista de novo e recarrega os canais, avisando quando termina. Uma lista nova precisa ser salva com OK antes. As listas também são atualizadas sempre que o programa inicia e a cada três horas.
+Atualizar (F5) no mesmo menu baixa essa lista de novo e recarrega os canais, avisando quando termina. Uma lista nova precisa ser salva com OK antes. As listas também são atualizadas sempre que o programa inicia e a cada três horas. Só a lista destacada é atualizada; as outras mantêm seus canais. Para atualizar todas as listas, pressione Ctrl+A na lista antes.
 
 Escolha OK para manter suas mudanças, ou Cancelar para descartá-las. Os canais recarregam depois de OK.
 

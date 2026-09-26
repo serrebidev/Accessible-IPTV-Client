@@ -120,7 +120,7 @@ Dosya > Oynatma listesi yöneticisi (Ctrl+M) oynatma listesi kaynaklarınızı l
 
 Listedeki bir kaynak üzerinde Uygulamalar tuşu ya da Shift+F10 menüsünü açar: URL'yi kopyala, Yeniden adlandır (F2) ve Sil (Delete). Bir kaynağa verdiğiniz ad yalnızca bir etikettir; kaynağı değiştirmez.
 
-Aynı menüdeki Yenile (F5), o oynatma listesini yeniden indirir, kanalları yeniden yükler ve bittiğinde bildirir. Yeni bir oynatma listesi önce Tamam ile kaydedilmelidir. Oynatma listeleri ayrıca program her başladığında ve üç saatte bir yenilenir.
+Aynı menüdeki Yenile (F5), o oynatma listesini yeniden indirir, kanalları yeniden yükler ve bittiğinde bildirir. Yeni bir oynatma listesi önce Tamam ile kaydedilmelidir. Oynatma listeleri ayrıca program her başladığında ve üç saatte bir yenilenir. Yalnızca vurgulanan oynatma listesi yenilenir; diğerleri kanallarını korur. Tüm oynatma listelerini yenilemek için önce listede Ctrl+A tuşlarına basın.
 
 Değişikliklerinizi korumak için Tamam'ı, atmak için İptal'i seçin. Tamam'dan sonra kanallar yeniden yüklenir.
 

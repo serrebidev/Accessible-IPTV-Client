@@ -2372,15 +2372,23 @@ class IPTVClient(wx.Frame):
             LOG.debug("IPTVClient._channel_is_epg_exempt: ignored exception", exc_info=True)
         return False
 
-    def start_playlist_load(self):
-        """Kicks off ONLY the playlist loading thread."""
+    def start_playlist_load(self, only=None):
+        """Kicks off ONLY the playlist loading thread.
+
+        ``only`` (a list of sources) fetches just those again; every other
+        playlist keeps the channels and provider session it already has.
+        """
+        keep = None
+        if only is not None:
+            keep = (list(self.all_channels), dict(getattr(self, "provider_clients", None) or {}),
+                    list(getattr(self, "provider_epg_sources", None) or []))
         self._playlist_load_token += 1
         self._pending_epg_autostart = True
         self._pending_epg_autostart_token = self._playlist_load_token
         self._cancel_epg_autostart_timer()
         threading.Thread(
             target=self._do_playlist_refresh,
-            args=(self._playlist_load_token,),
+            args=(self._playlist_load_token, only, keep),
             daemon=True
         ).start()
 
@@ -2635,7 +2643,7 @@ class IPTVClient(wx.Frame):
         # This full cycle can be triggered by the timer.
         self.start_playlist_load()
 
-    def _do_playlist_refresh(self, refresh_token: int):
+    def _do_playlist_refresh(self, refresh_token: int, only=None, keep=None):
         """
         Loads playlists from cache for a fast UI update, then refreshes from the network.
         Crucially, it only starts the EPG import *after* playlists are loaded.
@@ -2709,7 +2717,8 @@ class IPTVClient(wx.Frame):
                 prefilled_by_group.setdefault(grp, []).append(ch)
                 prefilled_all.append(ch)
 
-        for _src in playlist_sources:
+        # A partial refresh leaves the channels on screen until it is done.
+        for _src in (playlist_sources if only is None else ()):
             _prefill_from_cache(_src)
 
         if prefilled_all:
@@ -2730,7 +2739,7 @@ class IPTVClient(wx.Frame):
 
         # We will collect these from the workers
         provider_clients_local: Dict[str, object] = {}
-        provider_epg_sources: List[str] = []
+        provider_epg_sources: List[str] = list(keep[2]) if keep else []
 
         def fetch_and_process_playlist(src):
             result = {
@@ -2740,6 +2749,18 @@ class IPTVClient(wx.Frame):
                 "valid_cache": None,
                 "error": None
             }
+            if only is not None and src not in only:
+                scope_id = _source_scope_id(src)
+                kept = [ch for ch in keep[0] if scope_id and ch.get("playlist-id") == scope_id]
+                if kept:  # else it never loaded: fetch it like the rest
+                    result["channels"] = kept
+                    if isinstance(src, dict):
+                        pid = src.get("id") or src.get("provider_id")
+                        if pid in keep[1]:
+                            result["clients"][pid] = keep[1][pid]
+                    elif isinstance(src, str) and src.startswith(("http://", "https://")):
+                        result["valid_cache"] = get_cache_path_for_url(src)
+                    return result
             try:
                 if isinstance(src, dict):
                     stype = (src.get("type") or "").lower()
@@ -2923,9 +2944,10 @@ class IPTVClient(wx.Frame):
             else:
                 self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
-            if getattr(self, "_announce_playlists_refreshed", False):
-                self._announce_playlists_refreshed = False
-                self._speak(_("Playlists refreshed."))
+            done = getattr(self, "_announce_playlists_refreshed", None)
+            if done:
+                self._announce_playlists_refreshed = None
+                self._speak(done)
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
             self._schedule_auto_update_check()
@@ -6991,7 +7013,7 @@ class IPTVClient(wx.Frame):
 
     def show_manager(self, _):
         dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"),
-                                    on_refresh=self._refresh_playlist_source)
+                                    on_refresh=self._refresh_playlist_sources)
         if dlg.ShowModal() == wx.ID_OK:
             self.playlist_sources = dlg.GetResult()
             self.config["playlists"] = self.playlist_sources
@@ -7001,20 +7023,30 @@ class IPTVClient(wx.Frame):
             self.start_playlist_load() # Reload everything after changes
         dlg.Destroy()
 
-    def _refresh_playlist_source(self, src) -> None:
-        """Playlist Manager > Refresh: fetch this playlist again, then reload all."""
-        if src not in self.playlist_sources:
+    def _refresh_playlist_sources(self, sources, label) -> None:
+        """Playlist Manager > Refresh: fetch these playlists again.
+
+        ``label`` names the one highlighted playlist; None means all of them
+        (Ctrl+A first), which is the same full reload the timer does.
+        """
+        if any(src not in self.playlist_sources for src in sources):
             self._speak(_("Choose OK to save the new playlist, then refresh it."))
             return
-        if isinstance(src, str) and src.startswith(("http://", "https://")):
-            # Otherwise a copy downloaded in the last 15 minutes is reused.
-            try:
-                os.remove(get_cache_path_for_url(src))
-            except OSError:
-                LOG.debug("IPTVClient._refresh_playlist_source: no cached copy to drop", exc_info=True)
-        self._announce_playlists_refreshed = True
-        self._speak(_("Refreshing playlists..."))
-        self.start_playlist_load()
+        for src in sources:
+            if isinstance(src, str) and src.startswith(("http://", "https://")):
+                # Otherwise a copy downloaded in the last 15 minutes is reused.
+                try:
+                    os.remove(get_cache_path_for_url(src))
+                except OSError:
+                    LOG.debug("IPTVClient._refresh_playlist_sources: no cached copy to drop", exc_info=True)
+        if label is None:
+            self._announce_playlists_refreshed = _("All playlists refreshed.")
+            self._speak(_("Refreshing all playlists..."))
+            self.start_playlist_load()
+        else:
+            self._announce_playlists_refreshed = _("Playlist refreshed: {name}").format(name=label)
+            self._speak(_("Refreshing playlist: {name}").format(name=label))
+            self.start_playlist_load(only=list(sources))
 
     def show_epg_manager(self, _):
         dlg = EPGManagerDialog(self, self.epg_sources, self.config.get("epg_names"))

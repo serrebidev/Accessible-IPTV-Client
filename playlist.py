@@ -2686,6 +2686,8 @@ class _SourceNamesMixin:
             self.OnRemove(event)
         elif key == wx.WXK_F5 and getattr(self, "_on_refresh", None):
             self.OnRefresh(event)
+        elif key == ord("A") and event.ControlDown() and getattr(self, "_on_refresh", None):
+            self.OnSelectAll(event)
         else:
             event.Skip()
 
@@ -2801,8 +2803,9 @@ class _SourceNamesMixin:
         copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
         copy_item.Enable(self._selected_source_url() is not None)
         if getattr(self, "_on_refresh", None):
-            refresh_item = menu.Append(wx.ID_ANY, _("Refresh") + "\tF5")
-            refresh_item.Enable(has_selection)
+            label = _("Refresh All Playlists") if self._refresh_all else _("Refresh")
+            refresh_item = menu.Append(wx.ID_ANY, label + "\tF5")
+            refresh_item.Enable(has_selection or self._refresh_all)
             menu.Bind(wx.EVT_MENU, self.OnRefresh, refresh_item)
         rename_item = menu.Append(wx.ID_ANY, _("Rename") + "\tF2")
         remove_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
@@ -2926,6 +2929,7 @@ if WX_AVAILABLE:
         def __init__(self, parent, playlist_sources, source_names=None, on_refresh=None):
             super().__init__(parent, title=_("Playlist Manager"), size=(600, 300))
             self._on_refresh = on_refresh
+            self._refresh_all = False  # Ctrl+A: Refresh covers every playlist
             self.help_topic = "playlist-manager"
             self.playlist_sources = [dict(src) if isinstance(src, dict) else src
                                      for src in playlist_sources]
@@ -2968,6 +2972,7 @@ if WX_AVAILABLE:
             # also covers Shift+F10 and the Applications key.
             self.lb.Bind(wx.EVT_CONTEXT_MENU, self._on_source_context_menu)
             self.lb.Bind(wx.EVT_CHAR_HOOK, self._on_source_shortcut)
+            self.lb.Bind(wx.EVT_LISTBOX, self._on_highlight_moved)
             self._focus_source_list()
 
         def OnAddFile(self, _event):
@@ -2991,10 +2996,25 @@ if WX_AVAILABLE:
                         self.lb.Append(self._format_source_label(url))
                         self.lb.SetSelection(len(self.playlist_sources) - 1)
 
+        def OnSelectAll(self, _event):
+            """Ctrl+A: the next Refresh covers every playlist, until the highlight moves."""
+            if self.playlist_sources:
+                self._refresh_all = True
+                import live_announce
+                live_announce.speak(_("All playlists selected. Press F5 to refresh them all."))
+
+        def _on_highlight_moved(self, event):
+            self._refresh_all = False
+            event.Skip()
+
         def OnRefresh(self, _event):
+            if self._refresh_all:
+                self._on_refresh(list(self.playlist_sources), None)
+                return
             i = self.lb.GetSelection()
             if i != wx.NOT_FOUND:
-                self._on_refresh(self.playlist_sources[i])
+                src = self.playlist_sources[i]
+                self._on_refresh([src], self._format_source_label(src))
 
         def OnAddXtream(self, _):
             self._add_provider_source(XtreamCodesDialog)

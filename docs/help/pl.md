@@ -121,7 +121,7 @@ Plik > Menedżer playlist (Ctrl+M) wypisuje twoje źródła playlist. Otwiera si
 
 Na źródle na liście klawisz aplikacji albo Shift+F10 otwiera jego menu: Kopiuj adres URL, Zmień nazwę (F2) i Usuń (Delete). Nadana źródłu nazwa jest tylko etykietą; nie zmienia źródła.
 
-Odśwież (F5) w tym samym menu ponownie pobiera tę listę odtwarzania, wczytuje kanały od nowa i informuje o zakończeniu. Nową listę trzeba najpierw zapisać przyciskiem OK. Listy odtwarzania są też odświeżane przy każdym uruchomieniu programu i co trzy godziny.
+Odśwież (F5) w tym samym menu ponownie pobiera tę listę odtwarzania, wczytuje kanały od nowa i informuje o zakończeniu. Nową listę trzeba najpierw zapisać przyciskiem OK. Listy odtwarzania są też odświeżane przy każdym uruchomieniu programu i co trzy godziny. Odświeżana jest tylko zaznaczona lista; pozostałe zachowują swoje kanały. Aby odświeżyć wszystkie listy, najpierw naciśnij Ctrl+A na liście.
 
 Wybierz OK, aby zachować zmiany, albo Anuluj, aby je porzucić. Po OK kanały ładują się na nowo.
 

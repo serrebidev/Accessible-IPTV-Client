@@ -121,7 +121,7 @@ Datei > Wiedergabelisten-Manager (Ctrl+M) listet Ihre Wiedergabelistenquellen au
 
 Auf einer Quelle in der Liste öffnet die Anwendungstaste oder Shift+F10 ihr Menü: URL kopieren, Umbenennen (F2) und Löschen (Entf). Ein Name, den Sie einer Quelle geben, ist nur ein Etikett; er ändert die Quelle nicht.
 
-Aktualisieren (F5) im selben Menü lädt diese Wiedergabeliste erneut herunter, lädt die Sender neu und sagt an, wenn es fertig ist. Eine neue Wiedergabeliste muss zuerst mit OK gespeichert werden. Wiedergabelisten werden außerdem bei jedem Programmstart und alle drei Stunden aktualisiert.
+Aktualisieren (F5) im selben Menü lädt diese Wiedergabeliste erneut herunter, lädt die Sender neu und sagt an, wenn es fertig ist. Eine neue Wiedergabeliste muss zuerst mit OK gespeichert werden. Wiedergabelisten werden außerdem bei jedem Programmstart und alle drei Stunden aktualisiert. Nur die markierte Wiedergabeliste wird aktualisiert; die anderen behalten ihre Sender. Um alle Wiedergabelisten zu aktualisieren, drücken Sie zuerst Strg+A in der Liste.
 
 Wählen Sie OK, um Ihre Änderungen zu behalten, oder Abbrechen, um sie zu verwerfen. Nach OK laden die Sender neu.
 

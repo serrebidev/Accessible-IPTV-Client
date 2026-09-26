@@ -121,7 +121,7 @@ File > Gestione playlist (Ctrl+M) elenca le sorgenti delle playlist. Si apre con
 
 Su una sorgente dell'elenco, il tasto applicazioni o Shift+F10 apre il suo menu: Copia URL, Rinomina (F2) e Elimina (Canc). Un nome dato a una sorgente è solo un'etichetta; non cambia la sorgente.
 
-Aggiorna (F5) nello stesso menu scarica di nuovo quella playlist, ricarica i canali e avvisa quando ha finito. Una nuova playlist va prima salvata con OK. Le playlist vengono aggiornate anche a ogni avvio del programma e ogni tre ore.
+Aggiorna (F5) nello stesso menu scarica di nuovo quella playlist, ricarica i canali e avvisa quando ha finito. Una nuova playlist va prima salvata con OK. Le playlist vengono aggiornate anche a ogni avvio del programma e ogni tre ore. Viene aggiornata solo la playlist evidenziata; le altre mantengono i loro canali. Per aggiornare tutte le playlist, premi prima Ctrl+A nell'elenco.
 
 Scegliere OK per mantenere le modifiche, o Annulla per scartarle. I canali si ricaricano dopo OK.
 

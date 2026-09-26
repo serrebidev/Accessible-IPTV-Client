@@ -121,7 +121,7 @@ Archivo > Administrador de listas de reproducción (Ctrl+M) enumera sus fuentes 
 
 Sobre una fuente de la lista, la tecla de aplicaciones o Shift+F10 abre su menú: Copiar URL, Renombrar (F2) y Eliminar (Supr). Un nombre que dé a una fuente es solo una etiqueta; no cambia la fuente.
 
-Actualizar (F5) en el mismo menú vuelve a descargar esa lista y recarga los canales, y avisa cuando termina. Una lista nueva debe guardarse antes con Aceptar. Las listas también se actualizan cada vez que se inicia el programa y cada tres horas.
+Actualizar (F5) en el mismo menú vuelve a descargar esa lista y recarga los canales, y avisa cuando termina. Una lista nueva debe guardarse antes con Aceptar. Las listas también se actualizan cada vez que se inicia el programa y cada tres horas. Solo se actualiza la lista resaltada; las demás conservan sus canales. Para actualizar todas las listas, pulse primero Ctrl+A en la lista.
 
 Elija Aceptar para conservar sus cambios, o Cancelar para descartarlos. Los canales se recargan tras Aceptar.
 
