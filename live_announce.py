@@ -28,3 +28,20 @@ def notify(ctrl: wx.Window) -> None:
                 EVENT_OBJECT_LIVEREGIONCHANGED, ctrl.GetHandle(), OBJID_CLIENT, 0)
         except Exception:
             LOG.debug("Could not raise live region event", exc_info=True)
+
+
+def speak(text: str) -> None:
+    """Read ``text`` from whichever window of this app is in front (a dialog too)."""
+    win = wx.GetActiveWindow()
+    if win is None or not text:
+        return
+    label = getattr(win, "_live_announcer", None)
+    if label is None:
+        # Not straight on the top-level window: a second child stops wx from
+        # sizing its single panel to fill the window.
+        kids = [child for child in win.GetChildren() if not child.IsTopLevel()]
+        label = wx.StaticText(kids[0] if kids else win, label="")
+        label.Hide()
+        win._live_announcer = label
+    label.SetLabel(text)
+    notify(label)

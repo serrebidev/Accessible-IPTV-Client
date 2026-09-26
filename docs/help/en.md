@@ -130,6 +130,8 @@ File > Playlist Manager (Ctrl+M) lists your playlist sources. It opens with the 
 
 On a source in the list, the Applications key or Shift+F10 opens its menu: Copy URL, Rename (F2) and Delete (Del). A name you give a source is only a label; it does not change the source.
 
+Refresh (F5) on the same menu downloads that playlist again and reloads the channels, and says when it is done. A new playlist has to be saved with OK first. Playlists are also refreshed each time the program starts and every three hours.
+
 Choose OK to keep your changes, or Cancel to forget them. The channels reload after OK.
 
 ### Xtream Codes accounts {#xtream-codes}

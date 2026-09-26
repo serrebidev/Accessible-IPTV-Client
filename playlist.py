@@ -2684,6 +2684,8 @@ class _SourceNamesMixin:
             self.OnRename(event)
         elif key == wx.WXK_DELETE:
             self.OnRemove(event)
+        elif key == wx.WXK_F5 and getattr(self, "_on_refresh", None):
+            self.OnRefresh(event)
         else:
             event.Skip()
 
@@ -2798,6 +2800,10 @@ class _SourceNamesMixin:
         menu = wx.Menu()
         copy_item = menu.Append(wx.ID_ANY, _("Copy URL"))
         copy_item.Enable(self._selected_source_url() is not None)
+        if getattr(self, "_on_refresh", None):
+            refresh_item = menu.Append(wx.ID_ANY, _("Refresh") + "\tF5")
+            refresh_item.Enable(has_selection)
+            menu.Bind(wx.EVT_MENU, self.OnRefresh, refresh_item)
         rename_item = menu.Append(wx.ID_ANY, _("Rename") + "\tF2")
         remove_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
         rename_item.Enable(has_selection)
@@ -2917,8 +2923,9 @@ else:
 
 if WX_AVAILABLE:
     class PlaylistManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
-        def __init__(self, parent, playlist_sources, source_names=None):
+        def __init__(self, parent, playlist_sources, source_names=None, on_refresh=None):
             super().__init__(parent, title=_("Playlist Manager"), size=(600, 300))
+            self._on_refresh = on_refresh
             self.help_topic = "playlist-manager"
             self.playlist_sources = [dict(src) if isinstance(src, dict) else src
                                      for src in playlist_sources]
@@ -2983,6 +2990,11 @@ if WX_AVAILABLE:
                         self.playlist_sources.append(url)
                         self.lb.Append(self._format_source_label(url))
                         self.lb.SetSelection(len(self.playlist_sources) - 1)
+
+        def OnRefresh(self, _event):
+            i = self.lb.GetSelection()
+            if i != wx.NOT_FOUND:
+                self._on_refresh(self.playlist_sources[i])
 
         def OnAddXtream(self, _):
             self._add_provider_source(XtreamCodesDialog)

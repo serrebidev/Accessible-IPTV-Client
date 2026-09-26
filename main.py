@@ -1655,10 +1655,6 @@ class IPTVClient(wx.Frame):
         self._db_tune_started = False
         self._build_ui()
         self._info_status_bar = self.CreateStatusBar()
-        # Hidden text the screen reader reads for announcements made while this
-        # window is in front; the status bar itself is not read on a live-region change.
-        self._announcer = wx.StaticText(self._info_status_bar, label="")
-        self._announcer.Hide()
         install_help_hooks(wx.GetApp())
         self._start_now_playing_timer()
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
@@ -2265,11 +2261,7 @@ class IPTVClient(wx.Frame):
         self._speak(text)
 
     def _speak(self, text: str) -> None:
-        announcer = getattr(self, "_announcer", None)
-        if announcer is None or not text:
-            return
-        announcer.SetLabel(text)
-        live_announce.notify(announcer)
+        live_announce.speak(text)
 
     def _rebuild_favorites_view(self, removed_name: str = ""):
         """Refresh the Favorites category after a channel was removed from it."""
@@ -2931,6 +2923,9 @@ class IPTVClient(wx.Frame):
             else:
                 self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
+            if getattr(self, "_announce_playlists_refreshed", False):
+                self._announce_playlists_refreshed = False
+                self._speak(_("Playlists refreshed."))
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
             self._schedule_auto_update_check()
@@ -6995,7 +6990,8 @@ class IPTVClient(wx.Frame):
             _("Import Failed"), wx.OK | wx.ICON_WARNING)
 
     def show_manager(self, _):
-        dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"))
+        dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"),
+                                    on_refresh=self._refresh_playlist_source)
         if dlg.ShowModal() == wx.ID_OK:
             self.playlist_sources = dlg.GetResult()
             self.config["playlists"] = self.playlist_sources
@@ -7004,6 +7000,21 @@ class IPTVClient(wx.Frame):
             save_config(self.config)
             self.start_playlist_load() # Reload everything after changes
         dlg.Destroy()
+
+    def _refresh_playlist_source(self, src) -> None:
+        """Playlist Manager > Refresh: fetch this playlist again, then reload all."""
+        if src not in self.playlist_sources:
+            self._speak(_("Choose OK to save the new playlist, then refresh it."))
+            return
+        if isinstance(src, str) and src.startswith(("http://", "https://")):
+            # Otherwise a copy downloaded in the last 15 minutes is reused.
+            try:
+                os.remove(get_cache_path_for_url(src))
+            except OSError:
+                LOG.debug("IPTVClient._refresh_playlist_source: no cached copy to drop", exc_info=True)
+        self._announce_playlists_refreshed = True
+        self._speak(_("Refreshing playlists..."))
+        self.start_playlist_load()
 
     def show_epg_manager(self, _):
         dlg = EPGManagerDialog(self, self.epg_sources, self.config.get("epg_names"))
