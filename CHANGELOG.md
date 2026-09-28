@@ -1,6 +1,13 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.144.2 - 2026-09-27
+
+### Bug fixes
+
+- Open the catch-up list after its guide lookup, not at the cost of a frozen app
+- Accept valid XMLTV timestamps shorter than 14 digits
+
 ## v1.144.1 - 2026-09-25
 
 ### Bug fixes
