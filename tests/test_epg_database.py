@@ -508,6 +508,23 @@ def test_xmltv_negative_half_hour_offset_parses_to_utc():
     assert _parse_xmltv_to_utc_str("20240101120000 +0000") == "20240101120000"
 
 
+def test_xmltv_short_timestamps_parse_to_utc():
+    # The XMLTV spec allows omitting trailing components and the reference
+    # parser fills month/day with 01 and the rest with zeros. Feeds in the
+    # wild publish the minute form; a 14-digit-only regex made every
+    # programme of such a guide parse to None and be dropped at import.
+    assert _parse_xmltv_to_utc_str("202609270600 +0100") == "20260927050000"
+    assert _parse_xmltv_to_utc_str("202609270600") == "20260927060000"
+    assert _parse_xmltv_to_utc_str("2026092706") == "20260927060000"
+    assert _parse_xmltv_to_utc_str("20260927") == "20260927000000"
+    assert _parse_xmltv_to_utc_str("202609") == "20260901000000"
+    assert _parse_xmltv_to_utc_str("2026") == "20260101000000"
+    # Malformed digit counts and invalid fields stay rejected.
+    assert _parse_xmltv_to_utc_str("20260927123") is None      # 11 digits
+    assert _parse_xmltv_to_utc_str("20261327000000") is None   # month 13
+    assert _parse_xmltv_to_utc_str("2026092706002") is None    # 13 digits
+
+
 def _epg_gz_temp_path(url: str) -> str:
     h = hashlib.md5(url.encode("utf-8", "ignore")).hexdigest()
     return os.path.join(tempfile.gettempdir(), f"epg_{h}.xml.gz")

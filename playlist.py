@@ -801,7 +801,13 @@ def _market_tokens_for(country: str, brand: str, text: str) -> Tuple[Set[str], S
 # XMLTV time parsing to UTC (ROBUST & EXCEPTION-SAFE)
 # =========================
 
-_XMLTV_TS_RX = re.compile(r'^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+\-]\d{4})?$')
+# XMLTV allows trailing date/time components to be omitted: "20260927",
+# "202609270600" and "20260927060000" are all valid stamps, and real feeds
+# do publish the minute-precision form. A whole guide of them used to parse
+# to None and be dropped silently at import. The reference parser (XMLTV::Date)
+# fills month/day with 01 and the remaining time components with zeros; odd
+# digit counts (11, 13) still cannot match because every group is two digits.
+_XMLTV_TS_RX = re.compile(r'^(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?\s*([+\-]\d{4})?$')
 
 def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
     if not s:
@@ -822,7 +828,8 @@ def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
             # CPU time in profiling (~55%). The fixed-width digit groups are already
             # validated by the regex, so construct directly instead.
             y, mo, d, h, mi, sec, offset_str = m.groups()
-            dt = datetime.datetime(int(y), int(mo), int(d), int(h), int(mi), int(sec))
+            dt = datetime.datetime(int(y), int(mo or 1), int(d or 1),
+                                   int(h or 0), int(mi or 0), int(sec or 0))
             if offset_str:
                 # Parse sign and magnitude separately; floor-division on a negative
                 # combined value mishandles half-hour zones (e.g. -0330 -> -3h50m).
