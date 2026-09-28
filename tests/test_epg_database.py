@@ -10,6 +10,7 @@ import random
 import sqlite3
 import sys
 import tempfile
+import time
 
 import pytest
 
@@ -31,6 +32,21 @@ from playlist import (
     strip_noise_words,
     tokenize_channel_name,
 )
+
+
+def test_import_lock_from_exited_process_is_recovered(tmp_path):
+    db_path = str(tmp_path / "epg.db")
+    lock_path, pid_path = playlist._import_lock_paths(db_path)
+    with open(lock_path, "w", encoding="ascii") as handle:
+        handle.write("locked")
+    with open(pid_path, "w", encoding="ascii") as handle:
+        handle.write("999999999")
+    os.utime(lock_path, (time.time() - 2, time.time() - 2))
+
+    started = time.monotonic()
+    assert playlist._try_acquire_import_lock(db_path, max_wait_sec=1)
+    assert time.monotonic() - started < 1
+    playlist._release_import_lock(db_path)
 
 
 def _create_epg_schema(path):
@@ -665,6 +681,21 @@ def test_programme_descriptions_round_trip(tmp_path):
     db.close()
     assert now_next is not None
     assert now_next[0]["description"] == "A great episode."
+
+
+def test_reimport_replaces_stale_programmes_in_same_slot(tmp_path):
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    db.insert_channel("3201", "HGTV East")
+    db.insert_programme("3201", "News 12", "20260928030000", "20260928033000")
+    db.insert_programme("3201", "News 12", "20260928040000", "20260928090000")
+    db.insert_programme("3201", "Older show", "20260927030000", "20260927033000")
+    db.insert_programme("3201", "House Hunters", "20260928030000", "20260928033000")
+    db.insert_programme("3201", "Totally '90s House", "20260928040000", "20260928050000")
+    rows = db.conn.execute(
+        "SELECT title FROM programmes WHERE channel_id = ? ORDER BY start", ("3201",)
+    ).fetchall()
+    db.close()
+    assert rows == [("Older show",), ("House Hunters",), ("Totally '90s House",)]
 
 
 def test_legacy_programme_table_is_migrated_and_descriptions_backfill(tmp_path):

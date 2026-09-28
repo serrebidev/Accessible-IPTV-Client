@@ -258,7 +258,15 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
                 age = time.time() - os.stat(lock_path).st_mtime
             except Exception:
                 age = 0
-            if age > 2 * 60 * 60:  # 2 hours
+            owner_exited = False
+            try:
+                with open(pid_path, encoding='ascii') as pf:
+                    owner_pid = int(pf.read().strip())
+                import psutil
+                owner_exited = age > 1 and not psutil.pid_exists(owner_pid)
+            except (OSError, ValueError, ImportError):
+                _logger.debug("EPG import owner PID unavailable; using age fallback", exc_info=True)
+            if owner_exited or age > 2 * 60 * 60:
                 try:
                     os.remove(lock_path)
                 except Exception:
@@ -1485,6 +1493,13 @@ class EPGDatabase:
     def insert_programme(self, channel_id: str, title: str, start_utc: str, end_utc: str,
                          description: str = ""):
         c = self.conn.cursor()
+        # A refreshed guide can change both the show and its time span. Remove
+        # old overlapping slots so stale entries cannot win the now/next query.
+        c.execute("""
+            DELETE FROM programmes
+            WHERE channel_id = ? AND start < ? AND end > ?
+              AND NOT (start = ? AND end = ?)
+        """, (channel_id, end_utc, start_utc, start_utc, end_utc))
         # Upsert so a re-import can fill a description in: an empty one, or a
         # short one the guide has since expanded. Guides often publish a
         # series blurb first and the episode synopsis nearer the air date, and
@@ -1494,10 +1509,15 @@ class EPGDatabase:
         c.execute("""
             INSERT INTO programmes (channel_id, title, start, end, description)
             VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(channel_id, start, end) DO UPDATE SET description = excluded.description
-            WHERE excluded.description IS NOT NULL AND excluded.description != ''
-              AND (programmes.description IS NULL
-                   OR length(excluded.description) > length(programmes.description))
+            ON CONFLICT(channel_id, start, end) DO UPDATE SET
+              title = excluded.title,
+              description = CASE
+                WHEN programmes.title != excluded.title THEN excluded.description
+                WHEN length(excluded.description) > length(coalesce(programmes.description, ''))
+                  THEN excluded.description
+                ELSE programmes.description END
+            WHERE programmes.title != excluded.title
+               OR length(excluded.description) > length(coalesce(programmes.description, ''))
         """, (channel_id, title, start_utc, end_utc, description))
 
     def prune_old_programmes(self, days: int = 7):
