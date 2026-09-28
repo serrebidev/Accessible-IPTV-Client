@@ -162,6 +162,40 @@ def test_return_opens_the_list_on_the_played_programme():
     assert opened == [({"name": "TVP 1"}, "20260910183000")]
 
 
+def test_catchup_list_lookup_runs_off_the_gui_thread(monkeypatch):
+    # The fuzzy channel match and recent-programmes query take seconds over a
+    # large guide (and longer while an EPG import saturates the disk). On the
+    # GUI thread that freezes the app and NVDA with it - the failure the
+    # search path documents - so the lookup must go through the EPG executor
+    # and the dialog must arrive via CallAfter, like View EPG already does.
+    queued = []
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: queued.append((fn, a)))
+    fetched = []
+    submitted = []
+
+    class _Executor:
+        def submit(self, fn):
+            submitted.append(fn)
+
+    client = _client(
+        _catchup_dialog_open=False,
+        _epg_executor=_Executor(),
+        _get_catchup_programmes=lambda channel: fetched.append(channel) or ["programme"],
+        _show_catchup_dialog=lambda *a: None,
+    )
+    main.IPTVClient._open_catchup_dialog(client, {"name": "TVP 1"}, "20260910183000")
+    assert fetched == []        # nothing queried on the calling (UI) thread
+    assert len(submitted) == 1  # the lookup was queued to the executor instead
+    submitted[0]()
+    assert fetched == [{"name": "TVP 1"}]
+    assert queued == [(client._show_catchup_dialog,
+                       ({"name": "TVP 1"}, ["programme"], "20260910183000"))]
+    # A second press while the first lookup is still in flight (the flag is
+    # only cleared by _show_catchup_dialog's finally) queues nothing.
+    main.IPTVClient._open_catchup_dialog(client, {"name": "TVP 1"})
+    assert len(submitted) == 1
+
+
 @pytest.mark.parametrize("override", [
     {"IsShown": lambda: False},                        # minimized to the tray
     {"_suppress_recording_notifications": True},       # the app is quitting

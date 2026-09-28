@@ -1624,6 +1624,7 @@ class IPTVClient(wx.Frame):
         self._internal_player_audio_key = ""
         # Live catch-up download progress dialogs, by recorder id.
         self._catchup_downloads: Dict[int, "CatchupDownloadDialog"] = {}
+        self._catchup_dialog_open = False
         # Auto-retry bookkeeping for failed catch-up downloads, keyed by the
         # *original* recorder id so the attempt budget survives retries (each
         # retry gets a fresh recorder id).
@@ -8369,45 +8370,68 @@ class IPTVClient(wx.Frame):
         self._launch_stream(url, title, stream_kind=stream_kind, channel=channel, show_internal_player=False)
 
     def _open_catchup_dialog(self, channel: Dict[str, str], select_start: str = ""):
-        programmes = self._get_catchup_programmes(channel)
-        if not programmes:
-            message_box(_("No catch-up programmes are available for this channel."),
-                          _("Catch-up"), wx.OK | wx.ICON_INFORMATION)
+        # The fuzzy channel match and recent-programmes query run over a
+        # multi-million-row guide (candidate LIKE scans plus per-candidate
+        # availability probes), and seconds more while an EPG import saturates
+        # the disk. That on the GUI thread freezes the whole app - the exact
+        # failure the search path documents - so the lookup runs on the EPG
+        # executor and the dialog opens through CallAfter, like View EPG and
+        # What's On Now already do. The flag keeps a second press during the
+        # lookup from queueing a second dialog.
+        if getattr(self, "_catchup_dialog_open", False):
             return
-        dlg = CatchupDialog(self, channel.get("name", ""), programmes,
-                            initial_start=select_start)
+        self._catchup_dialog_open = True
+
+        def fetch():
+            programmes = self._get_catchup_programmes(channel)
+            wx.CallAfter(self._show_catchup_dialog, channel, programmes, select_start)
+
+        self._epg_executor.submit(fetch)
+
+    def _show_catchup_dialog(self, channel: Dict[str, str],
+                             programmes: List[Dict[str, str]],
+                             select_start: str = ""):
         try:
-            action = dlg.ShowModal()
-            if action not in (wx.ID_OK, wx.ID_SAVE):
+            if not programmes:
+                message_box(_("No catch-up programmes are available for this channel."),
+                              _("Catch-up"), wx.OK | wx.ICON_INFORMATION)
                 return
-            selected = dlg.get_selection()
-            if not selected:
-                return
-            show = {
-                "channel_id": selected.get("channel_id", ""),
-                "channel_name": channel.get("name", selected.get("channel_name", "")),
-                "show_title": selected.get("title", ""),
-                "start": selected.get("start", ""),
-                "end": selected.get("end", "")
-            }
-            if action == wx.ID_SAVE:
-                self._download_catchup_programme(channel, show)
-                return
+            dlg = CatchupDialog(self, channel.get("name", ""), programmes,
+                                initial_start=select_start)
             try:
-                url, _unused = self._resolve_show_url(channel, show)
-            except ProviderError as err:
-                message_box(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                return
-            except Exception as err:
-                message_box(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                return
-            display = (selected.get("title") or channel.get("name", "IPTV Stream"))
-            self._launch_stream(url, display, stream_kind="catchup", channel=channel)
-            # Read back by _on_internal_player_closed, and only for a catch-up
-            # stream, so a live channel played later never reopens this list.
-            self._catchup_return = {"channel": channel, "start": selected.get("start", "")}
+                action = dlg.ShowModal()
+                if action not in (wx.ID_OK, wx.ID_SAVE):
+                    return
+                selected = dlg.get_selection()
+                if not selected:
+                    return
+                show = {
+                    "channel_id": selected.get("channel_id", ""),
+                    "channel_name": channel.get("name", selected.get("channel_name", "")),
+                    "show_title": selected.get("title", ""),
+                    "start": selected.get("start", ""),
+                    "end": selected.get("end", "")
+                }
+                if action == wx.ID_SAVE:
+                    self._download_catchup_programme(channel, show)
+                    return
+                try:
+                    url, _unused = self._resolve_show_url(channel, show)
+                except ProviderError as err:
+                    message_box(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
+                    return
+                except Exception as err:
+                    message_box(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
+                    return
+                display = (selected.get("title") or channel.get("name", "IPTV Stream"))
+                self._launch_stream(url, display, stream_kind="catchup", channel=channel)
+                # Read back by _on_internal_player_closed, and only for a catch-up
+                # stream, so a live channel played later never reopens this list.
+                self._catchup_return = {"channel": channel, "start": selected.get("start", "")}
+            finally:
+                dlg.Destroy()
         finally:
-            dlg.Destroy()
+            self._catchup_dialog_open = False
 
     def _padded_catchup_window(self, show):
         """Programme window widened by the Schedule Padding minutes.
