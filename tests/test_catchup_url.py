@@ -18,6 +18,43 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import main  # noqa: E402
 
 
+def test_enter_on_epg_result_without_archive_plays_live():
+    channel = {"name": "SKY WITNESS", "url": "https://tv.example/live/76879"}
+    launched = []
+    client = SimpleNamespace(
+        channel_list=SimpleNamespace(GetSelection=lambda: 0),
+        displayed=[{"type": "epg", "data": {"show_title": "Old show"}}],
+        _find_channel_for_epg=lambda _show: channel,
+        _channel_has_catchup=lambda _channel: False,
+        _resolve_live_url=lambda ch: ch["url"],
+        _resolve_show_url=lambda *_args: (_ for _ in ()).throw(AssertionError("archive requested")),
+        _terminate_media_probe=lambda _channel: None,
+        _launch_stream=lambda *args, **kwargs: launched.append((args, kwargs)),
+        show_player_on_enter=True,
+    )
+    main.IPTVClient.play_selected(client)
+    assert launched[0][0][:2] == (channel["url"], "SKY WITNESS")
+    assert launched[0][1]["stream_kind"] == "live"
+
+
+def test_current_epg_result_with_archive_metadata_still_plays_as_live():
+    channel = {"name": "SKY WITNESS", "url": "https://tv.example/live/76879"}
+    launched = []
+    client = SimpleNamespace(
+        channel_list=SimpleNamespace(GetSelection=lambda: 0),
+        displayed=[{"type": "epg", "data": {"show_title": "Current show"}}],
+        _find_channel_for_epg=lambda _show: channel,
+        _channel_has_catchup=lambda _channel: True,
+        _resolve_show_url=lambda ch, _show: (ch["url"], False),
+        _terminate_media_probe=lambda _channel: None,
+        _launch_stream=lambda *args, **kwargs: launched.append((args, kwargs)),
+        show_player_on_enter=True,
+    )
+    main.IPTVClient.play_selected(client)
+    assert launched[0][0][:2] == (channel["url"], "SKY WITNESS")
+    assert launched[0][1]["stream_kind"] == "live"
+
+
 def test_teleelevidenie_hosts_share_one_connection_key():
     assert main.single_stream_provider_key(
         "https://my.teleelevidenie.com/play/mpegts-token|User-Agent=Mozilla") == "teleelevidenie.com"

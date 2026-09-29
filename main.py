@@ -7861,10 +7861,12 @@ class IPTVClient(wx.Frame):
             return
 
         try:
-            if show:
-                url, _unused = self._resolve_show_url(channel, show)
+            if show and self._channel_has_catchup(channel):
+                url, is_catchup = self._resolve_show_url(channel, show)
             else:
-                url = self._resolve_live_url(channel)
+                url, is_catchup = self._resolve_live_url(channel), False
+            if not is_catchup:
+                show = None
         except ProviderError as err:
             message_box(_("Provider error: {error}").format(error=err), _("Playback Error"), wx.OK | wx.ICON_ERROR)
             return
