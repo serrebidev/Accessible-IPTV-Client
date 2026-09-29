@@ -29,7 +29,9 @@ testpaths = ["tests"]
 # `.pytest-runs` replaces `.pytest-work`, whose ACL can be left inaccessible by
 # an interrupted elevated test run on Windows.  Relative `*current` symlinks
 # are suppressed in tests/conftest.py.
-addopts = "--basetemp=.pytest-runs"
+# seleniumbase and pytest-playwright both register --browser, which kills
+# pytest at startup on machines that have both installed.
+addopts = "--basetemp=.pytest-runs -p no:seleniumbase"
 cache_dir = ".pytest-cache"
 filterwarnings = [
     "error::SyntaxWarning",
