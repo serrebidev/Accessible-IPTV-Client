@@ -1581,6 +1581,16 @@ class InternalPlayerFrame(wx.Frame):
                 self._last_position_ms = None
             self._stall_ticks = 0
             return
+        # libVLC reports Playing while it is still filling its cache, and the
+        # clock does not move until the cache is full.  Without this grace a
+        # restart that raised the buffer to 12 s was itself judged stalled 4 s
+        # later, and each retry raised the buffer again: Sky Witness
+        # reconnected four times in 15 s.
+        since_start = now - self._play_start_monotonic if self._play_start_monotonic else float("inf")
+        if since_start < self._av_startup_grace_seconds + self.base_buffer_seconds:
+            self._stall_ticks = 0
+            self._last_position_ms = None
+            return
         try:
             position = self.player.get_time()
         except Exception:

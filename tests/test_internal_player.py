@@ -479,6 +479,7 @@ class TestPlaybackHealthWatchdog:
             _last_position_ms=None,
             _stall_ticks=0,
             _stall_threshold=8,
+            base_buffer_seconds=2.0,
             restarts=[],
         )
         frame._reset_av_watchdog = types.MethodType(cls.IPF._reset_av_watchdog, frame)
@@ -555,6 +556,20 @@ class TestPlaybackHealthWatchdog:
             self.IPF._monitor_playback_progress(frame, 20.0 + tick * 0.5, "playing")
 
         assert frame.restarts == [("playback stalled", True)]
+
+    def test_position_watchdog_waits_for_a_restart_to_fill_its_cache(self):
+        # A reconnect that raised the buffer to 12 s: libVLC says Playing but
+        # its clock stays put until the cache is full.
+        frame = self._frame()
+        frame.media.available = False
+        frame.player.advance_position = False
+        frame.base_buffer_seconds = 12.0
+        frame._play_start_monotonic = 100.0
+
+        for tick in range(40):  # 20 s, all inside the 24 s grace
+            self.IPF._monitor_playback_progress(frame, 100.5 + tick * 0.5, "playing")
+
+        assert frame.restarts == []
 
     def test_leaving_playing_state_resets_all_health_clocks(self):
         frame = self._frame()
