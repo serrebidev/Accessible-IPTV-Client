@@ -27,6 +27,31 @@ class MockState(IntEnum):
     Error = 7
 
 
+@pytest.mark.parametrize('buffered_seconds,expected', [(5, []), (8, []), (10, ['refresh'])])
+def test_live_buffer_recovery_waits_for_provider_burst(monkeypatch, buffered_seconds, expected):
+    """A short pause must not discard buffered media and open another connection."""
+    actions = []
+    frame = types.SimpleNamespace(
+        player=types.SimpleNamespace(get_state=lambda: 'Buffering'),
+        _last_state_name='buffering', _current_stream_kind='live',
+        _buffer_start_ts=100., _play_start_monotonic=90., _has_seen_playing=True,
+        _pending_restart=False, _early_buffer_fix_applied=False,
+        _xtream_buffer_refresh_seconds=10., _is_paused=False,
+        _gave_up=False, _pending_xtream_refresh=False,
+        _refresh_audio_track_choice=lambda: None,
+        _state_name=internal_player.InternalPlayerFrame._state_name,
+        _monitor_playback_progress=lambda *a: None,
+        _looks_like_xtream_live_ts=lambda: True,
+        _restart_expected_xtream_live=lambda: actions.append('refresh') or True,
+        _schedule_restart=lambda *a, **k: actions.append('restart'),
+        _localized_state=lambda s: s,
+        _update_status_label=lambda *a: None,
+    )
+    monkeypatch.setattr(internal_player.time,'monotonic',lambda:100.+buffered_seconds)
+    internal_player.InternalPlayerFrame._on_timer(frame,None)
+    assert actions == expected
+
+
 class TestBufferProfile:
     """Test buffer profile calculations."""
 

@@ -236,7 +236,9 @@ class InternalPlayerFrame(wx.Frame):
         self._min_network_cache_seconds = 0.0
         self._max_network_cache_seconds = 0.0
         self._ts_network_bias = 0.0
-        self._xtream_buffer_refresh_seconds = 5.0
+        # Bursty live providers can pause 5-8 seconds; keep the connection and
+        # buffered media through that pause. This does not increase startup cache.
+        self._xtream_buffer_refresh_seconds = 10.0
         self._xtream_refresh_count = 0
         self._max_xtream_refreshes = 6
         self._first_start_buffer_timeout_seconds = 20.0
@@ -1858,6 +1860,7 @@ class InternalPlayerFrame(wx.Frame):
                 handled_xtream_refresh = self._restart_expected_xtream_live()
             if (
                 allow_recovery
+                and not xtream_live
                 and not handled_xtream_refresh
                 and not self._pending_restart
                 and not self._early_buffer_fix_applied
