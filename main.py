@@ -4910,9 +4910,10 @@ class IPTVClient(wx.Frame):
             return
         if not fetch_url.lower().startswith(("http://", "https://")):
             return
-        if self._player_is_showing(channel):
-            # The player owns this stream right now: reuse its connection
-            # instead of opening a second one for the probe.
+        if self._internal_player_has_media():
+            # Something is playing: a probe would be a second connection to a
+            # provider that may allow only two (Dispatcharr/SceneTime), so
+            # browsing the list while watching would make the next tune fail.
             return
         if IPTVClient._single_stream_provider_busy(self, fetch_url):
             # The provider's one media connection is in use; probing would
@@ -4948,6 +4949,7 @@ class IPTVClient(wx.Frame):
             # bail if a user-initiated session preempted this probe while it
             # queued: the probe must never steal a one-stream provider's slot.
             if (identity in self._media_probe_inflight
+                    and not self._internal_player_has_media()
                     and not IPTVClient._single_stream_provider_busy(self, url)):
                 media = probe_media_type(url, merge_headers(headers, url_headers),
                                          on_popen=_register)
@@ -4970,28 +4972,27 @@ class IPTVClient(wx.Frame):
             LOG.info("Media-type probe could not classify %s", name)
 
     def _terminate_media_probe(self, channel) -> None:
-        """Kill an in-flight classification probe for this channel, if any.
+        """Kill every in-flight classification probe.
 
         A user-initiated media session (playback, recording, download)
         preempts the background probe: the probe is only advisory, and on a
         one-stream provider its open connection would otherwise refuse the
         real session's connection.
         """
-        try:
-            identity = self._channel_record_key(channel)
-        except Exception:
-            return
-        proc = self._media_probe_procs.pop(identity, None)
-        self._media_probe_inflight.discard(identity)
-        if proc is None or proc.poll() is not None:
-            return
-        LOG.info("Preempting media-type probe for %s",
-                 self._channel_display_name(channel))
-        try:
-            proc.kill()
-            proc.wait(timeout=5)
-        except Exception:
-            LOG.debug("_terminate_media_probe: ignored exception", exc_info=True)
+        # Every probe goes, not only this channel's: another channel's probe
+        # may hold a connection on the same provider the session needs.
+        self._media_probe_inflight.clear()
+        procs, self._media_probe_procs = self._media_probe_procs, {}
+        for proc in procs.values():
+            if proc is None or proc.poll() is not None:
+                continue
+            LOG.info("Preempting media-type probe for %s",
+                     self._channel_display_name(channel))
+            try:
+                proc.kill()
+                proc.wait(timeout=5)
+            except Exception:
+                LOG.debug("_terminate_media_probe: ignored exception", exc_info=True)
 
     def _show_recording_padding_dialog(self, _event=None):
         """Let the user set the lead-in/lead-out used for scheduled programmes."""
