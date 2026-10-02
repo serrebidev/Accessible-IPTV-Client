@@ -47,7 +47,7 @@ def test_load_config_moves_old_default_buffer_to_new_default(tmp_path, monkeypat
     cfg_file = tmp_path / "config.json"
     monkeypatch.setattr(options, "get_config_read_candidates",
                         lambda: [str(cfg_file)])
-    for stored, expected in ((2.0, 4.0), (12.0, 4.0), (6.0, 6.0)):
+    for stored, expected in ((2.0, 6.0), (4.0, 6.0), (12.0, 6.0), (5.0, 5.0)):
         cfg_file.write_text(json.dumps({"internal_player_buffer_seconds": stored}),
                             encoding="utf-8")
         assert options.load_config()["internal_player_buffer_seconds"] == expected
