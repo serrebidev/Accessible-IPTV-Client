@@ -34,7 +34,12 @@ DVR_SCHEDULE_FILE = "scheduled_recordings.json"
 CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = sys.platform.startswith("win")
-DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
+# 4 s (was 2): live TS sources pause 2-6 s (provider reconnects, segment gaps); a 2 s
+# buffer ran dry on each one. Costs about 2 s of extra start-up time.
+DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 4.0
+# Former defaults: written into every config on load, so a stored value equal to one
+# of them is the default, not a choice. Move it to the current default.
+_OLD_DEFAULT_BUFFER_SECONDS = (2.0, 12.0)
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 DEFAULT_RECORDING_PRE_PADDING_MINUTES = 0
@@ -501,7 +506,7 @@ def load_config() -> Dict:
                         if k in ("recording_format_audio", "recording_format_video"):
                             continue
                         data.setdefault(k, v)
-                    if data.get("internal_player_buffer_seconds") == 12.0:
+                    if data.get("internal_player_buffer_seconds") in _OLD_DEFAULT_BUFFER_SECONDS:
                         data["internal_player_buffer_seconds"] = DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
                     data["recording_format"] = normalize_recording_format(data.get("recording_format"))
                     migrate_recording_format_prefs(data)
