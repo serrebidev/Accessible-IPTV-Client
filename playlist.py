@@ -1409,6 +1409,14 @@ class EPGDatabase:
             group_tag = name_region or id_region or ''
         norm = canonicalize_name(strip_noise_words(display_name))
         c = self.conn.cursor()
+        # Servers that key the guide by channel number (Dispatcharr/Xtream
+        # tvg-id = number) hand a number to another channel when they
+        # renumber. The old channel's schedule must go, or it shows under the
+        # new one wherever the new guide has no overlapping slot. XMLTV lists
+        # channels before programmes, so this import refills the id right after.
+        old = c.execute("SELECT norm_name FROM channels WHERE id = ?", (channel_id,)).fetchone()
+        if old and old[0] and norm and old[0] != norm:
+            c.execute("DELETE FROM programmes WHERE channel_id = ?", (channel_id,))
         c.execute(
             "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag) VALUES (?, ?, ?, ?)",
             (channel_id, display_name, norm, group_tag)

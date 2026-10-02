@@ -698,6 +698,19 @@ def test_reimport_replaces_stale_programmes_in_same_slot(tmp_path):
     assert rows == [("Older show",), ("House Hunters",), ("Totally '90s House",)]
 
 
+def test_channel_id_given_to_another_channel_drops_old_schedule(tmp_path):
+    """A server renumber hands id 14703 from Sheffield Live TV to Sky Mix."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    db.insert_channel("14703", "Sheffield Live TV")
+    db.insert_programme("14703", "Sheffield Live TV", "20261002010000", "20261002050000")
+    db.insert_channel("14703", "Sky Mix HD")
+    db.insert_programme("14703", "Road Wars", "20261002000000", "20261002010000")
+    db.insert_channel("14703", "Sky Mix")  # same channel, noise word only: keep
+    rows = db.conn.execute("SELECT title FROM programmes WHERE channel_id = '14703'").fetchall()
+    db.close()
+    assert rows == [("Road Wars",)]
+
+
 def test_legacy_programme_table_is_migrated_and_descriptions_backfill(tmp_path):
     """Databases from before descriptions existed keep working and gain the column."""
     path = tmp_path / "epg.db"
