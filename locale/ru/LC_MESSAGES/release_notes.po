@@ -12,19 +12,19 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:14
 msgid "Drop a channel's old schedule when its id now names another channel"
 msgstr "Удалять старую программу канала, если его идентификатор теперь принадлежит другому каналу"
 
-#: CHANGELOG.md:18
+#: CHANGELOG.md:8
+msgid "Keep 4 seconds of live TV buffered so short source pauses no longer stall"
+msgstr "Буферизует 4 секунды прямого эфира, чтобы короткие паузы источника больше не останавливали воспроизведение"
+
+#: CHANGELOG.md:24
 msgid "Never open a stream-type probe while something is playing"
 msgstr "Никогда не запускать проверку типа потока, пока что-то воспроизводится"
 
-#: CHANGELOG.md:12
+#: CHANGELOG.md:18
 msgid "Remove stale committed binaries (1 files)"
 msgstr "Удалены устаревшие двоичные файлы из репозитория (1 файл)"
-
-#: CHANGELOG.md:24
-msgid "Tolerate brief live buffering without reconnecting"
-msgstr "Переносить кратковременную буферизацию прямого эфира без переподключения"
 

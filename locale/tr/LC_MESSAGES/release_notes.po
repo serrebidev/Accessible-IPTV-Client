@@ -12,19 +12,19 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:14
 msgid "Drop a channel's old schedule when its id now names another channel"
 msgstr "Kanalın kimliği artık başka bir kanalı gösterdiğinde eski yayın akışı silinir"
 
-#: CHANGELOG.md:18
+#: CHANGELOG.md:8
+msgid "Keep 4 seconds of live TV buffered so short source pauses no longer stall"
+msgstr "Kaynaktaki kısa duraklamalar oynatmayı artık durdurmasın diye canlı yayının 4 saniyesini arabellekte tutar"
+
+#: CHANGELOG.md:24
 msgid "Never open a stream-type probe while something is playing"
 msgstr "Bir şey oynatılırken asla akış türü denetimi açma"
 
-#: CHANGELOG.md:12
+#: CHANGELOG.md:18
 msgid "Remove stale committed binaries (1 files)"
 msgstr "Depodaki eski ikili dosyalar kaldırıldı (1 dosya)"
-
-#: CHANGELOG.md:24
-msgid "Tolerate brief live buffering without reconnecting"
-msgstr "Yeniden bağlanmadan canlı yayınlarda kısa arabelleğe alma duraklamalarını tolere et"
 

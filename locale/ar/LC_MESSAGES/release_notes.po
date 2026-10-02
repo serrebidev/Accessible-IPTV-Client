@@ -12,19 +12,19 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:14
 msgid "Drop a channel's old schedule when its id now names another channel"
 msgstr "حذف الجدول القديم للقناة عندما يصبح معرّفها يشير إلى قناة أخرى"
 
-#: CHANGELOG.md:18
+#: CHANGELOG.md:8
+msgid "Keep 4 seconds of live TV buffered so short source pauses no longer stall"
+msgstr "يحتفظ بأربع ثوانٍ من البث المباشر في المخزن المؤقت حتى لا تتسبب التوقفات القصيرة في المصدر في توقف التشغيل"
+
+#: CHANGELOG.md:24
 msgid "Never open a stream-type probe while something is playing"
 msgstr "عدم فتح فحص نوع البث مطلقًا أثناء تشغيل محتوى"
 
-#: CHANGELOG.md:12
+#: CHANGELOG.md:18
 msgid "Remove stale committed binaries (1 files)"
 msgstr "إزالة الملفات الثنائية القديمة المضمّنة في المستودع (ملف واحد)"
-
-#: CHANGELOG.md:24
-msgid "Tolerate brief live buffering without reconnecting"
-msgstr "تحمّل فترات التخزين المؤقت القصيرة للبث المباشر دون إعادة الاتصال"
 
