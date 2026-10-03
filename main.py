@@ -6446,6 +6446,15 @@ class IPTVClient(wx.Frame):
                 # user has re-focused the box since this search started: that
                 # result is stale and stealing focus would interrupt editing.
                 # getattr keeps non-GUI test doubles (no HasFocus) working.
+                # Replacing search results is different from appending asynchronous
+                # EPG rows. Let the virtual list order the old/new model transition
+                # so NVDA never observes a stale active child during a SetItemCount
+                # shrink.
+                IPTVClient._replace_search_results_chunked(
+                    self, entries, search_token, populate_token
+                )
+                # Focus/selection must follow replacement: replace_contents
+                # clears active row state even for a one-result search.
                 has_focus = getattr(self.filter_box, "HasFocus", None)
                 if (
                     callable(has_focus)
@@ -6454,13 +6463,9 @@ class IPTVClient(wx.Frame):
                     == getattr(self, "_filter_focus_gen_at_search", -1)
                 ):
                     self._focus_after_filter()
-                # Replacing search results is different from appending asynchronous
-                # EPG rows. Let the virtual list order the old/new model transition
-                # so NVDA never observes a stale active child during a SetItemCount
-                # shrink.
-                IPTVClient._replace_search_results_chunked(
-                    self, entries, search_token, populate_token
-                )
+                list_has_focus = getattr(self.channel_list, "HasFocus", None)
+                if callable(list_has_focus) and list_has_focus() and entries:
+                    self.channel_list.SetSelection(0)
                 LOG.debug("search %r: %d channel matches", txt, len(matching_channels))
             wx.CallAfter(apply_results)
 

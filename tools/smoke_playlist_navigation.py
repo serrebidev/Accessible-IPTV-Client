@@ -60,6 +60,40 @@ while wx.Window.FindFocus() != frame.channel_list and deadline.Time() < 2000:
 assert wx.Window.FindFocus() == frame.channel_list, wx.Window.FindFocus()
 assert frame.channel_list.GetCount() == 1
 
+# A one-result search must leave a real selection whose URL survives two Tabs.
+# Exercise both Enter (focus moves when results arrive) and Tab (focus moves
+# before the asynchronous replacement). Neither may leave only a focused row.
+frame._schedule_media_probe = lambda channel: None
+frame.all_channels = [
+    {"name": "Sky Mix", "url": "https://example.com/sky-mix.ts",
+     "group": "Second", "playlist-id": main._source_scope_id(sources[1])},
+]
+frame.channels_by_group = {"Second": frame.all_channels}
+for key in (wx.WXK_RETURN, wx.WXK_TAB):
+    frame._populate_channel_list_chunked(frame.all_channels)
+    frame.channel_list.SetSelection(0)
+    frame.filter_box.SetValue("sky mix")
+    frame.filter_box.SetFocus()
+    app.Yield()
+    if key == wx.WXK_RETURN:
+        frame.apply_filter()
+    else:
+        event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        event.SetKeyCode(key)
+        frame.filter_box.GetEventHandler().ProcessEvent(event)
+    deadline = wx.StopWatch()
+    while (frame.channel_list.GetSelection() != 0 or
+           frame.url_display.GetValue() != "https://example.com/sky-mix.ts") and deadline.Time() < 2000:
+        app.Yield()
+    assert frame.channel_list.GetSelection() == 0, (key, "search result not selected")
+    for control in (frame.channel_list, frame.episode_description_field):
+        event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        event.SetKeyCode(wx.WXK_TAB)
+        control.GetEventHandler().ProcessEvent(event)
+        app.Yield()
+    assert wx.Window.FindFocus() == frame.url_display
+    assert frame.url_display.GetValue() == "https://example.com/sky-mix.ts"
+
 # Shift+Tab must keep navigating backwards: leave the field, no filter forced.
 frame.filter_box.SetValue("Two")
 frame.filter_box.SetFocus()
