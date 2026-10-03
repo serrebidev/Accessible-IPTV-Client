@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:520
+#: internal_player.py:521
 msgid "&Playback"
 msgstr "&Odtwarzanie"
 
@@ -185,21 +185,21 @@ msgid "Attempt to add provider XMLTV"
 msgstr "Spróbuj dodać XMLTV dostawcy"
 
 #: internal_player.py:112
-#: internal_player.py:593
+#: internal_player.py:594
 msgid "Audio Output Device"
 msgstr "Urządzenie wyjścia audio"
 
-#: internal_player.py:498
+#: internal_player.py:499
 msgid "Audio Output Device..."
 msgstr "Urządzenie wyjścia audio..."
 
-#: internal_player.py:490
+#: internal_player.py:491
 #: main.py:2505
 #: shortcuts.py:74
 msgid "Audio Track"
 msgstr "Ścieżka audio"
 
-#: internal_player.py:2135
+#: internal_player.py:2098
 msgid "Audio Track: {name}"
 msgstr "Ścieżka dźwiękowa: {name}"
 
@@ -227,7 +227,7 @@ msgstr "Tylko dźwięk (WAV)"
 msgid "Audio output devices"
 msgstr "Urządzenia wyjścia audio"
 
-#: internal_player.py:2171
+#: internal_player.py:2134
 msgid "Audio track unavailable"
 msgstr "Ścieżka audio niedostępna"
 
@@ -235,9 +235,9 @@ msgstr "Ścieżka audio niedostępna"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Wykryto strumień tylko dźwiękowy. Rozpoczęto nagrywanie ({fmt}):\n{path}"
 
-#: internal_player.py:1783
-#: internal_player.py:2190
-#: internal_player.py:2199
+#: internal_player.py:1746
+#: internal_player.py:2153
+#: internal_player.py:2162
 msgid "Audio: {name}"
 msgstr "Audio: {name}"
 
@@ -306,15 +306,15 @@ msgstr "Podstawowy adres URL serwera Xtream Codes"
 msgid "Breaking changes"
 msgstr "Zmiany niezgodne wstecz"
 
-#: options.py:866
+#: options.py:863
 msgid "Browse..."
 msgstr "Przeglądaj..."
 
-#: internal_player.py:744
-#: internal_player.py:1684
-#: internal_player.py:1696
-#: internal_player.py:1758
-#: internal_player.py:1911
+#: internal_player.py:750
+#: internal_player.py:1647
+#: internal_player.py:1659
+#: internal_player.py:1721
+#: internal_player.py:1874
 msgid "Buffering..."
 msgstr "Buforowanie..."
 
@@ -344,7 +344,7 @@ msgstr "Wbudowany odtwarzacz niedostępny:\n{detail}"
 #: main.py:9631
 #: main.py:9754
 #: main.py:9944
-#: options.py:869
+#: options.py:866
 #: playlist.py:2902
 #: playlist.py:2996
 #: playlist.py:3204
@@ -368,7 +368,7 @@ msgstr "Anulowano"
 msgid "Cannot find \"{text}\"."
 msgstr "Nie można znaleźć \"{text}\"."
 
-#: internal_player.py:394
+#: internal_player.py:395
 msgid "Cast"
 msgstr "Przesyłaj"
 
@@ -385,18 +385,18 @@ msgstr "Przesyłaj / Połącz..."
 msgid "Cast To..."
 msgstr "Przesyłaj do..."
 
-#: internal_player.py:395
+#: internal_player.py:396
 msgid "Cast to Device"
 msgstr "Przesyłaj do urządzenia"
 
-#: internal_player.py:500
+#: internal_player.py:501
 #: main.py:2504
 #: shortcuts.py:71
 msgid "Cast..."
 msgstr "Przesyłaj..."
 
-#: internal_player.py:1741
-#: internal_player.py:1745
+#: internal_player.py:1704
+#: internal_player.py:1708
 #: main.py:8190
 #: main.py:8307
 #: main.py:8321
@@ -414,7 +414,7 @@ msgstr "Błąd przesyłania"
 msgid "Casting failed: {error}"
 msgstr "Przesyłanie nie powiodło się: {error}"
 
-#: internal_player.py:1741
+#: internal_player.py:1704
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "Przesyłanie jest niedostępne, ponieważ moduł przesyłania nie został zainicjowany."
 
@@ -520,7 +520,7 @@ msgstr "Sprawdzanie typu strumienia…"
 msgid "Checking {account}..."
 msgstr "Sprawdzanie {account}..."
 
-#: internal_player.py:420
+#: internal_player.py:421
 msgid "Choose Audio Track"
 msgstr "Wybierz ścieżkę dźwiękową"
 
@@ -611,7 +611,7 @@ msgstr "Nie udało się sprawdzić tego konta.\n\n{error}"
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "Nie udało się skopiować informacji diagnostycznych:\n{error}"
 
-#: internal_player.py:345
+#: internal_player.py:346
 msgid "Could not create libVLC media player object."
 msgstr "Nie można utworzyć obiektu odtwarzacza multimedialnego libVLC."
 
@@ -650,11 +650,11 @@ msgstr "Nie można wczytać odcinków tego serialu."
 msgid "Could not load episodes:\n{error}"
 msgstr "Nie można wczytać odcinków:\n{error}"
 
-#: internal_player.py:2281
+#: internal_player.py:2244
 msgid "Could not load subtitle file."
 msgstr "Nie można załadować pliku z napisami."
 
-#: internal_player.py:717
+#: internal_player.py:723
 msgid "Could not load the stream: {error}"
 msgstr "Nie można załadować strumienia: {error}"
 
@@ -720,7 +720,7 @@ msgstr "Nie udało się wyłączyć komputera:\n{error}"
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Nie udało się rozpocząć pobierania powtórki:\n{error}"
 
-#: internal_player.py:739
+#: internal_player.py:745
 msgid "Could not start playback: {error}"
 msgstr "Nie można rozpocząć odtwarzania: {error}"
 
@@ -938,8 +938,8 @@ msgstr "Upłynęło: {time}"
 msgid "Encrypted settings backup saved."
 msgstr "Zapisano zaszyfrowaną kopię zapasową ustawień."
 
-#: internal_player.py:1762
-#: internal_player.py:1909
+#: internal_player.py:1725
+#: internal_player.py:1872
 msgid "Ended"
 msgstr "Zakończono"
 
@@ -967,7 +967,7 @@ msgstr "Wprowadź dodatni numer kanału."
 msgid "Enter a shortcut (leave blank to restore the default):"
 msgstr "Wprowadź skrót (pozostaw puste, aby przywrócić domyślny):"
 
-#: options.py:873
+#: options.py:870
 msgid "Enter player executable or path:"
 msgstr "Wprowadź plik wykonywalny lub ścieżkę odtwarzacza:"
 
@@ -986,7 +986,7 @@ msgstr "Opis odcinka"
 msgid "Episode {num}"
 msgstr "Odcinek {num}"
 
-#: internal_player.py:1763
+#: internal_player.py:1726
 #: main.py:3554
 #: main.py:3608
 #: main.py:5148
@@ -1023,11 +1023,11 @@ msgstr "Nie znaleziono pliku wykonywalnego: {path}"
 msgid "Exit"
 msgstr "Zakończ"
 
-#: internal_player.py:2537
+#: internal_player.py:2500
 msgid "Exit Full Screen"
 msgstr "Wyjdź z trybu pełnoekranowego"
 
-#: internal_player.py:505
+#: internal_player.py:506
 #: shortcuts.py:79
 msgid "Exit Player"
 msgstr "Zamknij odtwarzacz"
@@ -1094,11 +1094,11 @@ msgstr "Nie udało się pobrać danych EPG: {error}"
 msgid "Failed to fetch release info ({code})."
 msgstr "Nie udało się pobrać informacji o wersji ({code})."
 
-#: internal_player.py:337
+#: internal_player.py:338
 msgid "Failed to initialise libVLC instance."
 msgstr "Nie udało się zainicjować instancji libVLC."
 
-#: internal_player.py:342
+#: internal_player.py:343
 msgid "Failed to initialise media player: {error}"
 msgstr "Nie udało się zainicjować odtwarzacza multimedialnego: {error}"
 
@@ -1155,8 +1155,8 @@ msgstr "Format"
 msgid "Found {count} devices:"
 msgstr "Znaleziono {count} urządzeń:"
 
-#: internal_player.py:400
-#: internal_player.py:2537
+#: internal_player.py:401
+#: internal_player.py:2500
 msgid "Full Screen"
 msgstr "Pełny ekran"
 
@@ -1208,7 +1208,7 @@ msgstr "Port HTTPS"
 msgid "Help"
 msgstr "Pomoc"
 
-#: internal_player.py:504
+#: internal_player.py:505
 #: shortcuts.py:78
 msgid "Hide Window"
 msgstr "Ukryj okno"
@@ -1224,9 +1224,9 @@ msgstr "Ukryj starsze wersje"
 msgid "IPTV Stream"
 msgstr "Strumień IPTV"
 
-#: internal_player.py:443
-#: internal_player.py:476
-#: internal_player.py:1756
+#: internal_player.py:444
+#: internal_player.py:477
+#: internal_player.py:1719
 msgid "Idle"
 msgstr "Bezczynny"
 
@@ -1327,7 +1327,7 @@ msgstr "Skróty klawiaturowe..."
 msgid "Language"
 msgstr "Język"
 
-#: internal_player.py:1364
+#: internal_player.py:1327
 msgid "Last error: {reason}"
 msgstr "Ostatni błąd: {reason}"
 
@@ -1347,11 +1347,11 @@ msgstr "Błąd uruchamiania"
 msgid "Live TV && Catch-up"
 msgstr "Telewizja na żywo && Powtórki"
 
-#: internal_player.py:2273
+#: internal_player.py:2236
 msgid "Load Subtitle File"
 msgstr "Załaduj plik z napisami"
 
-#: internal_player.py:494
+#: internal_player.py:495
 msgid "Load Subtitle File..."
 msgstr "Załaduj plik z napisami..."
 
@@ -1472,18 +1472,18 @@ msgstr "Brak źródeł"
 msgid "No Video on Demand content found."
 msgstr "Nie znaleziono zawartości wideo na żądanie."
 
-#: internal_player.py:1745
+#: internal_player.py:1708
 #: main.py:8307
 msgid "No active stream to cast."
 msgstr "Brak aktywnego strumienia do przesłania."
 
-#: internal_player.py:592
+#: internal_player.py:593
 msgid "No audio output devices were found."
 msgstr "Nie znaleziono urządzeń wyjścia audio."
 
-#: internal_player.py:2130
-#: internal_player.py:2196
-#: internal_player.py:2358
+#: internal_player.py:2093
+#: internal_player.py:2159
+#: internal_player.py:2321
 msgid "No audio tracks available"
 msgstr "Brak dostępnych ścieżek audio"
 
@@ -1558,11 +1558,11 @@ msgstr "Obecnie nie ma aktywnych nagrań."
 msgid "No release history is available."
 msgstr "Historia wydań nie jest dostępna."
 
-#: internal_player.py:632
+#: internal_player.py:633
 msgid "No stream URL provided."
 msgstr "Nie podano adresu URL strumienia."
 
-#: internal_player.py:2307
+#: internal_player.py:2270
 msgid "No subtitle text found in this file."
 msgstr "Nie znaleziono tekstu napisów w tym pliku."
 
@@ -1605,15 +1605,15 @@ msgstr "Teraz: {title} ({start} – {end})"
 #: main.py:303
 #: main.py:9631
 #: main.py:9753
-#: options.py:869
+#: options.py:866
 #: playlist.py:2901
 #: playlist.py:2995
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2237
-#: internal_player.py:2243
-#: internal_player.py:2260
+#: internal_player.py:2200
+#: internal_player.py:2206
+#: internal_player.py:2223
 msgid "Off"
 msgstr "Wył."
 
@@ -1642,7 +1642,7 @@ msgstr "Otwórz projekt Accessible IPTV Client na GitHubie"
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Otwórz nagrany plik w VLC, naciśnij Ctrl+T i wpisz jeden z podanych czasów. Jeśli FFmpeg podał czas multimediów pliku, zostanie użyty ten czas; w przeciwnym razie jest to czas od rozpoczęcia nagrywania, który po przerwie może być nieco późniejszy."
 
-#: internal_player.py:1757
+#: internal_player.py:1720
 msgid "Opening"
 msgstr "Otwieranie"
 
@@ -1687,16 +1687,16 @@ msgstr "Pakiet"
 msgid "Password"
 msgstr "Hasło"
 
-#: internal_player.py:374
-#: internal_player.py:741
-#: internal_player.py:1683
-#: internal_player.py:1694
-#: internal_player.py:1704
+#: internal_player.py:375
+#: internal_player.py:747
+#: internal_player.py:1646
+#: internal_player.py:1657
+#: internal_player.py:1667
 msgid "Pause"
 msgstr "Wstrzymaj"
 
-#: internal_player.py:1760
-#: internal_player.py:1886
+#: internal_player.py:1723
+#: internal_player.py:1849
 msgid "Paused"
 msgstr "Wstrzymano"
 
@@ -1712,18 +1712,18 @@ msgstr "Telefon"
 msgid "Platform: {platform}"
 msgstr "Platforma: {platform}"
 
-#: internal_player.py:767
+#: internal_player.py:773
 #: main.py:3500
 #: main.py:10094
 #: main.py:10284
 msgid "Play"
 msgstr "Odtwórz"
 
-#: internal_player.py:375
+#: internal_player.py:376
 msgid "Play or Pause"
 msgstr "Odtwórz lub wstrzymaj"
 
-#: internal_player.py:482
+#: internal_player.py:483
 #: main.py:1416
 #: main.py:2487
 #: main.py:2499
@@ -1749,11 +1749,11 @@ msgstr "Odtwarzacz"
 msgid "Player Controls"
 msgstr "Elementy sterujące odtwarzacza"
 
-#: internal_player.py:630
+#: internal_player.py:631
 msgid "Player window has been destroyed."
 msgstr "Okno odtwarzacza zostało zamknięte."
 
-#: internal_player.py:1759
+#: internal_player.py:1722
 msgid "Playing"
 msgstr "Odtwarzanie"
 
@@ -1782,8 +1782,8 @@ msgstr "Typ playlisty"
 msgid "Playlist view"
 msgstr "Widok playlisty"
 
-#: internal_player.py:1026
-#: internal_player.py:1371
+#: internal_player.py:1032
+#: internal_player.py:1334
 msgid "Please try another channel or try again later."
 msgstr "Spróbuj innego kanału lub spróbuj ponownie później."
 
@@ -1917,19 +1917,19 @@ msgstr "Ostatnio oglądane"
 msgid "Recently Watched..."
 msgstr "Ostatnio oglądane..."
 
-#: internal_player.py:1388
-#: internal_player.py:1891
-#: internal_player.py:1898
-#: internal_player.py:1906
-#: internal_player.py:1914
+#: internal_player.py:1351
+#: internal_player.py:1854
+#: internal_player.py:1861
+#: internal_player.py:1869
+#: internal_player.py:1877
 msgid "Reconnecting..."
 msgstr "Ponowne łączenie..."
 
-#: internal_player.py:388
 #: internal_player.py:389
-#: internal_player.py:484
-#: internal_player.py:1712
-#: internal_player.py:1728
+#: internal_player.py:390
+#: internal_player.py:485
+#: internal_player.py:1675
+#: internal_player.py:1691
 #: main.py:2503
 #: main.py:3509
 #: main.py:4110
@@ -1998,7 +1998,7 @@ msgstr "Czasy problemów w nagraniu"
 msgid "Recording Warning"
 msgstr "Ostrzeżenie nagrywania"
 
-#: internal_player.py:1711
+#: internal_player.py:1674
 msgid "Recording is not available from this window."
 msgstr "Nagrywanie nie jest dostępne z tego okna."
 
@@ -2052,11 +2052,11 @@ msgstr "Odświeżanie wszystkich list odtwarzania..."
 msgid "Refreshing playlist: {name}"
 msgstr "Odświeżanie listy odtwarzania: {name}"
 
-#: internal_player.py:1038
-#: internal_player.py:1893
-#: internal_player.py:1900
-#: internal_player.py:1903
-#: internal_player.py:1914
+#: internal_player.py:1044
+#: internal_player.py:1856
+#: internal_player.py:1863
+#: internal_player.py:1866
+#: internal_player.py:1877
 msgid "Refreshing stream..."
 msgstr "Odświeżanie strumienia..."
 
@@ -2089,7 +2089,7 @@ msgstr "Zastąpić bieżące ustawienia tą kopią zapasową? Po zaimportowaniu 
 msgid "Restore"
 msgstr "Przywróć"
 
-#: internal_player.py:1704
+#: internal_player.py:1667
 msgid "Resume"
 msgstr "Wznów"
 
@@ -2167,7 +2167,7 @@ msgstr "Szukaj"
 msgid "Searching for devices..."
 msgstr "Wyszukiwanie urządzeń..."
 
-#: options.py:861
+#: options.py:858
 msgid "Select Custom Player"
 msgstr "Wybierz niestandardowy odtwarzacz"
 
@@ -2175,7 +2175,7 @@ msgstr "Wybierz niestandardowy odtwarzacz"
 msgid "Select Device to Cast"
 msgstr "Wybierz urządzenie do przesyłania"
 
-#: options.py:881
+#: options.py:878
 msgid "Select Player Executable"
 msgstr "Wybierz plik wykonywalny odtwarzacza"
 
@@ -2322,7 +2322,7 @@ msgstr "Wyłącz komputer po zakończeniu nagrań"
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Wyłączanie anulowane. Automatyczne wyłączanie po nagraniach jest teraz wyłączone."
 
-#: internal_player.py:496
+#: internal_player.py:497
 #: shortcuts.py:76
 msgid "Speak Subtitles"
 msgstr "Odczytuj napisy"
@@ -2362,8 +2362,8 @@ msgstr "Rozpoczyna się o {start}: {title}"
 msgid "Status"
 msgstr "Status"
 
-#: internal_player.py:380
-#: internal_player.py:483
+#: internal_player.py:381
+#: internal_player.py:484
 #: main.py:1417
 #: main.py:2488
 #: main.py:2500
@@ -2378,11 +2378,11 @@ msgstr "Zatrzymaj"
 msgid "Stop All Recordings"
 msgstr "Zatrzymaj wszystkie nagrania"
 
-#: internal_player.py:381
+#: internal_player.py:382
 msgid "Stop Playback"
 msgstr "Zatrzymaj odtwarzanie"
 
-#: internal_player.py:1728
+#: internal_player.py:1691
 #: main.py:3507
 #: main.py:5045
 msgid "Stop Recording"
@@ -2392,8 +2392,8 @@ msgstr "Zatrzymaj nagrywanie"
 msgid "Stop Recording(s)"
 msgstr "Zatrzymaj nagranie(a)"
 
-#: internal_player.py:768
-#: internal_player.py:1761
+#: internal_player.py:774
+#: internal_player.py:1724
 msgid "Stopped"
 msgstr "Zatrzymano"
 
@@ -2414,8 +2414,8 @@ msgstr "Zatrzymywanie nagrywania..."
 msgid "Stopping {count} recording(s)..."
 msgstr "Zatrzymywanie {count} nagrań..."
 
-#: internal_player.py:1027
-#: internal_player.py:1372
+#: internal_player.py:1033
+#: internal_player.py:1335
 msgid "Stream Lost"
 msgstr "Utracono strumień"
 
@@ -2424,17 +2424,17 @@ msgstr "Utracono strumień"
 msgid "Stream URL"
 msgstr "Adres URL strumienia"
 
-#: internal_player.py:1367
+#: internal_player.py:1330
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Strumień rozłączony po {count} próbach. Strumień może być offline lub mieć problemy."
 
-#: internal_player.py:1025
+#: internal_player.py:1031
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Strumień rozłączony. Może być offline lub mieć problemy."
 
-#: internal_player.py:1030
-#: internal_player.py:1375
-#: internal_player.py:1916
+#: internal_player.py:1036
+#: internal_player.py:1338
+#: internal_player.py:1879
 msgid "Stream lost"
 msgstr "Utracono strumień"
 
@@ -2447,41 +2447,41 @@ msgstr "Wyjście strumienia"
 msgid "Subscription"
 msgstr "Subskrypcja"
 
-#: internal_player.py:2285
+#: internal_player.py:2248
 msgid "Subtitle file loaded: {name}"
 msgstr "Załadowano plik z napisami: {name}"
 
-#: internal_player.py:2274
+#: internal_player.py:2237
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Pliki napisów (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: internal_player.py:2289
+#: internal_player.py:2252
 msgid "Subtitle speech needs an SRT or WebVTT file."
 msgstr "Odczytywanie napisów wymaga pliku SRT lub WebVTT."
 
-#: internal_player.py:2344
+#: internal_player.py:2307
 msgid "Subtitle speech off"
 msgstr "Odczytywanie napisów wyłączone"
 
-#: internal_player.py:2346
+#: internal_player.py:2309
 msgid "Subtitle speech on"
 msgstr "Odczytywanie napisów włączone"
 
-#: internal_player.py:2348
+#: internal_player.py:2311
 msgid "Subtitle speech on. Load an SRT or WebVTT file to hear subtitles."
 msgstr "Odczytywanie napisów włączone. Wczytaj plik SRT lub WebVTT, aby słyszeć napisy."
 
-#: internal_player.py:2233
+#: internal_player.py:2196
 msgid "Subtitle track unavailable"
 msgstr "Ścieżka napisów jest niedostępna"
 
-#: internal_player.py:493
+#: internal_player.py:494
 #: main.py:2506
 #: shortcuts.py:75
 msgid "Subtitles"
 msgstr "Napisy"
 
-#: internal_player.py:2240
+#: internal_player.py:2203
 msgid "Subtitles: {name}"
 msgstr "Napisy: {name}"
 
@@ -2629,8 +2629,8 @@ msgstr "Pozostały czas: {time}"
 msgid "Title"
 msgstr "Tytuł"
 
-#: internal_player.py:401
-#: internal_player.py:501
+#: internal_player.py:402
+#: internal_player.py:502
 #: shortcuts.py:77
 msgid "Toggle Full Screen"
 msgstr "Przełącz tryb pełnoekranowy"
@@ -2640,10 +2640,10 @@ msgstr "Przełącz tryb pełnoekranowy"
 msgid "Topics"
 msgstr "Tematy"
 
-#: internal_player.py:2095
-#: internal_player.py:2174
-#: internal_player.py:2227
-#: internal_player.py:2239
+#: internal_player.py:2058
+#: internal_player.py:2137
+#: internal_player.py:2190
+#: internal_player.py:2202
 msgid "Track {id}"
 msgstr "Ścieżka {id}"
 
@@ -2860,15 +2860,15 @@ msgstr "Widok"
 msgid "View EPG..."
 msgstr "Pokaż EPG..."
 
-#: internal_player.py:1775
+#: internal_player.py:1738
 msgid "Vol {value}%"
 msgstr "Głośn. {value}%"
 
-#: internal_player.py:406
+#: internal_player.py:407
 msgid "Volume"
 msgstr "Głośność"
 
-#: internal_player.py:414
+#: internal_player.py:415
 msgid "Volume Control"
 msgstr "Regulacja głośności"
 
@@ -2886,7 +2886,7 @@ msgstr "Zmniejsz głośność"
 msgid "Volume Up"
 msgstr "Zwiększ głośność"
 
-#: internal_player.py:502
+#: internal_player.py:503
 #: main.py:2496
 #: main.py:2507
 #: main.py:3066
@@ -3045,7 +3045,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} nie jest skonfigurowany dla systemu Linux."
 
-#: internal_player.py:681
+#: internal_player.py:687
 msgid "{title} - Built-in Player"
 msgstr "{title} - Wbudowany odtwarzacz"
 
@@ -3057,7 +3057,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} do {end}"
 
-#: internal_player.py:1772
+#: internal_player.py:1735
 msgid "{value}s buffer"
 msgstr "bufor {value}s"
 
@@ -3065,7 +3065,7 @@ msgstr "bufor {value}s"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Łącznie zapisano {warnings} ostrzeżeń, {errors} błędów i {fatals} błędów krytycznych."
 
-#: internal_player.py:1771
+#: internal_player.py:1734
 msgid "~{value} Mbps"
 msgstr "~{value} Mb/s"
 
