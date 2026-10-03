@@ -232,6 +232,7 @@ class InternalPlayerFrame(wx.Frame):
         self._buffer_step_seconds = 1.0
         self._max_buffer_seconds = self._resolve_max_buffer(max_buffer_seconds, base_value)
         self.base_buffer_seconds = max(0.0, min(base_value, self._max_buffer_seconds))
+        self._initial_buffer_seconds = self.base_buffer_seconds
         self._network_cache_fraction = 0.0
         self._min_network_cache_seconds = 0.0
         self._max_network_cache_seconds = 0.0
@@ -655,6 +656,11 @@ class InternalPlayerFrame(wx.Frame):
             self._gave_up = False
             self._video_visible = bool(video_visible)
             self._begin_new_stream_audio_state()
+            # Retry adjustments belong to this stream, not every later channel.
+            if hasattr(self, "_initial_buffer_seconds"):
+                self.base_buffer_seconds = self._initial_buffer_seconds
+                self._refresh_ts_floor()
+                self._update_cache_bounds()
         if stream_kind is None:
             stream_kind = "live"
         self._current_stream_kind = stream_kind
@@ -1212,61 +1218,18 @@ class InternalPlayerFrame(wx.Frame):
         headers: Optional[Dict[str, object]] = None,
     ) -> Tuple[float, dict, Optional[float]]:
         bitrate = bitrate_hint if bitrate_hint and bitrate_hint > 0 else self._estimate_stream_bitrate(url, headers=headers)
-        base = self.base_buffer_seconds
-        is_linear_ts = self._is_current_stream_ts(url)
-        is_audio = self._is_likely_audio(url)
-        
-        cache_fraction = self._network_cache_fraction
-        if is_linear_ts:
-            cache_fraction = max(cache_fraction, self._ts_network_bias)
-
-        # Fast startup: use minimal initial buffer, rely on reconnect logic for stability
-        # User can increase base_buffer_seconds in config if they have slow internet
-        if is_audio:
-            # Audio streams: fast start
-            raw_target = max(base, 2.0)
-        elif bitrate is None:
-            # Unknown bitrate: moderate buffer for stability
-            raw_target = max(base, 2.5)
-        elif bitrate <= 3.0:
-            # Low bitrate (SD)
-            raw_target = max(base, 2.5)
-        elif bitrate <= 8.0:
-            # Medium bitrate (720p-1080p)
-            raw_target = max(base, 3.0)
-        else:
-            # High bitrate (HD/4K): absorb startup jitter
-            raw_target = max(base, 3.5)
-            
-        if is_linear_ts:
-            raw_target = max(raw_target, self._ts_buffer_floor)
-
-        target = min(self._max_buffer_seconds, max(base, raw_target))
-        
-        # Allow network cache to take up most of the buffer time
-        network_candidate = max(target - 0.5, target * cache_fraction)
-        network_target = max(self._min_network_cache_seconds, network_candidate)
-        network_target = min(network_target, self._max_network_cache_seconds, target)
-        network_ms = int(network_target * 1000)
-        
-        file_pad = 6.0 if is_linear_ts else 4.0
-        live_pad = 4.0 if is_linear_ts else 2.5
-        disc_pad = file_pad
-        
-        # Calculate file caching layer
-        file_cache_target = max(target + file_pad, network_target + (file_pad + 2.0))
-        file_cache = max(4000, int(file_cache_target * 1000))
-        
-        demux_cap = 45.0 if is_linear_ts else 40.0
+        # Honor the requested cache budget, including increases after a stall.
+        # Bitrate floors and access-specific padding silently overrode it.
+        target = min(self._max_buffer_seconds, max(0.1, self.base_buffer_seconds))
+        cache_ms = int(target * 1000)
         profile = {
-            "network_ms": network_ms,
-            "live_ms": int(max(target + live_pad, network_target + (live_pad + 1.5)) * 1000),
-            "file_ms": file_cache,
-            "disc_ms": max(file_cache, int((target + disc_pad) * 1000)),
-            "demux_read_ahead": max(8, int(min(target, demux_cap) * 0.85)),
+            "network_ms": cache_ms,
+            "live_ms": cache_ms,
+            "file_ms": cache_ms,
+            "disc_ms": cache_ms,
             "adaptive_cache": True,
         }
-        return network_target, profile, bitrate
+        return target, profile, bitrate
 
     def _estimate_stream_bitrate(self, url: str, headers: Optional[Dict[str, object]] = None) -> Optional[float]:
         """Estimate bitrate from URL hints only (no network calls for fast startup)."""

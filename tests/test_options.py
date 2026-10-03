@@ -43,11 +43,11 @@ def test_load_config_migrates_legacy_file(tmp_path, monkeypatch):
     assert cfg["recording_format_video"] == "provider_mkv"
 
 
-def test_load_config_moves_old_default_buffer_to_new_default(tmp_path, monkeypatch):
+def test_load_config_preserves_explicit_buffer_settings(tmp_path, monkeypatch):
     cfg_file = tmp_path / "config.json"
     monkeypatch.setattr(options, "get_config_read_candidates",
                         lambda: [str(cfg_file)])
-    for stored, expected in ((2.0, 6.0), (4.0, 6.0), (12.0, 6.0), (5.0, 5.0)):
+    for stored, expected in ((2.0, 2.0), (4.0, 4.0), (12.0, 12.0), (5.0, 5.0)):
         cfg_file.write_text(json.dumps({"internal_player_buffer_seconds": stored}),
                             encoding="utf-8")
         assert options.load_config()["internal_player_buffer_seconds"] == expected

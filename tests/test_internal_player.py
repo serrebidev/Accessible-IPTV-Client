@@ -52,6 +52,37 @@ def test_live_buffer_recovery_waits_for_provider_burst(monkeypatch, buffered_sec
     assert actions == expected
 
 
+@pytest.mark.parametrize('base', [0.3, 1.0, 2.0, 6.0])
+@pytest.mark.parametrize('bitrate', [None, 2.0, 6.0, 20.0])
+@pytest.mark.parametrize('kind', ['audio', 'ts', 'other'])
+def test_buffer_profile_honors_requested_duration(base, bitrate, kind):
+    frame = types.SimpleNamespace(
+        base_buffer_seconds=base, _max_buffer_seconds=18.0,
+        _min_network_cache_seconds=0.1, _max_network_cache_seconds=18.0,
+        _network_cache_fraction=0.0, _ts_network_bias=0.0, _ts_buffer_floor=base,
+        _estimate_stream_bitrate=lambda *a, **k: None,
+        _is_current_stream_ts=lambda url: kind == 'ts',
+        _is_likely_audio=lambda url: kind == 'audio',
+    )
+    target, profile, _ = internal_player.InternalPlayerFrame._compute_buffer_profile(
+        frame, 'https://example.com/live/123', bitrate_hint=bitrate)
+    assert target == base
+    # Access types must not silently add seconds to the requested cache.
+    for key in ('network_ms', 'live_ms', 'file_ms', 'disc_ms'):
+        assert profile[key] == int(base * 1000)
+
+
+def test_buffer_profile_preserves_retry_increase_and_maximum():
+    frame = types.SimpleNamespace(
+        base_buffer_seconds=30.0, _max_buffer_seconds=18.0,
+        _estimate_stream_bitrate=lambda *a, **k: None,
+    )
+    target, profile, _ = internal_player.InternalPlayerFrame._compute_buffer_profile(
+        frame, 'https://example.com/live/123')
+    assert target == 18.0
+    assert profile['network_ms'] == 18000
+
+
 class TestBufferProfile:
     """Test buffer profile calculations."""
 
@@ -859,6 +890,21 @@ class TestReconnectKeepsVideoHidden:
     def _play(self, frame, **kw):
         internal_player.InternalPlayerFrame.play(
             frame, "http://example/stream.ts", "Chan", **kw)
+
+    def test_new_channel_resets_retry_buffer_but_retry_keeps_it(self):
+        frame = self._stub_frame()
+        frame._initial_buffer_seconds = 6.0
+        frame.base_buffer_seconds = 18.0
+        frame._max_buffer_seconds = 18.0
+        frame._refresh_ts_floor = types.MethodType(internal_player.InternalPlayerFrame._refresh_ts_floor, frame)
+        frame._update_cache_bounds = types.MethodType(internal_player.InternalPlayerFrame._update_cache_bounds, frame)
+        self._play(frame, video_visible=False)
+        assert frame.base_buffer_seconds == 6.0
+        assert frame._ts_buffer_floor == 6.0
+        assert frame._min_network_cache_seconds == 6.0
+        frame.base_buffer_seconds = 9.0
+        self._play(frame, _retry=True)
+        assert frame.base_buffer_seconds == 9.0
 
     def test_hidden_stream_is_remembered_and_survives_a_reconnect(self, monkeypatch):
         # Neutralise the visible-play focus hop so a regression fails on the

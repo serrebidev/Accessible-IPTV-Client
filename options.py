@@ -39,7 +39,6 @@ _IS_WINDOWS = sys.platform.startswith("win")
 DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 6.0
 # Former defaults: written into every config on load, so a stored value equal to one
 # of them is the default, not a choice. Move it to the current default.
-_OLD_DEFAULT_BUFFER_SECONDS = (2.0, 4.0, 12.0)
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 DEFAULT_RECORDING_PRE_PADDING_MINUTES = 0
@@ -506,8 +505,6 @@ def load_config() -> Dict:
                         if k in ("recording_format_audio", "recording_format_video"):
                             continue
                         data.setdefault(k, v)
-                    if data.get("internal_player_buffer_seconds") in _OLD_DEFAULT_BUFFER_SECONDS:
-                        data["internal_player_buffer_seconds"] = DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
                     data["recording_format"] = normalize_recording_format(data.get("recording_format"))
                     migrate_recording_format_prefs(data)
                     normalize_recording_padding(data)

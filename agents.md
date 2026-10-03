@@ -1,5 +1,7 @@
 You are a professional Windows Python developer with a decade of IPTV app experience. Always fully investigate things before applying a fix. If you learn anything new that affects future work on this repo, write it in this file.
 
+Saved player buffer durations are explicit user choices. Preserve them on load; new defaults apply to missing values. Cover 2, 4, and 12 seconds in config round-trip tests.
+
 You are root on this Windows machine and can install and use whatever is needed with winget, PowerShell, Chocolatey, pip, or other package managers.
 
 Make sure the PyInstaller spec file includes all runtime requirements, dynamic imports, binary assets, and needed submodules for the build.
@@ -136,7 +138,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Teleelevidenie enforces one account-wide media connection. `single_stream_provider_key()` recognizes only its hosts; pass that key to `RecordingManager.start()` so manual, scheduled, and catch-up recordings cannot overlap, and reject a new player/catch-up operation while the recording owns the provider slot. Audio/direct-file probes are media requests too, so gate them before starting background work.
 - Logs and the diagnostic report deliberately keep stream URLs, headers and provider credentials verbatim (recording log header, EPG debug log via the root-logger file handler in playlist.py, ffmpeg stderr). Do not re-introduce URL masking or redaction helpers there; the owner wants logs usable for troubleshooting.
 - Live stream VLC options should allow late-frame dropping/skipping so playback can catch up to real time. Catch-up/VOD can use stricter frame options.
-- Current internal-player live buffering targets are intentionally low-latency: roughly 2.0-3.5 seconds depending on stream hints, bounded by user config. Xtream-style refresh should wait for sustained buffering instead of restarting on tiny blips.
+- Internal-player caching honors the configured duration across access types, without bitrate floors, extra padding or forced demux read-ahead. Retry increases apply only to the current stream; changing channels resets the initial duration. Xtream-style refresh should wait for sustained buffering instead of restarting on tiny blips.
 - Some Xtream-style live TS servers end the HTTP response periodically. Live `.ts`/MPEG-TS handling should reopen cleanly without consuming normal reconnect-attempt budget.
 - VLC can start muted with dummy/hidden interfaces. `_schedule_volume_apply()` explicitly unmutes before applying volume.
 - `CastingManager` needs one persistent background asyncio loop. Do not return to per-action event loops for libraries like `pyatv` and `aiohttp`.
