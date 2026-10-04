@@ -1,17 +1,17 @@
-wxPython>=4.2.0
-python-vlc>=3.0.20123
+wxPython>=4.3.1
+python-vlc>=3.0.21203
 # Casting. The protocol clients are Caster's (tools/sync_caster.py); these are
 # the libraries they drive. soco is optional: without it Sonos speakers simply
 # do not appear.
-pychromecast>=14.0.0
-pyatv>=0.14.0
-zeroconf>=0.131.0
-soco>=0.30.0
+pychromecast>=14.0.10
+pyatv>=0.18.0
+zeroconf>=0.151.5
+soco>=0.31.4
 # main.spec imports chardet.pipeline and bundles its mypyc modules by name.
 # That subpackage first appears in 7.0.0; on 6.x and earlier the release build
 # fails at spec-parse time with ModuleNotFoundError.
-chardet>=7.0.0
-cryptography>=43.0.0
+chardet>=7.6.0
+cryptography>=50.0.2
 
 # Development dependencies
-pytest>=7.0.0
+pytest>=9.1.1

@@ -956,7 +956,8 @@ class CastingManager:
             "-vn", "-map", "a:0?",
             # Absorb the receiver's clock drifting from the source's.
             "-af", "aresample=44100:async=1000:first_pts=0",
-            "-ac", "2", "-f", "wav", "-c:a", "pcm_s16le", "-flush_packets", "1", "-",
+            # Lossless streaming FLAC avoids miniaudio's unknown-length WAV scan.
+            "-ac", "2", "-f", "flac", "-c:a", "flac", "-flush_packets", "1", "-",
         ]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                 stdin=subprocess.DEVNULL, **engine._no_window_kwargs())

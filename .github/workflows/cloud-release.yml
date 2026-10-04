@@ -60,13 +60,13 @@ jobs:
           echo "::error::Cloud releases run from main only (got ${{ github.ref }})."
           exit 1
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
           lfs: true
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
@@ -145,7 +145,7 @@ jobs:
             echo "ref=$tag" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: AccessibleIPTVClient-windows
           path: dist/release/*
@@ -177,12 +177,12 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.windows.outputs.ref }}
           lfs: false
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
@@ -195,7 +195,7 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
         run: bash tools/build_macos.sh
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: AccessibleIPTVClient-macos
           path: dist/AccessibleIPTVClient-v*-macos-*.zip

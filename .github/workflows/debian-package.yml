@@ -39,7 +39,7 @@ jobs:
           echo "ref=${tag:-${{ github.sha }}}" >> "$GITHUB_OUTPUT"
 
       - name: Check out ${{ steps.target.outputs.ref }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.target.outputs.ref }}
           fetch-depth: 0
@@ -48,7 +48,7 @@ jobs:
           lfs: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
