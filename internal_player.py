@@ -524,12 +524,12 @@ class InternalPlayerFrame(wx.Frame):
         user_guide.set_menu_help(self, playback_menu, "built-in-player")
         user_guide.set_menu_help(self, audio_track_item, "audio-tracks")
         user_guide.set_menu_help(self, subtitle_item, "built-in-player")
-
-    def _shortcut_label(self, label: str, action: str) -> str:
-        return label + "\t" + self._shortcuts[action]
         user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
         user_guide.set_menu_help(self, self.record_menu_item, "recordings")
         user_guide.set_menu_help(self, m_cast, "casting")
+
+    def _shortcut_label(self, label: str, action: str) -> str:
+        return label + "\t" + self._shortcuts[action]
 
     # ------------------------------------------------------------------ audio device
     def _apply_audio_output_device(self) -> None:
