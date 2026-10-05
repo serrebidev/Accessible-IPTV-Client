@@ -2311,6 +2311,13 @@ class InternalPlayerFrame(wx.Frame):
                 # SPU delay is in microseconds; a positive delay shows cues later.
                 ms = self.player.get_time() - self.player.video_get_spu_delay() // 1000
                 index = subtitle_cues.active(self._subtitle_cues, ms) if ms >= 0 else None
+                # Bound review by the playhead too, so a seek back into a gap
+                # cannot leave a later, unplayed cue reviewable.
+                self._last_cue_index = subtitle_cues.started(self._subtitle_cues, ms) if ms >= 0 else None
+                if self._last_cue_index is None:
+                    self._review_cue_index = None
+                elif self._review_cue_index is not None and self._review_cue_index > self._last_cue_index:
+                    self._review_cue_index = self._last_cue_index
         except Exception:
             return
         if index == self._cue_index:

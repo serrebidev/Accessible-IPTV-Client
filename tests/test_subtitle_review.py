@@ -109,3 +109,37 @@ def test_review_commands_speak_through_the_live_announcer(monkeypatch):
     InternalPlayerFrame._review_subtitle(frame, -1)
     InternalPlayerFrame._read_current_subtitle(frame)
     assert said == ["One", "Two"]
+
+
+def test_seeking_back_into_a_gap_rebounds_review_to_the_playhead():
+    frame = _frame()
+    _play_to(frame, 5500)
+    _play_to(frame, 2500)  # seek back into the gap after "One"
+    assert _say(frame, 0) == "Last subtitle: One"
+    assert _say(frame, 1) == "No later subtitle."
+    _play_to(frame, 500)  # before the first cue
+    assert _say(frame, 0) == "No subtitle has been shown yet."
+
+
+def test_subtitles_off_keeps_what_was_already_shown():
+    frame = _frame()
+    _play_to(frame, 3500)
+    frame.player.video_get_spu = lambda: -1
+    _play_to(frame, 5500)
+    assert _say(frame, 0) == "Last subtitle: Two"
+
+
+def test_started_cue_lookup():
+    import subtitle_cues
+    assert subtitle_cues.started(CUES, 999) is None
+    assert subtitle_cues.started(CUES, 1000) == 0
+    assert subtitle_cues.started(CUES, 4500) == 1
+    assert subtitle_cues.started(CUES, 99999) == 2
+
+
+def test_new_commands_are_offered_in_the_keyboard_shortcuts_dialog():
+    import inspect
+    import main
+    source = inspect.getsource(main.IPTVClient._customize_shortcuts)
+    for action in ("read_subtitle", "previous_subtitle", "next_subtitle"):
+        assert '("player", "%s"' % action in source

@@ -61,6 +61,12 @@ def load(path: str) -> List[Cue]:
     return parse(text)
 
 
+def started(cues: List[Cue], ms: int) -> Optional[int]:
+    """Index of the latest cue that has started by ``ms``, shown or not."""
+    i = bisect.bisect_right(cues, (ms, float("inf"), "")) - 1
+    return i if i >= 0 else None
+
+
 def active(cues: List[Cue], ms: int) -> Optional[int]:
     """Index of the cue showing at ``ms``; the latest-starting one wins on overlap."""
     i = bisect.bisect_right(cues, (ms, float("inf"), "")) - 1
