@@ -214,6 +214,8 @@ Tasti nel lettore:
 - A: traccia audio successiva.
 - S: traccia dei sottotitoli successiva, incluso Off. Riproduzione > Sottotitoli ti consente di scegliere una traccia o caricare un file di sottotitoli esterno.
 - Maiusc+S: attiva o disattiva la lettura dei sottotitoli.
+- C: leggere il sottotitolo attuale, o l'ultimo mostrato.
+- Pag su e Pag giù: tornare indietro tra i sottotitoli già mostrati e di nuovo avanti fino al più recente.
 - I: annuncia il canale corrente, gli orari dei programmi, il programma successivo e lo stato della registrazione.
 - D: scegliere il dispositivo di uscita audio.
 - Ctrl+C: trasmettere a un dispositivo.
@@ -229,7 +231,11 @@ I canali possono portare più tracce audio, come altre lingue o audiodescrizione
 
 Una traccia scelta è ricordata per quel canale e torna la volta successiva. Per sceglierle in automatico vedere Traccia audio preferita.
 
+### Lettura dei sottotitoli {#subtitle-speech}
+
 Il testo dei sottotitoli appare nel video quando lo stream lo fornisce. Riproduzione > Carica file sottotitoli accetta un file di sottotitoli esterno. Attiva Riproduzione > Leggi i sottotitoli ad alta voce (Maiusc+S) e lo screen reader leggerà ogni sottotitolo di un file SRT o WebVTT caricato non appena compare, anche con la finestra del lettore nascosta. Il sottotitolo corrente è mostrato anche come testo alla fine dei controlli del lettore. I sottotitoli inclusi nello stream stesso e i file ASS o SSA non possono ancora essere letti ad alta voce.
+
+Riproduzione > Leggi il sottotitolo attuale (C) legge il sottotitolo sullo schermo, o l'ultimo mostrato se sullo schermo non ce n'è nessuno. Riproduzione > Sottotitolo precedente (Pag su) e Sottotitolo successivo (Pag giù) scorrono i sottotitoli già mostrati, così puoi riascoltare una riga che ti è sfuggita. Non leggono mai oltre la riproduzione e funzionano sia con Leggi i sottotitoli ad alta voce attivo sia disattivato.
 
 ### Dispositivo di uscita audio {#audio-output-device}
 
@@ -413,7 +419,7 @@ Lettore integrato:
 - Ctrl+P: riprodurre o mettere in pausa.
 - Ctrl+S: fermare.
 - Ctrl+R: registrare.
-- S: Scorri le tracce dei sottotitoli. I: Annuncia cosa sta suonando. Maiusc+S: leggi i sottotitoli ad alta voce.
+- S: Scorri le tracce dei sottotitoli. I: Annuncia cosa sta suonando. Maiusc+S: leggi i sottotitoli ad alta voce. C: leggere il sottotitolo attuale. Pag su e Pag giù: sottotitoli precedenti e successivi.
 - Su e Giù: volume a passi del 2%; con Ctrl, passi del 5%.
 - A: traccia audio successiva.
 - D: dispositivo di uscita audio.

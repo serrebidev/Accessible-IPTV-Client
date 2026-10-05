@@ -214,6 +214,8 @@ Touches du lecteur :
 - A : piste audio suivante.
 - S : piste de sous-titres suivante, y compris Off. Lecture > Sous-titres vous permet de choisir une piste ou de charger un fichier de sous-titres externe.
 - Maj+S : activer ou désactiver la lecture des sous-titres.
+- C : lire le sous-titre actuel, ou le dernier affiché.
+- Page précédente et Page suivante : revenir sur les sous-titres déjà affichés, puis avancer de nouveau jusqu'au plus récent.
 - I : annonce la chaîne actuelle, les horaires des programmes, le prochain programme et l'état de l'enregistrement.
 - D : choisir le périphérique de sortie audio.
 - Ctrl+C : diffuser vers un appareil.
@@ -229,7 +231,11 @@ Les chaînes peuvent porter plusieurs pistes audio, comme d'autres langues ou l'
 
 Une piste choisie est mémorisée pour cette chaîne et revient la prochaine fois. Pour les choisir automatiquement, voir Piste audio préférée.
 
+### Lecture des sous-titres {#subtitle-speech}
+
 Le texte des sous-titres apparaît dans la vidéo lorsque le flux le fournit. Lecture > Charger le fichier de sous-titres accepte un fichier de sous-titres externe. Activez Lecture > Lire les sous-titres à voix haute (Maj+S) et votre lecteur d'écran lit chaque sous-titre d'un fichier SRT ou WebVTT chargé au moment où il apparaît, même lorsque la fenêtre du lecteur est masquée. Le sous-titre en cours s'affiche aussi sous forme de texte à la fin des commandes du lecteur. Les sous-titres fournis par le flux lui-même, ainsi que les fichiers ASS ou SSA, ne peuvent pas encore être lus à voix haute.
+
+Lecture > Lire le sous-titre actuel (C) lit le sous-titre à l'écran, ou le dernier affiché s'il n'y en a aucun à l'écran. Lecture > Sous-titre précédent (Page précédente) et Sous-titre suivant (Page suivante) parcourent les sous-titres déjà affichés, pour réentendre une ligne manquée. Ils ne lisent jamais en avance sur la lecture et fonctionnent que Lire les sous-titres à voix haute soit activé ou non.
 
 ### Périphérique de sortie audio {#audio-output-device}
 
@@ -413,7 +419,7 @@ Lecteur intégré :
 - Ctrl+P : lire ou mettre en pause.
 - Ctrl+S : arrêter.
 - Ctrl+R : enregistrer.
-- S: Cycle des pistes de sous-titres. I: Annoncez ce qui se joue. Maj+S : lire les sous-titres à voix haute.
+- S: Cycle des pistes de sous-titres. I: Annoncez ce qui se joue. Maj+S : lire les sous-titres à voix haute. C : lire le sous-titre actuel. Page précédente et Page suivante : sous-titres précédents et suivants.
 - Haut et Bas : volume par pas de 2 % ; avec Ctrl, pas de 5 %.
 - A : piste audio suivante.
 - D : périphérique de sortie audio.

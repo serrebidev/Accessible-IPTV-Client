@@ -197,6 +197,9 @@ class InternalPlayerFrame(wx.Frame):
         self._on_speak_subtitles_cb = on_speak_subtitles
         self._subtitle_cues: List[subtitle_cues.Cue] = []
         self._cue_index: Optional[int] = None
+        # The cue most recently shown, and where Previous/Next Subtitle review stands.
+        self._last_cue_index: Optional[int] = None
+        self._review_cue_index: Optional[int] = None
         self._subtitle_generation = 0
         self._allow_close = False
         base_value = self._coerce_seconds(base_buffer_seconds, fallback=0.0)
@@ -496,6 +499,12 @@ class InternalPlayerFrame(wx.Frame):
         self.speak_subtitles_item = playback_menu.AppendCheckItem(
             wx.ID_ANY, self._shortcut_label(_("Speak Subtitles"), "speak_subtitles"))
         self.speak_subtitles_item.Check(self._speak_subtitles)
+        m_read_subtitle = playback_menu.Append(
+            wx.ID_ANY, self._shortcut_label(_("Read Current Subtitle"), "read_subtitle"))
+        m_previous_subtitle = playback_menu.Append(
+            wx.ID_ANY, self._shortcut_label(_("Previous Subtitle"), "previous_subtitle"))
+        m_next_subtitle = playback_menu.Append(
+            wx.ID_ANY, self._shortcut_label(_("Next Subtitle"), "next_subtitle"))
         m_audio_device = playback_menu.Append(wx.ID_ANY, _("Audio Output Device...") + "\tD")
         playback_menu.AppendSeparator()
         m_cast = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Cast..."), "cast"))
@@ -512,6 +521,9 @@ class InternalPlayerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_subtitle_menu_select)
         self.Bind(wx.EVT_MENU, self._load_subtitle_file, m_load_subtitle)
         self.Bind(wx.EVT_MENU, lambda _evt: self._toggle_speak_subtitles(), self.speak_subtitles_item)
+        self.Bind(wx.EVT_MENU, lambda _evt: self._read_current_subtitle(), m_read_subtitle)
+        self.Bind(wx.EVT_MENU, lambda _evt: self._review_subtitle(-1), m_previous_subtitle)
+        self.Bind(wx.EVT_MENU, lambda _evt: self._review_subtitle(1), m_next_subtitle)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_cast(), m_cast)
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_fullscreen(), m_full)
         self.Bind(wx.EVT_MENU, lambda _evt: self.GetParent()._announce_what_is_playing(), m_info)
@@ -524,6 +536,9 @@ class InternalPlayerFrame(wx.Frame):
         user_guide.set_menu_help(self, playback_menu, "built-in-player")
         user_guide.set_menu_help(self, audio_track_item, "audio-tracks")
         user_guide.set_menu_help(self, subtitle_item, "built-in-player")
+        for item in (m_load_subtitle, self.speak_subtitles_item,
+                     m_read_subtitle, m_previous_subtitle, m_next_subtitle):
+            user_guide.set_menu_help(self, item, "subtitle-speech")
         user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
         user_guide.set_menu_help(self, self.record_menu_item, "recordings")
         user_guide.set_menu_help(self, m_cast, "casting")
@@ -1930,6 +1945,12 @@ class InternalPlayerFrame(wx.Frame):
             self._cycle_subtitle()
         elif action == "speak_subtitles":
             self._toggle_speak_subtitles()
+        elif action == "read_subtitle":
+            self._read_current_subtitle()
+        elif action == "previous_subtitle":
+            self._review_subtitle(-1)
+        elif action == "next_subtitle":
+            self._review_subtitle(1)
         elif action == "fullscreen":
             self._set_fullscreen(not self._fullscreen)
         elif action == "play_pause":
@@ -2274,6 +2295,8 @@ class InternalPlayerFrame(wx.Frame):
         self._subtitle_generation += 1
         self._subtitle_cues = cues
         self._cue_index = None
+        self._last_cue_index = None
+        self._review_cue_index = None
         self.subtitle_label.SetLabel("")
         if cues:
             self._cue_timer.Start(150)
@@ -2293,10 +2316,43 @@ class InternalPlayerFrame(wx.Frame):
         if index == self._cue_index:
             return
         self._cue_index = index
+        if index is not None:
+            self._last_cue_index = self._review_cue_index = index
         text = self._subtitle_cues[index].text if index is not None else ""
         self.subtitle_label.SetLabel(text)
         if text and self._speak_subtitles and not self._is_paused:
             self._speak(self.subtitle_label)
+
+    def _subtitle_review_text(self, step: int) -> str:
+        """Move the review position by ``step`` cues and return what to say.
+
+        Review never goes past the cue most recently shown, so it cannot read
+        ahead of playback. ``step`` 0 reads the cue on screen, or the last one.
+        """
+        if not self._subtitle_cues:
+            return _("No subtitle text to read. Load an SRT or WebVTT file.")
+        if self._last_cue_index is None:
+            return _("No subtitle has been shown yet.")
+        if step == 0:
+            if self._cue_index is not None:
+                self._review_cue_index = self._cue_index
+                return self._subtitle_cues[self._cue_index].text
+            self._review_cue_index = self._last_cue_index
+            return _("Last subtitle: {text}").format(text=self._subtitle_cues[self._last_cue_index].text)
+        current = self._review_cue_index if self._review_cue_index is not None else self._last_cue_index
+        target = current + step
+        if target < 0:
+            return _("No earlier subtitle.")
+        if target > self._last_cue_index:
+            return _("No later subtitle.")
+        self._review_cue_index = target
+        return self._subtitle_cues[target].text
+
+    def _read_current_subtitle(self) -> None:
+        live_announce.speak(self._subtitle_review_text(0))
+
+    def _review_subtitle(self, step: int) -> None:
+        live_announce.speak(self._subtitle_review_text(step))
 
     def _toggle_speak_subtitles(self) -> None:
         self._speak_subtitles = not self._speak_subtitles

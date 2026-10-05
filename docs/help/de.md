@@ -214,6 +214,8 @@ Tasten im Player:
 - A: nächste Tonspur.
 - S: nächster Untertiteltrack, einschließlich Aus. Mit „Wiedergabe“ > „Untertitel“ können Sie einen Titel auswählen oder eine externe Untertiteldatei laden.
 - Umschalt+S: Untertitel vorlesen ein oder aus.
+- C: den aktuellen Untertitel vorlesen, oder den zuletzt angezeigten.
+- Bild auf und Bild ab: durch die bereits angezeigten Untertitel zurückgehen und wieder vor bis zum neuesten.
 - I: Ansage des aktuellen Senders, der Programmzeiten, des nächsten Programms und des Aufnahmestatus.
 - D: das Audioausgabegerät wählen.
 - Ctrl+C: an ein Gerät übertragen.
@@ -229,7 +231,11 @@ Sender können mehrere Tonspuren mitführen, etwa andere Sprachen oder Audiodesk
 
 Eine gewählte Spur wird pro Sender gemerkt und kommt beim nächsten Mal wieder. Zum automatischen Wählen siehe Bevorzugte Audiospur.
 
+### Untertitel vorlesen {#subtitle-speech}
+
 Untertiteltext erscheint im Video, wenn der Stream ihn liefert. Wiedergabe > Untertiteldatei laden akzeptiert eine externe Untertiteldatei. Schalten Sie Wiedergabe > Untertitel vorlesen (Umschalt+S) ein, dann liest Ihr Screenreader jeden Untertitel einer geladenen SRT- oder WebVTT-Datei vor, sobald er erscheint, auch bei ausgeblendetem Player-Fenster. Der aktuelle Untertitel steht außerdem als Text am Ende der Player-Steuerelemente. Untertitel, die der Stream selbst mitbringt, sowie ASS- oder SSA-Dateien können noch nicht vorgelesen werden.
+
+Wiedergabe > Aktuellen Untertitel vorlesen (C) liest den Untertitel auf dem Bildschirm vor, oder den zuletzt angezeigten, wenn gerade keiner zu sehen ist. Wiedergabe > Vorheriger Untertitel (Bild auf) und Nächster Untertitel (Bild ab) bewegen sich durch die bereits angezeigten Untertitel, sodass Sie eine verpasste Zeile noch einmal hören. Sie lesen nie der Wiedergabe voraus und funktionieren, egal ob Untertitel vorlesen ein- oder ausgeschaltet ist.
 
 ### Audioausgabegerät {#audio-output-device}
 
@@ -413,7 +419,7 @@ Integrierter Player:
 - Ctrl+P: wiedergeben oder pausieren.
 - Ctrl+S: stoppen.
 - Ctrl+R: aufnehmen.
-- S: Durchlaufen Sie Untertitelspuren. I: Kündigen Sie an, was gerade gespielt wird. Umschalt+S: Untertitel vorlesen.
+- S: Durchlaufen Sie Untertitelspuren. I: Kündigen Sie an, was gerade gespielt wird. Umschalt+S: Untertitel vorlesen. C: aktuellen Untertitel vorlesen. Bild auf und Bild ab: frühere und spätere Untertitel.
 - Pfeil auf und ab: Lautstärke in 2%-Schritten; mit Ctrl 5%-Schritte.
 - A: nächste Tonspur.
 - D: Audioausgabegerät.

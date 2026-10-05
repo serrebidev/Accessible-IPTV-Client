@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:521
+#: internal_player.py:533
 msgid "&Playback"
 msgstr "&Lejátszás"
 
@@ -71,7 +71,7 @@ msgstr "Fiók"
 #: main.py:3068
 #: main.py:3206
 #: main.py:9044
-#: shortcuts.py:57
+#: shortcuts.py:60
 msgid "Account Info"
 msgstr "Fiókadatok"
 
@@ -138,7 +138,7 @@ msgstr "Xtream Codes-fiók hozzáadása"
 
 #: main.py:2327
 #: main.py:3230
-#: shortcuts.py:58
+#: shortcuts.py:61
 msgid "Add to Favorites"
 msgstr "Hozzáadás a kedvencekhez"
 
@@ -185,21 +185,21 @@ msgid "Attempt to add provider XMLTV"
 msgstr "A szolgáltató XMLTV-forrásának automatikus beállítása"
 
 #: internal_player.py:112
-#: internal_player.py:594
+#: internal_player.py:608
 msgid "Audio Output Device"
 msgstr "Hangkimeneti eszköz"
 
-#: internal_player.py:499
+#: internal_player.py:508
 msgid "Audio Output Device..."
 msgstr "Hangkimeneti eszköz…"
 
-#: internal_player.py:491
+#: internal_player.py:494
 #: main.py:2505
-#: shortcuts.py:74
+#: shortcuts.py:77
 msgid "Audio Track"
 msgstr "Hangsáv"
 
-#: internal_player.py:2098
+#: internal_player.py:2118
 msgid "Audio Track: {name}"
 msgstr "Hangsáv: {name}"
 
@@ -227,7 +227,7 @@ msgstr "Csak hang (WAV)"
 msgid "Audio output devices"
 msgstr "Hangkimeneti eszközök"
 
-#: internal_player.py:2134
+#: internal_player.py:2154
 msgid "Audio track unavailable"
 msgstr "A hangsáv nem érhető el"
 
@@ -235,9 +235,9 @@ msgstr "A hangsáv nem érhető el"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "A program kizárólag hangot tartalmazó adást észlelt. A rögzítés megkezdődött ({fmt}):\n{path}"
 
-#: internal_player.py:1746
-#: internal_player.py:2153
-#: internal_player.py:2162
+#: internal_player.py:1760
+#: internal_player.py:2173
+#: internal_player.py:2182
 msgid "Audio: {name}"
 msgstr "Hang: {name}"
 
@@ -310,11 +310,11 @@ msgstr "Visszafelé nem kompatibilis változások"
 msgid "Browse..."
 msgstr "Tallózás…"
 
-#: internal_player.py:750
-#: internal_player.py:1647
-#: internal_player.py:1659
-#: internal_player.py:1721
-#: internal_player.py:1874
+#: internal_player.py:764
+#: internal_player.py:1661
+#: internal_player.py:1673
+#: internal_player.py:1735
+#: internal_player.py:1888
 msgid "Buffering..."
 msgstr "Pufferelés…"
 
@@ -368,7 +368,7 @@ msgstr "Megszakítva"
 msgid "Cannot find \"{text}\"."
 msgstr "Nem található: „{text}”."
 
-#: internal_player.py:395
+#: internal_player.py:398
 msgid "Cast"
 msgstr "Átküldés"
 
@@ -376,7 +376,7 @@ msgstr "Átküldés"
 #: main.py:2498
 #: main.py:3074
 #: main.py:3218
-#: shortcuts.py:53
+#: shortcuts.py:56
 msgid "Cast / Connect..."
 msgstr "Átküldés / kapcsolódás…"
 
@@ -385,18 +385,18 @@ msgstr "Átküldés / kapcsolódás…"
 msgid "Cast To..."
 msgstr "Átküldés ide…"
 
-#: internal_player.py:396
+#: internal_player.py:399
 msgid "Cast to Device"
 msgstr "Átküldés eszközre"
 
-#: internal_player.py:501
+#: internal_player.py:510
 #: main.py:2504
-#: shortcuts.py:71
+#: shortcuts.py:74
 msgid "Cast..."
 msgstr "Átküldés…"
 
-#: internal_player.py:1704
-#: internal_player.py:1708
+#: internal_player.py:1718
+#: internal_player.py:1722
 #: main.py:8190
 #: main.py:8307
 #: main.py:8321
@@ -414,7 +414,7 @@ msgstr "Átküldési hiba"
 msgid "Casting failed: {error}"
 msgstr "Nem sikerült az átküldés: {error}"
 
-#: internal_player.py:1704
+#: internal_player.py:1718
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "A műsor nem küldhető át, mert a szükséges összetevő nincs előkészítve."
 
@@ -520,7 +520,7 @@ msgstr "Az adás típusának ellenőrzése…"
 msgid "Checking {account}..."
 msgstr "{account} ellenőrzése…"
 
-#: internal_player.py:421
+#: internal_player.py:424
 msgid "Choose Audio Track"
 msgstr "Hangsáv kiválasztása"
 
@@ -611,7 +611,7 @@ msgstr "Nem sikerült ellenőrizni ezt a fiókot.\n\n{error}"
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "Nem sikerült a diagnosztikai adatokat a vágólapra másolni:\n{error}"
 
-#: internal_player.py:346
+#: internal_player.py:349
 msgid "Could not create libVLC media player object."
 msgstr "Nem sikerült létrehozni a libVLC lejátszóobjektumát."
 
@@ -650,11 +650,11 @@ msgstr "Nem sikerült betölteni a sorozat epizódjait."
 msgid "Could not load episodes:\n{error}"
 msgstr "Nem sikerült betölteni az epizódokat:\n{error}"
 
-#: internal_player.py:2244
+#: internal_player.py:2264
 msgid "Could not load subtitle file."
 msgstr "Nem sikerült betölteni a feliratfájlt."
 
-#: internal_player.py:723
+#: internal_player.py:737
 msgid "Could not load the stream: {error}"
 msgstr "Nem sikerült betölteni az adást: {error}"
 
@@ -720,7 +720,7 @@ msgstr "Nem sikerült leállítani a számítógépet:\n{error}"
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Nem sikerült elindítani az archív műsor letöltését:\n{error}"
 
-#: internal_player.py:745
+#: internal_player.py:759
 msgid "Could not start playback: {error}"
 msgstr "Nem sikerült elindítani a lejátszást: {error}"
 
@@ -896,7 +896,7 @@ msgstr "A műsorújság-adatbázist frissíteni kell"
 #: main.py:3064
 #: main.py:3202
 #: playlist.py:2926
-#: shortcuts.py:48
+#: shortcuts.py:51
 msgid "EPG Manager"
 msgstr "Műsorújság kezelése"
 
@@ -938,8 +938,8 @@ msgstr "Eltelt idő: {time}"
 msgid "Encrypted settings backup saved."
 msgstr "A beállítások titkosított biztonsági mentése elkészült."
 
-#: internal_player.py:1725
-#: internal_player.py:1872
+#: internal_player.py:1739
+#: internal_player.py:1886
 msgid "Ended"
 msgstr "Véget ért"
 
@@ -986,7 +986,7 @@ msgstr "Epizódleírás"
 msgid "Episode {num}"
 msgstr "{num}. epizód"
 
-#: internal_player.py:1726
+#: internal_player.py:1740
 #: main.py:3554
 #: main.py:3608
 #: main.py:5148
@@ -1019,16 +1019,16 @@ msgstr "Nem található a futtatható fájl: {path}"
 #: main.py:1431
 #: main.py:3185
 #: main.py:3211
-#: shortcuts.py:50
+#: shortcuts.py:53
 msgid "Exit"
 msgstr "Kilépés"
 
-#: internal_player.py:2500
+#: internal_player.py:2555
 msgid "Exit Full Screen"
 msgstr "Kilépés a teljes képernyős nézetből"
 
-#: internal_player.py:506
-#: shortcuts.py:79
+#: internal_player.py:515
+#: shortcuts.py:85
 msgid "Exit Player"
 msgstr "Kilépés a lejátszóból"
 
@@ -1061,7 +1061,7 @@ msgstr "Beállítások exportálása…"
 msgid "Extracting update..."
 msgstr "Frissítés kicsomagolása…"
 
-#: shortcuts.py:117
+#: shortcuts.py:123
 msgid "F1 is reserved for Help."
 msgstr "Az F1 billentyű a súgó számára van fenntartva."
 
@@ -1094,11 +1094,11 @@ msgstr "Nem sikerült lekérni a műsorújság adatait: {error}"
 msgid "Failed to fetch release info ({code})."
 msgstr "Nem sikerült lekérni a kiadás adatait ({code})."
 
-#: internal_player.py:338
+#: internal_player.py:341
 msgid "Failed to initialise libVLC instance."
 msgstr "Nem sikerült inicializálni a libVLC-példányt."
 
-#: internal_player.py:343
+#: internal_player.py:346
 msgid "Failed to initialise media player: {error}"
 msgstr "Nem sikerült inicializálni a lejátszót: {error}"
 
@@ -1155,8 +1155,8 @@ msgstr "Formátum"
 msgid "Found {count} devices:"
 msgstr "{count} eszköz található:"
 
-#: internal_player.py:401
-#: internal_player.py:2500
+#: internal_player.py:404
+#: internal_player.py:2555
 msgid "Full Screen"
 msgstr "Teljes képernyő"
 
@@ -1181,7 +1181,7 @@ msgstr "Ugrás csatornaszámra"
 #: main.py:2490
 #: main.py:3093
 #: main.py:3234
-#: shortcuts.py:62
+#: shortcuts.py:65
 msgid "Go to Channel Number..."
 msgstr "Ugrás csatornaszámra…"
 
@@ -1208,8 +1208,8 @@ msgstr "HTTPS-port"
 msgid "Help"
 msgstr "Súgó"
 
-#: internal_player.py:505
-#: shortcuts.py:78
+#: internal_player.py:514
+#: shortcuts.py:84
 msgid "Hide Window"
 msgstr "Ablak elrejtése"
 
@@ -1224,9 +1224,9 @@ msgstr "Régebbi kiadások elrejtése"
 msgid "IPTV Stream"
 msgstr "IPTV-adás"
 
-#: internal_player.py:444
-#: internal_player.py:477
-#: internal_player.py:1719
+#: internal_player.py:447
+#: internal_player.py:480
+#: internal_player.py:1733
 msgid "Idle"
 msgstr "Tétlen"
 
@@ -1236,7 +1236,7 @@ msgstr "Az importálás befejeződött"
 
 #: main.py:3065
 #: main.py:3203
-#: shortcuts.py:49
+#: shortcuts.py:52
 msgid "Import EPG to DB"
 msgstr "Műsorújság importálása az adatbázisba"
 
@@ -1293,7 +1293,7 @@ msgstr "A frissítés telepítése folyamatban van. {app} bezárul, majd magát�
 msgid "Invalid backup salt."
 msgstr "A biztonsági mentéshez tartozó kriptográfiai só érvénytelen."
 
-#: shortcuts.py:88
+#: shortcuts.py:94
 msgid "Invalid keyboard shortcut."
 msgstr "Érvénytelen billentyűkombináció."
 
@@ -1327,9 +1327,13 @@ msgstr "Billentyűparancsok…"
 msgid "Language"
 msgstr "Nyelv"
 
-#: internal_player.py:1327
+#: internal_player.py:1341
 msgid "Last error: {reason}"
 msgstr "Legutóbbi hiba: {reason}"
+
+#: internal_player.py:2340
+msgid "Last subtitle: {text}"
+msgstr "Utolsó felirat: {text}"
 
 #: main.py:5262
 msgid "Latest release tag is missing or invalid."
@@ -1347,11 +1351,11 @@ msgstr "Indítási hiba"
 msgid "Live TV && Catch-up"
 msgstr "Élő TV és műsorarchívum"
 
-#: internal_player.py:2236
+#: internal_player.py:2256
 msgid "Load Subtitle File"
 msgstr "Feliratfájl betöltése"
 
-#: internal_player.py:495
+#: internal_player.py:498
 msgid "Load Subtitle File..."
 msgstr "Feliratfájl betöltése…"
 
@@ -1388,7 +1392,7 @@ msgstr "A MAC-címet hat oktett formájában adja meg, például: 00:1A:79:12:34
 msgid "MAC address presented to the portal"
 msgstr "A portálhoz használt MAC-cím"
 
-#: shortcuts.py:115
+#: shortcuts.py:121
 msgid "Main-window shortcuts need Ctrl or Alt."
 msgstr "A főablak billentyűparancsainak tartalmazniuk kell a Ctrl vagy az Alt billentyűt."
 
@@ -1439,6 +1443,11 @@ msgstr "Név"
 msgid "Never (no expiry date set)"
 msgstr "Soha (nincs beállítva lejárati dátum)"
 
+#: internal_player.py:507
+#: shortcuts.py:82
+msgid "Next Subtitle"
+msgstr "Következő felirat"
+
 #: main.py:2073
 msgid "Next: {programme}"
 msgstr "Következik: {programme}"
@@ -1472,18 +1481,18 @@ msgstr "Nincsenek források"
 msgid "No Video on Demand content found."
 msgstr "Nem található igény szerinti videótartalom."
 
-#: internal_player.py:1708
+#: internal_player.py:1722
 #: main.py:8307
 msgid "No active stream to cast."
 msgstr "Nincs átküldhető adás."
 
-#: internal_player.py:593
+#: internal_player.py:607
 msgid "No audio output devices were found."
 msgstr "Nem található hangkimeneti eszköz."
 
-#: internal_player.py:2093
-#: internal_player.py:2159
-#: internal_player.py:2321
+#: internal_player.py:2113
+#: internal_player.py:2179
+#: internal_player.py:2376
 msgid "No audio tracks available"
 msgstr "Nincs elérhető hangsáv"
 
@@ -1509,6 +1518,10 @@ msgstr "Ehhez a műsorhoz nincs elérhető leírás."
 msgid "No devices found."
 msgstr "Nem található egyetlen eszköz sem."
 
+#: internal_player.py:2344
+msgid "No earlier subtitle."
+msgstr "Nincs korábbi felirat."
+
 #: main.py:6831
 msgid "No episodes found for this series."
 msgstr "Ehhez a sorozathoz nem található epizód."
@@ -1520,6 +1533,10 @@ msgstr "Nem állnak rendelkezésre további hibarészletek."
 #: main.py:4682
 msgid "No ffmpeg details were reported."
 msgstr "Az FFmpeg nem közölt további részleteket."
+
+#: internal_player.py:2346
+msgid "No later subtitle."
+msgstr "Nincs későbbi felirat."
 
 #: release_notes.py:40
 msgid "No notable changes."
@@ -1558,13 +1575,21 @@ msgstr "Jelenleg nincs folyamatban rögzítés."
 msgid "No release history is available."
 msgstr "Nem állnak rendelkezésre kiadási előzmények."
 
-#: internal_player.py:633
+#: internal_player.py:647
 msgid "No stream URL provided."
 msgstr "Nincs megadva adás-URL."
 
-#: internal_player.py:2270
+#: internal_player.py:2334
+msgid "No subtitle has been shown yet."
+msgstr "Még nem jelent meg felirat."
+
+#: internal_player.py:2290
 msgid "No subtitle text found in this file."
 msgstr "Ebben a fájlban nem található feliratszöveg."
+
+#: internal_player.py:2332
+msgid "No subtitle text to read. Load an SRT or WebVTT file."
+msgstr "Nincs felolvasható feliratszöveg. Töltsön be egy SRT- vagy WebVTT-fájlt."
 
 #: main.py:9675
 msgid "No timed problems were found in the newest recording log."
@@ -1611,9 +1636,9 @@ msgstr "Most: {title} ({start} – {end})"
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2200
-#: internal_player.py:2206
-#: internal_player.py:2223
+#: internal_player.py:2220
+#: internal_player.py:2226
+#: internal_player.py:2243
 msgid "Off"
 msgstr "Kikapcsolva"
 
@@ -1642,7 +1667,7 @@ msgstr "Az Accessible IPTV Client projekt megnyitása a GitHubon"
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Nyissa meg a felvételt VLC-ben, nyomja meg a Ctrl+T billentyűkombinációt, majd írja be a felsorolt időpontok egyikét. Ha az FFmpeg jelentette a fájl médiaidejét, azt használjuk; egyébként a felvétel kezdete óta eltelt időt, amely egy megszakítás után kissé későbbi lehet a tényleges lejátszási pozíciónál."
 
-#: internal_player.py:1720
+#: internal_player.py:1734
 msgid "Opening"
 msgstr "Megnyitás"
 
@@ -1687,16 +1712,16 @@ msgstr "Csomag"
 msgid "Password"
 msgstr "Jelszó"
 
-#: internal_player.py:375
-#: internal_player.py:747
-#: internal_player.py:1646
-#: internal_player.py:1657
-#: internal_player.py:1667
+#: internal_player.py:378
+#: internal_player.py:761
+#: internal_player.py:1660
+#: internal_player.py:1671
+#: internal_player.py:1681
 msgid "Pause"
 msgstr "Szünet"
 
-#: internal_player.py:1723
-#: internal_player.py:1849
+#: internal_player.py:1737
+#: internal_player.py:1863
 msgid "Paused"
 msgstr "Szüneteltetve"
 
@@ -1712,25 +1737,25 @@ msgstr "Telefon"
 msgid "Platform: {platform}"
 msgstr "Operációs rendszer: {platform}"
 
-#: internal_player.py:773
+#: internal_player.py:787
 #: main.py:3500
 #: main.py:10094
 #: main.py:10284
 msgid "Play"
 msgstr "Lejátszás"
 
-#: internal_player.py:376
+#: internal_player.py:379
 msgid "Play or Pause"
 msgstr "Lejátszás vagy szünet"
 
-#: internal_player.py:483
+#: internal_player.py:486
 #: main.py:1416
 #: main.py:2487
 #: main.py:2499
 #: main.py:3072
 #: main.py:3216
-#: shortcuts.py:51
-#: shortcuts.py:68
+#: shortcuts.py:54
+#: shortcuts.py:71
 msgid "Play/Pause"
 msgstr "Lejátszás/szünet"
 
@@ -1749,11 +1774,11 @@ msgstr "Lejátszó"
 msgid "Player Controls"
 msgstr "Lejátszásvezérlők"
 
-#: internal_player.py:631
+#: internal_player.py:645
 msgid "Player window has been destroyed."
 msgstr "A lejátszóablak már nem érhető el."
 
-#: internal_player.py:1722
+#: internal_player.py:1736
 msgid "Playing"
 msgstr "Lejátszás folyamatban"
 
@@ -1764,7 +1789,7 @@ msgstr "Lejátszási lista"
 #: main.py:3063
 #: main.py:3201
 #: playlist.py:3015
-#: shortcuts.py:47
+#: shortcuts.py:50
 msgid "Playlist Manager"
 msgstr "Lejátszási lista kezelése"
 
@@ -1782,8 +1807,8 @@ msgstr "Lejátszási lista típusa"
 msgid "Playlist view"
 msgstr "Lejátszási lista nézete"
 
-#: internal_player.py:1032
-#: internal_player.py:1334
+#: internal_player.py:1046
+#: internal_player.py:1348
 msgid "Please try another channel or try again later."
 msgstr "Válasszon másik csatornát, vagy próbálja újra később."
 
@@ -1851,9 +1876,14 @@ msgstr "Az Escape billentyűvel elrejtheti ezt az ablakot; a letöltés folytat�
 #: main.py:3091
 #: main.py:3232
 #: main.py:3682
-#: shortcuts.py:61
+#: shortcuts.py:64
 msgid "Previous Channel"
 msgstr "Előző csatorna"
+
+#: internal_player.py:505
+#: shortcuts.py:81
+msgid "Previous Subtitle"
+msgstr "Előző felirat"
 
 #: main.py:10089
 msgid "Program - Channel"
@@ -1901,6 +1931,11 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "Véletlenszerű MAC-cím generálása"
 
+#: internal_player.py:503
+#: shortcuts.py:80
+msgid "Read Current Subtitle"
+msgstr "Aktuális felirat felolvasása"
+
 #: main.py:9157
 msgid "Ready."
 msgstr "Kész."
@@ -1913,29 +1948,29 @@ msgstr "Legutóbb lejátszott csatornák"
 #: main.py:2491
 #: main.py:3092
 #: main.py:3233
-#: shortcuts.py:63
+#: shortcuts.py:66
 msgid "Recently Watched..."
 msgstr "Legutóbb lejátszott csatornák…"
 
-#: internal_player.py:1351
-#: internal_player.py:1854
-#: internal_player.py:1861
-#: internal_player.py:1869
-#: internal_player.py:1877
+#: internal_player.py:1365
+#: internal_player.py:1868
+#: internal_player.py:1875
+#: internal_player.py:1883
+#: internal_player.py:1891
 msgid "Reconnecting..."
 msgstr "Újracsatlakozás…"
 
-#: internal_player.py:389
-#: internal_player.py:390
-#: internal_player.py:485
-#: internal_player.py:1675
-#: internal_player.py:1691
+#: internal_player.py:392
+#: internal_player.py:393
+#: internal_player.py:488
+#: internal_player.py:1689
+#: internal_player.py:1705
 #: main.py:2503
 #: main.py:3509
 #: main.py:4110
 #: main.py:8278
 #: main.py:8286
-#: shortcuts.py:70
+#: shortcuts.py:73
 msgid "Record"
 msgstr "Rögzítés"
 
@@ -1998,7 +2033,7 @@ msgstr "Felvételi problémák időpontjai"
 msgid "Recording Warning"
 msgstr "Rögzítési figyelmeztetés"
 
-#: internal_player.py:1674
+#: internal_player.py:1688
 msgid "Recording is not available from this window."
 msgstr "Ebből az ablakból nem indítható rögzítés."
 
@@ -2052,11 +2087,11 @@ msgstr "Az összes lejátszási lista frissítése..."
 msgid "Refreshing playlist: {name}"
 msgstr "Lejátszási lista frissítése: {name}"
 
-#: internal_player.py:1044
-#: internal_player.py:1856
-#: internal_player.py:1863
-#: internal_player.py:1866
+#: internal_player.py:1058
+#: internal_player.py:1870
 #: internal_player.py:1877
+#: internal_player.py:1880
+#: internal_player.py:1891
 msgid "Refreshing stream..."
 msgstr "Adás frissítése…"
 
@@ -2089,7 +2124,7 @@ msgstr "Lecseréli a jelenlegi beállításokat a biztonsági mentés tartalmár
 msgid "Restore"
 msgstr "Ablak visszaállítása"
 
-#: internal_player.py:1667
+#: internal_player.py:1681
 msgid "Resume"
 msgstr "Folytatás"
 
@@ -2265,7 +2300,7 @@ msgstr "A beállítások mérete meghaladja a biztonsági mentés megengedett fe
 msgid "Settings imported. Restart the app to use them."
 msgstr "A beállítások importálása megtörtént. Érvénybe lépésükhöz indítsa újra a programot."
 
-#: shortcuts.py:121
+#: shortcuts.py:127
 msgid "Shortcut conflicts with {command}."
 msgstr "A billentyűkombináció ütközik az alábbi parancs hozzárendelésével: {command}."
 
@@ -2275,12 +2310,12 @@ msgstr "A billentyűparancs mentése megtörtént. Használatához indítsa újr
 
 #: main.py:3071
 #: main.py:3215
-#: shortcuts.py:60
+#: shortcuts.py:63
 msgid "Show Built-in Player"
 msgstr "Beépített lejátszó megjelenítése"
 
 #: main.py:3239
-#: shortcuts.py:59
+#: shortcuts.py:62
 msgid "Show Downloads"
 msgstr "Letöltések megjelenítése"
 
@@ -2322,8 +2357,8 @@ msgstr "A számítógép leállítása a felvételek befejezése után"
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "A leállítás megszakadt. A számítógép a felvételek befejezése után mostantól nem áll le automatikusan."
 
-#: internal_player.py:497
-#: shortcuts.py:76
+#: internal_player.py:500
+#: shortcuts.py:79
 msgid "Speak Subtitles"
 msgstr "Feliratok felolvasása"
 
@@ -2338,7 +2373,7 @@ msgstr "Stalker Portal – {name}"
 
 #: main.py:2497
 #: main.py:5043
-#: shortcuts.py:56
+#: shortcuts.py:59
 msgid "Start Recording"
 msgstr "Rögzítés indítása"
 
@@ -2362,15 +2397,15 @@ msgstr "Kezdés: {start} – {title}"
 msgid "Status"
 msgstr "Állapot"
 
-#: internal_player.py:381
-#: internal_player.py:484
+#: internal_player.py:384
+#: internal_player.py:487
 #: main.py:1417
 #: main.py:2488
 #: main.py:2500
 #: main.py:3073
 #: main.py:3217
-#: shortcuts.py:52
-#: shortcuts.py:69
+#: shortcuts.py:55
+#: shortcuts.py:72
 msgid "Stop"
 msgstr "Leállítás"
 
@@ -2378,11 +2413,11 @@ msgstr "Leállítás"
 msgid "Stop All Recordings"
 msgstr "Összes rögzítés leállítása"
 
-#: internal_player.py:382
+#: internal_player.py:385
 msgid "Stop Playback"
 msgstr "Lejátszás leállítása"
 
-#: internal_player.py:1691
+#: internal_player.py:1705
 #: main.py:3507
 #: main.py:5045
 msgid "Stop Recording"
@@ -2392,8 +2427,8 @@ msgstr "Rögzítés leállítása"
 msgid "Stop Recording(s)"
 msgstr "Rögzítések leállítása"
 
-#: internal_player.py:774
-#: internal_player.py:1724
+#: internal_player.py:788
+#: internal_player.py:1738
 msgid "Stopped"
 msgstr "Leállítva"
 
@@ -2414,8 +2449,8 @@ msgstr "Rögzítés leállítása…"
 msgid "Stopping {count} recording(s)..."
 msgstr "{count} rögzítés leállítása…"
 
-#: internal_player.py:1033
-#: internal_player.py:1335
+#: internal_player.py:1047
+#: internal_player.py:1349
 msgid "Stream Lost"
 msgstr "Az adás megszakadt"
 
@@ -2424,17 +2459,17 @@ msgstr "Az adás megszakadt"
 msgid "Stream URL"
 msgstr "Adás-URL"
 
-#: internal_player.py:1330
+#: internal_player.py:1344
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Az adás {count} újrapróbálkozás után megszakadt. Lehet, hogy jelenleg nem érhető el, vagy működési hiba lépett fel."
 
-#: internal_player.py:1031
+#: internal_player.py:1045
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Az adás megszakadt. Lehet, hogy jelenleg nem érhető el, vagy működési hiba lépett fel."
 
-#: internal_player.py:1036
-#: internal_player.py:1338
-#: internal_player.py:1879
+#: internal_player.py:1050
+#: internal_player.py:1352
+#: internal_player.py:1893
 msgid "Stream lost"
 msgstr "Az adás megszakadt"
 
@@ -2447,41 +2482,41 @@ msgstr "Kimeneti formátum"
 msgid "Subscription"
 msgstr "Előfizetés"
 
-#: internal_player.py:2248
+#: internal_player.py:2268
 msgid "Subtitle file loaded: {name}"
 msgstr "Feliratfájl betöltve: {name}"
 
-#: internal_player.py:2237
+#: internal_player.py:2257
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Feliratfájlok (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: internal_player.py:2252
+#: internal_player.py:2272
 msgid "Subtitle speech needs an SRT or WebVTT file."
 msgstr "A feliratfelolvasáshoz SRT vagy WebVTT fájl szükséges."
 
-#: internal_player.py:2307
+#: internal_player.py:2362
 msgid "Subtitle speech off"
 msgstr "Feliratfelolvasás kikapcsolva"
 
-#: internal_player.py:2309
+#: internal_player.py:2364
 msgid "Subtitle speech on"
 msgstr "Feliratfelolvasás bekapcsolva"
 
-#: internal_player.py:2311
+#: internal_player.py:2366
 msgid "Subtitle speech on. Load an SRT or WebVTT file to hear subtitles."
 msgstr "Feliratfelolvasás bekapcsolva. A feliratok meghallgatásához töltsön be egy SRT vagy WebVTT fájlt."
 
-#: internal_player.py:2196
+#: internal_player.py:2216
 msgid "Subtitle track unavailable"
 msgstr "Nem érhető el feliratsáv"
 
-#: internal_player.py:494
+#: internal_player.py:497
 #: main.py:2506
-#: shortcuts.py:75
+#: shortcuts.py:78
 msgid "Subtitles"
 msgstr "Feliratok"
 
-#: internal_player.py:2203
+#: internal_player.py:2223
 msgid "Subtitles: {name}"
 msgstr "Feliratok: {name}"
 
@@ -2629,9 +2664,9 @@ msgstr "Hátralévő idő: {time}"
 msgid "Title"
 msgstr "Cím"
 
-#: internal_player.py:402
-#: internal_player.py:502
-#: shortcuts.py:77
+#: internal_player.py:405
+#: internal_player.py:511
+#: shortcuts.py:83
 msgid "Toggle Full Screen"
 msgstr "Teljes képernyős nézet be- és kikapcsolása"
 
@@ -2640,10 +2675,10 @@ msgstr "Teljes képernyős nézet be- és kikapcsolása"
 msgid "Topics"
 msgstr "Témakörök"
 
-#: internal_player.py:2058
-#: internal_player.py:2137
-#: internal_player.py:2190
-#: internal_player.py:2202
+#: internal_player.py:2078
+#: internal_player.py:2157
+#: internal_player.py:2210
+#: internal_player.py:2222
 msgid "Track {id}"
 msgstr "{id}. sáv"
 
@@ -2697,7 +2732,7 @@ msgstr "Váratlan fiókválasz érkezett az Xtream-kiszolgálótól"
 msgid "Unknown"
 msgstr "Ismeretlen"
 
-#: shortcuts.py:110
+#: shortcuts.py:116
 msgid "Unknown command."
 msgstr "Ismeretlen parancs."
 
@@ -2860,39 +2895,39 @@ msgstr "Nézet"
 msgid "View EPG..."
 msgstr "Műsorújság megtekintése…"
 
-#: internal_player.py:1738
+#: internal_player.py:1752
 msgid "Vol {value}%"
 msgstr "Hangerő: {value}%"
 
-#: internal_player.py:407
+#: internal_player.py:410
 msgid "Volume"
 msgstr "Hangerő"
 
-#: internal_player.py:415
+#: internal_player.py:418
 msgid "Volume Control"
 msgstr "Hangerőszabályzó"
 
 #: main.py:2493
 #: main.py:2502
-#: shortcuts.py:55
-#: shortcuts.py:73
+#: shortcuts.py:58
+#: shortcuts.py:76
 msgid "Volume Down"
 msgstr "Hangerő csökkentése"
 
 #: main.py:2492
 #: main.py:2501
-#: shortcuts.py:54
-#: shortcuts.py:72
+#: shortcuts.py:57
+#: shortcuts.py:75
 msgid "Volume Up"
 msgstr "Hangerő növelése"
 
-#: internal_player.py:503
+#: internal_player.py:512
 #: main.py:2496
 #: main.py:2507
 #: main.py:3066
 #: main.py:3205
-#: shortcuts.py:65
-#: shortcuts.py:80
+#: shortcuts.py:68
+#: shortcuts.py:86
 msgid "What Is Playing"
 msgstr "Aktuális műsorinformációk"
 
@@ -2906,7 +2941,7 @@ msgstr "Újdonságok"
 #: main.py:2495
 #: main.py:3204
 #: main.py:10062
-#: shortcuts.py:64
+#: shortcuts.py:67
 msgid "What's on Now"
 msgstr "Most adásban"
 
@@ -3045,7 +3080,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "A következő lejátszó nincs beállítva Linuxon: {player}."
 
-#: internal_player.py:687
+#: internal_player.py:701
 msgid "{title} - Built-in Player"
 msgstr "{title} – Beépített lejátszó"
 
@@ -3057,7 +3092,7 @@ msgstr "{title} – {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}. Kezdés: {start}; befejezés: {end}"
 
-#: internal_player.py:1735
+#: internal_player.py:1749
 msgid "{value}s buffer"
 msgstr "{value} másodperces puffer"
 
@@ -3065,7 +3100,7 @@ msgstr "{value} másodperces puffer"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Összesen {warnings} figyelmeztetés, {errors} hiba és {fatals} végzetes hiba került a naplóba."
 
-#: internal_player.py:1734
+#: internal_player.py:1748
 msgid "~{value} Mbps"
 msgstr "Körülbelül {value} Mbps"
 

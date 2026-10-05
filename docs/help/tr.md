@@ -213,6 +213,8 @@ Oynatıcıdaki tuşlar:
 - A: sonraki ses parçası.
 - S: Kapalı dahil sonraki altyazı parçası. Oynatma > Altyazılar bir parça seçmenizi veya harici bir altyazı dosyası yüklemenizi sağlar.
 - Shift+S: altyazı seslendirmeyi açar veya kapatır.
+- C: geçerli altyazıyı ya da son gösterileni okur.
+- Page Up ve Page Down: daha önce gösterilen altyazılarda geri gider ve en yenisine kadar yeniden ilerler.
 - I: mevcut kanalı, program zamanlarını, sonraki programı ve kayıt durumunu duyurur.
 - D: ses çıkış cihazını seçme.
 - Ctrl+C: bir cihaza yayınlama.
@@ -228,7 +230,11 @@ Kanallar birkaç ses parçası taşıyabilir: başka diller ya da sesli betimlem
 
 Seçtiğiniz bir parça o kanal için hatırlanır ve gelecek sefer geri gelir. Otomatik seçim için bkz. Tercih edilen ses parçası.
 
+### Altyazı seslendirme {#subtitle-speech}
+
 Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda ekran okuyucunuz, yüklenen SRT veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Akışın kendisiyle gelen altyazılar ve ASS veya SSA dosyaları henüz seslendirilemez.
+
+Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı yoksa son gösterileni okur. Oynatma > Önceki altyazı (Page Up) ve Sonraki altyazı (Page Down), daha önce gösterilen altyazılar arasında gezinir; böylece kaçırdığınız bir satırı yeniden dinleyebilirsiniz. Hiçbir zaman oynatmanın önüne geçip okumazlar ve Altyazıları seslendir açık da olsa kapalı da olsa çalışırlar.
 
 ### Ses çıkış cihazı {#audio-output-device}
 
@@ -412,7 +418,7 @@ Yerleşik oynatıcı:
 - Ctrl+P: oynatma ya da duraklatma.
 - Ctrl+S: durdurma.
 - Ctrl+R: kaydetme.
-- S: Altyazı parçaları arasında geçiş yapın. I: Neyin oynandığını duyurun. Shift+S: altyazıları seslendir.
+- S: Altyazı parçaları arasında geçiş yapın. I: Neyin oynandığını duyurun. Shift+S: altyazıları seslendir. C: geçerli altyazıyı okur. Page Up ve Page Down: önceki ve sonraki altyazılar.
 - Yukarı ve Aşağı: ses düzeyi %2 adımlarla; Ctrl ile %5 adımlarla.
 - A: sonraki ses parçası.
 - D: ses çıkış cihazı.

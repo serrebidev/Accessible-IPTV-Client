@@ -60,3 +60,5 @@ def test_player_menu_registers_specific_help_topics(monkeypatch):
     assert "audio-output-device" in frame.help_menu_topics.values()
     assert frame.help_menu_topics[frame.record_menu_item.GetId()] == "recordings"
     assert "casting" in frame.help_menu_topics.values()
+    assert frame.help_menu_topics[frame.speak_subtitles_item.GetId()] == "subtitle-speech"
+    assert list(frame.help_menu_topics.values()).count("subtitle-speech") == 5
