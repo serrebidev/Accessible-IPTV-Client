@@ -803,3 +803,130 @@ def test_gz_download_does_not_resume_a_partial_file_from_an_earlier_run(monkeypa
     finally:
         stream.close()
     assert requests == [None]
+
+
+def test_prune_old_programmes_removes_exactly_the_expired_rows(tmp_path):
+    """Prune must delete expired rows and keep the ones inside the window."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        # Anchored to the app's own clock so the cutoff lands between the
+        # expired rows and the ones inside the window, whatever today's date is.
+        utcnow = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        old = (utcnow - datetime.timedelta(days=300)).strftime("%Y%m%d%H%M%S")
+        edge = (utcnow - datetime.timedelta(days=30)).strftime("%Y%m%d%H%M%S")
+        recent = (utcnow - datetime.timedelta(days=2)).strftime("%Y%m%d%H%M%S")
+        future = (utcnow + datetime.timedelta(days=300)).strftime("%Y%m%d%H%M%S")
+        rows = [
+            ("ch1", "Expired long ago", old, old, ""),
+            ("ch2", "Expired 30d", edge, edge, ""),
+            ("ch3", "Within window", recent, recent, ""),
+            ("ch4", "Future", future, future, ""),
+        ]
+        db.conn.executemany(
+            "INSERT OR IGNORE INTO programmes (channel_id,title,start,end,description)"
+            " VALUES (?,?,?,?,?)", rows)
+        db.conn.commit()
+
+        db.prune_old_programmes(days=14)
+
+        kept = sorted(r[0] for r in db.conn.execute("SELECT title FROM programmes").fetchall())
+        assert kept == ["Future", "Within window"]
+    finally:
+        db.close()
+
+
+def test_prune_reclaims_file_space(tmp_path):
+    """DELETE frees pages but never shrinks the file unless auto_vacuum is set.
+
+    Without this the guide only ever grew: one user's epg.db reached 8 GB of
+    mostly-empty pages that prune never returned to the filesystem.
+    """
+    db_path = str(tmp_path / "epg.db")
+    db = EPGDatabase(db_path)
+    try:
+        assert db.conn.execute("PRAGMA auto_vacuum").fetchone()[0] == 2, "INCREMENTAL not active"
+
+        old = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+               - datetime.timedelta(days=40)).strftime("%Y%m%d%H%M%S")
+        keep = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+                - datetime.timedelta(days=1)).strftime("%Y%m%d%H%M%S")
+        rows = [
+            (f"ch{i:03d}", "Expired", old, old, "x" * 200)
+            for i in range(4000)
+        ] + [
+            (f"ch{i:03d}", "Keep", keep, keep, "x" * 200)
+            for i in range(200)
+        ]
+        db.conn.executemany(
+            "INSERT OR IGNORE INTO programmes (channel_id,title,start,end,description)"
+            " VALUES (?,?,?,?,?)", rows)
+        db.conn.commit()
+        db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        size_full = os.path.getsize(db_path)
+
+        db.prune_old_programmes(days=14)
+        db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+        size_after = os.path.getsize(db_path)
+        assert db.conn.execute("SELECT COUNT(*) FROM programmes").fetchone()[0] == 200
+        assert size_after < size_full, f"file did not shrink: {size_full} -> {size_after}"
+    finally:
+        db.close()
+
+
+def test_winsock_connection_abort_is_treated_as_transient():
+    """[WinError 10054] must be retried, not reported as a failed import.
+
+    This is the error a 542 MB uncompressed XMLTV feed produced: the remote
+    host tore the socket down mid-transfer and the import gave up at once.
+    """
+    from playlist import _is_transient_epg_error
+
+    reported = "[WinError 10054] An existing connection was forcibly closed by the remote host"
+    assert _is_transient_epg_error(OSError(reported))
+    # Sibling Winsock aborts, all of which aborted the import outright before.
+    for winerror in (10051, 10053, 10055, 10060, 10061):
+        assert _is_transient_epg_error(OSError(winerror, "socket failure")), winerror
+
+    # Genuine parse/data errors must still surface to the user.
+    assert not _is_transient_epg_error(ValueError("malformed XMLTV: bad tvg id"))
+    assert not _is_transient_epg_error(sqlite3.OperationalError("no such table: programmes"))
+
+
+def test_epg_import_requests_gzip_encoded_feed(monkeypatch, tmp_path):
+    """urllib sends no Accept-Encoding of its own.
+
+    Dispatcharr (tv.serrebiradio.com) only compresses the XMLTV feed when the
+    client asks, and the uncompressed body was 542 MB with no Content-Length.
+    """
+    captured = {}
+
+    class _Resp:
+        status = 200
+
+        def info(self):
+            return self
+
+        def get(self, name, default=None):
+            return default
+
+        def peek(self, n=0):
+            return b"<?xml version='1.0'?><tv></tv>"
+
+        def read(self, n=-1):
+            return b""
+
+        def close(self):
+            pass
+
+    def urlopen(req, timeout=None):
+        captured["accept_encoding"] = req.get_header("Accept-encoding")
+        return _Resp()
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    monkeypatch.setattr(playlist.urllib.request, "urlopen", urlopen)
+    try:
+        db.import_epg_xml(["https://example.invalid/xmltv.php?username=u&password=p"])
+    finally:
+        db.close()
+    assert captured.get("accept_encoding") == "gzip"

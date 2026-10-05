@@ -922,7 +922,61 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
 # DB PRAGMAs
 # =========================
 
+# gzip truncation, dropped sockets and a few common transient parse/IO failures.
+# These are worth another attempt; anything else is reported to the user.
+_EPG_TRANSIENT_HINTS = (
+    'end-of-stream marker',
+    'compressed file ended',
+    'unexpected end of data',
+    'crc check failed',
+    'incomplete read',
+    'connection reset',
+    'timed out',
+    'no element found',
+    'unclosed token',
+    # Winsock aborts: the peer (or an intermediary) tore the socket down
+    # mid-transfer. urllib surfaces these as WinError text, never as the
+    # POSIX wording above, and a long XMLTV download provokes them routinely.
+    '10054',  # forcibly closed by remote host
+    '10053',  # software caused connection abort
+    '10055',  # connection aborted by host software
+    '10051',  # peer did not respond
+    '10060',  # connection timed out
+    '10061',  # connection refused while retrying
+    'forcibly closed',
+    'connection aborted',
+)
+
+_EPG_TRANSIENT_EXCEPTIONS = (
+    IncompleteRead,
+    ConnectionResetError,
+    ConnectionAbortedError,
+    BrokenPipeError,
+    TimeoutError,
+)
+
+
+def _is_transient_epg_error(err: Exception) -> bool:
+    """True when re-opening the source is likely to succeed."""
+    if isinstance(err, _EPG_TRANSIENT_EXCEPTIONS):
+        return True
+    msg = str(err).lower()
+    return any(hint in msg for hint in _EPG_TRANSIENT_HINTS)
+
+
+# SQLite never returns the pages a DELETE frees to the filesystem, so an EPG
+# database only ever grew -- prune cut the rows but not the file, and one user's
+# guide reached 8 GB of mostly-empty pages. auto_vacuum=INCREMENTAL lets prune
+# give the space back, via the incremental_vacuum call in
+# prune_old_programmes. It only takes effect on a database created with it (an
+# existing file silently keeps auto_vacuum=NONE until it is rebuilt), and
+# setting it on an existing file is a harmless no-op, so it is safe to apply
+# unconditionally.
 PRAGMA_IMPORT = [
+    # MUST stay first. SQLite only accepts auto_vacuum before the database file
+    # is created, and journal_mode=WAL below writes the header, so putting it
+    # after makes it a silent no-op on every fresh database.
+    "PRAGMA auto_vacuum=INCREMENTAL;",
     "PRAGMA journal_mode=WAL;",
     "PRAGMA synchronous=NORMAL;",
     "PRAGMA temp_store=MEMORY;",
@@ -1534,6 +1588,13 @@ class EPGDatabase:
         c = self.conn.cursor()
         c.execute("DELETE FROM programmes WHERE end < ?", (cutoff,))
         self.conn.commit()
+        # Only meaningful on a database created with auto_vacuum=INCREMENTAL; a
+        # no-op everywhere else. This pragma returns rows, so the statement has
+        # to be drained or the connection is left with a statement in progress.
+        try:
+            self.conn.execute("PRAGMA incremental_vacuum").fetchall()
+        except Exception:
+            _logger.debug("EPGDatabase.prune_old_programmes: ignored exception", exc_info=True)
 
     def commit(self):
         self.conn.commit()
@@ -2356,9 +2417,16 @@ class EPGDatabase:
                 last_err = None
                 for attempt in range(3):
                     try:
+                        # Ask for gzip: a multi-hundred-MB XMLTV feed is highly
+                        # compressible and many providers (Dispatcharr) only
+                        # compress when the client asks. urllib sends no
+                        # Accept-Encoding of its own, so without this the whole
+                        # feed arrives uncompressed over a connection long
+                        # enough to be reset mid-transfer.
                         req = urllib.request.Request(src, headers={
                             "User-Agent": "Mozilla/5.0",
-                            "Accept": "application/xml, text/xml, application/gzip, */*"
+                            "Accept": "application/xml, text/xml, application/gzip, */*",
+                            "Accept-Encoding": "gzip",
                         })
                         resp = urllib.request.urlopen(req, timeout=300)
                         status = getattr(resp, "status", None)
@@ -2417,25 +2485,7 @@ class EPGDatabase:
                 return gzip.open(src, 'rb') if is_gz else open(src, 'rb')
 
         def _is_transient_stream_error(err: Exception) -> bool:
-            msg = str(err).lower()
-            # gzip truncation/HTTP partials and a few common transient parse/IO issues
-            hints = (
-                'end-of-stream marker',
-                'compressed file ended',
-                'unexpected end of data',
-                'crc check failed',
-                'incomplete read',
-                'connection reset',
-                'timed out',
-                'no element found',
-                'unclosed token',
-            )
-            try:
-                if isinstance(err, IncompleteRead):
-                    return True
-            except Exception:
-                _logger.debug("EPGDatabase.import_epg_xml._is_transient_stream_error: ignored exception", exc_info=True)
-            return any(h in msg for h in hints)
+            return _is_transient_epg_error(err)
 
         for idx, src in enumerate(xml_sources):
             t0 = time.time()
