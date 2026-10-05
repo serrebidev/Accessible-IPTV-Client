@@ -8991,11 +8991,19 @@ class CastDiscoveryDialog(wx.Dialog):
                 devices = self.caster.discover_all()
                 wx.CallAfter(self._update_list, devices)
             except Exception as e:
-                wx.CallAfter(self.status_lbl.SetLabel, _("Error: {error}").format(error=e))
+                wx.CallAfter(self._show_scan_error, e)
 
         threading.Thread(target=do_scan, daemon=True).start()
 
+    def _show_scan_error(self, error):
+        # The scan outlives the dialog when it is cancelled mid-search.
+        if not self:
+            return
+        self.status_lbl.SetLabel(_("Error: {error}").format(error=error))
+
     def _update_list(self, devices: List[object]):
+        if not self:
+            return
         self.devices = devices
         self.listbox.Clear()
         if not devices:
@@ -9005,8 +9013,10 @@ class CastDiscoveryDialog(wx.Dialog):
         self.status_lbl.SetLabel(_("Found {count} devices:").format(count=len(devices)))
         for dev in devices:
             self.listbox.Append(dev.display_name)
-        
-        # Restore selection if possible (not implemented for now to keep it simple)
+
+        # Select the first device so Connect works straight from the keyboard.
+        self.listbox.SetSelection(0)
+        self.ok_btn.Enable()
 
     def _on_select(self, event):
         sel = self.listbox.GetSelection()

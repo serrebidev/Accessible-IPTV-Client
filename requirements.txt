@@ -12,6 +12,9 @@ soco>=0.31.4
 # fails at spec-parse time with ModuleNotFoundError.
 chardet>=7.6.0
 cryptography>=50.0.2
+# playlist.py checks whether a crashed EPG import still owns the import lock;
+# without psutil a stale lock blocks EPG imports for two hours.
+psutil>=7.0.0
 
 # Development dependencies
 pytest>=9.1.1
