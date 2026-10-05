@@ -1,6 +1,16 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.145.0 - 2026-10-05
+
+### Features
+
+- Read the current subtitle again and review earlier ones (#38)
+
+### Bug fixes
+
+- Cast dialog, stale EPG lock and cast relay thread join
+
 ## v1.144.15 - 2026-10-05
 
 ### Bug fixes
