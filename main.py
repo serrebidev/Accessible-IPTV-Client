@@ -2504,6 +2504,9 @@ class IPTVClient(wx.Frame):
             ("player", "cast", _("Cast...")),
             ("player", "audio_track", _("Audio Track")),
             ("player", "subtitles", _("Subtitles")),
+            ("player", "read_subtitle", _("Read Current Subtitle")),
+            ("player", "previous_subtitle", _("Previous Subtitle")),
+            ("player", "next_subtitle", _("Next Subtitle")),
             ("player", "what_is_playing", _("What Is Playing")),
         ]
         labels = ["{name}: {key}".format(

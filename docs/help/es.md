@@ -214,6 +214,8 @@ Teclas en el reproductor:
 - A: siguiente pista de audio.
 - S: siguiente pista de subtítulos, incluido Off. Reproducción > Subtítulos te permite elegir una pista o cargar un archivo de subtítulos externo.
 - Mayús+S: activar o desactivar la lectura de subtítulos.
+- C: leer el subtítulo actual, o el último que se mostró.
+- Re Pág y Av Pág: retroceder por los subtítulos ya mostrados y volver a avanzar hasta el más reciente.
 - I: anuncio el canal actual, los horarios de los programas, el próximo programa y el estado de la grabación.
 - D: elegir el dispositivo de salida de audio.
 - Ctrl+C: transmitir a un dispositivo.
@@ -229,7 +231,11 @@ Los canales pueden llevar varias pistas de audio, como otros idiomas o audiodesc
 
 Una pista que elija se recuerda para ese canal y vuelve la próxima vez. Para elegirlas automáticamente, vea Pista de audio preferida.
 
+### Lectura de subtítulos {#subtitle-speech}
+
 El texto de los subtítulos aparece en el vídeo cuando la transmisión lo proporciona. Reproducción > Cargar archivo de subtítulos acepta un archivo de subtítulos externo. Active Reproducción > Leer subtítulos en voz alta (Mayús+S) y su lector de pantalla leerá cada subtítulo de un archivo SRT o WebVTT cargado cuando aparezca, también con la ventana del reproductor oculta. El subtítulo actual se muestra además como texto al final de los controles del reproductor. Los subtítulos que vienen con la propia transmisión y los archivos ASS o SSA todavía no se pueden leer en voz alta.
+
+Reproducción > Leer el subtítulo actual (C) lee el subtítulo que está en pantalla, o el último que se mostró si no hay ninguno en pantalla. Reproducción > Subtítulo anterior (Re Pág) y Subtítulo siguiente (Av Pág) recorren los subtítulos ya mostrados, para que pueda volver a oír una línea que se le escapó. Nunca leen por delante de la reproducción y funcionan tanto si Leer subtítulos en voz alta está activado como si no.
 
 ### Dispositivo de salida de audio {#audio-output-device}
 
@@ -413,7 +419,7 @@ Reproductor integrado:
 - Ctrl+P: reproducir o pausar.
 - Ctrl+S: detener.
 - Ctrl+R: grabar.
-- S: Ciclo de pistas de subtítulos. I: Anuncia lo que está sonando. Mayús+S: leer subtítulos en voz alta.
+- S: Ciclo de pistas de subtítulos. I: Anuncia lo que está sonando. Mayús+S: leer subtítulos en voz alta. C: leer el subtítulo actual. Re Pág y Av Pág: subtítulos anteriores y posteriores.
 - Arriba y Abajo: volumen en pasos de 2%; con Ctrl, pasos de 5%.
 - A: siguiente pista de audio.
 - D: dispositivo de salida de audio.

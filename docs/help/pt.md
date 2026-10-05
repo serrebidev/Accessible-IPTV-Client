@@ -214,6 +214,8 @@ Teclas no reprodutor:
 - A: próxima faixa de áudio.
 - S: próxima faixa de legenda, incluindo Off. Reprodução > Legendas permite escolher uma faixa ou carregar um arquivo de legenda externo.
 - Shift+S: ativar ou desativar a leitura de legendas.
+- C: ler a legenda atual, ou a última mostrada.
+- Page Up e Page Down: voltar pelas legendas já mostradas e avançar de novo até a mais recente.
 - I: anuncia o canal atual, horários dos programas, próximo programa e status da gravação.
 - D: escolher o dispositivo de saída de áudio.
 - Ctrl+C: transmitir para um dispositivo.
@@ -229,7 +231,11 @@ Canais podem carregar várias faixas de áudio, como outros idiomas ou audiodesc
 
 Uma faixa que você escolhe é lembrada para aquele canal e volta na próxima vez. Para escolhê-las automaticamente, veja Faixa de áudio preferida.
 
+### Leitura de legendas {#subtitle-speech}
+
 O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e o seu leitor de tela lerá cada legenda de um arquivo SRT ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. Legendas que vêm no próprio stream e arquivos ASS ou SSA ainda não podem ser lidos em voz alta.
+
+Reprodução > Ler a legenda atual (C) lê a legenda que está na tela, ou a última mostrada quando não há nenhuma na tela. Reprodução > Legenda anterior (Page Up) e Próxima legenda (Page Down) percorrem as legendas já mostradas, para você ouvir de novo uma linha que perdeu. Elas nunca leem à frente da reprodução e funcionam com Ler legendas em voz alta ativado ou desativado.
 
 ### Dispositivo de saída de áudio {#audio-output-device}
 
@@ -413,7 +419,7 @@ Reprodutor integrado:
 - Ctrl+P: reproduzir ou pausar.
 - Ctrl+S: parar.
 - Ctrl+R: gravar.
-- S: Percorra as faixas de legenda. I: Anuncie o que está tocando. Shift+S: ler legendas em voz alta.
+- S: Percorra as faixas de legenda. I: Anuncie o que está tocando. Shift+S: ler legendas em voz alta. C: ler a legenda atual. Page Up e Page Down: legendas anteriores e seguintes.
 - Acima e Abaixo: volume em passos de 2%; com Ctrl, passos de 5%.
 - A: próxima faixa de áudio.
 - D: dispositivo de saída de áudio.
