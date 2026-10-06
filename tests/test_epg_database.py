@@ -932,6 +932,43 @@ def test_epg_import_requests_gzip_encoded_feed(monkeypatch, tmp_path):
     assert captured.get("accept_encoding") == "gzip"
 
 
+def test_reimport_keeps_history_of_a_channel_id_the_guide_defines_twice(tmp_path):
+    """A Dispatcharr feed defined 390 channel ids twice under different names.
+
+    The second definition read as a renumbered channel and deleted the id's
+    programmes on every import, history and catch-up included.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?><tv>'
+        '<channel id="14170"><display-name>Sky Sports Tennis</display-name></channel>'
+        '<channel id="14170"><display-name>Lacrosse Championships Gold Medal</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" stop="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+        'channel="14170"><title>Tennis</title></programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        old_start = (now - datetime.timedelta(days=2)).strftime("%Y%m%d%H%M%S")
+        old_end = (now - datetime.timedelta(days=2, hours=-1)).strftime("%Y%m%d%H%M%S")
+        db.insert_programme("14170", "Earlier Match", old_start, old_end)
+        db.commit()
+
+        db.import_epg_xml([str(xml_path)])
+
+        titles = {row[0] for row in db.conn.execute(
+            "SELECT title FROM programmes WHERE channel_id = '14170'")}
+        assert titles == {"Tennis", "Earlier Match"}
+        name = db.conn.execute("SELECT display_name FROM channels WHERE id = '14170'").fetchone()[0]
+        assert name == "Sky Sports Tennis"
+    finally:
+        db.close()
+
+
 def test_epg_search_treats_percent_and_underscore_literally(tmp_path):
     now = datetime.datetime.now(datetime.timezone.utc)
     fmt = "%Y%m%d%H%M%S"
@@ -947,3 +984,38 @@ def test_epg_search_treats_percent_and_underscore_literally(tmp_path):
         assert names == {"100% News"}
     finally:
         db.close()
+
+
+def test_import_checkpoints_the_wal_between_batches(tmp_path):
+    """wal_autocheckpoint is off during import; without a checkpoint per batch
+    a 618 MB guide grew the WAL past 1.8 GB before the final TRUNCATE."""
+    start = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv><channel id="c"><display-name>C</display-name></channel>']
+    for i in range(15001):
+        st = start + datetime.timedelta(minutes=i)
+        parts.append(f'<programme start="{st.strftime(fmt)}" stop="{(st + datetime.timedelta(minutes=1)).strftime(fmt)}" '
+                     f'channel="c"><title>P{i}</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    executed = []
+    real = db.conn
+
+    class _Spy:
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+        def execute(self, sql, *args):
+            executed.append(sql)
+            return real.execute(sql, *args)
+
+    db.conn = _Spy()
+    try:
+        db.import_epg_xml([str(xml_path)])
+    finally:
+        db.conn = real
+        db.close()
+    assert any("wal_checkpoint(PASSIVE)" in sql for sql in executed)

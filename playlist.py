@@ -2532,11 +2532,20 @@ class EPGDatabase:
         def _is_transient_stream_error(err: Exception) -> bool:
             return _is_transient_epg_error(err)
 
+        # Guides can define one channel id more than once with different
+        # names (a Dispatcharr feed carried 390 such ids). insert_channel reads
+        # a name change as a renumbered channel and deletes its programmes, so
+        # every import wiped those channels' history, catch-up included. The
+        # first definition in a source wins; repeats are skipped. Reset per
+        # attempt: a retry rolls back the channel rows it would otherwise skip.
+        seen_channel_ids: Set[str] = set()
+
         for idx, src in enumerate(xml_sources):
             t0 = time.time()
             attempts_left = 3
             while attempts_left > 0:
                 chan_count, prog_count, inserted_since_commit, sample_ok = 0, 0, 0, 0
+                seen_channel_ids.clear()
                 stream = None
                 began_txn = False
                 try:
@@ -2606,7 +2615,8 @@ class EPGDatabase:
                                 ch_id = elem.get("id", "")
                                 dn_elem = elem.find("./display-name")
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
-                                if ch_id or disp:
+                                if (ch_id or disp) and ch_id not in seen_channel_ids:
+                                    seen_channel_ids.add(ch_id)
                                     self.insert_channel(ch_id, disp)
                                     chan_count += 1
                             elif tag == 'programme':
@@ -2634,6 +2644,16 @@ class EPGDatabase:
                                     inserted_since_commit += 1
                                     if inserted_since_commit >= BATCH:
                                         self.commit()
+                                        # wal_autocheckpoint is off for the import, so without
+                                        # this the whole guide piled up in the WAL until the
+                                        # final TRUNCATE: a 618 MB feed peaked above 1.8 GB of
+                                        # WAL next to a 600 MB database. PASSIVE never waits on
+                                        # readers; checkpointed frames are reused by later
+                                        # batches, so the WAL stays near one batch in size.
+                                        try:
+                                            self.conn.execute("PRAGMA wal_checkpoint(PASSIVE);").fetchall()
+                                        except Exception:
+                                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                                         _logger.debug("EPG COMMIT src=%s progs+%d total=%d mem=%sMB", src, BATCH, prog_count, _mem_mb())
                                         inserted_since_commit = 0
                             # Clear processed nodes and detach them from their parent so
