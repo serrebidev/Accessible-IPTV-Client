@@ -1287,6 +1287,20 @@ def _implicit_catchup_source(channel: Dict[str, str]) -> str:
     return ""
 
 
+def _now_playing_key(channel: Dict[str, str]) -> str:
+    """Cache key for a channel's on-air row label and description.
+
+    The normalized name alone is not enough: providers carry several channels
+    of one name with different guides, and all of them showed the first one's
+    programme. The tvg-id tells them apart.
+    """
+    raw_name = str(channel.get("name") or "")
+    # Names made only of strip tags ("USA", "CAR") canonicalize to nothing.
+    name_key = canonicalize_name(raw_name) or raw_name.strip().lower()
+    tvg_id = str(channel.get("tvg-id") or "").strip().lower()
+    if name_key and tvg_id:
+        return f"{name_key}\x1f{tvg_id}"
+    return name_key
 def set_linux_env():
     if platform.system() != "Linux":
         return
@@ -1957,7 +1971,7 @@ class IPTVClient(wx.Frame):
             cache = getattr(self, "_now_playing_labels", {})
             if not cache:
                 return ""
-            return cache.get(canonicalize_name(channel.get("name", "")), "")
+            return cache.get(_now_playing_key(channel), "")
 
     def _refresh_now_playing_labels(self):
         """One bulk query: the on-air programme of every EPG channel, for row labels."""
@@ -1971,13 +1985,14 @@ class IPTVClient(wx.Frame):
             db = EPGDatabase(get_db_path(), readonly=True)
             try:
                 channels = db.get_all_now_next()
+                known_ids = db.get_channel_ids_lower()
             finally:
                 db.close()
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        mapping = self._build_now_playing_labels(channels)
-        descriptions = self._build_now_playing_descriptions(channels)
+        mapping = self._build_now_playing_labels(channels, known_ids=known_ids)
+        descriptions = self._build_now_playing_descriptions(channels, known_ids=known_ids)
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
             self._now_playing_labels = mapping
@@ -2008,13 +2023,20 @@ class IPTVClient(wx.Frame):
         return by_id, by_id_lower, name_index, stripped_index
 
     @staticmethod
-    def _match_epg_channel(channel, by_id, by_id_lower, name_index, stripped_index):
+    def _match_epg_channel(channel, by_id, by_id_lower, name_index, stripped_index,
+                           known_ids=None):
         """The EPG entry for a playlist channel, or None.
 
         1) tvg-id, including the common XMLTV id variants, case-insensitive
         and tolerant of one extra dotted segment ("chan.tv" vs "chan").
         2) names: exact normalized, then noise-stripped, for the channel
         name and then the tvg-name.
+
+        ``known_ids`` holds every guide channel id (lower case), including
+        ones with nothing on air right now. A channel whose tvg-id is among
+        them has a guide of its own, so when that guide is empty at the
+        moment it gets no label rather than a namesake's: the noise-stripped
+        name of "48 Hours" is "hours", which matched an unrelated channel.
         """
         raw_id = str(channel.get("tvg-id") or "").strip()
         candidates = _expand_tvg_id_candidates(raw_id)
@@ -2025,6 +2047,8 @@ class IPTVClient(wx.Frame):
             channel_id = by_id_lower.get(candidate.strip().lower())
             if channel_id is not None:
                 return by_id[channel_id]
+        if known_ids and any(c.strip().lower() in known_ids for c in candidates if c.strip()):
+            return None
         for source in (channel.get("name"), channel.get("tvg-name")):
             text = str(source or "").strip()
             if not text:
@@ -2038,26 +2062,28 @@ class IPTVClient(wx.Frame):
                     return by_id[channel_id]
         return None
 
-    def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
+    def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
+                                  known_ids=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
 
         Exact normalized names miss a lot of channels ("TVP 1 HD" against a
         "TVP 1" guide entry, renamed feeds, ...), so the lookup walks the same
         signals the EPG view uses: tvg-id first (expanded variants included),
         then normalized names with noise words stripped. The returned map is
-        keyed by the playlist channel's normalized name, which is what the row
-        renderer has at hand.
+        keyed by ``_now_playing_key``: the normalized name plus the tvg-id, so
+        same-named channels with different guides (a provider's several
+        "CBC News" feeds) each keep their own programme.
         """
         by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
 
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
-            name_key = canonicalize_name(channel.get("name", ""))
+            name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
             entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index)
+                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
             if not entry:
                 continue
             suffix = ""
@@ -2076,8 +2102,8 @@ class IPTVClient(wx.Frame):
         return mapping
 
     def _build_now_playing_descriptions(
-            self, channels: Dict[str, Dict[str, object]]) -> Dict[str, str]:
-        """On-air episode description per canonical playlist channel name.
+            self, channels: Dict[str, Dict[str, object]], known_ids=None) -> Dict[str, str]:
+        """On-air episode description per playlist channel (``_now_playing_key``).
 
         Same fuzzy channel match as the row labels, but carries the long
         description text for the Tab-reachable description field instead of
@@ -2088,11 +2114,11 @@ class IPTVClient(wx.Frame):
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
-            name_key = canonicalize_name(channel.get("name", ""))
+            name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
             entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index)
+                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
             if not entry:
                 continue
             now_show = entry.get("now")
@@ -7637,7 +7663,7 @@ class IPTVClient(wx.Frame):
             # highlighted channel from the bulk now-playing cache.
             self._set_episode_description(getattr(
                 self, "_now_playing_descriptions", {}).get(
-                canonicalize_name(ch.get("name", "")), ""))
+                _now_playing_key(ch), ""))
             # Warm the media-type cache (issue #33) once the selection
             # settles, so the Recording Format menu and recording paths know
             # audio-only streams before they are used.

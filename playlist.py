@@ -2334,6 +2334,10 @@ class EPGDatabase:
             })
         return results
 
+    def get_channel_ids_lower(self) -> Set[str]:
+        """Every guide channel id, lower-cased, including ones with no programmes."""
+        return {str(row[0]).lower() for row in self.conn.execute("SELECT id FROM channels") if row[0]}
+
     def count_programmes(self) -> int:
         """Number of stored programmes, or -1 when the count is unavailable.
 
