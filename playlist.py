@@ -1439,6 +1439,22 @@ class EPGDatabase:
         existing_cols = {row[1] for row in c.execute("PRAGMA table_info(programmes)").fetchall()}
         if "description" not in existing_cols:
             c.execute("ALTER TABLE programmes ADD COLUMN description TEXT")
+        # Every EPG source that lists each channel (several can share an id),
+        # so an import only ever forgets a channel no source still lists.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS channel_sources (
+                channel_id TEXT,
+                source_key TEXT,
+                PRIMARY KEY (channel_id, source_key)
+            )
+        """)
+        c.execute("CREATE INDEX IF NOT EXISTS idx_channel_sources_source ON channel_sources (source_key)")
+        channel_cols = {row[1] for row in c.execute("PRAGMA table_info(channels)").fetchall()}
+        # Migration: when an import last saw each channel. Rows that predate it
+        # count as seen now, so they get the full grace period.
+        if "last_seen" not in channel_cols:
+            c.execute("ALTER TABLE channels ADD COLUMN last_seen INTEGER")
+            c.execute("UPDATE channels SET last_seen = ?", (int(time.time()),))
         # Indexes crucial for fast lookups
         # idx_programmes_channel_start_end is a left-prefix superset of (channel_id, start),
         # so the standalone (channel_id, start) index is redundant — drop it to speed bulk
@@ -1469,7 +1485,7 @@ class EPGDatabase:
             _logger.debug("EPGDatabase.reopen: ignored exception", exc_info=True)
         self._open()
 
-    def insert_channel(self, channel_id: str, display_name: str):
+    def insert_channel(self, channel_id: str, display_name: str, source_key: Optional[str] = None):
         name_region = extract_group(display_name)
         id_region = _detect_region_from_id(channel_id or "")
         # Prefer region derived from the channel id when it contradicts the display name.
@@ -1489,9 +1505,13 @@ class EPGDatabase:
         if old and old[0] and norm and old[0] != norm:
             c.execute("DELETE FROM programmes WHERE channel_id = ?", (channel_id,))
         c.execute(
-            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag) VALUES (?, ?, ?, ?)",
-            (channel_id, display_name, norm, group_tag)
+            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag, last_seen) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (channel_id, display_name, norm, group_tag, int(time.time()))
         )
+        if source_key:
+            c.execute("INSERT OR IGNORE INTO channel_sources (channel_id, source_key) VALUES (?, ?)",
+                      (channel_id, source_key))
 
     def _repair_channel_regions_prefer_id(self):
         """One-time reconciliation: if a channel's id clearly encodes a region
@@ -1598,6 +1618,63 @@ class EPGDatabase:
             WHERE programmes.title != excluded.title
                OR length(excluded.description) > length(coalesce(programmes.description, ''))
         """, (channel_id, title, start_utc, end_utc, description))
+
+    def _retire_unseen_channels(self, days: int = 14) -> int:
+        """Delete guide channels (and programmes) no import has listed for ``days``.
+
+        Catches what per-source cleanup cannot: a source whose URL changed (a
+        rotated token or password gives it a new source key, so channels it
+        dropped stay listed under the old one) and rows from builds that
+        recorded no source.
+        Programmes are pruned after the same 14 days, so such a channel has
+        nothing left worth keeping.
+        """
+        cutoff = int(time.time()) - days * 86400
+        c = self.conn.cursor()
+        stale = [row[0] for row in c.execute(
+            "SELECT id FROM channels WHERE last_seen IS NOT NULL AND last_seen < ?", (cutoff,))]
+        if stale:
+            self._delete_channels(c, stale)
+        self.conn.commit()
+        return len(stale)
+
+    @staticmethod
+    def _delete_channels(c, ids) -> None:
+        """Delete channels with their programmes and source listings.
+
+        The programmes go too: an id the feed later hands to another channel
+        must not bring the old channel's schedule back with it.
+        """
+        ids = list(ids)
+        c.executemany("DELETE FROM programmes WHERE channel_id = ?", ((i,) for i in ids))
+        c.executemany("DELETE FROM channel_sources WHERE channel_id = ?", ((i,) for i in ids))
+        c.executemany("DELETE FROM channels WHERE id = ?", ((i,) for i in ids))
+
+    def _drop_channels_missing_from(self, source_key: str, keep_ids: Set[str]) -> int:
+        """Forget ``source_key``'s listing of channels it no longer defines.
+
+        Scoped to the one source that was just imported: a source that is not
+        part of this run (its provider's playlist failed, so its EPG URL was
+        never discovered) keeps its listings. A channel is deleted only when
+        no source lists it any more, so an id two sources share survives one
+        of them dropping it. Returns the number of channels deleted.
+        """
+        c = self.conn.cursor()
+        c.execute("CREATE TEMP TABLE IF NOT EXISTS import_seen_ids (id TEXT PRIMARY KEY)")
+        c.execute("DELETE FROM import_seen_ids")
+        c.executemany("INSERT OR IGNORE INTO import_seen_ids (id) VALUES (?)", ((i,) for i in keep_ids))
+        dropped = [row[0] for row in c.execute(
+            "SELECT channel_id FROM channel_sources WHERE source_key = ? "
+            "AND channel_id NOT IN (SELECT id FROM import_seen_ids)", (source_key,))]
+        c.executemany("DELETE FROM channel_sources WHERE channel_id = ? AND source_key = ?",
+                      ((i, source_key) for i in dropped))
+        orphaned = [i for i in dropped if c.execute(
+            "SELECT 1 FROM channel_sources WHERE channel_id = ? LIMIT 1", (i,)).fetchone() is None]
+        if orphaned:
+            self._delete_channels(c, orphaned)
+        c.execute("DELETE FROM import_seen_ids")
+        self.conn.commit()
+        return len(orphaned)
 
     def prune_old_programmes(self, days: int = 7):
         utcnow = self._utcnow()
@@ -2539,10 +2616,15 @@ class EPGDatabase:
         # first definition in a source wins; repeats are skipped. Reset per
         # attempt: a retry rolls back the channel rows it would otherwise skip.
         seen_channel_ids: Set[str] = set()
+        # Per imported source: its key and the channel ids it defined, for the
+        # stale-channel cleanup after the run.
+        imported_sources: List[Tuple[str, Set[str]]] = []
 
         for idx, src in enumerate(xml_sources):
             t0 = time.time()
             attempts_left = 3
+            source_ok = False
+            source_key = hashlib.sha1(src.encode("utf-8", "surrogatepass")).hexdigest()
             while attempts_left > 0:
                 chan_count, prog_count, inserted_since_commit, sample_ok = 0, 0, 0, 0
                 seen_channel_ids.clear()
@@ -2617,7 +2699,7 @@ class EPGDatabase:
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
                                 if (ch_id or disp) and ch_id not in seen_channel_ids:
                                     seen_channel_ids.add(ch_id)
-                                    self.insert_channel(ch_id, disp)
+                                    self.insert_channel(ch_id, disp, source_key)
                                     chan_count += 1
                             elif tag == 'programme':
                                 ch_id = elem.get("channel", "")
@@ -2676,6 +2758,7 @@ class EPGDatabase:
                                   src, chan_count, prog_count, time.time() - t0, _mem_mb())
 
                     # success; exit retry loop for this source
+                    source_ok = True
                     break
 
                 except Exception as e:
@@ -2751,13 +2834,40 @@ class EPGDatabase:
                         except Exception:
                             _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
+            # An empty guide from a briefly broken feed is no reason to forget
+            # every channel it normally carries.
+            if source_ok and chan_count:
+                imported_sources.append((source_key, set(seen_channel_ids)))
             grand_chan += chan_count
             grand_prog += prog_count
             if progress_callback:
                 try: progress_callback(idx + 1, total)
                 except Exception:
                     _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
-        
+
+        # Channels the guide no longer lists used to stay forever. Their ids
+        # then still counted as "this channel has its own guide", so a playlist
+        # channel carrying a retired id never fell back to a current guide of
+        # the same name. Each source only forgets its own channels, and only
+        # when it imported with channels this run; a source left out of the run
+        # (or failing) keeps everything.
+        for source_key, kept in imported_sources:
+            try:
+                removed = self._drop_channels_missing_from(source_key, kept)
+                if removed:
+                    _logger.info("EPG removed %d channels the guide no longer lists", removed)
+            except Exception as e:
+                _logger.debug("EPG stale-channel cleanup skipped: %s", e)
+        # Only while imports work: a run where nothing imported says nothing
+        # about which channels the guide still carries.
+        if imported_sources:
+            try:
+                removed = self._retire_unseen_channels(days=14)
+                if removed:
+                    _logger.info("EPG removed %d channels no import has listed for 14 days", removed)
+            except Exception as e:
+                _logger.debug("EPG unseen-channel cleanup skipped: %s", e)
+
         try:
             self.prune_old_programmes(days=14)
             self.commit()
