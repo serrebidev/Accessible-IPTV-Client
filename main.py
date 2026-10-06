@@ -1301,6 +1301,82 @@ def _now_playing_key(channel: Dict[str, str]) -> str:
     if name_key and tvg_id:
         return f"{name_key}\x1f{tvg_id}"
     return name_key
+
+
+# Bump whenever _parse_m3u_return starts producing different channel dicts
+# from the same playlist text; it salts the parsed-playlist cache key.
+_PARSED_PLAYLIST_CACHE_VERSION = "2"
+
+# Xtream Codes live URL: /live/USER/PASS/ID[.ext] or the short /USER/PASS/ID[.ext].
+_XTREAM_LIVE_PATH_RE = re.compile(r"^/(?:live/)?([^/]+)/([^/]+)/(\d+)(?:\.[A-Za-z0-9]+)?$")
+
+
+def _catchup_wall_clock(dt: datetime.datetime, tz_name: str = "") -> datetime.datetime:
+    """``dt`` on the clock the provider's archive reads catch-up starts in.
+
+    ``tz_name`` is the playlist's ``catchup-timezone``: "UTC" (Dispatcharr) or
+    an IANA zone. Without one, or when the zone is unknown here, the user's
+    local time is used, which is what Xtream servers in the user's region
+    expect.
+    """
+    name = (tz_name or "").strip()
+    if name.upper() in {"UTC", "GMT", "Z", "ETC/UTC", "ETC/GMT"}:
+        return dt.astimezone(datetime.timezone.utc)
+    if name:
+        try:
+            from zoneinfo import ZoneInfo
+            return dt.astimezone(ZoneInfo(name))
+        except Exception:
+            LOG.debug("_catchup_wall_clock: unknown catch-up timezone %r", name, exc_info=True)
+    return utc_to_local(dt)
+
+
+def _xtream_timeshift_url(channel: Dict[str, str], start_dt: datetime.datetime,
+                          end_dt: datetime.datetime) -> str:
+    """Xtream Codes archive URL for a ``catchup="xc"`` channel without a source.
+
+    Xtream playlists (and Dispatcharr's XC output) mark archive channels with
+    ``catchup="xc"`` and no ``catchup-source``: the archive URL is implied by
+    the live URL. ``/live/U/P/ID`` becomes ``/timeshift/U/P/MIN/START/ID.ts``.
+    The live URL's ``|Referer=...|Cookie=...`` tail is kept: a provider that
+    needs those headers for live needs them for the archive too.
+    """
+    raw_url, sep, modifiers = str(channel.get("url") or "").partition("|")
+    raw_url = raw_url.strip()
+    modifiers = modifiers.strip()
+    try:
+        parsed = urllib.parse.urlparse(raw_url)
+    except (TypeError, ValueError):
+        return ""
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return ""
+    m = _XTREAM_LIVE_PATH_RE.match(parsed.path or "")
+    if not m:
+        return ""
+    user, password, stream_id = m.groups()
+    duration = max(1, int((end_dt - start_dt).total_seconds() // 60))
+    start = _catchup_wall_clock(start_dt, channel.get("catchup-timezone", ""))
+    try:
+        offset = channel.get("catchup-offset")
+        if offset:
+            start -= datetime.timedelta(hours=float(offset))
+    except (TypeError, ValueError):
+        LOG.debug("_xtream_timeshift_url: ignored catch-up offset", exc_info=True)
+    token = start.strftime("%Y-%m-%d:%H-%M")
+    url = (f"{parsed.scheme}://{parsed.netloc}/timeshift/{user}/{password}/"
+           f"{duration}/{token}/{stream_id}.ts")
+    if parsed.query:
+        # A provider token in the live URL's query authorises the archive too.
+        url = f"{url}?{parsed.query}"
+    ua = channel.get("http-user-agent")
+    # Read the tail with the same parser playback uses, so aliases such as
+    # "UA=" count as a User-Agent and the provider's own value is not overridden.
+    tail_headers = split_stream_modifiers("x|" + modifiers)[1] if modifiers else {}
+    if ua and not tail_headers.get("user-agent"):
+        modifiers = "|".join(filter(None, [modifiers, f"User-Agent={urllib.parse.quote(ua)}"]))
+    return f"{url}|{modifiers}" if modifiers else url
+
+
 def set_linux_env():
     if platform.system() != "Linux":
         return
@@ -7265,6 +7341,10 @@ class IPTVClient(wx.Frame):
         http_headers: List[str] = []
         http_auth = ""
         http_accept = ""
+        # Playlist-wide catch-up clock from the #EXTM3U header. Dispatcharr
+        # sends catchup-timezone="UTC" and its archive expects UTC start
+        # times; without it the start goes out in the user's local time.
+        catchup_timezone = ""
 
         for raw_line in text.splitlines():
             s = raw_line.strip()
@@ -7273,6 +7353,13 @@ class IPTVClient(wx.Frame):
 
             if s[0] == '#':
                 upper_prefix = s[:10].upper()
+                if upper_prefix.startswith("#EXTM3U"):
+                    for match in attr_iter(s[7:]):
+                        if match.group(1).lower() == "catchup-timezone":
+                            catchup_timezone = (match.group(2) or match.group(3)
+                                                or match.group(4) or "").strip()
+                            break
+                    continue
                 if upper_prefix.startswith("#EXTINF"):
                     name = ""
                     group = ""
@@ -7427,6 +7514,8 @@ class IPTVClient(wx.Frame):
                 channel["catchup-source"] = catchup_source
             if catchup_offset:
                 channel["catchup-offset"] = catchup_offset
+            if catchup_timezone and (catchup or catchup_source):
+                channel["catchup-timezone"] = catchup_timezone
             if http_user_agent:
                 channel["http-user-agent"] = http_user_agent
             if http_referrer:
@@ -7465,6 +7554,7 @@ class IPTVClient(wx.Frame):
             tvg_name = ""
             tvg_logo = ""
             tvg_rec = ""
+            media_hint = ""
             timeshift = ""
             catchup = ""
             catchup_type = ""
@@ -7484,7 +7574,11 @@ class IPTVClient(wx.Frame):
     def _playlist_text_hash(self, text: str) -> str:
         if not text:
             return ""
-        return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()
+        # The parsed-playlist cache is keyed by this hash, so the parser
+        # version is part of it: a parser change must not be hidden behind
+        # channels cached by an older build from the same playlist text.
+        payload = _PARSED_PLAYLIST_CACHE_VERSION + "\n" + text
+        return hashlib.sha1(payload.encode("utf-8", "surrogatepass")).hexdigest()
 
     def _parsed_cache_path_for_key(self, key: str) -> str:
         digest = hashlib.sha1(key.encode("utf-8", "surrogatepass")).hexdigest()
@@ -7797,7 +7891,9 @@ class IPTVClient(wx.Frame):
         # the equivalent information through their legacy timeshift attribute.
         source = channel.get("catchup-source") or _implicit_catchup_source(channel)
         if not source:
-            return ""
+            if str(channel.get("catchup") or "").strip().lower() != "xc":
+                return ""
+            return _xtream_timeshift_url(channel, start_dt, end_dt)
 
         offset = channel.get("catchup-offset")
         offset_hours = 0.0
@@ -7834,8 +7930,9 @@ class IPTVClient(wx.Frame):
         if not last_segment.isdigit():
             src = f"{src}/{stream_id}"
 
-        start_local = utc_to_local(start_dt)
-        end_local = utc_to_local(end_dt)
+        catchup_tz = channel.get("catchup-timezone", "")
+        start_local = _catchup_wall_clock(start_dt, catchup_tz)
+        end_local = _catchup_wall_clock(end_dt, catchup_tz)
         try:
             if offset_hours:
                 delta = datetime.timedelta(hours=offset_hours)
