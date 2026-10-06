@@ -13,6 +13,8 @@ import os
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import main  # noqa: E402
@@ -204,3 +206,112 @@ class TestLegacyTimeshiftMetadata:
         for value in ("", "0", "-1", "invalid", None):
             channel = dict(base, timeshift=value)
             assert main.IPTVClient._channel_has_catchup(client, channel) is False
+
+
+class TestXtreamCatchupWithoutSource:
+    """Xtream/Dispatcharr playlists mark archive channels catchup="xc" only.
+
+    The archive URL is implied by the live URL. Without this the app offered
+    catch-up and then failed with "Unable to construct catch-up URL".
+    """
+
+    LIVE = "https://tv.example/live/user/pass/90508"
+
+    def test_xc_channel_gets_the_xtream_timeshift_url(self):
+        channel = {"url": self.LIVE, "catchup": "xc", "catchup-days": "4",
+                   "catchup-timezone": "UTC"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == "https://tv.example/timeshift/user/pass/60/2026-09-06:12-00/90508.ts"
+
+    def test_short_xtream_path_and_extension(self):
+        channel = {"url": "http://host:8080/user/pass/1234.m3u8", "catchup": "xc",
+                   "catchup-timezone": "UTC"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == "http://host:8080/timeshift/user/pass/60/2026-09-06:12-00/1234.ts"
+
+    def test_iana_catchup_timezone_is_honoured(self):
+        zoneinfo = pytest.importorskip("zoneinfo")
+        try:
+            zoneinfo.ZoneInfo("Europe/Berlin")
+        except Exception:
+            pytest.skip("no time zone database on this machine")
+        channel = {"url": self.LIVE, "catchup": "xc", "catchup-timezone": "Europe/Berlin"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert "/2026-09-06:14-00/" in url
+
+    def test_user_agent_rides_along(self):
+        channel = {"url": self.LIVE, "catchup": "xc", "catchup-timezone": "UTC",
+                   "http-user-agent": "Agent X"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url.endswith(".ts|User-Agent=Agent%20X")
+
+    def test_live_url_header_modifiers_are_kept(self):
+        channel = {"url": self.LIVE + ".ts|Referer=https://ref.example/|Cookie=a=b",
+                   "catchup": "xc", "catchup-timezone": "UTC", "http-user-agent": "Agent X"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == ("https://tv.example/timeshift/user/pass/60/2026-09-06:12-00/90508.ts"
+                       "|Referer=https://ref.example/|Cookie=a=b|User-Agent=Agent%20X")
+
+    def test_user_agent_in_the_url_tail_is_not_doubled(self):
+        channel = {"url": self.LIVE + "|User-Agent=Live", "catchup": "xc",
+                   "catchup-timezone": "UTC", "http-user-agent": "Live"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url.endswith(".ts|User-Agent=Live")
+
+    def test_a_ua_alias_in_the_url_tail_counts_as_the_user_agent(self):
+        channel = {"url": self.LIVE + "|UA=Live", "catchup": "xc",
+                   "catchup-timezone": "UTC", "http-user-agent": "Other"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url.endswith(".ts|UA=Live")
+
+    def test_live_url_query_token_is_kept(self):
+        channel = {"url": self.LIVE + ".ts?token=abc|Referer=https://ref.example/",
+                   "catchup": "xc", "catchup-timezone": "UTC"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == ("https://tv.example/timeshift/user/pass/60/2026-09-06:12-00/90508.ts"
+                       "?token=abc|Referer=https://ref.example/")
+
+    def test_non_xtream_url_is_not_guessed(self):
+        channel = {"url": "https://cdn.example/hls/channel/index.m3u8", "catchup": "xc"}
+        assert main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END) == ""
+
+    def test_other_catchup_modes_without_source_still_build_nothing(self):
+        channel = {"url": self.LIVE, "catchup": "default"}
+        assert main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END) == ""
+
+    def test_catchup_timezone_also_applies_to_path_style_sources(self):
+        channel = {"url": "http://host:8080/live/user/pass/1234.ts", "catchup": "default",
+                   "catchup-source": "http://host:8080", "catchup-timezone": "UTC"}
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == "http://host:8080/1234/2026-09-06:12-00/60/"
+
+
+class TestPlaylistHeaderCatchupTimezone:
+    TEXT = (
+        '#EXTM3U x-tvg-url="https://tv.example/xmltv.php" catchup-timezone="UTC"\n'
+        '#EXTINF:-1 tvg-id="3012" catchup="xc" catchup-days="4" group-title="USA: News",CNN\n'
+        'https://tv.example/live/user/pass/90508\n'
+        '#EXTINF:-1 tvg-id="13821" group-title="Canada",CBC\n'
+        'https://tv.example/live/user/pass/93802\n'
+    )
+
+    def test_header_timezone_reaches_catchup_channels_only(self):
+        channels = main.IPTVClient._parse_m3u_return(_client(), self.TEXT)
+        assert channels[0]["catchup-timezone"] == "UTC"
+        assert "catchup-timezone" not in channels[1]
+
+    def test_parser_version_is_part_of_the_cache_hash(self):
+        plain = __import__("hashlib").sha1(self.TEXT.encode("utf-8")).hexdigest()
+        assert main.IPTVClient._playlist_text_hash(None, self.TEXT) != plain
+
+
+def test_radio_hint_does_not_leak_onto_a_bare_url_entry():
+    text = (
+        "#EXTM3U\n"
+        '#EXTINF:-1 radio="true",Radio One\n'
+        "http://host/radio1\n"
+        "http://host/bare\n"
+    )
+    channels = main.IPTVClient._parse_m3u_return(_client(), text)
+    assert channels[0].get("media_hint") == "audio"
+    assert "media_hint" not in channels[1]

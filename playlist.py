@@ -419,6 +419,23 @@ def _significant_channel_numbers(*texts: str) -> Set[str]:
     return numbers
 
 
+def _like_escape(text: str) -> str:
+    """``text`` for a ``LIKE ... ESCAPE '\\'`` pattern, matched literally."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _id_number_text(channel_id: str) -> str:
+    """A channel id as text for ``_significant_channel_numbers``.
+
+    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
+    "151") is a database key, not a channel number. Counting it made "ESPN"
+    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
+    channel that lacked the number.
+    """
+    text = (channel_id or "").strip()
+    return "" if text.isdigit() else text
+
+
 def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
     """Expand common XMLTV id variants such as IPTV-org channel.au@City."""
     raw = (tvg_id or "").strip()
@@ -1422,6 +1439,22 @@ class EPGDatabase:
         existing_cols = {row[1] for row in c.execute("PRAGMA table_info(programmes)").fetchall()}
         if "description" not in existing_cols:
             c.execute("ALTER TABLE programmes ADD COLUMN description TEXT")
+        # Every EPG source that lists each channel (several can share an id),
+        # so an import only ever forgets a channel no source still lists.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS channel_sources (
+                channel_id TEXT,
+                source_key TEXT,
+                PRIMARY KEY (channel_id, source_key)
+            )
+        """)
+        c.execute("CREATE INDEX IF NOT EXISTS idx_channel_sources_source ON channel_sources (source_key)")
+        channel_cols = {row[1] for row in c.execute("PRAGMA table_info(channels)").fetchall()}
+        # Migration: when an import last saw each channel. Rows that predate it
+        # count as seen now, so they get the full grace period.
+        if "last_seen" not in channel_cols:
+            c.execute("ALTER TABLE channels ADD COLUMN last_seen INTEGER")
+            c.execute("UPDATE channels SET last_seen = ?", (int(time.time()),))
         # Indexes crucial for fast lookups
         # idx_programmes_channel_start_end is a left-prefix superset of (channel_id, start),
         # so the standalone (channel_id, start) index is redundant — drop it to speed bulk
@@ -1452,7 +1485,7 @@ class EPGDatabase:
             _logger.debug("EPGDatabase.reopen: ignored exception", exc_info=True)
         self._open()
 
-    def insert_channel(self, channel_id: str, display_name: str):
+    def insert_channel(self, channel_id: str, display_name: str, source_key: Optional[str] = None):
         name_region = extract_group(display_name)
         id_region = _detect_region_from_id(channel_id or "")
         # Prefer region derived from the channel id when it contradicts the display name.
@@ -1472,9 +1505,13 @@ class EPGDatabase:
         if old and old[0] and norm and old[0] != norm:
             c.execute("DELETE FROM programmes WHERE channel_id = ?", (channel_id,))
         c.execute(
-            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag) VALUES (?, ?, ?, ?)",
-            (channel_id, display_name, norm, group_tag)
+            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag, last_seen) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (channel_id, display_name, norm, group_tag, int(time.time()))
         )
+        if source_key:
+            c.execute("INSERT OR IGNORE INTO channel_sources (channel_id, source_key) VALUES (?, ?)",
+                      (channel_id, source_key))
 
     def _repair_channel_regions_prefer_id(self):
         """One-time reconciliation: if a channel's id clearly encodes a region
@@ -1581,6 +1618,63 @@ class EPGDatabase:
             WHERE programmes.title != excluded.title
                OR length(excluded.description) > length(coalesce(programmes.description, ''))
         """, (channel_id, title, start_utc, end_utc, description))
+
+    def _retire_unseen_channels(self, days: int = 14) -> int:
+        """Delete guide channels (and programmes) no import has listed for ``days``.
+
+        Catches what per-source cleanup cannot: a source whose URL changed (a
+        rotated token or password gives it a new source key, so channels it
+        dropped stay listed under the old one) and rows from builds that
+        recorded no source.
+        Programmes are pruned after the same 14 days, so such a channel has
+        nothing left worth keeping.
+        """
+        cutoff = int(time.time()) - days * 86400
+        c = self.conn.cursor()
+        stale = [row[0] for row in c.execute(
+            "SELECT id FROM channels WHERE last_seen IS NOT NULL AND last_seen < ?", (cutoff,))]
+        if stale:
+            self._delete_channels(c, stale)
+        self.conn.commit()
+        return len(stale)
+
+    @staticmethod
+    def _delete_channels(c, ids) -> None:
+        """Delete channels with their programmes and source listings.
+
+        The programmes go too: an id the feed later hands to another channel
+        must not bring the old channel's schedule back with it.
+        """
+        ids = list(ids)
+        c.executemany("DELETE FROM programmes WHERE channel_id = ?", ((i,) for i in ids))
+        c.executemany("DELETE FROM channel_sources WHERE channel_id = ?", ((i,) for i in ids))
+        c.executemany("DELETE FROM channels WHERE id = ?", ((i,) for i in ids))
+
+    def _drop_channels_missing_from(self, source_key: str, keep_ids: Set[str]) -> int:
+        """Forget ``source_key``'s listing of channels it no longer defines.
+
+        Scoped to the one source that was just imported: a source that is not
+        part of this run (its provider's playlist failed, so its EPG URL was
+        never discovered) keeps its listings. A channel is deleted only when
+        no source lists it any more, so an id two sources share survives one
+        of them dropping it. Returns the number of channels deleted.
+        """
+        c = self.conn.cursor()
+        c.execute("CREATE TEMP TABLE IF NOT EXISTS import_seen_ids (id TEXT PRIMARY KEY)")
+        c.execute("DELETE FROM import_seen_ids")
+        c.executemany("INSERT OR IGNORE INTO import_seen_ids (id) VALUES (?)", ((i,) for i in keep_ids))
+        dropped = [row[0] for row in c.execute(
+            "SELECT channel_id FROM channel_sources WHERE source_key = ? "
+            "AND channel_id NOT IN (SELECT id FROM import_seen_ids)", (source_key,))]
+        c.executemany("DELETE FROM channel_sources WHERE channel_id = ? AND source_key = ?",
+                      ((i, source_key) for i in dropped))
+        orphaned = [i for i in dropped if c.execute(
+            "SELECT 1 FROM channel_sources WHERE channel_id = ? LIMIT 1", (i,)).fetchone() is None]
+        if orphaned:
+            self._delete_channels(c, orphaned)
+        c.execute("DELETE FROM import_seen_ids")
+        self.conn.commit()
+        return len(orphaned)
 
     def prune_old_programmes(self, days: int = 7):
         utcnow = self._utcnow()
@@ -1713,7 +1807,7 @@ class EPGDatabase:
         # whichever came first in the guide - TVN 7 - won, so View EPG showed
         # another channel's schedule while the channel list, which matches by
         # name, was right.
-        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
         seen_norms = set()
         for source_text, base_score, base_why in ((tvg_name, 96, 'exact-tvg-name'),
                                                   (name, 92, 'exact-name')):
@@ -1723,7 +1817,7 @@ class EPGDatabase:
             seen_norms.add(norm)
             rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm,)).fetchall()
             for r in rows:
-                candidate_numbers = _significant_channel_numbers(r[0], r[2])
+                candidate_numbers = _significant_channel_numbers(_id_number_text(r[0]), r[2])
                 existing = candidates.get(r[0])
                 score = base_score
                 why = base_why
@@ -1740,8 +1834,10 @@ class EPGDatabase:
                 elif candidate_numbers:
                     score -= 15
                     why += ' -extra-number'
-                if existing and existing.get('score', 0) >= score:
-                    # Keep the stronger match (usually an exact-id hit).
+                if existing and (existing.get('score', 0) >= score
+                                 or existing.get('why', '').startswith(('exact-id', 'expanded-tvg-id'))):
+                    # Keep the stronger match, and never relabel an id hit:
+                    # resolve_best_channel_id treats it as the channel's own guide.
                     continue
                 candidates[r[0]] = {
                     'id': r[0],
@@ -1786,14 +1882,14 @@ class EPGDatabase:
         playlist_zone = _detect_zone(" ".join([channel.get("group",""), tvg_name, name]))
         playlist_brand_key = _brand_key(name)
         playlist_ts = _detect_timeshift(" ".join([tvg_name, name]))
-        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
         brand_text = canonicalize_name(strip_noise_words(name)).lower()
         playlist_brand_family = _reverse_brand_lookup(brand_text)
         pl_calls = extract_callsigns(" ".join([tvg_name, name, channel.get("group",""), tvg_id]))
         pl_tokens = tokenize_channel_name(name)
 
         # HBO variant extraction (playlist side)
-        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), tvg_id])) if playlist_brand_family == "hbo" else ""
+        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), _id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
         pl_hbo_variant = _normalize_hbo_variant(playlist_region, pl_hbo_variant_raw)
 
         c = self.conn.cursor()
@@ -1919,7 +2015,7 @@ class EPGDatabase:
                     why.append('-timeshift-extra-epg')
 
             if playlist_numbers:
-                epg_numbers = _significant_channel_numbers(ch_id, disp)
+                epg_numbers = _significant_channel_numbers(_id_number_text(ch_id), disp)
                 if epg_numbers & playlist_numbers:
                     score += 16
                     why.append('+number')
@@ -1932,7 +2028,7 @@ class EPGDatabase:
 
             # ---- HBO variant-aware boosting ----
             if playlist_brand_family == "hbo" and epg_brand_family == "hbo":
-                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, ch_id]))
+                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, _id_number_text(ch_id)]))
                 epg_hbo_variant = _normalize_hbo_variant(grp, epg_hbo_variant_raw)
 
                 if pl_hbo_variant or epg_hbo_variant:
@@ -2036,6 +2132,26 @@ class EPGDatabase:
             key=lambda m: (-m.get('score', 0), identity_tiebreak(m)),
         )
 
+        # The guide's own channel for this tvg-id is authoritative. Fuzzy
+        # bonuses (brand, region, implicit East) can lift a loose candidate
+        # past it, and so could "has data now" when the own guide is empty
+        # this hour: on a 49k-channel Dispatcharr playlist that gave ~3.5% of
+        # channels another channel's schedule ("Cheers" showed National
+        # Geographic). With the own guide empty, only a same-named guide
+        # channel may stand in for it.
+        try:
+            own = [m for m in matches if identity_tiebreak(m) <= 1]
+            if own:
+                for m in own:
+                    if self._has_any_schedule_from_now(m['id']):
+                        return m['id']
+                for m in matches:
+                    if identity_tiebreak(m) in (2, 3) and self._has_any_schedule_from_now(m['id']):
+                        return m['id']
+                return own[0]['id']
+        except Exception:
+            _logger.debug("resolve_best_channel_id: own-id probe failed", exc_info=True)
+
         # Probe schedule availability for top-N and reorder
         try:
             avail = []
@@ -2127,8 +2243,10 @@ class EPGDatabase:
         normalized_query = canonicalize_name(strip_noise_words(raw_query))
         if not normalized_query:
             return []
-        q = "%" + normalized_query + "%"
-        title_q = "%" + raw_query.lower() + "%"
+        # Typed text is literal: "%" and "_" are LIKE wildcards otherwise
+        # ("a_c" found "MEGA Cosmos", "100%" every "1005 PM" sports event).
+        q = "%" + _like_escape(normalized_query) + "%"
+        title_q = "%" + _like_escape(raw_query.lower()) + "%"
         c = self.conn.cursor()
         now = self._utcnow().strftime("%Y%m%d%H%M%S")
         rows = []
@@ -2137,7 +2255,7 @@ class EPGDatabase:
             """
             SELECT id
             FROM channels
-            WHERE norm_name LIKE ?
+            WHERE norm_name LIKE ? ESCAPE '\\'
             LIMIT ?
             """,
             (q, limit),
@@ -2173,7 +2291,7 @@ class EPGDatabase:
                     SELECT p.channel_id, p.title, p.start, p.end, c.display_name
                     FROM programmes p
                     JOIN channels c ON c.id = p.channel_id
-                    WHERE LOWER(p.title) LIKE ?
+                    WHERE LOWER(p.title) LIKE ? ESCAPE '\\'
                       AND p.end >= ?
                       AND p.start <= ?
                     ORDER BY p.start ASC
@@ -2297,6 +2415,10 @@ class EPGDatabase:
                 "description": description or ""
             })
         return results
+
+    def get_channel_ids_lower(self) -> Set[str]:
+        """Every guide channel id, lower-cased, including ones with no programmes."""
+        return {str(row[0]).lower() for row in self.conn.execute("SELECT id FROM channels") if row[0]}
 
     def count_programmes(self) -> int:
         """Number of stored programmes, or -1 when the count is unavailable.
@@ -2487,11 +2609,25 @@ class EPGDatabase:
         def _is_transient_stream_error(err: Exception) -> bool:
             return _is_transient_epg_error(err)
 
+        # Guides can define one channel id more than once with different
+        # names (a Dispatcharr feed carried 390 such ids). insert_channel reads
+        # a name change as a renumbered channel and deletes its programmes, so
+        # every import wiped those channels' history, catch-up included. The
+        # first definition in a source wins; repeats are skipped. Reset per
+        # attempt: a retry rolls back the channel rows it would otherwise skip.
+        seen_channel_ids: Set[str] = set()
+        # Per imported source: its key and the channel ids it defined, for the
+        # stale-channel cleanup after the run.
+        imported_sources: List[Tuple[str, Set[str]]] = []
+
         for idx, src in enumerate(xml_sources):
             t0 = time.time()
             attempts_left = 3
+            source_ok = False
+            source_key = hashlib.sha1(src.encode("utf-8", "surrogatepass")).hexdigest()
             while attempts_left > 0:
                 chan_count, prog_count, inserted_since_commit, sample_ok = 0, 0, 0, 0
+                seen_channel_ids.clear()
                 stream = None
                 began_txn = False
                 try:
@@ -2561,8 +2697,9 @@ class EPGDatabase:
                                 ch_id = elem.get("id", "")
                                 dn_elem = elem.find("./display-name")
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
-                                if ch_id or disp:
-                                    self.insert_channel(ch_id, disp)
+                                if (ch_id or disp) and ch_id not in seen_channel_ids:
+                                    seen_channel_ids.add(ch_id)
+                                    self.insert_channel(ch_id, disp, source_key)
                                     chan_count += 1
                             elif tag == 'programme':
                                 ch_id = elem.get("channel", "")
@@ -2589,6 +2726,16 @@ class EPGDatabase:
                                     inserted_since_commit += 1
                                     if inserted_since_commit >= BATCH:
                                         self.commit()
+                                        # wal_autocheckpoint is off for the import, so without
+                                        # this the whole guide piled up in the WAL until the
+                                        # final TRUNCATE: a 618 MB feed peaked above 1.8 GB of
+                                        # WAL next to a 600 MB database. PASSIVE never waits on
+                                        # readers; checkpointed frames are reused by later
+                                        # batches, so the WAL stays near one batch in size.
+                                        try:
+                                            self.conn.execute("PRAGMA wal_checkpoint(PASSIVE);").fetchall()
+                                        except Exception:
+                                            _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                                         _logger.debug("EPG COMMIT src=%s progs+%d total=%d mem=%sMB", src, BATCH, prog_count, _mem_mb())
                                         inserted_since_commit = 0
                             # Clear processed nodes and detach them from their parent so
@@ -2611,6 +2758,7 @@ class EPGDatabase:
                                   src, chan_count, prog_count, time.time() - t0, _mem_mb())
 
                     # success; exit retry loop for this source
+                    source_ok = True
                     break
 
                 except Exception as e:
@@ -2686,13 +2834,40 @@ class EPGDatabase:
                         except Exception:
                             _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
+            # An empty guide from a briefly broken feed is no reason to forget
+            # every channel it normally carries.
+            if source_ok and chan_count:
+                imported_sources.append((source_key, set(seen_channel_ids)))
             grand_chan += chan_count
             grand_prog += prog_count
             if progress_callback:
                 try: progress_callback(idx + 1, total)
                 except Exception:
                     _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
-        
+
+        # Channels the guide no longer lists used to stay forever. Their ids
+        # then still counted as "this channel has its own guide", so a playlist
+        # channel carrying a retired id never fell back to a current guide of
+        # the same name. Each source only forgets its own channels, and only
+        # when it imported with channels this run; a source left out of the run
+        # (or failing) keeps everything.
+        for source_key, kept in imported_sources:
+            try:
+                removed = self._drop_channels_missing_from(source_key, kept)
+                if removed:
+                    _logger.info("EPG removed %d channels the guide no longer lists", removed)
+            except Exception as e:
+                _logger.debug("EPG stale-channel cleanup skipped: %s", e)
+        # Only while imports work: a run where nothing imported says nothing
+        # about which channels the guide still carries.
+        if imported_sources:
+            try:
+                removed = self._retire_unseen_channels(days=14)
+                if removed:
+                    _logger.info("EPG removed %d channels no import has listed for 14 days", removed)
+            except Exception as e:
+                _logger.debug("EPG unseen-channel cleanup skipped: %s", e)
+
         try:
             self.prune_old_programmes(days=14)
             self.commit()

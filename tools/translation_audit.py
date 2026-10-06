@@ -211,8 +211,18 @@ def audit_notes(lang, messages, locale_dir=None):
     have = {}
     if os.path.exists(po):
         have = {e["msgid"]: e.get("msgstr", "") for e in i18n_tools.parse_po(po) if e.get("msgid")}
-    return [f"{lang}: untranslated What's New bullet: {msgid!r}"
-            for msgid in sorted(messages) if not have.get(msgid)]
+    problems = [f"{lang}: untranslated What's New bullet: {msgid!r}"
+                for msgid in sorted(messages) if not have.get(msgid)]
+    # v1.145.0 shipped two bullets whose msgstr in every language was the
+    # Python repr of a {lang: text} dict, which What's New then read out.
+    problems += [f"{lang}: What's New bullet translated as a language table, not text: {msgid!r}"
+                 for msgid in sorted(messages)
+                 if _LANGUAGE_TABLE.match(have.get(msgid) or "")]
+    return problems
+
+
+# "{'ar': ..." / '{"de": ...': a whole per-language table pasted as one msgstr.
+_LANGUAGE_TABLE = re.compile(r"""^\s*\{\s*['"][a-z]{2}(?:[_-][A-Za-z]{2})?['"]\s*:""")
 
 
 def prepare_notes(messages, languages=AUDITED_LANGUAGES, locale_dir=None):

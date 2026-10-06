@@ -8,6 +8,7 @@ carries the account credentials and changes on every resolve.
 
 import os
 import sys
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -328,7 +329,49 @@ class TestNowPlayingMatching:
                       "now": {"title": "Show A", "start": "20260907200000", "end": "20260907210000"}},
         }
         labels = client._build_now_playing_labels(channels)
-        assert labels["renamed feed"].startswith(" — Show A (")
+        assert labels["renamed feed\x1fepg-2.tv"].startswith(" — Show A (")
+
+    def test_same_named_channels_keep_their_own_programmes(self):
+        """Several "CBC News" feeds with different guides each show their own."""
+        from main import IPTVClient
+        client = self._client_with_epg(None)
+        client.all_channels = [
+            {"name": "CBC News", "tvg-id": "1"},
+            {"name": "CBC News", "tvg-id": "2"},
+        ]
+        channels = {
+            "1": {"display_name": "CBC News",
+                  "now": {"title": "Toronto", "start": "20260907200000", "end": "20260907210000"}},
+            "2": {"display_name": "CBC News",
+                  "now": {"title": "Calgary", "start": "20260907200000", "end": "20260907210000"}},
+        }
+        client._now_playing_labels = client._build_now_playing_labels(channels)
+        client._now_playing_lock = threading.Lock()
+        suffix = _bind(IPTVClient, "_now_playing_suffix", client)
+        assert "Toronto" in suffix(client.all_channels[0])
+        assert "Calgary" in suffix(client.all_channels[1])
+
+    def test_a_known_guide_with_nothing_on_does_not_borrow_a_namesake(self):
+        """A channel with its own (currently empty) guide gets no label, not a namesake's."""
+        client = self._client_with_epg(None)
+        client.all_channels = [{"name": "Hours HD", "tvg-id": "4717"}]
+        channels = {
+            "9": {"display_name": "Hours",
+                  "now": {"title": "Basketball", "start": "20260907200000", "end": "20260907210000"}},
+        }
+        assert client._build_now_playing_labels(channels, known_ids={"4717", "9"}) == {}
+        # A tvg-id the guide does not know still falls back to the name.
+        assert client._build_now_playing_labels(channels, known_ids={"9"})
+
+    def test_names_made_of_strip_tags_still_get_a_label(self):
+        client = self._client_with_epg(None)
+        client.all_channels = [{"name": "USA", "tvg-id": "6968"}]
+        channels = {
+            "6968": {"display_name": "USA Network",
+                     "now": {"title": "SVU", "start": "20260907200000", "end": "20260907210000"}},
+        }
+        labels = client._build_now_playing_labels(channels)
+        assert labels["usa\x1f6968"].startswith(" — SVU (")
 
     def test_tvg_name_matches_when_the_name_does_not(self):
         client = self._client_with_epg(None)

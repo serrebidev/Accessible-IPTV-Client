@@ -166,6 +166,23 @@ def test_notes_audit_and_prepare_notes(tmp_path):
     assert entries == {"Old": "Ancien", "Empty": "", "New": ""}
 
 
+def test_notes_audit_rejects_a_pasted_language_table(tmp_path):
+    """v1.145.0 shipped bullets whose msgstr was a {lang: text} dict repr."""
+    po = tmp_path / "de" / "LC_MESSAGES" / "release_notes.po"
+    _po(po, [("Fix", "{'ar': 'x', 'de': 'Korrektur'}"), ("Ok", "Gut {name}")])
+    problems = audit.audit_notes("de", _messages("Fix", "Ok"), locale_dir=str(tmp_path))
+    assert problems == ["de: What's New bullet translated as a language table, not text: 'Fix'"]
+
+
+def test_committed_notes_catalogues_hold_no_language_tables():
+    for lang in audit.AUDITED_LANGUAGES:
+        po = os.path.join(i18n_tools.LOCALE_DIR, lang, "LC_MESSAGES", "release_notes.po")
+        if not os.path.exists(po):
+            continue
+        for entry in i18n_tools.parse_po(po):
+            assert not audit._LANGUAGE_TABLE.match(entry.get("msgstr") or ""), (lang, entry.get("msgid"))
+
+
 def test_release_audits_translations_before_touching_files(monkeypatch):
     calls = []
     monkeypatch.setattr(sys, "argv", ["release.py", "release"])

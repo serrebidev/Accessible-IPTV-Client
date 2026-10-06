@@ -930,3 +930,228 @@ def test_epg_import_requests_gzip_encoded_feed(monkeypatch, tmp_path):
     finally:
         db.close()
     assert captured.get("accept_encoding") == "gzip"
+
+
+def test_reimport_keeps_history_of_a_channel_id_the_guide_defines_twice(tmp_path):
+    """A Dispatcharr feed defined 390 channel ids twice under different names.
+
+    The second definition read as a renumbered channel and deleted the id's
+    programmes on every import, history and catch-up included.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?><tv>'
+        '<channel id="14170"><display-name>Sky Sports Tennis</display-name></channel>'
+        '<channel id="14170"><display-name>Lacrosse Championships Gold Medal</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" stop="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+        'channel="14170"><title>Tennis</title></programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        old_start = (now - datetime.timedelta(days=2)).strftime("%Y%m%d%H%M%S")
+        old_end = (now - datetime.timedelta(days=2, hours=-1)).strftime("%Y%m%d%H%M%S")
+        db.insert_programme("14170", "Earlier Match", old_start, old_end)
+        db.commit()
+
+        db.import_epg_xml([str(xml_path)])
+
+        titles = {row[0] for row in db.conn.execute(
+            "SELECT title FROM programmes WHERE channel_id = '14170'")}
+        assert titles == {"Tennis", "Earlier Match"}
+        name = db.conn.execute("SELECT display_name FROM channels WHERE id = '14170'").fetchone()[0]
+        assert name == "Sky Sports Tennis"
+    finally:
+        db.close()
+
+
+def test_epg_search_treats_percent_and_underscore_literally(tmp_path):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    fmt = "%Y%m%d%H%M%S"
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.insert_channel("a", "100% News")
+        db.insert_channel("b", "Sports 1005 PM")
+        for cid in ("a", "b"):
+            db.insert_programme(cid, "Show", (now - datetime.timedelta(minutes=5)).strftime(fmt),
+                                (now + datetime.timedelta(minutes=55)).strftime(fmt))
+        db.commit()
+        names = {r["channel_name"] for r in db.get_channels_with_show("100%")}
+        assert names == {"100% News"}
+    finally:
+        db.close()
+
+
+def test_import_checkpoints_the_wal_between_batches(tmp_path):
+    """wal_autocheckpoint is off during import; without a checkpoint per batch
+    a 618 MB guide grew the WAL past 1.8 GB before the final TRUNCATE."""
+    start = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv><channel id="c"><display-name>C</display-name></channel>']
+    for i in range(15001):
+        st = start + datetime.timedelta(minutes=i)
+        parts.append(f'<programme start="{st.strftime(fmt)}" stop="{(st + datetime.timedelta(minutes=1)).strftime(fmt)}" '
+                     f'channel="c"><title>P{i}</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    executed = []
+    real = db.conn
+
+    class _Spy:
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+        def execute(self, sql, *args):
+            executed.append(sql)
+            return real.execute(sql, *args)
+
+    db.conn = _Spy()
+    try:
+        db.import_epg_xml([str(xml_path)])
+    finally:
+        db.conn = real
+        db.close()
+    assert any("wal_checkpoint(PASSIVE)" in sql for sql in executed)
+
+
+def _guide_xml(path, channels):
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    body = "".join(f'<channel id="{cid}"><display-name>{name}</display-name></channel>' for cid, name in channels)
+    body += "".join(
+        f'<programme start="{now.strftime(fmt)}" stop="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+        f'channel="{cid}"><title>{name} show</title></programme>' for cid, name in channels)
+    path.write_text(f'<?xml version="1.0" encoding="UTF-8"?><tv>{body}</tv>', encoding="utf-8")
+    return str(path)
+
+
+def test_import_forgets_channels_the_guide_no_longer_lists(tmp_path):
+    """A retired id kept counting as "this channel has its own guide", so a
+    playlist channel still carrying it never fell back to a current namesake."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        guide = tmp_path / "guide.xml"
+        db.import_epg_xml([_guide_xml(guide, [("1", "CNN"), ("2", "Old Channel")])])
+        db.import_epg_xml([_guide_xml(guide, [("1", "CNN")])])
+        assert db.get_channel_ids_lower() == {"1"}
+        left = db.conn.execute("SELECT COUNT(*) FROM programmes WHERE channel_id = '2'").fetchone()[0]
+        assert left == 0
+    finally:
+        db.close()
+
+
+def test_a_failed_or_empty_source_keeps_its_channels(tmp_path):
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        guide = tmp_path / "guide.xml"
+        db.import_epg_xml([_guide_xml(guide, [("1", "CNN"), ("2", "BBC One")])])
+        guide.write_text("<html>busy</html", encoding="utf-8")
+        db.import_epg_xml([str(guide)])
+        assert db.get_channel_ids_lower() == {"1", "2"}
+        guide.write_text('<?xml version="1.0"?><tv></tv>', encoding="utf-8")
+        db.import_epg_xml([str(guide)])
+        assert db.get_channel_ids_lower() == {"1", "2"}
+    finally:
+        db.close()
+
+
+def test_a_source_missing_from_the_run_keeps_its_channels(tmp_path):
+    """A provider whose playlist failed contributes no EPG URL to the import.
+    Another source succeeding must not delete that provider's channels."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        a, b = tmp_path / "a.xml", tmp_path / "b.xml"
+        db.import_epg_xml([_guide_xml(a, [("1", "CNN"), ("2", "Gone")]),
+                           _guide_xml(b, [("90", "Provider B News")])])
+        db.import_epg_xml([_guide_xml(a, [("1", "CNN")])])
+        assert db.get_channel_ids_lower() == {"1", "90"}
+        kept = db.conn.execute("SELECT COUNT(*) FROM programmes WHERE channel_id = '90'").fetchone()[0]
+        assert kept == 1
+    finally:
+        db.close()
+
+
+def test_channels_from_an_older_database_are_never_dropped_unseen(tmp_path):
+    """Rows written before sources were recorded carry no source; only a
+    source that defines them again takes ownership."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.insert_channel("legacy", "Legacy Channel")
+        db.commit()
+        db.import_epg_xml([_guide_xml(tmp_path / "a.xml", [("1", "CNN")])])
+        assert db.get_channel_ids_lower() == {"1", "legacy"}
+    finally:
+        db.close()
+
+
+def test_a_changed_source_url_retires_its_old_channels_after_14_days(tmp_path):
+    """A rotated token gives the same feed a new source key; channels it
+    dropped in that refresh keep the old key, so per-source cleanup never
+    reaches them. The 14-day unseen limit does."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        old_url, new_url = tmp_path / "token1.xml", tmp_path / "token2.xml"
+        db.import_epg_xml([_guide_xml(old_url, [("1", "CNN"), ("2", "Gone")])])
+        db.import_epg_xml([_guide_xml(new_url, [("1", "CNN")])])
+        assert db.get_channel_ids_lower() == {"1", "2"}
+        fifteen_days_ago = int(time.time()) - 15 * 86400
+        db.conn.execute("UPDATE channels SET last_seen = ? WHERE id = '2'", (fifteen_days_ago,))
+        db.commit()
+        db.import_epg_xml([str(new_url)])
+        assert db.get_channel_ids_lower() == {"1"}
+    finally:
+        db.close()
+
+
+def test_unseen_channels_are_kept_while_no_import_succeeds(tmp_path):
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        guide = tmp_path / "guide.xml"
+        db.import_epg_xml([_guide_xml(guide, [("1", "CNN")])])
+        db.conn.execute("UPDATE channels SET last_seen = ?", (int(time.time()) - 30 * 86400,))
+        db.commit()
+        guide.write_text("<html>busy</html", encoding="utf-8")
+        db.import_epg_xml([str(guide)])
+        assert db.get_channel_ids_lower() == {"1"}
+    finally:
+        db.close()
+
+
+def test_rows_from_before_last_seen_get_the_full_grace_period(tmp_path):
+    path = str(tmp_path / "epg.db")
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE channels (id TEXT PRIMARY KEY, display_name TEXT, norm_name TEXT, group_tag TEXT)")
+    conn.execute("INSERT INTO channels VALUES ('old', 'Old', 'old', '')")
+    conn.commit()
+    conn.close()
+    db = EPGDatabase(path)
+    try:
+        seen = db.conn.execute("SELECT last_seen FROM channels WHERE id = 'old'").fetchone()[0]
+        assert seen and abs(seen - time.time()) < 60
+        db.import_epg_xml([_guide_xml(tmp_path / "a.xml", [("1", "CNN")])])
+        assert db.get_channel_ids_lower() == {"1", "old"}
+    finally:
+        db.close()
+
+
+def test_an_id_two_sources_share_survives_one_of_them_dropping_it(tmp_path):
+    """Both sources list "x"; B drops it in a run where A is missing (its
+    provider's playlist failed). A still lists "x", so it must stay."""
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        a, b = tmp_path / "a.xml", tmp_path / "b.xml"
+        db.import_epg_xml([_guide_xml(a, [("x", "Shared")]), _guide_xml(b, [("x", "Shared"), ("y", "B")])])
+        db.import_epg_xml([_guide_xml(b, [("y", "B")])])
+        assert db.get_channel_ids_lower() == {"x", "y"}
+        # Once A drops it too, nothing lists it and it goes.
+        db.import_epg_xml([_guide_xml(a, [("z", "A")])])
+        assert db.get_channel_ids_lower() == {"y", "z"}
+    finally:
+        db.close()
