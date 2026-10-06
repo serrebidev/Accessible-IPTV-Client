@@ -7148,6 +7148,9 @@ class IPTVClient(wx.Frame):
             return False
         self.epg_importing = True
         self._epg_import_notify = bool(notify)
+        # The list this import really reads; the live list can change while it
+        # runs (a playlist refresh discovering a guide).
+        self._epg_import_sources = list(sources)
 
         def do_import():
             _lower_current_thread_priority()
@@ -7179,14 +7182,23 @@ class IPTVClient(wx.Frame):
         # Clear match cache as IDs/channels may have changed in the DB
         with self._epg_match_lock:
             self._epg_match_cache.clear()
+        imported = list(getattr(self, "_epg_import_sources", None) or self.epg_sources)
+        self._epg_import_sources = None
         if success:
             try:
                 self.config["epg_last_import_epoch"] = int(time.time())
-                self.config["epg_last_sources_hash"] = self._hash_epg_sources(self.epg_sources)
+                # Record what was imported, not the live list: a guide added
+                # while this import ran was not part of it.
+                self.config["epg_last_sources_hash"] = self._hash_epg_sources(imported)
                 save_config(self.config)
                 self._ensure_dvr_scheduler(start=True).request_series_scan()
             except Exception:
                 LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
+        if self._hash_epg_sources(self.epg_sources) != self._hash_epg_sources(imported):
+            # Sources changed mid-import, and the import requested for them was
+            # refused because this one was running. Run it now; it reads the
+            # current list, so this cannot repeat unless the list changes again.
+            wx.CallAfter(self.start_epg_import_background)
         # The rows read the on-air programme, so refresh the bulk labels now
         # that new EPG data may have arrived.
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
