@@ -84,3 +84,19 @@ def test_a_longer_description_replaces_a_shorter_one(tmp_path):
         assert _store(db, "") == [(synopsis,)]
     finally:
         db.conn.close()
+
+
+def test_epg_manager_playlist_guide_checkbox(wx_app):
+    from playlist import EPGManagerDialog
+    dlg = EPGManagerDialog(None, ["a.xml"])
+    try:
+        assert dlg.GetUsePlaylistEpg() is True
+        dlg.playlist_epg_cb.SetValue(False)
+        assert dlg.GetUsePlaylistEpg() is False
+    finally:
+        dlg.Destroy()
+    dlg = EPGManagerDialog(None, ["a.xml"], use_playlist_epg=False)
+    try:
+        assert dlg.GetUsePlaylistEpg() is False
+    finally:
+        dlg.Destroy()

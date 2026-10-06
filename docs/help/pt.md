@@ -146,6 +146,8 @@ Arquivo > Gerenciador de EPG (Ctrl+E) lista suas fontes de guia.
 - Adicionar arquivo: um arquivo XMLTV no seu computador (.xml ou .xml.gz).
 - Adicionar URL: o endereço da Internet de um guia XMLTV.
 
+Usar também o EPG indicado por cada lista de reprodução: muitas listas indicam o próprio EPG na primeira linha. Enquanto esta caixa estiver marcada (padrão), esses EPGs são importados junto com as fontes acima, e um EPG que você já adicionou não é importado duas vezes.
+
 A tecla de menu de aplicativo ou Shift+F10 sobre uma fonte abre o menu dela: Copiar URL, Renomear (F2) e Eliminar (Delete). Escolha OK para manter suas mudanças.
 
 ### Importar o guia {#import-epg}

@@ -191,3 +191,37 @@ def test_schema_repair_declined_starts_nothing(monkeypatch):
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__]))
+
+
+class TestSourcesChangedDuringImport:
+    """A playlist refresh can discover a guide while an import is running.
+
+    The import requested for it is refused (one is already running), and the
+    finishing import used to record the live list as imported, so the new
+    guide waited for the next scheduled import, hours later.
+    """
+
+    def test_the_imported_list_is_recorded_and_the_new_one_imported_next(self, monkeypatch):
+        old = "http://example.invalid/epg.xml"
+        client = _client(monkeypatch, sources=(old,))
+        later = []
+        monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: later.append(fn))
+
+        assert client.start_epg_import_background(force=True) is True
+        client.epg_sources = [old, "http://new.invalid/guide.xml"]
+        assert client.start_epg_import_background() is False  # refused: one is running
+
+        client.finish_import_background(True)
+
+        assert client.config["epg_last_sources_hash"] == client._hash_epg_sources([old])
+        assert later == [client.start_epg_import_background]
+
+    def test_no_follow_up_import_when_nothing_changed(self, monkeypatch):
+        client = _client(monkeypatch)
+        later = []
+        monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: later.append(fn))
+
+        client.start_epg_import_background(force=True)
+        client.finish_import_background(True)
+
+        assert later == []

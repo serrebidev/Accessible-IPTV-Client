@@ -146,6 +146,8 @@ Datei > EPG-Manager (Ctrl+E) listet Ihre Zeitschriftenquellen auf.
 - Datei hinzufügen: eine XMLTV-Datei auf Ihrem Computer (.xml oder .xml.gz).
 - URL hinzufügen: die Internetadresse einer XMLTV-Zeitschrift.
 
+Auch den EPG verwenden, auf den jede Wiedergabeliste verweist: Viele Wiedergabelisten nennen in ihrer ersten Zeile ihren eigenen EPG. Solange dieses Kästchen aktiviert ist (Standard), werden diese EPGs zusammen mit den obigen Quellen importiert, und ein bereits hinzugefügter EPG wird nicht doppelt importiert.
+
 Die Anwendungstaste oder Shift+F10 auf einer Quelle öffnet ihr Menü: URL kopieren, Umbenennen (F2) und Löschen (Entf). Wählen Sie OK, um Ihre Änderungen zu behalten.
 
 ### Die Zeitschrift importieren {#import-epg}

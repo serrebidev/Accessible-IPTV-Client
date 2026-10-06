@@ -1014,6 +1014,67 @@ def _load_internal_player_frame_class():
 _M3U_ATTR_RE = re.compile(r'([A-Za-z0-9_\-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^",\s]+))')
 
 
+# #EXTM3U header attributes that name the playlist's own XMLTV guide.
+_PLAYLIST_EPG_ATTRS = ("x-tvg-url", "url-tvg")
+
+
+def _playlist_header_epg_urls(text: str) -> List[str]:
+    """Guide URLs a playlist advertises in its #EXTM3U header.
+
+    ``x-tvg-url`` (and its older alias ``url-tvg``) may list several guides
+    separated by commas. Only http(s) URLs are used: a header cannot be
+    allowed to point the importer at a file on the user's computer. Only the
+    first line is read, so a 12 MB playlist is not split for this.
+    """
+    if not text:
+        return []
+    head = text.lstrip("﻿ \t\r\n")
+    end = head.find("\n")
+    first = (head if end == -1 else head[:end]).strip()
+    if not first[:7].upper() == "#EXTM3U":
+        return []
+    urls: List[str] = []
+    for match in _M3U_ATTR_RE.finditer(first[7:]):
+        if match.group(1).lower() not in _PLAYLIST_EPG_ATTRS:
+            continue
+        value = match.group(2) or match.group(3) or ""
+        if match.group(4):
+            # _M3U_ATTR_RE ends an unquoted value at a comma, but an unquoted
+            # guide list (x-tvg-url=https://a/1.xml,https://b/2.xml) runs to
+            # the next whitespace.
+            value = re.match(r"\S*", match.string[match.start(4):]).group(0)
+        for part in value.split(","):
+            url = part.strip()
+            scheme, sep, rest = url.partition("://")
+            if not sep or scheme.lower() not in ("http", "https"):
+                continue
+            # The importer recognises only lowercase schemes; "HTTP://..."
+            # would otherwise be opened as a local file path and fail.
+            url = f"{scheme.lower()}://{rest}"
+            if url not in urls:
+                urls.append(url)
+    return urls
+
+
+def _merge_playlist_header_guides(previous, fetched, playlist_sources):
+    """(guides per playlist, flat guide list) after a playlist load.
+
+    A playlist read in this load replaces its own entry, also with an empty
+    list when its header dropped the guide; one kept from the previous load
+    in a partial refresh keeps its entry; a playlist no longer configured
+    loses it.
+    """
+    merged = dict(previous)
+    merged.update(fetched)
+    by_source = {src: list(guides) for src, guides in merged.items() if src in playlist_sources}
+    flat: List[str] = []
+    for guides in by_source.values():
+        for epg in guides:
+            if epg not in flat:
+                flat.append(epg)
+    return by_source, flat
+
+
 def _extinf_name_comma(line: str) -> int:
     """Index of the comma separating an #EXTINF's attributes from its name.
 
@@ -1650,6 +1711,11 @@ class IPTVClient(wx.Frame):
         self._tray_ready_timer: Optional[wx.CallLater] = None
         self.provider_clients: Dict[str, object] = {}
         self.provider_epg_sources: List[str] = []
+        # Guides named by plain M3U playlists' #EXTM3U headers (x-tvg-url),
+        # kept apart so EPG Manager's checkbox can switch them off. Tracked per
+        # playlist, so refreshing one playlist replaces only its own guides.
+        self.playlist_epg_by_source: Dict[str, List[str]] = {}
+        self.playlist_epg_sources: List[str] = []
         self._internal_player_frame: Optional[object] = None
         self._update_check_inflight = False
         self._update_install_pending = False
@@ -2484,7 +2550,8 @@ class IPTVClient(wx.Frame):
         keep = None
         if only is not None:
             keep = (list(self.all_channels), dict(getattr(self, "provider_clients", None) or {}),
-                    list(getattr(self, "provider_epg_sources", None) or []))
+                    list(getattr(self, "provider_epg_sources", None) or []),
+                    dict(getattr(self, "playlist_epg_by_source", None) or {}))
         self._playlist_load_token += 1
         self._pending_epg_autostart = True
         self._pending_epg_autostart_token = self._playlist_load_token
@@ -2846,12 +2913,16 @@ class IPTVClient(wx.Frame):
         # We will collect these from the workers
         provider_clients_local: Dict[str, object] = {}
         provider_epg_sources: List[str] = list(keep[2]) if keep else []
+        previous_playlist_epg: Dict[str, List[str]] = dict(keep[3]) if keep else {}
+        fetched_playlist_epg: Dict[str, List[str]] = {}
 
         def fetch_and_process_playlist(src):
             result = {
                 "channels": [],
                 "clients": {},
                 "epg_sources": [],
+                # None unless this load read the playlist's text.
+                "playlist_epg_sources": None,
                 "valid_cache": None,
                 "error": None
             }
@@ -2956,6 +3027,7 @@ class IPTVClient(wx.Frame):
                         with open(cache_path, "r", encoding="utf-8", errors="ignore") as f:
                             text = f.read()
                             
+                    result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
                     
                     channels = None
@@ -2971,6 +3043,7 @@ class IPTVClient(wx.Frame):
                 elif isinstance(src, str) and os.path.exists(src):
                     with open(src, "r", encoding="utf-8", errors="ignore") as f:
                         text = f.read()
+                    result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
                     cache_key = f"file:{os.path.abspath(src)}"
                     parsed_cache = self._parsed_cache_path_for_key(cache_key)
@@ -3012,6 +3085,11 @@ class IPTVClient(wx.Frame):
                 for epg in res["epg_sources"]:
                     if epg not in provider_epg_sources:
                         provider_epg_sources.append(epg)
+                # A playlist fetched in this load replaces its own header guides
+                # (even with none, when its header dropped them); one kept from
+                # the previous load during a partial refresh keeps them.
+                if isinstance(src, str) and res["playlist_epg_sources"] is not None:
+                    fetched_playlist_epg[src] = list(res["playlist_epg_sources"])
                 
                 for ch in res["channels"]:
                     scope_id = _source_scope_id(src)
@@ -3037,6 +3115,8 @@ class IPTVClient(wx.Frame):
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
+            self.playlist_epg_by_source, self.playlist_epg_sources = _merge_playlist_header_guides(
+                previous_playlist_epg, fetched_playlist_epg, playlist_sources)
             self.reload_epg_sources()
             self._pending_epg_autostart = True
             self._pending_epg_autostart_token = refresh_token
@@ -6964,8 +7044,19 @@ class IPTVClient(wx.Frame):
 
     def reload_epg_sources(self):
         base = list(self.config.get("epgs", []))
-        for epg in getattr(self, "provider_epg_sources", []):
-            if epg not in base:
+        extra = list(getattr(self, "provider_epg_sources", []))
+        if self.config.get("use_playlist_epg", True):
+            extra += getattr(self, "playlist_epg_sources", [])
+        # Compare stripped text, so a playlist naming the guide the user
+        # already added (Dispatcharr's x-tvg-url is that same xmltv.php)
+        # never imports it twice.
+        def key(epg):
+            return epg.strip() if isinstance(epg, str) else repr(epg)
+
+        seen = {key(epg) for epg in base}
+        for epg in extra:
+            if key(epg) not in seen:
+                seen.add(key(epg))
                 base.append(epg)
         self.epg_sources = base
 
@@ -7057,6 +7148,9 @@ class IPTVClient(wx.Frame):
             return False
         self.epg_importing = True
         self._epg_import_notify = bool(notify)
+        # The list this import really reads; the live list can change while it
+        # runs (a playlist refresh discovering a guide).
+        self._epg_import_sources = list(sources)
 
         def do_import():
             _lower_current_thread_priority()
@@ -7088,14 +7182,23 @@ class IPTVClient(wx.Frame):
         # Clear match cache as IDs/channels may have changed in the DB
         with self._epg_match_lock:
             self._epg_match_cache.clear()
+        imported = list(getattr(self, "_epg_import_sources", None) or self.epg_sources)
+        self._epg_import_sources = None
         if success:
             try:
                 self.config["epg_last_import_epoch"] = int(time.time())
-                self.config["epg_last_sources_hash"] = self._hash_epg_sources(self.epg_sources)
+                # Record what was imported, not the live list: a guide added
+                # while this import ran was not part of it.
+                self.config["epg_last_sources_hash"] = self._hash_epg_sources(imported)
                 save_config(self.config)
                 self._ensure_dvr_scheduler(start=True).request_series_scan()
             except Exception:
                 LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
+        if self._hash_epg_sources(self.epg_sources) != self._hash_epg_sources(imported):
+            # Sources changed mid-import, and the import requested for them was
+            # refused because this one was running. Run it now; it reads the
+            # current list, so this cannot repeat unless the list changes again.
+            wx.CallAfter(self.start_epg_import_background)
         # The rows read the on-air programme, so refresh the bulk labels now
         # that new EPG data may have arrived.
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
@@ -7161,11 +7264,16 @@ class IPTVClient(wx.Frame):
             self.start_playlist_load(only=list(sources))
 
     def show_epg_manager(self, _):
-        dlg = EPGManagerDialog(self, self.epg_sources, self.config.get("epg_names"))
+        # Edit only the user's own sources. self.epg_sources also holds the
+        # guides providers and playlist headers discovered; handing those to
+        # the dialog saved them into "epgs" on OK, so they stayed after their
+        # provider was removed or the playlist checkbox was turned off.
+        dlg = EPGManagerDialog(self, list(self.config.get("epgs", [])), self.config.get("epg_names"),
+                               use_playlist_epg=bool(self.config.get("use_playlist_epg", True)))
         if dlg.ShowModal() == wx.ID_OK:
-            self.epg_sources = dlg.GetResult()
-            self.config["epgs"] = self.epg_sources
+            self.config["epgs"] = dlg.GetResult()
             self.config["epg_names"] = dlg.GetNames()
+            self.config["use_playlist_epg"] = dlg.GetUsePlaylistEpg()
             save_config(self.config)
             self.reload_epg_sources()
             wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes

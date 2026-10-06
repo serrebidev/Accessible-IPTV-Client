@@ -1,4 +1,7 @@
 name: Debian Package
+# The release tag in the run name lets cloud-release.yml find the run it
+# dispatched even when `gh workflow run` prints no run URL.
+run-name: ${{ inputs.release_tag && format('Debian Package {0}', inputs.release_tag) || 'Debian Package' }}
 
 # Every push to main builds a package as a downloadable artifact, and a manual
 # run against a tag (cloud-release.yml does this) attaches the .deb to that

@@ -161,9 +161,24 @@ jobs:
           TAG: ${{ needs.windows.outputs.tag }}
         run: |
           set -euo pipefail
-          gh workflow run debian-package.yml --repo "$GITHUB_REPOSITORY" --ref main -f release_tag="$TAG"
-          sleep 15
-          id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow debian-package.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')"
+          # Watch the run this step dispatched, never "the latest" one: v1.145.1's
+          # `gh run list --limit 1` returned an older finished run, so the step
+          # checked the release before the real build had uploaded the .deb.
+          since="$(date -u -d '-60 seconds' +%Y-%m-%dT%H:%M:%SZ)"
+          out="$(gh workflow run debian-package.yml --repo "$GITHUB_REPOSITORY" --ref main -f release_tag="$TAG" 2>&1)"
+          echo "$out"
+          id="$(grep -oE '/actions/runs/[0-9]+' <<<"$out" | grep -oE '[0-9]+$' | tail -n 1 || true)"
+          # Older gh prints no run URL: find our dispatch by its run name, which
+          # carries the release tag (debian-package.yml run-name), so neither an
+          # older run nor someone else's concurrent dispatch can be picked.
+          for _ in $(seq 1 20); do
+            [ -n "$id" ] && break
+            sleep 6
+            id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow debian-package.yml --event workflow_dispatch --limit 50 \
+              --json databaseId,createdAt,displayTitle \
+              --jq "[.[] | select(.displayTitle == \"Debian Package $TAG\" and .createdAt >= \"$since\")] | sort_by(.createdAt) | last | .databaseId // empty")"
+          done
+          [ -n "$id" ] || { echo "::error::Could not find the debian-package.yml run for $TAG"; exit 1; }
           echo "debian-package.yml for $TAG -> https://github.com/$GITHUB_REPOSITORY/actions/runs/$id"
           gh run watch "$id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 30
           have="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
