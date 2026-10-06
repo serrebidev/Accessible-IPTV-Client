@@ -419,6 +419,20 @@ def _significant_channel_numbers(*texts: str) -> Set[str]:
     return numbers
 
 
+
+
+def _id_number_text(channel_id: str) -> str:
+    """A channel id as text for ``_significant_channel_numbers``.
+
+    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
+    "151") is a database key, not a channel number. Counting it made "ESPN"
+    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
+    channel that lacked the number.
+    """
+    text = (channel_id or "").strip()
+    return "" if text.isdigit() else text
+
+
 def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
     """Expand common XMLTV id variants such as IPTV-org channel.au@City."""
     raw = (tvg_id or "").strip()
@@ -1713,7 +1727,7 @@ class EPGDatabase:
         # whichever came first in the guide - TVN 7 - won, so View EPG showed
         # another channel's schedule while the channel list, which matches by
         # name, was right.
-        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
         seen_norms = set()
         for source_text, base_score, base_why in ((tvg_name, 96, 'exact-tvg-name'),
                                                   (name, 92, 'exact-name')):
@@ -1723,7 +1737,7 @@ class EPGDatabase:
             seen_norms.add(norm)
             rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm,)).fetchall()
             for r in rows:
-                candidate_numbers = _significant_channel_numbers(r[0], r[2])
+                candidate_numbers = _significant_channel_numbers(_id_number_text(r[0]), r[2])
                 existing = candidates.get(r[0])
                 score = base_score
                 why = base_why
@@ -1740,8 +1754,10 @@ class EPGDatabase:
                 elif candidate_numbers:
                     score -= 15
                     why += ' -extra-number'
-                if existing and existing.get('score', 0) >= score:
-                    # Keep the stronger match (usually an exact-id hit).
+                if existing and (existing.get('score', 0) >= score
+                                 or existing.get('why', '').startswith(('exact-id', 'expanded-tvg-id'))):
+                    # Keep the stronger match, and never relabel an id hit:
+                    # resolve_best_channel_id treats it as the channel's own guide.
                     continue
                 candidates[r[0]] = {
                     'id': r[0],
@@ -1786,14 +1802,14 @@ class EPGDatabase:
         playlist_zone = _detect_zone(" ".join([channel.get("group",""), tvg_name, name]))
         playlist_brand_key = _brand_key(name)
         playlist_ts = _detect_timeshift(" ".join([tvg_name, name]))
-        playlist_numbers = _significant_channel_numbers(tvg_id, tvg_name, name)
+        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
         brand_text = canonicalize_name(strip_noise_words(name)).lower()
         playlist_brand_family = _reverse_brand_lookup(brand_text)
         pl_calls = extract_callsigns(" ".join([tvg_name, name, channel.get("group",""), tvg_id]))
         pl_tokens = tokenize_channel_name(name)
 
         # HBO variant extraction (playlist side)
-        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), tvg_id])) if playlist_brand_family == "hbo" else ""
+        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), _id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
         pl_hbo_variant = _normalize_hbo_variant(playlist_region, pl_hbo_variant_raw)
 
         c = self.conn.cursor()
@@ -1919,7 +1935,7 @@ class EPGDatabase:
                     why.append('-timeshift-extra-epg')
 
             if playlist_numbers:
-                epg_numbers = _significant_channel_numbers(ch_id, disp)
+                epg_numbers = _significant_channel_numbers(_id_number_text(ch_id), disp)
                 if epg_numbers & playlist_numbers:
                     score += 16
                     why.append('+number')
@@ -1932,7 +1948,7 @@ class EPGDatabase:
 
             # ---- HBO variant-aware boosting ----
             if playlist_brand_family == "hbo" and epg_brand_family == "hbo":
-                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, ch_id]))
+                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, _id_number_text(ch_id)]))
                 epg_hbo_variant = _normalize_hbo_variant(grp, epg_hbo_variant_raw)
 
                 if pl_hbo_variant or epg_hbo_variant:
@@ -2035,6 +2051,26 @@ class EPGDatabase:
             matches,
             key=lambda m: (-m.get('score', 0), identity_tiebreak(m)),
         )
+
+        # The guide's own channel for this tvg-id is authoritative. Fuzzy
+        # bonuses (brand, region, implicit East) can lift a loose candidate
+        # past it, and so could "has data now" when the own guide is empty
+        # this hour: on a 49k-channel Dispatcharr playlist that gave ~3.5% of
+        # channels another channel's schedule ("Cheers" showed National
+        # Geographic). With the own guide empty, only a same-named guide
+        # channel may stand in for it.
+        try:
+            own = [m for m in matches if identity_tiebreak(m) <= 1]
+            if own:
+                for m in own:
+                    if self._has_any_schedule_from_now(m['id']):
+                        return m['id']
+                for m in matches:
+                    if identity_tiebreak(m) in (2, 3) and self._has_any_schedule_from_now(m['id']):
+                        return m['id']
+                return own[0]['id']
+        except Exception:
+            _logger.debug("resolve_best_channel_id: own-id probe failed", exc_info=True)
 
         # Probe schedule availability for top-N and reorder
         try:
