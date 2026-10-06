@@ -155,6 +155,8 @@ File > EPG Manager (Ctrl+E) lists your guide sources.
 - Add File: an XMLTV file on your computer (.xml or .xml.gz).
 - Add URL: the internet address of an XMLTV guide.
 
+Also use the guide each playlist links to: many playlists name their own guide in their first line. While this is checked, as it is by default, those guides are imported along with the sources above, and a guide you already added is not imported twice.
+
 The Applications key or Shift+F10 on a source opens its menu: Copy URL, Rename (F2) and Delete (Del). Choose OK to keep your changes.
 
 ### Importing the guide {#import-epg}

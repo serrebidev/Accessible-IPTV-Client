@@ -146,6 +146,8 @@ Fichier > Gestionnaire EPG (Ctrl+E) liste vos sources de guide.
 - Ajouter un fichier : un fichier XMLTV sur votre ordinateur (.xml ou .xml.gz).
 - Ajouter une URL : l'adresse Internet d'un guide XMLTV.
 
+Utiliser aussi l'EPG indiqué par chaque liste de lecture : beaucoup de listes indiquent leur propre EPG dans leur première ligne. Tant que cette case est cochée (c'est le cas par défaut), ces EPG sont importés avec les sources ci-dessus, et un EPG que vous avez déjà ajouté n'est pas importé deux fois.
+
 La touche Applications ou Shift+F10 sur une source ouvre son menu : Copier l'URL, Renommer (F2) et Supprimer (Suppr). Choisissez OK pour conserver vos modifications.
 
 ### Importer le guide {#import-epg}

@@ -466,6 +466,10 @@ def load_config() -> Dict:
         "minimize_to_tray": False,
         "auto_check_updates": True,
         "epg_enabled": True,
+        # Also import the guide a playlist names in its #EXTM3U header
+        # (x-tvg-url / url-tvg). EPG Manager > "Also use the guide each
+        # playlist links to".
+        "use_playlist_epg": True,
         "epg_auto_import_interval_hours": 6.0,
         "show_player_on_enter": True,
         "show_channel_url": True,

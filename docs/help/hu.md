@@ -156,6 +156,8 @@ A Fájl > Műsorújság kezelése (Ctrl+E) ablakban a beállított műsorújság
 - Fájl hozzáadása: a számítógépen tárolt XMLTV-fájl (.xml vagy .xml.gz) felvétele.
 - URL hozzáadása: internetes XMLTV-műsorújság címének megadása.
 
+Az egyes lejátszási listákban megadott műsorújság használata is: sok lejátszási lista az első sorában megadja a saját műsorújságát. Amíg ez be van jelölve (alapértelmezés szerint be van), ezek a műsorújságok a fenti forrásokkal együtt kerülnek importálásra, a már hozzáadott műsorújságot pedig nem importálja kétszer.
+
 A kijelölt forrás helyi menüjét az Alkalmazásgombbal vagy a Shift+F10 billentyűkombinációval nyithatja meg; innen érhető el az URL másolása, az Átnevezés (F2) és a Törlés (Delete). A módosítások megőrzéséhez nyomja meg az OK gombot.
 
 ### A műsorújság importálása {#import-epg}

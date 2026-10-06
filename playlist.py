@@ -3097,11 +3097,12 @@ if WX_AVAILABLE:
             return False
 
     class EPGManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]
-        def __init__(self, parent, epg_sources, source_names=None):
+        def __init__(self, parent, epg_sources, source_names=None, use_playlist_epg=True):
             super().__init__(parent, title=_("EPG Manager"), size=(600, 300))
             self.help_topic = "epg-manager"
             self.epg_sources = epg_sources.copy()
             self.source_names = normalize_source_names(source_names)
+            self._use_playlist_epg = bool(use_playlist_epg)
             self._build_ui()
             self.CenterOnParent()
             self.Layout()
@@ -3122,6 +3123,11 @@ if WX_AVAILABLE:
             if self.epg_sources:
                 self.lb.SetSelection(0)
             main_sizer.Add(self.lb, 1, wx.EXPAND | wx.ALL, 5)
+            # Playlists can name their own guide in the #EXTM3U header
+            # (x-tvg-url); those guides are imported alongside the list above.
+            self.playlist_epg_cb = wx.CheckBox(panel, label=_("Also use the guide each playlist links to"))
+            self.playlist_epg_cb.SetValue(self._use_playlist_epg)
+            main_sizer.Add(self.playlist_epg_cb, 0, wx.ALL, 5)
             ok_sizer = wx.BoxSizer(wx.HORIZONTAL)
             ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("OK"))
             cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Cancel"))
@@ -3176,6 +3182,9 @@ if WX_AVAILABLE:
 
         def GetResult(self):
             return self.epg_sources
+
+        def GetUsePlaylistEpg(self) -> bool:
+            return bool(self.playlist_epg_cb.GetValue())
 else:
     class EPGManagerDialog:  # type: ignore[misc]
         def __init__(self, *_args, **_kwargs):
@@ -3183,6 +3192,9 @@ else:
 
         def GetResult(self):
             return []
+
+        def GetUsePlaylistEpg(self) -> bool:
+            return True
 
 if WX_AVAILABLE:
     class PlaylistManagerDialog(_SourceNamesMixin, wx.Dialog):  # type: ignore[misc]

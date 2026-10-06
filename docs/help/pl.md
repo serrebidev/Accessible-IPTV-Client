@@ -146,6 +146,8 @@ Plik > Menedżer EPG (Ctrl+E) wypisuje twoje źródła przewodnika.
 - Dodaj plik: plik XMLTV na komputerze (.xml albo .xml.gz).
 - Dodaj URL: internetowy adres przewodnika XMLTV.
 
+Używaj też EPG wskazanego przez każdą playlistę: wiele playlist podaje własny EPG w pierwszym wierszu. Dopóki to pole jest zaznaczone (domyślnie jest), te EPG są importowane razem z powyższymi źródłami, a EPG, który już dodano, nie jest importowany dwa razy.
+
 Klawisz aplikacji albo Shift+F10 na źródle otwiera jego menu: Kopiuj adres URL, Zmień nazwę (F2) i Usuń (Delete). Wybierz OK, aby zachować zmiany.
 
 ### Importowanie przewodnika {#import-epg}

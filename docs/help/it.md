@@ -146,6 +146,8 @@ File > Gestione EPG (Ctrl+E) elenca le sorgenti della guida.
 - Aggiungi file: un file XMLTV sul computer (.xml o .xml.gz).
 - Aggiungi URL: l'indirizzo Internet di una guida XMLTV.
 
+Usa anche l'EPG indicato da ogni playlist: molte playlist indicano il proprio EPG nella prima riga. Finché questa casella è selezionata (lo è per impostazione predefinita), questi EPG vengono importati insieme alle sorgenti qui sopra, e un EPG che hai già aggiunto non viene importato due volte.
+
 Il tasto applicazioni o Shift+F10 su una sorgente apre il suo menu: Copia URL, Rinomina (F2) e Elimina (Canc). Scegliere OK per mantenere le modifiche.
 
 ### Importare la guida {#import-epg}

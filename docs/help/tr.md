@@ -145,6 +145,8 @@ Dosya > EPG Yöneticisi (Ctrl+E) rehber kaynaklarınızı listeler.
 - Dosya ekle: bilgisayarınızda bir XMLTV dosyası (.xml ya da .xml.gz).
 - URL ekle: bir XMLTV rehberinin internet adresi.
 
+Her oynatma listesinin belirttiği EPG'yi de kullan: birçok oynatma listesi kendi EPG'sini ilk satırında belirtir. Bu kutu işaretli olduğu sürece (varsayılan olarak işaretlidir), bu EPG'ler yukarıdaki kaynaklarla birlikte içe aktarılır ve zaten eklediğiniz bir EPG iki kez içe aktarılmaz.
+
 Bir kaynak üzerinde Uygulamalar tuşu ya da Shift+F10 menüsünü açar: URL'yi kopyala, Yeniden adlandır (F2) ve Sil (Delete). Değişikliklerinizi korumak için Tamam'ı seçin.
 
 ### Rehberi içe aktarma {#import-epg}
