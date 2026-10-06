@@ -62,7 +62,16 @@ PY
 
 echo "=== launching under Xvfb"
 Xvfb "$DISPLAY" -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 &
-sleep 2
+# A fixed sleep raced Xvfb on a freshly pulled image (v1.146.1): the next
+# check found no display and GTK aborted. Wait for its socket instead.
+i=0
+until [ -S "/tmp/.X11-unix/X${DISPLAY_NUM}" ]; do
+    i=$((i + 1))
+    if [ "$i" -gt 60 ]; then
+        echo "FAIL: Xvfb did not start"; cat /tmp/xvfb.log; exit 1
+    fi
+    sleep 0.5
+done
 
 echo "=== Stalker portal dialog check"
 python3 - <<'PY'
