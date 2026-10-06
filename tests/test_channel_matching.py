@@ -78,3 +78,29 @@ def test_both_call_sites_share_one_implementation():
     assert "_find_matching_channel_for_program" in source
     # The scoring constants should appear in exactly one method.
     assert "score = max(score, 70)" not in source
+
+
+def test_lookup_is_memoized_per_playlist_and_dropped_on_reload():
+    """Highlighting EPG rows reuses one index; a new channel list rebuilds it.
+
+    The scan normalized every channel name per highlight and froze the GUI for
+    2.5 s on a 50,000-channel playlist, so features and answers are cached
+    against the identity of ``all_channels``.
+    """
+    stub = SimpleNamespace(all_channels=list(CHANNELS))
+    program = {"channel_name": "BBC Two", "channel_id": ""}
+    first = IPTVClient._find_matching_channel_for_program(stub, program)
+    assert first["url"] == "u2"
+    assert IPTVClient._find_matching_channel_for_program(stub, program) is first
+
+    stub.all_channels = [{"name": "BBC Two", "tvg-id": "", "url": "new"}]
+    assert IPTVClient._find_matching_channel_for_program(stub, program)["url"] == "new"
+
+
+def test_first_exact_tvg_id_wins_over_later_duplicates():
+    channels = [
+        {"name": "Feed A", "tvg-id": "Same.Id", "url": "a"},
+        {"name": "Feed B", "tvg-id": "same.id", "url": "b"},
+    ]
+    got = _match(channels, {"channel_name": "Feed B", "channel_id": "SAME.ID"})
+    assert got["url"] == "a"

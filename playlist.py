@@ -2479,26 +2479,58 @@ class EPGDatabase:
         # bounds the "next" side of the scan.
         floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
         horizon_str = (now + datetime.timedelta(hours=6)).strftime("%Y%m%d%H%M%S")
+        # Only the covering index's columns here: fetching the description
+        # with every row forced a table lookup for all ~200,000 rows in the
+        # window, once a minute, to keep one "now" row per channel. The
+        # descriptions of the on-air rows are fetched afterwards by id.
         rows = c.execute("""
-            SELECT p.title, p.start, p.end, c.id, c.display_name, p.description
-            FROM programmes p
-            JOIN channels c ON c.id = p.channel_id
-            WHERE p.start >= ? AND p.start <= ? AND p.end > ?
-            ORDER BY p.start ASC
+            SELECT id, channel_id, title, start, end
+            FROM programmes
+            WHERE start >= ? AND start <= ? AND end > ?
+            ORDER BY start ASC
         """, (floor_str, horizon_str, now_str)).fetchall()
 
-        out: Dict[str, Dict[str, object]] = {}
-        for title, start, end, channel_id, display_name, description in rows:
-            entry = out.setdefault(channel_id, {"display_name": display_name or ""})
-            row = {"title": title, "start": start, "end": end,
-                   "description": description or ""}
+        now_rows: Dict[str, tuple] = {}
+        next_rows: Dict[str, tuple] = {}
+        for row in rows:
+            channel_id, start = row[1], row[3]
             if start <= now_str:
                 # Airing now; on overlapping entries prefer the most recent start.
-                if "now" not in entry or start > entry["now"]["start"]:
-                    entry["now"] = row
-            elif "next" not in entry:
+                current = now_rows.get(channel_id)
+                if current is None or start > current[3]:
+                    now_rows[channel_id] = row
+            elif channel_id not in next_rows:
                 # Rows arrive ordered by start, so the first future one wins.
-                entry["next"] = row
+                next_rows[channel_id] = row
+
+        descriptions: Dict[int, str] = {}
+        ids = [row[0] for row in now_rows.values()]
+        for i in range(0, len(ids), 900):  # under SQLite's default variable limit
+            chunk = ids[i:i + 900]
+            descriptions.update(c.execute(
+                "SELECT id, description FROM programmes WHERE id IN ({})".format(
+                    ",".join("?" * len(chunk))), chunk))
+        names = {}
+        wanted = set(now_rows) | set(next_rows)
+        for channel_id, display_name in c.execute("SELECT id, display_name FROM channels"):
+            if channel_id in wanted:
+                names[channel_id] = display_name or ""
+
+        def as_dict(row, description):
+            return {"title": row[2], "start": row[3], "end": row[4],
+                    "description": description or ""}
+
+        out: Dict[str, Dict[str, object]] = {}
+        for channel_id in wanted:
+            if channel_id not in names:
+                continue  # the old JOIN dropped programmes of unknown channels
+            entry = out[channel_id] = {"display_name": names[channel_id]}
+            row = now_rows.get(channel_id)
+            if row is not None:
+                entry["now"] = as_dict(row, descriptions.get(row[0]))
+            row = next_rows.get(channel_id)
+            if row is not None:
+                entry["next"] = as_dict(row, "")
         return out
 
     # =========================

@@ -9,6 +9,7 @@ every UI matching scan, so the regexes are compiled once at module level rather
 than rebuilt per call.
 """
 
+import functools
 import re
 from typing import Dict, List, Optional
 
@@ -166,6 +167,15 @@ def _group_synonym_patterns():
     return _GROUP_SYNONYM_PATTERNS_CACHE
 
 
+# The now-playing labels re-normalize every playlist and guide name each
+# minute (about 200,000 strings on a large provider), and the regexes cost
+# ~13 s of CPU per pass. Names barely change between passes, so a cache that
+# holds the whole working set makes repeat passes nearly free. Bounded so a
+# long session of playlist reloads cannot grow it without limit.
+_NAME_CACHE_SIZE = 1 << 18
+
+
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
 def canonicalize_name(name: str) -> str:
     name = (name or "").strip().lower()
     while True:
@@ -178,6 +188,7 @@ def canonicalize_name(name: str) -> str:
     name = _CANON_WS_RE.sub(' ', name)
     return name.strip()
 
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
 def strip_noise_words(text: str) -> str:
     if not text:
         return ""

@@ -13,6 +13,7 @@ import wx
 import datetime
 import re
 import platform
+import functools
 import time
 import subprocess
 import hashlib
@@ -1348,6 +1349,23 @@ def _implicit_catchup_source(channel: Dict[str, str]) -> str:
     return ""
 
 
+def _local_hhmm(utc_stamp: str) -> str:
+    """Local "HH:MM" for an XMLTV UTC "YYYYMMDDHHMMSS" stamp.
+
+    The row labels format two stamps for every guide channel each minute,
+    and strptime plus astimezone cost ~15 s per pass on a large guide. Most
+    programmes share a handful of start times, so the result is cached; the
+    offset is part of the key so a time zone change is still picked up.
+    """
+    return _local_hhmm_cached(utc_stamp, time.timezone, time.altzone)
+
+
+@functools.lru_cache(maxsize=8192)
+def _local_hhmm_cached(utc_stamp: str, _timezone: int, _altzone: int) -> str:
+    stamp = datetime.datetime.strptime(utc_stamp, "%Y%m%d%H%M%S")
+    return utc_to_local(stamp.replace(tzinfo=datetime.timezone.utc)).strftime("%H:%M")
+
+
 def _now_playing_key(channel: Dict[str, str]) -> str:
     """Cache key for a channel's on-air row label and description.
 
@@ -2277,14 +2295,11 @@ class IPTVClient(wx.Frame):
         if not title:
             return ""
         try:
-            start = utc_to_local(datetime.datetime.strptime(
-                show["start"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+            start = _local_hhmm(show["start"])
             if not with_end:
-                return "{title} ({start})".format(title=title, start=start.strftime("%H:%M"))
-            end = utc_to_local(datetime.datetime.strptime(
-                show["end"], "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc))
+                return "{title} ({start})".format(title=title, start=start)
             return "{title} ({start}–{end})".format(
-                title=title, start=start.strftime("%H:%M"), end=end.strftime("%H:%M"))
+                title=title, start=start, end=_local_hhmm(show["end"]))
         except Exception:
             LOG.debug("IPTVClient._programme_label: ignored exception", exc_info=True)
             return title
@@ -2322,6 +2337,11 @@ class IPTVClient(wx.Frame):
             self._now_playing_timer = None
 
     def _on_now_playing_timer(self, _event):
+        # Nobody reads the row labels while the window sits in the tray, and
+        # each refresh is a guide query plus a match of every channel.
+        # restore_from_tray refreshes them as the window comes back.
+        if not self.IsShown():
+            return
         threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
 
     def _toggle_favorite_selected(self, *_args):
@@ -2904,6 +2924,7 @@ class IPTVClient(wx.Frame):
                     return
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
+                self._program_match_cache = None  # holds the old channel list
                 self._invalidate_favorites_cache()
                 self._fill_playlist_scope_combo()
                 self._refresh_group_ui()
@@ -3112,6 +3133,7 @@ class IPTVClient(wx.Frame):
                 return
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            self._program_match_cache = None  # holds the old channel list
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
@@ -3911,6 +3933,52 @@ class IPTVClient(wx.Frame):
             return
         self._play_live_channel(channel)
 
+    _PROGRAM_MATCH_QUALITY_TAGS = ("hd", "sd", "fhd", "uhd", "4k", "hevc", "h264", "h.264")
+
+    @classmethod
+    def _program_match_base(cls, name_lower: str) -> str:
+        for pat in cls._PROGRAM_MATCH_QUALITY_TAGS:
+            name_lower = name_lower.replace(" {pat}".format(pat=pat), "")
+            name_lower = name_lower.replace("({pat})".format(pat=pat), "")
+            name_lower = name_lower.replace("[{pat}]".format(pat=pat), "")
+        return name_lower.strip()
+
+    def _program_match_index(self):
+        """Per-channel match features plus a result memo, for the current playlist.
+
+        Highlighting an EPG search row resolves its playlist channel on the GUI
+        thread (the recording menu needs it), and normalizing ~50,000 channel
+        names per highlight froze the app and NVDA for 2.5 s. The features only
+        change when ``all_channels`` is replaced, so they are built once per
+        playlist load and keyed on that list's identity.
+        """
+        channels = self.all_channels
+        cached = getattr(self, "_program_match_cache", None)
+        if cached is not None and cached[0] is channels:
+            return cached[1], cached[2], cached[3]
+        rows = []
+        by_tvg_id: Dict[str, Dict[str, str]] = {}
+        for ch in channels:
+            ch_name = ch.get("name", "")
+            ch_tvg_name = ch.get("tvg-name", "")
+            ch_tvg_id = (ch.get("tvg-id", "") or "").lower()
+            if ch_tvg_id and ch_tvg_id not in by_tvg_id:
+                by_tvg_id[ch_tvg_id] = ch
+            ch_name_lower = ch_name.lower()
+            ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
+            rows.append((
+                ch,
+                ch_tvg_id,
+                ch_name_lower,
+                ch_tvg_name.lower(),
+                ch_name_norm,
+                canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else "",
+                IPTVClient._program_match_base(ch_name_lower),
+            ))
+        memo: Dict[tuple, Optional[Dict[str, str]]] = {}
+        self._program_match_cache = (channels, rows, by_tvg_id, memo)
+        return rows, by_tvg_id, memo
+
     def _find_matching_channel_for_program(self, program: Dict[str, str]) -> Optional[Dict[str, str]]:
         """Find the playlist channel that best matches an EPG/search program row."""
         channel_name = program.get("channel_name", "")
@@ -3918,71 +3986,65 @@ class IPTVClient(wx.Frame):
         if not channel_name and not channel_id:
             return None
 
+        # Through the class: test doubles stand in for the frame here.
+        rows, by_tvg_id, memo = IPTVClient._program_match_index(self)
+        memo_key = (channel_name, channel_id)
+        if memo_key in memo:
+            return memo[memo_key]
+        channel_id_lower = channel_id.lower() if channel_id else ""
+        # An exact tvg-id scores 100, which nothing else reaches, and ties keep
+        # the first channel: the same answer the full scan below would give.
+        exact = by_tvg_id.get(channel_id_lower) if channel_id_lower else None
+        if exact is not None:
+            memo[memo_key] = exact
+            return exact
+
         matching_channel = None
         best_score = 0
         channel_name_lower = channel_name.lower() if channel_name else ""
         channel_name_norm = canonicalize_name(strip_noise_words(channel_name)) if channel_name else ""
-        base_patterns = ["hd", "sd", "fhd", "uhd", "4k", "hevc", "h264", "h.264"]
-        channel_base = channel_name_lower
-        for pat in base_patterns:
-            channel_base = channel_base.replace(" {pat}".format(pat=pat), "")
-            channel_base = channel_base.replace("({pat})".format(pat=pat), "")
-            channel_base = channel_base.replace("[{pat}]".format(pat=pat), "")
-        channel_base = channel_base.strip()
+        channel_base = IPTVClient._program_match_base(channel_name_lower)
+        words_epg = set(channel_name_norm.split())
 
-        for ch in self.all_channels:
-            ch_name = ch.get("name", "")
-            ch_tvg_name = ch.get("tvg-name", "")
-            ch_tvg_id = ch.get("tvg-id", "")
-            ch_name_lower = ch_name.lower()
+        for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in rows:
             score = 0
 
-            if channel_id and ch_tvg_id:
-                if channel_id.lower() == ch_tvg_id.lower():
-                    score = 100
-                elif channel_id.lower() in ch_tvg_id.lower() or ch_tvg_id.lower() in channel_id.lower():
-                    score = max(score, 80)
+            if channel_id_lower and ch_tvg_id:
+                if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
+                    score = 80
             if ch_name_lower == channel_name_lower:
                 score = max(score, 90)
-            if ch_tvg_name and ch_tvg_name.lower() == channel_name_lower:
+            if ch_tvg_lower and ch_tvg_lower == channel_name_lower:
                 score = max(score, 90)
 
-            ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
-            ch_tvg_norm = canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else ""
             if channel_name_norm and (ch_name_norm == channel_name_norm or ch_tvg_norm == channel_name_norm):
                 score = max(score, 70)
 
-            ch_base = ch_name_lower
-            for pat in base_patterns:
-                ch_base = ch_base.replace(" {pat}".format(pat=pat), "")
-                ch_base = ch_base.replace("({pat})".format(pat=pat), "")
-                ch_base = ch_base.replace("[{pat}]".format(pat=pat), "")
-            ch_base = ch_base.strip()
             if channel_base and ch_base and channel_base == ch_base:
                 score = max(score, 60)
 
             if channel_name_lower and (channel_name_lower in ch_name_lower or ch_name_lower in channel_name_lower):
                 score = max(score, 40)
-            if ch_tvg_name and channel_name_lower and (
-                    channel_name_lower in ch_tvg_name.lower() or ch_tvg_name.lower() in channel_name_lower):
+            if ch_tvg_lower and channel_name_lower and (
+                    channel_name_lower in ch_tvg_lower or ch_tvg_lower in channel_name_lower):
                 score = max(score, 40)
 
-            if channel_name_norm and ch_name_norm:
-                words_epg = set(channel_name_norm.split())
+            # Word overlap scores at most 30, so it only matters below that;
+            # skipping it otherwise keeps a word set per channel out of memory.
+            if score < 30 and words_epg and ch_name_norm:
                 words_ch = set(ch_name_norm.split())
-                if words_epg and words_ch:
-                    overlap = len(words_epg & words_ch)
+                overlap = len(words_epg & words_ch)
+                if overlap > 0:
                     total = max(len(words_epg), len(words_ch))
-                    if overlap > 0:
-                        score = max(score, int(30 * overlap / total))
+                    score = max(score, int(30 * overlap / total))
 
             if score > best_score:
                 best_score = score
                 matching_channel = ch
 
-        if best_score < 30:
-            return None
-        return matching_channel
+        result = matching_channel if best_score >= 30 else None
+        memo[memo_key] = result
+        return result
 
     def _recording_format_label(self, key: str) -> str:
         labels = {
@@ -5998,6 +6060,7 @@ class IPTVClient(wx.Frame):
         self.Show()
         self.Iconize(False)
         self.Raise()
+        threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
         # Delay focus operations to let the tray icon fully release
         wx.CallLater(150, self._complete_restore_from_tray)
     
@@ -6685,6 +6748,14 @@ class IPTVClient(wx.Frame):
                 )
             except Exception:
                 results = []
+            else:
+                if results:
+                    # Highlighting an EPG row resolves its channel on the GUI
+                    # thread; build that lookup's index here, off it.
+                    try:
+                        self._program_match_index()
+                    except Exception:
+                        LOG.debug("IPTVClient.apply_filter.epg_search: index warm-up failed", exc_info=True)
             finally:
                 try:
                     if db is not None and hasattr(db, "close"):
@@ -7873,13 +7944,10 @@ class IPTVClient(wx.Frame):
         elif item["type"] == "epg":
             self.url_display.SetValue("")
             r = item["data"]
-            url = ""
-            target_norm = canonicalize_name(r.get("channel_name", ""))
-            for ch in self.all_channels:
-                if canonicalize_name(ch.get("name", "")) == target_norm:
-                    url = ch.get("url", "")
-                    break
-            self.url_display.SetValue(url)
+            # The same (memoized) match the recording menu just made, so the
+            # URL shown is the channel that playing or recording this row uses.
+            ch = self._find_channel_for_epg(r)
+            self.url_display.SetValue(ch.get("url", "") if ch else "")
             self._set_episode_description(r.get("description") or "")
 
     def _epg_msg_from_tuple(self, now, nxt):
