@@ -1,6 +1,18 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.145.1 - 2026-10-06
+
+### Bug fixes
+
+- Show translated What's New text instead of a table of every language
+- Forget guide channels the EPG no longer lists
+- Keep guide history and use less disk space during EPG imports
+- Search the EPG for % and _ literally
+- Play catch-up on Xtream and Dispatcharr channels
+- Read each channel's own programme in the channel list
+- Show each channel's own guide in View EPG and catch-up lists
+
 ## v1.145.0 - 2026-10-05
 
 ### Features
