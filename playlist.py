@@ -419,6 +419,9 @@ def _significant_channel_numbers(*texts: str) -> Set[str]:
     return numbers
 
 
+def _like_escape(text: str) -> str:
+    """``text`` for a ``LIKE ... ESCAPE '\\'`` pattern, matched literally."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _id_number_text(channel_id: str) -> str:
@@ -2163,8 +2166,10 @@ class EPGDatabase:
         normalized_query = canonicalize_name(strip_noise_words(raw_query))
         if not normalized_query:
             return []
-        q = "%" + normalized_query + "%"
-        title_q = "%" + raw_query.lower() + "%"
+        # Typed text is literal: "%" and "_" are LIKE wildcards otherwise
+        # ("a_c" found "MEGA Cosmos", "100%" every "1005 PM" sports event).
+        q = "%" + _like_escape(normalized_query) + "%"
+        title_q = "%" + _like_escape(raw_query.lower()) + "%"
         c = self.conn.cursor()
         now = self._utcnow().strftime("%Y%m%d%H%M%S")
         rows = []
@@ -2173,7 +2178,7 @@ class EPGDatabase:
             """
             SELECT id
             FROM channels
-            WHERE norm_name LIKE ?
+            WHERE norm_name LIKE ? ESCAPE '\\'
             LIMIT ?
             """,
             (q, limit),
@@ -2209,7 +2214,7 @@ class EPGDatabase:
                     SELECT p.channel_id, p.title, p.start, p.end, c.display_name
                     FROM programmes p
                     JOIN channels c ON c.id = p.channel_id
-                    WHERE LOWER(p.title) LIKE ?
+                    WHERE LOWER(p.title) LIKE ? ESCAPE '\\'
                       AND p.end >= ?
                       AND p.start <= ?
                     ORDER BY p.start ASC

@@ -930,3 +930,20 @@ def test_epg_import_requests_gzip_encoded_feed(monkeypatch, tmp_path):
     finally:
         db.close()
     assert captured.get("accept_encoding") == "gzip"
+
+
+def test_epg_search_treats_percent_and_underscore_literally(tmp_path):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    fmt = "%Y%m%d%H%M%S"
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.insert_channel("a", "100% News")
+        db.insert_channel("b", "Sports 1005 PM")
+        for cid in ("a", "b"):
+            db.insert_programme(cid, "Show", (now - datetime.timedelta(minutes=5)).strftime(fmt),
+                                (now + datetime.timedelta(minutes=55)).strftime(fmt))
+        db.commit()
+        names = {r["channel_name"] for r in db.get_channels_with_show("100%")}
+        assert names == {"100% News"}
+    finally:
+        db.close()
