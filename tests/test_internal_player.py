@@ -873,6 +873,7 @@ class TestReconnectKeepsVideoHidden:
         frame._schedule_volume_apply = lambda: None
         frame._update_status_label = lambda *a, **kw: None
         frame._ensure_player_window = lambda: frame.window_attached.append(True)
+        frame._vlc_call = types.MethodType(internal_player.InternalPlayerFrame._vlc_call, frame)
         frame.player = types.SimpleNamespace(
             stop=lambda: None,
             set_media=lambda _m: None,
@@ -958,6 +959,101 @@ class TestReconnectKeepsVideoHidden:
         frame = self._stub_frame()
         self._play(frame, video_visible=True, focus_controls=False)
         assert focus_hops == []
+
+
+class TestChannelChangeDoesNotBlockTheGui:
+    """libVLC's stop() took 0.4-0.9 s per channel change at a 6 s buffer, all
+    on the GUI thread after Enter. It now runs on the control thread, still
+    ahead of the new stream so a one-stream provider never sees two."""
+
+    def test_play_returns_while_the_old_stream_is_still_stopping(self):
+        from concurrent.futures import ThreadPoolExecutor
+        stubs = TestReconnectKeepsVideoHidden()
+        frame = stubs._stub_frame()
+        gate, calls = threading.Event(), []
+        frame.player.stop = lambda: (gate.wait(5), calls.append("stop"))
+        frame.player.set_media = lambda _m: calls.append("set_media")
+        frame.player.play = lambda: calls.append("play")
+        frame._vlc_ops = ThreadPoolExecutor(max_workers=1)
+        stubs._play(frame, video_visible=False)
+        assert calls == [] and not frame._vlc_switch.done()
+        gate.set()
+        frame._vlc_switch.result(5)
+        assert calls == ["stop", "set_media", "play"]
+        frame._vlc_ops.shutdown()
+
+
+class TestQueuedChannelChanges:
+    """Codex review on #41: a switch overtaken by a newer channel must not open
+    its stream, and Pause pressed before the new stream starts must stick."""
+
+    def _frame(self):
+        from concurrent.futures import ThreadPoolExecutor
+        stubs = TestReconnectKeepsVideoHidden()
+        frame = stubs._stub_frame()
+        frame.gate, frame.calls = threading.Event(), []
+        frame.entered = threading.Event()
+        frame.player.stop = lambda: (frame.entered.set(), frame.gate.wait(5),
+                                     frame.calls.append("stop"))
+        frame.player.set_media = lambda m: frame.calls.append("set_media")
+        frame.player.play = lambda: frame.calls.append("play")
+        frame.player.set_pause = lambda v: frame.calls.append(("pause", v))
+        frame._vlc_ops = ThreadPoolExecutor(max_workers=1)
+        return stubs, frame
+
+    def test_superseded_switch_never_opens_its_stream(self):
+        stubs, frame = self._frame()
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)  # the first switch is mid-stop
+        stubs._play(frame, video_visible=False)
+        frame.gate.set()
+        frame._vlc_switch.result(5)
+        frame._vlc_ops.shutdown()
+        assert frame.calls == ["stop", "stop", "set_media", "play"]
+
+    def test_stop_during_a_pending_switch_keeps_the_channel_closed(self):
+        stubs, frame = self._frame()
+        frame._status_timer.Stop = lambda: None
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        stopped = internal_player.InternalPlayerFrame.stop(frame, manual=True)
+        frame.gate.set()
+        stopped.result(5)
+        frame._vlc_ops.shutdown()
+        assert frame.calls == ["stop", "stop"]
+
+    def test_closing_during_a_switch_never_opens_the_channel(self):
+        stubs, frame = self._frame()
+        frame._teardown_guard, frame._vlc_released = threading.Lock(), False
+        frame.player.release = lambda: frame.calls.append("release")
+        frame.instance.release = lambda: None
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        threading.Timer(0.2, frame.gate.set).start()
+        internal_player.InternalPlayerFrame._release_vlc(frame)
+        assert frame.calls == ["stop", "stop", "release"]
+
+    def test_play_after_a_mid_switch_stop_opens_the_shown_channel(self):
+        stubs, frame = self._frame()
+        frame._status_timer.Stop = lambda: None
+        frame.player.get_state = lambda: None
+        frame.play = types.MethodType(internal_player.InternalPlayerFrame.play, frame)
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        internal_player.InternalPlayerFrame.stop(frame, manual=True)
+        internal_player.InternalPlayerFrame._on_toggle_pause(frame)
+        frame.gate.set()
+        frame._vlc_ops.shutdown(wait=True)
+        assert frame.calls == ["stop", "stop", "stop", "set_media", "play"]
+
+    def test_pause_while_the_switch_is_pending_lands_after_it(self):
+        stubs, frame = self._frame()
+        stubs._play(frame, video_visible=False)
+        internal_player.InternalPlayerFrame._on_toggle_pause(frame)
+        assert frame._is_paused is True
+        frame.gate.set()
+        frame._vlc_ops.shutdown(wait=True)
+        assert frame.calls == ["stop", "set_media", "play", ("pause", 1)]
 
 
 class TestAudioOutputDeviceEnumeration:

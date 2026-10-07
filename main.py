@@ -169,6 +169,20 @@ _MODAL_BOX_DEPTH = 0
 _MODAL_BOX_CLOSED_HOOK = None
 
 
+def _wait_for_player_stop(stopped) -> None:
+    """Block (off the GUI thread) until the built-in player's stop has run.
+
+    No timeout: carrying on while libVLC still holds the connection is the
+    overlap a one-stream provider refuses. The stop never raises, and teardown
+    lets queued stops run rather than cancelling them."""
+    if stopped is None:
+        return
+    try:
+        stopped.result()
+    except Exception:
+        LOG.debug("_wait_for_player_stop: ignored exception", exc_info=True)
+
+
 def message_box(*args, **kwargs):
     """``wx.MessageBox`` that records, app-wide, that a modal box is on screen.
 
@@ -4413,13 +4427,14 @@ class IPTVClient(wx.Frame):
                         _("Recording Error"), wx.OK | wx.ICON_WARNING)
             return
         player_shown = False
+        player_stopped = None
         if share:
             frame = self._internal_player_frame
             try:
                 player_shown = bool(frame.IsShown())
             except Exception:
                 player_shown = False
-            frame.stop(manual=True)
+            player_stopped = frame.stop(manual=True)
         if intent is None and not share:
             self._start_live_recording(key, url, name, fmt, headers, out_dir, None,
                                        media=media)
@@ -4431,7 +4446,9 @@ class IPTVClient(wx.Frame):
 
         def probe():
             if share:
-                # The provider still counts the player's connection for a moment.
+                # libVLC closes the player's connection on its own thread, and
+                # the provider still counts it for a moment after that.
+                _wait_for_player_stop(player_stopped)
                 catchup_direct.settle_media_session()
             choice = self._recording_audio_choice(url, headers, intent) if intent else None
             if share and intent:
@@ -4522,9 +4539,10 @@ class IPTVClient(wx.Frame):
                 or getattr(frame, "_current_url", None) != shared["url"]
                 or getattr(frame, "_manual_stop", False)):
             return
-        frame.stop(manual=True)
+        player_stopped = frame.stop(manual=True)
 
         def resume():
+            _wait_for_player_stop(player_stopped)
             catchup_direct.settle_media_session()
             wx.CallAfter(self._resume_direct_playback, shared["channel"],
                          shared["shown"], shared["url"])
