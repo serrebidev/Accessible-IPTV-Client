@@ -873,6 +873,7 @@ class TestReconnectKeepsVideoHidden:
         frame._schedule_volume_apply = lambda: None
         frame._update_status_label = lambda *a, **kw: None
         frame._ensure_player_window = lambda: frame.window_attached.append(True)
+        frame._vlc_call = types.MethodType(internal_player.InternalPlayerFrame._vlc_call, frame)
         frame.player = types.SimpleNamespace(
             stop=lambda: None,
             set_media=lambda _m: None,
@@ -958,6 +959,28 @@ class TestReconnectKeepsVideoHidden:
         frame = self._stub_frame()
         self._play(frame, video_visible=True, focus_controls=False)
         assert focus_hops == []
+
+
+class TestChannelChangeDoesNotBlockTheGui:
+    """libVLC's stop() took 0.4-0.9 s per channel change at a 6 s buffer, all
+    on the GUI thread after Enter. It now runs on the control thread, still
+    ahead of the new stream so a one-stream provider never sees two."""
+
+    def test_play_returns_while_the_old_stream_is_still_stopping(self):
+        from concurrent.futures import ThreadPoolExecutor
+        stubs = TestReconnectKeepsVideoHidden()
+        frame = stubs._stub_frame()
+        gate, calls = threading.Event(), []
+        frame.player.stop = lambda: (gate.wait(5), calls.append("stop"))
+        frame.player.set_media = lambda _m: calls.append("set_media")
+        frame.player.play = lambda: calls.append("play")
+        frame._vlc_ops = ThreadPoolExecutor(max_workers=1)
+        stubs._play(frame, video_visible=False)
+        assert calls == [] and not frame._vlc_switch.done()
+        gate.set()
+        frame._vlc_switch.result(5)
+        assert calls == ["stop", "set_media", "play"]
+        frame._vlc_ops.shutdown()
 
 
 class TestAudioOutputDeviceEnumeration:

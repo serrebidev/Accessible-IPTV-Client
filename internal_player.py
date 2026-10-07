@@ -9,6 +9,7 @@ import time
 import urllib.parse
 import urllib.request
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple
 
 import wx
@@ -219,6 +220,13 @@ class InternalPlayerFrame(wx.Frame):
         self._teardown_guard = threading.Lock()
         self._vlc_released = False
         self._teardown_thread: Optional[threading.Thread] = None
+        # libVLC's stop() waits for the old stream to unwind, and that wait
+        # grows with the cache: 0.4-0.9 s per channel change at a 6 s buffer,
+        # all of it on the GUI thread after Enter. Transport calls run here
+        # instead, one at a time, so a one-stream provider still sees the old
+        # connection close before the new one opens.
+        self._vlc_ops = ThreadPoolExecutor(max_workers=1, thread_name_prefix="VLCControl")
+        self._vlc_switch = None
         self._fullscreen = False
         self._volume_value = 80
         self._volume_last_ts = 0.0
@@ -723,19 +731,6 @@ class InternalPlayerFrame(wx.Frame):
             media.add_option(":vout=dummy")
             media.add_option(":intf=dummy")
         self._set_subtitle_cues([])
-        # Stop any existing playback quickly (don't wait for it to fully stop)
-        try:
-            self.player.stop()
-        except Exception:
-            LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
-        try:
-            self.player.set_media(media)
-        except Exception as err:
-            try:
-                media.release()
-            except Exception:
-                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
-            raise InternalPlayerUnavailableError(_("Could not load the stream: {error}").format(error=err))
         if video_visible:
             self._ensure_player_window()
         else:
@@ -752,12 +747,23 @@ class InternalPlayerFrame(wx.Frame):
                 self.player.set_xwindow(0)  # Linux
             except Exception:
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
-        LOG.debug("Calling player.play()...")
-        try:
-            self._apply_audio_output_device()
-            self.player.play()
-        except Exception as err:
-            raise InternalPlayerUnavailableError(_("Could not start playback: {error}").format(error=err))
+        player = self.player
+
+        def switch() -> None:
+            try:
+                player.stop()
+            except Exception:
+                LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
+            try:
+                player.set_media(media)
+                self._apply_audio_output_device()
+                player.play()
+            except Exception as err:
+                LOG.error("Could not start playback: %s", err)
+                wx.CallAfter(self._update_status_label,
+                             _("Could not start playback: {error}").format(error=err), priority=1)
+
+        self._vlc_switch = self._vlc_call(switch)
         self._is_paused = False
         self.play_pause_btn.SetLabel(_("Pause"))
         self._schedule_volume_apply()
@@ -779,16 +785,34 @@ class InternalPlayerFrame(wx.Frame):
         self._pending_restart = False
         self._status_timer.Stop()
         self._set_subtitle_cues([])
-        try:
-            self.player.stop()
-        except Exception:
-            LOG.debug("InternalPlayerFrame.stop: ignored exception", exc_info=True)
+        self._vlc_call(self.player.stop)
         self._is_paused = True
         self._has_seen_playing = False
         self.play_pause_btn.SetLabel(_("Play"))
         self._update_status_label(_("Stopped"), priority=2)
 
     # ---------------------------------------------------------------- internal
+    def _vlc_call(self, fn):
+        """Run a libVLC transport call on the control thread, in order.
+
+        Inline when there is no control thread (test stubs) or it has shut
+        down (teardown has already stopped the player). Never raises.
+        """
+        def run() -> None:
+            try:
+                fn()
+            except Exception:
+                LOG.debug("InternalPlayerFrame._vlc_call: ignored exception", exc_info=True)
+
+        ops = getattr(self, "_vlc_ops", None)
+        if ops is not None:
+            try:
+                return ops.submit(run)
+            except RuntimeError:
+                return None
+        run()
+        return None
+
     def _apply_cache_options(self, media: "vlc.Media", profile: dict) -> None:
         media.add_option(":http-reconnect=true")
         media.add_option(":rtsp-tcp")
@@ -1656,7 +1680,7 @@ class InternalPlayerFrame(wx.Frame):
             self._reconnect_attempts = 0
             self._status_timer.Start(500)
             try:
-                self.player.play()
+                self._vlc_call(self.player.play)
                 self._is_paused = False
                 self.play_pause_btn.SetLabel(_("Pause"))
                 self._update_status_label(_("Buffering..."))
@@ -1667,7 +1691,7 @@ class InternalPlayerFrame(wx.Frame):
         if is_stopped_state and can_resume:
             # VLC reports stopped but not from a manual stop; try to restart.
             try:
-                self.player.play()
+                self._vlc_call(self.player.play)
                 self._is_paused = False
                 self.play_pause_btn.SetLabel(_("Pause"))
                 self._status_timer.Start(500)
@@ -1677,7 +1701,7 @@ class InternalPlayerFrame(wx.Frame):
             return
 
         try:
-            self.player.pause()
+            self._vlc_call(self.player.pause)
             self._is_paused = not self._is_paused
             self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
         except Exception:
@@ -1797,6 +1821,9 @@ class InternalPlayerFrame(wx.Frame):
         return name.rsplit(".", 1)[-1].strip() or "Unknown"
 
     def _on_timer(self, _event: wx.TimerEvent) -> None:
+        switch = getattr(self, "_vlc_switch", None)
+        if switch is not None and not switch.done():
+            return  # the old stream's Stopped state is not a dropout
         self._refresh_audio_track_choice()
         try:
             state = self.player.get_state()
@@ -2603,6 +2630,11 @@ class InternalPlayerFrame(wx.Frame):
             if self._vlc_released:
                 return
             self._vlc_released = True
+        ops = getattr(self, "_vlc_ops", None)
+        if ops is not None:
+            # A channel change still queued must not reopen the stream after
+            # the release; one under way finishes first.
+            ops.shutdown(wait=True, cancel_futures=True)
         steps = (
             ("player.stop", getattr(self, "player", None), "stop"),
             ("player.release", getattr(self, "player", None), "release"),

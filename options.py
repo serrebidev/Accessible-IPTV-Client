@@ -34,11 +34,10 @@ DVR_SCHEDULE_FILE = "scheduled_recordings.json"
 CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = sys.platform.startswith("win")
-# 6 s (was 2, then 4): live TS sources pause 2-6 s (provider reconnects, segment gaps),
-# and a short network hiccup on top still emptied a 4 s buffer. Costs start-up time.
-DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 6.0
-# Former defaults: written into every config on load, so a stored value equal to one
-# of them is the default, not a choice. Move it to the current default.
+# libVLC holds sound back until this much is cached, so it is start-up time on every
+# channel: measured 0.8 s to sound at 1 s, 7-12 s at 6 s (VLC itself uses 1 s). 2 s
+# rides out short source gaps; a stall raises it for that stream, up to the max.
+DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 DEFAULT_RECORDING_PRE_PADDING_MINUTES = 0
