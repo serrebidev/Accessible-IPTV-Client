@@ -1701,7 +1701,12 @@ class InternalPlayerFrame(wx.Frame):
             self._reconnect_attempts = 0
             self._status_timer.Start(500)
             try:
-                self._vlc_call(self.player.play)
+                if self._current_url:
+                    # Reopen what the window shows: a Stop pressed mid-switch
+                    # left the player holding the previous channel, or none.
+                    self.play(self._current_url, self._current_title, _retry=True)
+                else:
+                    self._vlc_call(self.player.play)
                 self._is_paused = False
                 self.play_pause_btn.SetLabel(_("Pause"))
                 self._update_status_label(_("Buffering..."))

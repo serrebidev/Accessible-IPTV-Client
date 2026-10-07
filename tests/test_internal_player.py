@@ -1033,6 +1033,19 @@ class TestQueuedChannelChanges:
         internal_player.InternalPlayerFrame._release_vlc(frame)
         assert frame.calls == ["stop", "stop", "release"]
 
+    def test_play_after_a_mid_switch_stop_opens_the_shown_channel(self):
+        stubs, frame = self._frame()
+        frame._status_timer.Stop = lambda: None
+        frame.player.get_state = lambda: None
+        frame.play = types.MethodType(internal_player.InternalPlayerFrame.play, frame)
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        internal_player.InternalPlayerFrame.stop(frame, manual=True)
+        internal_player.InternalPlayerFrame._on_toggle_pause(frame)
+        frame.gate.set()
+        frame._vlc_ops.shutdown(wait=True)
+        assert frame.calls == ["stop", "stop", "stop", "set_media", "play"]
+
     def test_pause_while_the_switch_is_pending_lands_after_it(self):
         stubs, frame = self._frame()
         stubs._play(frame, video_visible=False)
