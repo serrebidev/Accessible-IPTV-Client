@@ -1166,3 +1166,31 @@ def test_audio_track_reapply_waits_for_published_tracks():
     frame._get_audio_tracks = lambda: [(1, 'Spanish'), (2, 'English')]
     internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
     assert picked == [2] and frame._audio_reapply_pending is False
+
+
+def test_backed_off_retry_does_not_reopen_a_newer_channel(monkeypatch):
+    """Codex review on #42: a channel change during the backoff wins."""
+    later, played = [], []
+    monkeypatch.setattr(internal_player.wx, 'CallLater', lambda ms, fn: later.append(fn))
+    frame = types.SimpleNamespace(
+        _destroyed=False, _manual_stop=False, _gave_up=False,
+        _current_url='http://a/live/u/p/1', _current_title='A',
+        _pending_xtream_refresh=False, _pending_restart=False,
+        _last_restart_ts=0.0, _reconnect_reset_window=120.0, _restart_cooldown=2.0,
+        _reconnect_attempts=1, _max_reconnect_attempts=6, _last_restart_reason='',
+        _vlc_generation=5, _update_status_label=lambda *a, **k: None,
+        _reconnect_delay_ms=internal_player.InternalPlayerFrame._reconnect_delay_ms,
+        play=lambda *a, **k: played.append(a),
+    )
+    internal_player.InternalPlayerFrame._schedule_restart(frame, 'stream ended')
+    frame._vlc_generation = 6  # the user picked another channel
+    later[0]()
+    assert played == []
+
+
+def test_stream_lost_box_goes_through_the_app_modal_queue():
+    shown = []
+    parent = types.SimpleNamespace(_show_or_queue_message_box=lambda *a: shown.append(a))
+    frame = types.SimpleNamespace(_destroyed=False, GetParent=lambda: parent)
+    internal_player.InternalPlayerFrame._notify_box(frame, 'lost', 'Stream Lost', 0)
+    assert shown == [('lost', 'Stream Lost', 0)]

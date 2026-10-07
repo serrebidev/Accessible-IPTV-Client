@@ -1089,7 +1089,7 @@ class InternalPlayerFrame(wx.Frame):
             self._manual_stop = True
             self._current_url = None
             wx.CallAfter(
-                wx.MessageBox,
+                self._notify_box,
                 _("Stream disconnected. The stream may be offline or experiencing issues.")
                 + "\n\n" + _("Please try another channel or try again later."),
                 _("Stream Lost"),
@@ -1104,8 +1104,11 @@ class InternalPlayerFrame(wx.Frame):
         self._last_restart_ts = time.monotonic()
         LOG.info("Xtream TS segment ended; refreshing stream without consuming retries.")
         self._update_status_label(_("Refreshing stream..."), priority=2)
+        generation = getattr(self, "_vlc_generation", 0)
 
         def _do_restart() -> None:
+            if generation != getattr(self, "_vlc_generation", 0):
+                return  # a newer play() or stop() owns the player now
             self._pending_restart = False
             self._pending_xtream_refresh = False
             if self._destroyed or self._manual_stop or not self._current_url:
@@ -1388,7 +1391,7 @@ class InternalPlayerFrame(wx.Frame):
                 if self._last_restart_reason:
                     reason_hint = "\n\n" + _("Last error: {reason}").format(reason=self._last_restart_reason)
                 wx.CallAfter(
-                    wx.MessageBox,
+                    self._notify_box,
                     _("Stream disconnected after {count} retries. "
                       "The stream may be offline or experiencing issues.").format(
                         count=self._max_reconnect_attempts)
@@ -1411,8 +1414,13 @@ class InternalPlayerFrame(wx.Frame):
             self._max_reconnect_attempts,
         )
         self._update_status_label(_("Reconnecting..."), priority=2)
+        # A channel change during the 2-8 s backoff must not be reopened by
+        # this retry when it fires (Codex review on #42).
+        generation = getattr(self, "_vlc_generation", 0)
 
         def _do_restart() -> None:
+            if generation != getattr(self, "_vlc_generation", 0):
+                return  # a newer play() or stop() owns the player now
             self._pending_restart = False
             if self._destroyed or not self._current_url or self._manual_stop or self._gave_up:
                 return
@@ -1839,6 +1847,20 @@ class InternalPlayerFrame(wx.Frame):
         self.status_label.SetLabel(label)
         if prefix and getattr(self, "announcement_level", 2) >= priority:
             self._speak(self.status_label)
+
+    def _notify_box(self, message: str, caption: str, style: int) -> None:
+        """Show a box the timer raised, through the app's modal queue.
+
+        A bare wx.MessageBox opened while another box is up nests a second
+        message loop, which can leave the main window disabled for good.
+        """
+        if self._destroyed:
+            return
+        show = getattr(self.GetParent(), "_show_or_queue_message_box", None)
+        if show is not None:
+            show(message, caption, style)
+        else:
+            wx.MessageBox(message, caption, style)
 
     def _speak(self, ctrl: wx.Window) -> None:
         """Read ``ctrl`` aloud; through the main window when this one is not in front."""
