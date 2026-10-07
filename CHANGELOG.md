@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.146.3 - 2026-10-06
+
+### Bug fixes
+
+- Keep retrying live channels while the server restarts them (#42)
+
 ## v1.146.2 - 2026-10-06
 
 ### Bug fixes

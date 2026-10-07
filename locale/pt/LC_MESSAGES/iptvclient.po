@@ -203,7 +203,7 @@ msgstr "Dispositivo de saída de áudio..."
 msgid "Audio Track"
 msgstr "Faixa de áudio"
 
-#: internal_player.py:2172
+#: internal_player.py:2194
 msgid "Audio Track: {name}"
 msgstr "Faixa de áudio: {name}"
 
@@ -231,7 +231,7 @@ msgstr "Somente áudio (WAV)"
 msgid "Audio output devices"
 msgstr "Dispositivos de saída de áudio"
 
-#: internal_player.py:2208
+#: internal_player.py:2230
 msgid "Audio track unavailable"
 msgstr "Faixa de áudio indisponível"
 
@@ -239,9 +239,9 @@ msgstr "Faixa de áudio indisponível"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Fluxo somente áudio detectado. Gravação iniciada ({fmt}):\n{path}"
 
-#: internal_player.py:1811
-#: internal_player.py:2227
-#: internal_player.py:2236
+#: internal_player.py:1833
+#: internal_player.py:2249
+#: internal_player.py:2258
 msgid "Audio: {name}"
 msgstr "Áudio: {name}"
 
@@ -314,11 +314,11 @@ msgstr "Mudanças incompatíveis"
 msgid "Browse..."
 msgstr "Procurar..."
 
-#: internal_player.py:778
-#: internal_player.py:1712
-#: internal_player.py:1724
-#: internal_player.py:1786
-#: internal_player.py:1942
+#: internal_player.py:783
+#: internal_player.py:1734
+#: internal_player.py:1746
+#: internal_player.py:1808
+#: internal_player.py:1964
 msgid "Buffering..."
 msgstr "Armazenando em buffer..."
 
@@ -399,8 +399,8 @@ msgstr "Transmitir para o dispositivo"
 msgid "Cast..."
 msgstr "Transmitir..."
 
-#: internal_player.py:1769
-#: internal_player.py:1773
+#: internal_player.py:1791
+#: internal_player.py:1795
 #: main.py:8510
 #: main.py:8627
 #: main.py:8641
@@ -418,7 +418,7 @@ msgstr "Erro de transmissão"
 msgid "Casting failed: {error}"
 msgstr "Falha na transmissão: {error}"
 
-#: internal_player.py:1769
+#: internal_player.py:1791
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "A transmissão não está disponível porque o transmissor não foi inicializado."
 
@@ -654,7 +654,7 @@ msgstr "Não foi possível carregar os episódios desta série."
 msgid "Could not load episodes:\n{error}"
 msgstr "Não foi possível carregar os episódios:\n{error}"
 
-#: internal_player.py:2318
+#: internal_player.py:2340
 msgid "Could not load subtitle file."
 msgstr "Não foi possível carregar o arquivo de legenda."
 
@@ -720,7 +720,7 @@ msgstr "Não foi possível desligar o computador:\n{error}"
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Não foi possível iniciar a transferência do replay:\n{error}"
 
-#: internal_player.py:771
+#: internal_player.py:776
 msgid "Could not start playback: {error}"
 msgstr "Não foi possível iniciar a reprodução: {error}"
 
@@ -938,8 +938,8 @@ msgstr "Decorrido: {time}"
 msgid "Encrypted settings backup saved."
 msgstr "Backup de configurações criptografadas salvo."
 
-#: internal_player.py:1790
-#: internal_player.py:1940
+#: internal_player.py:1812
+#: internal_player.py:1962
 msgid "Ended"
 msgstr "Encerrado"
 
@@ -986,7 +986,7 @@ msgstr "Descrição do episódio"
 msgid "Episode {num}"
 msgstr "Episódio {num}"
 
-#: internal_player.py:1791
+#: internal_player.py:1813
 #: main.py:3775
 #: main.py:3829
 #: main.py:5413
@@ -1023,7 +1023,7 @@ msgstr "Executável não encontrado: {path}"
 msgid "Exit"
 msgstr "Sair"
 
-#: internal_player.py:2616
+#: internal_player.py:2643
 msgid "Exit Full Screen"
 msgstr "Sair da tela cheia"
 
@@ -1156,7 +1156,7 @@ msgid "Found {count} devices:"
 msgstr "{count} dispositivos encontrados:"
 
 #: internal_player.py:412
-#: internal_player.py:2616
+#: internal_player.py:2643
 msgid "Full Screen"
 msgstr "Tela cheia"
 
@@ -1226,7 +1226,7 @@ msgstr "Transmissão IPTV"
 
 #: internal_player.py:455
 #: internal_player.py:488
-#: internal_player.py:1784
+#: internal_player.py:1806
 msgid "Idle"
 msgstr "Ocioso"
 
@@ -1327,11 +1327,11 @@ msgstr "Atalhos de teclado..."
 msgid "Language"
 msgstr "Idioma"
 
-#: internal_player.py:1379
+#: internal_player.py:1389
 msgid "Last error: {reason}"
 msgstr "Último erro: {reason}"
 
-#: internal_player.py:2401
+#: internal_player.py:2423
 msgid "Last subtitle: {text}"
 msgstr "Última legenda: {text}"
 
@@ -1351,7 +1351,7 @@ msgstr "Erro ao iniciar"
 msgid "Live TV && Catch-up"
 msgstr "TV ao vivo && Replay"
 
-#: internal_player.py:2310
+#: internal_player.py:2332
 msgid "Load Subtitle File"
 msgstr "Carregar arquivo de legenda"
 
@@ -1482,7 +1482,7 @@ msgstr "Sem fontes"
 msgid "No Video on Demand content found."
 msgstr "Nenhum conteúdo de vídeo sob demanda encontrado."
 
-#: internal_player.py:1773
+#: internal_player.py:1795
 #: main.py:8627
 msgid "No active stream to cast."
 msgstr "Nenhuma transmissão ativa para transmitir."
@@ -1491,9 +1491,9 @@ msgstr "Nenhuma transmissão ativa para transmitir."
 msgid "No audio output devices were found."
 msgstr "Nenhum dispositivo de saída de áudio foi encontrado."
 
-#: internal_player.py:2167
-#: internal_player.py:2233
-#: internal_player.py:2437
+#: internal_player.py:2189
+#: internal_player.py:2255
+#: internal_player.py:2459
 msgid "No audio tracks available"
 msgstr "Nenhuma faixa de áudio disponível"
 
@@ -1519,7 +1519,7 @@ msgstr "Sem descrição disponível para este programa."
 msgid "No devices found."
 msgstr "Nenhum dispositivo encontrado."
 
-#: internal_player.py:2405
+#: internal_player.py:2427
 msgid "No earlier subtitle."
 msgstr "Não há legenda anterior."
 
@@ -1535,7 +1535,7 @@ msgstr "Nenhum detalhe do erro foi informado."
 msgid "No ffmpeg details were reported."
 msgstr "Nenhum detalhe do ffmpeg foi relatado."
 
-#: internal_player.py:2407
+#: internal_player.py:2429
 msgid "No later subtitle."
 msgstr "Não há legenda posterior."
 
@@ -1580,15 +1580,15 @@ msgstr "Não há histórico de versões disponível."
 msgid "No stream URL provided."
 msgstr "Nenhuma URL de transmissão fornecida."
 
-#: internal_player.py:2395
+#: internal_player.py:2417
 msgid "No subtitle has been shown yet."
 msgstr "Nenhuma legenda foi mostrada ainda."
 
-#: internal_player.py:2344
+#: internal_player.py:2366
 msgid "No subtitle text found in this file."
 msgstr "Nenhum texto de legenda encontrado neste arquivo."
 
-#: internal_player.py:2393
+#: internal_player.py:2415
 msgid "No subtitle text to read. Load an SRT or WebVTT file."
 msgstr "Não há texto de legenda para ler. Carregue um arquivo SRT ou WebVTT."
 
@@ -1637,9 +1637,9 @@ msgstr "Agora: {title} ({start} – {end})"
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2274
-#: internal_player.py:2280
-#: internal_player.py:2297
+#: internal_player.py:2296
+#: internal_player.py:2302
+#: internal_player.py:2319
 msgid "Off"
 msgstr "Desligado"
 
@@ -1668,7 +1668,7 @@ msgstr "Abrir o projeto Accessible IPTV Client no GitHub"
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Abra o arquivo gravado no VLC, pressione Ctrl+T e insira um dos horários listados. Os horários usam o relógio de mídia do arquivo quando informado pelo FFmpeg; caso contrário, representam o tempo decorrido da gravação e podem ser ligeiramente posteriores após uma interrupção."
 
-#: internal_player.py:1785
+#: internal_player.py:1807
 msgid "Opening"
 msgstr "Abrindo"
 
@@ -1714,16 +1714,16 @@ msgid "Password"
 msgstr "Senha"
 
 #: internal_player.py:386
-#: internal_player.py:775
-#: internal_player.py:1680
-#: internal_player.py:1711
-#: internal_player.py:1722
-#: internal_player.py:1732
+#: internal_player.py:780
+#: internal_player.py:1702
+#: internal_player.py:1733
+#: internal_player.py:1744
+#: internal_player.py:1754
 msgid "Pause"
 msgstr "Pausar"
 
-#: internal_player.py:1788
-#: internal_player.py:1917
+#: internal_player.py:1810
+#: internal_player.py:1939
 msgid "Paused"
 msgstr "Pausado"
 
@@ -1739,7 +1739,7 @@ msgstr "Telefone"
 msgid "Platform: {platform}"
 msgstr "Plataforma: {platform}"
 
-#: internal_player.py:803
+#: internal_player.py:808
 #: main.py:3721
 #: main.py:10424
 #: main.py:10614
@@ -1780,7 +1780,7 @@ msgstr "Controles do reprodutor"
 msgid "Player window has been destroyed."
 msgstr "A janela do reprodutor foi fechada."
 
-#: internal_player.py:1787
+#: internal_player.py:1809
 msgid "Playing"
 msgstr "Reproduzindo"
 
@@ -1809,8 +1809,8 @@ msgstr "Tipo de lista de reprodução"
 msgid "Playlist view"
 msgstr "Vista da lista de reprodução"
 
-#: internal_player.py:1084
-#: internal_player.py:1386
+#: internal_player.py:1094
+#: internal_player.py:1396
 msgid "Please try another channel or try again later."
 msgstr "Tente outro canal ou tente novamente mais tarde."
 
@@ -1956,19 +1956,19 @@ msgstr "Assistido recentemente"
 msgid "Recently Watched..."
 msgstr "Assistido recentemente..."
 
-#: internal_player.py:1403
-#: internal_player.py:1922
-#: internal_player.py:1929
-#: internal_player.py:1937
-#: internal_player.py:1945
+#: internal_player.py:1413
+#: internal_player.py:1944
+#: internal_player.py:1951
+#: internal_player.py:1959
+#: internal_player.py:1967
 msgid "Reconnecting..."
 msgstr "Reconectando..."
 
 #: internal_player.py:400
 #: internal_player.py:401
 #: internal_player.py:496
-#: internal_player.py:1740
-#: internal_player.py:1756
+#: internal_player.py:1762
+#: internal_player.py:1778
 #: main.py:2706
 #: main.py:3730
 #: main.py:4371
@@ -2037,7 +2037,7 @@ msgstr "Tempos dos problemas da gravação"
 msgid "Recording Warning"
 msgstr "Aviso de gravação"
 
-#: internal_player.py:1739
+#: internal_player.py:1761
 msgid "Recording is not available from this window."
 msgstr "A gravação não está disponível a partir desta janela."
 
@@ -2091,11 +2091,11 @@ msgstr "Atualizando todas as listas..."
 msgid "Refreshing playlist: {name}"
 msgstr "Atualizando lista: {name}"
 
-#: internal_player.py:1096
-#: internal_player.py:1924
-#: internal_player.py:1931
-#: internal_player.py:1934
-#: internal_player.py:1945
+#: internal_player.py:1106
+#: internal_player.py:1946
+#: internal_player.py:1953
+#: internal_player.py:1956
+#: internal_player.py:1967
 msgid "Refreshing stream..."
 msgstr "Atualizando transmissão..."
 
@@ -2128,8 +2128,8 @@ msgstr "Substituir as configurações atuais por este backup? Reinicie o aplicat
 msgid "Restore"
 msgstr "Restaurar"
 
-#: internal_player.py:1680
-#: internal_player.py:1732
+#: internal_player.py:1702
+#: internal_player.py:1754
 msgid "Resume"
 msgstr "Retomar"
 
@@ -2422,7 +2422,7 @@ msgstr "Parar todas as gravações"
 msgid "Stop Playback"
 msgstr "Parar reprodução"
 
-#: internal_player.py:1756
+#: internal_player.py:1778
 #: main.py:3728
 #: main.py:5310
 msgid "Stop Recording"
@@ -2432,8 +2432,8 @@ msgstr "Parar gravação"
 msgid "Stop Recording(s)"
 msgstr "Parar gravação(ões)"
 
-#: internal_player.py:804
-#: internal_player.py:1789
+#: internal_player.py:809
+#: internal_player.py:1811
 msgid "Stopped"
 msgstr "Parado"
 
@@ -2454,8 +2454,8 @@ msgstr "Parando a gravação..."
 msgid "Stopping {count} recording(s)..."
 msgstr "Parando {count} gravação(ões)..."
 
-#: internal_player.py:1085
-#: internal_player.py:1387
+#: internal_player.py:1095
+#: internal_player.py:1397
 msgid "Stream Lost"
 msgstr "Transmissão perdida"
 
@@ -2464,17 +2464,17 @@ msgstr "Transmissão perdida"
 msgid "Stream URL"
 msgstr "URL da transmissão"
 
-#: internal_player.py:1382
+#: internal_player.py:1392
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Transmissão desconectada após {count} tentativas. A transmissão pode estar offline ou com problemas."
 
-#: internal_player.py:1083
+#: internal_player.py:1093
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Transmissão desconectada. Pode estar offline ou com problemas."
 
-#: internal_player.py:1088
-#: internal_player.py:1390
-#: internal_player.py:1947
+#: internal_player.py:1098
+#: internal_player.py:1400
+#: internal_player.py:1969
 msgid "Stream lost"
 msgstr "Transmissão perdida"
 
@@ -2487,31 +2487,31 @@ msgstr "Saída da transmissão"
 msgid "Subscription"
 msgstr "Assinatura"
 
-#: internal_player.py:2322
+#: internal_player.py:2344
 msgid "Subtitle file loaded: {name}"
 msgstr "Arquivo de legenda carregado: {name}"
 
-#: internal_player.py:2311
+#: internal_player.py:2333
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Arquivos de legenda (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: internal_player.py:2326
+#: internal_player.py:2348
 msgid "Subtitle speech needs an SRT or WebVTT file."
 msgstr "A leitura de legendas precisa de um arquivo SRT ou WebVTT."
 
-#: internal_player.py:2423
+#: internal_player.py:2445
 msgid "Subtitle speech off"
 msgstr "Leitura de legendas desativada"
 
-#: internal_player.py:2425
+#: internal_player.py:2447
 msgid "Subtitle speech on"
 msgstr "Leitura de legendas ativada"
 
-#: internal_player.py:2427
+#: internal_player.py:2449
 msgid "Subtitle speech on. Load an SRT or WebVTT file to hear subtitles."
 msgstr "Leitura de legendas ativada. Carregue um arquivo SRT ou WebVTT para ouvir as legendas."
 
-#: internal_player.py:2270
+#: internal_player.py:2292
 msgid "Subtitle track unavailable"
 msgstr "Faixa de legendas indisponível"
 
@@ -2521,7 +2521,7 @@ msgstr "Faixa de legendas indisponível"
 msgid "Subtitles"
 msgstr "Legendas"
 
-#: internal_player.py:2277
+#: internal_player.py:2299
 msgid "Subtitles: {name}"
 msgstr "Legendas: {name}"
 
@@ -2680,10 +2680,10 @@ msgstr "Alternar tela cheia"
 msgid "Topics"
 msgstr "Tópicos"
 
-#: internal_player.py:2132
-#: internal_player.py:2211
-#: internal_player.py:2264
-#: internal_player.py:2276
+#: internal_player.py:2154
+#: internal_player.py:2233
+#: internal_player.py:2286
+#: internal_player.py:2298
 msgid "Track {id}"
 msgstr "Faixa {id}"
 
@@ -2900,7 +2900,7 @@ msgstr "Exibir"
 msgid "View EPG..."
 msgstr "Exibir EPG..."
 
-#: internal_player.py:1803
+#: internal_player.py:1825
 msgid "Vol {value}%"
 msgstr "Vol {value}%"
 
@@ -3085,7 +3085,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "O {player} não está configurado para Linux."
 
-#: internal_player.py:713
+#: internal_player.py:718
 msgid "{title} - Built-in Player"
 msgstr "{title} - Reprodutor integrado"
 
@@ -3097,7 +3097,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} a {end}"
 
-#: internal_player.py:1800
+#: internal_player.py:1822
 msgid "{value}s buffer"
 msgstr "buffer de {value}s"
 
@@ -3105,7 +3105,7 @@ msgstr "buffer de {value}s"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Foram registados {warnings} avisos, {errors} erros e {fatals} erros fatais no total."
 
-#: internal_player.py:1799
+#: internal_player.py:1821
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
