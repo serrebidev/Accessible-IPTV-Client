@@ -1133,3 +1133,36 @@ class TestAudioOutputDeviceEnumeration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_failed_open_is_not_a_ts_rollover():
+    """Dispatcharr's 503 on open must use the backed-off retries, not instant refreshes."""
+    frame = types.SimpleNamespace(
+        _destroyed=False, _manual_stop=False, _gave_up=False,
+        _current_url='https://tv.example/live/u/p/77078', _current_stream_kind='live',
+        _looks_like_xtream_live_ts=lambda: True, _has_seen_playing=False,
+        _pending_restart=False, _pending_xtream_refresh=False,
+    )
+    assert internal_player.InternalPlayerFrame._restart_expected_xtream_live(frame) is False
+    assert frame._pending_restart is False
+
+
+def test_reconnect_delays_back_off_to_about_thirty_seconds():
+    delay = internal_player.InternalPlayerFrame._reconnect_delay_ms
+    delays = [delay(n) for n in range(1, 7)]
+    assert delays == [400, 2000, 4000, 8000, 8000, 8000]
+    assert sum(delays) >= 30_000
+
+
+def test_audio_track_reapply_waits_for_published_tracks():
+    picked = []
+    frame = types.SimpleNamespace(
+        _audio_reapply_pending=True, _wanted_audio_track_name='English',
+        _audio_track_label='', _get_audio_tracks=lambda: [],
+        player=types.SimpleNamespace(audio_set_track=picked.append),
+    )
+    internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
+    assert frame._audio_reapply_pending is True
+    frame._get_audio_tracks = lambda: [(1, 'Spanish'), (2, 'English')]
+    internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
+    assert picked == [2] and frame._audio_reapply_pending is False

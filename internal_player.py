@@ -237,7 +237,7 @@ class InternalPlayerFrame(wx.Frame):
         self._pending_restart = False
         self._pending_xtream_refresh = False
         self._reconnect_attempts = 0
-        self._max_reconnect_attempts = 4
+        self._max_reconnect_attempts = 6
         self._last_restart_ts = 0.0
         self._last_restart_reason = ""
         self._buffer_step_seconds = 1.0
@@ -707,7 +707,12 @@ class InternalPlayerFrame(wx.Frame):
         self._buffer_start_ts = None
         self._early_buffer_fix_applied = False
         self._has_seen_playing = False
-        self._detected_content_ts = False  # Reset content type detection
+        if not _retry:
+            # A reconnect reopens the same URL, so it keeps what detection
+            # found. Clearing it here flipped Dispatcharr's extensionless
+            # /live/U/P/ID streams out of the TS rollover path after the
+            # first refresh, and every later drop then burned retries.
+            self._detected_content_ts = False
 
         LOG.info("Playing URL: %s (title=%s, retry=%s)", base_url, title, _retry)
         self.SetTitle(_("{title} - Built-in Player").format(title=self._current_title))
@@ -1066,6 +1071,11 @@ class InternalPlayerFrame(wx.Frame):
             or not self._current_url
             or self._current_stream_kind != "live"
             or not self._looks_like_xtream_live_ts()
+            # A connection that never played did not roll over; it failed to
+            # open (Dispatcharr answers 503 "Channel is stopping, retry
+            # shortly"). That belongs to the backed-off reconnect budget, not
+            # to six instant refreshes that hammer the server and give up.
+            or not self._has_seen_playing
         ):
             self._pending_xtream_refresh = False
             return False
@@ -1418,7 +1428,18 @@ class InternalPlayerFrame(wx.Frame):
             except Exception as err:
                 LOG.error("Stream restart failed: %s", err)
 
-        wx.CallLater(400, _do_restart)
+        wx.CallLater(self._reconnect_delay_ms(self._reconnect_attempts), _do_restart)
+
+    @staticmethod
+    def _reconnect_delay_ms(attempt: int) -> int:
+        """Wait before reconnect ``attempt`` (1-based): 0.4, 2, 4, 8, 8, 8 s.
+
+        A blip reconnects at once; a server that is restarting the channel
+        gets about 30 s in total instead of four tries in 8 s.
+        """
+        if attempt <= 1:
+            return 400
+        return min(1000 * 2 ** (attempt - 1), 8000)
 
     def _prune_buffer_events(self, now: float) -> None:
         while self._buffering_events and now - self._buffering_events[0] > self._choppy_window_seconds:
@@ -1637,9 +1658,10 @@ class InternalPlayerFrame(wx.Frame):
             self._schedule_restart("playback stalled", adjust_buffer=True)
 
     def _should_auto_recover_on_end(self) -> bool:
+        # The retry budget is _schedule_restart's to enforce: it tells the
+        # user the stream was lost. Checking it here ended the last retry
+        # silently on "Ended" with no message.
         if self._manual_stop or not self._current_url:
-            return False
-        if self._reconnect_attempts >= self._max_reconnect_attempts:
             return False
         try:
             length = self.player.get_length()
@@ -1759,7 +1781,7 @@ class InternalPlayerFrame(wx.Frame):
             self.record_btn.SetName(label)
             item = getattr(self, "record_menu_item", None)
             if item is not None:
-                item.SetItemLabel(label + "\tCtrl+R")
+                item.SetItemLabel(self._shortcut_label(label, "record"))
             self.controls_panel.Layout()
         except Exception:
             LOG.debug("InternalPlayerFrame.set_recording_state: ignored exception", exc_info=True)
@@ -2595,9 +2617,14 @@ class InternalPlayerFrame(wx.Frame):
         if not self._audio_reapply_pending or not self._wanted_audio_track_name:
             self._audio_reapply_pending = False
             return
+        tracks = self._get_audio_tracks()
+        if not tracks:
+            # libVLC publishes the list a moment after Playing; checking once
+            # dropped the chosen track on every reconnect.
+            return
         self._audio_reapply_pending = False
         wanted = self._wanted_audio_track_name
-        for tid, name in self._get_audio_tracks():
+        for tid, name in tracks:
             if name == wanted:
                 try:
                     self.player.audio_set_track(tid)
