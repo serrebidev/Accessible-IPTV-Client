@@ -1186,3 +1186,11 @@ def test_backed_off_retry_does_not_reopen_a_newer_channel(monkeypatch):
     frame._vlc_generation = 6  # the user picked another channel
     later[0]()
     assert played == []
+
+
+def test_stream_lost_box_goes_through_the_app_modal_queue():
+    shown = []
+    parent = types.SimpleNamespace(_show_or_queue_message_box=lambda *a: shown.append(a))
+    frame = types.SimpleNamespace(_destroyed=False, GetParent=lambda: parent)
+    internal_player.InternalPlayerFrame._notify_box(frame, 'lost', 'Stream Lost', 0)
+    assert shown == [('lost', 'Stream Lost', 0)]
