@@ -1022,6 +1022,17 @@ class TestQueuedChannelChanges:
         frame._vlc_ops.shutdown()
         assert frame.calls == ["stop", "stop"]
 
+    def test_closing_during_a_switch_never_opens_the_channel(self):
+        stubs, frame = self._frame()
+        frame._teardown_guard, frame._vlc_released = threading.Lock(), False
+        frame.player.release = lambda: frame.calls.append("release")
+        frame.instance.release = lambda: None
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        threading.Timer(0.2, frame.gate.set).start()
+        internal_player.InternalPlayerFrame._release_vlc(frame)
+        assert frame.calls == ["stop", "stop", "release"]
+
     def test_pause_while_the_switch_is_pending_lands_after_it(self):
         stubs, frame = self._frame()
         stubs._play(frame, video_visible=False)

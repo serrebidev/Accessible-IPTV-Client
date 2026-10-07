@@ -173,8 +173,8 @@ def _wait_for_player_stop(stopped) -> None:
     """Block (off the GUI thread) until the built-in player's stop has run.
 
     No timeout: carrying on while libVLC still holds the connection is the
-    overlap a one-stream provider refuses. The stop itself never raises; only
-    a teardown that cancelled it ends the wait early."""
+    overlap a one-stream provider refuses. The stop never raises, and teardown
+    lets queued stops run rather than cancelling them."""
     if stopped is None:
         return
     try:

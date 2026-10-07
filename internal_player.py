@@ -2653,9 +2653,11 @@ class InternalPlayerFrame(wx.Frame):
             self._vlc_released = True
         ops = getattr(self, "_vlc_ops", None)
         if ops is not None:
-            # A channel change still queued must not reopen the stream after
-            # the release; one under way finishes first.
-            ops.shutdown(wait=True, cancel_futures=True)
+            # Every queued or running switch sees it has been replaced and
+            # never opens its stream; queued stops still run, so a hand-off
+            # waiting on one is told the truth instead of being cancelled.
+            self._vlc_generation = getattr(self, "_vlc_generation", 0) + 1
+            ops.shutdown(wait=True)
         steps = (
             ("player.stop", getattr(self, "player", None), "stop"),
             ("player.release", getattr(self, "player", None), "release"),
