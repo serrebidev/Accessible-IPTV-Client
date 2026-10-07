@@ -1406,6 +1406,11 @@ class InternalPlayerFrame(wx.Frame):
                 self._gave_up = True
                 self._manual_stop = True
                 self._current_url = None
+                # The attempt may still be connecting: a server that answers
+                # late must not start playing behind "Stream Lost" and hold
+                # the provider connection (Codex review on #44).
+                self._vlc_generation = getattr(self, "_vlc_generation", 0) + 1
+                self._vlc_call(self.player.stop)
                 # Build informative error message
                 reason_hint = ""
                 if self._last_restart_reason:

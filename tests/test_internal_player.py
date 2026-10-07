@@ -1231,7 +1231,7 @@ def test_silent_server_times_out_while_still_opening(monkeypatch, state, waited,
 
 @pytest.mark.parametrize('played,expected_gave_up', [(False, True), (True, False)])
 def test_channel_that_never_played_is_reported_after_the_deadline(monkeypatch, played, expected_gave_up):
-    later, boxes = [], []
+    later, boxes, stopped = [], [], []
     monkeypatch.setattr(internal_player.wx, 'CallLater', lambda ms, fn: later.append(fn))
     monkeypatch.setattr(internal_player.wx, 'CallAfter', lambda fn, *a: boxes.append(a))
     monkeypatch.setattr(internal_player.time, 'monotonic', lambda: 131.)
@@ -1243,9 +1243,14 @@ def test_channel_that_never_played_is_reported_after_the_deadline(monkeypatch, p
         _reconnect_attempts=1, _max_reconnect_attempts=6, _last_restart_reason='',
         _first_play_request_ts=100., _first_play_deadline_seconds=30.,
         _played_since_request=played, _vlc_generation=1,
+        player=types.SimpleNamespace(stop=lambda: stopped.append(True)),
+        _vlc_call=lambda fn: fn(),
         _update_status_label=lambda *a, **k: None, _notify_box=None,
         _reconnect_delay_ms=internal_player.InternalPlayerFrame._reconnect_delay_ms,
     )
     internal_player.InternalPlayerFrame._schedule_restart(frame, 'no media received')
     assert frame._gave_up is expected_gave_up
     assert bool(boxes) is expected_gave_up and bool(later) is not expected_gave_up
+    # A still-connecting attempt is stopped and can no longer start playing.
+    assert bool(stopped) is expected_gave_up
+    assert (frame._vlc_generation == 2) is expected_gave_up
