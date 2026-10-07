@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.146.5 - 2026-10-07
+
+### Bug fixes
+
+- Stop hanging on a channel whose streams are all offline (#44)
+
 ## v1.146.4 - 2026-10-06
 
 ### Bug fixes

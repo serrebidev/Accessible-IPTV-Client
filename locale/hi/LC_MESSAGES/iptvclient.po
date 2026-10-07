@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:541
+#: internal_player.py:551
 msgid "&Playback"
 msgstr "&प्लेबैक"
 
@@ -189,21 +189,21 @@ msgid "Attempt to add provider XMLTV"
 msgstr "प्रदाता का XMLTV जोड़ने का प्रयास करें"
 
 #: internal_player.py:113
-#: internal_player.py:617
+#: internal_player.py:627
 msgid "Audio Output Device"
 msgstr "ऑडियो आउटपुट डिवाइस"
 
-#: internal_player.py:516
+#: internal_player.py:526
 msgid "Audio Output Device..."
 msgstr "ऑडियो आउटपुट डिवाइस..."
 
-#: internal_player.py:502
+#: internal_player.py:512
 #: main.py:2708
 #: shortcuts.py:77
 msgid "Audio Track"
 msgstr "ऑडियो ट्रैक"
 
-#: internal_player.py:2216
+#: internal_player.py:2246
 msgid "Audio Track: {name}"
 msgstr "ऑडियो ट्रैक: {name}"
 
@@ -231,7 +231,7 @@ msgstr "केवल ऑडियो (WAV)"
 msgid "Audio output devices"
 msgstr "ऑडियो आउटपुट डिवाइस"
 
-#: internal_player.py:2252
+#: internal_player.py:2282
 msgid "Audio track unavailable"
 msgstr "ऑडियो ट्रैक उपलब्ध नहीं है"
 
@@ -239,9 +239,9 @@ msgstr "ऑडियो ट्रैक उपलब्ध नहीं है"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "केवल ऑडियो स्ट्रीम मिली. रिकॉर्डिंग प्रारंभ हुई ({fmt}):\n{path}"
 
-#: internal_player.py:1841
-#: internal_player.py:2271
-#: internal_player.py:2280
+#: internal_player.py:1866
+#: internal_player.py:2301
+#: internal_player.py:2310
 msgid "Audio: {name}"
 msgstr "ऑडियो: {name}"
 
@@ -314,11 +314,11 @@ msgstr "असंगत बदलाव"
 msgid "Browse..."
 msgstr "ब्राउज़ करें..."
 
-#: internal_player.py:783
-#: internal_player.py:1742
-#: internal_player.py:1754
-#: internal_player.py:1816
-#: internal_player.py:1986
+#: internal_player.py:795
+#: internal_player.py:1767
+#: internal_player.py:1779
+#: internal_player.py:1841
+#: internal_player.py:2016
 msgid "Buffering..."
 msgstr "बफ़र हो रहा है..."
 
@@ -372,7 +372,7 @@ msgstr "रद्द किया गया"
 msgid "Cannot find \"{text}\"."
 msgstr "\"{text}\" नहीं मिला।"
 
-#: internal_player.py:406
+#: internal_player.py:416
 msgid "Cast"
 msgstr "कास्ट करें"
 
@@ -389,18 +389,18 @@ msgstr "कास्ट करें / कनेक्ट करें..."
 msgid "Cast To..."
 msgstr "इसमें कास्ट करें..."
 
-#: internal_player.py:407
+#: internal_player.py:417
 msgid "Cast to Device"
 msgstr "डिवाइस पर कास्ट करें"
 
-#: internal_player.py:518
+#: internal_player.py:528
 #: main.py:2707
 #: shortcuts.py:74
 msgid "Cast..."
 msgstr "कास्ट करें..."
 
-#: internal_player.py:1799
-#: internal_player.py:1803
+#: internal_player.py:1824
+#: internal_player.py:1828
 #: main.py:8510
 #: main.py:8627
 #: main.py:8641
@@ -418,7 +418,7 @@ msgstr "कास्टिंग त्रुटि"
 msgid "Casting failed: {error}"
 msgstr "कास्टिंग विफल: {error}"
 
-#: internal_player.py:1799
+#: internal_player.py:1824
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "कास्टिंग उपलब्ध नहीं है क्योंकि कास्टर प्रारंभ नहीं किया गया है।"
 
@@ -524,7 +524,7 @@ msgstr "स्ट्रीम प्रकार जाँचा जा रह�
 msgid "Checking {account}..."
 msgstr "{account} की जाँच हो रही है..."
 
-#: internal_player.py:432
+#: internal_player.py:442
 msgid "Choose Audio Track"
 msgstr "ऑडियो ट्रैक चुनें"
 
@@ -615,7 +615,7 @@ msgstr "इस खाते की जाँच नहीं हो सकी।
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "नैदानिक जानकारी कॉपी नहीं की जा सकी:\n{error}"
 
-#: internal_player.py:357
+#: internal_player.py:367
 msgid "Could not create libVLC media player object."
 msgstr "libVLC मीडिया प्लेयर ऑब्जेक्ट नहीं बनाया जा सका।"
 
@@ -654,7 +654,7 @@ msgstr "इस सीरीज़ के एपिसोड लोड नही�
 msgid "Could not load episodes:\n{error}"
 msgstr "एपिसोड लोड नहीं किए जा सके:\n{error}"
 
-#: internal_player.py:2362
+#: internal_player.py:2392
 msgid "Could not load subtitle file."
 msgstr "उपशीर्षक फ़ाइल लोड नहीं की जा सकी।"
 
@@ -720,7 +720,7 @@ msgstr "कंप्यूटर बंद नहीं किया जा स�
 msgid "Could not start catch-up download:\n{error}"
 msgstr "कैच-अप डाउनलोड शुरू नहीं हो सका:\n{error}"
 
-#: internal_player.py:776
+#: internal_player.py:788
 msgid "Could not start playback: {error}"
 msgstr "प्लेबैक शुरू नहीं हो सका: {error}"
 
@@ -938,8 +938,8 @@ msgstr "बीता समय: {time}"
 msgid "Encrypted settings backup saved."
 msgstr "एन्क्रिप्टेड सेटिंग बैकअप सहेजा गया।"
 
-#: internal_player.py:1820
-#: internal_player.py:1984
+#: internal_player.py:1845
+#: internal_player.py:2014
 msgid "Ended"
 msgstr "समाप्त"
 
@@ -986,7 +986,7 @@ msgstr "एपिसोड विवरण"
 msgid "Episode {num}"
 msgstr "एपिसोड {num}"
 
-#: internal_player.py:1821
+#: internal_player.py:1846
 #: main.py:3775
 #: main.py:3829
 #: main.py:5413
@@ -1023,11 +1023,11 @@ msgstr "निष्पादन योग्य फ़ाइल नहीं �
 msgid "Exit"
 msgstr "बाहर निकलें"
 
-#: internal_player.py:2665
+#: internal_player.py:2695
 msgid "Exit Full Screen"
 msgstr "पूर्ण स्क्रीन से बाहर निकलें"
 
-#: internal_player.py:523
+#: internal_player.py:533
 #: shortcuts.py:85
 msgid "Exit Player"
 msgstr "प्लेयर से बाहर निकलें"
@@ -1094,11 +1094,11 @@ msgstr "EPG डेटा प्राप्त करने में विफ�
 msgid "Failed to fetch release info ({code})."
 msgstr "रिलीज़ जानकारी प्राप्त करने में विफल ({code})।"
 
-#: internal_player.py:349
+#: internal_player.py:359
 msgid "Failed to initialise libVLC instance."
 msgstr "libVLC इंस्टेंस प्रारंभ करने में विफल।"
 
-#: internal_player.py:354
+#: internal_player.py:364
 msgid "Failed to initialise media player: {error}"
 msgstr "मीडिया प्लेयर प्रारंभ करने में विफल: {error}"
 
@@ -1155,8 +1155,8 @@ msgstr "प्रारूप"
 msgid "Found {count} devices:"
 msgstr "{count} डिवाइस मिले:"
 
-#: internal_player.py:412
-#: internal_player.py:2665
+#: internal_player.py:422
+#: internal_player.py:2695
 msgid "Full Screen"
 msgstr "पूर्ण स्क्रीन"
 
@@ -1208,7 +1208,7 @@ msgstr "HTTPS पोर्ट"
 msgid "Help"
 msgstr "सहायता"
 
-#: internal_player.py:522
+#: internal_player.py:532
 #: shortcuts.py:84
 msgid "Hide Window"
 msgstr "विंडो छिपाएँ"
@@ -1224,9 +1224,9 @@ msgstr "पुराने रिलीज़ छिपाएँ"
 msgid "IPTV Stream"
 msgstr "IPTV स्ट्रीम"
 
-#: internal_player.py:455
-#: internal_player.py:488
-#: internal_player.py:1814
+#: internal_player.py:465
+#: internal_player.py:498
+#: internal_player.py:1839
 msgid "Idle"
 msgstr "निष्क्रिय"
 
@@ -1327,11 +1327,11 @@ msgstr "कुंजीपटल शॉर्टकट..."
 msgid "Language"
 msgstr "भाषा"
 
-#: internal_player.py:1392
+#: internal_player.py:1417
 msgid "Last error: {reason}"
 msgstr "अंतिम त्रुटि: {reason}"
 
-#: internal_player.py:2445
+#: internal_player.py:2475
 msgid "Last subtitle: {text}"
 msgstr "अंतिम उपशीर्षक: {text}"
 
@@ -1351,11 +1351,11 @@ msgstr "लॉन्च त्रुटि"
 msgid "Live TV && Catch-up"
 msgstr "लाइव टीवी && कैच-अप"
 
-#: internal_player.py:2354
+#: internal_player.py:2384
 msgid "Load Subtitle File"
 msgstr "उपशीर्षक फ़ाइल लोड करें"
 
-#: internal_player.py:506
+#: internal_player.py:516
 msgid "Load Subtitle File..."
 msgstr "उपशीर्षक फ़ाइल लोड करें..."
 
@@ -1443,7 +1443,7 @@ msgstr "नाम"
 msgid "Never (no expiry date set)"
 msgstr "कभी नहीं (कोई समाप्ति तिथि निर्धारित नहीं)"
 
-#: internal_player.py:515
+#: internal_player.py:525
 #: main.py:2712
 #: shortcuts.py:82
 msgid "Next Subtitle"
@@ -1482,18 +1482,18 @@ msgstr "कोई स्रोत नहीं"
 msgid "No Video on Demand content found."
 msgstr "कोई वीडियो ऑन डिमांड सामग्री नहीं मिली।"
 
-#: internal_player.py:1803
+#: internal_player.py:1828
 #: main.py:8627
 msgid "No active stream to cast."
 msgstr "कास्ट करने के लिए कोई सक्रिय स्ट्रीम नहीं है।"
 
-#: internal_player.py:616
+#: internal_player.py:626
 msgid "No audio output devices were found."
 msgstr "कोई ऑडियो आउटपुट डिवाइस नहीं मिला।"
 
-#: internal_player.py:2211
-#: internal_player.py:2277
-#: internal_player.py:2481
+#: internal_player.py:2241
+#: internal_player.py:2307
+#: internal_player.py:2511
 msgid "No audio tracks available"
 msgstr "कोई ऑडियो ट्रैक उपलब्ध नहीं है"
 
@@ -1519,7 +1519,7 @@ msgstr "इस कार्यक्रम के लिए कोई विव�
 msgid "No devices found."
 msgstr "कोई डिवाइस नहीं मिला।"
 
-#: internal_player.py:2449
+#: internal_player.py:2479
 msgid "No earlier subtitle."
 msgstr "इससे पहले कोई उपशीर्षक नहीं है।"
 
@@ -1535,7 +1535,7 @@ msgstr "कोई त्रुटि विवरण नहीं दिया �
 msgid "No ffmpeg details were reported."
 msgstr "कोई ffmpeg विवरण रिपोर्ट नहीं किया गया।"
 
-#: internal_player.py:2451
+#: internal_player.py:2481
 msgid "No later subtitle."
 msgstr "इसके बाद कोई उपशीर्षक नहीं है।"
 
@@ -1576,19 +1576,19 @@ msgstr "वर्तमान में कोई रिकॉर्डिंग
 msgid "No release history is available."
 msgstr "कोई रिलीज़ इतिहास उपलब्ध नहीं है।"
 
-#: internal_player.py:656
+#: internal_player.py:666
 msgid "No stream URL provided."
 msgstr "कोई स्ट्रीम URL प्रदान नहीं किया गया।"
 
-#: internal_player.py:2439
+#: internal_player.py:2469
 msgid "No subtitle has been shown yet."
 msgstr "अभी तक कोई उपशीर्षक नहीं दिखाया गया है।"
 
-#: internal_player.py:2388
+#: internal_player.py:2418
 msgid "No subtitle text found in this file."
 msgstr "इस फ़ाइल में कोई उपशीर्षक पाठ नहीं मिला।"
 
-#: internal_player.py:2437
+#: internal_player.py:2467
 msgid "No subtitle text to read. Load an SRT or WebVTT file."
 msgstr "पढ़ने के लिए कोई उपशीर्षक पाठ नहीं है। SRT या WebVTT फ़ाइल लोड करें।"
 
@@ -1637,9 +1637,9 @@ msgstr "अभी: {title} ({start} – {end})"
 msgid "OK"
 msgstr "ठीक है"
 
-#: internal_player.py:2318
-#: internal_player.py:2324
-#: internal_player.py:2341
+#: internal_player.py:2348
+#: internal_player.py:2354
+#: internal_player.py:2371
 msgid "Off"
 msgstr "बंद"
 
@@ -1668,7 +1668,7 @@ msgstr "GitHub पर Accessible IPTV Client प्रोजेक्ट खो�
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "रिकॉर्ड की गई फ़ाइल को VLC में खोलें, Ctrl+T दबाएँ और सूची में दिया गया समय दर्ज करें। FFmpeg द्वारा उपलब्ध होने पर समय फ़ाइल की मीडिया घड़ी से लिया जाता है; अन्यथा यह रिकॉर्डिंग शुरू होने से बीता समय होता है और रुकावट के बाद थोड़ा आगे हो सकता है।"
 
-#: internal_player.py:1815
+#: internal_player.py:1840
 msgid "Opening"
 msgstr "खुल रहा है"
 
@@ -1713,17 +1713,17 @@ msgstr "पैकेज"
 msgid "Password"
 msgstr "पासवर्ड"
 
-#: internal_player.py:386
-#: internal_player.py:780
-#: internal_player.py:1710
-#: internal_player.py:1741
-#: internal_player.py:1752
-#: internal_player.py:1762
+#: internal_player.py:396
+#: internal_player.py:792
+#: internal_player.py:1735
+#: internal_player.py:1766
+#: internal_player.py:1777
+#: internal_player.py:1787
 msgid "Pause"
 msgstr "रोकें"
 
-#: internal_player.py:1818
-#: internal_player.py:1961
+#: internal_player.py:1843
+#: internal_player.py:1991
 msgid "Paused"
 msgstr "रुका हुआ"
 
@@ -1739,18 +1739,18 @@ msgstr "फ़ोन"
 msgid "Platform: {platform}"
 msgstr "प्लेटफ़ॉर्म: {platform}"
 
-#: internal_player.py:808
+#: internal_player.py:820
 #: main.py:3721
 #: main.py:10424
 #: main.py:10614
 msgid "Play"
 msgstr "चलाएँ"
 
-#: internal_player.py:387
+#: internal_player.py:397
 msgid "Play or Pause"
 msgstr "चलाएँ या रोकें"
 
-#: internal_player.py:494
+#: internal_player.py:504
 #: main.py:1599
 #: main.py:2690
 #: main.py:2702
@@ -1776,11 +1776,11 @@ msgstr "प्लेयर"
 msgid "Player Controls"
 msgstr "प्लेयर नियंत्रण"
 
-#: internal_player.py:654
+#: internal_player.py:664
 msgid "Player window has been destroyed."
 msgstr "प्लेयर विंडो नष्ट कर दी गई है।"
 
-#: internal_player.py:1817
+#: internal_player.py:1842
 msgid "Playing"
 msgstr "चल रहा है"
 
@@ -1809,8 +1809,8 @@ msgstr "प्लेलिस्ट प्रकार"
 msgid "Playlist view"
 msgstr "प्लेलिस्ट दृश्य"
 
-#: internal_player.py:1094
-#: internal_player.py:1399
+#: internal_player.py:1106
+#: internal_player.py:1424
 msgid "Please try another channel or try again later."
 msgstr "कृपया दूसरा चैनल आज़माएँ या बाद में पुनः प्रयास करें।"
 
@@ -1882,7 +1882,7 @@ msgstr "इस विंडो को छिपाने के लिए Escape
 msgid "Previous Channel"
 msgstr "पिछला चैनल"
 
-#: internal_player.py:513
+#: internal_player.py:523
 #: main.py:2711
 #: shortcuts.py:81
 msgid "Previous Subtitle"
@@ -1934,7 +1934,7 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "MAC यादृच्छिक करें"
 
-#: internal_player.py:511
+#: internal_player.py:521
 #: main.py:2710
 #: shortcuts.py:80
 msgid "Read Current Subtitle"
@@ -1956,19 +1956,19 @@ msgstr "हाल ही में देखा गया"
 msgid "Recently Watched..."
 msgstr "हाल ही में देखा गया..."
 
-#: internal_player.py:1416
-#: internal_player.py:1966
-#: internal_player.py:1973
-#: internal_player.py:1981
-#: internal_player.py:1989
+#: internal_player.py:1441
+#: internal_player.py:1996
+#: internal_player.py:2003
+#: internal_player.py:2011
+#: internal_player.py:2019
 msgid "Reconnecting..."
 msgstr "पुनः कनेक्ट हो रहा है..."
 
-#: internal_player.py:400
-#: internal_player.py:401
-#: internal_player.py:496
-#: internal_player.py:1770
-#: internal_player.py:1786
+#: internal_player.py:410
+#: internal_player.py:411
+#: internal_player.py:506
+#: internal_player.py:1795
+#: internal_player.py:1811
 #: main.py:2706
 #: main.py:3730
 #: main.py:4371
@@ -2037,7 +2037,7 @@ msgstr "रिकॉर्डिंग की समस्याओं का �
 msgid "Recording Warning"
 msgstr "रिकॉर्डिंग चेतावनी"
 
-#: internal_player.py:1769
+#: internal_player.py:1794
 msgid "Recording is not available from this window."
 msgstr "इस विंडो से रिकॉर्डिंग उपलब्ध नहीं है।"
 
@@ -2091,11 +2091,11 @@ msgstr "सभी प्लेलिस्ट रीफ़्रेश हो �
 msgid "Refreshing playlist: {name}"
 msgstr "प्लेलिस्ट रीफ़्रेश हो रही है: {name}"
 
-#: internal_player.py:1106
-#: internal_player.py:1968
-#: internal_player.py:1975
-#: internal_player.py:1978
-#: internal_player.py:1989
+#: internal_player.py:1118
+#: internal_player.py:1998
+#: internal_player.py:2005
+#: internal_player.py:2008
+#: internal_player.py:2019
 msgid "Refreshing stream..."
 msgstr "स्ट्रीम ताज़ा हो रही है..."
 
@@ -2128,8 +2128,8 @@ msgstr "मौजूदा सेटिंग को इस बैकअप स�
 msgid "Restore"
 msgstr "पुनर्स्थापित करें"
 
-#: internal_player.py:1710
-#: internal_player.py:1762
+#: internal_player.py:1735
+#: internal_player.py:1787
 msgid "Resume"
 msgstr "फिर से शुरू करें"
 
@@ -2362,7 +2362,7 @@ msgstr "रिकॉर्डिंग पूरी होने पर कं�
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "बंद करना रद्द किया गया। रिकॉर्डिंग के बाद स्वचालित शटडाउन अब बंद है।"
 
-#: internal_player.py:508
+#: internal_player.py:518
 #: shortcuts.py:79
 msgid "Speak Subtitles"
 msgstr "उपशीर्षक बोलकर पढ़ें"
@@ -2402,8 +2402,8 @@ msgstr "{start} पर शुरू: {title}"
 msgid "Status"
 msgstr "स्थिति"
 
-#: internal_player.py:392
-#: internal_player.py:495
+#: internal_player.py:402
+#: internal_player.py:505
 #: main.py:1600
 #: main.py:2691
 #: main.py:2703
@@ -2418,11 +2418,11 @@ msgstr "रोकें"
 msgid "Stop All Recordings"
 msgstr "सभी रिकॉर्डिंग रोकें"
 
-#: internal_player.py:393
+#: internal_player.py:403
 msgid "Stop Playback"
 msgstr "प्लेबैक रोकें"
 
-#: internal_player.py:1786
+#: internal_player.py:1811
 #: main.py:3728
 #: main.py:5310
 msgid "Stop Recording"
@@ -2432,8 +2432,8 @@ msgstr "रिकॉर्डिंग रोकें"
 msgid "Stop Recording(s)"
 msgstr "रिकॉर्डिंग रोकें"
 
-#: internal_player.py:809
-#: internal_player.py:1819
+#: internal_player.py:821
+#: internal_player.py:1844
 msgid "Stopped"
 msgstr "रुका हुआ"
 
@@ -2454,8 +2454,8 @@ msgstr "रिकॉर्डिंग रुक रही है..."
 msgid "Stopping {count} recording(s)..."
 msgstr "{count} रिकॉर्डिंग रुक रही हैं..."
 
-#: internal_player.py:1095
-#: internal_player.py:1400
+#: internal_player.py:1107
+#: internal_player.py:1425
 msgid "Stream Lost"
 msgstr "स्ट्रीम खो गई"
 
@@ -2464,17 +2464,17 @@ msgstr "स्ट्रीम खो गई"
 msgid "Stream URL"
 msgstr "स्ट्रीम URL"
 
-#: internal_player.py:1395
+#: internal_player.py:1420
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "{count} पुनः प्रयासों के बाद स्ट्रीम डिस्कनेक्ट हो गई। स्ट्रीम ऑफ़लाइन हो सकती है या समस्याएँ आ रही हो सकती हैं।"
 
-#: internal_player.py:1093
+#: internal_player.py:1105
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "स्ट्रीम कट गई। यह ऑफ़लाइन हो सकती है या इसमें समस्या हो सकती है।"
 
-#: internal_player.py:1098
-#: internal_player.py:1403
-#: internal_player.py:1991
+#: internal_player.py:1110
+#: internal_player.py:1428
+#: internal_player.py:2021
 msgid "Stream lost"
 msgstr "स्ट्रीम खो गई"
 
@@ -2487,41 +2487,41 @@ msgstr "स्ट्रीम आउटपुट"
 msgid "Subscription"
 msgstr "सदस्यता"
 
-#: internal_player.py:2366
+#: internal_player.py:2396
 msgid "Subtitle file loaded: {name}"
 msgstr "उपशीर्षक फ़ाइल लोड की गई: {name}"
 
-#: internal_player.py:2355
+#: internal_player.py:2385
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "उपशीर्षक फ़ाइलें (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: internal_player.py:2370
+#: internal_player.py:2400
 msgid "Subtitle speech needs an SRT or WebVTT file."
 msgstr "उपशीर्षक पढ़ने के लिए SRT या WebVTT फ़ाइल चाहिए।"
 
-#: internal_player.py:2467
+#: internal_player.py:2497
 msgid "Subtitle speech off"
 msgstr "उपशीर्षक वाचन बंद"
 
-#: internal_player.py:2469
+#: internal_player.py:2499
 msgid "Subtitle speech on"
 msgstr "उपशीर्षक वाचन चालू"
 
-#: internal_player.py:2471
+#: internal_player.py:2501
 msgid "Subtitle speech on. Load an SRT or WebVTT file to hear subtitles."
 msgstr "उपशीर्षक वाचन चालू। उपशीर्षक सुनने के लिए SRT या WebVTT फ़ाइल लोड करें।"
 
-#: internal_player.py:2314
+#: internal_player.py:2344
 msgid "Subtitle track unavailable"
 msgstr "सबटाइटल ट्रैक उपलब्ध नहीं है"
 
-#: internal_player.py:505
+#: internal_player.py:515
 #: main.py:2709
 #: shortcuts.py:78
 msgid "Subtitles"
 msgstr "उपशीर्षक"
 
-#: internal_player.py:2321
+#: internal_player.py:2351
 msgid "Subtitles: {name}"
 msgstr "उपशीर्षक: {name}"
 
@@ -2669,8 +2669,8 @@ msgstr "शेष समय: {time}"
 msgid "Title"
 msgstr "शीर्षक"
 
-#: internal_player.py:413
-#: internal_player.py:519
+#: internal_player.py:423
+#: internal_player.py:529
 #: shortcuts.py:83
 msgid "Toggle Full Screen"
 msgstr "पूर्ण स्क्रीन टॉगल करें"
@@ -2680,10 +2680,10 @@ msgstr "पूर्ण स्क्रीन टॉगल करें"
 msgid "Topics"
 msgstr "विषय"
 
-#: internal_player.py:2176
-#: internal_player.py:2255
-#: internal_player.py:2308
-#: internal_player.py:2320
+#: internal_player.py:2206
+#: internal_player.py:2285
+#: internal_player.py:2338
+#: internal_player.py:2350
 msgid "Track {id}"
 msgstr "ट्रैक {id}"
 
@@ -2900,15 +2900,15 @@ msgstr "दृश्य"
 msgid "View EPG..."
 msgstr "EPG देखें..."
 
-#: internal_player.py:1833
+#: internal_player.py:1858
 msgid "Vol {value}%"
 msgstr "वॉल्यूम {value}%"
 
-#: internal_player.py:418
+#: internal_player.py:428
 msgid "Volume"
 msgstr "वॉल्यूम"
 
-#: internal_player.py:426
+#: internal_player.py:436
 msgid "Volume Control"
 msgstr "वॉल्यूम नियंत्रण"
 
@@ -2926,7 +2926,7 @@ msgstr "आवाज़ कम करें"
 msgid "Volume Up"
 msgstr "आवाज़ बढ़ाएँ"
 
-#: internal_player.py:520
+#: internal_player.py:530
 #: main.py:2699
 #: main.py:2713
 #: main.py:3287
@@ -3085,7 +3085,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} Linux के लिए कॉन्फ़िगर नहीं किया गया है।"
 
-#: internal_player.py:718
+#: internal_player.py:730
 msgid "{title} - Built-in Player"
 msgstr "{title} - अंतर्निहित प्लेयर"
 
@@ -3097,7 +3097,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} से {end}"
 
-#: internal_player.py:1830
+#: internal_player.py:1855
 msgid "{value}s buffer"
 msgstr "{value} सेकंड बफ़र"
 
@@ -3105,7 +3105,7 @@ msgstr "{value} सेकंड बफ़र"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "कुल {warnings} चेतावनियाँ, {errors} त्रुटियाँ और {fatals} गंभीर त्रुटियाँ लॉग की गईं।"
 
-#: internal_player.py:1829
+#: internal_player.py:1854
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
