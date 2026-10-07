@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.146.2 - 2026-10-06
+
+### Bug fixes
+
+- Start channels faster and stop the pause after pressing Enter (#41)
+
 ## v1.146.1 - 2026-10-06
 
 ### Bug fixes
