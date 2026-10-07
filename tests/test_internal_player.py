@@ -1011,6 +1011,17 @@ class TestQueuedChannelChanges:
         frame._vlc_ops.shutdown()
         assert frame.calls == ["stop", "stop", "set_media", "play"]
 
+    def test_stop_during_a_pending_switch_keeps_the_channel_closed(self):
+        stubs, frame = self._frame()
+        frame._status_timer.Stop = lambda: None
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)
+        stopped = internal_player.InternalPlayerFrame.stop(frame, manual=True)
+        frame.gate.set()
+        stopped.result(5)
+        frame._vlc_ops.shutdown()
+        assert frame.calls == ["stop", "stop"]
+
     def test_pause_while_the_switch_is_pending_lands_after_it(self):
         stubs, frame = self._frame()
         stubs._play(frame, video_visible=False)

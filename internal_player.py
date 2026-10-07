@@ -654,6 +654,9 @@ class InternalPlayerFrame(wx.Frame):
             raise InternalPlayerUnavailableError(_("Player window has been destroyed."))
         if not url:
             raise InternalPlayerUnavailableError(_("No stream URL provided."))
+        # Armed first: resolving the new stream can take a while, and a switch
+        # already queued must see that it has been replaced.
+        self._vlc_generation = generation = getattr(self, "_vlc_generation", 0) + 1
 
         if _retry:
             self._manual_stop = False
@@ -748,7 +751,6 @@ class InternalPlayerFrame(wx.Frame):
             except Exception:
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         player = self.player
-        self._vlc_generation = generation = getattr(self, "_vlc_generation", 0) + 1
 
         def switch() -> None:
             if generation != self._vlc_generation:
@@ -793,6 +795,8 @@ class InternalPlayerFrame(wx.Frame):
         self._pending_restart = False
         self._status_timer.Stop()
         self._set_subtitle_cues([])
+        # A switch still opening must not connect after Stop.
+        self._vlc_generation = getattr(self, "_vlc_generation", 0) + 1
         stopped = self._vlc_call(self.player.stop)
         self._is_paused = True
         self._has_seen_playing = False

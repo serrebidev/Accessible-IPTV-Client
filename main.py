@@ -169,12 +169,16 @@ _MODAL_BOX_DEPTH = 0
 _MODAL_BOX_CLOSED_HOOK = None
 
 
-def _wait_for_player_stop(stopped, timeout: float = 15.0) -> None:
-    """Block (off the GUI thread) until the built-in player's stop has run."""
+def _wait_for_player_stop(stopped) -> None:
+    """Block (off the GUI thread) until the built-in player's stop has run.
+
+    No timeout: carrying on while libVLC still holds the connection is the
+    overlap a one-stream provider refuses. The stop itself never raises; only
+    a teardown that cancelled it ends the wait early."""
     if stopped is None:
         return
     try:
-        stopped.result(timeout)
+        stopped.result()
     except Exception:
         LOG.debug("_wait_for_player_stop: ignored exception", exc_info=True)
 
