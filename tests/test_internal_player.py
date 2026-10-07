@@ -1194,3 +1194,58 @@ def test_stream_lost_box_goes_through_the_app_modal_queue():
     frame = types.SimpleNamespace(_destroyed=False, GetParent=lambda: parent)
     internal_player.InternalPlayerFrame._notify_box(frame, 'lost', 'Stream Lost', 0)
     assert shown == [('lost', 'Stream Lost', 0)]
+
+
+@pytest.mark.parametrize('state,waited,expected', [
+    ('Opening', 24., []), ('Opening', 25., ['no media received']),
+    ('Buffering', 25., ['no media received']), ('Playing', 60., []),
+])
+def test_silent_server_times_out_while_still_opening(monkeypatch, state, waited, expected):
+    """libVLC stays in Opening for as long as a server sends nothing, which is
+    what Dispatcharr does while it fails a channel over. The startup timeout
+    must cover Opening, or a dead channel hangs with no recovery at all."""
+    restarts = []
+    frame = types.SimpleNamespace(
+        player=types.SimpleNamespace(get_state=lambda: state),
+        _last_state_name=state.lower(), _current_stream_kind='live',
+        _buffer_start_ts=None, _play_start_monotonic=100., _has_seen_playing=False,
+        _pending_restart=False, _early_buffer_fix_applied=False,
+        _xtream_buffer_refresh_seconds=10., _first_start_buffer_timeout_seconds=25.,
+        _is_paused=False, _gave_up=False, _pending_xtream_refresh=False,
+        _manual_stop=False, _played_since_request=False,
+        _refresh_audio_track_choice=lambda: None,
+        _maybe_apply_preferred_audio_track=lambda: None,
+        _maybe_reapply_audio_track=lambda: None,
+        _state_name=internal_player.InternalPlayerFrame._state_name,
+        _monitor_playback_progress=lambda *a: None,
+        _looks_like_xtream_live_ts=lambda: True,
+        _restart_expected_xtream_live=lambda: False,
+        _schedule_restart=lambda reason, **k: restarts.append(reason),
+        _record_buffer_event=lambda now: None,
+        _localized_state=lambda s: s, _update_status_label=lambda *a, **k: None,
+    )
+    monkeypatch.setattr(internal_player.time, 'monotonic', lambda: 100. + waited)
+    internal_player.InternalPlayerFrame._on_timer(frame, None)
+    assert restarts == expected
+
+
+@pytest.mark.parametrize('played,expected_gave_up', [(False, True), (True, False)])
+def test_channel_that_never_played_is_reported_after_the_deadline(monkeypatch, played, expected_gave_up):
+    later, boxes = [], []
+    monkeypatch.setattr(internal_player.wx, 'CallLater', lambda ms, fn: later.append(fn))
+    monkeypatch.setattr(internal_player.wx, 'CallAfter', lambda fn, *a: boxes.append(a))
+    monkeypatch.setattr(internal_player.time, 'monotonic', lambda: 131.)
+    frame = types.SimpleNamespace(
+        _destroyed=False, _manual_stop=False, _gave_up=False,
+        _current_url='http://a/live/u/p/1', _current_title='A',
+        _pending_xtream_refresh=False, _pending_restart=False,
+        _last_restart_ts=120.0, _reconnect_reset_window=120.0, _restart_cooldown=2.0,
+        _reconnect_attempts=1, _max_reconnect_attempts=6, _last_restart_reason='',
+        _first_play_request_ts=100., _first_play_deadline_seconds=30.,
+        _played_since_request=played, _vlc_generation=1,
+        _update_status_label=lambda *a, **k: None, _notify_box=None,
+        _reconnect_delay_ms=internal_player.InternalPlayerFrame._reconnect_delay_ms,
+    )
+    internal_player.InternalPlayerFrame._schedule_restart(frame, 'no media received')
+    assert frame._gave_up is expected_gave_up
+    assert bool(boxes) is expected_gave_up and bool(later) is not expected_gave_up

@@ -253,7 +253,17 @@ class InternalPlayerFrame(wx.Frame):
         self._xtream_buffer_refresh_seconds = 10.0
         self._xtream_refresh_count = 0
         self._max_xtream_refreshes = 6
-        self._first_start_buffer_timeout_seconds = 20.0
+        # No media yet: libVLC sits in Opening for as long as a server stays
+        # silent, and Dispatcharr stays silent while it fails a channel over
+        # through its backup streams (up to its "Channel Initialization
+        # Timeout"). Leaving earlier makes it tear the channel down and start
+        # again from the first, dead stream, so this waits a little longer.
+        self._first_start_buffer_timeout_seconds = 25.0
+        # A channel that has not played once this long after it was chosen
+        # is reported as offline instead of retried for minutes.
+        self._first_play_deadline_seconds = 30.0
+        self._first_play_request_ts = 0.0
+        self._played_since_request = False
         self._detected_content_ts = False  # True if stream detected as TS via Content-Type
         self._refresh_ts_floor()
         self._update_cache_bounds()
@@ -680,6 +690,8 @@ class InternalPlayerFrame(wx.Frame):
             self._xtream_refresh_count = 0
             self._last_restart_reason = ""
             self._gave_up = False
+            self._first_play_request_ts = time.monotonic()
+            self._played_since_request = False
             self._video_visible = bool(video_visible)
             self._begin_new_stream_audio_state()
             # Retry adjustments belong to this stream, not every later channel.
@@ -1381,7 +1393,15 @@ class InternalPlayerFrame(wx.Frame):
             return
         if now - self._last_restart_ts < self._restart_cooldown:
             return
-        if self._reconnect_attempts >= self._max_reconnect_attempts:
+        never_played_too_long = bool(
+            not getattr(self, "_played_since_request", True)
+            and getattr(self, "_first_play_request_ts", 0.0)
+            and now - self._first_play_request_ts >= self._first_play_deadline_seconds
+        )
+        if never_played_too_long or self._reconnect_attempts >= self._max_reconnect_attempts:
+            if never_played_too_long:
+                LOG.info("Giving up: no media %.0fs after the channel was chosen.",
+                         now - self._first_play_request_ts)
             if not self._gave_up:
                 self._gave_up = True
                 self._manual_stop = True
@@ -1394,7 +1414,7 @@ class InternalPlayerFrame(wx.Frame):
                     self._notify_box,
                     _("Stream disconnected after {count} retries. "
                       "The stream may be offline or experiencing issues.").format(
-                        count=self._max_reconnect_attempts)
+                        count=self._reconnect_attempts)
                     + reason_hint + "\n\n"
                     + _("Please try another channel or try again later."),
                     _("Stream Lost"),
@@ -1907,6 +1927,7 @@ class InternalPlayerFrame(wx.Frame):
             self._last_state_name = state_key
             if state_key == "playing":
                 self._has_seen_playing = True
+                self._played_since_request = True
                 self._stall_ticks = 0
                 self._xtream_refresh_count = 0
             elif state_key != "playing":
@@ -1946,17 +1967,21 @@ class InternalPlayerFrame(wx.Frame):
                 self._schedule_restart("early buffering detected", adjust_buffer=True)
             elif allow_recovery and not handled_xtream_refresh and not self._pending_restart and buffer_duration >= 10.0:
                 self._schedule_restart("prolonged buffering", adjust_buffer=True)
-            elif (
-                not allow_recovery
-                and self._play_start_monotonic
-                and not self._pending_restart
-                and since_start >= self._first_start_buffer_timeout_seconds
-            ):
-                self._schedule_restart("no media received", adjust_buffer=True)
         else:
             if self._buffer_start_ts is not None:
                 self._record_buffer_event(now)
             self._buffer_start_ts = None
+
+        if (
+            not self._has_seen_playing
+            and state_key in ("nothingspecial", "opening", "buffering")
+            and self._play_start_monotonic
+            and not self._pending_restart
+            and now - self._play_start_monotonic >= self._first_start_buffer_timeout_seconds
+        ):
+            # Opening counts too: a silent server never gets libVLC to
+            # Buffering. Nothing arrived, so a bigger buffer would not help.
+            self._schedule_restart("no media received")
 
         prefix = _("Paused") if self._is_paused else self._localized_state(state_name)
 
