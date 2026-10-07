@@ -748,12 +748,17 @@ class InternalPlayerFrame(wx.Frame):
             except Exception:
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
         player = self.player
+        self._vlc_generation = generation = getattr(self, "_vlc_generation", 0) + 1
 
         def switch() -> None:
+            if generation != self._vlc_generation:
+                return  # a newer channel replaced this one before it opened
             try:
                 player.stop()
             except Exception:
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
+            if generation != self._vlc_generation:
+                return  # replaced while the old stream was unwinding
             try:
                 player.set_media(media)
                 self._apply_audio_output_device()
@@ -775,7 +780,10 @@ class InternalPlayerFrame(wx.Frame):
         if video_visible and focus_controls:
             wx.CallAfter(self.play_pause_btn.SetFocus)
 
-    def stop(self, _evt: Optional[wx.Event] = None, manual: bool = False) -> None:
+    def stop(self, _evt: Optional[wx.Event] = None, manual: bool = False):
+        """Stop playback. Returns a future that is done once libVLC has really
+        let go of the stream (None when it already has): a hand-off to another
+        connection on a one-stream provider waits on it, off the GUI thread."""
         manual_stop = manual or (_evt is not None)
         if manual_stop:
             self._manual_stop = True
@@ -785,11 +793,12 @@ class InternalPlayerFrame(wx.Frame):
         self._pending_restart = False
         self._status_timer.Stop()
         self._set_subtitle_cues([])
-        self._vlc_call(self.player.stop)
+        stopped = self._vlc_call(self.player.stop)
         self._is_paused = True
         self._has_seen_playing = False
         self.play_pause_btn.SetLabel(_("Play"))
         self._update_status_label(_("Stopped"), priority=2)
+        return stopped
 
     # ---------------------------------------------------------------- internal
     def _vlc_call(self, fn):
@@ -1658,6 +1667,14 @@ class InternalPlayerFrame(wx.Frame):
             target.SetFocus()
 
     def _on_toggle_pause(self, _event: Optional[wx.Event] = None) -> None:
+        switch = getattr(self, "_vlc_switch", None)
+        if switch is not None and not switch.done() and not self._manual_stop:
+            # libVLC still reports the old stream's state; act on what the
+            # user asked for and let it land after the new stream starts.
+            self._is_paused = not self._is_paused
+            self._vlc_call(lambda paused=int(self._is_paused): self.player.set_pause(paused))
+            self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
+            return
         state = None
         try:
             state = self.player.get_state()

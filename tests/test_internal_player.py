@@ -983,6 +983,44 @@ class TestChannelChangeDoesNotBlockTheGui:
         frame._vlc_ops.shutdown()
 
 
+class TestQueuedChannelChanges:
+    """Codex review on #41: a switch overtaken by a newer channel must not open
+    its stream, and Pause pressed before the new stream starts must stick."""
+
+    def _frame(self):
+        from concurrent.futures import ThreadPoolExecutor
+        stubs = TestReconnectKeepsVideoHidden()
+        frame = stubs._stub_frame()
+        frame.gate, frame.calls = threading.Event(), []
+        frame.entered = threading.Event()
+        frame.player.stop = lambda: (frame.entered.set(), frame.gate.wait(5),
+                                     frame.calls.append("stop"))
+        frame.player.set_media = lambda m: frame.calls.append("set_media")
+        frame.player.play = lambda: frame.calls.append("play")
+        frame.player.set_pause = lambda v: frame.calls.append(("pause", v))
+        frame._vlc_ops = ThreadPoolExecutor(max_workers=1)
+        return stubs, frame
+
+    def test_superseded_switch_never_opens_its_stream(self):
+        stubs, frame = self._frame()
+        stubs._play(frame, video_visible=False)
+        assert frame.entered.wait(5)  # the first switch is mid-stop
+        stubs._play(frame, video_visible=False)
+        frame.gate.set()
+        frame._vlc_switch.result(5)
+        frame._vlc_ops.shutdown()
+        assert frame.calls == ["stop", "stop", "set_media", "play"]
+
+    def test_pause_while_the_switch_is_pending_lands_after_it(self):
+        stubs, frame = self._frame()
+        stubs._play(frame, video_visible=False)
+        internal_player.InternalPlayerFrame._on_toggle_pause(frame)
+        assert frame._is_paused is True
+        frame.gate.set()
+        frame._vlc_ops.shutdown(wait=True)
+        assert frame.calls == ["stop", "set_media", "play", ("pause", 1)]
+
+
 class TestAudioOutputDeviceEnumeration:
     """Opening Audio Output Device from the player menu used to crash the app.
 
