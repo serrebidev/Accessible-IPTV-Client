@@ -1104,8 +1104,11 @@ class InternalPlayerFrame(wx.Frame):
         self._last_restart_ts = time.monotonic()
         LOG.info("Xtream TS segment ended; refreshing stream without consuming retries.")
         self._update_status_label(_("Refreshing stream..."), priority=2)
+        generation = getattr(self, "_vlc_generation", 0)
 
         def _do_restart() -> None:
+            if generation != getattr(self, "_vlc_generation", 0):
+                return  # a newer play() or stop() owns the player now
             self._pending_restart = False
             self._pending_xtream_refresh = False
             if self._destroyed or self._manual_stop or not self._current_url:
@@ -1411,8 +1414,13 @@ class InternalPlayerFrame(wx.Frame):
             self._max_reconnect_attempts,
         )
         self._update_status_label(_("Reconnecting..."), priority=2)
+        # A channel change during the 2-8 s backoff must not be reopened by
+        # this retry when it fires (Codex review on #42).
+        generation = getattr(self, "_vlc_generation", 0)
 
         def _do_restart() -> None:
+            if generation != getattr(self, "_vlc_generation", 0):
+                return  # a newer play() or stop() owns the player now
             self._pending_restart = False
             if self._destroyed or not self._current_url or self._manual_stop or self._gave_up:
                 return
