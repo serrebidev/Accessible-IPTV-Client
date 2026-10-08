@@ -77,6 +77,8 @@ from audio_tracks import (
     select_preferred_audio_track,
 )
 from external_player import ExternalPlayerLauncher
+from subtitle_speech import SubtitleSpeechManager
+from app_tts import AppTtsBackend
 import recorder
 from recorder import RECORDING_FORMATS
 from recorder import format_duration, format_size, parse_ffmpeg_progress, written_size
@@ -1770,6 +1772,19 @@ class IPTVClient(wx.Frame):
         self.caster = None
 
         self.player_launcher = ExternalPlayerLauncher()
+
+        # Subtitle speech (issue #37): one player-independent cue queue.
+        # Screen-reader speech is the default; the app-owned TTS backend is
+        # opt-in and Windows-only.
+        self._subtitle_manager = SubtitleSpeechManager(self._speak_subtitle_cue)
+        self._subtitle_manager.set_auto_speech(
+            self._bool_pref(self.config.get("speak_subtitles", False)))
+        self._app_tts = AppTtsBackend()
+        if self._app_tts.available:
+            self._app_tts.set_volume(self.config.get("subtitle_app_volume", 100))
+            saved_output = self.config.get("subtitle_app_output", "")
+            if saved_output:
+                self._app_tts.set_output(saved_output)
 
         # Recording Manager
         self.recorder = recorder.RecordingManager()
@@ -3506,6 +3521,31 @@ class IPTVClient(wx.Frame):
                 self._announcement_items.append(item)
                 self.Bind(wx.EVT_MENU, lambda _evt, value=level: self._set_announcement_level(value), item)
             om.AppendSubMenu(announcement_menu, _("Automatic Announcements"))
+            # Subtitle speech (issue #37): backend choice, app-voice settings,
+            # and the honest per-player capability report.
+            speech_menu = wx.Menu()
+            self._subtitle_backend_items = []
+            backend = self._subtitle_backend()
+            for value, label in (("screen_reader", _("Speak through screen reader")),
+                                 ("app_tts", _("Speak through application voice"))):
+                item = speech_menu.AppendRadioItem(wx.ID_ANY, label)
+                item.Check(value == backend)
+                self.Bind(wx.EVT_MENU, lambda _evt, v=value: self._set_subtitle_backend(v), item)
+                self._subtitle_backend_items.append((item, value))
+            speech_menu.AppendSeparator()
+            self._subtitle_app_tts_items = []
+            vol_item = speech_menu.Append(wx.ID_ANY, _("Application voice volume..."))
+            self.Bind(wx.EVT_MENU, lambda _evt: self._set_app_tts_volume(), vol_item)
+            self._subtitle_app_tts_items.append(vol_item)
+            out_item = speech_menu.Append(wx.ID_ANY, _("Application voice output..."))
+            self.Bind(wx.EVT_MENU, lambda _evt: self._choose_app_tts_output(), out_item)
+            self._subtitle_app_tts_items.append(out_item)
+            speech_menu.AppendSeparator()
+            cap_item = speech_menu.Append(wx.ID_ANY, _("Subtitle capabilities..."))
+            self.Bind(wx.EVT_MENU, lambda _evt: self._show_subtitle_capabilities(), cap_item)
+            om.AppendSubMenu(speech_menu, _("Subtitle Speech"))
+            user_guide.set_menu_help(self, speech_menu, "subtitle-speech")
+            self._sync_subtitle_speech_menu()
             shortcut_item = om.Append(wx.ID_ANY, _("Keyboard Shortcuts..."))
             self.Bind(wx.EVT_MENU, self._customize_shortcuts, shortcut_item)
             mb.Append(om, _("Options"))
@@ -6461,6 +6501,14 @@ class IPTVClient(wx.Frame):
                 self._release_recordings_on_exit()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            try:
+                self.player_launcher.close_subtitle_adapter()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: subtitle adapter close failed", exc_info=True)
+            try:
+                self._app_tts.close()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: app TTS close failed", exc_info=True)
             if self.caster:
                 self.caster.stop()
             if self.tray_icon:
@@ -8418,6 +8466,144 @@ class IPTVClient(wx.Frame):
 
     def _on_player_speak_subtitles(self, enabled: bool) -> None:
         self.config["speak_subtitles"] = bool(enabled)
+        self._subtitle_manager.set_auto_speech(bool(enabled))
+
+    # ------------------------------------------------------- subtitle speech
+    # Issue #37: player-independent subtitle speech. The screen reader
+    # (JAWS/NVDA) keeps ownership of its voice, volume and audio endpoint;
+    # the optional application-owned TTS backend owns its own volume and
+    # output device instead. Neither ever affects the other.
+
+    def _speak_subtitle_cue(self, text: str) -> None:
+        """Route one subtitle cue to the configured speech backend."""
+        if (self.config.get("subtitle_speech_backend", "screen_reader") == "app_tts"
+                and self._app_tts.available
+                and self._app_tts.speak(text)):
+            return
+        live_announce.speak(text)
+
+    def _subtitle_backend(self) -> str:
+        backend = self.config.get("subtitle_speech_backend", "screen_reader")
+        if backend == "app_tts" and not self._app_tts.available:
+            return "screen_reader"
+        return backend if backend in ("screen_reader", "app_tts") else "screen_reader"
+
+    def _set_subtitle_backend(self, backend: str) -> None:
+        if backend == "app_tts" and not self._app_tts.available:
+            message_box(
+                _("The application voice is only available on Windows with SAPI."),
+                _("Subtitle Speech"), wx.OK | wx.ICON_INFORMATION)
+            return
+        self.config["subtitle_speech_backend"] = backend
+        save_config(self.config)
+        self._sync_subtitle_speech_menu()
+        if backend == "app_tts":
+            live_announce.speak(_("Subtitle speech will use the application voice."))
+        else:
+            live_announce.speak(_("Subtitle speech will use your screen reader."))
+
+    def _set_app_tts_volume(self) -> None:
+        if not self._app_tts.available:
+            return
+        dlg = wx.Dialog(self, title=_("Application voice volume"))
+        try:
+            panel = wx.Panel(dlg)
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            label = wx.StaticText(panel, label=_("Volume:"))
+            slider = wx.Slider(panel, value=int(self._app_tts.volume),
+                               minValue=0, maxValue=100,
+                               style=wx.SL_HORIZONTAL | wx.SL_LABELS)
+            sizer.Add(label, 0, wx.ALL, 8)
+            sizer.Add(slider, 0, wx.EXPAND | wx.ALL, 8)
+            buttons = wx.StdDialogButtonSizer()
+            ok = wx.Button(panel, wx.ID_OK, _("OK"))
+            cancel = wx.Button(panel, wx.ID_CANCEL, _("Cancel"))
+            buttons.AddButton(ok)
+            buttons.AddButton(cancel)
+            buttons.Realize()
+            sizer.Add(buttons, 0, wx.ALIGN_CENTER | wx.ALL, 8)
+            panel.SetSizer(sizer)
+            sizer.Fit(dlg)
+            slider.SetFocus()
+            if dlg.ShowModal() == wx.ID_OK:
+                level = int(slider.GetValue())
+                if self._app_tts.set_volume(level):
+                    self.config["subtitle_app_volume"] = level
+                    save_config(self.config)
+        finally:
+            dlg.Destroy()
+
+    def _choose_app_tts_output(self) -> None:
+        if not self._app_tts.available:
+            return
+        outputs = self._app_tts.list_outputs()
+        if not outputs:
+            message_box(_("No application voice outputs found."),
+                        _("Subtitle Speech"), wx.OK | wx.ICON_INFORMATION)
+            return
+        dlg = wx.SingleChoiceDialog(
+            self, _("Output device for the application voice:"),
+            _("Application voice output"), outputs)
+        try:
+            current = self.config.get("subtitle_app_output", "")
+            for i, name in enumerate(outputs):
+                if current and current.lower() in name.lower():
+                    dlg.SetSelection(i)
+                    break
+            if dlg.ShowModal() == wx.ID_OK:
+                choice = dlg.GetStringSelection()
+                if self._app_tts.set_output(choice):
+                    self.config["subtitle_app_output"] = choice
+                    save_config(self.config)
+                    live_announce.speak(
+                        _("Application voice output: {name}").format(name=choice))
+                else:
+                    message_box(_("Could not select that output device."),
+                                _("Subtitle Speech"), wx.OK | wx.ICON_WARNING)
+        finally:
+            dlg.Destroy()
+
+    def _show_subtitle_capabilities(self) -> None:
+        """Honest per-player report of subtitle-text capabilities (issue #37)."""
+        players = ["built-in", "MPV", "VLC", "MPC", "MPC-BE", "PotPlayer", "Kodi"]
+        lines = []
+        for player in players:
+            state = self._subtitle_manager.get_capability(player, "timed_cues")
+            if state == "available":
+                desc = _("available")
+            elif state == "unavailable":
+                desc = _("not supported by this player")
+            else:
+                desc = _("not verified yet")
+            lines.append(f"{player}: {desc}")
+        lines.append("")
+        lines.append(_("Only players with a documented timed-text API can provide "
+                        "subtitle words. The built-in player reads SRT and WebVTT "
+                        "files; MPV works through the application's own session."))
+        message_box("\n".join(lines), _("Subtitle Capabilities"),
+                    wx.OK | wx.ICON_INFORMATION)
+
+    def _sync_subtitle_speech_menu(self) -> None:
+        backend = self._subtitle_backend()
+        for item, value in getattr(self, "_subtitle_backend_items", []):
+            item.Check(value == backend)
+        for item in getattr(self, "_subtitle_app_tts_items", []):
+            item.Enable(self._app_tts.available)
+
+    def _on_mpv_subtitle_state(self, state: str) -> None:
+        """The MPV adapter reports available/first_cue/unavailable; reflect honestly."""
+        if state == "available":
+            # The session is up, but timed cues stay unverified until the
+            # first real cue arrives rather than being promised up front.
+            return
+        if state == "first_cue":
+            for cap in ("timed_cues", "read_current", "read_previous"):
+                self._subtitle_manager.set_capability("MPV", cap, "available")
+            live_announce.speak(_("MPV subtitle speech on."))
+            return
+        for cap in ("timed_cues", "read_current", "read_previous"):
+            self._subtitle_manager.set_capability("MPV", cap, "unverified")
+        live_announce.speak(_("MPV subtitle speech unavailable."))
         save_config(self.config)
 
     def _on_player_audio_device(self, device_id: str) -> None:
@@ -8575,8 +8761,20 @@ class IPTVClient(wx.Frame):
                 message_box(_("Failed to start built-in player:\n{error}").format(error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
             return
 
-        # External player launch
-        ok, err = self.player_launcher.launch(player, url, custom_path)
+        # External player launch. With subtitle speech on, MPV goes through
+        # the application-owned session adapter (issue #37); if the adapter
+        # cannot be established the launch falls back to the plain handoff.
+        subtitle_manager = None
+        if self._bool_pref(self.config.get("speak_subtitles", False)):
+            resolved = ExternalPlayerLauncher._resolve_player_name(player, custom_path)
+            if resolved == "MPV":
+                subtitle_manager = self._subtitle_manager
+                self._subtitle_manager.set_auto_speech(True)
+        ok, err = self.player_launcher.launch(
+            player, url, custom_path,
+            subtitle_manager=subtitle_manager,
+            subtitle_state_cb=self._on_mpv_subtitle_state,
+        )
         if not ok:
             message_box(_("Failed to launch {player}:\n{error}").format(player=player, error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
         elif stream_kind == "live":

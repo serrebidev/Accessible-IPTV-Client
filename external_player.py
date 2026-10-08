@@ -1,5 +1,6 @@
 import os
 import platform
+import shutil
 import subprocess
 import json
 import socket
@@ -11,6 +12,11 @@ from typing import Tuple
 from i18n import gettext as _
 import logging
 
+try:
+    from mpv_subtitle_adapter import MpvSubtitleAdapter
+except Exception:  # pragma: no cover - adapter is optional at runtime
+    MpvSubtitleAdapter = None
+
 LOG = logging.getLogger(__name__)
 
 
@@ -19,11 +25,25 @@ class ExternalPlayerLauncher:
         self._launch_guard_lock = threading.Lock()
         self._last_launch_ts = 0.0
         self._last_launch_url = ""
+        self._mpv_adapter = None
 
-    def launch(self, player_name: str, url: str, custom_path: str = "") -> Tuple[bool, str]:
+    def launch(
+        self,
+        player_name: str,
+        url: str,
+        custom_path: str = "",
+        subtitle_manager=None,
+        subtitle_state_cb=None,
+    ) -> Tuple[bool, str]:
         """
         Launches the specified external player with the given URL.
         Returns (success, error_message).
+
+        When ``subtitle_manager`` is given and the player is MPV, the launch
+        goes through the application-owned MPV session adapter (issue #37) so
+        subtitle text can be spoken. If the adapter cannot be established,
+        the launch falls back to the plain handoff and speech is reported
+        unavailable; playback itself is never blocked.
         """
         # Guard against accidental double-invocation of the same stream.
         with self._launch_guard_lock:
@@ -32,6 +52,14 @@ class ExternalPlayerLauncher:
                 return True, "" # Debounced
             self._last_launch_ts = now
             self._last_launch_url = url
+
+        # MPV with subtitle speech: use our own session adapter.
+        if subtitle_manager is not None and MpvSubtitleAdapter is not None:
+            resolved = self._resolve_player_name(player_name, custom_path)
+            if resolved == "MPV":
+                if self._launch_mpv_subtitled(url, subtitle_manager, subtitle_state_cb):
+                    return True, ""
+                LOG.info("MPV subtitle adapter unavailable; plain handoff instead")
 
         # If using mpv, try to reuse an existing instance via IPC first.
         if player_name == "MPV":
@@ -104,6 +132,65 @@ class ExternalPlayerLauncher:
                 else: err = _("{player} is not configured for Linux.").format(player=player_name)
         
         return ok, err
+
+    @staticmethod
+    def _resolve_player_name(player_name: str, custom_path: str = "") -> str:
+        """Map a launch request (including Custom paths) to a known player."""
+        if player_name == "Custom" and custom_path:
+            pname = os.path.basename(custom_path).lower()
+            if "mpv" in pname:
+                return "MPV"
+            if "vlc" in pname:
+                return "VLC"
+            if "mpc-be" in pname or "mpcbe" in pname:
+                return "MPC-BE"
+            if pname.startswith("mpc-hc") or pname.startswith("mpc"):
+                return "MPC"
+        return player_name
+
+    def _find_mpv_exe(self):
+        """Locate the MPV executable the same way launch() does."""
+        system = platform.system()
+        if system == "Windows":
+            for exe in (r"C:\\Program Files\\mpv\\mpv.exe",
+                        r"C:\\Program Files (x86)\\mpv\\mpv.exe"):
+                if os.path.exists(exe):
+                    return exe
+            return None
+        if system == "Darwin":
+            return None  # no bundled macOS path known; keep honest
+        return shutil.which("mpv")
+
+    def _launch_mpv_subtitled(self, url, manager, state_cb=None) -> bool:
+        """Launch our own MPV behind the subtitle-text session adapter."""
+        self.close_subtitle_adapter()
+        exe = self._find_mpv_exe()
+        if not exe:
+            LOG.info("MPV subtitle adapter: mpv executable not found")
+            return False
+        try:
+            adapter = MpvSubtitleAdapter.launch(exe, url, manager, state_cb)
+        except Exception:
+            LOG.warning("MPV subtitle adapter: launch failed", exc_info=True)
+            return False
+        if adapter is None:
+            return False
+        self._mpv_adapter = adapter
+        return True
+
+    def close_subtitle_adapter(self) -> None:
+        """Drop any active MPV subtitle session (its MPV keeps nothing)."""
+        adapter, self._mpv_adapter = self._mpv_adapter, None
+        if adapter is not None:
+            try:
+                adapter.close()
+            except Exception:
+                LOG.debug("close_subtitle_adapter failed", exc_info=True)
+
+    @property
+    def mpv_subtitle_active(self) -> bool:
+        adapter = self._mpv_adapter
+        return bool(adapter is not None and adapter.available)
 
     def _argv_for(self, player_name: str, exe_or_cmd: str, is_windows: bool, url: str) -> list:
         # Build argv with best-effort single-instance/enqueue flags where supported.
