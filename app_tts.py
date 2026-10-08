@@ -244,6 +244,8 @@ class AppTtsBackend:
         self._voice = None
         self._lock = threading.Lock()
         self._volume = 100
+        self._selected_output = ""  # friendly-name fragment, "" = SAPI default
+        self._speak_failed = False  # log the first failure only, not a storm
         if not _IS_WINDOWS:
             return
         try:
@@ -268,9 +270,15 @@ class AppTtsBackend:
         try:
             with self._lock:
                 self._voice.call("Speak", text, _SPF_ASYNC | _SPF_PURGEBEFORESPEAK)
+            self._speak_failed = False
             return True
         except _ComError:
-            LOG.warning("app_tts: Speak failed", exc_info=True)
+            # A removed Bluetooth/USB device lands here. Log once; the caller
+            # degrades to screen-reader speech and retries on the next cue,
+            # which is also how a returned device is picked back up.
+            if not self._speak_failed:
+                self._speak_failed = True
+                LOG.warning("app_tts: Speak failed", exc_info=True)
             return False
 
     def stop(self) -> None:
@@ -346,6 +354,7 @@ class AppTtsBackend:
                         if name.lower() in desc.lower():
                             self._voice.put("AudioOutput", item)
                             item.release()
+                            self._selected_output = name
                             return True
                         item.release()
                 finally:
@@ -354,6 +363,38 @@ class AppTtsBackend:
         except _ComError:
             LOG.warning("app_tts: SetOutput failed", exc_info=True)
             return False
+
+    def reset_output(self) -> bool:
+        """Best-effort return to the SAPI default output (issue #37).
+
+        Used by the "use the system default" device-loss policy. Putting
+        VT_EMPTY for AudioOutput asks SAPI for its default; on failure the
+        caller keeps the screen-reader fallback, so this never breaks speech.
+        """
+        if not self._voice:
+            return False
+        try:
+            with self._lock:
+                self._voice.put("AudioOutput", None)
+            self._selected_output = ""
+            return True
+        except _ComError:
+            LOG.warning("app_tts: reset_output failed", exc_info=True)
+            return False
+
+    @property
+    def selected_output(self) -> str:
+        """The output fragment chosen via set_output, "" for SAPI default."""
+        return self._selected_output
+
+    def output_present(self) -> bool:
+        """True when the selected output still exists (device-loss check)."""
+        if not self._voice or not self._selected_output:
+            return True  # default output: nothing specific to lose
+        return any(
+            self._selected_output.lower() in name.lower()
+            for name in self.list_outputs()
+        )
 
     def close(self) -> None:
         voice, self._voice = self._voice, None

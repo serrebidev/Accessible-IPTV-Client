@@ -413,40 +413,61 @@ class MpvSubtitleAdapter:
         if pid == _OBS_SID:
             if data != self._sid:
                 self._sid = data
-                self._generation += 1
+                self._bump_generation()
                 self._manager.clear()
             return
         if pid == _OBS_SUB_TEXT:
+            previous = self._sub_text
             self._sub_text = data
-            self._emit_cue_if_ready()
+            # Text is the cue-display event: only a changed, non-empty value
+            # is a new cue. Timing-only arrivals are merged in place below.
+            if data and data != previous:
+                self._emit_new_cue()
         elif pid == _OBS_SUB_START:
             self._sub_start = data
-            self._emit_cue_if_ready()
+            self._update_timing()
         elif pid == _OBS_SUB_END:
             self._sub_end = data
-            self._emit_cue_if_ready()
+            self._update_timing()
 
-    def _emit_cue_if_ready(self) -> None:
-        text = self._sub_text
-        if not text:  # None (unavailable) or "" (nothing displayed)
-            return
+    def _bump_generation(self) -> None:
+        """New media generation: drop pending property state so a late or
+        stale event from the old stream can never be spoken under the new one."""
+        self._generation += 1
+        self._sub_text = None
+        self._sub_start = None
+        self._sub_end = None
+
+    def _timing_ms(self, value) -> Optional[int]:
         try:
-            start_ms = int(float(self._sub_start) * 1000) if self._sub_start is not None else None
+            return int(float(value) * 1000) if value is not None else None
         except (TypeError, ValueError):
-            start_ms = None
-        try:
-            end_ms = int(float(self._sub_end) * 1000) if self._sub_end is not None else None
-        except (TypeError, ValueError):
-            end_ms = None
+            return None
+
+    def _emit_new_cue(self) -> None:
         track = "" if self._sid is None else str(self._sid)
-        self._manager.on_cue(text, start_ms=start_ms, end_ms=end_ms,
-                             source="mpv-ipc", track=track)
+        self._manager.on_cue(
+            self._sub_text,
+            start_ms=self._timing_ms(self._sub_start),
+            end_ms=self._timing_ms(self._sub_end),
+            source="mpv-ipc",
+            track=track,
+            generation=self._generation,
+        )
         if not self._first_cue_sent:
             self._first_cue_sent = True
             self._report("first_cue")
 
+    def _update_timing(self) -> None:
+        """Timing arrived without new text: fill in the current cue only."""
+        self._manager.update_cue_timing(
+            self._timing_ms(self._sub_start),
+            self._timing_ms(self._sub_end),
+            generation=self._generation,
+        )
+
     def _on_end_of_file(self, _msg: dict) -> None:
-        self._generation += 1
+        self._bump_generation()
         self._manager.clear()
 
     def _on_disconnect(self) -> None:

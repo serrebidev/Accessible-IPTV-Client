@@ -1775,16 +1775,24 @@ class IPTVClient(wx.Frame):
 
         # Subtitle speech (issue #37): one player-independent cue queue.
         # Screen-reader speech is the default; the app-owned TTS backend is
-        # opt-in and Windows-only.
-        self._subtitle_manager = SubtitleSpeechManager(self._speak_subtitle_cue)
+        # opt-in and Windows-only. Speech output is marshalled onto the UI
+        # thread because cue sources (the MPV IPC reader) run off it.
+        self._subtitle_manager = SubtitleSpeechManager(
+            self._speak_subtitle_cue,
+            ui_thread=wx.CallAfter,
+            on_speak_error=self._on_subtitle_speak_error,
+        )
         self._subtitle_manager.set_auto_speech(
             self._bool_pref(self.config.get("speak_subtitles", False)))
         self._app_tts = AppTtsBackend()
+        self._app_tts_failure_announced = False
         if self._app_tts.available:
             self._app_tts.set_volume(self.config.get("subtitle_app_volume", 100))
             saved_output = self.config.get("subtitle_app_output", "")
-            if saved_output:
-                self._app_tts.set_output(saved_output)
+            if saved_output and not self._app_tts.set_output(saved_output):
+                # Saved device is gone (unplugged Bluetooth/USB, ...): apply
+                # the device-loss policy now rather than failing silently.
+                self._apply_app_tts_device_policy()
 
         # Recording Manager
         self.recorder = recorder.RecordingManager()
@@ -3540,6 +3548,22 @@ class IPTVClient(wx.Frame):
             out_item = speech_menu.Append(wx.ID_ANY, _("Application voice output..."))
             self.Bind(wx.EVT_MENU, lambda _evt: self._choose_app_tts_output(), out_item)
             self._subtitle_app_tts_items.append(out_item)
+            # Device-loss policy (issue #37): what the application voice does
+            # when its selected output disappears (unplugged USB/Bluetooth).
+            # "pause" is the privacy-preserving default: never silently
+            # reroute previously private captions to another device.
+            self._subtitle_device_policy_items = []
+            policy = self.config.get("subtitle_app_device_policy", "pause")
+            for value, label in (
+                    ("pause", _("On device loss: pause until the device returns")),
+                    ("default", _("On device loss: use the system default"))):
+                item = speech_menu.AppendRadioItem(wx.ID_ANY, label)
+                item.Check(value == policy)
+                self.Bind(wx.EVT_MENU,
+                          lambda _evt, v=value: self._set_app_tts_device_policy(v),
+                          item)
+                self._subtitle_device_policy_items.append((item, value))
+                self._subtitle_app_tts_items.append(item)
             speech_menu.AppendSeparator()
             cap_item = speech_menu.Append(wx.ID_ANY, _("Subtitle capabilities..."))
             self.Bind(wx.EVT_MENU, lambda _evt: self._show_subtitle_capabilities(), cap_item)
@@ -8475,12 +8499,50 @@ class IPTVClient(wx.Frame):
     # output device instead. Neither ever affects the other.
 
     def _speak_subtitle_cue(self, text: str) -> None:
-        """Route one subtitle cue to the configured speech backend."""
+        """Route one subtitle cue to the configured speech backend.
+
+        Runs on the UI thread (marshalled by the subtitle manager). If the
+        application voice fails, the cue still reaches the screen reader; the
+        device-loss policy decides what happens to the selected output.
+        """
         if (self.config.get("subtitle_speech_backend", "screen_reader") == "app_tts"
                 and self._app_tts.available
                 and self._app_tts.speak(text)):
+            self._app_tts_failure_announced = False
             return
+        if self.config.get("subtitle_speech_backend") == "app_tts":
+            self._apply_app_tts_device_policy()
         live_announce.speak(text)
+
+    def _on_subtitle_speak_error(self, text: str, _exc: Exception) -> None:
+        """Accessible failure path (issue #37): a debug log alone is not
+        enough; the user hears the failure as text through the live region."""
+        live_announce.speak(_("Subtitle speech failed."))
+
+    def _apply_app_tts_device_policy(self) -> None:
+        """Device-loss policy for the application voice (issue #37).
+
+        "pause" (the privacy-preserving default): keep the selected output and
+        retry it on every cue, so speech resumes by itself when the device
+        returns and nothing is ever silently rerouted to loudspeakers.
+        "default": switch back to the SAPI default output instead.
+        """
+        if not self._app_tts.available:
+            return
+        policy = self.config.get("subtitle_app_device_policy", "pause")
+        if policy == "default":
+            if self._app_tts.reset_output():
+                self.config.pop("subtitle_app_output", None)
+                save_config(self.config)
+            self._app_tts_failure_announced = False
+            return
+        # "pause": only announce once per outage; each new cue retries the
+        # selected output, so a returned device picks speech back up.
+        if not self._app_tts_failure_announced:
+            self._app_tts_failure_announced = True
+            live_announce.speak(
+                _("The application voice is unavailable. "
+                  "Subtitles will use your screen reader."))
 
     def _subtitle_backend(self) -> str:
         backend = self.config.get("subtitle_speech_backend", "screen_reader")
@@ -8534,6 +8596,12 @@ class IPTVClient(wx.Frame):
             dlg.Destroy()
 
     def _choose_app_tts_output(self) -> None:
+        """Output device for the application voice (issue #37).
+
+        Applies only to this backend, never to the screen reader. The chosen
+        device gets an audible preview, and the choice is only saved after
+        the user confirms it — an accessible confirmation before saving.
+        """
         if not self._app_tts.available:
             return
         outputs = self._app_tts.list_outputs()
@@ -8541,40 +8609,62 @@ class IPTVClient(wx.Frame):
             message_box(_("No application voice outputs found."),
                         _("Subtitle Speech"), wx.OK | wx.ICON_INFORMATION)
             return
+        previous = self.config.get("subtitle_app_output", "")
         dlg = wx.SingleChoiceDialog(
             self, _("Output device for the application voice:"),
             _("Application voice output"), outputs)
         try:
-            current = self.config.get("subtitle_app_output", "")
             for i, name in enumerate(outputs):
-                if current and current.lower() in name.lower():
+                if previous and previous.lower() in name.lower():
                     dlg.SetSelection(i)
                     break
-            if dlg.ShowModal() == wx.ID_OK:
-                choice = dlg.GetStringSelection()
-                if self._app_tts.set_output(choice):
-                    self.config["subtitle_app_output"] = choice
-                    save_config(self.config)
-                    live_announce.speak(
-                        _("Application voice output: {name}").format(name=choice))
-                else:
-                    message_box(_("Could not select that output device."),
-                                _("Subtitle Speech"), wx.OK | wx.ICON_WARNING)
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            choice = dlg.GetStringSelection()
         finally:
             dlg.Destroy()
+        if not self._app_tts.set_output(choice):
+            message_box(_("Could not select that output device."),
+                        _("Subtitle Speech"), wx.OK | wx.ICON_WARNING)
+            return
+        # Audible preview through the newly chosen device, then confirm.
+        self._app_tts.speak(_("This is the application voice."))
+        keep = message_box(
+            _("Keep this output device?\n{name}").format(name=choice),
+            _("Subtitle Speech"), wx.YES_NO | wx.ICON_QUESTION) == wx.YES
+        if keep:
+            self.config["subtitle_app_output"] = choice
+            save_config(self.config)
+            self._app_tts_failure_announced = False
+            live_announce.speak(
+                _("Application voice output: {name}").format(name=choice))
+        elif previous:
+            # Revert to the previous device rather than leaving a half-
+            # confirmed choice active.
+            self._app_tts.set_output(previous)
+
+    def _set_app_tts_device_policy(self, policy: str) -> None:
+        if policy not in ("pause", "default"):
+            return
+        self.config["subtitle_app_device_policy"] = policy
+        save_config(self.config)
+        self._sync_subtitle_speech_menu()
+        if policy == "pause":
+            live_announce.speak(
+                _("If the output device disappears, subtitle speech pauses "
+                  "until it returns."))
+        else:
+            live_announce.speak(
+                _("If the output device disappears, the application voice "
+                  "falls back to the system default."))
 
     def _show_subtitle_capabilities(self) -> None:
         """Honest per-player report of subtitle-text capabilities (issue #37)."""
         players = ["built-in", "MPV", "VLC", "MPC", "MPC-BE", "PotPlayer", "Kodi"]
         lines = []
         for player in players:
-            state = self._subtitle_manager.get_capability(player, "timed_cues")
-            if state == "available":
-                desc = _("available")
-            elif state == "unavailable":
-                desc = _("not supported by this player")
-            else:
-                desc = _("not verified yet")
+            desc = self._subtitle_manager.describe_capability(
+                player, "timed_cues", _)
             lines.append(f"{player}: {desc}")
         lines.append("")
         lines.append(_("Only players with a documented timed-text API can provide "
@@ -8587,6 +8677,9 @@ class IPTVClient(wx.Frame):
         backend = self._subtitle_backend()
         for item, value in getattr(self, "_subtitle_backend_items", []):
             item.Check(value == backend)
+        policy = self.config.get("subtitle_app_device_policy", "pause")
+        for item, value in getattr(self, "_subtitle_device_policy_items", []):
+            item.Check(value == policy)
         for item in getattr(self, "_subtitle_app_tts_items", []):
             item.Enable(self._app_tts.available)
 
@@ -8773,7 +8866,10 @@ class IPTVClient(wx.Frame):
         ok, err = self.player_launcher.launch(
             player, url, custom_path,
             subtitle_manager=subtitle_manager,
-            subtitle_state_cb=self._on_mpv_subtitle_state,
+            # The adapter reports from its IPC reader thread; marshal onto
+            # the UI thread before touching wx or the config.
+            subtitle_state_cb=lambda state: wx.CallAfter(
+                self._on_mpv_subtitle_state, state),
         )
         if not ok:
             message_box(_("Failed to launch {player}:\n{error}").format(player=player, error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)

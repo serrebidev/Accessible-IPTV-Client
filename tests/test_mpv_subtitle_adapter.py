@@ -171,3 +171,39 @@ def test_live_mpv_delivers_cues(tmp_path):
     finally:
         ad.close()
     assert ad.available is False
+
+
+def test_generation_bump_drops_pending_property_state():
+    ad, mgr, spoken, _states = _adapter()
+    ad._dispatch(_event(2, "Old cue"))
+    assert spoken == ["Old cue"]
+    # Track switch: new generation, stale property state discarded.
+    ad._dispatch(_event(5, 2, name="sid"))
+    # A late timing event from the old stream must not touch the new one.
+    ad._dispatch(_event(3, 9.0, name="sub-start"))
+    assert mgr.get_recent(10) == []
+    assert spoken == ["Old cue"]
+    # The new generation's cues carry the new generation identity.
+    ad._dispatch(_event(2, "New cue"))
+    recent = mgr.get_recent(10)
+    assert len(recent) == 1
+    assert recent[0].text == "New cue"
+    assert recent[0].generation == 1
+    assert recent[0].track == "2"
+    assert spoken == ["Old cue", "New cue"]
+
+
+def test_text_event_after_end_of_file_starts_new_generation():
+    # After end-of-file the transport is a new stream: a sub-text event is a
+    # newly displayed cue, not a resurrection of the old one. mpv's IPC is a
+    # single ordered connection, so old-stream text cannot arrive here; the
+    # generation key on the recorded cue keeps the boundary explicit.
+    ad, mgr, spoken, _states = _adapter()
+    ad._dispatch(_event(2, "First file cue"))
+    ad._dispatch(json.dumps({"event": "end-file", "reason": "stop"}).encode())
+    assert mgr.get_recent(10) == []
+    ad._dispatch(_event(2, "First file cue"))
+    assert spoken == ["First file cue", "First file cue"]
+    recent = mgr.get_recent(10)
+    assert len(recent) == 1
+    assert recent[0].generation == 1
