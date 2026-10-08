@@ -1,6 +1,16 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.147.1 - 2026-10-08
+
+### Bug fixes
+
+- Complete subtitle-speech follow-ups from issue #37 review
+
+### Other changes
+
+- I18n: translate subtitle-speech follow-up strings (12 languages)
+
 ## v1.147.0 - 2026-10-08
 
 ### Features
