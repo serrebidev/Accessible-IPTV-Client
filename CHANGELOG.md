@@ -1,6 +1,15 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.147.0 - 2026-10-08
+
+### Features
+
+- Wire MPV subtitle speech, backend choice and capability report into the app (issue #37)
+- Add application-owned TTS backend with volume and output selection (issue #37)
+- Add MPV session adapter for subtitle text via JSON IPC (issue #37)
+- Add player-independent subtitle speech manager (issue #37)
+
 ## v1.146.5 - 2026-10-07
 
 ### Bug fixes

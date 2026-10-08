@@ -12,15 +12,27 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: CHANGELOG.md:20
-msgid "Keep retrying live channels while the server restarts them (#42)"
-msgstr "متابعة إعادة محاولة القنوات المباشرة أثناء إعادة تشغيلها على الخادم (#42)"
+#: CHANGELOG.md:10
+msgid "Add MPV session adapter for subtitle text via JSON IPC (issue #37)"
+msgstr "إضافة محول جلسة MPV لنص الترجمة عبر JSON IPC (issue #37)"
 
-#: CHANGELOG.md:14
+#: CHANGELOG.md:9
+msgid "Add application-owned TTS backend with volume and output selection (issue #37)"
+msgstr "إضافة محرك تحويل النص إلى كلام خاص بالتطبيق مع مستوى الصوت واختيار الإخراج (issue #37)"
+
+#: CHANGELOG.md:11
+msgid "Add player-independent subtitle speech manager (issue #37)"
+msgstr "إضافة مدير قراءة الترجمة المستقل عن المشغل (issue #37)"
+
+#: CHANGELOG.md:23
 msgid "Stop a waiting reconnect from restarting a newly chosen channel (#43)"
 msgstr "لم تعد إعادة الاتصال المنتظرة تعيد تشغيل القناة التي اخترتها للتو (#43)"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:17
 msgid "Stop hanging on a channel whose streams are all offline (#44)"
 msgstr "لم يعد التطبيق يتوقف عند قناة جميع بثوثها غير متاحة (#44)"
+
+#: CHANGELOG.md:8
+msgid "Wire MPV subtitle speech, backend choice and capability report into the app (issue #37)"
+msgstr "دمج قراءة ترجمة MPV واختيار المحرك وتقرير الإمكانيات في التطبيق (issue #37)"
 
