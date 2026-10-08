@@ -54,6 +54,7 @@ SOURCE_FILES = [
     "release_notes.py",
     "shortcuts.py",
     "settings_backup.py",
+    "subtitle_speech.py",  # describe_capability() translates state names
 ]
 
 # ``N_`` marks a string for extraction without translating it at that point
