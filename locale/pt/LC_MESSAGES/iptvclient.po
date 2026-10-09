@@ -12,16 +12,16 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:552
+#: internal_player.py:556
 msgid "&Playback"
 msgstr "&Reprodução"
 
-#: main.py:5127
+#: main.py:5159
 msgid "(No EPG debug log has been written yet.)"
 msgstr "(Ainda não foi escrito nenhum registo de depuração do EPG.)"
 
-#: main.py:10144
-#: main.py:11101
+#: main.py:10283
+#: main.py:11240
 msgid "(No title)"
 msgstr "(Sem título)"
 
@@ -29,29 +29,29 @@ msgstr "(Sem título)"
 msgid "(thumbprint {thumbprint})."
 msgstr "(impressão digital {thumbprint})."
 
-#: main.py:2684
+#: main.py:2694
 #: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "É necessária uma senha de backup."
 
-#: main.py:6499
+#: main.py:6531
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "Há uma descarga ou gravação em curso.\n\nSe sair agora, ela será interrompida e apenas a parte já capturada será mantida.\n\nSair mesmo assim?"
 
-#: main.py:6479
+#: main.py:6511
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "Está a decorrer uma gravação e {count} gravação continua agendada.\n\n{names}\n\nA aplicação tem de permanecer aberta para a iniciar. Sair na mesma?"
 
-#: main.py:277
+#: main.py:278
 msgid "A screen reader accessible IPTV client for Windows and Linux.\n\nSupports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, built-in VLC playback, casting, and XMLTV EPG."
 msgstr "Um cliente IPTV acessível a leitores de ecrã para Windows e Linux.\n\nSuporta listas M3U/M3U Plus, Stalker Portal, Xtream Codes, reprodução VLC integrada, transmissão para dispositivos e EPG XMLTV."
 
-#: main.py:262
+#: main.py:263
 msgid "About {name}"
 msgstr "Acerca de {name}"
 
-#: main.py:3418
-#: main.py:3592
+#: main.py:3428
+#: main.py:3624
 msgid "About..."
 msgstr "Sobre..."
 
@@ -59,8 +59,8 @@ msgstr "Sobre..."
 msgid "Accessibility"
 msgstr "Acessibilidade"
 
-#: main.py:2773
-#: main.py:2789
+#: main.py:2783
+#: main.py:2799
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Backup do Accessible IPTV (*.aiptv)"
 
@@ -68,9 +68,9 @@ msgstr "Backup do Accessible IPTV (*.aiptv)"
 msgid "Account"
 msgstr "Conta"
 
-#: main.py:3312
-#: main.py:3450
-#: main.py:9673
+#: main.py:3322
+#: main.py:3460
+#: main.py:9812
 #: shortcuts.py:60
 msgid "Account Info"
 msgstr "Informações da conta"
@@ -79,12 +79,12 @@ msgstr "Informações da conta"
 msgid "Account balance"
 msgstr "Saldo da conta"
 
-#: main.py:9692
-#: main.py:9694
+#: main.py:9831
+#: main.py:9833
 msgid "Account details"
 msgstr "Detalhes da conta"
 
-#: main.py:9812
+#: main.py:9951
 msgid "Account details copied to the clipboard."
 msgstr "Detalhes da conta copiados para a área de transferência."
 
@@ -92,8 +92,8 @@ msgstr "Detalhes da conta copiados para a área de transferência."
 msgid "Account information is not supported for this provider type."
 msgstr "As informações da conta não são compatíveis com este tipo de provedor."
 
-#: main.py:9686
-#: main.py:9688
+#: main.py:9825
+#: main.py:9827
 msgid "Accounts"
 msgstr "Contas"
 
@@ -101,7 +101,7 @@ msgstr "Contas"
 msgid "Active"
 msgstr "Ativa"
 
-#: main.py:5122
+#: main.py:5154
 msgid "Active recordings: {count}"
 msgstr "Gravações ativas: {count}"
 
@@ -136,16 +136,16 @@ msgstr "Adicionar Xtream Codes"
 msgid "Add Xtream Codes Account"
 msgstr "Adicionar conta do Xtream Codes"
 
-#: main.py:2552
-#: main.py:3474
+#: main.py:2562
+#: main.py:3484
 #: shortcuts.py:61
 msgid "Add to Favorites"
 msgstr "Adicionar aos favoritos"
 
-#: main.py:6906
-#: main.py:6942
-#: main.py:6943
-#: main.py:7960
+#: main.py:6938
+#: main.py:6974
+#: main.py:6975
+#: main.py:7992
 msgid "All Channels"
 msgstr "Todos os canais"
 
@@ -154,11 +154,11 @@ msgstr "Todos os canais"
 msgid "All files"
 msgstr "Todos os arquivos"
 
-#: main.py:2077
+#: main.py:2087
 msgid "All playlists"
 msgstr "Todas as listas de reprodução"
 
-#: main.py:7424
+#: main.py:7456
 msgid "All playlists refreshed."
 msgstr "Todas as listas atualizadas."
 
@@ -166,7 +166,7 @@ msgstr "Todas as listas atualizadas."
 msgid "All playlists selected. Press F5 to refresh them all."
 msgstr "Todas as listas selecionadas. Pressione F5 para atualizar todas."
 
-#: main.py:10465
+#: main.py:10604
 msgid "All recordings have finished.\n\nThe computer will shut down by itself. Seconds remaining: {seconds}"
 msgstr "Todas as gravações terminaram.\n\nO computador será desligado automaticamente. Segundos restantes: {seconds}"
 
@@ -178,27 +178,27 @@ msgstr "Formatos permitidos"
 msgid "Also use the guide each playlist links to"
 msgstr "Usar também o EPG indicado por cada lista de reprodução"
 
-#: main.py:5566
+#: main.py:5598
 msgid "An update is already in progress."
 msgstr "Já existe uma atualização em curso."
 
-#: main.py:8620
+#: main.py:8759
 msgid "Application voice output"
 msgstr "Saída da voz do aplicativo"
 
-#: main.py:3548
+#: main.py:3580
 msgid "Application voice output..."
 msgstr "Saída da voz do aplicativo..."
 
-#: main.py:8645
+#: main.py:8784
 msgid "Application voice output: {name}"
 msgstr "Saída da voz do aplicativo: {name}"
 
-#: main.py:8575
+#: main.py:8714
 msgid "Application voice volume"
 msgstr "Volume da voz do aplicativo"
 
-#: main.py:3545
+#: main.py:3577
 msgid "Application voice volume..."
 msgstr "Volume da voz do aplicativo..."
 
@@ -209,41 +209,41 @@ msgid "Attempt to add provider XMLTV"
 msgstr "Tentar adicionar o XMLTV do provedor"
 
 #: internal_player.py:114
-#: internal_player.py:628
+#: internal_player.py:632
 msgid "Audio Output Device"
 msgstr "Dispositivo de saída de áudio"
 
-#: internal_player.py:527
+#: internal_player.py:531
 msgid "Audio Output Device..."
 msgstr "Dispositivo de saída de áudio..."
 
-#: internal_player.py:513
-#: main.py:2731
+#: internal_player.py:517
+#: main.py:2741
 #: shortcuts.py:77
 msgid "Audio Track"
 msgstr "Faixa de áudio"
 
-#: internal_player.py:2254
+#: internal_player.py:2258
 msgid "Audio Track: {name}"
 msgstr "Faixa de áudio: {name}"
 
-#: main.py:4137
+#: main.py:4169
 msgid "Audio only (AAC, M4A)"
 msgstr "Somente áudio (AAC, M4A)"
 
-#: main.py:4135
+#: main.py:4167
 msgid "Audio only (FLAC)"
 msgstr "Somente áudio (FLAC)"
 
-#: main.py:4134
+#: main.py:4166
 msgid "Audio only (MP3 V0)"
 msgstr "Somente áudio (MP3 V0)"
 
-#: main.py:4138
+#: main.py:4170
 msgid "Audio only (Opus)"
 msgstr "Somente áudio (Opus)"
 
-#: main.py:4136
+#: main.py:4168
 msgid "Audio only (WAV)"
 msgstr "Somente áudio (WAV)"
 
@@ -251,17 +251,17 @@ msgstr "Somente áudio (WAV)"
 msgid "Audio output devices"
 msgstr "Dispositivos de saída de áudio"
 
-#: internal_player.py:2290
+#: internal_player.py:2294
 msgid "Audio track unavailable"
 msgstr "Faixa de áudio indisponível"
 
-#: main.py:4574
+#: main.py:4606
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Fluxo somente áudio detectado. Gravação iniciada ({fmt}):\n{path}"
 
-#: internal_player.py:1874
-#: internal_player.py:2309
-#: internal_player.py:2318
+#: internal_player.py:1878
+#: internal_player.py:2313
+#: internal_player.py:2322
 msgid "Audio: {name}"
 msgstr "Áudio: {name}"
 
@@ -285,18 +285,18 @@ msgstr "A verificação do Authenticode retornou dados inválidos."
 msgid "Authenticode verification timed out."
 msgstr "A verificação Authenticode expirou."
 
-#: main.py:3392
-#: main.py:3518
+#: main.py:3402
+#: main.py:3528
 msgid "Auto-check for Updates"
 msgstr "Verificar atualizações automaticamente"
 
-#: main.py:3369
-#: main.py:3508
+#: main.py:3379
+#: main.py:3518
 msgid "Automatic"
 msgstr "Automático"
 
-#: main.py:3405
-#: main.py:3531
+#: main.py:3415
+#: main.py:3541
 msgid "Automatic Announcements"
 msgstr "Anúncios automáticos"
 
@@ -334,11 +334,11 @@ msgstr "Mudanças incompatíveis"
 msgid "Browse..."
 msgstr "Procurar..."
 
-#: internal_player.py:803
-#: internal_player.py:1775
-#: internal_player.py:1787
-#: internal_player.py:1849
-#: internal_player.py:2024
+#: internal_player.py:807
+#: internal_player.py:1779
+#: internal_player.py:1791
+#: internal_player.py:1853
+#: internal_player.py:2028
 msgid "Buffering..."
 msgstr "Armazenando em buffer..."
 
@@ -346,29 +346,29 @@ msgstr "Armazenando em buffer..."
 msgid "Bug fixes"
 msgstr "Correções de erros"
 
-#: internal_player.py:191
+#: internal_player.py:192
 msgid "Built-in IPTV Player"
 msgstr "Reprodutor IPTV integrado"
 
-#: main.py:1647
+#: main.py:1648
 msgid "Built-in Player"
 msgstr "Reprodutor integrado"
 
-#: main.py:1026
+#: main.py:1027
 msgid "Built-in player is unavailable."
 msgstr "O reprodutor integrado não está disponível."
 
-#: main.py:8811
+#: main.py:8950
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "Reprodutor integrado indisponível:\n{detail}"
 
 #: internal_player.py:142
-#: main.py:8587
-#: main.py:9586
-#: main.py:9907
-#: main.py:10260
-#: main.py:10383
-#: main.py:10573
+#: main.py:8726
+#: main.py:9725
+#: main.py:10046
+#: main.py:10399
+#: main.py:10522
+#: main.py:10712
 #: options.py:869
 #: playlist.py:3165
 #: playlist.py:3265
@@ -377,111 +377,111 @@ msgstr "Reprodutor integrado indisponível:\n{detail}"
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: main.py:10004
+#: main.py:10143
 msgid "Cancel Download"
 msgstr "Cancelar transferência"
 
-#: main.py:10441
+#: main.py:10580
 msgid "Cancel Shutdown"
 msgstr "Cancelar desligamento"
 
-#: main.py:10602
+#: main.py:10741
 msgid "Canceled"
 msgstr "Cancelado"
 
-#: main.py:505
+#: main.py:506
 msgid "Cannot find \"{text}\"."
 msgstr "Não foi possível localizar \"{text}\"."
 
-#: internal_player.py:417
+#: internal_player.py:421
 msgid "Cast"
 msgstr "Transmitir"
 
-#: main.py:1605
-#: main.py:2724
-#: main.py:3318
-#: main.py:3462
+#: main.py:1606
+#: main.py:2734
+#: main.py:3328
+#: main.py:3472
 #: shortcuts.py:56
 msgid "Cast / Connect..."
 msgstr "Transmitir / Conectar..."
 
-#: main.py:3426
-#: main.py:3453
+#: main.py:3436
+#: main.py:3463
 msgid "Cast To..."
 msgstr "Transmitir para..."
 
-#: internal_player.py:418
+#: internal_player.py:422
 msgid "Cast to Device"
 msgstr "Transmitir para o dispositivo"
 
-#: internal_player.py:529
-#: main.py:2730
+#: internal_player.py:533
+#: main.py:2740
 #: shortcuts.py:74
 msgid "Cast..."
 msgstr "Transmitir..."
 
-#: internal_player.py:1832
 #: internal_player.py:1836
-#: main.py:8794
-#: main.py:8926
-#: main.py:8940
-#: main.py:9533
+#: internal_player.py:1840
+#: main.py:8933
+#: main.py:9065
+#: main.py:9079
+#: main.py:9672
 msgid "Casting"
 msgstr "Transmitindo"
 
-#: main.py:8790
-#: main.py:8797
-#: main.py:8942
+#: main.py:8929
+#: main.py:8936
+#: main.py:9081
 msgid "Casting Error"
 msgstr "Erro de transmissão"
 
-#: main.py:8787
+#: main.py:8926
 msgid "Casting failed: {error}"
 msgstr "Falha na transmissão: {error}"
 
-#: internal_player.py:1832
+#: internal_player.py:1836
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "A transmissão não está disponível porque o transmissor não foi inicializado."
 
-#: main.py:8794
-#: main.py:8940
+#: main.py:8933
+#: main.py:9079
 msgid "Casting to {device}..."
 msgstr "Transmitindo para {device}..."
 
-#: main.py:3815
-#: main.py:9024
-#: main.py:9048
-#: main.py:9051
-#: main.py:10075
+#: main.py:3847
+#: main.py:9163
+#: main.py:9187
+#: main.py:9190
+#: main.py:10214
 msgid "Catch-up"
 msgstr "Replay"
 
-#: main.py:9106
-#: main.py:9112
-#: main.py:9124
-#: main.py:9137
-#: main.py:9225
-#: main.py:9233
-#: main.py:9277
-#: main.py:9341
-#: main.py:9359
-#: main.py:9363
-#: main.py:9406
+#: main.py:9245
+#: main.py:9251
+#: main.py:9263
+#: main.py:9276
+#: main.py:9364
+#: main.py:9372
+#: main.py:9416
+#: main.py:9480
+#: main.py:9498
+#: main.py:9502
+#: main.py:9545
 msgid "Catch-up Download"
 msgstr "Transferência de replay"
 
-#: main.py:10110
+#: main.py:10249
 msgid "Catch-up programmes"
 msgstr "Programas de catch-up"
 
-#: main.py:10076
+#: main.py:10215
 msgid "Catch-up: {name}"
 msgstr "Replay: {name}"
 
-#: main.py:812
-#: main.py:814
-#: main.py:970
-#: main.py:3237
+#: main.py:813
+#: main.py:815
+#: main.py:971
+#: main.py:3247
 msgid "Categories"
 msgstr "Categorias"
 
@@ -489,12 +489,12 @@ msgstr "Categorias"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "Mudanças de cada versão do {app}, da mais recente para a mais antiga. As notas das versões mais recentes aparecem no seu idioma quando forem traduzidas; as entradas mais antigas continuam em inglês."
 
-#: main.py:10526
+#: main.py:10665
 msgid "Channel"
 msgstr "Canal"
 
-#: main.py:4227
-#: main.py:7559
+#: main.py:4259
+#: main.py:7591
 msgid "Channel Not Found"
 msgstr "Canal não encontrado"
 
@@ -503,49 +503,49 @@ msgstr "Canal não encontrado"
 msgid "Channel missing command reference"
 msgstr "O canal está sem a referência de comando"
 
-#: main.py:4009
+#: main.py:4041
 msgid "Channel number {number} was not found."
 msgstr "O número do canal {number} não foi encontrado."
 
-#: main.py:3255
-#: main.py:10967
-#: main.py:10969
+#: main.py:3265
+#: main.py:11106
+#: main.py:11108
 msgid "Channels"
 msgstr "Canais"
 
-#: main.py:9786
+#: main.py:9925
 msgid "Check failed."
 msgstr "A verificação falhou."
 
-#: main.py:3408
+#: main.py:3418
 msgid "Check for Updates"
 msgstr "Verificar atualizações"
 
-#: main.py:3588
+#: main.py:3620
 msgid "Check for Updates..."
 msgstr "Verificar atualizações..."
 
-#: main.py:7390
+#: main.py:7422
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "Verifique se as fontes de EPG em Arquivo > Gerenciador de EPG estão acessíveis e tente novamente."
 
-#: main.py:9750
+#: main.py:9889
 msgid "Checking account, please wait..."
 msgstr "Verificando a conta, aguarde..."
 
-#: main.py:5730
+#: main.py:5762
 msgid "Checking for update details..."
 msgstr "Verificando detalhes da atualização..."
 
-#: main.py:5194
+#: main.py:5226
 msgid "Checking stream type…"
 msgstr "Verificando o tipo de fluxo…"
 
-#: main.py:9751
+#: main.py:9890
 msgid "Checking {account}..."
 msgstr "Verificando {account}..."
 
-#: internal_player.py:443
+#: internal_player.py:447
 msgid "Choose Audio Track"
 msgstr "Escolher faixa de áudio"
 
@@ -557,32 +557,32 @@ msgstr "Escolher arquivo XML do EPG"
 msgid "Choose M3U file"
 msgstr "Escolher arquivo M3U"
 
-#: main.py:7414
+#: main.py:7446
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "Escolha OK para salvar a nova lista e depois atualize-a."
 
-#: main.py:3978
+#: main.py:4010
 msgid "Choose a channel to play:"
 msgstr "Escolha um canal para reproduzir:"
 
-#: main.py:2741
+#: main.py:2751
 msgid "Choose a command to change:"
 msgstr "Escolha um comando para alterar:"
 
-#: main.py:321
-#: main.py:384
-#: main.py:581
-#: main.py:9701
-#: main.py:10320
-#: main.py:10725
+#: main.py:322
+#: main.py:385
+#: main.py:582
+#: main.py:9840
+#: main.py:10459
+#: main.py:10864
 msgid "Close"
 msgstr "Fechar"
 
-#: main.py:284
+#: main.py:285
 msgid "Community and support"
 msgstr "Comunidade e suporte"
 
-#: main.py:10599
+#: main.py:10738
 msgid "Completed"
 msgstr "Concluído"
 
@@ -594,19 +594,19 @@ msgstr "Fontes de EPG configuradas"
 msgid "Configured playlists and providers"
 msgstr "Listas de reprodução e provedores configurados"
 
-#: main.py:5121
+#: main.py:5153
 msgid "Configured playlists: {count}"
 msgstr "Listas de reprodução configuradas: {count}"
 
-#: main.py:9584
+#: main.py:9723
 msgid "Connect"
 msgstr "Conectar"
 
-#: main.py:9546
+#: main.py:9685
 msgid "Connected"
 msgstr "Conectado"
 
-#: main.py:9546
+#: main.py:9685
 msgid "Connected to {device}"
 msgstr "Conectado a {device}"
 
@@ -614,13 +614,13 @@ msgstr "Conectado a {device}"
 msgid "Connections in use"
 msgstr "Conexões em uso"
 
-#: main.py:9700
-#: main.py:10317
+#: main.py:9839
+#: main.py:10456
 msgid "Copy Details"
 msgstr "Copiar detalhes"
 
-#: main.py:3417
-#: main.py:3590
+#: main.py:3427
+#: main.py:3622
 msgid "Copy Log and Debug Information"
 msgstr "Copiar registo e informações de depuração"
 
@@ -628,54 +628,54 @@ msgstr "Copiar registo e informações de depuração"
 msgid "Copy URL"
 msgstr "Copiar URL"
 
-#: main.py:9775
+#: main.py:9914
 msgid "Could not check this account.\n\n{error}"
 msgstr "Não foi possível verificar esta conta.\n\n{error}"
 
-#: main.py:5139
+#: main.py:5171
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "Não foi possível copiar as informações de diagnóstico:\n{error}"
 
-#: internal_player.py:368
+#: internal_player.py:372
 msgid "Could not create libVLC media player object."
 msgstr "Não foi possível criar o objeto do reprodutor de mídia libVLC."
 
-#: main.py:2781
+#: main.py:2791
 msgid "Could not export settings: {error}"
 msgstr "Não foi possível exportar as configurações: {error}"
 
-#: main.py:4345
-#: main.py:4468
+#: main.py:4377
+#: main.py:4500
 msgid "Could not find a stream URL for this channel."
 msgstr "Não foi possível encontrar uma URL de transmissão para este canal."
 
-#: main.py:4225
-#: main.py:7559
+#: main.py:4257
+#: main.py:7591
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "Não foi possível encontrar o canal '{channel}' na sua lista de reprodução."
 
-#: main.py:8754
+#: main.py:8893
 msgid "Could not find stream URL for this selection."
 msgstr "Não foi possível encontrar a URL de transmissão para esta seleção."
 
-#: main.py:4158
-#: main.py:7554
+#: main.py:4190
+#: main.py:7586
 msgid "Could not identify the channel."
 msgstr "Não foi possível identificar o canal."
 
-#: main.py:2800
+#: main.py:2810
 msgid "Could not import settings: {error}"
 msgstr "Não foi possível importar as configurações: {error}"
 
-#: main.py:7143
+#: main.py:7175
 msgid "Could not load episodes for this series."
 msgstr "Não foi possível carregar os episódios desta série."
 
-#: main.py:7162
+#: main.py:7194
 msgid "Could not load episodes:\n{error}"
 msgstr "Não foi possível carregar os episódios:\n{error}"
 
-#: internal_player.py:2400
+#: internal_player.py:2404
 msgid "Could not load subtitle file."
 msgstr "Não foi possível carregar o arquivo de legenda."
 
@@ -687,25 +687,25 @@ msgstr "Não foi possível localizar o aplicativo {player}."
 msgid "Could not locate {player} executable."
 msgstr "Não foi possível localizar o executável {player}."
 
-#: main.py:7470
+#: main.py:7502
 msgid "Could not look for provider accounts: {error}"
 msgstr "Não foi possível procurar contas de provedor: {error}"
 
-#: main.py:8260
+#: main.py:8292
 msgid "Could not match this programme to a playlist channel."
 msgstr "Não foi possível associar este programa a um canal da lista de reprodução."
 
-#: main.py:5082
-#: main.py:5095
+#: main.py:5114
+#: main.py:5127
 msgid "Could not open folder:\n{error}"
 msgstr "Não foi possível abrir a pasta:\n{error}"
 
-#: main.py:5481
+#: main.py:5513
 msgid "Could not open the EPG window: {error}"
 msgstr "Não foi possível abrir a janela do EPG: {error}"
 
-#: main.py:9805
-#: main.py:10333
+#: main.py:9944
+#: main.py:10472
 #: playlist.py:3067
 msgid "Could not open the clipboard."
 msgstr "Não foi possível abrir a área de transferência."
@@ -719,9 +719,9 @@ msgstr "Não foi possível acessar o servidor Xtream: {error}"
 msgid "Could not reach the portal: {error}"
 msgstr "Não foi possível acessar o portal: {error}"
 
-#: main.py:3957
-#: main.py:4464
-#: main.py:8277
+#: main.py:3989
+#: main.py:4496
+#: main.py:8309
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Não foi possível resolver a URL de transmissão:\n{error}"
 
@@ -729,27 +729,27 @@ msgstr "Não foi possível resolver a URL de transmissão:\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Não foi possível executar a verificação Authenticode: {detail}"
 
-#: main.py:4173
+#: main.py:4205
 msgid "Could not schedule recording:\n{error}"
 msgstr "Não foi possível agendar a gravação:\n{error}"
 
-#: main.py:8632
+#: main.py:8771
 msgid "Could not select that output device."
 msgstr "Não foi possível selecionar esse dispositivo de saída."
 
-#: main.py:4851
+#: main.py:4883
 msgid "Could not shut down the computer:\n{error}"
 msgstr "Não foi possível desligar o computador:\n{error}"
 
-#: main.py:9276
+#: main.py:9415
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Não foi possível iniciar a transferência do replay:\n{error}"
 
-#: internal_player.py:796
+#: internal_player.py:800
 msgid "Could not start playback: {error}"
 msgstr "Não foi possível iniciar a reprodução: {error}"
 
-#: main.py:4556
+#: main.py:4588
 msgid "Could not start recording:\n{error}"
 msgstr "Não foi possível iniciar a gravação:\n{error}"
 
@@ -757,16 +757,16 @@ msgstr "Não foi possível iniciar a gravação:\n{error}"
 msgid "Created"
 msgstr "Criada"
 
-#: main.py:10717
+#: main.py:10856
 msgid "Currently airing programs"
 msgstr "Programas em exibição no momento"
 
-#: main.py:9531
+#: main.py:9670
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "Atualmente conectado a: {device}\n\nDesconectar?"
 
-#: main.py:3354
-#: main.py:3500
+#: main.py:3364
+#: main.py:3510
 msgid "Custom Player..."
 msgstr "Reprodutor personalizado..."
 
@@ -778,7 +778,7 @@ msgstr "Dias restantes"
 msgid "Days since expiry"
 msgstr "Dias desde o vencimento"
 
-#: main.py:10575
+#: main.py:10714
 #: playlist.py:3103
 msgid "Delete"
 msgstr "Eliminar"
@@ -791,13 +791,13 @@ msgstr "Eliminar lista de reprodução"
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "Eliminar a lista de reprodução «{name}»?\n\nSerá removida da lista de listas de reprodução. Não é possível anular esta ação."
 
-#: main.py:10095
-#: main.py:11134
+#: main.py:10234
+#: main.py:11273
 msgid "Description"
 msgstr "Descrição"
 
-#: main.py:3401
-#: main.py:3526
+#: main.py:3411
+#: main.py:3536
 msgid "Detailed status"
 msgstr "Status detalhado"
 
@@ -805,12 +805,12 @@ msgstr "Status detalhado"
 msgid "Detected from"
 msgstr "Detectada em"
 
-#: main.py:5140
-#: main.py:5143
+#: main.py:5172
+#: main.py:5175
 msgid "Diagnostic Information"
 msgstr "Informações de diagnóstico"
 
-#: main.py:5142
+#: main.py:5174
 msgid "Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."
 msgstr "As informações de diagnóstico foram copiadas para a área de transferência. Pode colá-las numa mensagem para o programador."
 
@@ -818,7 +818,7 @@ msgstr "As informações de diagnóstico foram copiadas para a área de transfer
 msgid "Disabled"
 msgstr "Desativada"
 
-#: main.py:8788
+#: main.py:8927
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "Desconectado do dispositivo de transmissão. Abra o menu de transmissão para escolher outro dispositivo."
 
@@ -827,7 +827,7 @@ msgstr "Desconectado do dispositivo de transmissão. Abra o menu de transmissão
 msgid "Display name"
 msgstr "Nome de exibição"
 
-#: main.py:10002
+#: main.py:10141
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "Quer mesmo cancelar esta transferência? Não poderá ser retomada."
 
@@ -835,136 +835,136 @@ msgstr "Quer mesmo cancelar esta transferência? Não poderá ser retomada."
 msgid "Documentation"
 msgstr "Documentação"
 
-#: main.py:10194
+#: main.py:10333
 msgid "Download"
 msgstr "Transferir"
 
-#: main.py:5643
+#: main.py:5675
 msgid "Download and install now? The app will restart after the update."
 msgstr "Baixar e instalar agora? O aplicativo será reiniciado após a atualização."
 
-#: main.py:9340
+#: main.py:9479
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "Transferência cancelada. O ficheiro incompleto foi descartado."
 
-#: main.py:9362
+#: main.py:9501
 msgid "Download complete:\n{path}"
 msgstr "Descarga concluída:\n{path}"
 
-#: main.py:9915
+#: main.py:10054
 msgid "Download details"
 msgstr "Detalhes da transferência"
 
-#: main.py:9352
+#: main.py:9491
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "A descarga terminou mais cedo:\n{path}\n\nSó chegaram {written} de {expected} antes de o fornecedor fechar a ligação. O ficheiro incompleto foi mantido."
 
-#: main.py:9953
+#: main.py:10092
 msgid "Download failed (code {code})."
 msgstr "Falha no download (código {code})."
 
-#: main.py:9399
+#: main.py:9538
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "Falha na descarga (código {code}):\n{path}\n\n{detail}"
 
-#: main.py:9969
+#: main.py:10108
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "Download falhou - tentando novamente (tentativa {attempt} de {total}) em {seconds} segundos..."
 
-#: main.py:9396
+#: main.py:9535
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "Falha na descarga:\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:6502
+#: main.py:6534
 msgid "Download in progress"
 msgstr "Descarga em curso"
 
-#: main.py:9914
+#: main.py:10053
 msgid "Download progress"
 msgstr "Progresso da descarga"
 
-#: main.py:9913
+#: main.py:10052
 msgid "Download status"
 msgstr "Estado da descarga"
 
-#: main.py:5756
-#: main.py:5797
+#: main.py:5788
+#: main.py:5829
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "A atualização baixada falhou na verificação SHA-256."
 
-#: main.py:9993
+#: main.py:10132
 msgid "Downloaded: {size}"
 msgstr "Transferido: {size}"
 
-#: main.py:5748
-#: main.py:5752
-#: main.py:5789
-#: main.py:5793
+#: main.py:5780
+#: main.py:5784
+#: main.py:5821
+#: main.py:5825
 msgid "Downloading update..."
 msgstr "Baixando atualização..."
 
-#: main.py:9873
-#: main.py:9982
-#: main.py:9986
+#: main.py:10012
+#: main.py:10121
+#: main.py:10125
 msgid "Downloading {name}"
 msgstr "A descarregar {name}"
 
-#: main.py:5471
+#: main.py:5503
 msgid "EPG"
 msgstr "EPG"
 
-#: main.py:3854
+#: main.py:3886
 msgid "EPG Database Update Needed"
 msgstr "Atualização do banco de dados EPG necessária"
 
-#: main.py:2720
-#: main.py:3308
-#: main.py:3446
+#: main.py:2730
+#: main.py:3318
+#: main.py:3456
 #: playlist.py:3133
 #: shortcuts.py:51
 msgid "EPG Manager"
 msgstr "Gerenciador de EPG"
 
-#: main.py:7495
-#: main.py:7513
+#: main.py:7527
+#: main.py:7545
 msgid "EPG Not Available"
 msgstr "EPG não disponível"
 
-#: main.py:5124
+#: main.py:5156
 msgid "EPG debug log (latest 128 KiB):"
 msgstr "Registo de depuração do EPG (últimos 128 KiB):"
 
-#: main.py:5120
+#: main.py:5152
 msgid "EPG enabled: {enabled}"
 msgstr "EPG ativado: {enabled}"
 
-#: main.py:7487
+#: main.py:7519
 msgid "EPG import is already in progress."
 msgstr "A importação do EPG já está em andamento."
 
-#: main.py:7506
+#: main.py:7538
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "A importação do EPG será iniciada em segundo plano. Você pode continuar usando o aplicativo; uma mensagem avisará quando a importação terminar."
 
-#: main.py:7495
-#: main.py:7513
+#: main.py:7527
+#: main.py:7545
 msgid "EPG is not enabled."
 msgstr "O EPG não está habilitado."
 
-#: main.py:11112
+#: main.py:11251
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
-#: main.py:9991
+#: main.py:10130
 msgid "Elapsed: {time}"
 msgstr "Decorrido: {time}"
 
-#: main.py:2784
+#: main.py:2794
 msgid "Encrypted settings backup saved."
 msgstr "Backup de configurações criptografadas salvo."
 
-#: internal_player.py:1853
-#: internal_player.py:2022
+#: internal_player.py:1857
+#: internal_player.py:2026
 msgid "Ended"
 msgstr "Encerrado"
 
@@ -976,19 +976,19 @@ msgstr "Digite a URL do XML do EPG"
 msgid "Enter M3U URL"
 msgstr "Digite a URL M3U"
 
-#: main.py:3991
+#: main.py:4023
 msgid "Enter a channel number:"
 msgstr "Insira um número de canal:"
 
-#: main.py:2675
+#: main.py:2685
 msgid "Enter a password for the settings backup:"
 msgstr "Digite uma senha para o backup de configurações:"
 
-#: main.py:4000
+#: main.py:4032
 msgid "Enter a positive channel number."
 msgstr "Insira um número de canal positivo."
 
-#: main.py:2751
+#: main.py:2761
 msgid "Enter a shortcut (leave blank to restore the default):"
 msgstr "Insira um atalho (deixe em branco para restaurar o padrão):"
 
@@ -996,14 +996,14 @@ msgstr "Insira um atalho (deixe em branco para restaurar o padrão):"
 msgid "Enter player executable or path:"
 msgstr "Digite o executável ou o caminho do reprodutor:"
 
-#: main.py:2688
+#: main.py:2698
 msgid "Enter the password again:"
 msgstr "Digite a senha novamente:"
 
-#: main.py:3274
-#: main.py:3276
-#: main.py:10098
-#: main.py:11137
+#: main.py:3284
+#: main.py:3286
+#: main.py:10237
+#: main.py:11276
 msgid "Episode description"
 msgstr "Descrição do episódio"
 
@@ -1011,48 +1011,48 @@ msgstr "Descrição do episódio"
 msgid "Episode {num}"
 msgstr "Episódio {num}"
 
-#: internal_player.py:1854
-#: main.py:3839
-#: main.py:3893
-#: main.py:5482
-#: main.py:7471
-#: main.py:7535
-#: main.py:7554
-#: main.py:9549
+#: internal_player.py:1858
+#: main.py:3871
+#: main.py:3925
+#: main.py:5514
+#: main.py:7503
+#: main.py:7567
+#: main.py:7586
+#: main.py:9688
 msgid "Error"
 msgstr "Erro"
 
-#: main.py:3839
-#: main.py:3892
+#: main.py:3871
+#: main.py:3924
 msgid "Error fetching EPG: {error}"
 msgstr "Erro ao obter o EPG: {error}"
 
-#: main.py:9621
+#: main.py:9760
 msgid "Error: {error}"
 msgstr "Erro: {error}"
 
-#: main.py:3400
-#: main.py:3525
+#: main.py:3410
+#: main.py:3535
 msgid "Errors only"
 msgstr "Apenas erros"
 
-#: external_player.py:223
-#: external_player.py:233
+#: external_player.py:235
+#: external_player.py:245
 msgid "Executable not found: {path}"
 msgstr "Executável não encontrado: {path}"
 
-#: main.py:1616
-#: main.py:3429
-#: main.py:3455
+#: main.py:1617
+#: main.py:3439
+#: main.py:3465
 #: shortcuts.py:53
 msgid "Exit"
 msgstr "Sair"
 
-#: internal_player.py:2703
+#: internal_player.py:2721
 msgid "Exit Full Screen"
 msgstr "Sair da tela cheia"
 
-#: internal_player.py:534
+#: internal_player.py:538
 #: shortcuts.py:85
 msgid "Exit Player"
 msgstr "Sair do reprodutor"
@@ -1073,16 +1073,16 @@ msgstr "Vencida"
 msgid "Expires"
 msgstr "Vence"
 
-#: main.py:2772
+#: main.py:2782
 msgid "Export Settings"
 msgstr "Exportar configurações"
 
-#: main.py:3395
-#: main.py:3519
+#: main.py:3405
+#: main.py:3529
 msgid "Export Settings..."
 msgstr "Exportar configurações..."
 
-#: main.py:5799
+#: main.py:5831
 msgid "Extracting update..."
 msgstr "Extraindo atualização..."
 
@@ -1090,16 +1090,16 @@ msgstr "Extraindo atualização..."
 msgid "F1 is reserved for Help."
 msgstr "F1 está reservada para a Ajuda."
 
-#: main.py:10600
+#: main.py:10739
 msgid "Failed"
 msgstr "Falhou"
 
-#: main.py:8797
-#: main.py:8942
+#: main.py:8936
+#: main.py:9081
 msgid "Failed to cast: {error}"
 msgstr "Falha ao transmitir: {error}"
 
-#: main.py:9549
+#: main.py:9688
 msgid "Failed to connect: {error}"
 msgstr "Falha ao conectar: {error}"
 
@@ -1111,7 +1111,7 @@ msgstr "Falha ao baixar o manifesto ({code})."
 msgid "Failed to download update ({code})."
 msgstr "Falha ao baixar a atualização ({code})."
 
-#: main.py:7535
+#: main.py:7567
 msgid "Failed to fetch EPG data: {error}"
 msgstr "Falha ao obter os dados do EPG: {error}"
 
@@ -1119,27 +1119,27 @@ msgstr "Falha ao obter os dados do EPG: {error}"
 msgid "Failed to fetch release info ({code})."
 msgstr "Falha ao obter as informações da versão ({code})."
 
-#: internal_player.py:360
+#: internal_player.py:364
 msgid "Failed to initialise libVLC instance."
 msgstr "Falha ao inicializar a instância do libVLC."
 
-#: internal_player.py:365
+#: internal_player.py:369
 msgid "Failed to initialise media player: {error}"
 msgstr "Falha ao inicializar o reprodutor de mídia: {error}"
 
-#: main.py:8880
+#: main.py:9019
 msgid "Failed to launch {player}:\n{error}"
 msgstr "Falha ao iniciar {player}:\n{error}"
 
-#: main.py:8859
+#: main.py:8998
 msgid "Failed to start built-in player:\n{error}"
 msgstr "Falha ao iniciar o reprodutor integrado:\n{error}"
 
-#: main.py:1999
-#: main.py:2387
-#: main.py:2395
-#: main.py:2503
-#: main.py:2562
+#: main.py:2009
+#: main.py:2397
+#: main.py:2405
+#: main.py:2513
+#: main.py:2572
 msgid "Favorites"
 msgstr "Favoritos"
 
@@ -1147,45 +1147,45 @@ msgstr "Favoritos"
 msgid "Features"
 msgstr "Novidades"
 
-#: main.py:3456
+#: main.py:3466
 msgid "File"
 msgstr "Arquivo"
 
-#: main.py:10704
+#: main.py:10843
 msgid "Filter (Tab):"
 msgstr "Filtro (Tab):"
 
-#: main.py:10706
+#: main.py:10845
 msgid "Filter programs"
 msgstr "Filtrar programas"
 
-#: main.py:380
-#: main.py:382
+#: main.py:381
+#: main.py:383
 msgid "Find"
 msgstr "Localizar"
 
-#: main.py:383
+#: main.py:384
 msgid "Find Next"
 msgstr "Localizar próxima"
 
-#: main.py:290
+#: main.py:291
 msgid "Follow Serrebi on GitHub"
 msgstr "Seguir Serrebi no GitHub"
 
-#: main.py:10528
+#: main.py:10667
 msgid "Format"
 msgstr "Formato"
 
-#: main.py:9632
+#: main.py:9771
 msgid "Found {count} devices:"
 msgstr "{count} dispositivos encontrados:"
 
-#: internal_player.py:423
-#: internal_player.py:2703
+#: internal_player.py:427
+#: internal_player.py:2721
 msgid "Full Screen"
 msgstr "Tela cheia"
 
-#: main.py:5023
+#: main.py:5055
 msgid "Full ffmpeg log:\n{path}"
 msgstr "Registo completo do ffmpeg:\n{path}"
 
@@ -1197,30 +1197,30 @@ msgstr "GZip XML"
 msgid "GitHub API rate limit exceeded. Please try again later."
 msgstr "Limite de solicitações da API do GitHub excedido. Tente novamente mais tarde."
 
-#: main.py:3992
-#: main.py:4001
-#: main.py:4010
+#: main.py:4024
+#: main.py:4033
+#: main.py:4042
 msgid "Go to Channel Number"
 msgstr "Ir para o número do canal"
 
-#: main.py:2716
-#: main.py:3337
-#: main.py:3478
+#: main.py:2726
+#: main.py:3347
+#: main.py:3488
 #: shortcuts.py:65
 msgid "Go to Channel Number..."
 msgstr "Ir para o número do canal..."
 
-#: main.py:3334
-#: main.py:3475
+#: main.py:3344
+#: main.py:3485
 msgid "Go to Favorites"
 msgstr "Ir para os favoritos"
 
-#: main.py:2463
+#: main.py:2473
 msgid "Guide information unavailable"
 msgstr "Informações do guia indisponíveis"
 
-#: main.py:375
-#: main.py:379
+#: main.py:376
+#: main.py:380
 msgid "Guide text"
 msgstr "Texto do guia"
 
@@ -1228,73 +1228,73 @@ msgstr "Texto do guia"
 msgid "HTTPS port"
 msgstr "Porta HTTPS"
 
-#: main.py:3423
-#: main.py:3593
+#: main.py:3433
+#: main.py:3625
 msgid "Help"
 msgstr "Ajuda"
 
-#: internal_player.py:533
+#: internal_player.py:537
 #: shortcuts.py:84
 msgid "Hide Window"
 msgstr "Ocultar janela"
 
-#: main.py:614
+#: main.py:615
 msgid "Hide older releases"
 msgstr "Ocultar versões anteriores"
 
-#: main.py:3936
-#: main.py:8301
-#: main.py:8773
-#: main.py:8813
+#: main.py:3968
+#: main.py:8333
+#: main.py:8912
+#: main.py:8952
 msgid "IPTV Stream"
 msgstr "Transmissão IPTV"
 
-#: internal_player.py:466
-#: internal_player.py:499
-#: internal_player.py:1847
+#: internal_player.py:470
+#: internal_player.py:503
+#: internal_player.py:1851
 msgid "Idle"
 msgstr "Ocioso"
 
-#: main.py:8659
+#: main.py:8798
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "Se o dispositivo de saída desaparecer, a leitura de legendas pausa até ele retornar."
 
-#: main.py:8663
+#: main.py:8802
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "Se o dispositivo de saída desaparecer, a voz do aplicativo volta ao dispositivo padrão do sistema."
 
-#: main.py:7386
+#: main.py:7418
 msgid "Import Complete"
 msgstr "Importação concluída"
 
-#: main.py:3309
-#: main.py:3447
+#: main.py:3319
+#: main.py:3457
 #: shortcuts.py:52
 msgid "Import EPG to DB"
 msgstr "Importar EPG para o banco de dados"
 
-#: main.py:3861
-#: main.py:7393
-#: main.py:7501
+#: main.py:3893
+#: main.py:7425
+#: main.py:7533
 msgid "Import Failed"
 msgstr "Falha na importação"
 
-#: main.py:2788
-#: main.py:2804
+#: main.py:2798
+#: main.py:2814
 msgid "Import Settings"
 msgstr "Importar configurações"
 
-#: main.py:3396
-#: main.py:3520
+#: main.py:3406
+#: main.py:3530
 msgid "Import Settings..."
 msgstr "Importar configurações..."
 
-#: main.py:7508
+#: main.py:7540
 msgid "Import Started"
 msgstr "Importação iniciada"
 
-#: main.py:3401
-#: main.py:3526
+#: main.py:3411
+#: main.py:3536
 msgid "Important events"
 msgstr "Eventos importantes"
 
@@ -1306,7 +1306,7 @@ msgstr "Importando EPG"
 msgid "Importing EPG data…"
 msgstr "Importando dados do EPG…"
 
-#: main.py:7487
+#: main.py:7519
 msgid "In Progress"
 msgstr "Em andamento"
 
@@ -1318,7 +1318,7 @@ msgstr "Incluir automaticamente o guia XMLTV do provedor"
 msgid "Installer message: {message}"
 msgstr "Mensagem do instalador: {message}"
 
-#: main.py:5981
+#: main.py:6013
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "A instalar a atualização. {app} vai fechar e iniciar novamente sozinho; entretanto, não o abra manualmente."
 
@@ -1338,77 +1338,77 @@ msgstr "Resposta inválida da API do reprodutor Xtream"
 msgid "Invalid response from portal"
 msgstr "Resposta inválida do portal"
 
-#: main.py:288
+#: main.py:289
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "Aderir ao grupo do Telegram SerrebiProjects"
 
-#: main.py:8638
+#: main.py:8777
 msgid "Keep this output device?\n{name}"
 msgstr "Manter este dispositivo de saída?\n{name}"
 
-#: main.py:2742
 #: main.py:2752
 #: main.py:2762
-#: main.py:2766
+#: main.py:2772
+#: main.py:2776
 msgid "Keyboard Shortcuts"
 msgstr "Atalhos de teclado"
 
-#: main.py:3406
-#: main.py:3573
+#: main.py:3416
+#: main.py:3605
 msgid "Keyboard Shortcuts..."
 msgstr "Atalhos de teclado..."
 
-#: main.py:3375
-#: main.py:3514
-#: main.py:5544
+#: main.py:3385
+#: main.py:3524
+#: main.py:5576
 msgid "Language"
 msgstr "Idioma"
 
-#: internal_player.py:1425
+#: internal_player.py:1429
 msgid "Last error: {reason}"
 msgstr "Último erro: {reason}"
 
-#: internal_player.py:2483
+#: internal_player.py:2501
 msgid "Last subtitle: {text}"
 msgstr "Última legenda: {text}"
 
-#: main.py:5596
+#: main.py:5628
 msgid "Latest release tag is missing or invalid."
 msgstr "A tag da versão mais recente está ausente ou é inválida."
 
-#: main.py:8759
-#: main.py:8811
-#: main.py:8859
-#: main.py:8880
+#: main.py:8898
+#: main.py:8950
+#: main.py:8998
+#: main.py:9019
 msgid "Launch Error"
 msgstr "Erro ao iniciar"
 
-#: main.py:3326
-#: main.py:3467
+#: main.py:3336
+#: main.py:3477
 msgid "Live TV && Catch-up"
 msgstr "TV ao vivo && Replay"
 
-#: internal_player.py:2392
+#: internal_player.py:2396
 msgid "Load Subtitle File"
 msgstr "Carregar arquivo de legenda"
 
-#: internal_player.py:517
+#: internal_player.py:521
 msgid "Load Subtitle File..."
 msgstr "Carregar arquivo de legenda..."
 
-#: main.py:7024
+#: main.py:7056
 msgid "Loading Video on Demand…"
 msgstr "Carregando vídeo sob demanda…"
 
-#: main.py:7151
+#: main.py:7183
 msgid "Loading episodes…"
 msgstr "Carregando episódios…"
 
-#: main.py:1875
+#: main.py:1885
 msgid "Loading playlists..."
 msgstr "Carregando listas de reprodução..."
 
-#: main.py:5096
+#: main.py:5128
 msgid "Logs"
 msgstr "Registos"
 
@@ -1429,11 +1429,11 @@ msgstr "O endereço MAC deve conter seis octetos (por ex., 00:1A:79:12:34:56)."
 msgid "MAC address presented to the portal"
 msgstr "Endereço MAC apresentado ao portal"
 
-#: main.py:8700
+#: main.py:8839
 msgid "MPV subtitle speech on."
 msgstr "Leitura de legendas do MPV ativada."
 
-#: main.py:8704
+#: main.py:8843
 msgid "MPV subtitle speech unavailable."
 msgstr "Leitura de legendas do MPV indisponível."
 
@@ -1445,12 +1445,12 @@ msgstr "Os atalhos da janela principal precisam de Ctrl ou Alt."
 msgid "Maximum connections"
 msgstr "Conexões máximas"
 
-#: main.py:3358
-#: main.py:3501
+#: main.py:3368
+#: main.py:3511
 msgid "Media Player to Use"
 msgstr "Reprodutor de mídia a usar"
 
-#: main.py:3303
+#: main.py:3313
 msgid "Menu"
 msgstr "Menu"
 
@@ -1458,20 +1458,20 @@ msgstr "Menu"
 msgid "Message from provider"
 msgstr "Mensagem do provedor"
 
-#: main.py:3377
-#: main.py:3515
+#: main.py:3387
+#: main.py:3525
 msgid "Minimize to System Tray"
 msgstr "Minimizar para a bandeja do sistema"
 
-#: main.py:10363
+#: main.py:10502
 msgid "Minutes after programme:"
 msgstr "Minutos após o programa:"
 
-#: main.py:10362
+#: main.py:10501
 msgid "Minutes before programme:"
 msgstr "Minutos antes do programa:"
 
-#: main.py:10601
+#: main.py:10740
 msgid "Missed"
 msgstr "Perdido"
 
@@ -1488,103 +1488,107 @@ msgstr "Nome"
 msgid "Never (no expiry date set)"
 msgstr "Nunca (sem data de vencimento)"
 
-#: internal_player.py:526
-#: main.py:2735
+#: internal_player.py:530
+#: main.py:2745
 #: shortcuts.py:82
 msgid "Next Subtitle"
 msgstr "Próxima legenda"
 
-#: main.py:2296
+#: main.py:2306
 msgid "Next: {programme}"
 msgstr "A seguir: {programme}"
 
-#: main.py:8070
+#: main.py:8102
 msgid "Next: {title} ({start} – {end})"
 msgstr "A seguir: {title} ({start} – {end})"
 
 #: account_info.py:357
-#: main.py:2473
+#: main.py:2483
 msgid "No"
 msgstr "Não"
 
-#: main.py:7479
+#: main.py:7511
 msgid "No Accounts"
 msgstr "Sem contas"
 
-#: main.py:7538
+#: main.py:7570
 msgid "No Data"
 msgstr "Sem dados"
 
-#: main.py:7491
+#: main.py:7523
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "Nenhuma fonte de EPG configurada. Adicione uma em Arquivo > Gerenciador de EPG."
 
-#: main.py:7491
+#: main.py:7523
 msgid "No Sources"
 msgstr "Sem fontes"
 
-#: main.py:7086
+#: main.py:7118
 msgid "No Video on Demand content found."
 msgstr "Nenhum conteúdo de vídeo sob demanda encontrado."
 
-#: internal_player.py:1836
-#: main.py:8926
+#: internal_player.py:1840
+#: main.py:9065
 msgid "No active stream to cast."
 msgstr "Nenhuma transmissão ativa para transmitir."
 
-#: main.py:8614
+#: main.py:8575
+msgid "No active subtitle session."
+msgstr ""
+
+#: main.py:8753
 msgid "No application voice outputs found."
 msgstr "Nenhuma saída de voz do aplicativo encontrada."
 
-#: internal_player.py:627
+#: internal_player.py:631
 msgid "No audio output devices were found."
 msgstr "Nenhum dispositivo de saída de áudio foi encontrado."
 
-#: internal_player.py:2249
-#: internal_player.py:2315
-#: internal_player.py:2519
+#: internal_player.py:2253
+#: internal_player.py:2319
+#: internal_player.py:2537
 msgid "No audio tracks available"
 msgstr "Nenhuma faixa de áudio disponível"
 
-#: main.py:9023
+#: main.py:9162
 msgid "No catch-up programmes are available for this channel."
 msgstr "Não há programas de replay disponíveis para este canal."
 
-#: main.py:2436
+#: main.py:2446
 msgid "No channel is selected."
 msgstr "Nenhum canal está selecionado."
 
-#: main.py:6901
+#: main.py:6933
 msgid "No channels found."
 msgstr "Nenhum canal encontrado."
 
-#: main.py:3751
-#: main.py:10164
-#: main.py:11249
+#: main.py:3783
+#: main.py:10303
+#: main.py:11388
 msgid "No description available for this programme."
 msgstr "Sem descrição disponível para este programa."
 
-#: main.py:9629
+#: main.py:9768
 msgid "No devices found."
 msgstr "Nenhum dispositivo encontrado."
 
-#: internal_player.py:2487
+#: internal_player.py:2505
 msgid "No earlier subtitle."
 msgstr "Não há legenda anterior."
 
-#: main.py:7182
+#: main.py:7214
 msgid "No episodes found for this series."
 msgstr "Nenhum episódio encontrado para esta série."
 
-#: main.py:9962
+#: main.py:10101
 msgid "No error details were reported."
 msgstr "Nenhum detalhe do erro foi informado."
 
-#: main.py:5011
+#: main.py:5043
 msgid "No ffmpeg details were reported."
 msgstr "Nenhum detalhe do ffmpeg foi relatado."
 
-#: internal_player.py:2489
+#: internal_player.py:2507
 msgid "No later subtitle."
 msgstr "Não há legenda posterior."
 
@@ -1592,70 +1596,82 @@ msgstr "Não há legenda posterior."
 msgid "No notable changes."
 msgstr "Nenhuma mudança relevante."
 
-#: main.py:3967
+#: main.py:3999
 msgid "No previous channel is available."
 msgstr "Nenhum canal anterior está disponível."
 
-#: main.py:8068
+#: main.py:8582
+msgid "No previous subtitle."
+msgstr ""
+
+#: main.py:8100
 msgid "No program currently airing."
 msgstr "Nenhum programa no ar no momento."
 
-#: main.py:3873
+#: main.py:3905
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "Ainda não foi importada nenhuma guia de programas, por isso não há nada para agendar.\n\nImporte primeiro uma guia (Ficheiro > Gestor de EPG, depois Ficheiro > Importar EPG para a base de dados) e tente novamente."
 
-#: main.py:7538
+#: main.py:7570
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "Nenhum programa está em exibição no momento, ou os dados do EPG ainda não foram importados."
 
-#: main.py:7475
+#: main.py:7507
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "Nenhuma conta de provedor foi encontrada.\n\nAs contas Xtream Codes e Stalker Portal adicionadas no Gerenciador de listas de reprodução são listadas aqui, junto com qualquer conta detectada em uma URL de lista de reprodução ou de transmissão."
 
-#: main.py:3975
+#: main.py:8588
+msgid "No recent subtitles."
+msgstr ""
+
+#: main.py:4007
 msgid "No recently watched channels are available."
 msgstr "Nenhum canal assistido recentemente está disponível."
 
-#: main.py:4723
-#: main.py:4734
+#: main.py:4755
+#: main.py:4766
 msgid "No recordings are currently active."
 msgstr "Nenhuma gravação está ativa no momento."
 
-#: main.py:563
+#: main.py:564
 msgid "No release history is available."
 msgstr "Não há histórico de versões disponível."
 
-#: internal_player.py:667
+#: internal_player.py:671
 msgid "No stream URL provided."
 msgstr "Nenhuma URL de transmissão fornecida."
 
-#: internal_player.py:2477
+#: internal_player.py:2495
 msgid "No subtitle has been shown yet."
 msgstr "Nenhuma legenda foi mostrada ainda."
 
-#: internal_player.py:2426
+#: main.py:8577
+msgid "No subtitle text available yet."
+msgstr ""
+
+#: internal_player.py:2430
 msgid "No subtitle text found in this file."
 msgstr "Nenhum texto de legenda encontrado neste arquivo."
 
-#: internal_player.py:2475
+#: internal_player.py:2493
 msgid "No subtitle text to read. Load an SRT or WebVTT file."
 msgstr "Não há texto de legenda para ler. Carregue um arquivo SRT ou WebVTT."
 
-#: main.py:10304
+#: main.py:10443
 msgid "No timed problems were found in the newest recording log."
 msgstr "Não foram encontrados problemas com horário no registro de gravação mais recente."
 
-#: main.py:5471
+#: main.py:5503
 msgid "No upcoming schedule found for this channel."
 msgstr "Nenhuma programação futura encontrada para este canal."
 
-#: main.py:3400
-#: main.py:3525
+#: main.py:3410
+#: main.py:3535
 msgid "None"
 msgstr "Nenhum"
 
-#: main.py:8261
-#: main.py:8754
+#: main.py:8293
+#: main.py:8893
 msgid "Not Found"
 msgstr "Não encontrado"
 
@@ -1668,69 +1684,69 @@ msgstr "Não é um backup de configurações do Accessible IPTV."
 msgid "Not reported by the server"
 msgstr "O servidor não informou"
 
-#: main.py:8896
+#: main.py:9035
 msgid "Nothing is playing in the built-in player."
 msgstr "Não está a ser reproduzido nada no leitor incorporado."
 
-#: main.py:8056
+#: main.py:8088
 msgid "Now: {title} ({start} – {end})"
 msgstr "Agora: {title} ({start} – {end})"
 
 #: internal_player.py:141
-#: main.py:320
-#: main.py:8586
-#: main.py:10260
-#: main.py:10382
+#: main.py:321
+#: main.py:8725
+#: main.py:10399
+#: main.py:10521
 #: options.py:869
 #: playlist.py:3164
 #: playlist.py:3264
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2356
-#: internal_player.py:2362
-#: internal_player.py:2379
+#: internal_player.py:2360
+#: internal_player.py:2366
+#: internal_player.py:2383
 msgid "Off"
 msgstr "Desligado"
 
-#: main.py:607
+#: main.py:608
 msgid "Older releases (English)"
 msgstr "Versões anteriores (em inglês)"
 
-#: main.py:3558
+#: main.py:3590
 msgid "On device loss: pause until the device returns"
 msgstr "Em caso de perda do dispositivo: pausar até o dispositivo retornar"
 
-#: main.py:3559
+#: main.py:3591
 msgid "On device loss: use the system default"
 msgstr "Em caso de perda do dispositivo: usar o dispositivo padrão do sistema"
 
-#: main.py:8675
+#: main.py:8814
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT and WebVTT files; MPV works through the application's own session."
 msgstr "Somente reprodutores com uma API documentada de texto temporizado podem fornecer as palavras das legendas. O reprodutor integrado lê arquivos SRT e WebVTT; o MPV funciona através da sessão própria do aplicativo."
 
-#: main.py:10192
+#: main.py:10331
 msgid "Open"
 msgstr "Abrir"
 
-#: main.py:3416
-#: main.py:3589
+#: main.py:3426
+#: main.py:3621
 msgid "Open Logs Folder"
 msgstr "Abrir pasta de registos"
 
-#: main.py:5400
+#: main.py:5432
 msgid "Open Recordings Folder"
 msgstr "Abrir pasta de gravações"
 
-#: main.py:289
+#: main.py:290
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "Abrir o projeto Accessible IPTV Client no GitHub"
 
-#: main.py:10308
+#: main.py:10447
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Abra o arquivo gravado no VLC, pressione Ctrl+T e insira um dos horários listados. Os horários usam o relógio de mídia do arquivo quando informado pelo FFmpeg; caso contrário, representam o tempo decorrido da gravação e podem ser ligeiramente posteriores após uma interrupção."
 
-#: internal_player.py:1848
+#: internal_player.py:1852
 msgid "Opening"
 msgstr "Abrindo"
 
@@ -1750,7 +1766,7 @@ msgstr "Senha opcional da conta do portal"
 msgid "Optional portal account username"
 msgstr "Nome de utilizador opcional da conta do portal"
 
-#: main.py:3575
+#: main.py:3607
 msgid "Options"
 msgstr "Opções"
 
@@ -1763,11 +1779,11 @@ msgstr "Outras mudanças"
 msgid "Other details reported by the server"
 msgstr "Outros detalhes informados pelo servidor"
 
-#: main.py:6936
+#: main.py:6968
 msgid "Other playlists"
 msgstr "Outras listas de reprodução"
 
-#: main.py:8619
+#: main.py:8758
 msgid "Output device for the application voice:"
 msgstr "Dispositivo de saída para a voz do aplicativo:"
 
@@ -1779,17 +1795,17 @@ msgstr "Pacote"
 msgid "Password"
 msgstr "Senha"
 
-#: internal_player.py:397
-#: internal_player.py:800
-#: internal_player.py:1743
-#: internal_player.py:1774
-#: internal_player.py:1785
-#: internal_player.py:1795
+#: internal_player.py:401
+#: internal_player.py:804
+#: internal_player.py:1747
+#: internal_player.py:1778
+#: internal_player.py:1789
+#: internal_player.py:1799
 msgid "Pause"
 msgstr "Pausar"
 
-#: internal_player.py:1851
-#: internal_player.py:1999
+#: internal_player.py:1855
+#: internal_player.py:2003
 msgid "Paused"
 msgstr "Pausado"
 
@@ -1801,67 +1817,67 @@ msgstr "Pendente"
 msgid "Phone"
 msgstr "Telefone"
 
-#: main.py:5117
+#: main.py:5149
 msgid "Platform: {platform}"
 msgstr "Plataforma: {platform}"
 
-#: internal_player.py:828
-#: main.py:3785
-#: main.py:10723
-#: main.py:10913
+#: internal_player.py:832
+#: main.py:3817
+#: main.py:10862
+#: main.py:11052
 msgid "Play"
 msgstr "Reproduzir"
 
-#: internal_player.py:398
+#: internal_player.py:402
 msgid "Play or Pause"
 msgstr "Reproduzir ou pausar"
 
-#: internal_player.py:505
-#: main.py:1601
-#: main.py:2713
-#: main.py:2725
-#: main.py:3316
-#: main.py:3460
+#: internal_player.py:509
+#: main.py:1602
+#: main.py:2723
+#: main.py:2735
+#: main.py:3326
+#: main.py:3470
 #: shortcuts.py:54
 #: shortcuts.py:71
 msgid "Play/Pause"
 msgstr "Reproduzir/Pausar"
 
-#: main.py:3958
-#: main.py:8274
-#: main.py:8277
+#: main.py:3990
+#: main.py:8306
+#: main.py:8309
 msgid "Playback Error"
 msgstr "Erro de reprodução"
 
-#: main.py:3319
-#: main.py:3464
+#: main.py:3329
+#: main.py:3474
 msgid "Player"
 msgstr "Reprodutor"
 
-#: main.py:1612
+#: main.py:1613
 msgid "Player Controls"
 msgstr "Controles do reprodutor"
 
-#: internal_player.py:665
+#: internal_player.py:669
 msgid "Player window has been destroyed."
 msgstr "A janela do reprodutor foi fechada."
 
-#: internal_player.py:1850
+#: internal_player.py:1854
 msgid "Playing"
 msgstr "Reproduzindo"
 
-#: main.py:2057
+#: main.py:2067
 msgid "Playlist"
 msgstr "Lista de reprodução"
 
-#: main.py:3307
-#: main.py:3445
+#: main.py:3317
+#: main.py:3455
 #: playlist.py:3234
 #: shortcuts.py:50
 msgid "Playlist Manager"
 msgstr "Gerenciador de listas de reprodução"
 
-#: main.py:7428
+#: main.py:7460
 msgid "Playlist refreshed: {name}"
 msgstr "Lista atualizada: {name}"
 
@@ -1869,14 +1885,14 @@ msgstr "Lista atualizada: {name}"
 msgid "Playlist type"
 msgstr "Tipo de lista de reprodução"
 
-#: main.py:3225
-#: main.py:3227
-#: main.py:3229
+#: main.py:3235
+#: main.py:3237
+#: main.py:3239
 msgid "Playlist view"
 msgstr "Vista da lista de reprodução"
 
-#: internal_player.py:1114
-#: internal_player.py:1432
+#: internal_player.py:1118
+#: internal_player.py:1436
 msgid "Please try another channel or try again later."
 msgstr "Tente outro canal ou tente novamente mais tarde."
 
@@ -1905,17 +1921,17 @@ msgstr "O portal não retornou a URL de transmissão"
 msgid "Portal handshake failed: no token returned"
 msgstr "Falha no handshake com o portal: nenhum token retornado"
 
-#: main.py:10239
-#: main.py:10242
+#: main.py:10378
+#: main.py:10381
 msgid "Prefer an audio description track when the channel has one"
 msgstr "Preferir uma faixa de audiodescrição quando o canal tiver uma"
 
-#: main.py:10230
+#: main.py:10369
 msgid "Preferred Audio Track"
 msgstr "Faixa de áudio preferida"
 
-#: main.py:3359
-#: main.py:3502
+#: main.py:3369
+#: main.py:3512
 msgid "Preferred Audio Track..."
 msgstr "Faixa de áudio preferida..."
 
@@ -1923,76 +1939,76 @@ msgstr "Faixa de áudio preferida..."
 msgid "Preferred stream container format"
 msgstr "Formato de contêiner de transmissão preferido"
 
-#: main.py:10245
+#: main.py:10384
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "Nomes de faixa ou idiomas preferidos, o mais desejado primeiro:"
 
-#: main.py:9884
+#: main.py:10023
 msgid "Preparing download..."
 msgstr "A preparar a descarga..."
 
-#: main.py:5774
-#: main.py:5828
+#: main.py:5806
+#: main.py:5860
 msgid "Preparing to restart..."
 msgstr "Preparando para reiniciar..."
 
-#: main.py:9898
+#: main.py:10037
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Prima Escape para ocultar esta janela; a transferência continua. Exibir > Mostrar transferências (Ctrl+Shift+D) volta a mostrá-la."
 
-#: main.py:2715
-#: main.py:3335
-#: main.py:3476
-#: main.py:3967
+#: main.py:2725
+#: main.py:3345
+#: main.py:3486
+#: main.py:3999
 #: shortcuts.py:64
 msgid "Previous Channel"
 msgstr "Canal Anterior"
 
-#: internal_player.py:524
-#: main.py:2734
+#: internal_player.py:528
+#: main.py:2744
 #: shortcuts.py:81
 msgid "Previous Subtitle"
 msgstr "Legenda anterior"
 
-#: main.py:10718
+#: main.py:10857
 msgid "Program - Channel"
 msgstr "Programa - Canal"
 
-#: main.py:9990
+#: main.py:10129
 msgid "Progress: {percent}%"
 msgstr "Progresso: {percent}%"
 
 #: account_info.py:111
-#: main.py:2060
+#: main.py:2070
 #: playlist.py:3385
 msgid "Provider"
 msgstr "Provedor"
 
-#: main.py:4460
-#: main.py:8274
-#: main.py:9048
-#: main.py:9106
+#: main.py:4492
+#: main.py:8306
+#: main.py:9187
+#: main.py:9245
 msgid "Provider error: {error}"
 msgstr "Erro do provedor: {error}"
 
-#: main.py:4129
+#: main.py:4161
 msgid "Provider quality (copy, MKV)"
 msgstr "Qualidade do provedor (cópia, MKV)"
 
-#: main.py:4130
+#: main.py:4162
 msgid "Provider quality (copy, MP4)"
 msgstr "Qualidade do provedor (cópia, MP4)"
 
-#: main.py:4133
+#: main.py:4165
 msgid "Provider quality (stream copy, MKA)"
 msgstr "Qualidade do provedor (cópia de fluxo, MKA)"
 
-#: main.py:2065
+#: main.py:2075
 #: playlist.py:3390
 msgid "Provider – {name}"
 msgstr "Provedor – {name}"
 
-#: main.py:5118
+#: main.py:5150
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
@@ -2000,147 +2016,159 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "MAC aleatório"
 
-#: internal_player.py:522
-#: main.py:2733
+#: internal_player.py:526
+#: main.py:2743
 #: shortcuts.py:80
 msgid "Read Current Subtitle"
 msgstr "Ler a legenda atual"
 
-#: main.py:9786
+#: main.py:3563
+msgid "Read current subtitle"
+msgstr ""
+
+#: main.py:3567
+msgid "Read previous subtitle"
+msgstr ""
+
+#: main.py:9925
 msgid "Ready."
 msgstr "Pronto."
 
-#: main.py:3976
-#: main.py:3979
+#: main.py:8596
+msgid "Recent Subtitles"
+msgstr ""
+
+#: main.py:4008
+#: main.py:4011
 msgid "Recently Watched"
 msgstr "Assistido recentemente"
 
-#: main.py:2717
-#: main.py:3336
-#: main.py:3477
+#: main.py:2727
+#: main.py:3346
+#: main.py:3487
 #: shortcuts.py:66
 msgid "Recently Watched..."
 msgstr "Assistido recentemente..."
 
-#: internal_player.py:1449
-#: internal_player.py:2004
-#: internal_player.py:2011
-#: internal_player.py:2019
-#: internal_player.py:2027
+#: internal_player.py:1453
+#: internal_player.py:2008
+#: internal_player.py:2015
+#: internal_player.py:2023
+#: internal_player.py:2031
 msgid "Reconnecting..."
 msgstr "Reconectando..."
 
-#: internal_player.py:411
-#: internal_player.py:412
-#: internal_player.py:507
-#: internal_player.py:1803
-#: internal_player.py:1819
-#: main.py:2729
-#: main.py:3794
-#: main.py:4435
-#: main.py:8897
-#: main.py:8905
+#: internal_player.py:415
+#: internal_player.py:416
+#: internal_player.py:511
+#: internal_player.py:1807
+#: internal_player.py:1823
+#: main.py:2739
+#: main.py:3826
+#: main.py:4467
+#: main.py:9036
+#: main.py:9044
 #: shortcuts.py:73
 msgid "Record"
 msgstr "Gravar"
 
-#: main.py:10918
-#: main.py:11213
+#: main.py:11057
+#: main.py:11352
 msgid "Record Daily"
 msgstr "Gravar diariamente"
 
-#: main.py:10920
-#: main.py:11215
+#: main.py:11059
+#: main.py:11354
 msgid "Record Series"
 msgstr "Gravar série"
 
-#: main.py:10919
-#: main.py:11214
+#: main.py:11058
+#: main.py:11353
 msgid "Record Weekly"
 msgstr "Gravar semanalmente"
 
-#: main.py:4451
-#: main.py:4580
-#: main.py:4707
-#: main.py:4710
-#: main.py:4721
-#: main.py:4724
-#: main.py:4732
-#: main.py:4735
-#: main.py:10597
+#: main.py:4483
+#: main.py:4612
+#: main.py:4739
+#: main.py:4742
+#: main.py:4753
+#: main.py:4756
+#: main.py:4764
+#: main.py:4767
+#: main.py:10736
 msgid "Recording"
 msgstr "Gravando"
 
-#: main.py:4948
+#: main.py:4980
 msgid "Recording Complete"
 msgstr "Gravação concluída"
 
-#: main.py:4197
+#: main.py:4229
 msgid "Recording Conflict"
 msgstr "Conflito de Gravação"
 
-#: main.py:4461
-#: main.py:4465
-#: main.py:4469
-#: main.py:4491
-#: main.py:4557
-#: main.py:4970
+#: main.py:4493
+#: main.py:4497
+#: main.py:4501
+#: main.py:4523
+#: main.py:4589
+#: main.py:5002
 msgid "Recording Error"
 msgstr "Erro de gravação"
 
-#: main.py:5388
+#: main.py:5420
 msgid "Recording Format"
 msgstr "Formato de gravação"
 
-#: main.py:5398
-#: main.py:10289
-#: main.py:10295
-#: main.py:10334
+#: main.py:5430
+#: main.py:10428
+#: main.py:10434
+#: main.py:10473
 msgid "Recording Problem Times"
 msgstr "Tempos dos problemas da gravação"
 
-#: main.py:4954
+#: main.py:4986
 msgid "Recording Warning"
 msgstr "Aviso de gravação"
 
-#: internal_player.py:1802
+#: internal_player.py:1806
 msgid "Recording is not available from this window."
 msgstr "A gravação não está disponível a partir desta janela."
 
-#: main.py:4968
+#: main.py:5000
 msgid "Recording of {name} ended unexpectedly (code {code}).\n\n{detail}"
 msgstr "A gravação de {name} terminou inesperadamente (código {code}).\n\n{detail}"
 
-#: main.py:4947
+#: main.py:4979
 msgid "Recording saved:\n{path}"
 msgstr "Gravação salva:\n{path}"
 
-#: main.py:4207
+#: main.py:4239
 msgid "Recording scheduled.\n\nThe programme guide has not been imported yet, so the Scheduled Recordings window may not list anything, and this may be the only episode you can schedule. Import the guide from File > Import EPG to DB to see and schedule upcoming programmes."
 msgstr "Gravação agendada.\n\nA guia de programas ainda não foi importada, pelo que a janela de gravações agendadas pode não listar nada, e esta pode ser a única episódio que consegue agendar. Importe a guia em Ficheiro > Importar EPG para a base de dados para ver e agendar programas futuros."
 
-#: main.py:4576
+#: main.py:4608
 msgid "Recording started ({fmt}):\n{path}"
 msgstr "Gravação iniciada ({fmt}):\n{path}"
 
-#: main.py:4952
+#: main.py:4984
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "A gravação foi interrompida, mas o ffmpeg relatou o código {code}.\n\n{detail}\n\nArquivo:\n{path}"
 
-#: main.py:4185
+#: main.py:4217
 msgid "Recording updated to repeat."
 msgstr "Gravação atualizada para repetir."
 
-#: main.py:3364
-#: main.py:3579
-#: main.py:5083
-#: main.py:5367
+#: main.py:3374
+#: main.py:3611
+#: main.py:5115
+#: main.py:5399
 msgid "Recordings"
 msgstr "Gravações"
 
-#: main.py:9699
-#: main.py:10531
-#: main.py:10569
+#: main.py:9838
+#: main.py:10670
+#: main.py:10708
 #: playlist.py:3098
 msgid "Refresh"
 msgstr "Atualizar"
@@ -2149,35 +2177,35 @@ msgstr "Atualizar"
 msgid "Refresh All Playlists"
 msgstr "Atualizar todas as listas"
 
-#: main.py:7425
+#: main.py:7457
 msgid "Refreshing all playlists..."
 msgstr "Atualizando todas as listas..."
 
-#: main.py:7429
+#: main.py:7461
 msgid "Refreshing playlist: {name}"
 msgstr "Atualizando lista: {name}"
 
-#: internal_player.py:1126
-#: internal_player.py:2006
-#: internal_player.py:2013
-#: internal_player.py:2016
-#: internal_player.py:2027
+#: internal_player.py:1130
+#: internal_player.py:2010
+#: internal_player.py:2017
+#: internal_player.py:2020
+#: internal_player.py:2031
 msgid "Refreshing stream..."
 msgstr "Atualizando transmissão..."
 
-#: main.py:573
+#: main.py:574
 msgid "Release history"
 msgstr "Histórico de versões"
 
-#: main.py:10664
+#: main.py:10803
 msgid "Remove all scheduled recordings from the list?"
 msgstr "Remover todas as gravações agendadas da lista?"
 
-#: main.py:2552
+#: main.py:2562
 msgid "Remove from Favorites"
 msgstr "Remover dos favoritos"
 
-#: main.py:10667
+#: main.py:10806
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "Remover a gravação agendada '{title}' da lista?"
 
@@ -2186,90 +2214,94 @@ msgstr "Remover a gravação agendada '{title}' da lista?"
 msgid "Rename"
 msgstr "Renomear"
 
-#: main.py:2803
+#: main.py:2813
 msgid "Replace current settings with this backup? Restart the app after importing."
 msgstr "Substituir as configurações atuais por este backup? Reinicie o aplicativo após a importação."
 
-#: main.py:1597
+#: main.py:1598
 msgid "Restore"
 msgstr "Restaurar"
 
-#: internal_player.py:1743
-#: internal_player.py:1795
+#: internal_player.py:1747
+#: internal_player.py:1799
 msgid "Resume"
 msgstr "Retomar"
 
-#: main.py:10352
+#: main.py:3571
+msgid "Review recent subtitles..."
+msgstr ""
+
+#: main.py:10491
 msgid "Schedule Padding"
 msgstr "Margem de agendamento"
 
-#: main.py:5394
+#: main.py:5426
 msgid "Schedule Padding..."
 msgstr "Margem de agendamento..."
 
-#: main.py:3798
-#: main.py:3877
-#: main.py:4158
-#: main.py:4174
-#: main.py:4178
-#: main.py:4185
-#: main.py:4189
-#: main.py:4212
-#: main.py:4219
-#: main.py:10724
-#: main.py:10915
-#: main.py:11210
-#: main.py:11258
+#: main.py:3830
+#: main.py:3909
+#: main.py:4190
+#: main.py:4206
+#: main.py:4210
+#: main.py:4217
+#: main.py:4221
+#: main.py:4244
+#: main.py:4251
+#: main.py:10863
+#: main.py:11054
+#: main.py:11349
+#: main.py:11397
 msgid "Schedule Recording"
 msgstr "Agendar gravação"
 
-#: main.py:3807
+#: main.py:3839
 msgid "Schedule Recording..."
 msgstr "Agendar gravação..."
 
-#: main.py:10596
+#: main.py:10735
 msgid "Scheduled"
 msgstr "Agendado"
 
-#: main.py:4398
+#: main.py:4430
 msgid "Scheduled Recording"
 msgstr "Gravação agendada"
 
-#: main.py:10511
-#: main.py:10648
-#: main.py:10657
-#: main.py:10668
+#: main.py:10650
+#: main.py:10787
+#: main.py:10796
+#: main.py:10807
 msgid "Scheduled Recordings"
 msgstr "Gravações agendadas"
 
-#: main.py:5384
+#: main.py:5416
 msgid "Scheduled Recordings..."
 msgstr "Gravações agendadas..."
 
-#: main.py:4342
+#: main.py:4374
 msgid "Scheduled recording is missing channel data."
 msgstr "A gravação agendada está sem dados do canal."
 
-#: main.py:4396
+#: main.py:4428
 msgid "Scheduled recording started:\n{title}"
 msgstr "Gravação agendada iniciada:\n{title}"
 
-#: main.py:4215
+#: main.py:4247
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "Gravação agendada:\n{title}\n{time}"
 
-#: main.py:6492
-#: main.py:10523
+#: main.py:6524
+#: main.py:10662
 msgid "Scheduled recordings"
 msgstr "Gravações agendadas"
 
-#: main.py:3246
-#: main.py:3250
-#: main.py:3252
+#: main.py:3256
+#: main.py:3260
+#: main.py:3262
 msgid "Search"
 msgstr "Pesquisar"
 
-#: main.py:9579
+#: main.py:9718
 msgid "Searching for devices..."
 msgstr "Procurando dispositivos..."
 
@@ -2277,7 +2309,7 @@ msgstr "Procurando dispositivos..."
 msgid "Select Custom Player"
 msgstr "Selecionar reprodutor personalizado"
 
-#: main.py:9571
+#: main.py:9710
 msgid "Select Device to Cast"
 msgstr "Selecionar dispositivo para transmitir"
 
@@ -2285,28 +2317,28 @@ msgstr "Selecionar dispositivo para transmitir"
 msgid "Select Player Executable"
 msgstr "Selecionar o executável do reprodutor"
 
-#: main.py:2387
+#: main.py:2397
 msgid "Select a channel first."
 msgstr "Selecione primeiro um canal."
 
-#: main.py:4435
+#: main.py:4467
 msgid "Select a channel to record first."
 msgstr "Selecione primeiro um canal para gravar."
 
-#: main.py:11258
+#: main.py:11397
 msgid "Select a programme first."
 msgstr "Selecione primeiro um programa."
 
-#: main.py:10080
+#: main.py:10219
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "Selecione um programa e prima Enter para o abrir, ou use o menu de contexto para o transferir. Prima Escape para fechar."
 
-#: main.py:10648
-#: main.py:10657
+#: main.py:10787
+#: main.py:10796
 msgid "Select a scheduled recording first."
 msgstr "Selecione primeiro uma gravação agendada."
 
-#: main.py:9685
+#: main.py:9824
 msgid "Select an account to check its status:"
 msgstr "Selecione uma conta para verificar o status:"
 
@@ -2318,7 +2350,7 @@ msgstr "Selecione o dispositivo de saída de áudio para o leitor integrado."
 msgid "Select the playlist format to download"
 msgstr "Selecione o formato da lista de reprodução para baixar"
 
-#: main.py:10251
+#: main.py:10390
 msgid "Separate them with commas, for example: audio description, English. A track is used when its name contains one of these words. Leave this empty to keep whatever track the channel starts on."
 msgstr "Separe-os com vírgulas, por exemplo: audiodescrição, português. Uma faixa é usada quando o nome dela contém uma destas palavras. Deixe vazio para manter a faixa com que o canal começa."
 
@@ -2344,22 +2376,22 @@ msgstr "Hora do servidor"
 msgid "Server time zone"
 msgstr "Fuso horário do servidor"
 
-#: main.py:5402
+#: main.py:5434
 msgid "Set Download Folder..."
 msgstr "Definir pasta de descarga..."
 
-#: main.py:5147
+#: main.py:5179
 msgid "Set download folder"
 msgstr "Definir pasta de descarga"
 
-#: main.py:2676
-#: main.py:2684
-#: main.py:2689
+#: main.py:2686
 #: main.py:2694
-#: main.py:2782
-#: main.py:2784
-#: main.py:2801
-#: main.py:2808
+#: main.py:2699
+#: main.py:2704
+#: main.py:2792
+#: main.py:2794
+#: main.py:2811
+#: main.py:2818
 msgid "Settings Backup"
 msgstr "Backup de configurações"
 
@@ -2367,7 +2399,7 @@ msgstr "Backup de configurações"
 msgid "Settings are too large to back up."
 msgstr "As configurações são grandes demais para o backup."
 
-#: main.py:2807
+#: main.py:2817
 msgid "Settings imported. Restart the app to use them."
 msgstr "Configurações importadas. Reinicie o aplicativo para usá-las."
 
@@ -2375,69 +2407,73 @@ msgstr "Configurações importadas. Reinicie o aplicativo para usá-las."
 msgid "Shortcut conflicts with {command}."
 msgstr "O atalho entra em conflito com {command}."
 
-#: main.py:2765
+#: main.py:2775
 msgid "Shortcut saved. Restart the app to use it."
 msgstr "Atalho salvo. Reinicie o aplicativo para usá-lo."
 
-#: main.py:3315
-#: main.py:3459
+#: main.py:3325
+#: main.py:3469
 #: shortcuts.py:63
 msgid "Show Built-in Player"
 msgstr "Mostrar reprodutor integrado"
 
-#: main.py:3483
+#: main.py:3493
 #: shortcuts.py:62
 msgid "Show Downloads"
 msgstr "Mostrar transferências"
 
-#: main.py:1600
+#: main.py:1601
 msgid "Show Player"
 msgstr "Mostrar reprodutor"
 
-#: main.py:3382
-#: main.py:3516
+#: main.py:3392
+#: main.py:3526
 msgid "Show Player on Enter"
 msgstr "Mostrar o reprodutor ao pressionar Enter"
 
-#: main.py:3386
-#: main.py:3517
+#: main.py:3396
+#: main.py:3527
 msgid "Show Stream URL"
 msgstr "Mostrar o URL da transmissão"
 
-#: main.py:579
-#: main.py:604
+#: main.py:580
+#: main.py:605
 msgid "Show older releases (English)"
 msgstr "Mostrar versões anteriores (em inglês)"
 
-#: main.py:4781
-#: main.py:4842
-#: main.py:4852
-#: main.py:10428
+#: main.py:4813
+#: main.py:4874
+#: main.py:4884
+#: main.py:10567
 msgid "Shut Down After Recordings"
 msgstr "Desligar após as gravações"
 
-#: main.py:10442
+#: main.py:10581
 msgid "Shut Down Now"
 msgstr "Desligar agora"
 
-#: main.py:5406
+#: main.py:5438
 msgid "Shut Down the Computer When Recordings Finish"
 msgstr "Desligar o computador quando as gravações terminarem"
 
-#: main.py:4841
+#: main.py:4873
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Desligamento cancelado. O desligamento automático após as gravações está desativado."
 
-#: internal_player.py:519
+#: internal_player.py:523
 #: shortcuts.py:79
 msgid "Speak Subtitles"
 msgstr "Ler legendas em voz alta"
 
-#: main.py:3538
+#: main.py:3557
+msgid "Speak subtitles"
+msgstr ""
+
+#: main.py:3548
 msgid "Speak through application voice"
 msgstr "Falar com a voz do aplicativo"
 
-#: main.py:3537
+#: main.py:3547
 msgid "Speak through screen reader"
 msgstr "Falar com o leitor de tela"
 
@@ -2445,26 +2481,26 @@ msgstr "Falar com o leitor de tela"
 msgid "Stalker Portal"
 msgstr "Stalker Portal"
 
-#: main.py:2064
+#: main.py:2074
 #: playlist.py:3389
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: main.py:2723
-#: main.py:5377
+#: main.py:2733
+#: main.py:5409
 #: shortcuts.py:59
 msgid "Start Recording"
 msgstr "Iniciar gravação"
 
-#: main.py:10355
+#: main.py:10494
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "Iniciar as gravações agendadas mais cedo ou continuar a gravar depois de o programa terminar. As gravações manuais não são alteradas."
 
-#: main.py:5661
+#: main.py:5693
 msgid "Starting update..."
 msgstr "Iniciando atualização..."
 
-#: main.py:8062
+#: main.py:8094
 msgid "Starts at {start}: {title}"
 msgstr "Começa às {start}: {title}"
 
@@ -2472,83 +2508,83 @@ msgstr "Começa às {start}: {title}"
 #: account_info.py:469
 #: account_info.py:471
 #: account_info.py:515
-#: main.py:10527
+#: main.py:10666
 msgid "Status"
 msgstr "Status"
 
-#: internal_player.py:403
-#: internal_player.py:506
-#: main.py:1602
-#: main.py:2714
-#: main.py:2726
-#: main.py:3317
-#: main.py:3461
+#: internal_player.py:407
+#: internal_player.py:510
+#: main.py:1603
+#: main.py:2724
+#: main.py:2736
+#: main.py:3327
+#: main.py:3471
 #: shortcuts.py:55
 #: shortcuts.py:72
 msgid "Stop"
 msgstr "Parar"
 
-#: main.py:5381
+#: main.py:5413
 msgid "Stop All Recordings"
 msgstr "Parar todas as gravações"
 
-#: internal_player.py:404
+#: internal_player.py:408
 msgid "Stop Playback"
 msgstr "Parar reprodução"
 
-#: internal_player.py:1819
-#: main.py:3792
-#: main.py:5379
+#: internal_player.py:1823
+#: main.py:3824
+#: main.py:5411
 msgid "Stop Recording"
 msgstr "Parar gravação"
 
-#: main.py:1614
+#: main.py:1615
 msgid "Stop Recording(s)"
 msgstr "Parar gravação(ões)"
 
-#: internal_player.py:829
-#: internal_player.py:1852
+#: internal_player.py:833
+#: internal_player.py:1856
 msgid "Stopped"
 msgstr "Parado"
 
-#: main.py:10598
+#: main.py:10737
 msgid "Stopping"
 msgstr "Parando"
 
-#: main.py:4449
-#: main.py:4705
+#: main.py:4481
+#: main.py:4737
 msgid "Stopping recording for {name}..."
 msgstr "Parando a gravação de {name}..."
 
-#: main.py:4721
+#: main.py:4753
 msgid "Stopping recording..."
 msgstr "Parando a gravação..."
 
-#: main.py:4731
+#: main.py:4763
 msgid "Stopping {count} recording(s)..."
 msgstr "Parando {count} gravação(ões)..."
 
-#: internal_player.py:1115
-#: internal_player.py:1433
+#: internal_player.py:1119
+#: internal_player.py:1437
 msgid "Stream Lost"
 msgstr "Transmissão perdida"
 
-#: main.py:3280
-#: main.py:3282
+#: main.py:3290
+#: main.py:3292
 msgid "Stream URL"
 msgstr "URL da transmissão"
 
-#: internal_player.py:1428
+#: internal_player.py:1432
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Transmissão desconectada após {count} tentativas. A transmissão pode estar offline ou com problemas."
 
-#: internal_player.py:1113
+#: internal_player.py:1117
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Transmissão desconectada. Pode estar offline ou com problemas."
 
-#: internal_player.py:1118
-#: internal_player.py:1436
-#: internal_player.py:2029
+#: internal_player.py:1122
+#: internal_player.py:1440
+#: internal_player.py:2033
 msgid "Stream lost"
 msgstr "Transmissão perdida"
 
@@ -2561,69 +2597,77 @@ msgstr "Saída da transmissão"
 msgid "Subscription"
 msgstr "Assinatura"
 
-#: main.py:8678
+#: main.py:8817
 msgid "Subtitle Capabilities"
 msgstr "Recursos de legendas"
 
-#: main.py:3570
-#: main.py:8562
-#: main.py:8615
-#: main.py:8633
-#: main.py:8639
+#: main.py:3602
+#: main.py:8701
+#: main.py:8754
+#: main.py:8772
+#: main.py:8778
 msgid "Subtitle Speech"
 msgstr "Leitura de legendas"
 
-#: main.py:3568
+#: main.py:3600
 msgid "Subtitle capabilities..."
 msgstr "Recursos de legendas..."
 
-#: internal_player.py:2404
+#: internal_player.py:2408
 msgid "Subtitle file loaded: {name}"
 msgstr "Arquivo de legenda carregado: {name}"
 
-#: internal_player.py:2393
+#: internal_player.py:2397
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Arquivos de legenda (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:8525
+#: main.py:8550
+msgid "Subtitle speech %s."
+msgstr ""
+
+#: main.py:8663
 msgid "Subtitle speech failed."
 msgstr "A leitura de legendas falhou."
 
-#: internal_player.py:2408
+#: internal_player.py:2412
 msgid "Subtitle speech needs an SRT or WebVTT file."
 msgstr "A leitura de legendas precisa de um arquivo SRT ou WebVTT."
 
-#: internal_player.py:2505
+#: internal_player.py:2523
 msgid "Subtitle speech off"
 msgstr "Leitura de legendas desativada"
 
-#: internal_player.py:2507
+#: internal_player.py:2525
 msgid "Subtitle speech on"
 msgstr "Leitura de legendas ativada"
 
-#: internal_player.py:2509
+#: internal_player.py:2527
 msgid "Subtitle speech on. Load an SRT or WebVTT file to hear subtitles."
 msgstr "Leitura de legendas ativada. Carregue um arquivo SRT ou WebVTT para ouvir as legendas."
 
-#: main.py:8568
+#: main.py:8643
+msgid "Subtitle speech paused: the selected audio output is unavailable."
+msgstr ""
+
+#: main.py:8707
 msgid "Subtitle speech will use the application voice."
 msgstr "A leitura de legendas usará a voz do aplicativo."
 
-#: main.py:8570
+#: main.py:8709
 msgid "Subtitle speech will use your screen reader."
 msgstr "A leitura de legendas usará seu leitor de tela."
 
-#: internal_player.py:2352
+#: internal_player.py:2356
 msgid "Subtitle track unavailable"
 msgstr "Faixa de legendas indisponível"
 
-#: internal_player.py:516
-#: main.py:2732
+#: internal_player.py:520
+#: main.py:2742
 #: shortcuts.py:78
 msgid "Subtitles"
 msgstr "Legendas"
 
-#: internal_player.py:2359
+#: internal_player.py:2363
 msgid "Subtitles: {name}"
 msgstr "Legendas: {name}"
 
@@ -2631,44 +2675,40 @@ msgstr "Legendas: {name}"
 msgid "System default"
 msgstr "Predefinido do sistema"
 
-#: main.py:3851
+#: main.py:3883
 msgid "The EPG database was created by an older version and is missing newer fields. Import the guide again to update it?\n\n(Without this, the EPG views cannot show programme descriptions.)"
 msgstr "O banco de dados EPG foi criado por uma versão mais antiga e faltam campos novos. Importar o guia novamente para atualizá-lo?\n\n(Sem isso, as visualizações de EPG não podem mostrar as descrições dos programas.)"
 
-#: main.py:3861
-#: main.py:7501
+#: main.py:3893
+#: main.py:7533
 msgid "The EPG import could not be started."
 msgstr "Não foi possível iniciar a importação do EPG."
 
-#: main.py:7389
+#: main.py:7421
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "A importação do EPG não foi concluída. A guia de programação pode estar incompleta ou inalterada."
 
-#: main.py:7385
+#: main.py:7417
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "A importação do EPG foi concluída. A guia de programação está atualizada."
 
-#: main.py:8561
+#: main.py:8700
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "A voz do aplicativo está disponível apenas no Windows com SAPI."
 
-#: main.py:8549
-msgid "The application voice is unavailable. Subtitles will use your screen reader."
-msgstr "A voz do aplicativo está indisponível. As legendas usarão seu leitor de tela."
-
-#: main.py:4963
+#: main.py:4995
 msgid "The audio could not be copied into an MKA container, so nothing was recorded and nothing was transcoded. Choose another audio format from Recordings > Recording Format and try again.\n\n{detail}"
 msgstr "Não foi possível copiar o áudio para um contêiner MKA, então nada foi gravado e nada foi transcodificado. Escolha outro formato de áudio em Gravações > Formato de gravação e tente novamente.\n\n{detail}"
 
-#: main.py:5133
+#: main.py:5165
 msgid "The clipboard is unavailable."
 msgstr "A área de transferência não está disponível."
 
-#: main.py:4776
+#: main.py:4808
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
 msgstr "O computador será desligado quando todas as gravações em andamento ou agendadas terminarem.\n\nAntes disso você verá uma contagem decrescente que pode cancelar, e esta opção desativa-se sozinha assim que for usada.\n\nDesligar o computador quando as gravações terminarem?"
 
-#: main.py:1205
+#: main.py:1206
 msgid "The connection to the provider timed out."
 msgstr "A conexão com o provedor expirou."
 
@@ -2684,120 +2724,124 @@ msgstr "O instalador parou com o código de saída {code}."
 msgid "The installer was still running after 15 minutes."
 msgstr "O instalador ainda estava em execução após 15 minutos."
 
-#: main.py:5542
+#: main.py:5574
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "O idioma foi alterado. Reinicie o Accessible IPTV Client para que a alteração tenha efeito completo."
 
-#: main.py:2694
+#: main.py:2704
 msgid "The passwords do not match."
 msgstr "As senhas não coincidem."
 
-#: main.py:1191
+#: main.py:1192
 msgid "The provider asked for a login (HTTP 401 Unauthorized). Check the playlist's user name and password."
 msgstr "O provedor pediu login (HTTP 401 Unauthorized). Verifique o nome de usuário e a senha da lista de reprodução."
 
-#: main.py:1194
+#: main.py:1195
 msgid "The provider does not have this programme (HTTP 404 Not Found). It may be older than the provider's archive."
 msgstr "O provedor não tem este programa (HTTP 404 Not Found). Ele pode ser mais antigo que o arquivo do provedor."
 
-#: main.py:1187
+#: main.py:1188
 msgid "The provider refused access (HTTP 403 Forbidden). Many providers allow only one stream per account at a time: stop other playback or downloads from this account and try again."
 msgstr "O provedor recusou o acesso (HTTP 403 Forbidden). Muitos provedores permitem apenas um stream por conta de cada vez: pare outras reproduções ou descargas desta conta e tente novamente."
 
-#: main.py:1198
+#: main.py:1199
 msgid "The provider rejected the request (HTTP 4xx error)."
 msgstr "O provedor rejeitou a solicitação (erro HTTP 4xx)."
 
-#: main.py:1200
+#: main.py:1201
 msgid "The provider's server had an error (HTTP 5xx). Try again later."
 msgstr "O servidor do provedor apresentou um erro (HTTP 5xx). Tente novamente mais tarde."
 
-#: main.py:1207
+#: main.py:1208
 msgid "The provider's server refused the connection."
 msgstr "O servidor do provedor recusou a conexão."
+
+#: main.py:8688
+msgid "The selected audio output is unavailable. Subtitle speech is paused."
+msgstr ""
 
 #: account_info.py:548
 msgid "The server did not report any account details."
 msgstr "O servidor não informou nenhum detalhe da conta."
 
-#: main.py:1202
+#: main.py:1203
 msgid "The stream sent data that could not be read."
 msgstr "O stream enviou dados que não puderam ser lidos."
 
-#: main.py:6061
+#: main.py:6093
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "A atualização para a v{version} não terminou, por isso o {app} continua na v{current}. Pode tentar de novo em Ajuda > Procurar atualizações..."
 
-#: main.py:648
+#: main.py:649
 msgid "The user guide could not be opened: {error}"
 msgstr "Não foi possível abrir o guia do usuário: {error}"
 
-#: main.py:9123
-#: main.py:9224
+#: main.py:9262
+#: main.py:9363
 msgid "This catch-up programme is already downloading."
 msgstr "Este programa já está a ser transferido."
 
-#: main.py:4709
+#: main.py:4741
 msgid "This channel is not currently recording."
 msgstr "Este canal não está sendo gravado no momento."
 
-#: main.py:2395
+#: main.py:2405
 msgid "This entry cannot be added to Favorites."
 msgstr "Esta entrada não pode ser adicionada aos favoritos."
 
-#: main.py:8903
+#: main.py:9042
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "Esta é uma transmissão de catch-up. Use Transferir na lista de catch-up para a guardar."
 
-#: main.py:8636
+#: main.py:8775
 msgid "This is the application voice."
 msgstr "Esta é a voz do aplicativo."
 
-#: main.py:4178
+#: main.py:4210
 msgid "This programme has already ended."
 msgstr "Este programa já terminou."
 
-#: main.py:4188
+#: main.py:4220
 msgid "This programme is already scheduled to record."
 msgstr "Este programa já está agendado para gravação."
 
-#: main.py:9101
+#: main.py:9240
 msgid "This programme is not available as catch-up content yet."
 msgstr "Este programa ainda não está disponível como replay."
 
-#: main.py:4196
+#: main.py:4228
 msgid "This recording overlaps {count} other scheduled recording(s). Schedule it anyway?"
 msgstr "Esta gravação se sobrepõe a outra (s) gravação(ões) programada (s) {count}. Agendar mesmo assim?"
 
-#: main.py:10524
-#: main.py:11121
+#: main.py:10663
+#: main.py:11260
 msgid "Time"
 msgstr "Hora"
 
-#: main.py:9992
+#: main.py:10131
 msgid "Time remaining: {time}"
 msgstr "Tempo restante: {time}"
 
-#: main.py:10525
-#: main.py:11122
+#: main.py:10664
+#: main.py:11261
 msgid "Title"
 msgstr "Título"
 
-#: internal_player.py:424
-#: internal_player.py:530
+#: internal_player.py:428
+#: internal_player.py:534
 #: shortcuts.py:83
 msgid "Toggle Full Screen"
 msgstr "Alternar tela cheia"
 
-#: main.py:371
-#: main.py:374
+#: main.py:372
+#: main.py:375
 msgid "Topics"
 msgstr "Tópicos"
 
-#: internal_player.py:2214
-#: internal_player.py:2293
-#: internal_player.py:2346
-#: internal_player.py:2358
+#: internal_player.py:2218
+#: internal_player.py:2297
+#: internal_player.py:2350
+#: internal_player.py:2362
 msgid "Track {id}"
 msgstr "Faixa {id}"
 
@@ -2826,11 +2870,11 @@ msgstr "Não foi possível baixar o manifesto. Verifique sua conexão."
 msgid "Unable to download update. Please check your connection."
 msgstr "Não foi possível baixar a atualização. Verifique sua conexão."
 
-#: main.py:9111
+#: main.py:9250
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "Não foi possível preparar a transferência do replay:\n{error}"
 
-#: main.py:9051
+#: main.py:9190
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Não foi possível preparar a transmissão de replay:\n{error}"
 
@@ -2846,7 +2890,7 @@ msgstr "Sem categoria"
 msgid "Unexpected account response from the Xtream server"
 msgstr "Resposta de conta inesperada do servidor Xtream"
 
-#: main.py:11102
+#: main.py:11241
 #: updater.py:773
 msgid "Unknown"
 msgstr "Desconhecido"
@@ -2855,30 +2899,30 @@ msgstr "Desconhecido"
 msgid "Unknown command."
 msgstr "Comando desconhecido."
 
-#: main.py:4153
+#: main.py:4185
 msgid "Unknown time"
 msgstr "Hora desconhecida"
 
-#: main.py:5645
+#: main.py:5677
 msgid "Update Available"
 msgstr "Atualização disponível"
 
-#: main.py:6076
+#: main.py:6108
 msgid "Update Complete"
 msgstr "Atualização concluída"
 
-#: main.py:5847
-#: main.py:5863
-#: main.py:5906
-#: main.py:5950
+#: main.py:5879
+#: main.py:5895
+#: main.py:5938
+#: main.py:5982
 msgid "Update Error"
 msgstr "Erro de atualização"
 
-#: main.py:6065
+#: main.py:6097
 msgid "Update Not Completed"
 msgstr "Atualização não concluída"
 
-#: main.py:5640
+#: main.py:5672
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Atualização disponível: v{latest} (atual v{current})."
 
@@ -2886,34 +2930,34 @@ msgstr "Atualização disponível: v{latest} (atual v{current})."
 msgid "Update cancelled."
 msgstr "Atualização cancelada."
 
-#: main.py:5616
+#: main.py:5648
 msgid "Update check failed: {error}"
 msgstr "Falha na verificação de atualizações: {error}"
 
-#: main.py:5571
+#: main.py:5603
 msgid "Update check is already running."
 msgstr "A verificação de atualizações já está em execução."
 
-#: main.py:5905
-#: main.py:5949
+#: main.py:5937
+#: main.py:5981
 msgid "Update failed to start: {error}"
 msgstr "Falha ao iniciar a atualização: {error}"
 
-#: main.py:5846
-#: main.py:5862
+#: main.py:5878
+#: main.py:5894
 msgid "Update failed: {error}"
 msgstr "Falha na atualização: {error}"
 
-#: main.py:5767
-#: main.py:5821
+#: main.py:5799
+#: main.py:5853
 msgid "Update helper is missing from this build."
 msgstr "O auxiliar de atualização está ausente nesta compilação."
 
-#: main.py:5787
+#: main.py:5819
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "O manifesto de atualização contém um nome de arquivo de ativo não seguro."
 
-#: main.py:5746
+#: main.py:5778
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "O manifesto de atualização contém um nome de arquivo de instalador não seguro."
 
@@ -2921,12 +2965,12 @@ msgstr "O manifesto de atualização contém um nome de arquivo de instalador n�
 msgid "Update manifest download URL is missing."
 msgstr "A URL de download do manifesto de atualização está ausente."
 
-#: main.py:5742
+#: main.py:5774
 #: updater.py:609
 msgid "Update manifest is missing required fields."
 msgstr "O manifesto de atualização está sem campos obrigatórios."
 
-#: main.py:5737
+#: main.py:5769
 msgid "Update manifest version is not newer than the current app."
 msgstr "A versão do manifesto de atualização não é mais recente que o aplicativo atual."
 
@@ -2938,35 +2982,35 @@ msgstr "O manifesto de atualização não foi encontrado na versão mais recente
 msgid "Update package contains an unsafe file path."
 msgstr "O pacote de atualização contém um caminho de arquivo inseguro."
 
-#: main.py:5806
+#: main.py:5838
 msgid "Updated executable '{name}' not found in the package."
 msgstr "O executável atualizado '{name}' não foi encontrado no pacote."
 
-#: main.py:5566
-#: main.py:5571
-#: main.py:5605
-#: main.py:5617
+#: main.py:5598
+#: main.py:5603
+#: main.py:5637
+#: main.py:5649
 msgid "Updates"
 msgstr "Atualizações"
 
-#: main.py:5581
+#: main.py:5613
 msgid "Updates are only available in the packaged build."
 msgstr "As atualizações estão disponíveis apenas na compilação empacotada."
 
-#: main.py:5579
+#: main.py:5611
 msgid "Updates are only supported on Windows builds."
 msgstr "As atualizações são compatíveis apenas com compilações do Windows."
 
-#: main.py:5660
-#: main.py:5989
+#: main.py:5692
+#: main.py:6021
 msgid "Updating {app}"
 msgstr "Atualizando {app}"
 
-#: main.py:360
-#: main.py:505
-#: main.py:649
-#: main.py:3413
-#: main.py:3585
+#: main.py:361
+#: main.py:506
+#: main.py:650
+#: main.py:3423
+#: main.py:3617
 msgid "User Guide"
 msgstr "Guia do usuário"
 
@@ -2985,90 +3029,90 @@ msgstr "Nome de usuário, senha e URL são obrigatórios."
 msgid "Validation"
 msgstr "Validação"
 
-#: main.py:5754
-#: main.py:5795
+#: main.py:5786
+#: main.py:5827
 msgid "Verifying download..."
 msgstr "Verificando download..."
 
-#: main.py:5758
-#: main.py:5808
+#: main.py:5790
+#: main.py:5840
 msgid "Verifying signature..."
 msgstr "Verificando assinatura..."
 
-#: main.py:7144
-#: main.py:7163
+#: main.py:7176
+#: main.py:7195
 msgid "Video on Demand"
 msgstr "Vídeo sob demanda"
 
-#: main.py:3327
-#: main.py:3468
+#: main.py:3337
+#: main.py:3478
 msgid "Video on Demand (Movies && Series)"
 msgstr "Vídeo sob demanda (filmes && séries)"
 
-#: main.py:3343
-#: main.py:3484
+#: main.py:3353
+#: main.py:3494
 msgid "View"
 msgstr "Exibir"
 
-#: main.py:3811
+#: main.py:3843
 msgid "View EPG..."
 msgstr "Exibir EPG..."
 
-#: internal_player.py:1866
+#: internal_player.py:1870
 msgid "Vol {value}%"
 msgstr "Vol {value}%"
 
-#: internal_player.py:429
+#: internal_player.py:433
 msgid "Volume"
 msgstr "Volume"
 
-#: internal_player.py:437
+#: internal_player.py:441
 msgid "Volume Control"
 msgstr "Controle de volume"
 
-#: main.py:2719
-#: main.py:2728
+#: main.py:2729
+#: main.py:2738
 #: shortcuts.py:58
 #: shortcuts.py:76
 msgid "Volume Down"
 msgstr "Diminuir volume"
 
-#: main.py:2718
-#: main.py:2727
+#: main.py:2728
+#: main.py:2737
 #: shortcuts.py:57
 #: shortcuts.py:75
 msgid "Volume Up"
 msgstr "Aumentar volume"
 
-#: main.py:8579
+#: main.py:8718
 msgid "Volume:"
 msgstr "Nível de volume:"
 
-#: internal_player.py:531
-#: main.py:2722
-#: main.py:2736
-#: main.py:3310
-#: main.py:3449
+#: internal_player.py:535
+#: main.py:2732
+#: main.py:2746
+#: main.py:3320
+#: main.py:3459
 #: shortcuts.py:68
 #: shortcuts.py:86
 msgid "What Is Playing"
 msgstr "O que está sendo reproduzido"
 
-#: main.py:555
-#: main.py:3415
-#: main.py:3586
+#: main.py:556
+#: main.py:3425
+#: main.py:3618
 #: release_notes.py:146
 msgid "What's New"
 msgstr "Novidades"
 
-#: main.py:2721
-#: main.py:3448
-#: main.py:10691
+#: main.py:2731
+#: main.py:3458
+#: main.py:10830
 #: shortcuts.py:67
 msgid "What's on Now"
 msgstr "No ar agora"
 
-#: main.py:10233
+#: main.py:10372
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "Quando um canal oferece mais de uma faixa de áudio, o reprodutor integrado pode mudar sozinho para a faixa que você quiser."
 
@@ -3096,17 +3140,17 @@ msgstr "Senha do Xtream Codes"
 msgid "Xtream Codes username"
 msgstr "Nome de usuário do Xtream Codes"
 
-#: main.py:2062
+#: main.py:2072
 #: playlist.py:3387
 msgid "Xtream Codes – {name}"
 msgstr "Xtream Codes – {name}"
 
 #: account_info.py:357
-#: main.py:2473
+#: main.py:2483
 msgid "Yes"
 msgstr "Sim"
 
-#: main.py:2560
+#: main.py:2570
 msgid "You have not added any favorites yet. Select a channel and press Ctrl+D to add it."
 msgstr "Ainda não adicionou nenhum favorito. Selecione um canal e pressione Ctrl+D para adicioná-lo."
 
@@ -3118,7 +3162,7 @@ msgstr "disponível"
 msgid "channel stream URL"
 msgstr "URL de transmissão do canal"
 
-#: main.py:9954
+#: main.py:10093
 msgid "ffmpeg exit code: {code}"
 msgstr "Código de saída do ffmpeg: {code}"
 
@@ -3130,11 +3174,19 @@ msgstr "não suportado por este reprodutor"
 msgid "not verified yet"
 msgstr "ainda não verificado"
 
+#: main.py:8549
+msgid "off"
+msgstr ""
+
+#: main.py:8549
+msgid "on"
+msgstr ""
+
 #: account_info.py:116
 msgid "playlist URL"
 msgstr "URL da lista de reprodução"
 
-#: internal_player.py:190
+#: internal_player.py:191
 msgid "python-vlc (libVLC) is not available."
 msgstr "O python-vlc (libVLC) não está disponível."
 
@@ -3142,40 +3194,40 @@ msgstr "O python-vlc (libVLC) não está disponível."
 msgid "unknown source"
 msgstr "origem desconhecida"
 
-#: main.py:5119
+#: main.py:5151
 msgid "wxPython: {version}"
 msgstr "wxPython: {version}"
 
-#: main.py:4131
+#: main.py:4163
 msgid "x264 re-encode (MKV)"
 msgstr "Recodificação x264 (MKV)"
 
-#: main.py:4132
+#: main.py:4164
 msgid "x264 re-encode (MP4)"
 msgstr "Recodificação x264 (MP4)"
 
-#: main.py:11315
+#: main.py:11454
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "O {app} já está em execução, mas não respondeu. Aguarde um momento e tente novamente, ou feche-o pela área de notificação."
 
-#: main.py:5603
+#: main.py:5635
 msgid "{app} is up to date (v{version})."
 msgstr "O {app} está atualizado (v{version})."
 
-#: main.py:6074
+#: main.py:6106
 msgid "{app} was successfully updated to v{version}."
 msgstr "{app} foi atualizado com êxito para a v{version}."
 
-#: main.py:2471
+#: main.py:2481
 msgid "{channel}. Now: {current}. Next: {next}. Recording: {recording}."
 msgstr "{channel}. Agora: {current}. A seguir: {next}. Gravação: {recording}."
 
-#: main.py:10712
-#: main.py:10863
+#: main.py:10851
+#: main.py:11002
 msgid "{count} programs"
 msgstr "{count} programas"
 
-#: main.py:6485
+#: main.py:6517
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} gravação está agendada mas ainda não começou.\n\n{names}\n\nA aplicação tem de permanecer aberta para a iniciar. Sair na mesma?"
 
@@ -3199,15 +3251,15 @@ msgstr "Campo {label}"
 msgid "{label} label"
 msgstr "Rótulo {label}"
 
-#: main.py:2155
+#: main.py:2165
 msgid "{name} (Favorite)"
 msgstr "{name} (favorito)"
 
-#: main.py:2502
+#: main.py:2512
 msgid "{name} was removed. Favorites is now empty."
 msgstr "{name} foi removido. Os favoritos estão vazios."
 
-#: main.py:270
+#: main.py:271
 msgid "{name} {version}"
 msgstr "{name} {version}"
 
@@ -3215,32 +3267,32 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "O {player} não está configurado para Linux."
 
-#: internal_player.py:731
+#: internal_player.py:735
 msgid "{title} - Built-in Player"
 msgstr "{title} - Reprodutor integrado"
 
-#: main.py:9117
+#: main.py:9256
 msgid "{title} - {channel}"
 msgstr "{title} - {channel}"
 
-#: main.py:2466
+#: main.py:2476
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} a {end}"
 
-#: internal_player.py:1863
+#: internal_player.py:1867
 msgid "{value}s buffer"
 msgstr "buffer de {value}s"
 
-#: main.py:5014
+#: main.py:5046
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Foram registados {warnings} avisos, {errors} erros e {fatals} erros fatais no total."
 
-#: internal_player.py:1862
+#: internal_player.py:1866
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
-#: main.py:7150
-#: main.py:7175
+#: main.py:7182
+#: main.py:7207
 msgid "◄ Back"
 msgstr "◄ Voltar"
 
