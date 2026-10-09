@@ -15,13 +15,13 @@ back to screen-reader speech. Speech must never take playback down with it.
 
 import ctypes
 import logging
-import platform
+import sys
 import threading
 from ctypes import wintypes
 
 LOG = logging.getLogger(__name__)
 
-_IS_WINDOWS = platform.system() == "Windows"
+_IS_WINDOWS = sys.platform == "win32"
 
 # SAPI.SpVoice as IDispatch; the SpVoice coclass is scriptable.
 _CLSID_SpVoice = "{96749377-3391-11D2-9EE3-00C04F797396}"
@@ -32,6 +32,7 @@ _COINIT_APARTMENTTHREADED = 0x2
 _DISPATCH_METHOD = 1
 _DISPATCH_PROPERTYGET = 2
 _DISPATCH_PROPERTYPUT = 4
+_DISPATCH_PROPERTYPUTREF = 8
 _DISPID_PROPERTYPUT = -3
 _LOCALE_SYSTEM_DEFAULT = 0x800
 
@@ -56,6 +57,24 @@ class _ComError(Exception):
     pass
 
 
+class _VariantData(ctypes.Union):
+    # VARIANT's union also holds a BRECORD (two pointers), which makes VARIANT
+    # 24 bytes on 64-bit and 16 on 32-bit. Declared as a bare int64 it was 16
+    # on 64-bit: Invoke wrote past the result and the app died at startup
+    # (v1.147.0/1, 0xC0000409).
+    _fields_ = [("data", ctypes.c_int64),
+                ("_record", ctypes.c_void_p * 2)]
+
+
+class _Variant(ctypes.Structure):
+    _anonymous_ = ("_u",)
+    _fields_ = [("vt", wintypes.USHORT),
+                ("wReserved1", wintypes.USHORT),
+                ("wReserved2", wintypes.USHORT),
+                ("wReserved3", wintypes.USHORT),
+                ("_u", _VariantData)]
+
+
 class _Dispatch:
     """Minimal IDispatch client: method calls, property get/put, BSTR/i4/bool."""
 
@@ -65,7 +84,7 @@ class _Dispatch:
                     ("Data3", wintypes.WORD),
                     ("Data4", ctypes.c_ubyte * 8)]
 
-    def __init__(self, punk):
+    def __init__(self, punk, addref=True):
         self._ole32 = ctypes.windll.ole32
         self._oleaut32 = ctypes.windll.oleaut32
         # Pointer widths matter on 64-bit: declare every prototype.
@@ -90,7 +109,7 @@ class _Dispatch:
             if hr != 0 or not ppv.value:
                 raise _ComError(f"CoCreateInstance(SpVoice) failed: {hr:#x}")
             punk = ppv.value
-        else:
+        elif addref:
             # punk is an IDispatch pointer obtained elsewhere; AddRef it.
             self._addref(punk)
         self._punk = punk
@@ -105,25 +124,20 @@ class _Dispatch:
         return guid
 
     def _addref(self, punk):
-        func = ctypes.WINFUNCTYPE(wintypes.ULONG)(
+        func = ctypes.WINFUNCTYPE(wintypes.ULONG, ctypes.c_void_p)(
             ctypes.cast(punk, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents[1])
         func(punk)
 
     def release(self):
         if self._punk:
-            func = ctypes.WINFUNCTYPE(wintypes.ULONG)(
+            func = ctypes.WINFUNCTYPE(wintypes.ULONG, ctypes.c_void_p)(
                 self._vtable.contents[2])
             func(self._punk)
             self._punk = 0
 
     # -- VARIANT helpers -----------------------------------------------------
 
-    class _Variant(ctypes.Structure):
-        _fields_ = [("vt", wintypes.USHORT),
-                    ("wReserved1", wintypes.USHORT),
-                    ("wReserved2", wintypes.USHORT),
-                    ("wReserved3", wintypes.USHORT),
-                    ("data", ctypes.c_int64)]
+    _Variant = _Variant
 
     def _to_variant(self, value):
         var = self._Variant()
@@ -135,8 +149,8 @@ class _Dispatch:
             var.data = value
         elif isinstance(value, _Dispatch):
             var.vt = _VT_DISPATCH
+            # Borrowed for the call only; the callee AddRefs what it keeps.
             var.data = value._punk
-            value._addref(value._punk)
         elif isinstance(value, str):
             var.vt = _VT_BSTR
             bstr = self._oleaut32.SysAllocString(ctypes.c_wchar_p(value))
@@ -157,9 +171,10 @@ class _Dispatch:
         if var.vt == _VT_I4:
             return ctypes.c_int32(var.data & 0xFFFFFFFF).value
         if var.vt == _VT_BOOL:
-            return bool(var.data)
+            return bool(var.data & 0xFFFF)  # VARIANT_BOOL is 16 bits
         if var.vt == _VT_DISPATCH and var.data:
-            return _Dispatch(var.data)
+            # Invoke already handed us a reference; take it over.
+            return _Dispatch(var.data, addref=False)
         if var.vt == _VT_EMPTY:
             return None
         return None
@@ -177,11 +192,13 @@ class _Dispatch:
         # IDispatch vtable: 0 QI, 1 AddRef, 2 Release, 3 GetTypeInfoCount,
         # 4 GetTypeInfo, 5 GetIDsOfNames, 6 Invoke.
         func = ctypes.WINFUNCTYPE(
-            ctypes.c_long, ctypes.c_void_p,
+            ctypes.c_long, ctypes.c_void_p, ctypes.c_void_p,
             ctypes.POINTER(wintypes.LPCWSTR), wintypes.UINT,
             wintypes.LCID, ctypes.POINTER(wintypes.DWORD))(
                 self._vtable.contents[5])
-        hr = func(self._punk, wname, 1, _LOCALE_SYSTEM_DEFAULT,
+        # GetIDsOfNames(this, riid, names, count, lcid, dispids); riid is IID_NULL.
+        iid_null = ctypes.create_string_buffer(16)
+        hr = func(self._punk, iid_null, wname, 1, _LOCALE_SYSTEM_DEFAULT,
                   ctypes.byref(dispid))
         if hr != 0:
             raise _ComError(f"GetIDsOfNames({name}) failed: {hr:#x}")
@@ -205,11 +222,20 @@ class _Dispatch:
             ctypes.cast(named, ctypes.POINTER(wintypes.DWORD)) if named else None,
             len(variants), 1 if prop_put else 0)
         result = self._Variant()
-        flags = _DISPATCH_PROPERTYPUT if prop_put else (
-            _DISPATCH_PROPERTYGET if not args else _DISPATCH_METHOD)
+        # Without arguments the name may be a method (GetAudioOutputs) or a
+        # property (Count); IDispatch takes both flags, as VBScript sends.
+        flags = _DISPATCH_PROPERTYGET | _DISPATCH_METHOD if not args else _DISPATCH_METHOD
+        if prop_put:
+            # Object properties (AudioOutput) only accept "Set" (PUTREF);
+            # None means Nothing, a null IDispatch, not VT_EMPTY.
+            putref = args[0] is None or isinstance(args[0], _Dispatch)
+            flags = _DISPATCH_PROPERTYPUTREF if putref else _DISPATCH_PROPERTYPUT
+            if args[0] is None:
+                variants[0].vt = _VT_DISPATCH
+                arr[0].vt = _VT_DISPATCH
         func = ctypes.WINFUNCTYPE(
             ctypes.c_long, ctypes.c_void_p, wintypes.DWORD,
-            ctypes.POINTER(wintypes.GUID), wintypes.LCID, wintypes.WORD,
+            ctypes.c_void_p, wintypes.LCID, wintypes.WORD,
             ctypes.POINTER(DISPPARAMS), ctypes.POINTER(self._Variant),
             ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.UINT))(
                 self._vtable.contents[6])
@@ -246,10 +272,16 @@ class AppTtsBackend:
         self._volume = 100
         self._selected_output = ""  # friendly-name fragment, "" = SAPI default
         self._speak_failed = False  # log the first failure only, not a storm
+        self._com_initialized = False  # owes one CoUninitialize in close()
         if not _IS_WINDOWS:
             return
         try:
-            ctypes.windll.ole32.CoInitializeEx(None, _COINIT_APARTMENTTHREADED)
+            init = ctypes.windll.ole32.CoInitializeEx
+            init.restype = ctypes.c_long
+            # S_OK and S_FALSE both need a matching CoUninitialize;
+            # RPC_E_CHANGED_MODE means another component owns the apartment
+            # and SAPI still works inside it, but it is not ours to undo.
+            self._com_initialized = init(None, _COINIT_APARTMENTTHREADED) in (0, 1)
         except Exception:
             LOG.debug("app_tts: CoInitializeEx failed", exc_info=True)
             return
@@ -349,14 +381,12 @@ class AppTtsBackend:
                         item = tokens.call("Item", i)
                         try:
                             desc = item.call("GetDescription") or ""
+                            if name.lower() in desc.lower():
+                                self._voice.put("AudioOutput", item)
+                                self._selected_output = name
+                                return True
                         finally:
-                            pass
-                        if name.lower() in desc.lower():
-                            self._voice.put("AudioOutput", item)
                             item.release()
-                            self._selected_output = name
-                            return True
-                        item.release()
                 finally:
                     tokens.release()
             return False
@@ -367,8 +397,8 @@ class AppTtsBackend:
     def reset_output(self) -> bool:
         """Best-effort return to the SAPI default output (issue #37).
 
-        Used by the "use the system default" device-loss policy. Putting
-        VT_EMPTY for AudioOutput asks SAPI for its default; on failure the
+        Used by the "use the system default" device-loss policy. Setting
+        AudioOutput to Nothing asks SAPI for its default; on failure the
         caller keeps the screen-reader fallback, so this never breaks speech.
         """
         if not self._voice:
@@ -403,6 +433,8 @@ class AppTtsBackend:
                 voice.release()
             except Exception:
                 LOG.debug("app_tts: release failed", exc_info=True)
+        if self._com_initialized:
+            self._com_initialized = False
             try:
                 ctypes.windll.ole32.CoUninitialize()
             except Exception:

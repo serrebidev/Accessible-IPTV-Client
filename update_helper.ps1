@@ -1062,6 +1062,7 @@ function Start-AppAfterUpdate {
     # seconds counts as a failure, not a success - and the last resort hands the
     # launch to Explorer, which starts the app from the shell instead of from
     # this helper's own process tree.
+    $crashed = $false
     for ($attempt = 1; $attempt -le 2; $attempt++) {
         $app = $null
         Grant-ForegroundToNextProcess
@@ -1093,8 +1094,17 @@ function Start-AppAfterUpdate {
                 return $true
             }
             Write-Log "Restart attempt $attempt exited immediately with code $($app.ExitCode)."
+            $crashed = $true
         }
         Wait-Pumped -Milliseconds 2000 -Window $Window
+    }
+
+    # The app started and died (v1.147.1 crashed with 0xC0000409): launching it
+    # again through Explorer only hides that, and the user heard "Update
+    # complete" for an app that never opened. Say it could not start instead.
+    if ($crashed) {
+        Write-Log "Could not restart the app after the update: it exits as soon as it starts."
+        return $false
     }
 
     try {
