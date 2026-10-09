@@ -27,8 +27,9 @@ class MockState(IntEnum):
     Error = 7
 
 
-@pytest.mark.parametrize('buffered_seconds,expected', [(5, []), (8, []), (10, ['refresh'])])
-def test_live_buffer_recovery_waits_for_provider_burst(monkeypatch, buffered_seconds, expected):
+@pytest.mark.parametrize('xtream', [True, False])
+@pytest.mark.parametrize('buffered_seconds,expected', [(5, []), (8, []), (10, ['restart'])])
+def test_live_buffer_recovery_waits_for_provider_burst(monkeypatch, buffered_seconds, expected, xtream):
     """A short pause must not discard buffered media and open another connection."""
     actions = []
     frame = types.SimpleNamespace(
@@ -41,7 +42,7 @@ def test_live_buffer_recovery_waits_for_provider_burst(monkeypatch, buffered_sec
         _refresh_audio_track_choice=lambda: None,
         _state_name=internal_player.InternalPlayerFrame._state_name,
         _monitor_playback_progress=lambda *a: None,
-        _looks_like_xtream_live_ts=lambda: True,
+        _looks_like_xtream_live_ts=lambda: xtream,
         _restart_expected_xtream_live=lambda: actions.append('refresh') or True,
         _schedule_restart=lambda *a, **k: actions.append('restart'),
         _localized_state=lambda s: s,
@@ -608,10 +609,30 @@ class TestPlaybackHealthWatchdog:
         frame.media.available = False
         frame.player.advance_position = False
 
-        for tick in range(frame._stall_threshold + 1):
+        for tick in range(21):
             self.IPF._monitor_playback_progress(frame, 20.0 + tick * 0.5, "playing")
 
         assert frame.restarts == [("playback stalled", True)]
+
+    def test_position_watchdog_keeps_connection_through_eight_second_pause(self):
+        frame = self._frame()
+        frame.media.available = False
+        frame.player.advance_position = False
+        for tick in range(17):
+            self.IPF._monitor_playback_progress(frame, 20.0 + tick * 0.5, "playing")
+        frame.player.advance_position = True
+        self.IPF._monitor_playback_progress(frame, 28.5, "playing")
+        assert frame.restarts == []
+
+    def test_av_watchdog_waits_for_initial_cache_to_fill(self):
+        frame = self._frame()
+        frame.base_buffer_seconds = 18.0
+        frame._play_start_monotonic = 100.0
+        self._sample(frame, 100.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 100.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 101.0, (1200, 120, 120, 120, 120))
+        self._sample(frame, 120.0, (1200, 120, 120, 120, 120))
+        assert frame.restarts == []
 
     def test_position_watchdog_waits_for_a_restart_to_fill_its_cache(self):
         # A reconnect that raised the buffer to 12 s: libVLC says Playing but
@@ -1186,6 +1207,35 @@ def test_backed_off_retry_does_not_reopen_a_newer_channel(monkeypatch):
     frame._vlc_generation = 6  # the user picked another channel
     later[0]()
     assert played == []
+
+
+@pytest.mark.parametrize('kind,base,maximum,expected', [
+    ('live', 2., 18., 10.), ('live', 4., 18., 10.),
+    ('live', 12., 18., 13.), ('live', 2., 6., 6.),
+    ('catchup', 2., 18., 3.),
+])
+def test_stall_recovery_builds_live_cushion_in_one_retry(monkeypatch, kind, base, maximum, expected):
+    later, profiles = [], []
+    monkeypatch.setattr(internal_player.wx, 'CallLater', lambda ms, fn: later.append(fn))
+    monkeypatch.setattr(internal_player.time, 'monotonic', lambda: 100.)
+    frame = types.SimpleNamespace(
+        _destroyed=False, _manual_stop=False, _gave_up=False,
+        _current_url='http://a/live/u/p/1', _current_title='A', _current_stream_kind=kind,
+        _pending_xtream_refresh=False, _pending_restart=False,
+        _last_restart_ts=0., _reconnect_reset_window=120., _restart_cooldown=2.,
+        _reconnect_attempts=0, _max_reconnect_attempts=6, _last_restart_reason='',
+        _vlc_generation=5, _update_status_label=lambda *a, **k: None,
+        _reconnect_delay_ms=internal_player.InternalPlayerFrame._reconnect_delay_ms,
+        base_buffer_seconds=base, _buffer_step_seconds=1., _max_buffer_seconds=maximum,
+        _refresh_ts_floor=lambda: None, _update_cache_bounds=lambda: None,
+        _estimate_stream_bitrate=lambda *a, **k: None,
+    )
+    frame.play = lambda *a, **k: profiles.append(
+        internal_player.InternalPlayerFrame._compute_buffer_profile(frame, frame._current_url)[1])
+    internal_player.InternalPlayerFrame._schedule_restart(frame, 'playback stalled', adjust_buffer=True)
+    later[0]()
+    assert profiles[0]['network_ms'] == int(expected * 1000)
+    assert frame._reconnect_attempts == 1
 
 
 def test_stream_lost_box_goes_through_the_app_modal_queue():

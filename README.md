@@ -149,7 +149,7 @@ Recordings follow the same choice. An MP3, or any other audio-only recording, ho
 
 The internal player sizes its network buffer dynamically. You can tune it in `iptvclient.conf`:
 
-- `internal_player_buffer_seconds` (default ~2s)
+- `internal_player_buffer_seconds` (default 10s; existing saved values are preserved)
 - `internal_player_max_buffer_seconds` (default ~18s)
 - `internal_player_variant_max_mbps` (HLS quality cap in Mbps, 0 = no cap)
 
