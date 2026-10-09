@@ -17,6 +17,7 @@ import wx
 import catchup_direct
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
+from options import DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
 import user_guide
 import shortcuts
 import subtitle_cues
@@ -253,9 +254,6 @@ class InternalPlayerFrame(wx.Frame):
         self._min_network_cache_seconds = 0.0
         self._max_network_cache_seconds = 0.0
         self._ts_network_bias = 0.0
-        # Bursty live providers can pause 5-8 seconds; keep the connection and
-        # buffered media through that pause. This does not increase startup cache.
-        self._xtream_buffer_refresh_seconds = 10.0
         self._xtream_refresh_count = 0
         self._max_xtream_refreshes = 6
         # No media yet: libVLC sits in Opening for as long as a server stays
@@ -283,7 +281,6 @@ class InternalPlayerFrame(wx.Frame):
         self._last_state_name: Optional[str] = None
         self._last_position_ms: Optional[int] = None
         self._stall_ticks = 0
-        self._stall_threshold = 8
         # One playback-health watchdog observes the presentation clock plus
         # libVLC's independent audio/video counters.  A single "anything is
         # moving" timestamp is not enough: audio can keep the VLC clock alive
@@ -312,7 +309,6 @@ class InternalPlayerFrame(wx.Frame):
             "application/json,text/plain,*/*"
         )
         self._buffer_start_ts: Optional[float] = None
-        self._early_buffer_fix_applied = False
         self._has_seen_playing = False
         self._min_buffer_event_seconds = 1.25
 
@@ -722,7 +718,6 @@ class InternalPlayerFrame(wx.Frame):
         self._stall_ticks = 0
         self._reset_av_watchdog()
         self._buffer_start_ts = None
-        self._early_buffer_fix_applied = False
         self._has_seen_playing = False
         if not _retry:
             # A reconnect reopens the same URL, so it keeps what detection
@@ -1462,7 +1457,11 @@ class InternalPlayerFrame(wx.Frame):
             if self._destroyed or not self._current_url or self._manual_stop or self._gave_up:
                 return
             if adjust_buffer:
-                new_base = min(self.base_buffer_seconds + self._buffer_step_seconds, self._max_buffer_seconds)
+                new_base = self.base_buffer_seconds + self._buffer_step_seconds
+                if self._current_stream_kind == "live":
+                    # One recovery must cover 5-8 s source gaps, not six reconnects.
+                    new_base = max(new_base, DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS)
+                new_base = min(new_base, self._max_buffer_seconds)
                 if new_base > self.base_buffer_seconds:
                     LOG.info("Increasing base buffer to %.1fs to stabilise playback.", new_base)
                     self.base_buffer_seconds = new_base
@@ -1614,7 +1613,7 @@ class InternalPlayerFrame(wx.Frame):
             )
 
         since_start = now - self._play_start_monotonic if self._play_start_monotonic else float("inf")
-        if not armed or since_start < self._av_startup_grace_seconds:
+        if not armed or since_start < self._av_startup_grace_seconds + self.base_buffer_seconds:
             return armed
 
         video_stalled = bool(
@@ -1698,7 +1697,8 @@ class InternalPlayerFrame(wx.Frame):
         else:
             self._stall_ticks = 0
         self._last_position_ms = position
-        if self._stall_ticks >= self._stall_threshold:
+        # The status timer runs every 500 ms; match the A/V watchdog's patience.
+        if self._stall_ticks * 0.5 >= self._av_stall_threshold_seconds:
             self._stall_ticks = 0
             self._schedule_restart("playback stalled", adjust_buffer=True)
 
@@ -1955,34 +1955,13 @@ class InternalPlayerFrame(wx.Frame):
             self._maybe_reapply_audio_track()
 
         self._monitor_playback_progress(now, state_key)
-        xtream_live = self._current_stream_kind == "live" and self._looks_like_xtream_live_ts()
-
         if state_key == "buffering":
             if self._buffer_start_ts is None:
                 self._buffer_start_ts = now
             buffer_duration = now - self._buffer_start_ts
-            since_start = now - self._play_start_monotonic if self._play_start_monotonic else float("inf")
-            allow_recovery = self._has_seen_playing
-            handled_xtream_refresh = False
-            if (
-                allow_recovery
-                and xtream_live
-                and not self._pending_restart
-                and buffer_duration >= self._xtream_buffer_refresh_seconds
-            ):
-                handled_xtream_refresh = self._restart_expected_xtream_live()
-            if (
-                allow_recovery
-                and not xtream_live
-                and not handled_xtream_refresh
-                and not self._pending_restart
-                and not self._early_buffer_fix_applied
-                and since_start <= 45.0
-                and buffer_duration >= 6.0
-            ):
-                self._early_buffer_fix_applied = True
-                self._schedule_restart("early buffering detected", adjust_buffer=True)
-            elif allow_recovery and not handled_xtream_refresh and not self._pending_restart and buffer_duration >= 10.0:
+            # A pause is not an ended TS segment: keep the connection, then
+            # use backed-off recovery with a larger cache if it stays stalled.
+            if self._has_seen_playing and not self._pending_restart and buffer_duration >= 10.0:
                 self._schedule_restart("prolonged buffering", adjust_buffer=True)
         else:
             if self._buffer_start_ts is not None:

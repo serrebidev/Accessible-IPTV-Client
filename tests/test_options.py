@@ -47,10 +47,23 @@ def test_load_config_preserves_explicit_buffer_settings(tmp_path, monkeypatch):
     cfg_file = tmp_path / "config.json"
     monkeypatch.setattr(options, "get_config_read_candidates",
                         lambda: [str(cfg_file)])
+    monkeypatch.setattr(options, "get_config_write_target",
+                        lambda: str(cfg_file))
     for stored, expected in ((2.0, 2.0), (4.0, 4.0), (12.0, 12.0), (5.0, 5.0)):
         cfg_file.write_text(json.dumps({"internal_player_buffer_seconds": stored}),
                             encoding="utf-8")
+        cfg = options.load_config()
+        assert cfg["internal_player_buffer_seconds"] == expected
+        options.save_config(cfg)
         assert options.load_config()["internal_player_buffer_seconds"] == expected
+
+
+def test_missing_buffer_defaults_to_cushion_longer_than_provider_pauses(tmp_path, monkeypatch):
+    cfg_file = tmp_path / "config.json"
+    cfg_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(options, "get_config_read_candidates", lambda: [str(cfg_file)])
+    cfg = options.load_config()
+    assert 8.0 < cfg["internal_player_buffer_seconds"] <= cfg["internal_player_max_buffer_seconds"]
 
 
 def test_load_config_keeps_existing_split_prefs(tmp_path, monkeypatch):

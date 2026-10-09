@@ -2,6 +2,8 @@ You are a professional Windows Python developer with a decade of IPTV app experi
 
 Saved player buffer durations are explicit user choices. Preserve them on load; new defaults apply to missing values. Cover 2, 4, and 12 seconds in config round-trip tests.
 
+Live providers can pause 5-8 seconds. Missing config values default to a 10-second buffer; saved values remain unchanged. Live stall recovery raises the session cache to at least that cushion, capped by the configured maximum. Both A/V and 500 ms presentation-clock watchdogs wait 10 seconds, and startup grace includes the cache duration. Prolonged buffering uses backed-off recovery with a larger cache, never the fast TS-ended refresh path. An injected 8-second local MPEG-TS pause kept one real libVLC connection open with no recovery at 2 and 10 seconds of configured cache.
+
 You are root on this Windows machine and can install and use whatever is needed with winget, PowerShell, Chocolatey, pip, or other package managers.
 
 Make sure the PyInstaller spec file includes all runtime requirements, dynamic imports, binary assets, and needed submodules for the build.
