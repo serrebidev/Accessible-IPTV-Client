@@ -1,6 +1,12 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.147.3 - 2026-10-08
+
+### Bug fixes
+
+- Channels slow to start after browsing on Dispatcharr
+
 ## v1.147.2 - 2026-10-08
 
 ### Bug fixes
