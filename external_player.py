@@ -57,7 +57,7 @@ class ExternalPlayerLauncher:
         if subtitle_manager is not None and MpvSubtitleAdapter is not None:
             resolved = self._resolve_player_name(player_name, custom_path)
             if resolved == "MPV":
-                if self._launch_mpv_subtitled(url, subtitle_manager, subtitle_state_cb):
+                if self._launch_mpv_subtitled(url, subtitle_manager, subtitle_state_cb, custom_path):
                     return True, ""
                 LOG.info("MPV subtitle adapter unavailable; plain handoff instead")
 
@@ -148,8 +148,20 @@ class ExternalPlayerLauncher:
                 return "MPC"
         return player_name
 
-    def _find_mpv_exe(self):
-        """Locate the MPV executable the same way launch() does."""
+    def _find_mpv_exe(self, custom_path: str = ""):
+        """Locate the MPV executable.
+
+        Resolution order: validated custom path, shutil.which("mpv"),
+        then known installation locations.
+        """
+        # 1. Validated custom path first.
+        if custom_path and os.path.isfile(custom_path):
+            return custom_path
+        # 2. PATH lookup on all platforms.
+        found = shutil.which("mpv")
+        if found:
+            return found
+        # 3. Known installation locations.
         system = platform.system()
         if system == "Windows":
             for exe in (r"C:\\Program Files\\mpv\\mpv.exe",
@@ -159,12 +171,12 @@ class ExternalPlayerLauncher:
             return None
         if system == "Darwin":
             return None  # no bundled macOS path known; keep honest
-        return shutil.which("mpv")
+        return None
 
-    def _launch_mpv_subtitled(self, url, manager, state_cb=None) -> bool:
+    def _launch_mpv_subtitled(self, url, manager, state_cb=None, custom_path: str = "") -> bool:
         """Launch our own MPV behind the subtitle-text session adapter."""
         self.close_subtitle_adapter()
-        exe = self._find_mpv_exe()
+        exe = self._find_mpv_exe(custom_path)
         if not exe:
             LOG.info("MPV subtitle adapter: mpv executable not found")
             return False

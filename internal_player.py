@@ -184,6 +184,7 @@ class InternalPlayerFrame(wx.Frame):
         shortcut_config: Optional[dict] = None,
         speak_subtitles: bool = False,
         on_speak_subtitles: Optional[Callable[[bool], None]] = None,
+        on_cue: Optional[Callable[..., None]] = None,
     ) -> None:
         _prepare_vlc_runtime()
         if vlc is None:
@@ -197,6 +198,9 @@ class InternalPlayerFrame(wx.Frame):
         self._shortcuts = shortcuts.effective(shortcut_config or {}, "player")
         self._speak_subtitles = bool(speak_subtitles)
         self._on_speak_subtitles_cb = on_speak_subtitles
+        # Cue sink (issue #45, item 2): when set, active cues are emitted to
+        # the shared SubtitleSpeechManager instead of spoken directly.
+        self._on_cue_cb = on_cue
         self._subtitle_cues: List[subtitle_cues.Cue] = []
         self._cue_index: Optional[int] = None
         # The cue most recently shown, and where Previous/Next Subtitle review stands.
@@ -2462,8 +2466,22 @@ class InternalPlayerFrame(wx.Frame):
             self._last_cue_index = self._review_cue_index = index
         text = self._subtitle_cues[index].text if index is not None else ""
         self.subtitle_label.SetLabel(text)
-        if text and self._speak_subtitles and not self._is_paused:
-            self._speak(self.subtitle_label)
+        # Issue #45, item 2: route through the shared manager when a cue sink
+        # is set, instead of speaking directly. The visible label is kept,
+        # but automatic speech goes through the manager/backend selection.
+        if text and index is not None:
+            cue = self._subtitle_cues[index]
+            if self._on_cue_cb is not None:
+                self._on_cue_cb(
+                    text=text,
+                    start_ms=cue.start_ms if hasattr(cue, 'start_ms') else None,
+                    end_ms=cue.end_ms if hasattr(cue, 'end_ms') else None,
+                    source="builtin-file",
+                    track="",
+                    generation=self._subtitle_generation,
+                )
+            elif self._speak_subtitles and not self._is_paused:
+                self._speak(self.subtitle_label)
 
     def _subtitle_review_text(self, step: int) -> str:
         """Move the review position by ``step`` cues and return what to say.

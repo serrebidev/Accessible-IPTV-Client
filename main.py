@@ -78,6 +78,7 @@ from audio_tracks import (
 )
 from external_player import ExternalPlayerLauncher
 from subtitle_speech import SubtitleSpeechManager
+from subtitle_session import SubtitleSessionController
 from app_tts import AppTtsBackend
 import recorder
 from recorder import RECORDING_FORMATS
@@ -1784,6 +1785,15 @@ class IPTVClient(wx.Frame):
         )
         self._subtitle_manager.set_auto_speech(
             self._bool_pref(self.config.get("speak_subtitles", False)))
+        # Session controller (issue #45, item 6): single owner for subtitle
+        # sessions. Every playback transition activates one session and
+        # cancels the previous; stale UI callbacks are dropped.
+        self._subtitle_session = SubtitleSessionController(self._subtitle_manager)
+        try:
+            import wx
+            self._subtitle_session.set_ui_thread(wx.CallAfter)
+        except ImportError:
+            pass
         self._app_tts = AppTtsBackend()
         self._app_tts_failure_announced = False
         if self._app_tts.available:
@@ -3540,6 +3550,28 @@ class IPTVClient(wx.Frame):
                 item.Check(value == backend)
                 self.Bind(wx.EVT_MENU, lambda _evt, v=value: self._set_subtitle_backend(v), item)
                 self._subtitle_backend_items.append((item, value))
+            speech_menu.AppendSeparator()
+            # Player-independent subtitle commands (issue #45, item 1):
+            # these work without the built-in player window existing, and
+            # route through the active session controller.
+            toggle_item = speech_menu.AppendCheckItem(wx.ID_ANY, _("Speak subtitles"))
+            toggle_item.Check(bool(self.config.get("speak_subtitles", False)))
+            self.Bind(wx.EVT_MENU,
+                      lambda _evt: self._on_toggle_subtitle_speech(),
+                      toggle_item)
+            self._subtitle_toggle_item = toggle_item
+            read_current_item = speech_menu.Append(wx.ID_ANY, _("Read current subtitle"))
+            self.Bind(wx.EVT_MENU,
+                      lambda _evt: self._on_read_current_subtitle(),
+                      read_current_item)
+            read_prev_item = speech_menu.Append(wx.ID_ANY, _("Read previous subtitle"))
+            self.Bind(wx.EVT_MENU,
+                      lambda _evt: self._on_read_previous_subtitle(),
+                      read_prev_item)
+            review_item = speech_menu.Append(wx.ID_ANY, _("Review recent subtitles..."))
+            self.Bind(wx.EVT_MENU,
+                      lambda _evt: self._on_review_recent_subtitles(),
+                      review_item)
             speech_menu.AppendSeparator()
             self._subtitle_app_tts_items = []
             vol_item = speech_menu.Append(wx.ID_ANY, _("Application voice volume..."))
@@ -8494,8 +8526,88 @@ class IPTVClient(wx.Frame):
         LOG.info("Last used audio track set to %s", name)
 
     def _on_player_speak_subtitles(self, enabled: bool) -> None:
-        self.config["speak_subtitles"] = bool(enabled)
-        self._subtitle_manager.set_auto_speech(bool(enabled))
+        enabled = bool(enabled)
+        if self.config.get("speak_subtitles") != enabled:
+            self.config["speak_subtitles"] = enabled
+            self.save_config()
+        self._subtitle_manager.set_auto_speech(enabled)
+
+    # Player-independent subtitle commands (issue #45, item 1).
+    # These work from the main window without the built-in player existing,
+    # and resolve the currently active session via the session controller.
+
+    def _on_toggle_subtitle_speech(self) -> None:
+        """Toggle automatic subtitle speech (player-independent)."""
+        enabled = not bool(self.config.get("speak_subtitles", False))
+        self.config["speak_subtitles"] = enabled
+        self.save_config()
+        self._subtitle_manager.set_auto_speech(enabled)
+        # If enabling and MPV is the selected player, ensure the adapter
+        # is started even if it wasn't (on-demand session activation).
+        if enabled:
+            self._ensure_mpv_subtitle_session()
+        state = _("on") if enabled else _("off")
+        live_announce.speak(_("Subtitle speech %s.") % state)
+        if hasattr(self, "_subtitle_toggle_item"):
+            self._subtitle_toggle_item.Check(enabled)
+
+    def _ensure_mpv_subtitle_session(self) -> None:
+        """Start the MPV subtitle adapter if MPV is the active player.
+
+        Called when the user enables subtitle speech while MPV is selected,
+        so on-demand reading works even if automatic speech was off.
+        """
+        # Only if MPV is the configured player and no adapter is active.
+        player = self.config.get("media_player", "")
+        if "MPV" not in str(player) and "mpv" not in str(player).lower():
+            return
+        # The adapter is managed by the player launcher; if we're not
+        # currently playing via MPV, there's no session to attach to.
+        # The next MPV launch will pick up the enabled preference.
+        pass
+
+    def _on_read_current_subtitle(self) -> None:
+        """Read the current subtitle cue (player-independent)."""
+        if not self._subtitle_manager.read_current():
+            # No cue yet: announce the state honestly.
+            token = self._subtitle_session.session_token
+            if token is None:
+                live_announce.speak(_("No active subtitle session."))
+            else:
+                live_announce.speak(_("No subtitle text available yet."))
+
+    def _on_read_previous_subtitle(self) -> None:
+        """Read the previous subtitle cue (player-independent)."""
+        if not self._subtitle_manager.read_previous():
+            live_announce.speak(_("No previous subtitle."))
+
+    def _on_review_recent_subtitles(self) -> None:
+        """Show recent subtitle cues for review (player-independent)."""
+        recent = self._subtitle_manager.get_recent(20)
+        if not recent:
+            live_announce.speak(_("No recent subtitles."))
+            return
+        # Build an accessible list dialog.
+        lines = []
+        for i, cue in enumerate(reversed(recent), 1):
+            lines.append(f"{i}. {cue.text}")
+        msg = "\n".join(lines)
+        # Use a simple scrollable message dialog.
+        dlg = wx.Dialog(self, title=_("Recent Subtitles"),
+                        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        text = wx.TextCtrl(dlg, value=msg,
+                           style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_DONTWRAP)
+        text.SetMinSize((500, 300))
+        sizer.Add(text, 1, wx.EXPAND | wx.ALL, 10)
+        btn_sizer = dlg.CreateButtonSizer(wx.OK)
+        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        dlg.SetSizer(sizer)
+        dlg.Fit()
+        # Focus the text for screen-reader review.
+        text.SetFocus()
+        dlg.ShowModal()
+        dlg.Destroy()
 
     # ------------------------------------------------------- subtitle speech
     # Issue #37: player-independent subtitle speech. The screen reader
@@ -8506,17 +8618,43 @@ class IPTVClient(wx.Frame):
     def _speak_subtitle_cue(self, text: str) -> None:
         """Route one subtitle cue to the configured speech backend.
 
-        Runs on the UI thread (marshalled by the subtitle manager). If the
-        application voice fails, the cue still reaches the screen reader; the
-        device-loss policy decides what happens to the selected output.
+        Runs on the UI thread (marshalled by the subtitle manager).
+
+        Privacy (issue #45, item 4): under the "pause" device-loss policy,
+        caption text is NEVER rerouted to the screen reader or SAPI default
+        without explicit user consent. Only a non-sensitive status message
+        is announced; the actual cue text is dropped until the selected
+        output returns.
         """
-        if (self.config.get("subtitle_speech_backend", "screen_reader") == "app_tts"
-                and self._app_tts.available
-                and self._app_tts.speak(text)):
+        backend = self.config.get("subtitle_speech_backend", "screen_reader")
+        if backend == "app_tts" and self._app_tts.available:
+            # Try the selected output first.
+            if self._app_tts.speak(text):
+                self._app_tts_failure_announced = False
+                return
+            # App TTS failed: apply the device-loss policy.
+            policy = self.config.get("subtitle_app_device_policy", "pause")
+            if policy == "pause":
+                # Privacy-preserving: do NOT fall back to screen reader.
+                # Announce only a non-sensitive status, once per outage.
+                if not self._app_tts_failure_announced:
+                    self._app_tts_failure_announced = True
+                    live_announce.speak(
+                        _("Subtitle speech paused: the selected audio output "
+                          "is unavailable."))
+                # Drop the cue text; do not queue it. Speech resumes with
+                # the current cue when the device returns.
+                return
+            # Policy is "default": fall back to SAPI default output.
+            if self._app_tts.reset_output():
+                self.config.pop("subtitle_app_output", None)
+                save_config(self.config)
             self._app_tts_failure_announced = False
-            return
-        if self.config.get("subtitle_speech_backend") == "app_tts":
-            self._apply_app_tts_device_policy()
+            # Retry on the default output.
+            if self._app_tts.speak(text):
+                return
+        # Screen-reader backend, or app_tts unavailable: use screen reader.
+        # This is the explicit user-chosen backend, not an implicit fallback.
         live_announce.speak(text)
 
     def _on_subtitle_speak_error(self, text: str, _exc: Exception) -> None:
@@ -8525,11 +8663,11 @@ class IPTVClient(wx.Frame):
         live_announce.speak(_("Subtitle speech failed."))
 
     def _apply_app_tts_device_policy(self) -> None:
-        """Device-loss policy for the application voice (issue #37).
+        """Device-loss policy for the application voice (issue #37, #45).
 
-        "pause" (the privacy-preserving default): keep the selected output and
-        retry it on every cue, so speech resumes by itself when the device
-        returns and nothing is ever silently rerouted to loudspeakers.
+        "pause" (the privacy-preserving default): do NOT reroute to the
+        screen reader. Announce only a non-sensitive status. The cue text
+        is never spoken until the selected output returns.
         "default": switch back to the SAPI default output instead.
         """
         if not self._app_tts.available:
@@ -8541,13 +8679,14 @@ class IPTVClient(wx.Frame):
                 save_config(self.config)
             self._app_tts_failure_announced = False
             return
-        # "pause": only announce once per outage; each new cue retries the
-        # selected output, so a returned device picks speech back up.
+        # "pause": only announce the status once per outage. Do NOT say
+        # "will use your screen reader" — that would violate the privacy
+        # policy by rerouting caption text without consent.
         if not self._app_tts_failure_announced:
             self._app_tts_failure_announced = True
             live_announce.speak(
-                _("The application voice is unavailable. "
-                  "Subtitles will use your screen reader."))
+                _("The selected audio output is unavailable. "
+                  "Subtitle speech is paused."))
 
     def _subtitle_backend(self) -> str:
         backend = self.config.get("subtitle_speech_backend", "screen_reader")

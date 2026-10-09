@@ -151,13 +151,19 @@ class _Transport:
 
     # -- read --------------------------------------------------------------
 
-    def read_line(self) -> Optional[bytes]:
-        """One newline-terminated message, or None on stop/error/empty poll."""
+    def read_line(self, deadline: Optional[float] = None) -> Optional[bytes]:
+        """One newline-terminated message, or None on stop/error/timeout.
+
+        If deadline (monotonic timestamp) is given, returns None when it
+        passes, instead of looping forever on a silent peer.
+        """
         try:
             while not self._stop.is_set():
                 if b"\n" in self._buffer:
                     line, self._buffer = self._buffer.split(b"\n", 1)
                     return line
+                if deadline is not None and time.monotonic() >= deadline:
+                    return None
                 chunk = self._read_chunk()
                 if chunk is None:
                     return None
@@ -251,6 +257,7 @@ class MpvSubtitleAdapter:
         self._sub_text = None
         self._sub_start = None
         self._sub_end = None
+        self._last_emitted_start = None
         self._sid = None
         self._mpv_version = ""
         self._first_cue_sent = False
@@ -358,11 +365,12 @@ class MpvSubtitleAdapter:
                     entry = self._pending.get(rid)
                 if entry is None or entry["event"].is_set():
                     break
-                line = self._transport.read_line() if self._transport else None
+                line = self._transport.read_line(deadline=deadline) if self._transport else None
                 if line:
                     self._dispatch(line)
                 else:
-                    time.sleep(READ_POLL_S)
+                    # No complete line before deadline: stop pumping.
+                    break
             with self._pending_lock:
                 entry = self._pending.pop(rid, None)
             if entry and entry["event"].is_set():
@@ -419,10 +427,16 @@ class MpvSubtitleAdapter:
         if pid == _OBS_SUB_TEXT:
             previous = self._sub_text
             self._sub_text = data
-            # Text is the cue-display event: only a changed, non-empty value
-            # is a new cue. Timing-only arrivals are merged in place below.
-            if data and data != previous:
-                self._emit_new_cue()
+            # Text is the cue-display event. A new cue is established by:
+            # - empty-to-non-empty transition, OR
+            # - changed start time with non-empty text (identical consecutive
+            #   cues at different times are distinct cues, not duplicates).
+            # Text inequality alone is NOT the boundary signal.
+            if data:
+                if not previous:
+                    self._emit_new_cue()
+                elif self._sub_start != self._last_emitted_start:
+                    self._emit_new_cue()
         elif pid == _OBS_SUB_START:
             self._sub_start = data
             self._update_timing()
@@ -437,6 +451,7 @@ class MpvSubtitleAdapter:
         self._sub_text = None
         self._sub_start = None
         self._sub_end = None
+        self._last_emitted_start = None
 
     def _timing_ms(self, value) -> Optional[int]:
         try:
@@ -446,6 +461,7 @@ class MpvSubtitleAdapter:
 
     def _emit_new_cue(self) -> None:
         track = "" if self._sid is None else str(self._sid)
+        self._last_emitted_start = self._sub_start
         self._manager.on_cue(
             self._sub_text,
             start_ms=self._timing_ms(self._sub_start),
