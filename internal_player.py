@@ -14,6 +14,7 @@ from typing import Callable, Deque, Dict, List, Optional, Sequence, Tuple
 
 import wx
 
+import catchup_direct
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
 import user_guide
@@ -778,6 +779,13 @@ class InternalPlayerFrame(wx.Frame):
                 LOG.debug("InternalPlayerFrame.play: ignored exception", exc_info=True)
             if generation != self._vlc_generation:
                 return  # replaced while the old stream was unwinding
+            # A stream-type probe that just left this server may still hold the
+            # provider connection this channel needs (see note_media_released).
+            deadline = time.monotonic() + catchup_direct.media_settle_remaining(playback_url)
+            while time.monotonic() < deadline:
+                if generation != self._vlc_generation:
+                    return
+                time.sleep(0.1)
             try:
                 player.set_media(media)
                 self._apply_audio_output_device()

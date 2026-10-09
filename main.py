@@ -5265,6 +5265,7 @@ class IPTVClient(wx.Frame):
         def _register(proc):
             # If a session preempted this probe between the check above and
             # the Popen, kill it immediately: never hold the slot unowned.
+            proc.probe_url = url  # for note_media_released when preempted
             if identity in self._media_probe_inflight:
                 self._media_probe_procs[identity] = proc
             else:
@@ -5287,7 +5288,8 @@ class IPTVClient(wx.Frame):
                       exc_info=True)
         finally:
             self._media_probe_inflight.discard(identity)
-            self._media_probe_procs.pop(identity, None)
+            if self._media_probe_procs.pop(identity, None) is not None:
+                catchup_direct.note_media_released(url)
         name = self._channel_display_name(channel)
         if media != media_type.MEDIA_UNKNOWN:
             self._media_type_cache.store(identity, channel.get("url", ""),
@@ -5322,6 +5324,9 @@ class IPTVClient(wx.Frame):
                 proc.wait(timeout=5)
             except Exception:
                 LOG.debug("_terminate_media_probe: ignored exception", exc_info=True)
+            # Recorded here, not only in the worker: the session that preempted
+            # the probe opens its stream before the worker thread gets to run.
+            catchup_direct.note_media_released(getattr(proc, "probe_url", ""))
 
     def _show_recording_padding_dialog(self, _event=None):
         """Let the user set the lead-in/lead-out used for scheduled programmes."""

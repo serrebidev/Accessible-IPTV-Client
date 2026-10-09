@@ -175,6 +175,33 @@ def _next_hop(url: str, headers: Optional[Dict[str, object]],
             return None, False
 
 
+# host -> time.monotonic() when a background media request to it closed.
+_released_at: Dict[str, float] = {}
+
+
+def note_media_released(url: str) -> None:
+    """Record that a background media request (a stream-type probe) to url's
+    server has just closed.
+
+    A restreamer such as Dispatcharr keeps the channel, and the provider
+    connection behind it, for a moment after its client leaves. Sky Mix took
+    50 s to start because two probes still held both SceneTime connections,
+    so Dispatcharr fell back to dead backup streams.
+    """
+    host = urllib.parse.urlsplit(url or "").netloc.lower()
+    if host:
+        _released_at[host] = time.monotonic()
+
+
+def media_settle_remaining(url: str) -> float:
+    """Seconds still to wait before opening url, given note_media_released."""
+    host = urllib.parse.urlsplit(url or "").netloc.lower()
+    released = _released_at.get(host)
+    if released is None:
+        return 0.0
+    return max(0.0, _MEDIA_SESSION_SETTLE_SECONDS - (time.monotonic() - released))
+
+
 def settle_media_session() -> None:
     """Wait until a one-stream provider has let go of a media request.
 

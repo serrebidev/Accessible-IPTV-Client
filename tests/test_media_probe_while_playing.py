@@ -65,3 +65,23 @@ def test_a_real_session_preempts_every_probe():
     client._terminate_media_probe({"name": "Sky One"})
     assert a.killed and b.killed
     assert client._media_probe_inflight == set() and client._media_probe_procs == {}
+
+
+def test_preempted_probe_makes_playback_wait_for_the_server(monkeypatch):
+    # 2026-10-08: probes of CBC and Saisons still held both SceneTime
+    # connections when Sky Mix was opened 0.1 s later, so Dispatcharr fell back
+    # to dead backup streams and the channel took 50 s to start.
+    clock = [1000.0]
+    monkeypatch.setattr(main.catchup_direct.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(main.catchup_direct, "_released_at", {})
+    client = _client(playing=False)
+    proc = _Proc()
+    proc.probe_url = "https://tv.example/live/u/p/93448"
+    client._media_probe_procs = {"key:Saisons": proc}
+    client._terminate_media_probe({"name": "Sky Mix"})
+    settle = main.catchup_direct._MEDIA_SESSION_SETTLE_SECONDS
+    remaining = main.catchup_direct.media_settle_remaining
+    assert remaining("https://tv.example/live/u/p/76953") == settle
+    assert remaining("https://other.example/live/1") == 0.0
+    clock[0] += settle
+    assert remaining("https://tv.example/live/u/p/76953") == 0.0
