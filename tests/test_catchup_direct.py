@@ -76,7 +76,18 @@ def test_the_probe_never_opens_the_archive_stream(provider):
     """The reported failure: resolving the redirect by following it opened the
     stream, so the .mp4 probe - and then ffmpeg - were refused with 403."""
     url = provider + "/play/mpegts-c468-tabc?utc=1789065000&lutc=1789142000"
-    found = catchup_direct.direct_download_url(url, 1789065000, 3300)
+    found = catchup_direct.direct_download_url(url, [(1789065000, 3300)])
+    assert found == provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
+    assert not [r for r in _OneStreamProvider.requests if "timeshift_abs" in r[1]]
+
+
+def test_a_padded_window_miss_does_not_open_the_archive_stream(provider):
+    """Ojciec Mateusz on TVP 1: the padded window (5+5 minutes) has no file,
+    and walking on for it opened timeshift_abs, so the exact file and ffmpeg
+    were both refused with 403."""
+    url = provider + "/play/mpegts-c468-tabc?utc=1789064700&lutc=1789142000"
+    found = catchup_direct.direct_download_url(
+        url, [(1789064700, 3900), (1789065000, 3300)])
     assert found == provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
     assert not [r for r in _OneStreamProvider.requests if "timeshift_abs" in r[1]]
 
@@ -88,7 +99,7 @@ def test_the_found_file_is_free_when_ffmpeg_asks_for_it(provider, monkeypatch):
     monkeypatch.setattr(_OneStreamProvider, "hold_seconds", 0.3)
     monkeypatch.setattr(catchup_direct, "_MEDIA_SESSION_SETTLE_SECONDS", 0.6)
     url = provider + "/play/mpegts-c468-tabc?utc=1789065000&lutc=1789142000"
-    found = catchup_direct.direct_download_url(url, 1789065000, 3300)
+    found = catchup_direct.direct_download_url(url, [(1789065000, 3300)])
     assert found
     # ffmpeg's request, made the moment the probe hands the URL over.
     request = urllib.request.Request(found, method="HEAD")
@@ -100,7 +111,7 @@ def test_nothing_to_wait_for_when_the_media_was_never_asked(provider, monkeypatc
     settled = []
     monkeypatch.setattr(catchup_direct, "settle_media_session", lambda: settled.append(True))
     missing = provider + "/elsewhere/chan/index.m3u8?t=1"
-    assert catchup_direct.direct_download_url(missing, 1789065000, 3300) is None
+    assert catchup_direct.direct_download_url(missing, [(1789065000, 3300)]) is None
     assert settled == []
 
 

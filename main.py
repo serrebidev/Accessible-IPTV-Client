@@ -9329,12 +9329,10 @@ class IPTVClient(wx.Frame):
                         != windows[0]:
                     windows.insert(0, (int(padded_start.timestamp()),
                                        int((padded_end - padded_start).total_seconds())))
-            direct = None
-            for start_epoch, window_seconds in windows:
-                direct = catchup_direct.direct_download_url(
-                    fetch_url, start_epoch, window_seconds, headers)
-                if direct:
-                    break
+            # All windows in one call: probing them one call at a time let the
+            # padded window's walk open teleelevidenie's archive stream, and
+            # the exact file was then refused with 403.
+            direct = catchup_direct.direct_download_url(fetch_url, windows, headers)
             if direct:
                 LOG.info("Catch-up: using fast direct download URL")
                 url = direct

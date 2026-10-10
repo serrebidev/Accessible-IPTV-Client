@@ -211,7 +211,7 @@ def settle_media_session() -> None:
     time.sleep(_MEDIA_SESSION_SETTLE_SECONDS)
 
 
-def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
+def direct_download_url(url: str, windows: List[Tuple[int, int]],
                         headers: Optional[Dict[str, object]] = None,
                         timeout: float = 6.0) -> Optional[str]:
     """A verified fast direct URL for this catch-up programme, or None.
@@ -225,20 +225,26 @@ def direct_download_url(url: str, start_epoch: int, duration_seconds: int,
     ends on the media server (teleelevidenie's ``/play/...`` -> archive
     ``timeshift_abs-<utc>.ts``) finds the ``.mp4`` next to it without ever
     opening the stream.
+
+    ``windows`` is a list of ``(start_epoch, duration_seconds)``, most wanted
+    first. Every window is probed at each hop before the next hop is taken:
+    probing them one call at a time let the first (padded) window walk the
+    chain onto the archive stream, and that open stream made teleelevidenie
+    refuse the programme-exact file - and ffmpeg after it - with 403.
     """
-    if not url or not start_epoch or not duration_seconds or duration_seconds <= 0:
+    windows = [(int(utc), int(dur)) for utc, dur in windows or () if utc and dur and dur > 0]
+    if not url or not windows:
         return None
-    utc = int(start_epoch)
-    duration = int(duration_seconds)
     tried = set()
 
     def probe_around(base: str) -> Optional[str]:
-        for candidate in candidate_direct_urls(base, utc, duration):
-            if candidate in tried or candidate == base:
-                continue
-            tried.add(candidate)
-            if probe_direct_url(candidate, headers, timeout):
-                return candidate
+        for utc, duration in windows:
+            for candidate in candidate_direct_urls(base, utc, duration):
+                if candidate in tried or candidate == base:
+                    continue
+                tried.add(candidate)
+                if probe_direct_url(candidate, headers, timeout):
+                    return candidate
         return None
 
     current = url

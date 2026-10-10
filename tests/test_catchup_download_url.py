@@ -95,8 +95,9 @@ class TestBeginCatchupDownload:
             main.IPTVClient._begin_catchup_download, client)
         client._start_catchup_recording = lambda *a, **k: None
 
-        def fake_direct(url, start_epoch, duration, headers=None, timeout=6.0):
-            probed.append((url, start_epoch, duration, dict(headers or {})))
+        def fake_direct(url, windows, headers=None, timeout=6.0):
+            for start_epoch, duration in windows:
+                probed.append((url, start_epoch, duration, dict(headers or {})))
             return direct
 
         monkeypatch.setattr(main.catchup_direct, "direct_download_url", fake_direct)
