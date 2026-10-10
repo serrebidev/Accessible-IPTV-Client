@@ -1,6 +1,14 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.149.2 - 2026-10-09
+
+### Bug fixes
+
+- The player keeps keyboard focus after a failed cast
+- An audio-only recording format chosen on a TV channel is used
+- Catch-up downloads on Teleelevidenie find the programme file again
+
 ## v1.149.1 - 2026-10-09
 
 ### Bug fixes
