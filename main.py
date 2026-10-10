@@ -1801,11 +1801,9 @@ class IPTVClient(wx.Frame):
         # sessions. Every playback transition activates one session and
         # cancels the previous; stale UI callbacks are dropped.
         self._subtitle_session = SubtitleSessionController(self._subtitle_manager)
-        try:
-            import wx
-            self._subtitle_session.set_ui_thread(wx.CallAfter)
-        except ImportError:
-            LOG.debug("subtitle session: wx unavailable, UI-thread hop disabled", exc_info=True)
+        # wx is imported at module level. A local "import wx" here made wx a
+        # local name for all of __init__ and crashed startup in v1.149.0.
+        self._subtitle_session.set_ui_thread(wx.CallAfter)
         self._app_tts = AppTtsBackend()
         self._app_tts_failure_announced = False
         if self._app_tts.available:
