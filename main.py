@@ -147,6 +147,18 @@ def _scoped_channels(channels, scope: str):
     return [ch for ch in channels if _scope_includes_channel(ch, scope)]
 
 
+def search_rank(name: str, query: str) -> tuple:
+    """Sort key for channel search hits: the exact name, then names where the query starts a
+    word, then any match; shorter names first. "challenge" lists Challenge and The Challenge
+    before "PEACOCK 03 Breeders Cup Challenge ..." event slots. sort() is stable, so ties keep
+    playlist order."""
+    name = name.lower().strip()
+    if name == query:
+        return (0, 0)
+    word_start = re.search(r"(?<![a-z0-9])" + re.escape(query), name) is not None
+    return (1 if word_start else 2, len(name))
+
+
 def _client_pid_scope(pid: str, scope: str) -> bool:
     """Whether a provider client id belongs to the playlist scope.
 
@@ -6803,6 +6815,7 @@ class IPTVClient(wx.Frame):
                 if txt and txt not in name.lower():
                     continue
                 matching_channels.append(ch)
+            matching_channels.sort(key=lambda ch: search_rank(ch.get("name") or "", txt))
             entries = [
                 {"type": "channel", "data": ch}
                 for ch in matching_channels

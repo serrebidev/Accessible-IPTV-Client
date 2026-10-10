@@ -819,3 +819,18 @@ def test_large_search_results_are_batched_and_stale_batches_stop():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_search_rank_puts_networks_before_event_slots():
+    from main import search_rank
+
+    names = [
+        "PEACOCK 03 Breeders Cup Challenge Keeneland Day2 @ Oct3 300 PM",
+        "The Challenge",
+        "XMAS COOKIE CHALLENGE",
+        "Challenge",
+        "Challengers TV",
+    ]
+    ranked = sorted(names, key=lambda n: search_rank(n, "challenge"))
+    assert ranked[:3] == ["Challenge", "The Challenge", "Challengers TV"]
+    assert ranked[-1].startswith("PEACOCK")
