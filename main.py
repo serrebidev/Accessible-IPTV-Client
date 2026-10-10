@@ -9078,6 +9078,19 @@ class IPTVClient(wx.Frame):
             return
 
         caster = self._ensure_caster()
+        # The device list and the failure box belong to the player. Owned by
+        # the main window, closing them handed focus to that (usually hidden)
+        # window, and the player was left with no focus: Tab did nothing and
+        # NVDA could not reach a single control.
+        player = getattr(self, "_internal_player_frame", None)
+        owner = player if player and player.IsShown() else self
+
+        def cast_failed(err):
+            message_box(_("Failed to cast: {error}").format(error=err), _("Casting Error"),
+                        wx.OK | wx.ICON_ERROR, owner)
+            if owner is player and player.IsShown():
+                player.Raise()
+                player.cast_btn.SetFocus()
 
         def do_cast(device):
             try:
@@ -9090,13 +9103,13 @@ class IPTVClient(wx.Frame):
                 wx.CallAfter(self._handoff_internal_player_after_cast, url, title)
                 wx.CallAfter(lambda: message_box(_("Casting to {device}...").format(device=device.display_name), _("Casting"), wx.OK | wx.ICON_INFORMATION))
             except Exception as e:
-                wx.CallAfter(lambda err=e: message_box(_("Failed to cast: {error}").format(error=err), _("Casting Error"), wx.OK | wx.ICON_ERROR))
+                wx.CallAfter(cast_failed, e)
 
         if caster.is_connected() and caster.active_device:
             threading.Thread(target=lambda: do_cast(caster.active_device), daemon=True).start()
             return
 
-        dlg = CastDiscoveryDialog(self, caster)
+        dlg = CastDiscoveryDialog(owner, caster)
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 device = dlg.get_selected_device()
