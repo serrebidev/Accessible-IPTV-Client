@@ -111,7 +111,7 @@ def test_request_response_matching():
     threading.Thread(target=answer, daemon=True).start()
 
     # _request pumps inline until the reader loop exists; emulate the loop.
-    ad._transport = type("T", (), {"read_line": lambda self: None})()
+    ad._transport = type("T", (), {"read_line": lambda self, deadline=None: None})()
     resp = ad._request(["get_property", "mpv-version"], timeout=2.0)
     assert resp is not None and resp["data"] == "mpv 0.37.0"
 

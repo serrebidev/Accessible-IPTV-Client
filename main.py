@@ -1805,7 +1805,7 @@ class IPTVClient(wx.Frame):
             import wx
             self._subtitle_session.set_ui_thread(wx.CallAfter)
         except ImportError:
-            pass
+            LOG.debug("subtitle session: wx unavailable, UI-thread hop disabled", exc_info=True)
         self._app_tts = AppTtsBackend()
         self._app_tts_failure_announced = False
         if self._app_tts.available:

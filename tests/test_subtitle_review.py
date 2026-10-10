@@ -13,7 +13,7 @@ def _frame(cues=CUES, time_ms=0):
     label.SetLabel = lambda value: setattr(label, "value", value)
     frame = types.SimpleNamespace(
         _subtitle_cues=list(cues), _cue_index=None, _last_cue_index=None, _review_cue_index=None,
-        _speak_subtitles=False, _is_paused=False, subtitle_label=label, spoken=[],
+        _speak_subtitles=False, _is_paused=False, subtitle_label=label, spoken=[], _on_cue_cb=None, _subtitle_generation=0,
         player=types.SimpleNamespace(video_get_spu=lambda: 1, video_get_spu_delay=lambda: 0,
                                      get_time=lambda: frame.time_ms),
         time_ms=time_ms)

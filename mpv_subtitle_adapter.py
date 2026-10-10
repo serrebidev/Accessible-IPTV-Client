@@ -369,7 +369,10 @@ class MpvSubtitleAdapter:
                 if line:
                     self._dispatch(line)
                 else:
-                    # No complete line before deadline: stop pumping.
+                    # Nothing to pump here (no transport, EOF, or the reader
+                    # loop owns the socket): the answer may still be
+                    # dispatched by another thread, so wait out the deadline.
+                    entry["event"].wait(max(0.0, deadline - time.monotonic()))
                     break
             with self._pending_lock:
                 entry = self._pending.pop(rid, None)
