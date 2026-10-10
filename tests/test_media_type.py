@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
-import media_type
 from media_type import (
     MEDIA_AUDIO,
     MEDIA_UNKNOWN,

@@ -12,6 +12,8 @@ and be unit-tested without a network (the candidate builder is pure).
 
 import logging
 import re
+import ssl
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -19,6 +21,15 @@ import urllib.request
 from typing import Dict, List, Optional, Tuple
 
 LOG = logging.getLogger(__name__)
+
+
+def _ssl_context():
+    if sys.platform == "win32":
+        # Native chain building retrieves issuers omitted by archive servers.
+        import truststore
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    return ssl.create_default_context()
+
 
 # ``index-<utc>-<duration>.m3u8`` -- when the playlist name itself carries the
 # server's start/duration numbers, those are the authoritative ones.
@@ -95,7 +106,7 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
     request_headers = _clean_headers(headers)
     try:
         req = urllib.request.Request(url, headers=request_headers, method="HEAD")
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
             if not _headers_look_like_media(resp.headers):
                 return False
             length = resp.headers.get("Content-Length")
@@ -112,7 +123,7 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
             ranged = dict(request_headers)
             ranged["Range"] = "bytes=0-0"
             req = urllib.request.Request(url, headers=ranged)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
                 return _headers_look_like_media(resp.headers)
         except urllib.error.HTTPError as err:
             # Same leak as the outer handler: close before GC reports it.
@@ -154,7 +165,7 @@ def _next_hop(url: str, headers: Optional[Dict[str, object]],
     come back 403 Forbidden. Redirectors answer HEAD with their Location, so
     GET is only tried when HEAD is refused.
     """
-    opener = urllib.request.build_opener(_NoRedirect)
+    opener = urllib.request.build_opener(_NoRedirect, urllib.request.HTTPSHandler(context=_ssl_context()))
     request_headers = _clean_headers(headers)
     for method in ("HEAD", "GET"):
         try:

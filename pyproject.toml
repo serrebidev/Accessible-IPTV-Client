@@ -20,6 +20,8 @@ select = ["F", "E9"]
 # sitecustomize re-exports the internal player lazily through a module-level
 # __getattr__, so these __all__ entries resolve at runtime but not statically.
 "sitecustomize.py" = ["F822"]
+# Copied verbatim from Caster; its import list is maintained upstream.
+"caster_devices.py" = ["F401"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

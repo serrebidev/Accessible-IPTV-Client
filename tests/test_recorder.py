@@ -1005,8 +1005,6 @@ def test_probe_audio_streams_shares_the_stream_report(monkeypatch):
 
 def test_probe_stream_report_on_popen_hook_allows_preemption(monkeypatch):
     """The on_popen hook receives the live probe so a session can kill it."""
-    import subprocess as stdlib_subprocess
-
     received = []
 
     class FakeProc:

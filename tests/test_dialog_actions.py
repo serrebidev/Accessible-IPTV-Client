@@ -14,7 +14,6 @@ Regression cover for a batch of reports:
 import os
 import pathlib
 import sys
-import threading
 import types
 from typing import Any
 

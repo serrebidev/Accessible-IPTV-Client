@@ -99,6 +99,7 @@ hidden_imports += [
 platform_binaries = []
 platform_datas = []
 if sys.platform == 'win32':
+    hidden_imports += ['truststore', 'truststore._api', 'truststore._windows', 'truststore._ssl_constants']
     platform_datas += [('ffmpeg.exe', '.'), ('update_helper.ps1', '.')]
 elif sys.platform == 'darwin':
     import shutil
@@ -138,7 +139,8 @@ a = Analysis(
     # jedi, parso and black) and pydantic.mypy pulls in mypy: developer tools the
     # app never runs, which bloated the bundle.
     excludes=['caster', 'pyaudiowpatch',
-              'IPython', 'jedi', 'parso', 'black', 'mypy', 'matplotlib_inline'],
+              'IPython', 'jedi', 'parso', 'black', 'mypy', 'matplotlib_inline']
+             + (['truststore'] if sys.platform != 'win32' else []),
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
