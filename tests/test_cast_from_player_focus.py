@@ -22,6 +22,9 @@ def test_failed_cast_keeps_focus_in_the_player(monkeypatch):
         def play(self, *_a, **_k):
             raise RuntimeError("no answer")
 
+        def disconnect(self):
+            shown.append(("disconnected", None))
+
     class Dialog:
         def __init__(self, parent, _caster):
             shown.append(("devices", parent))
@@ -51,5 +54,6 @@ def test_failed_cast_keeps_focus_in_the_player(monkeypatch):
 
     main.IPTVClient._cast_from_internal_player(client, "http://h/live.ts", "News", {})
 
-    assert shown == [("devices", player), ("box", player)]
+    # The failed cast's relay must not keep holding a one-stream provider.
+    assert shown == [("devices", player), ("disconnected", None), ("box", player)]
     assert focused == [True]

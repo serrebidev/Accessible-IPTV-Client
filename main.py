@@ -9103,6 +9103,14 @@ class IPTVClient(wx.Frame):
                 wx.CallAfter(self._handoff_internal_player_after_cast, url, title)
                 wx.CallAfter(lambda: message_box(_("Casting to {device}...").format(device=device.display_name), _("Casting"), wx.OK | wx.ICON_INFORMATION))
             except Exception as e:
+                # A failed cast can leave its relay pulling the stream, and on a
+                # one-stream provider that held the account's only connection:
+                # the next catch-up download got 403. _launch_stream's cast
+                # already drops the session on failure; do the same here.
+                try:
+                    caster.disconnect()
+                except Exception:
+                    LOG.debug("IPTVClient._cast_from_internal_player: ignored exception", exc_info=True)
                 wx.CallAfter(cast_failed, e)
 
         if caster.is_connected() and caster.active_device:
