@@ -1210,11 +1210,11 @@ def test_backed_off_retry_does_not_reopen_a_newer_channel(monkeypatch):
 
 
 @pytest.mark.parametrize('kind,base,maximum,expected', [
-    ('live', 2., 18., 10.), ('live', 4., 18., 10.),
-    ('live', 12., 18., 13.), ('live', 2., 6., 6.),
+    ('live', 2., 18., 3.), ('live', 4., 18., 5.),
+    ('live', 12., 18., 13.), ('live', 6., 6., 6.),
     ('catchup', 2., 18., 3.),
 ])
-def test_stall_recovery_builds_live_cushion_in_one_retry(monkeypatch, kind, base, maximum, expected):
+def test_stall_recovery_increases_cache_gradually_within_maximum(monkeypatch, kind, base, maximum, expected):
     later, profiles = [], []
     monkeypatch.setattr(internal_player.wx, 'CallLater', lambda ms, fn: later.append(fn))
     monkeypatch.setattr(internal_player.time, 'monotonic', lambda: 100.)

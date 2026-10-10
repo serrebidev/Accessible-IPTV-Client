@@ -34,9 +34,8 @@ DVR_SCHEDULE_FILE = "scheduled_recordings.json"
 CACHE_DIR_NAME = "iptv_cache"
 _CONFIG_PATH = None  # Path of config last loaded/saved
 _IS_WINDOWS = sys.platform.startswith("win")
-# Cover bursty live providers' 5-8 s pauses. Saved values remain explicit choices;
-# a stall raises the session's buffer to this cushion, within the configured max.
-DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 10.0
+# Start promptly; saved durations remain explicit choices.
+DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS = 2.0
 DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS = 18.0
 DEFAULT_RECORDING_FORMAT = "provider_mkv"
 DEFAULT_RECORDING_PRE_PADDING_MINUTES = 0
