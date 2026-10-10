@@ -24,7 +24,7 @@ class ExternalPlayerLauncher:
     def __init__(self):
         self._launch_guard_lock = threading.Lock()
         self._last_launch_ts = 0.0
-        self._last_launch_url = ""
+        self._last_launch_key = None
         self._mpv_adapter = None
 
     def launch(
@@ -48,10 +48,12 @@ class ExternalPlayerLauncher:
         # Guard against accidental double-invocation of the same stream.
         with self._launch_guard_lock:
             now = time.time()
-            if (now - self._last_launch_ts) < 0.75 and self._last_launch_url == url:
+            # Same stream in the same player only: switching players is a new playback.
+            key = (player_name, custom_path, url)
+            if (now - self._last_launch_ts) < 0.75 and self._last_launch_key == key:
                 return True, "" # Debounced
             self._last_launch_ts = now
-            self._last_launch_url = url
+            self._last_launch_key = key
 
         # MPV with subtitle speech: use our own session adapter.
         if subtitle_manager is not None and MpvSubtitleAdapter is not None:
