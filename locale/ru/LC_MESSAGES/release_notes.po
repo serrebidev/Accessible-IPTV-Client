@@ -12,25 +12,47 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-msgid "App crashed at startup in v1.147 (application voice COM calls)"
-msgstr "Приложение падало при запуске в v1.147 (вызовы COM голоса приложения)"
-
-#: CHANGELOG.md:18
+#: CHANGELOG.md:31
 msgid "Bound subtitle review by the playhead and offer it in Keyboard Shortcuts"
 msgstr "Привязать просмотр субтитров к позиции воспроизведения и предложить в сочетаниях клавиш"
 
-#: CHANGELOG.md:24
+#: CHANGELOG.md:8
+msgid "Channel search lists the closest names first"
+msgstr "Поиск каналов показывает самые близкие названия первыми"
+
+#: CHANGELOG.md:37
 msgid "Channels slow to start after browsing on Dispatcharr"
 msgstr "Каналы медленно запускались после просмотра списка в Dispatcharr"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:20
+msgid "I18n: fix UI string translations (13 languages)"
+msgstr "I18n: исправлены переводы интерфейса (13 языков)"
+
+#: CHANGELOG.md:21
+msgid "I18n: translate new subtitle-speech UI strings (13 languages)"
+msgstr "I18n: переведены новые строки озвучивания субтитров (13 языков)"
+
+#: CHANGELOG.md:9
 msgid "Implement Tibor #45 architectural items 1-8"
 msgstr "Реализовать архитектурные элементы 1-8 Tibor #45"
 
+#: CHANGELOG.md:16
+msgid "Keep live streams connected through provider pauses"
+msgstr "Прямые трансляции остаются подключёнными во время пауз провайдера"
+
+#: CHANGELOG.md:13
+msgid "MPV subtitle requests wait for the answer instead of giving up"
+msgstr "Запросы субтитров к MPV ждут ответа, а не сдаются"
+
 #: CHANGELOG.md:14
+msgid "Opening the same stream in another player is no longer ignored"
+msgstr "Открытие того же потока в другом плеере больше не игнорируется"
+
+#: CHANGELOG.md:27
 msgid "Read the current subtitle again and review earlier ones"
 msgstr "Прочитать текущий субтитр снова и просмотреть предыдущие"
 
+#: CHANGELOG.md:15
+msgid "Restore fast startup while keeping burst recovery"
+msgstr "Возвращён быстрый запуск с сохранением восстановления после всплесков"
 
-msgid "Implement Tibor #45 architectural items: player-independent commands, built-in player via manager, identical-cue fix, privacy routing, timeout fix, session controller, custom MPV path"
-msgstr "Реализовать архитектурные элементы Tibor #45: независимые от плеера команды, встроенный плеер через менеджер, исправление идентичных cue, маршрутизация конфиденциальности, исправление таймаута, контроллер сессии, пользовательский путь MPV"

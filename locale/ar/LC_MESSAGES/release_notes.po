@@ -12,25 +12,47 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-msgid "App crashed at startup in v1.147 (application voice COM calls)"
-msgstr "كان التطبيق يتعطل عند بدء التشغيل في الإصدار v1.147 (استدعاءات COM لصوت التطبيق)"
-
-#: CHANGELOG.md:18
+#: CHANGELOG.md:31
 msgid "Bound subtitle review by the playhead and offer it in Keyboard Shortcuts"
 msgstr "تقييد مراجعة الترجمة بموضع التشغيل وإتاحتها في اختصارات لوحة المفاتيح"
 
-#: CHANGELOG.md:24
+#: CHANGELOG.md:8
+msgid "Channel search lists the closest names first"
+msgstr "يعرض البحث عن القنوات الأسماء الأقرب أولاً"
+
+#: CHANGELOG.md:37
 msgid "Channels slow to start after browsing on Dispatcharr"
 msgstr "كانت القنوات تتأخر في البدء بعد التصفح على Dispatcharr"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:20
+msgid "I18n: fix UI string translations (13 languages)"
+msgstr "الترجمة: إصلاح ترجمات نصوص الواجهة (13 لغة)"
+
+#: CHANGELOG.md:21
+msgid "I18n: translate new subtitle-speech UI strings (13 languages)"
+msgstr "الترجمة: ترجمة نصوص نطق الترجمة الجديدة في الواجهة (13 لغة)"
+
+#: CHANGELOG.md:9
 msgid "Implement Tibor #45 architectural items 1-8"
 msgstr "تنفيذ العناصر المعمارية 1-8 من Tibor #45"
 
+#: CHANGELOG.md:16
+msgid "Keep live streams connected through provider pauses"
+msgstr "تبقى البثوث المباشرة متصلة أثناء توقفات المزوّد"
+
+#: CHANGELOG.md:13
+msgid "MPV subtitle requests wait for the answer instead of giving up"
+msgstr "طلبات الترجمة إلى MPV تنتظر الرد بدلاً من الاستسلام"
+
 #: CHANGELOG.md:14
+msgid "Opening the same stream in another player is no longer ignored"
+msgstr "لم يعد فتح البث نفسه في مشغّل آخر يُتجاهل"
+
+#: CHANGELOG.md:27
 msgid "Read the current subtitle again and review earlier ones"
 msgstr "إعادة قراءة الترجمة الحالية ومراجعة السابقات"
 
+#: CHANGELOG.md:15
+msgid "Restore fast startup while keeping burst recovery"
+msgstr "استعادة البدء السريع مع الإبقاء على التعافي من الدفعات"
 
-msgid "Implement Tibor #45 architectural items: player-independent commands, built-in player via manager, identical-cue fix, privacy routing, timeout fix, session controller, custom MPV path"
-msgstr "تنفيذ العناصر المعمارية لتقرير Tibor #45: أوامر مستقلة عن المشغل، المشغل المدمج عبر المدير، إصلاح التلميحات المتطابقة، التوجيه الخصوصي، إصلاح المهلة، وحدة تحكم الجلسة، مسار MPV مخصص"

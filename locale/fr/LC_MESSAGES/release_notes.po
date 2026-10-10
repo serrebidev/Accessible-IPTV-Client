@@ -12,25 +12,47 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-msgid "App crashed at startup in v1.147 (application voice COM calls)"
-msgstr "L'application plantait au démarrage dans la v1.147 (appels COM de la voix de l'application)"
-
-#: CHANGELOG.md:18
+#: CHANGELOG.md:31
 msgid "Bound subtitle review by the playhead and offer it in Keyboard Shortcuts"
 msgstr "Limiter la révision des sous-titres à la tête de lecture et la proposer dans Raccourcis clavier"
 
-#: CHANGELOG.md:24
+#: CHANGELOG.md:8
+msgid "Channel search lists the closest names first"
+msgstr "La recherche de chaînes affiche d'abord les noms les plus proches"
+
+#: CHANGELOG.md:37
 msgid "Channels slow to start after browsing on Dispatcharr"
 msgstr "Les chaînes mettaient longtemps à démarrer après la navigation sur Dispatcharr"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:20
+msgid "I18n: fix UI string translations (13 languages)"
+msgstr "I18n : correction des traductions de l'interface (13 langues)"
+
+#: CHANGELOG.md:21
+msgid "I18n: translate new subtitle-speech UI strings (13 languages)"
+msgstr "I18n : traduction des nouveaux textes de lecture des sous-titres (13 langues)"
+
+#: CHANGELOG.md:9
 msgid "Implement Tibor #45 architectural items 1-8"
 msgstr "Implémenter les éléments architecturaux 1-8 de Tibor #45"
 
+#: CHANGELOG.md:16
+msgid "Keep live streams connected through provider pauses"
+msgstr "Les flux en direct restent connectés pendant les pauses du fournisseur"
+
+#: CHANGELOG.md:13
+msgid "MPV subtitle requests wait for the answer instead of giving up"
+msgstr "Les requêtes de sous-titres à MPV attendent la réponse au lieu d'abandonner"
+
 #: CHANGELOG.md:14
+msgid "Opening the same stream in another player is no longer ignored"
+msgstr "Ouvrir le même flux dans un autre lecteur n'est plus ignoré"
+
+#: CHANGELOG.md:27
 msgid "Read the current subtitle again and review earlier ones"
 msgstr "Relire le sous-titre actuel et réviser les précédents"
 
+#: CHANGELOG.md:15
+msgid "Restore fast startup while keeping burst recovery"
+msgstr "Démarrage rapide rétabli tout en gardant la récupération des rafales"
 
-msgid "Implement Tibor #45 architectural items: player-independent commands, built-in player via manager, identical-cue fix, privacy routing, timeout fix, session controller, custom MPV path"
-msgstr "Implémenter les éléments architecturaux de Tibor #45 : commandes indépendantes du lecteur, lecteur intégré via gestionnaire, correction des cues identiques, routage de confidentialité, correction du timeout, contrôleur de session, chemin MPV personnalisé"

@@ -1,6 +1,25 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.149.0 - 2026-10-09
+
+### Features
+
+- Channel search lists the closest names first
+- Implement Tibor #45 architectural items 1-8
+
+### Bug fixes
+
+- MPV subtitle requests wait for the answer instead of giving up
+- Opening the same stream in another player is no longer ignored
+- Restore fast startup while keeping burst recovery
+- Keep live streams connected through provider pauses
+
+### Other changes
+
+- I18n: fix UI string translations (13 languages)
+- I18n: translate new subtitle-speech UI strings (13 languages)
+
 ## v1.148.0 - 2026-10-09
 
 ### Features

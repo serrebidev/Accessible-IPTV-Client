@@ -12,25 +12,47 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-msgid "App crashed at startup in v1.147 (application voice COM calls)"
-msgstr "v1.147 中应用启动时崩溃（应用程序语音的 COM 调用）"
-
-#: CHANGELOG.md:18
+#: CHANGELOG.md:31
 msgid "Bound subtitle review by the playhead and offer it in Keyboard Shortcuts"
 msgstr "将字幕回顾绑定到播放头并在键盘快捷键中提供"
 
-#: CHANGELOG.md:24
+#: CHANGELOG.md:8
+msgid "Channel search lists the closest names first"
+msgstr "频道搜索优先列出最接近的名称"
+
+#: CHANGELOG.md:37
 msgid "Channels slow to start after browsing on Dispatcharr"
 msgstr "在 Dispatcharr 上浏览后频道启动缓慢"
 
-#: CHANGELOG.md:8
+#: CHANGELOG.md:20
+msgid "I18n: fix UI string translations (13 languages)"
+msgstr "I18n：修正界面翻译（13 种语言）"
+
+#: CHANGELOG.md:21
+msgid "I18n: translate new subtitle-speech UI strings (13 languages)"
+msgstr "I18n：翻译新的字幕朗读界面文本（13 种语言）"
+
+#: CHANGELOG.md:9
 msgid "Implement Tibor #45 architectural items 1-8"
 msgstr "实现Tibor #45架构项目1-8"
 
+#: CHANGELOG.md:16
+msgid "Keep live streams connected through provider pauses"
+msgstr "提供商暂停期间直播保持连接"
+
+#: CHANGELOG.md:13
+msgid "MPV subtitle requests wait for the answer instead of giving up"
+msgstr "发给 MPV 的字幕请求会等待回复，而不是直接放弃"
+
 #: CHANGELOG.md:14
+msgid "Opening the same stream in another player is no longer ignored"
+msgstr "在另一个播放器中打开同一直播流不再被忽略"
+
+#: CHANGELOG.md:27
 msgid "Read the current subtitle again and review earlier ones"
 msgstr "重新朗读当前字幕并回顾之前的字幕"
 
+#: CHANGELOG.md:15
+msgid "Restore fast startup while keeping burst recovery"
+msgstr "恢复快速启动，同时保留突发恢复"
 
-msgid "Implement Tibor #45 architectural items: player-independent commands, built-in player via manager, identical-cue fix, privacy routing, timeout fix, session controller, custom MPV path"
-msgstr "实现Tibor #45架构项目：独立于播放器的命令、通过管理器集成播放器、相同提示修复、隐私路由、超时修复、会话控制器、自定义MPV路径"
