@@ -237,11 +237,11 @@ def test_resolve_video_media_uses_video_preference():
     assert resolve_recording_format(MEDIA_VIDEO, "audio_flac", "x264_mp4") == "x264_mp4"
 
 
-def test_resolve_video_media_repairs_wrong_kind_preference():
-    # A video preference naming an audio preset (stale/corrupt config) is
-    # repaired to the video default rather than recording a TV stream
-    # audio-only by accident.
-    assert resolve_recording_format(MEDIA_VIDEO, "audio_flac", "audio_flac") == "provider_mkv"
+def test_resolve_video_media_keeps_a_soundtrack_only_choice():
+    # MP3 picked on a TV channel records the soundtrack; it used to be
+    # "repaired" back to MKV, so the user's choice never took effect.
+    assert resolve_recording_format(MEDIA_VIDEO, "audio_flac", "audio_mp3_v0") == "audio_mp3_v0"
+    assert resolve_recording_format(MEDIA_VIDEO, "audio_flac", "bogus") == "provider_mkv"
 
 
 def test_resolve_unknown_media_uses_video_preference():
@@ -314,3 +314,20 @@ def test_migrate_repairs_invalid_and_wrong_kind_preferences():
     migrate_recording_format_prefs(cfg)
     assert cfg["recording_format_audio"] == "audio_mp3_v0"
     assert cfg["recording_format_video"] == "provider_mkv"
+
+
+def test_mp3_picked_on_a_tv_channel_is_the_tv_choice(monkeypatch):
+    """MP3 chosen on TVP 1 HD used to be saved as the radio preference, so
+    TV recordings and catch-up downloads stayed MKV."""
+    import types
+    import main
+    saved = []
+    monkeypatch.setattr(main, "save_config", saved.append)
+    client = types.SimpleNamespace(
+        config={"recording_format_audio": "audio_flac", "recording_format_video": "provider_mkv"},
+        _classify_channel_media=lambda channel: (channel["media"], "metadata"))
+    main.IPTVClient._set_recording_format(client, "audio_mp3_v0", {"media": MEDIA_VIDEO})
+    assert client.config["recording_format_video"] == "audio_mp3_v0"
+    assert client.config["recording_format_audio"] == "audio_flac"
+    main.IPTVClient._set_recording_format(client, "audio_mp3_v0", {"media": MEDIA_AUDIO})
+    assert client.config["recording_format_audio"] == "audio_mp3_v0"

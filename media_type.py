@@ -205,13 +205,15 @@ def resolve_recording_format(media: str, audio_pref: object, video_pref: object)
     everything else -- including not-yet-classified streams -- keeps the
     long-standing behaviour of using the video preference, so existing
     television recording behaviour is unchanged unless the stream is
-    positively identified as audio-only.
+    positively identified as audio-only. The video preference may name an
+    audio preset: MP3 picked on a TV channel records its soundtrack.
     """
+    from recorder import RECORDING_FORMATS
     if media == MEDIA_AUDIO:
         if isinstance(audio_pref, str) and _format_kind(audio_pref) == "audio":
             return audio_pref
         return DEFAULT_AUDIO_FORMAT
-    if isinstance(video_pref, str) and _format_kind(video_pref) == "video":
+    if isinstance(video_pref, str) and video_pref in RECORDING_FORMATS:
         return video_pref
     return DEFAULT_VIDEO_FORMAT
 
@@ -253,6 +255,5 @@ def migrate_recording_format_prefs(cfg: Dict[str, object]) -> None:
             and RECORDING_FORMATS[audio][2] == "audio"):
         cfg["recording_format_audio"] = legacy if legacy_kind == "audio" else DEFAULT_AUDIO_FORMAT
     video = cfg.get("recording_format_video")
-    if not (isinstance(video, str) and video in RECORDING_FORMATS
-            and RECORDING_FORMATS[video][2] == "video"):
+    if not (isinstance(video, str) and video in RECORDING_FORMATS):
         cfg["recording_format_video"] = legacy if legacy_kind == "video" else DEFAULT_RECORDING_FORMAT

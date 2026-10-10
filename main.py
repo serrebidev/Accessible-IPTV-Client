@@ -81,7 +81,6 @@ from subtitle_speech import SubtitleSpeechManager
 from subtitle_session import SubtitleSessionController
 from app_tts import AppTtsBackend
 import recorder
-from recorder import RECORDING_FORMATS
 from recorder import format_duration, format_size, parse_ffmpeg_progress, written_size
 import media_type
 from recorder import audio_stream_label, probe_audio_streams
@@ -5065,13 +5064,15 @@ class IPTVClient(wx.Frame):
             lines.append(_("Full ffmpeg log:\n{path}").format(path=log_path))
         return "\n".join(lines)
 
-    def _set_recording_format(self, key: str):
-        # The choice lands on the preference matching the chosen preset's own
-        # kind: picking an audio preset on a TV channel sets the audio
-        # preference (used for radio), not the video one, and vice versa.
+    def _set_recording_format(self, key: str, channel=None):
+        # The choice lands on the preference for the kind of channel it was
+        # made on: MP3 picked on a TV channel records TV soundtracks as MP3.
+        # Saving it as the radio preference instead left TV recordings in MKV.
         key = normalize_recording_format(key)
-        kind = RECORDING_FORMATS[key][2]
-        if kind == "audio":
+        media = media_type.MEDIA_UNKNOWN
+        if channel:
+            media, _source = self._classify_channel_media(channel)
+        if media == media_type.MEDIA_AUDIO:
             self.config["recording_format_audio"] = key
         else:
             self.config["recording_format_video"] = key
@@ -5227,7 +5228,7 @@ class IPTVClient(wx.Frame):
             item = fmt_menu.AppendRadioItem(wx.ID_ANY, self._recording_format_label(key))
             if key == current:
                 item.Check(True)
-            fmt_menu.Bind(wx.EVT_MENU, lambda evt, k=key: self._set_recording_format(k), item)
+            fmt_menu.Bind(wx.EVT_MENU, lambda evt, k=key, c=channel: self._set_recording_format(k, c), item)
         if (media == media_type.MEDIA_UNKNOWN and channel is not None
                 and self._media_probe_active(channel)):
             # The probe is still classifying this channel: say so with a
