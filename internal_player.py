@@ -17,7 +17,6 @@ import wx
 import catchup_direct
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
-from options import DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS
 import user_guide
 import shortcuts
 import subtitle_cues
@@ -1454,9 +1453,6 @@ class InternalPlayerFrame(wx.Frame):
                 return
             if adjust_buffer:
                 new_base = self.base_buffer_seconds + self._buffer_step_seconds
-                if self._current_stream_kind == "live":
-                    # One recovery must cover 5-8 s source gaps, not six reconnects.
-                    new_base = max(new_base, DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS)
                 new_base = min(new_base, self._max_buffer_seconds)
                 if new_base > self.base_buffer_seconds:
                     LOG.info("Increasing base buffer to %.1fs to stabilise playback.", new_base)
