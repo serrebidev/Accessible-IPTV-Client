@@ -18,6 +18,7 @@ import threading
 from http.client import IncompleteRead
 from providers import generate_provider_id
 from options import get_epg_log_path
+from modal_guard import message_box
 from typing import Dict, List, Optional, Tuple, Set
 
 import sys
@@ -3065,10 +3066,10 @@ class _SourceNamesMixin:
         if not url:
             return
         if _copy_text_to_clipboard(url):
-            wx.MessageBox(_("URL copied to the clipboard."), self.GetTitle(),
+            message_box(_("URL copied to the clipboard."), self.GetTitle(),
                           wx.OK | wx.ICON_INFORMATION)
         else:
-            wx.MessageBox(_("Could not open the clipboard."), self.GetTitle(),
+            message_box(_("Could not open the clipboard."), self.GetTitle(),
                           wx.OK | wx.ICON_ERROR)
 
     def _select_row_under(self, event):
@@ -3493,7 +3494,7 @@ if WX_AVAILABLE:
 
         def _on_ok(self, event):
             if not self.user_ctrl.GetValue().strip() or not self.pass_ctrl.GetValue().strip() or not self.url_ctrl.GetValue().strip():
-                wx.MessageBox(_("Username, password, and URL are required."), _("Validation"), wx.OK | wx.ICON_WARNING)
+                message_box(_("Username, password, and URL are required."), _("Validation"), wx.OK | wx.ICON_WARNING)
                 return
             self.EndModal(wx.ID_OK)
 
@@ -3627,11 +3628,11 @@ if WX_AVAILABLE:
 
         def _on_ok(self, event):
             if not self.url_ctrl.GetValue().strip():
-                wx.MessageBox(_("Portal URL is required."), _("Validation"), wx.OK | wx.ICON_WARNING)
+                message_box(_("Portal URL is required."), _("Validation"), wx.OK | wx.ICON_WARNING)
                 return
             mac = self._sanitize_mac(self.mac_ctrl.GetValue().strip())
             if len(mac.split(':')) != 6:
-                wx.MessageBox(_("MAC address must contain six octets (e.g., 00:1A:79:12:34:56)."), _("Validation"), wx.OK | wx.ICON_WARNING)
+                message_box(_("MAC address must contain six octets (e.g., 00:1A:79:12:34:56)."), _("Validation"), wx.OK | wx.ICON_WARNING)
                 return
             self.mac_ctrl.SetValue(mac)
             self.EndModal(wx.ID_OK)

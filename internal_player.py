@@ -17,6 +17,7 @@ import wx
 import catchup_direct
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
+from modal_guard import message_box
 import user_guide
 import shortcuts
 import subtitle_cues
@@ -642,7 +643,7 @@ class InternalPlayerFrame(wx.Frame):
     def _on_audio_device_menu(self, _event=None) -> None:
         devices = self._list_audio_output_devices()
         if not devices:
-            wx.MessageBox(_("No audio output devices were found."),
+            message_box(_("No audio output devices were found."),
                           _("Audio Output Device"), wx.OK | wx.ICON_INFORMATION)
             return
         dlg = AudioDeviceDialog(self, devices, self._audio_output_device)
@@ -1868,7 +1869,7 @@ class InternalPlayerFrame(wx.Frame):
     def _on_record(self, _event: Optional[wx.Event] = None) -> None:
         """Start (or stop) recording the channel that is playing right now."""
         if not self._on_record_cb:
-            wx.MessageBox(_("Recording is not available from this window."),
+            message_box(_("Recording is not available from this window."),
                           _("Record"), wx.OK | wx.ICON_INFORMATION)
             return
         try:
@@ -1898,11 +1899,11 @@ class InternalPlayerFrame(wx.Frame):
 
     def _on_cast(self, _event: Optional[wx.Event] = None) -> None:
         if not self._on_cast_cb:
-            wx.MessageBox(_("Casting is unavailable because the caster is not initialised."), _("Casting"), wx.OK | wx.ICON_INFORMATION)
+            message_box(_("Casting is unavailable because the caster is not initialised."), _("Casting"), wx.OK | wx.ICON_INFORMATION)
             return
         url = self._current_url or self._last_resolved_url or ""
         if not url:
-            wx.MessageBox(_("No active stream to cast."), _("Casting"), wx.OK | wx.ICON_WARNING)
+            message_box(_("No active stream to cast."), _("Casting"), wx.OK | wx.ICON_WARNING)
             return
         try:
             self._on_cast_cb(url, self._current_title or "IPTV Stream", self._current_headers)
@@ -2004,7 +2005,7 @@ class InternalPlayerFrame(wx.Frame):
                 show(message, caption, style, parent=parent, on_dismiss=on_dismiss)
         else:
             try:
-                wx.MessageBox(message, caption, style, parent=parent)
+                message_box(message, caption, style, parent=parent)
             finally:
                 if on_dismiss is not None:
                     on_dismiss()

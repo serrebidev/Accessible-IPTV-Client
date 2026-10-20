@@ -222,7 +222,7 @@ def test_about_dialog_links_ignore_navigation_keys(wx_app, monkeypatch):
 # Every box in main.py counts towards the modal depth
 # --------------------------------------------------------------------------- #
 def test_message_box_helper_marks_a_box_as_open(monkeypatch):
-    """A box opened anywhere in main.py has to defer finish notifications.
+    """A box opened anywhere in the app has to defer finish notifications.
 
     ``_stop_recording_for_channel`` opens "Stopping recording for X..." with a
     plain box, not through the frame's own helper, so the frame's instance
@@ -239,6 +239,29 @@ def test_message_box_helper_marks_a_box_as_open(monkeypatch):
     assert appmod.modal_box_is_open() is False
     appmod.message_box("hello", "caption", wx.OK)
     assert seen == [True]
+    assert appmod.modal_box_is_open() is False
+
+
+def test_a_box_opened_outside_main_still_counts(monkeypatch):
+    """The player and the playlist dialogs open boxes too.
+
+    A box they open has to be visible to the guard, or a recording that
+    finishes during it opens a second box inside the first one's message loop
+    and leaves the main window disabled for good.
+    """
+    import internal_player
+    import playlist
+
+    assert playlist.message_box is appmod.message_box
+    assert internal_player.message_box is appmod.message_box
+
+    seen = []
+    monkeypatch.setattr(wx, "MessageBox",
+                        lambda *a, **kw: seen.append(appmod.modal_box_is_open()) or wx.OK)
+
+    internal_player.message_box("hello", "caption", wx.OK)
+    playlist.message_box("hello", "caption", wx.OK)
+    assert seen == [True, True]
     assert appmod.modal_box_is_open() is False
 
 

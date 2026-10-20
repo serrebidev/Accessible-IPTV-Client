@@ -19,6 +19,9 @@ import subprocess
 import hashlib
 import concurrent.futures
 import live_announce
+# The modal-box guard lives in its own module: the player and the playlist
+# dialogs open boxes too, and they cannot import main (main imports them).
+from modal_guard import message_box, modal_box_is_open, set_modal_box_closed_hook
 
 # The macOS app bundles ffmpeg and libVLC (tools/build_macos.sh). An app opened
 # from Finder has no Homebrew on PATH, so point ffmpeg lookups and python-vlc
@@ -197,32 +200,6 @@ def _wait_for_player_stop(stopped) -> None:
         LOG.debug("_wait_for_player_stop: ignored exception", exc_info=True)
 
 
-def message_box(*args, **kwargs):
-    """``wx.MessageBox`` that records, app-wide, that a modal box is on screen.
-
-    Opening a second message box from inside the first one's message loop
-    desynchronizes wxMSW's parent-enable bookkeeping and leaves the main frame
-    permanently disabled - NVDA calls it "unavailable" and Alt+F4 and Escape do
-    nothing. Recording finish callbacks arrive from a watcher thread and used to
-    land exactly there, on top of the "Stopping recording..." box. The queueing
-    guard in ``IPTVClient`` can only defer them if it knows a box is up, so
-    *every* box in this module goes through here and bumps the counter.
-    """
-    global _MODAL_BOX_DEPTH
-    _MODAL_BOX_DEPTH += 1
-    try:
-        return wx.MessageBox(*args, **kwargs)
-    finally:
-        _MODAL_BOX_DEPTH = max(0, _MODAL_BOX_DEPTH - 1)
-        if _MODAL_BOX_DEPTH == 0:
-            _notify_modal_boxes_closed()
-
-
-def modal_box_is_open() -> bool:
-    """True while any box opened through :func:`message_box` is showing."""
-    return _MODAL_BOX_DEPTH > 0
-
-
 def _window_alive(window) -> bool:
     """True while the wx window still exists.
 
@@ -259,31 +236,6 @@ def _modal_dialog_is_open() -> bool:
                    for window in wx.GetTopLevelWindows())
     except Exception:
         return False
-
-
-def set_modal_box_closed_hook(hook) -> None:
-    """Register the callback that flushes notifications queued behind a box."""
-    global _MODAL_BOX_CLOSED_HOOK
-    _MODAL_BOX_CLOSED_HOOK = hook
-
-
-def _notify_modal_boxes_closed() -> None:
-    hook = _MODAL_BOX_CLOSED_HOOK
-    if hook is None:
-        return
-
-    def run():
-        # The hook is a bound method of the main frame; a frame torn down
-        # between the box closing and this idle callback raises RuntimeError.
-        try:
-            hook()
-        except RuntimeError:
-            LOG.debug("_notify_modal_boxes_closed: frame is gone", exc_info=True)
-
-    try:
-        wx.CallAfter(run)
-    except Exception:
-        LOG.debug("_notify_modal_boxes_closed: ignored exception", exc_info=True)
 
 
 class InternalPlayerUnavailableError(RuntimeError):
