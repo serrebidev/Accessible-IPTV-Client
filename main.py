@@ -2170,12 +2170,12 @@ class IPTVClient(wx.Frame):
                 return ""
             return cache.get(_now_playing_key(channel), "")
 
-    def _refresh_now_playing_labels(self):
+    def _refresh_now_playing_labels(self, force: bool = False):
         """One bulk query: the on-air programme of every EPG channel, for row labels."""
         if not getattr(self, "config", {}).get("epg_enabled", True):
             return
         now = time.time()
-        if now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
+        if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
         self._now_playing_refreshed_at = now
         try:
@@ -7452,8 +7452,10 @@ class IPTVClient(wx.Frame):
             # current list, so this cannot repeat unless the list changes again.
             wx.CallAfter(self.start_epg_import_background)
         # The rows read the on-air programme, so refresh the bulk labels now
-        # that new EPG data may have arrived.
-        threading.Thread(target=self._refresh_now_playing_labels, daemon=True).start()
+        # that new EPG data may have arrived. Forced: the 30 s throttle would
+        # swallow the refresh and the rows would keep showing the programme
+        # from before the import.
+        threading.Thread(target=self._refresh_now_playing_labels, args=(True,), daemon=True).start()
         self.on_highlight()
         if notify:
             # Reported last, so the guide is already reloaded behind the box.
