@@ -408,6 +408,26 @@ class TestXtreamAuthentication:
         assert query["username"][0] == "user@domain.com"
         assert query["password"][0] == "p@ss!word#123"
 
+    @patch('urllib.request.urlopen')
+    def test_a_body_that_is_not_a_playlist_is_an_authentication_failure(self, mock_urlopen):
+        """A wrong password answers with HTTP 200 and a body that is not a playlist.
+
+        Loading it as an empty one left the user with no channels and no
+        message at all.
+        """
+        mock_response = Mock()
+        mock_response.read.return_value = b'{"error":"invalid credentials"}'
+        mock_response.__enter__ = Mock(return_value=mock_response)
+        mock_response.__exit__ = Mock(return_value=False)
+        mock_urlopen.return_value = mock_response
+
+        cfg = XtreamCodesConfig(base_url="http://provider.com", username="user", password="wrong")
+        client = XtreamCodesClient(cfg)
+
+        with pytest.raises(Exception) as excinfo:
+            client.fetch_playlist()
+        assert "Authentication failed" in str(excinfo.value)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

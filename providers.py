@@ -97,9 +97,15 @@ class XtreamCodesClient:
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
             raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
-            return raw.decode("utf-8")
+            text = raw.decode("utf-8")
         except UnicodeDecodeError:
-            return raw.decode("latin-1", "ignore")
+            text = raw.decode("latin-1", "ignore")
+        # A wrong or expired password answers with HTTP 200 and a body that is
+        # not a playlist. Loading it as an empty one leaves the user with no
+        # channels and no message at all.
+        if "#EXTM3U" not in text[:4096]:
+            raise ProviderError(_("Authentication failed – the server rejected these credentials"))
+        return text
 
     # ------------------------------------------------------------------ #
     # player_api.php (structured VOD / Series browsing)
@@ -254,6 +260,14 @@ class StalkerPortalClient:
             with self._opener.open(req, timeout=timeout) as resp:
                 raw = resp.read()
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
+            status = getattr(err, "code", None)
+            if status in (401, 403):
+                # The portal dropped or expired the token. Forgetting it costs
+                # one handshake; keeping it leaves every later call - playlist,
+                # stream, catch-up, account info - failing with 401 until the
+                # cache expires, which is 25 minutes away.
+                with self._token_lock:
+                    self._token = None
             raise ProviderError(_("Could not reach the portal: {error}").format(error=err)) from err
         text = raw.decode("utf-8", "ignore")
         try:

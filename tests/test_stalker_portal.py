@@ -3,6 +3,8 @@ Tests for Stalker Portal provider functionality.
 """
 import pytest
 import json
+import time
+import types
 import urllib.parse
 import os
 import sys
@@ -488,6 +490,33 @@ class TestStalkerPortalGenres:
         
         assert len(channels_by_genre["News"]) == 2
         assert len(channels_by_genre["Sports"]) == 1
+
+
+def test_a_rejected_portal_token_is_forgotten():
+    """A 401 has to invalidate the cached token.
+
+    The token was cached for 25 minutes and never cleared, so once the portal
+    dropped it every later call - playlist, stream, catch-up, account info -
+    failed with 401 until the app was restarted.
+    """
+    import urllib.error
+
+    cfg = StalkerPortalConfig(
+        base_url="http://portal.example.com/stalker_portal",
+        username="user", password="pass", mac="00:1A:79:00:00:01")
+    client = StalkerPortalClient(cfg)
+    client._token = "stale-token"
+    client._token_issued = time.time()
+
+    def reject(*_args, **_kwargs):
+        raise urllib.error.HTTPError("http://portal.example.com", 401, "Unauthorized", None, None)
+
+    client._opener = types.SimpleNamespace(open=reject)
+
+    with pytest.raises(ProviderError):
+        client._portal_call({"type": "stb", "action": "handshake", "token": ""})
+
+    assert client._token is None
 
 
 if __name__ == "__main__":
