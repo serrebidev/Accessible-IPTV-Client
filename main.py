@@ -10846,6 +10846,11 @@ class ScheduledRecordingsDialog(wx.Dialog):
         return labels.get(status, status or "")
 
     def refresh(self):
+        # Keep the row the user was on, and never take the focus: the dialog is
+        # refreshed on every scheduler change, and jumping back to the first
+        # row lost the place of a screen-reader user browsing the schedule.
+        selected = self._selected_job()
+        selected_id = str(selected.get("id") or "") if selected else ""
         self.jobs = self.scheduler.list_jobs(include_done=True)
         self.list_ctrl.DeleteAllItems()
         for job in self.jobs:
@@ -10858,9 +10863,19 @@ class ScheduledRecordingsDialog(wx.Dialog):
                 font = self.list_ctrl.GetItemFont(idx)
                 font.SetWeight(wx.FONTWEIGHT_BOLD)
                 self.list_ctrl.SetItemFont(idx, font)
-        if self.jobs:
-            self.list_ctrl.Select(0)
-            self.list_ctrl.Focus(0)
+        if not self.jobs:
+            return
+        target = -1
+        if selected_id:
+            for idx, job in enumerate(self.jobs):
+                if str(job.get("id") or "") == selected_id:
+                    target = idx
+                    break
+        if target == -1:
+            target = 0
+        self.list_ctrl.Select(target)
+        if wx.Window.FindFocus() is self.list_ctrl:
+            self.list_ctrl.Focus(target)
 
     def _selected_job(self) -> Optional[Dict[str, object]]:
         idx = self.list_ctrl.GetFirstSelected()
