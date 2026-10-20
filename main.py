@@ -223,6 +223,35 @@ def modal_box_is_open() -> bool:
     return _MODAL_BOX_DEPTH > 0
 
 
+def _window_alive(window) -> bool:
+    """True while the wx window still exists.
+
+    A destroyed window raises on every call, so any code that keeps a window
+    around for later - a queued notification, a focus restore - has to probe
+    it before it uses it.
+    """
+    if window is None:
+        return False
+    try:
+        window.IsShown()
+    except RuntimeError:
+        return False
+    return True
+
+
+def _message_box_owner(parent, frame):
+    """The window a box belongs to, or None when that window is gone.
+
+    A queued box can outlive the window it was raised for: the built-in
+    player can be closed while its box waits behind another one. A destroyed
+    wx object raises on every call, so the owner is probed before it is handed
+    to wx.
+    """
+    if parent is not None and _window_alive(parent) and parent.IsShown():
+        return parent
+    return frame if _window_alive(frame) else None
+
+
 def _modal_dialog_is_open() -> bool:
     """True while any wx dialog is running modally."""
     try:
@@ -4973,12 +5002,19 @@ class IPTVClient(wx.Frame):
         depth = getattr(self, "_modal_box_depth", 0)
         self._modal_box_depth = depth + 1
         try:
-            owner = parent if parent and parent.IsShown() else (self.frame if hasattr(self, "frame") else None)
+            owner = _message_box_owner(parent, getattr(self, "frame", None))
             message_box(message, caption, style, parent=owner)
+        except Exception:
+            # A notification that cannot be shown must not take the app down
+            # with it: the caller is usually a GUI callback.
+            LOG.exception("Message box %r could not be shown", caption)
         finally:
             self._modal_box_depth = depth
             if on_dismiss is not None:
-                on_dismiss()
+                try:
+                    on_dismiss()
+                except Exception:
+                    LOG.exception("Message box dismissal handler failed")
             if depth == 0 and getattr(self, "_deferred_notification_queue", None):
                 wx.CallAfter(self._drain_deferred_notifications)
 
@@ -4987,7 +5023,11 @@ class IPTVClient(wx.Frame):
         queue = self._deferred_notifications()
         while queue and not self._modal_box_is_open():
             message, caption, style, parent, on_dismiss = queue.pop(0)
-            self._show_message_box(message, caption, style, parent=parent, on_dismiss=on_dismiss)
+            try:
+                self._show_message_box(message, caption, style, parent=parent, on_dismiss=on_dismiss)
+            except Exception:
+                # One bad entry must not swallow the rest of the queue.
+                LOG.exception("Deferred notification %r could not be shown", caption)
 
     def _report_recording_saved(self, rec) -> None:
         """Recording finished cleanly: notify, or queue the box if one is up."""
