@@ -1780,6 +1780,7 @@ class InternalPlayerFrame(wx.Frame):
             self._is_paused = not self._is_paused
             self._vlc_call(lambda paused=int(self._is_paused): self.player.set_pause(paused))
             self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
+            self.play_pause_btn.SetName(self.play_pause_btn.GetLabel())
             return
         state = None
         try:
@@ -1811,6 +1812,7 @@ class InternalPlayerFrame(wx.Frame):
                     self._vlc_call(self.player.play)
                 self._is_paused = False
                 self.play_pause_btn.SetLabel(_("Pause"))
+                self.play_pause_btn.SetName(self.play_pause_btn.GetLabel())
                 self._update_status_label(_("Buffering..."))
             except Exception:
                 LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
@@ -1822,6 +1824,7 @@ class InternalPlayerFrame(wx.Frame):
                 self._vlc_call(self.player.play)
                 self._is_paused = False
                 self.play_pause_btn.SetLabel(_("Pause"))
+                self.play_pause_btn.SetName(self.play_pause_btn.GetLabel())
                 self._status_timer.Start(500)
                 self._update_status_label(_("Buffering..."))
             except Exception:
@@ -1832,6 +1835,7 @@ class InternalPlayerFrame(wx.Frame):
             self._vlc_call(self.player.pause)
             self._is_paused = not self._is_paused
             self.play_pause_btn.SetLabel(_("Resume") if self._is_paused else _("Pause"))
+            self.play_pause_btn.SetName(self.play_pause_btn.GetLabel())
         except Exception:
             LOG.debug("InternalPlayerFrame._on_toggle_pause: ignored exception", exc_info=True)
 
@@ -1877,7 +1881,14 @@ class InternalPlayerFrame(wx.Frame):
         try:
             self._on_cast_cb(url, self._current_title or "IPTV Stream", self._current_headers)
         except Exception as exc:
-            LOG.error("Cast callback failed: %s", exc)
+            LOG.error("Cast callback failed: %s", type(exc).__name__)
+            def restore_focus():
+                if not self._destroyed and self and self.IsShown():
+                    self.Raise()
+                    self.cast_btn.SetFocus()
+
+            self._notify_box(_("Casting Error"), _("Casting"), wx.OK | wx.ICON_ERROR,
+                             parent=self, on_dismiss=restore_focus)
 
     @staticmethod
     def _localized_state(state_name: str) -> str:
@@ -1937,7 +1948,8 @@ class InternalPlayerFrame(wx.Frame):
         if prefix and getattr(self, "announcement_level", 2) >= priority:
             self._speak(self.status_label)
 
-    def _notify_box(self, message: str, caption: str, style: int) -> None:
+    def _notify_box(self, message: str, caption: str, style: int,
+                    *, parent=None, on_dismiss=None) -> None:
         """Show a box the timer raised, through the app's modal queue.
 
         A bare wx.MessageBox opened while another box is up nests a second
@@ -1947,9 +1959,16 @@ class InternalPlayerFrame(wx.Frame):
             return
         show = getattr(self.GetParent(), "_show_or_queue_message_box", None)
         if show is not None:
-            show(message, caption, style)
+            if parent is None and on_dismiss is None:
+                show(message, caption, style)
+            else:
+                show(message, caption, style, parent=parent, on_dismiss=on_dismiss)
         else:
-            wx.MessageBox(message, caption, style)
+            try:
+                wx.MessageBox(message, caption, style, parent=parent)
+            finally:
+                if on_dismiss is not None:
+                    on_dismiss()
 
     def _speak(self, ctrl: wx.Window) -> None:
         """Read ``ctrl`` aloud; through the main window when this one is not in front."""

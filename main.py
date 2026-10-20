@@ -8,7 +8,7 @@ import urllib.parse
 import sqlite3
 import threading
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 import wx
 import datetime
 import re
@@ -4942,7 +4942,7 @@ class IPTVClient(wx.Frame):
     # -------------------------------------------------------------- #
     _DEFERRED_NOTIFICATION_LIMIT = 8
 
-    def _deferred_notifications(self) -> List[Tuple[str, str, int]]:
+    def _deferred_notifications(self) -> List[Tuple[str, str, int, Optional[wx.Window], Optional[Callable[[], None]]]]:
         # Must return the *stored* list, not a fresh default: callers append
         # to the return value, so a new default each call would drop entries.
         queue = getattr(self, "_deferred_notification_queue", None)
@@ -4955,32 +4955,39 @@ class IPTVClient(wx.Frame):
         """True while any wx message box is showing in this app."""
         return bool(getattr(self, "_modal_box_depth", 0)) or modal_box_is_open()
 
-    def _show_or_queue_message_box(self, message: str, caption: str, style: int) -> None:
+    def _show_or_queue_message_box(self, message: str, caption: str, style: int,
+                                   *, parent=None, on_dismiss=None) -> None:
         """Show a wx.MessageBox now, or queue it while a modal box is open."""
         if self._modal_box_is_open():
             queue = self._deferred_notifications()
             if len(queue) < self._DEFERRED_NOTIFICATION_LIMIT:
-                queue.append((message, caption, style))
+                queue.append((message, caption, style, parent, on_dismiss))
             else:
                 LOG.warning("Dropping deferred notification %r: queue full", caption)
             return
-        self._show_message_box(message, caption, style)
+        self._show_message_box(message, caption, style, parent=parent, on_dismiss=on_dismiss)
 
-    def _show_message_box(self, message: str, caption: str, style: int) -> None:
+    def _show_message_box(self, message: str, caption: str, style: int,
+                          *, parent=None, on_dismiss=None) -> None:
         """Open a wx.MessageBox, tracking the modal depth it creates."""
         depth = getattr(self, "_modal_box_depth", 0)
         self._modal_box_depth = depth + 1
         try:
-            message_box(message, caption, style, parent=self.frame if hasattr(self, "frame") else None)
+            owner = parent if parent and parent.IsShown() else (self.frame if hasattr(self, "frame") else None)
+            message_box(message, caption, style, parent=owner)
         finally:
             self._modal_box_depth = depth
+            if on_dismiss is not None:
+                on_dismiss()
+            if depth == 0 and getattr(self, "_deferred_notification_queue", None):
+                wx.CallAfter(self._drain_deferred_notifications)
 
     def _drain_deferred_notifications(self) -> None:
         """Show notifications queued while a modal box was open (FIFO)."""
         queue = self._deferred_notifications()
         while queue and not self._modal_box_is_open():
-            message, caption, style = queue.pop(0)
-            self._show_message_box(message, caption, style)
+            message, caption, style, parent, on_dismiss = queue.pop(0)
+            self._show_message_box(message, caption, style, parent=parent, on_dismiss=on_dismiss)
 
     def _report_recording_saved(self, rec) -> None:
         """Recording finished cleanly: notify, or queue the box if one is up."""

@@ -95,6 +95,24 @@ def test_deferred_queue_is_fifo_and_does_not_double_fire(frame, monkeypatch):
     assert len(shown) == 3  # no duplicates on a second drain
 
 
+def test_box_queued_during_another_queued_box_drains_after_dismissal(frame, monkeypatch, wx_app):
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.frame = frame
+    shown = []
+
+    def fake_box(message, *_args, **_kwargs):
+        shown.append(message)
+        if message == "first":
+            client._show_or_queue_message_box("second", "caption", wx.OK)
+        return wx.OK
+
+    monkeypatch.setattr(wx, "MessageBox", fake_box)
+    client._show_or_queue_message_box("first", "caption", wx.OK)
+    assert shown == ["first"]
+    wx_app.Yield()
+    assert shown == ["first", "second"]
+
+
 # --------------------------------------------------------------------------- #
 # About dialog hyperlinks
 # --------------------------------------------------------------------------- #

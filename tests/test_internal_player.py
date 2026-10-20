@@ -904,8 +904,13 @@ class TestReconnectKeepsVideoHidden:
             set_hwnd=lambda v: frame.hwnd_calls.append(v),
         )
         frame.SetTitle = lambda _t: None
-        frame.play_pause_btn = types.SimpleNamespace(
-            SetLabel=lambda _l: None, SetFocus=lambda: None)
+        button = types.SimpleNamespace(label="Play", name="Play")
+        button.SetLabel = lambda label: setattr(button, "label", label)
+        button.GetLabel = lambda: button.label
+        button.SetName = lambda name: setattr(button, "name", name)
+        button.GetName = lambda: button.name
+        button.SetFocus = lambda: None
+        frame.play_pause_btn = button
         frame._status_timer = types.SimpleNamespace(Start=lambda _ms: None)
         return frame
 
@@ -1107,6 +1112,7 @@ class TestQueuedChannelChanges:
         stubs._play(frame, video_visible=False)
         internal_player.InternalPlayerFrame._on_toggle_pause(frame)
         assert frame._is_paused is True
+        assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Resume"
         frame.gate.set()
         frame._vlc_ops.shutdown(wait=True)
         assert frame.calls == ["stop", "set_media", "play", ("pause", 1)]

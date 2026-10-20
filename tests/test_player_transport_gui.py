@@ -1,9 +1,12 @@
 """Real wx controls must stay reachable and reflect failed playback."""
 import types
+from concurrent.futures import Future
 
 import pytest
 import wx
 
+import internal_player
+import main as appmod
 from internal_player import InternalPlayerFrame
 
 
@@ -77,3 +80,79 @@ def test_manual_stop_keeps_play_available_but_disables_stop(player_frame):
     assert frame.play_pause_btn.IsEnabled()
     assert frame.play_pause_btn.GetLabel() == "Play"
     assert not frame.stop_btn.IsEnabled()
+
+
+def test_pause_toggle_updates_accessible_name_while_switching_and_playing(player_frame):
+    frame = player_frame
+    frame._current_url = "https://example.invalid/stream"
+    frame._vlc_switch = Future()
+    frame._vlc_call = lambda _call: None
+    frame._on_toggle_pause()
+    assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Resume"
+    frame._on_toggle_pause()
+    assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Pause"
+
+    frame._vlc_switch = None
+    frame.player = types.SimpleNamespace(get_state=lambda: None, pause=lambda: None)
+    frame._on_toggle_pause()
+    assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Resume"
+
+
+@pytest.mark.parametrize("manual_stop", [False, True])
+def test_resume_paths_update_accessible_name_immediately(player_frame, manual_stop):
+    frame = player_frame
+    frame._current_url = "https://example.invalid/stream"
+    frame._manual_stop = manual_stop
+    frame.player = types.SimpleNamespace(
+        get_state=lambda: internal_player.vlc.State.Stopped, play=lambda: None)
+    frame.play = lambda *_args, **_kwargs: None
+    frame._vlc_call = lambda _call: None
+    frame._update_status_label = lambda *_args: None
+    frame.play_pause_btn.SetName("old name")
+    frame._on_toggle_pause()
+    assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Pause"
+
+
+@pytest.mark.parametrize("queued", [False, True])
+def test_cast_callback_failure_uses_player_modal_and_restores_focus(monkeypatch, caplog, queued):
+    app = wx.GetApp() or wx.App()
+    host = wx.Frame(None, title="main window")
+    for name in ("_deferred_notifications", "_modal_box_is_open",
+                 "_show_or_queue_message_box", "_show_message_box",
+                 "_drain_deferred_notifications"):
+        setattr(host, name, getattr(appmod.IPTVClient, name).__get__(host))
+    host.frame = host
+    host._DEFERRED_NOTIFICATION_LIMIT = 8
+    host._modal_box_depth = int(queued)
+    host.Show()
+    frame = InternalPlayerFrame(host)
+    frame.Show()
+    app.Yield()
+    url = "https://example.invalid/live/user/password/123.ts"
+    shown = []
+
+    def fake_box(message, caption, style, *, parent):
+        shown.append((message, caption, style, parent))
+        host.Raise()
+        host.SetFocus()
+        return wx.OK
+
+    monkeypatch.setattr(appmod, "message_box", fake_box)
+    try:
+        frame._current_url = url
+        frame._on_cast_cb = lambda *_args: (_ for _ in ()).throw(RuntimeError(url))
+        frame.cast_btn.SetFocus()
+        frame._on_cast()
+        if queued:
+            assert shown == []
+            host._modal_box_depth = 0
+            host._drain_deferred_notifications()
+        assert shown == [("Casting Error", "Casting", wx.OK | wx.ICON_ERROR, frame)]
+        assert url not in str(shown)
+        assert "Cast callback failed: RuntimeError" in caplog.text
+        assert url not in caplog.text
+        assert wx.Window.FindFocus() is frame.cast_btn
+    finally:
+        frame.Destroy()
+        host.Destroy()
+        app.Yield()
