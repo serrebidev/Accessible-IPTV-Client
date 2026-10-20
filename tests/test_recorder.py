@@ -1058,3 +1058,26 @@ def test_probe_stream_report_timeout_kills_probe(monkeypatch):
     monkeypatch.setattr(recorder, "get_ffmpeg_path", lambda: "ffmpeg")
     assert recorder.probe_stream_report("http://example.com/hung") == ""
     assert proc.killed
+
+
+def test_stopping_an_unknown_recording_says_that_nothing_was_stopped():
+    """The caller has to be able to tell "stopped" from "there was nothing".
+
+    The scheduled-recording path falls back to stopping by key when the
+    recording id no longer resolves; a stop that silently does nothing leaves
+    the recording running past its scheduled end.
+    """
+    manager = recorder.RecordingManager()
+    assert manager.stop(4242) is False
+
+
+def test_stopping_a_known_recording_reports_that_it_was_stopped(monkeypatch):
+    manager = recorder.RecordingManager()
+    stopped = []
+    monkeypatch.setattr(manager, "_graceful_stop",
+                        lambda rec, wait=False, detach=False: stopped.append(rec))
+    rec = object()
+    manager._recordings[7] = rec
+
+    assert manager.stop(7) is True
+    assert stopped == [rec]

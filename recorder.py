@@ -1152,11 +1152,19 @@ class RecordingManager:
         threading.Thread(target=self._watch, args=(rec, on_finish), daemon=True).start()
         return rec
 
-    def stop(self, rec_id: int, *, wait: bool = False, detach: bool = False) -> None:
+    def stop(self, rec_id: int, *, wait: bool = False, detach: bool = False) -> bool:
+        """Stop one recording. False when the id is not (or no longer) active.
+
+        The caller has to be able to tell "stopped" from "there was nothing
+        to stop": the scheduled-recording path falls back to stopping by key
+        when the id no longer resolves.
+        """
         with self._lock:
             rec = self._recordings.get(rec_id)
-        if rec:
-            self._graceful_stop(rec, wait=wait, detach=detach)
+        if not rec:
+            return False
+        self._graceful_stop(rec, wait=wait, detach=detach)
+        return True
 
     def stop_key(self, key: str, *, wait: bool = False, detach: bool = False) -> int:
         stopped = 0

@@ -389,3 +389,57 @@ def test_saves_from_several_threads_do_not_collide(tmp_path):
     reloaded = dvr.DVRScheduler(str(tmp_path / "schedule.json"),
                                 on_start=lambda job: None, on_stop=lambda job: None)
     assert reloaded.get_job("job1") is not None
+
+
+def test_stopping_a_scheduled_recording_falls_back_to_the_key():
+    """A recording id that no longer resolves must still stop the capture.
+
+    The capture is already gone from the recorder, so stopping by id does
+    nothing; without the fallback the job keeps recording past its scheduled
+    end and is reported as a stop timeout.
+    """
+    import main as appmod
+
+    stopped_ids = []
+    stopped_keys = []
+
+    class FakeRecorder:
+        def stop(self, rec_id, **_kwargs):
+            stopped_ids.append(rec_id)
+            return False
+
+        def stop_key(self, key, **_kwargs):
+            stopped_keys.append(key)
+            return 0
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.recorder = FakeRecorder()
+
+    appmod.IPTVClient._stop_scheduled_recording(client, {"id": 42, "recording_id": 7})
+
+    assert stopped_ids == [7]
+    assert stopped_keys == ["dvr:42"]
+
+
+def test_stopping_a_scheduled_recording_stops_by_id_when_it_resolves():
+    import main as appmod
+
+    stopped_ids = []
+    stopped_keys = []
+
+    class FakeRecorder:
+        def stop(self, rec_id, **_kwargs):
+            stopped_ids.append(rec_id)
+            return True
+
+        def stop_key(self, key, **_kwargs):
+            stopped_keys.append(key)
+            return 0
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.recorder = FakeRecorder()
+
+    appmod.IPTVClient._stop_scheduled_recording(client, {"id": 42, "recording_id": 7})
+
+    assert stopped_ids == [7]
+    assert stopped_keys == []
