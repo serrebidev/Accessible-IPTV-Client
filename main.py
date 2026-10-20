@@ -4923,7 +4923,16 @@ class IPTVClient(wx.Frame):
         """
         self._suppress_recording_notifications = True
         active = self.recorder.list_active()
-        self.recorder.stop_all(wait=True, detach=True)
+        # Waiting for FFmpeg to finalize takes 5 s + 15 s + 15 s per recording.
+        # It used to happen on the GUI thread, so the still-visible window froze
+        # for up to half a minute ("Not Responding") with no way to tell what
+        # was happening. The wait now pumps the event loop: the recordings are
+        # finalized the same way, and the window stays alive and readable.
+        self.recorder.stop_all(wait=False, detach=True)
+        deadline = time.time() + 90
+        while self.recorder.list_active() and time.time() < deadline:
+            wx.Yield()
+            time.sleep(0.05)
         scheduler = getattr(self, "dvr_scheduler", None)
         if scheduler is None:
             return
