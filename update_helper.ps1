@@ -38,6 +38,27 @@ function Write-Log {
 # leaves a line saying the helper ran at all (issue #26 left no trace).
 Write-Log "Update helper started (PID $PID, PowerShell $($PSVersionTable.PSVersion)). InstallDir=$InstallDir InstallerPath=$InstallerPath StagingDir=$StagingDir"
 
+function Restore-InstallBackup {
+    param([string]$BackupDir, [string]$InstallDir)
+    # Put the previous version back after a failed move.
+    #
+    # A partially created install directory has to go first: the backup is
+    # only restored when the install directory is not there, and a half-written
+    # tree leaves the app unable to start ("Failed to load Python DLL").
+    if (-not (Test-Path -LiteralPath $BackupDir)) { return $false }
+    try {
+        if (Test-Path -LiteralPath $InstallDir) {
+            Remove-Item -LiteralPath $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Move-Item -LiteralPath $BackupDir -Destination $InstallDir -Force
+        Write-Log "Rollback completed."
+        return $true
+    } catch {
+        Write-Log "Rollback failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 if ($SelfTest) {
     if ($ReadyFile) { New-Item -ItemType File -Path $ReadyFile -Force | Out-Null }
     exit 0
@@ -1303,6 +1324,17 @@ if ($InstallerPath) {
     # Pumped, and capped: a silent installer that never returns must still end
     # in a message rather than a status window that sits there for ever.
     if (-not (Wait-ForProcessExit -Process $proc -Window $statusWindow -TimeoutSeconds 900)) {
+        # The installer is still writing into the install directory, and the
+        # failure path restarts the app from it. Stop the installer first, so
+        # the app does not start into a half-written tree.
+        try {
+            if (-not $proc.HasExited) {
+                Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                Write-Log "Stopped the installer that was still running after the timeout."
+            }
+        } catch {
+            Write-Log "Could not stop the timed-out installer: $($_.Exception.Message)"
+        }
         Complete-FailedUpdate -Window $statusWindow -Kind "timeout" -InstallerLog $installerLog -Reason "Installer still running after 15 minutes; see $installerLog"
     }
     # Settle the process object so ExitCode is populated before it is read.
@@ -1388,28 +1420,15 @@ try {
     }
 } catch {
     Write-Log "Failed to move staging into place: $($_.Exception.Message)"
-    if ((Test-Path -LiteralPath $BackupDir) -and -not (Test-Path -LiteralPath $InstallDir)) {
-        try {
-            Move-Item -LiteralPath $BackupDir -Destination $InstallDir -Force
-            Write-Log "Rollback completed."
-        } catch {
-            Write-Log "Rollback failed: $($_.Exception.Message)"
-        }
-    }
+    Restore-InstallBackup -BackupDir $BackupDir -InstallDir $InstallDir
     Complete-FailedUpdate -Window $statusWindow -Reason "Could not put the update in place."
 }
 
 $exePath = Join-Path $InstallDir $ExeName
 if (-not (Test-Path -LiteralPath $exePath)) {
     Write-Log "Executable not found after update: $exePath"
-    if (Test-Path -LiteralPath $BackupDir) {
-        try {
-            Remove-Item -LiteralPath $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
-            Move-Item -LiteralPath $BackupDir -Destination $InstallDir -Force
-            Write-Log "Rolled back to previous version because the new executable was missing."
-        } catch {
-            Write-Log "Rollback failed: $($_.Exception.Message)"
-        }
+    if (Restore-InstallBackup -BackupDir $BackupDir -InstallDir $InstallDir) {
+        Write-Log "Rolled back to previous version because the new executable was missing."
     }
     Complete-FailedUpdate -Window $statusWindow -Reason "The updated executable was missing."
 }
