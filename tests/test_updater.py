@@ -595,6 +595,7 @@ def _run_helper_function(tmp_path, name, body):
     return out.stdout
 
 
+@pytest.mark.skipif(os.name != "nt", reason="needs Windows PowerShell")
 def test_the_rollback_puts_the_previous_version_back_over_a_partial_install(tmp_path):
     """A failed move can leave a half-written install directory behind.
 
