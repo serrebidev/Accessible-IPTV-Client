@@ -443,3 +443,68 @@ def test_stopping_a_scheduled_recording_stops_by_id_when_it_resolves():
 
     assert stopped_ids == [7]
     assert stopped_keys == []
+
+
+def test_the_series_scan_does_not_block_the_scheduler(tmp_path):
+    """The hourly series scan matches every rule against the guide.
+
+    It used to run inside the scheduler tick, so the scheduler could not tick
+    while it ran: a recording that came due in the meantime started late, and
+    one whose window passed was marked as missed and never recorded.
+    """
+    import threading
+
+    now = [5000.0]
+    events = []
+    release = threading.Event()
+    scan_started = threading.Event()
+
+    def on_start(job):
+        events.append("start")
+        return 42
+
+    def on_stop(job):
+        pass
+
+    def on_series():
+        scan_started.set()
+        release.wait(10)
+
+    scheduler = dvr.DVRScheduler(
+        str(tmp_path / "schedule.json"),
+        on_start=on_start,
+        on_stop=on_stop,
+        on_series=on_series,
+        clock=lambda: now[0],
+        poll_seconds=0.2,
+    )
+    start = datetime.datetime.fromtimestamp(5010, datetime.timezone.utc)
+    end = datetime.datetime.fromtimestamp(5030, datetime.timezone.utc)
+    job = dvr.build_job(
+        {"name": "DVR Test Channel", "url": "http://example/stream"},
+        _sample_program(start, end),
+        "provider_mkv",
+        job_id="job1",
+    )
+    scheduler.add_job(job)
+
+    def move_the_clock():
+        # The job comes due while the scan is still running.
+        scan_started.wait(5)
+        now[0] = 5015.0
+
+    mover = threading.Thread(target=move_the_clock, daemon=True)
+    mover.start()
+
+    scheduler.start()
+    try:
+        # The scan runs for as long as the test holds it.
+        assert scan_started.wait(5), "the series scan never started"
+        # The scheduler keeps ticking while the scan is still running.
+        deadline = time.time() + 5
+        while not events and time.time() < deadline:
+            time.sleep(0.05)
+        assert events == ["start"], "the scheduler could not tick while the series scan ran"
+    finally:
+        release.set()
+        scheduler.stop()

@@ -162,6 +162,7 @@ class DVRScheduler:
         self._stopping_since: Dict[str, float] = {}
         self._thread: Optional[threading.Thread] = None
         self._last_series_scan = 0.0
+        self._series_scan_thread: Optional[threading.Thread] = None
         self.load()
 
     def load(self) -> None:
@@ -358,11 +359,33 @@ class DVRScheduler:
                 now = float(self.clock())
                 if self.on_series and now - self._last_series_scan >= 3600:
                     self._last_series_scan = now
-                    self.on_series()
+                    self._start_series_scan()
             except Exception:
                 LOG.exception("DVR scheduler tick failed")
             self._wake_event.wait(self.poll_seconds)
             self._wake_event.clear()
+
+    def _start_series_scan(self) -> None:
+        """Run the hourly series scan off the scheduler thread.
+
+        The scan matches every series rule against the guide, and that takes
+        seconds on a full guide. The scheduler cannot tick while it runs, so a
+        recording that comes due in the meantime starts late - and one whose
+        window passes while the scan runs is marked as missed and never
+        recorded at all.
+        """
+        running = self._series_scan_thread
+        if running is not None and running.is_alive():
+            return
+
+        def scan():
+            try:
+                self.on_series()
+            except Exception:
+                LOG.exception("DVR series scan failed")
+
+        self._series_scan_thread = threading.Thread(target=scan, name="dvr-series-scan", daemon=True)
+        self._series_scan_thread.start()
 
     def _start_job(self, job_id: str) -> None:
         with self._lock:
