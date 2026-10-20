@@ -100,11 +100,16 @@ def test_update_helper_clears_the_backup_before_restarting():
 
 
 def test_update_helper_rollback_condition_is_valid_powershell():
-    """`Test-Path -LiteralPath $x -and ...` binds -and as a positional argument."""
+    """`Test-Path -LiteralPath $x -and ...` binds -and as a positional argument.
+
+    The rollback lives in Restore-InstallBackup now, and it must not use that
+    form anywhere.
+    """
     helper = (ROOT / "update_helper.ps1").read_text(encoding="utf-8")
 
-    assert "(Test-Path -LiteralPath $BackupDir) -and -not" in helper
+    assert "function Restore-InstallBackup {" in helper
     assert "Test-Path -LiteralPath $BackupDir -and" not in helper
+    assert "Test-Path -LiteralPath $InstallDir -and" not in helper
 
 
 def _update_helper_message_catalog():

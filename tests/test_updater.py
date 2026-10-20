@@ -572,6 +572,58 @@ def test_update_helper_extracts_the_installer_error(tmp_path):
 
 
 
+def _run_helper_function(tmp_path, name, body):
+    """Run one function from update_helper.ps1 with ``body`` appended."""
+    import subprocess
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "update_helper.ps1"), encoding="ascii") as handle:
+        helper = handle.read()
+    start = helper.index("function %s {" % name)
+    end = helper.index("\n}\n", start) + 3
+    script = tmp_path / "t.ps1"
+    script.write_text(
+        "function Write-Log { param([string]$Message) $script:logs += $Message }\n"
+        "$script:logs = @()\n"
+        + helper[start:end] + "\n" + body + "\n'FRAGMENT-OK'\n",
+        encoding="utf-8-sig")
+    out = subprocess.run(
+        [updater.windows_powershell_path(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+        capture_output=True, text=True, timeout=60, env=updater.clean_powershell_env())
+    assert out.returncode == 0, out.stderr + out.stdout
+    assert "FRAGMENT-OK" in out.stdout, out.stderr + out.stdout
+    return out.stdout
+
+
+def test_the_rollback_puts_the_previous_version_back_over_a_partial_install(tmp_path):
+    """A failed move can leave a half-written install directory behind.
+
+    The backup is only restored when the install directory is gone, so the
+    rollback has to remove the partial tree first - otherwise the app is left
+    uninstalled and the working version sits in the .bak folder.
+    """
+    install = tmp_path / "app"
+    backup = tmp_path / "app.bak"
+    install.mkdir()
+    (install / "half-written.dll").write_text("x", encoding="utf-8")
+    backup.mkdir()
+    (backup / "IPTVClient.exe").write_text("old", encoding="utf-8")
+
+    out = _run_helper_function(
+        tmp_path,
+        "Restore-InstallBackup",
+        "$ok = Restore-InstallBackup -BackupDir '%s' -InstallDir '%s'\n"
+        "if (-not $ok) { throw 'rollback reported failure' }\n"
+        "if (-not (Test-Path -LiteralPath (Join-Path '%s' 'IPTVClient.exe'))) "
+        "{ throw 'the previous version was not restored' }\n"
+        "if (Test-Path -LiteralPath (Join-Path '%s' 'half-written.dll')) "
+        "{ throw 'the partial install was left behind' }"
+        % (str(backup).replace("'", "''"), str(install).replace("'", "''"),
+           str(install).replace("'", "''"), str(install).replace("'", "''")))
+
+    assert "FRAGMENT-OK" in out
+
+
 def _run_helper_fragment(tmp_path, body):
     """Run update_helper.ps1's status/focus functions with ``body`` appended."""
     import subprocess
