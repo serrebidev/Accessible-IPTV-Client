@@ -236,6 +236,24 @@ def test_catchup_executor_rejection_reports_error_and_allows_retry():
     assert shown == [("EPG Not Available", "Catch-up", wx.OK | wx.ICON_ERROR)]
 
 
+def test_a_broken_epg_database_is_an_error_not_an_empty_list(monkeypatch):
+    """The lookup used to swallow every database error.
+
+    A locked or corrupt EPG database was reported as "no catch-up programmes
+    are available for this channel", and the error path the caller has for it
+    could never run.
+    """
+    class BrokenDatabase:
+        def __init__(self, *_args, **_kwargs):
+            raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(main, "EPGDatabase", BrokenDatabase)
+    client = _client()
+
+    with pytest.raises(RuntimeError):
+        main.IPTVClient._get_catchup_programmes(client, {"name": "TVP 1"})
+
+
 @pytest.mark.parametrize("override", [
     {"IsShown": lambda: False},                        # minimized to the tray
     {"_suppress_recording_notifications": True},       # the app is quitting

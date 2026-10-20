@@ -9748,15 +9748,16 @@ class IPTVClient(wx.Frame):
 
 
     def _get_catchup_programmes(self, channel: Dict[str, str]) -> List[Dict[str, str]]:
+        """The catch-up programmes of a channel.
+
+        A database that cannot be read is an error the user has to see, not an
+        empty list: the caller reports it as "EPG Not Available".
+        """
+        db = EPGDatabase(get_db_path(), readonly=True)
         try:
-            db = EPGDatabase(get_db_path(), readonly=True)
-            try:
-                programmes = db.get_recent_programmes(channel, hours=72, limit=80)
-            finally:
-                db.close()
-        except Exception:
-            programmes = []
-        return programmes
+            return db.get_recent_programmes(channel, hours=72, limit=80)
+        finally:
+            db.close()
 
 
 class CastDiscoveryDialog(wx.Dialog):
