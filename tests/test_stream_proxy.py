@@ -80,6 +80,7 @@ def test_get_stream_url_preserves_extra_headers_in_encoded_query():
 
 
 def test_chromecast_transcode_url_uses_fresh_session_and_stops_previous(monkeypatch):
+    monkeypatch.setattr(stream_proxy_module.time, "time_ns", lambda: 123456789)
     created = []
 
     class FakeConverter:

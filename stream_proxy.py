@@ -1351,7 +1351,7 @@ class StreamProxy:
         source_key = hashlib.md5(f"{target_url}|{tag}".encode()).hexdigest()
         fresh_session = is_fresh_transcode_profile(tag)
         if fresh_session:
-            session_id = hashlib.md5(f"{target_url}|{tag}|{time.time_ns()}".encode()).hexdigest()
+            session_id = secrets.token_hex(16)
         else:
             session_id = source_key
 
