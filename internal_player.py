@@ -170,6 +170,10 @@ class InternalPlayerFrame(wx.Frame):
 
     help_topic = "built-in-player"
     _HANDLE_CHECK_INTERVAL = 0.1
+    # How long the GUI thread waits for the HLS variant probe. The fetch has a
+    # two second timeout of its own, and a slow host must not hold the window
+    # (and the screen reader) silent for that long.
+    _VARIANT_PROBE_WAIT_SECONDS = 0.4
     # How long a quit waits for a close-time libVLC teardown that is still
     # running. Leaking an instance at process exit beats hanging the shutdown.
     _VLC_TEARDOWN_JOIN_SECONDS = 15.0
@@ -1200,6 +1204,28 @@ class InternalPlayerFrame(wx.Frame):
         return selected["url"], selected.get("bandwidth_mbps")
 
     def _fetch_hls_manifest(self, url: str, headers: Optional[Dict[str, object]] = None) -> Optional[str]:
+        """Fetch the HLS manifest without freezing the app.
+
+        The probe is a blocking HTTP GET, so a slow or dead host would hold
+        the GUI thread - and the screen reader with it - silent for the whole
+        timeout. The fetch runs on a worker thread and the caller waits only
+        briefly: a slow host costs the variant selection, not the UI.
+        """
+        result = {}
+
+        def fetch():
+            try:
+                result["text"] = self._fetch_hls_manifest_blocking(url, headers)
+            except Exception as err:
+                LOG.debug("HLS manifest fetch failed: %s", err)
+                result["text"] = None
+
+        worker = threading.Thread(target=fetch, name="hls-manifest", daemon=True)
+        worker.start()
+        worker.join(self._VARIANT_PROBE_WAIT_SECONDS)
+        return result.get("text")
+
+    def _fetch_hls_manifest_blocking(self, url: str, headers: Optional[Dict[str, object]] = None) -> Optional[str]:
         req = urllib.request.Request(url, headers=self._request_headers(headers))
         try:
             with urllib.request.urlopen(req, timeout=2) as response:

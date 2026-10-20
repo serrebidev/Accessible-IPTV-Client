@@ -1,4 +1,6 @@
 """Real wx controls must stay reachable and reflect failed playback."""
+import threading
+import time
 import types
 from concurrent.futures import Future
 
@@ -33,6 +35,30 @@ def test_tab_skips_disabled_and_hidden_controls(player_frame):
     frame.stop_btn.SetFocus()
     frame._focus_control_step(True)
     assert wx.Window.FindFocus() is frame.cast_btn
+
+
+def test_the_variant_probe_does_not_freeze_the_window(player_frame, monkeypatch):
+    """The HLS manifest probe is a blocking HTTP GET.
+
+    It runs on the GUI thread when a channel is opened, so a slow or dead host
+    would hold the window - and the screen reader with it - silent for the
+    whole timeout. The fetch runs on a worker and the caller waits briefly.
+    """
+    frame = player_frame
+    released = threading.Event()
+
+    def slow_urlopen(*_args, **_kwargs):
+        released.wait(5)
+        raise OSError("too slow")
+
+    monkeypatch.setattr(internal_player.urllib.request, "urlopen", slow_urlopen)
+
+    started = time.monotonic()
+    assert frame._fetch_hls_manifest("https://example.invalid/master.m3u8") is None
+    elapsed = time.monotonic() - started
+
+    assert elapsed < 1.0, "the GUI thread waited for the whole probe timeout"
+    released.set()
 
 
 def test_tab_from_slider_stays_in_named_controls(player_frame):
