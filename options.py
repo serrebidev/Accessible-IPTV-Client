@@ -525,6 +525,15 @@ def load_config() -> Dict:
                     return data
             except Exception as e:
                 _log_error(f"Failed to load config from {p}: {e}")
+                # Keep the unreadable file: the first save would overwrite it,
+                # and the playlists and favourites in it would be gone for good.
+                try:
+                    kept = p + ".corrupt"
+                    shutil.copy2(p, kept)
+                    _log_error(f"Kept a copy of the unreadable config at {kept}")
+                except Exception:
+                    LOG.debug("load_config: could not keep a copy of the unreadable config",
+                              exc_info=True)
                 # Do not break; try the next candidate location.
     # No config found; remember where a future save should write.
     try:
@@ -552,8 +561,13 @@ def save_config(cfg: Dict):
         dir_path = os.path.dirname(path)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
-        tmp_path = path + ".tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
+        # A fixed temp name lets two writers collide: the GUI thread and the
+        # playlist worker both save, and the loser failed with "being used by
+        # another process" - the setting was then silently lost. The temp file
+        # gets a unique name in the same directory, so the replace stays atomic.
+        handle, tmp_path = tempfile.mkstemp(
+            dir=dir_path or ".", prefix=os.path.basename(path) + ".", suffix=".tmp")
+        with os.fdopen(handle, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
@@ -580,7 +594,16 @@ def get_cache_dir():
         cache_dir = os.path.join(get_user_config_dir(), CACHE_DIR_NAME)
     else:
         cache_dir = os.path.join(tempfile.gettempdir(), CACHE_DIR_NAME)
-    os.makedirs(cache_dir, exist_ok=True)
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+    except OSError:
+        # A read-only config folder must not take every playlist refresh down
+        # with a raw "Permission denied"; the cache is disposable, so it goes
+        # to the temp folder instead.
+        LOG.debug("get_cache_dir: %s is not writable, using the temp folder", cache_dir,
+                  exc_info=True)
+        cache_dir = os.path.join(tempfile.gettempdir(), CACHE_DIR_NAME)
+        os.makedirs(cache_dir, exist_ok=True)
     return cache_dir
 
 
