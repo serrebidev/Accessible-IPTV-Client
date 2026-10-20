@@ -4474,10 +4474,12 @@ class IPTVClient(wx.Frame):
         rec_id = job.get("recording_id")
         if rec_id:
             try:
-                self.recorder.stop(int(rec_id))
-                return
+                if self.recorder.stop(int(rec_id)):
+                    return
             except Exception:
                 LOG.debug("IPTVClient._stop_scheduled_recording: ignored exception", exc_info=True)
+        # The recording id did not resolve (the capture is already gone): stop
+        # by key, or the job keeps recording past its scheduled end.
         self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
 
     def _upcoming_dvr_jobs(self) -> List[Dict[str, object]]:
