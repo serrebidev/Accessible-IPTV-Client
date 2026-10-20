@@ -30,6 +30,7 @@ import playlist as playlistmod  # noqa: E402
 
 CatchupDialog: Any = appmod.CatchupDialog
 ChannelEPGDialog: Any = appmod.ChannelEPGDialog
+CastDiscoveryDialog: Any = appmod.CastDiscoveryDialog
 WhatsOnNowDialog: Any = appmod.WhatsOnNowDialog
 IPTVClient: Any = appmod.IPTVClient
 PlaylistManagerDialog: Any = playlistmod.PlaylistManagerDialog
@@ -880,5 +881,16 @@ def test_channel_epg_dialog_selects_the_programme_airing_now(host):
         assert dlg.list_ctrl.GetItemCount() == 3
         assert dlg.list_ctrl.IsSelected(1)
         assert dlg.list_ctrl.GetFocusedItem() == 1
+    finally:
+        dlg.Destroy()
+
+
+def test_cast_device_list_has_accessible_name(host, monkeypatch):
+    monkeypatch.setattr(CastDiscoveryDialog, "_start_discovery", lambda _self: None)
+    dlg = CastDiscoveryDialog(host, types.SimpleNamespace())
+    try:
+        assert dlg.listbox.GetName() == "Select Device to Cast"
+        assert dlg.devices_label.GetLabel() == "Select Device to Cast"
+        assert dlg.devices_label.GetId() == dlg.listbox.GetId() - 1
     finally:
         dlg.Destroy()

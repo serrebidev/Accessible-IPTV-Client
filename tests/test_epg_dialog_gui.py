@@ -69,6 +69,35 @@ def test_channel_epg_dialog_builds_without_descriptions(wx_app):
         dlg.Destroy()
 
 
+def test_channel_epg_skips_bad_dates_without_shifting_selection(wx_app):
+    scheduled = []
+    valid = _programmes(with_description=True)[1]
+    dlg = ChannelEPGDialog(
+        None, "Sky Mix", [{"title": "Broken", "start": "bad"}, valid],
+        schedule_callback=lambda _channel, programme: scheduled.append(programme))
+    try:
+        assert dlg.list_ctrl.GetName() == "EPG"
+        assert dlg.list_label.GetLabel() == "EPG"
+        assert dlg.list_label.GetId() == dlg.list_ctrl.GetId() - 1
+        assert dlg.list_ctrl.GetItemCount() == 1
+        assert dlg.list_ctrl.IsSelected(0)
+        assert dlg.description_field.GetValue() == valid["description"]
+        dlg._on_schedule(None)
+        assert scheduled == [valid]
+    finally:
+        dlg.Destroy()
+
+
+def test_channel_epg_without_valid_rows_has_no_selection(wx_app):
+    dlg = ChannelEPGDialog(None, "Sky Mix", [{"title": "Broken", "start": "bad"}])
+    try:
+        assert dlg.list_ctrl.GetItemCount() == 0
+        assert dlg.list_ctrl.GetFirstSelected() == -1
+        assert dlg._selected_programme() is None
+    finally:
+        dlg.Destroy()
+
+
 def test_catchup_download_dialog_builds(wx_app):
     # log_path / written_path point at files that do not exist: the dialog
     # must still build (progress reads them defensively every second).

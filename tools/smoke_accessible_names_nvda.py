@@ -1,4 +1,4 @@
-"""Check the screen-reader names of the main-window controls.
+"""Check the screen-reader names of the main-window and dialog lists.
 
 Run: python tools/smoke_accessible_names_nvda.py
 
@@ -25,16 +25,28 @@ sys.path.insert(0, ROOT)
 import wx
 
 from smoke_favorites_shutdown import build_frame
+from main import CastDiscoveryDialog, ChannelEPGDialog
+
+
+class NoScanCastDialog(CastDiscoveryDialog):
+    def _start_discovery(self):
+        pass
 
 app = wx.App()
 frame = build_frame()
 frame.Show()
+cast_dialog = NoScanCastDialog(frame, object())
+epg_dialog = ChannelEPGDialog(frame, "Test Channel", [])
+cast_dialog.Show()
+epg_dialog.Show()
 app.Yield()
 
 pairs = (
     ("Categories", frame.categories_label, frame.group_list),
     ("Search", frame.search_label, frame.filter_box),
     ("Channels", frame.channels_label, frame.channel_list),
+    ("Select Device to Cast", cast_dialog.devices_label, cast_dialog.listbox),
+    ("EPG", epg_dialog.list_label, epg_dialog.list_ctrl),
 )
 
 print("wx-level label association:")
@@ -106,6 +118,8 @@ if msaa is not None:
         print(f"  {expected}: OK")
     print("All accessible names verified at the MSAA level.")
 
+cast_dialog.Destroy()
+epg_dialog.Destroy()
 frame._exit_forced = True
 frame.Close()
 app.Yield()

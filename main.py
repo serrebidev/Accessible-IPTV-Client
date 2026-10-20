@@ -9778,7 +9778,9 @@ class CastDiscoveryDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.status_lbl = wx.StaticText(panel, label=_("Searching for devices..."))
+        self.devices_label = wx.StaticText(panel, label=_("Select Device to Cast"))
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
+        self.listbox.SetName(_("Select Device to Cast"))
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -9791,6 +9793,7 @@ class CastDiscoveryDialog(wx.Dialog):
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
         
         sizer.Add(self.status_lbl, 0, wx.ALL, 10)
+        sizer.Add(self.devices_label, 0, wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
         
@@ -11311,19 +11314,21 @@ class ChannelEPGDialog(wx.Dialog):
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
                  schedule_callback=None, channel: Optional[Dict[str, str]] = None):
         super().__init__(parent, title=_("EPG: {channel}").format(channel=channel_name), size=(600, 450))
-        self.programmes = programmes
+        self.programmes = []
         self.schedule_callback = schedule_callback
         self.channel = channel or {}
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.list_label = wx.StaticText(panel, label=_("EPG"))
         self.list_ctrl = wx.ListCtrl(panel, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+        self.list_ctrl.SetName(_("EPG"))
         self.list_ctrl.InsertColumn(0, _("Time"), width=190)
         self.list_ctrl.InsertColumn(1, _("Title"), width=360)
 
         now_idx = self._populate_list(programmes)
-        if programmes:
+        if self.programmes:
             # Screen readers announce the selected row, so start on the
             # programme that is airing now instead of always row 0 (issue #3).
             first = now_idx if now_idx != -1 else 0
@@ -11339,7 +11344,8 @@ class ChannelEPGDialog(wx.Dialog):
 
         # No buttons: Schedule Recording lives in the row's context menu, and
         # Escape / Alt+F4 close the window, so Close was only a dead Tab stop.
-        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        sizer.Add(self.list_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
@@ -11375,6 +11381,7 @@ class ChannelEPGDialog(wx.Dialog):
                 is_now = start <= now <= end
                 
                 idx = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), time_str)
+                self.programmes.append(prog)
                 self.list_ctrl.SetItem(idx, 1, prog.get("title", ""))
                 
                 if is_now:
