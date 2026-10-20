@@ -535,6 +535,15 @@ def test_xmltv_short_timestamps_parse_to_utc():
     assert _parse_xmltv_to_utc_str("20260927") == "20260927000000"
     assert _parse_xmltv_to_utc_str("202609") == "20260901000000"
     assert _parse_xmltv_to_utc_str("2026") == "20260101000000"
+
+
+def test_an_out_of_range_date_costs_one_programme_not_the_source():
+    # A year 1 date with an eastern offset overflows the UTC conversion. The
+    # parse caught only ValueError and TypeError, so the OverflowError escaped
+    # the per-programme loop, the whole source was abandoned, and a five
+    # programme feed imported as zero channels and zero programmes.
+    assert _parse_xmltv_to_utc_str("00010101000000 +1400") is None
+    assert _parse_xmltv_to_utc_str("202609270600 +0100") == "20260927050000"
     # Malformed digit counts and invalid fields stay rejected.
     assert _parse_xmltv_to_utc_str("20260927123") is None      # 11 digits
     assert _parse_xmltv_to_utc_str("20261327000000") is None   # month 13

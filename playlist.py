@@ -873,7 +873,10 @@ def _parse_xmltv_to_utc_str(s: str) -> Optional[str]:
         # Manual zero-padded formatting avoids strftime's (locale-aware) overhead;
         # fields are plain ints so this is a straight numeric format, no locale lookup.
         return "%04d%02d%02d%02d%02d%02d" % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
+        # A stamp whose UTC conversion overflows the datetime range (a year 1
+        # date with an eastern offset) raises OverflowError, and it must cost
+        # that one programme, not the whole source.
         return None
 
 
