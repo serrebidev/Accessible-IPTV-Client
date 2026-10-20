@@ -4324,10 +4324,42 @@ class IPTVClient(wx.Frame):
                     dlg.refresh()
                 except Exception:
                     LOG.debug("IPTVClient._on_dvr_schedule_updated.refresh: ignored exception", exc_info=True)
+            self._report_failed_recordings()
             # A canceled or completed job can be the last thing an armed shutdown
             # was waiting for.
             self._maybe_shutdown_after_recordings()
         wx.CallAfter(refresh)
+
+    def _report_failed_recordings(self):
+        """Tell the user when a scheduled recording was lost.
+
+        The job record keeps the reason, but nothing showed it: the dialog
+        lists the status, and the recording simply never appeared. A failed or
+        missed job is reported once, through the app's modal queue.
+        """
+        scheduler = getattr(self, "dvr_scheduler", None)
+        if scheduler is None:
+            return
+        reported = getattr(self, "_reported_failed_recordings", None)
+        if reported is None:
+            reported = set()
+            self._reported_failed_recordings = reported
+        for job in scheduler.list_jobs(include_done=True):
+            status = str(job.get("status") or "")
+            if status not in {dvr.STATUS_FAILED, dvr.STATUS_MISSED}:
+                continue
+            job_id = str(job.get("id") or "")
+            if not job_id or job_id in reported:
+                continue
+            reported.add(job_id)
+            title = str(job.get("display_title") or job.get("title") or "")
+            status_text = {"failed": _("Failed"), "missed": _("Missed")}.get(status, status)
+            message = "{0}: {1}".format(status_text, title) if title else status_text
+            reason = str(job.get("message") or "")
+            if reason:
+                message = message + "\n" + reason
+            self._show_or_queue_message_box(message, _("Scheduled Recording"),
+                                             wx.OK | wx.ICON_ERROR)
 
     def _single_stream_provider_busy(self, url: str, *, include_player: bool = True) -> bool:
         """Whether another app-owned media operation holds this provider's slot."""

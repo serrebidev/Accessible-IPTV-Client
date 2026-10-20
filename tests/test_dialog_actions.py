@@ -14,6 +14,7 @@ Regression cover for a batch of reports:
 import os
 import pathlib
 import sys
+import time
 import types
 from typing import Any
 
@@ -860,6 +861,135 @@ def test_source_manager_lists_carry_accessible_names(host):
 # --------------------------------------------------------------------------- #
 # Issue #3: the channel EPG dialog starts on the programme airing now
 # --------------------------------------------------------------------------- #
+def test_a_failed_recording_is_reported_to_the_user():
+    """A recording that never started has to reach the user.
+
+    The job record keeps the reason, but nothing showed it: the dialog lists
+    the status, and the recording simply never appeared.
+    """
+    import main as appmod
+    import dvr
+
+    shown = []
+
+    class FakeScheduler:
+        def list_jobs(self, include_done=True):
+            return [{"id": "job1", "status": dvr.STATUS_FAILED, "title": "News",
+                     "message": "Could not find a stream URL for this channel."}]
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.dvr_scheduler = FakeScheduler()
+    client._show_or_queue_message_box = lambda *args, **kwargs: shown.append(args)
+
+    appmod.IPTVClient._report_failed_recordings(client)
+
+    assert len(shown) == 1
+    assert "News" in shown[0][0]
+    assert "Could not find a stream URL" in shown[0][0]
+
+    # The same job is not reported twice.
+    appmod.IPTVClient._report_failed_recordings(client)
+    assert len(shown) == 1
+
+
+def test_a_missed_recording_is_reported_to_the_user():
+    import main as appmod
+    import dvr
+
+    shown = []
+
+    class FakeScheduler:
+        def list_jobs(self, include_done=True):
+            return [{"id": "job2", "status": dvr.STATUS_MISSED, "title": "Sport"}]
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.dvr_scheduler = FakeScheduler()
+    client._show_or_queue_message_box = lambda *args, **kwargs: shown.append(args)
+
+    appmod.IPTVClient._report_failed_recordings(client)
+
+    assert len(shown) == 1
+    assert "Sport" in shown[0][0]
+
+
+def test_the_scheduled_recordings_dialog_keeps_the_row_the_user_was_on(host):
+    """The dialog is refreshed on every scheduler change.
+
+    It used to select row 0 and take the focus every time, so a screen-reader
+    user browsing the schedule lost their place whenever a recording started
+    or finished.
+    """
+    import main as appmod
+
+    class Host(wx.Frame):
+        def _schedule_window_label(self, job):
+            return str(job.get("title") or "")
+
+        def _recording_format_label(self, fmt):
+            return str(fmt or "")
+
+    class FakeScheduler:
+        def list_jobs(self, include_done=True):
+            return [{"id": "a", "title": "First", "status": "scheduled"},
+                    {"id": "b", "title": "Second", "status": "scheduled"}]
+
+    window = Host(None, title="dvr host")
+    dlg = appmod.ScheduledRecordingsDialog(window, FakeScheduler())
+    try:
+        dlg.refresh()
+        # The list allows multi-selection, so the user clears the first row and
+        # moves to the second one.
+        dlg.list_ctrl.SetItemState(0, 0, wx.LIST_STATE_SELECTED)
+        dlg.list_ctrl.Select(1)
+        assert dlg.list_ctrl.GetFirstSelected() == 1
+        dlg.refresh()
+        assert dlg.list_ctrl.GetFirstSelected() == 1
+    finally:
+        dlg.Destroy()
+        window.Destroy()
+
+
+def test_a_forced_now_playing_refresh_ignores_the_throttle(monkeypatch):
+    """The EPG import refreshes the row labels right after it finishes.
+
+    The 30 s throttle used to swallow that refresh, so the app said the guide
+    was up to date while the rows still showed the programme from before the
+    import.
+    """
+    import main as appmod
+
+    calls = []
+
+    class FakeDatabase:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def get_all_now_next(self):
+            return []
+
+        def get_channel_ids_lower(self):
+            return set()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(appmod, "EPGDatabase", FakeDatabase)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.config = {"epg_enabled": True}
+    client._now_playing_refreshed_at = time.time()
+    client._build_now_playing_labels = lambda channels, known_ids=None: calls.append(channels) or {}
+    client._build_now_playing_descriptions = lambda channels, known_ids=None: {}
+    client._now_playing_lock = __import__("threading").RLock()
+    client._now_playing_labels = {}
+    client._now_playing_descriptions = {}
+
+    client._refresh_now_playing_labels()
+    assert calls == [], "the throttle swallowed a normal refresh"
+
+    client._refresh_now_playing_labels(force=True)
+    assert calls == [[]], "a forced refresh did not run"
+
+
 def test_channel_epg_dialog_selects_the_programme_airing_now(host):
     import datetime
 
