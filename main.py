@@ -8551,7 +8551,7 @@ class IPTVClient(wx.Frame):
         enabled = bool(enabled)
         if self.config.get("speak_subtitles") != enabled:
             self.config["speak_subtitles"] = enabled
-            self.save_config()
+            save_config(self.config)
         self._subtitle_manager.set_auto_speech(enabled)
 
     # Player-independent subtitle commands (issue #45, item 1).
@@ -8562,7 +8562,7 @@ class IPTVClient(wx.Frame):
         """Toggle automatic subtitle speech (player-independent)."""
         enabled = not bool(self.config.get("speak_subtitles", False))
         self.config["speak_subtitles"] = enabled
-        self.save_config()
+        save_config(self.config)
         self._subtitle_manager.set_auto_speech(enabled)
         # If enabling and MPV is the selected player, ensure the adapter
         # is started even if it wasn't (on-demand session activation).

@@ -143,3 +143,29 @@ def test_new_commands_are_offered_in_the_keyboard_shortcuts_dialog():
     source = inspect.getsource(main.IPTVClient._customize_shortcuts)
     for action in ("read_subtitle", "previous_subtitle", "next_subtitle"):
         assert '("player", "%s"' % action in source
+
+
+def test_the_subtitle_speech_toggle_saves_the_setting(monkeypatch):
+    """The toggle called a method the frame does not have.
+
+    ``self.save_config()`` raised AttributeError, so the menu item popped a
+    Python error dialog, the setting was never written and the toggle did
+    nothing at all.
+    """
+    import main
+
+    saved = []
+    spoken = []
+    monkeypatch.setattr(main, "save_config", lambda cfg: saved.append(dict(cfg)))
+    monkeypatch.setattr(main.live_announce, "speak", lambda text: None)
+    client = types.SimpleNamespace(
+        config={"speak_subtitles": False, "media_player": "VLC"},
+        _subtitle_manager=types.SimpleNamespace(set_auto_speech=spoken.append),
+        _ensure_mpv_subtitle_session=lambda: None,
+    )
+
+    main.IPTVClient._on_toggle_subtitle_speech(client)
+
+    assert client.config["speak_subtitles"] is True
+    assert saved and saved[0]["speak_subtitles"] is True
+    assert spoken == [True]
