@@ -9198,11 +9198,25 @@ class IPTVClient(wx.Frame):
             return
         self._catchup_dialog_open = True
 
-        def fetch():
-            programmes = self._get_catchup_programmes(channel)
-            wx.CallAfter(self._show_catchup_dialog, channel, programmes, select_start)
+        def failed():
+            self._catchup_dialog_open = False
+            self._show_or_queue_message_box(
+                _("EPG Not Available"), _("Catch-up"), wx.OK | wx.ICON_ERROR)
 
-        self._epg_executor.submit(fetch)
+        def fetch():
+            try:
+                programmes = self._get_catchup_programmes(channel)
+            except Exception:
+                LOG.exception("Catch-up programme lookup failed")
+                wx.CallAfter(failed)
+            else:
+                wx.CallAfter(self._show_catchup_dialog, channel, programmes, select_start)
+
+        try:
+            self._epg_executor.submit(fetch)
+        except Exception:
+            LOG.exception("Could not submit catch-up programme lookup")
+            failed()
 
     def _show_catchup_dialog(self, channel: Dict[str, str],
                              programmes: List[Dict[str, str]],

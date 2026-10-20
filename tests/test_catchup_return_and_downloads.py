@@ -196,6 +196,46 @@ def test_catchup_list_lookup_runs_off_the_gui_thread(monkeypatch):
     assert len(submitted) == 1
 
 
+def test_catchup_lookup_failure_reports_error_and_allows_retry(monkeypatch):
+    queued, shown, submitted = [], [], []
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a: queued.append((fn, a)))
+
+    def fail(_channel):
+        raise RuntimeError("lookup failed")
+
+    client = _client(
+        _catchup_dialog_open=False,
+        _epg_executor=types.SimpleNamespace(submit=submitted.append),
+        _get_catchup_programmes=fail,
+        _show_or_queue_message_box=lambda *args: shown.append(args),
+    )
+    main.IPTVClient._open_catchup_dialog(client, {"name": "TVP 1"})
+    submitted.pop()()
+    assert client._catchup_dialog_open
+    assert len(queued) == 1
+    queued.pop()[0]()
+    assert not client._catchup_dialog_open
+    assert shown == [("EPG Not Available", "Catch-up", wx.OK | wx.ICON_ERROR)]
+    main.IPTVClient._open_catchup_dialog(client, {"name": "TVP 1"})
+    assert len(submitted) == 1
+
+
+def test_catchup_executor_rejection_reports_error_and_allows_retry():
+    shown = []
+
+    def reject(_fn):
+        raise RuntimeError("executor stopped")
+
+    client = _client(
+        _catchup_dialog_open=False,
+        _epg_executor=types.SimpleNamespace(submit=reject),
+        _show_or_queue_message_box=lambda *args: shown.append(args),
+    )
+    main.IPTVClient._open_catchup_dialog(client, {"name": "TVP 1"})
+    assert not client._catchup_dialog_open
+    assert shown == [("EPG Not Available", "Catch-up", wx.OK | wx.ICON_ERROR)]
+
+
 @pytest.mark.parametrize("override", [
     {"IsShown": lambda: False},                        # minimized to the tray
     {"_suppress_recording_notifications": True},       # the app is quitting
