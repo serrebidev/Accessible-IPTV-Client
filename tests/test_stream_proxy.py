@@ -19,6 +19,39 @@ from stream_proxy import (
 )
 
 
+def test_the_gateway_keeps_the_channel_credentials_on_its_own_host():
+    """The gateway URL carries the upstream host, and the token in it goes out
+    to every receiver on the LAN.
+
+    Sending the channel's credentials to whatever host a request names would
+    hand them to whoever asked, so they only travel to the host the session
+    was created for.
+    """
+    proxy = StreamProxy()
+    proxy.host = "127.0.0.1"
+    proxy.port = 12345
+
+    url = proxy.get_gateway_url(
+        "https://provider.example.test/live/stream.ts",
+        {"Cookie": "session=secret", "User-Agent": "ChannelUA"},
+    )
+    sid = url.split("/g/")[1].split("/")[0]
+
+    own = proxy.gateway_headers_for(sid, "provider.example.test")
+    assert own["Cookie"] == "session=secret"
+
+    # Somebody on the LAN reusing the token for their own host.
+    stranger = proxy.gateway_headers_for(sid, "attacker.example")
+    assert stranger == {}
+
+    # A host the provider redirected the session to is part of the session.
+    proxy.note_gateway_host(sid, "cdn.example.test")
+    assert proxy.gateway_headers_for(sid, "cdn.example.test")["Cookie"] == "session=secret"
+
+    # An unknown session is not a session at all.
+    assert proxy.gateway_headers_for("nosuchsession", "provider.example.test") is None
+
+
 def test_global_proxy_is_created_lazily():
     old_proxy = stream_proxy_module._PROXY
     try:

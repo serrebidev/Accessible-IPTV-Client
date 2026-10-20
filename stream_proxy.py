@@ -863,10 +863,16 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         if not is_allowed_upstream_url(upstream):
             return self.send_error(403)
         proxy = get_proxy()
-        headers = proxy.gateway_headers(sid)
-        if headers is None:
+        # The gateway URL carries the upstream host, and the token in it is
+        # handed to every receiver on the LAN. Sending the channel's
+        # credentials to whatever host the request names would leak them, so
+        # they only go to the host this session was created for (plus any
+        # host the provider redirected it to).
+        request_headers = proxy.gateway_headers_for(sid, netloc)
+        if request_headers is None:
             return self.send_error(404)
-        request_headers = dict(headers)
+        if not request_headers:
+            LOG.info("Gateway request names a host this session does not use: %s", netloc)
         if not any(k.lower() == 'user-agent' for k in request_headers):
             request_headers['User-Agent'] = self.headers.get('User-Agent') or _DEFAULT_UPSTREAM_USER_AGENT
         for name in self._GATEWAY_PASS_HEADERS:
@@ -891,7 +897,13 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             return self.send_error(502)
         with resp:
             ctype = (resp.headers.get('Content-Type') or '').lower()
-            path_lower = urllib.parse.urlsplit(resp.geturl()).path.lower()
+            final = urllib.parse.urlsplit(resp.geturl())
+            if final.netloc.lower() != netloc.lower() and netloc.lower() in proxy.gateway_hosts(sid):
+                # The provider redirected this session to another host: that
+                # host is part of the session now, so its requests may carry
+                # the channel's headers.
+                proxy.note_gateway_host(sid, final.netloc)
+            path_lower = final.path.lower()
             playlist = 'mpegurl' in ctype or path_lower.endswith(('.m3u8', '.m3u'))
             if playlist and not head:
                 body = resp.read(self._GATEWAY_PLAYLIST_LIMIT + 1)
@@ -1321,18 +1333,54 @@ class StreamProxy:
         """A LAN URL that fetches ``target_url`` with ``headers`` attached.
 
         Sessions are keyed by the header set, so every URL of one channel -
-        playlist, segments, redirects - shares one session.
+        playlist, segments, redirects - shares one session. The session also
+        remembers the host it was created for: the channel's credentials must
+        not follow a request that names some other host.
         """
         clean = normalize_request_headers(headers, add_default_user_agent=False)
         sid = hashlib.sha256(json.dumps(clean, sort_keys=True).encode()).hexdigest()[:20]
+        host = urllib.parse.urlsplit(str(target_url or "")).netloc.lower()
         with self.lock:
-            self._gateway_sessions[sid] = clean
+            self._gateway_sessions[sid] = {"headers": clean, "hosts": {host} if host else set()}
         return self.gateway_url(target_url, sid)
 
     def gateway_headers(self, sid):
         with self.lock:
-            headers = self._gateway_sessions.get(sid)
-        return dict(headers) if headers is not None else None
+            entry = self._gateway_sessions.get(sid)
+        return dict(entry["headers"]) if entry is not None else None
+
+    def gateway_headers_for(self, sid, host):
+        """The channel's headers, if this session may send them to ``host``.
+
+        The gateway URL carries the upstream host, and the token in it is
+        handed to every receiver on the LAN, so the channel's credentials
+        only go to the host the session was created for (plus any host the
+        provider redirected it to). ``None`` means the session is unknown;
+        an empty dict means the host is not one of its own.
+        """
+        with self.lock:
+            entry = self._gateway_sessions.get(sid)
+        if entry is None:
+            return None
+        if str(host or "").lower() not in entry["hosts"]:
+            return {}
+        return dict(entry["headers"])
+
+    def gateway_hosts(self, sid):
+        """The hosts this session may send the channel's headers to."""
+        with self.lock:
+            entry = self._gateway_sessions.get(sid)
+        return frozenset(entry["hosts"]) if entry is not None else frozenset()
+
+    def note_gateway_host(self, sid, host):
+        """Remember a host the provider redirected this session to."""
+        host = str(host or "").lower()
+        if not host:
+            return
+        with self.lock:
+            entry = self._gateway_sessions.get(sid)
+            if entry is not None:
+                entry["hosts"].add(host)
 
     def get_stream_url(self, target_url, headers=None, mode="auto"):
         params = {'url': target_url, 'mode': mode}
