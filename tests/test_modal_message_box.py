@@ -113,6 +113,69 @@ def test_box_queued_during_another_queued_box_drains_after_dismissal(frame, monk
     assert shown == ["first", "second"]
 
 
+def test_a_box_whose_window_was_closed_still_opens(frame, monkeypatch, wx_app):
+    """A queued box can outlive the window it was raised for.
+
+    The built-in player can be closed while its error box waits behind
+    another box, and a destroyed wx object raises on every call. The box must
+    still reach the user instead of taking the app down.
+    """
+    shown = []
+    monkeypatch.setattr(wx, "MessageBox", lambda *a, **kw: shown.append((a, kw)) or wx.OK)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.frame = frame
+    client._modal_box_depth = 1
+
+    gone = wx.Frame(None, title="closed while the box waited")
+    gone.Show()
+    wx_app.Yield()
+    gone.Destroy()
+    wx_app.Yield()
+    assert appmod._window_alive(gone) is False
+
+    client._show_or_queue_message_box("Casting Error", "Casting", wx.OK | wx.ICON_ERROR,
+                                      parent=gone, on_dismiss=lambda: None)
+    client._modal_box_depth = 0
+    client._drain_deferred_notifications()  # must not raise
+    assert len(shown) == 1
+    assert shown[0][0][0] == "Casting Error"
+    assert shown[0][1]["parent"] is frame  # falls back to the main window
+
+
+def test_one_failing_box_does_not_lose_the_rest_of_the_queue(frame, monkeypatch):
+    """A box that cannot be opened must not swallow the ones behind it."""
+    shown = []
+
+    def fake_box(message, *_args, **_kwargs):
+        if message == "first":
+            raise RuntimeError("no owner")
+        shown.append(message)
+        return wx.OK
+
+    monkeypatch.setattr(wx, "MessageBox", fake_box)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.frame = frame
+    client._modal_box_depth = 1
+
+    client._show_or_queue_message_box("first", "caption", wx.OK)
+    client._show_or_queue_message_box("second", "caption", wx.OK)
+    client._modal_box_depth = 0
+    client._drain_deferred_notifications()
+    assert shown == ["second"]
+
+
+def test_the_dismissal_handler_runs_even_when_the_box_could_not_open(frame, monkeypatch):
+    """The focus goes back to the Cast button even if the box never opened."""
+    dismissed = []
+    monkeypatch.setattr(wx, "MessageBox", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("no owner")))
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.frame = frame
+
+    client._show_or_queue_message_box("Casting Error", "Casting", wx.OK | wx.ICON_ERROR,
+                                      on_dismiss=lambda: dismissed.append(True))
+    assert dismissed == [True]
+
+
 # --------------------------------------------------------------------------- #
 # About dialog hyperlinks
 # --------------------------------------------------------------------------- #
