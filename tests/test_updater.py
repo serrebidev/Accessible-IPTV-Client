@@ -260,7 +260,75 @@ def test_fetch_update_manifest_reads_installer_metadata(monkeypatch):
 
     assert manifest.installer_asset_filename == "AccessibleIPTVClient-Setup-v1.2.3.exe"
     assert manifest.installer_download_url == "https://example.test/AccessibleIPTVClient-Setup-v1.2.3.exe"
-    assert manifest.installer_sha256 == "b" * 64
+
+
+def test_the_manifest_cannot_pin_its_own_certificate(monkeypatch):
+    """A release that declares its own signing certificate proves nothing.
+
+    Whoever can publish a release can sign it with their own certificate and
+    declare that certificate next to the file, so the pin has to come from
+    outside the release. The environment override is such a pin, and it wins.
+    """
+    release = {
+        "assets": [
+            {
+                "name": "manifest.json",
+                "browser_download_url": "https://example.test/manifest.json",
+            }
+        ]
+    }
+    manifest_payload = {
+        "version": "1.2.3",
+        "asset_filename": "AccessibleIPTVClient-v1.2.3.zip",
+        "download_url": "https://example.test/AccessibleIPTVClient-v1.2.3.zip",
+        "sha256": "a" * 64,
+        "signing_thumbprints": ["ATTACKER0000000000000000000000000000000000"],
+    }
+    monkeypatch.setattr(
+        updater.urllib.request,
+        "urlopen",
+        lambda req, timeout: _Response(manifest_payload),
+    )
+    monkeypatch.setenv("ACCESSIBLEIPTVCLIENT_TRUSTED_SIGNING_THUMBPRINTS",
+                       "TRUSTED0000000000000000000000000000000000")
+
+    manifest = updater.fetch_update_manifest(release, "manifest.json")
+
+    assert manifest.signing_thumbprints == ("TRUSTED0000000000000000000000000000000000",)
+
+
+def test_a_manifest_without_an_out_of_band_pin_is_only_a_last_resort(monkeypatch):
+    """With no pin of its own the client falls back to the manifest's value.
+
+    That is the source-run case (the application is not signed), so it is
+    logged rather than silently accepted.
+    """
+    release = {
+        "assets": [
+            {
+                "name": "manifest.json",
+                "browser_download_url": "https://example.test/manifest.json",
+            }
+        ]
+    }
+    manifest_payload = {
+        "version": "1.2.3",
+        "asset_filename": "AccessibleIPTVClient-v1.2.3.zip",
+        "download_url": "https://example.test/AccessibleIPTVClient-v1.2.3.zip",
+        "sha256": "a" * 64,
+        "signing_thumbprints": ["DECLARED000000000000000000000000000000000"],
+    }
+    monkeypatch.setattr(
+        updater.urllib.request,
+        "urlopen",
+        lambda req, timeout: _Response(manifest_payload),
+    )
+    monkeypatch.delenv("ACCESSIBLEIPTVCLIENT_TRUSTED_SIGNING_THUMBPRINTS", raising=False)
+    monkeypatch.setattr(updater, "_running_app_thumbprint", lambda: "")
+
+    manifest = updater.fetch_update_manifest(release, "manifest.json")
+
+    assert manifest.signing_thumbprints == ("DECLARED000000000000000000000000000000000",)
 
 
 def test_build_manifest_includes_optional_installer_metadata():

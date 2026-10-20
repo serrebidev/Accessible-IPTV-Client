@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
@@ -514,6 +515,49 @@ def _env_thumbprints() -> Tuple[str, ...]:
     return tuple(part.strip() for part in raw.split(",") if part.strip())
 
 
+# Certificates this build trusts for the update installer. Add a thumbprint
+# here when the signing certificate rotates: the running application was
+# signed with the old one, and the next release has to be signed with the old
+# one too, so the rotation is delivered by an update that already carries the
+# new pin.
+TRUSTED_SIGNING_THUMBPRINTS: Tuple[str, ...] = ()
+
+
+def _running_app_thumbprint() -> str:
+    """The certificate the running application was signed with.
+
+    The installed application is what the user already trusts, so its own
+    certificate is the pin for the next update. A release signed by anyone
+    else is rejected. A source run (not frozen) has no signature and pins
+    nothing.
+    """
+    if not getattr(sys, "frozen", False):
+        return ""
+    try:
+        signature = _authenticode_signature(sys.executable)
+    except Exception:
+        LOG.debug("_running_app_thumbprint: could not read the signature", exc_info=True)
+        return ""
+    return _normalize_thumbprint(signature.get("Thumbprint"))
+
+
+def _trusted_thumbprints() -> Tuple[str, ...]:
+    """The thumbprints an update installer may be signed with.
+
+    A pin that travels with the release proves nothing: whoever can publish
+    a release can sign it with their own certificate and declare that
+    certificate next to the file. Only a pin the client already trusts
+    counts - the environment override, the certificate the running
+    application was signed with, or the constant in this file.
+    """
+    pins = list(_env_thumbprints())
+    pins.extend(TRUSTED_SIGNING_THUMBPRINTS)
+    running = _running_app_thumbprint()
+    if running:
+        pins.append(running)
+    return _normalize_thumbprints(pins)
+
+
 def _extract_manifest_thumbprints(payload: dict) -> Tuple[str, ...]:
     raw = payload.get("signing_thumbprints") or payload.get("signing_thumbprint")
     if isinstance(raw, str):
@@ -579,14 +623,20 @@ def fetch_update_manifest(
     manifest_thumbs = list(_extract_manifest_thumbprints(data))
     LOG.debug("fetch_update_manifest: env_thumbprints=%s, manifest_thumbprints=%s", env_thumbs, manifest_thumbs)
 
-    # The manifest is an unsigned HTTPS asset, so thumbprints it declares are
-    # only as trustworthy as the sha256 next to them. An out-of-band pin (env
-    # var) is authoritative and overrides the self-declared value when present.
-    env_normalized = _normalize_thumbprints(env_thumbs)
-    if env_normalized:
-        thumbprints = env_normalized
-    else:
+    # The manifest is an unsigned HTTPS asset, so a thumbprint it declares is
+    # only as trustworthy as the sha256 next to it: whoever can publish a
+    # release can sign it with their own certificate and declare that
+    # certificate. The pin therefore has to come from outside the release -
+    # the environment override, the certificate the running application was
+    # signed with, or the constant in updater.py. The manifest's own value is
+    # only a last resort, for a source run with no signature at all, and that
+    # case is logged.
+    thumbprints = _trusted_thumbprints()
+    if not thumbprints:
         thumbprints = _normalize_thumbprints(manifest_thumbs)
+        if thumbprints:
+            LOG.warning("No out-of-band signing pin is available: falling back to the "
+                        "thumbprint the update manifest declares for itself.")
     LOG.debug("fetch_update_manifest: normalized thumbprints=%s", thumbprints)
     
     installer_asset, installer_url, installer_sha = _extract_installer_fields(data)
@@ -684,16 +734,15 @@ def find_executable(root: str, exe_name: str) -> Optional[str]:
 _PIN_ACCEPTED_STATUSES = frozenset({"valid", "unknownerror", "nottrusted"})
 
 
-def verify_authenticode(exe_path: str, allowed_thumbprints: Iterable[str]) -> None:
-    allowed = set(_normalize_thumbprints(allowed_thumbprints))
-    LOG.debug("verify_authenticode: exe=%s, allowed_thumbprints=%s", exe_path, allowed)
-    
-    # Convert to absolute path and normalize 
-    abs_path = os.path.abspath(exe_path)
-    
+def _authenticode_signature(exe_path: str) -> dict:
+    """The Authenticode signature of a file.
+
+    Returns the Status, StatusMessage and SignerCertificate thumbprint.
+    """
     # Write the PowerShell script to a temp file to avoid module loading issues
     # when running from a frozen PyInstaller app or PowerShell Core environment
     import tempfile
+    abs_path = os.path.abspath(exe_path)
     escaped_path = abs_path.replace("'", "''")
     ps_script = f'''
 $ErrorActionPreference = 'SilentlyContinue'
@@ -701,14 +750,14 @@ $sig = Get-AuthenticodeSignature -LiteralPath '{escaped_path}'
 $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} else {{ "" }}
 @{{Status=$sig.Status.ToString(); StatusMessage=$sig.StatusMessage; Thumbprint=$thumb}} | ConvertTo-Json -Compress
 '''
-    
+
     # Create temp script file (UTF-8 with BOM so Windows PowerShell 5.1 reads it
     # correctly even when the path contains non-ASCII characters).
     script_fd, script_path = tempfile.mkstemp(suffix=".ps1")
     try:
         os.write(script_fd, ps_script.encode('utf-8-sig'))
         os.close(script_fd)
-        
+
         # Windows PowerShell 5.1 straight, never through cmd.exe: cmd mangles a
         # quoted path with a space in it (issue #26), and %TEMP% has one for a
         # user profile named "First Last". The environment is cleaned of pwsh
@@ -728,23 +777,32 @@ $thumb = if ($sig.SignerCertificate) {{ $sig.SignerCertificate.Thumbprint }} els
             raise UpdateError(_("Authenticode verification timed out.")) from exc
         except OSError as exc:
             raise UpdateError(_("Could not run Authenticode verification: {detail}").format(detail=exc)) from exc
-        
-        LOG.debug("verify_authenticode: returncode=%s, stdout=%r, stderr=%r", 
-                  result.returncode, result.stdout[:500] if result.stdout else None, 
+
+        LOG.debug("verify_authenticode: returncode=%s, stdout=%r, stderr=%r",
+                  result.returncode, result.stdout[:500] if result.stdout else None,
                   result.stderr[:500] if result.stderr else None)
     finally:
         try:
             os.unlink(script_path)
         except OSError:
             LOG.debug("verify_authenticode: ignored exception", exc_info=True)
-    
+
     if result.returncode != 0:
         raise UpdateError(_("Authenticode verification failed: {detail}").format(
             detail=result.stderr.strip() or result.stdout.strip()))
     try:
-        data = json.loads(result.stdout.strip() or "{}")
+        return json.loads(result.stdout.strip() or "{}")
     except json.JSONDecodeError as exc:
         raise UpdateError(_("Authenticode verification returned invalid data.")) from exc
+
+
+def verify_authenticode(exe_path: str, allowed_thumbprints: Iterable[str]) -> None:
+    allowed = set(_normalize_thumbprints(allowed_thumbprints))
+    LOG.debug("verify_authenticode: exe=%s, allowed_thumbprints=%s", exe_path, allowed)
+
+    # Convert to absolute path and normalize 
+    abs_path = os.path.abspath(exe_path)
+    data = _authenticode_signature(abs_path)
 
     status = str(data.get("Status") or "").strip()
     status_msg = str(data.get("StatusMessage") or "").strip()
