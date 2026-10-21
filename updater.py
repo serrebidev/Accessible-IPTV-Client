@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -194,10 +195,16 @@ def collect_update_logs(temp_dir: Optional[str] = None,
 
 
 def windows_powershell_path() -> str:
-    """Windows PowerShell 5.1, which every supported Windows has, by full path."""
+    """Windows PowerShell 5.1, which every supported Windows has, by full path.
+
+    Never a bare name: Windows resolves the current directory before
+    System32, so a "powershell.exe" sitting next to the app would be
+    executed instead - with the user's privileges, during an update. If the
+    file really is not there, the launch fails with that path in the error
+    instead of running an unknown binary.
+    """
     system_root = os.environ.get("SYSTEMROOT") or os.environ.get("WINDIR") or r"C:\Windows"
-    path = os.path.join(system_root, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
-    return path if os.path.exists(path) else "powershell.exe"
+    return os.path.join(system_root, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
 
 
 def clean_powershell_env() -> dict:
@@ -485,13 +492,24 @@ def is_newer_version(current: str, latest: str) -> bool:
     return new > cur
 
 
+def _is_github_host(url: str) -> bool:
+    """True for the hosts a GitHub release is served from.
+
+    The token in the environment is the user's own GitHub credential. The
+    release manifest names the download URLs and travels unsigned, so the
+    token must never go to a host the manifest points at.
+    """
+    host = (urllib.parse.urlparse(url).hostname or "").lower()
+    return host == "github.com" or host.endswith((".github.com", ".githubusercontent.com"))
+
+
 def _build_request(url: str) -> urllib.request.Request:
     headers = {
         "User-Agent": "AccessibleIPTVClient-Updater",
         "Accept": "application/vnd.github+json",
     }
     token = os.environ.get("GITHUB_TOKEN", "").strip()
-    if token:
+    if token and _is_github_host(url):
         headers["Authorization"] = f"token {token}"
     return urllib.request.Request(url, headers=headers)
 

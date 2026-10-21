@@ -540,6 +540,86 @@ def test_collect_update_logs_joins_every_log_and_trims_the_installer_log(tmp_pat
     assert "early line" not in logs
 
 
+def test_the_github_token_never_leaves_github(monkeypatch):
+    """The token in the environment is the user's own GitHub credential.
+
+    The release manifest names the download URLs and travels unsigned, so a
+    token sent to whatever host it names hands that host the credential.
+    """
+    monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
+
+    api = updater._build_request("https://api.github.com/repos/o/r/releases/latest")
+    assert api.get_header("Authorization") == "token secret-token"
+
+    # The release assets are served from github.com and its CDN.
+    for url in ("https://github.com/o/r/releases/download/v1/app.zip",
+                "https://objects.githubusercontent.com/o/r/blob/x"):
+        assert updater._build_request(url).get_header("Authorization"), url
+
+    stranger = updater._build_request("https://cdn.example.test/update.zip")
+    assert not stranger.get_header("Authorization")
+    # A host that only looks like GitHub is not GitHub.
+    for url in ("https://github.com.example.test/update.zip",
+                "https://evil-github.com/update.zip"):
+        assert not updater._build_request(url).get_header("Authorization"), url
+
+
+def test_the_helper_never_runs_a_bare_powershell(monkeypatch):
+    """Windows resolves the current directory before System32.
+
+    A "powershell.exe" next to the app would be executed instead of the real
+    one - with the user's privileges, during an update. The old code fell
+    back to the bare name whenever the full path was not there, which is
+    exactly the case where it must not.
+    """
+    monkeypatch.setenv("SYSTEMROOT", r"C:\NoSuchWindows")
+    monkeypatch.setenv("WINDIR", r"C:\NoSuchWindows")
+    path = updater.windows_powershell_path()
+    assert os.path.dirname(path), "the helper would run whatever powershell.exe is on PATH"
+    assert path.lower().endswith(
+        os.path.join("system32", "windowspowershell", "v1.0", "powershell.exe"))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="needs Windows PowerShell")
+def test_the_helper_never_kills_a_reused_pid(tmp_path):
+    """A PID can be handed to another process after the app exits.
+
+    The helper waits up to thirty seconds for the app, and Windows is free
+    to reuse the PID in that window. Killing whatever holds it then would
+    take an unrelated program down with it.
+    """
+    import subprocess
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "update_helper.ps1"), encoding="ascii") as handle:
+        helper = handle.read()
+    start = helper.index("function Get-ParentAppProcess")
+    function = helper[start:helper.index("\nfunction ", start + 10)]
+
+    script = tmp_path / "t.ps1"
+    script.write_text(
+        function + "\n"
+        "$script:HelperStartedAt = Get-Date\n"
+        "Start-Sleep -Milliseconds 300\n"
+        "$child = Start-Process -PassThru -FilePath 'powershell' "
+        "-ArgumentList '-NoProfile','-Command','Start-Sleep 10'\n"
+        "Start-Sleep -Milliseconds 300\n"
+        "if (Get-ParentAppProcess -Id $child.Id) { Write-Output 'KILLED' } "
+        "else { Write-Output 'SAFE' }\n"
+        "Stop-Process -Id $child.Id -Force -ErrorAction SilentlyContinue\n"
+        "if (Get-ParentAppProcess -Id $PID) { Write-Output 'FOUND' } "
+        "else { Write-Output 'MISSING' }\n",
+        encoding="utf-8-sig")
+    out = subprocess.run(
+        [updater.windows_powershell_path(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+        capture_output=True, text=True, timeout=60, env=updater.clean_powershell_env())
+    assert out.returncode == 0, out.stderr
+    # A process that started after the helper is not the app.
+    assert "SAFE" in out.stdout, out.stdout
+    # A process that started before it is.
+    assert "FOUND" in out.stdout, out.stdout
+
+
 @pytest.mark.skipif(os.name != "nt", reason="needs Windows PowerShell")
 def test_update_helper_extracts_the_installer_error(tmp_path):
     """The answer Inno gave itself in silent mode is what the user is told."""
