@@ -28,6 +28,9 @@ _DEFAULT_UPSTREAM_USER_AGENT = (
     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 )
 _REAL_HLS_PLAYLIST_WAIT_SECONDS = 8
+# A gateway session holds the channel's request headers, so one that nothing
+# uses for half an hour is dropped.
+_GATEWAY_SESSION_TTL_S = 30 * 60
 _HLS_PLAYLIST_EXTENDED_WAIT_SECONDS = 4
 _HLS_UPSTREAM_READ_TIMEOUT_SECONDS = 30
 _HLS_UPSTREAM_MAX_STARTUP_ATTEMPTS = 3
@@ -1341,7 +1344,9 @@ class StreamProxy:
         sid = hashlib.sha256(json.dumps(clean, sort_keys=True).encode()).hexdigest()[:20]
         host = urllib.parse.urlsplit(str(target_url or "")).netloc.lower()
         with self.lock:
-            self._gateway_sessions[sid] = {"headers": clean, "hosts": {host} if host else set()}
+            self._gateway_sessions[sid] = {"headers": clean,
+                                           "hosts": {host} if host else set(),
+                                           "used": time.time()}
         return self.gateway_url(target_url, sid)
 
     def gateway_headers(self, sid):
@@ -1355,13 +1360,14 @@ class StreamProxy:
         The gateway URL carries the upstream host, and the token in it is
         handed to every receiver on the LAN, so the channel's credentials
         only go to the host the session was created for (plus any host the
-        provider redirected it to). ``None`` means the session is unknown;
-        an empty dict means the host is not one of its own.
+        provider redirected it to). ``None`` means the session is unknown; an
+        empty dict means the host is not one of its own.
         """
         with self.lock:
             entry = self._gateway_sessions.get(sid)
-        if entry is None:
-            return None
+            if entry is None:
+                return None
+            entry["used"] = time.time()
         if str(host or "").lower() not in entry["hosts"]:
             return {}
         return dict(entry["headers"])
@@ -1449,11 +1455,23 @@ class StreamProxy:
                         for key, sid in self.converter_sources.items()
                         if sid not in dead_set
                     }
+                self._expire_gateway_sessions(now)
             for c in stale_converters:
                 try:
                     c.stop()
                 except Exception:
                     LOG.debug("StreamProxy._cleanup_loop: ignored exception", exc_info=True)
+
+    def _expire_gateway_sessions(self, now: float) -> None:
+        """Drop the gateway sessions nothing uses any more.
+
+        A session holds the channel's own request headers, so an unused one
+        must not live for the rest of the session.
+        """
+        with self.lock:
+            for sid in [sid for sid, entry in self._gateway_sessions.items()
+                        if now - float(entry.get("used") or 0) > _GATEWAY_SESSION_TTL_S]:
+                self._gateway_sessions.pop(sid, None)
 
     def _ensure_firewall_rule(self):
         if os.name != "nt" or not self.port: return

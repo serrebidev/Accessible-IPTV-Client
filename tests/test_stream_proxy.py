@@ -541,3 +541,25 @@ def test_proxy_refuses_a_file_url_even_with_the_token(monkeypatch):
     handler = _RecordingHandler("/secret-token/stream?mode=audio&url=" + target)
     handler.do_GET()
     assert handler.errors == [403]
+
+
+def test_an_unused_gateway_session_is_dropped():
+    """A gateway session holds the channel's request headers.
+
+    One that nothing uses must not stay in memory for the rest of the
+    session.
+    """
+    import time
+
+    proxy = StreamProxy()
+    url = proxy.get_gateway_url("https://provider.example.test/live/stream.ts",
+                                {"Cookie": "session=secret"})
+    sid = url.split("/g/")[1].split("/")[0]
+    assert sid in proxy._gateway_sessions
+
+    proxy._expire_gateway_sessions(time.time() + 10)
+    assert sid in proxy._gateway_sessions, "a session in use was dropped"
+
+    proxy._expire_gateway_sessions(time.time() + 2 * 3600)
+    assert sid not in proxy._gateway_sessions
+    assert proxy.gateway_headers_for(sid, "provider.example.test") is None
