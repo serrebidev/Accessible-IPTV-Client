@@ -79,6 +79,75 @@ Every fix has a regression test that fails without it.
 | MINOR | `external_player.py` | the launch debounce used the wall clock | a backwards clock step left the debounce permanently open: the player refused to start until the app was restarted |
 | MINOR | `power.py` | the shutdown command was the bare name | Windows resolves the current directory before System32, so a `shutdown.exe` next to the app was executed instead of the real one, with the user's privileges |
 
+## Fifth pass: the locks, the recorder and the subtitle session
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| BLOCKER | `stream_proxy.py` | the cleanup loop held the proxy's lock and called the gateway expiry, which took that same non-reentrant lock again | ten seconds after the proxy started, the cleanup thread wedged for good with the lock held, and every converter, playlist and segment request blocked: casting died |
+| SEVERE | `providers.py` | the portal token lock was taken twice by the same thread when the portal answered 401 or 403 | a wrong MAC or an expired trial hung the thread for good instead of reporting that the portal could not be reached |
+| SEVERE | `playlist.py` | `<length units="minutes">inf</length>` raised `OverflowError` out of the per-programme handler | one bad programme aborted the whole source, so every programme after it in that feed was dropped |
+| SEVERE | `main.py` | the deferred cast-failure box used the player frame without probing it first | the player was closed while the box waited, and the callback raised `RuntimeError: wrapped C/C++ object of type Frame has been deleted` |
+| SEVERE | `recorder.py` | the shutdown path killed ffmpeg after a flat five seconds instead of the size-derived finalize budget | quitting during a multi-gigabyte MP4 left `ftyp` + one enormous `mdat` and no moov atom: unplayable, with the whole capture stranded inside it |
+| MINOR | `main.py`, `subtitle_speech.py` | the built-in player never cleared the shared subtitle manager, and a speech queued before the switch was still spoken | "Read current subtitle" and "Review recent subtitles" answered with the last line of the channel the user had just left |
+| MINOR | `options.py` | a config write that failed during serialization left its temp file behind | one `iptvclient.conf.*.tmp` per failed save |
+| MINOR | `power.py` | the shutdown command was hard-coded to `C:\Windows\System32` | the machine did not power off when Windows was installed on another drive |
+| MINOR | `internal_player.py` | the fullscreen button's label changed but its accessible name did not | NVDA announced "Toggle Full Screen" on a button that said "Exit Full Screen" |
+
+### The two deadlocks
+
+Both were the same mistake: a `threading.Lock` taken twice by the same thread.
+`StreamProxy._cleanup_loop` holds the lock and calls `_expire_gateway_sessions`,
+which takes it again; `StalkerPortalClient._ensure_token` holds the token lock
+across `_portal_call`, which takes it again on a 401/403. In both cases the
+second acquisition waits for a lock the same thread already holds, so the
+thread waits for itself. The tests missed both because the inner method was
+called directly in one case, and because no test drove a rejected portal token
+in the other. Both locks are `RLock` now.
+
+### The shutdown budget
+
+The same file stopped the same way got two different budgets: the normal path
+waited `finalize_timeout_seconds` (30 s plus the file's size at 8 MiB/s, so
+more than ten minutes for a 5 GB MP4), and the shutdown path waited five
+seconds. A faststart MP4 rewrites the whole file when it finalizes, so the
+shutdown path killed ffmpeg mid-rewrite - exactly the failure the other path
+was written to prevent. The shutdown budget is now
+`max(DETACH_WAIT_SECONDS, finalize_timeout_seconds(...))`, and the
+terminate/kill escalation still guarantees that no ffmpeg is left holding a
+provider's one stream slot.
+
+## Sixth pass: the updater, the dialogs and the schedule file
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `updater.py` | the `GITHUB_TOKEN` from the environment was attached to every request, including the download URL the release manifest names | the user's own GitHub credential was sent to whatever host an (unsigned) manifest pointed at |
+| SEVERE | `main.py` | Enter on a programme in "What's on Now" was handled by the list's `EVT_KEY_DOWN`, which a dialog never delivers | pressing Enter on a programme did nothing at all: the dialog takes Enter first, and the Play button is not a native default button |
+| SEVERE | `dvr.py` | a non-numeric timestamp in the schedule file was read outside any `try` | the value raised out of the scheduler's constructor, so the app did not start |
+| SEVERE | `update_helper.ps1` | the helper killed whatever held the app's PID | the app exited and Windows handed that PID to another program, which was then killed with it |
+| MINOR | `updater.py` | the PowerShell path fell back to the bare name `powershell.exe` | Windows resolves the current directory before System32, so a `powershell.exe` next to the app would run instead - with the user's privileges, during an update |
+| MINOR | `catchup_direct.py` | the host comparison was case-sensitive | a provider whose name differed only in case lost the channel's cookie and answered 403 |
+| MINOR | `options.py` | the write probe used one fixed file name | two writers probing the same folder collided, and the loser decided the folder was not writable - which sent the config somewhere else |
+| MINOR | `stream_proxy.py` | issuing a gateway URL replaced the session's host set | a redirect the provider had taught the proxy about lost the channel's credentials |
+| MINOR | `playlist.py` | the final `wal_checkpoint(TRUNCATE)` was not drained | the statement stayed in progress, so the WAL was not truncated |
+| MINOR | `settings_backup.py` | a damaged backup raised the JSON parser's own error | the import box said "Expecting value: line 1 column 1 (char 0)" instead of what to do about it |
+
+### Enter in a dialog
+
+A `wx.Dialog` consumes Enter before the focused control sees an
+`EVT_KEY_DOWN`, so a list inside one has to take Enter from the char hook -
+the catch-up list and the scheduled-recordings list already do. The
+"What's on Now" list was the last one still on the key-down, and its Play
+button is not a native default button: its Win32 style carries no
+`BS_DEFPUSHBUTTON`, so wx had nothing to press instead.
+
+### The one parameter name
+
+PowerShell 5.1 silently ignores a named argument that matches no
+parameter: `Get-ParentAppProcess -Id $pid` bound nothing and left the
+parameter at 0, so the helper read the *Idle* process (PID 0) instead of
+the app. The parameter is named to match its call sites now, and the
+reused-PID guard compares the process's start time with the helper's.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
