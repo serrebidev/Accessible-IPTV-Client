@@ -6726,8 +6726,11 @@ class IPTVClient(wx.Frame):
             self.playlist_scope_combo.SetFocus()
             return
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
-            self._activate_selected_group()
-            (self.filter_box if key == wx.WXK_TAB else self.channel_list).SetFocus()
+            activated = self._activate_selected_group()
+            if key == wx.WXK_TAB:
+                self.filter_box.SetFocus()
+            elif activated:
+                self.channel_list.SetFocus()
             return
         if key == wx.WXK_LEFT:
             self.group_list.CollapseSelectedBranch()
@@ -6737,22 +6740,27 @@ class IPTVClient(wx.Frame):
             return
         event.Skip()
 
-    def _activate_selected_group(self):
-        """Switch the channel list to the selected category and move focus there."""
+    def _activate_selected_group(self) -> bool:
+        """Switch the channel list to the selected category and move focus there.
+
+        False when the selection is only a branch of the hierarchy: Enter
+        expanded it, and the user stays in the tree.
+        """
         if self.group_list.GetSelection() == wx.NOT_FOUND:
             # A hierarchy-only parent is navigation, not a playlist category.
             # Enter/Tab expands it without unexpectedly showing All Channels.
             toggle = getattr(self.group_list, "ToggleSelectedBranch", None)
             if callable(toggle):
                 toggle()
-            return
+            return False
         self.on_group_select()
         # An empty scope combo has no selection: repopulating would fire
         # EVT_LIST_ITEM_SELECTED on a negative selection and crash here.
         if self.playlist_scope_combo.GetSelection() == wx.NOT_FOUND:
-            return
+            return False
         if self.channel_list.GetCount() > 0:
             self.channel_list.SetFocus()
+        return True
 
     def _on_group_activated(self, _event):
         # Mouse activation of a category follows the same path as Enter/Tab.
@@ -7669,11 +7677,13 @@ class IPTVClient(wx.Frame):
             return
 
         dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording)
-        if dlg.ShowModal() == wx.ID_OK:
-            selection = dlg.get_selection()
-            if selection:
-                self._play_from_whats_on_now(selection)
-        dlg.Destroy()
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                selection = dlg.get_selection()
+                if selection:
+                    self._play_from_whats_on_now(selection)
+        finally:
+            dlg.Destroy()
     
     def _play_from_whats_on_now(self, program: Dict[str, str]):
         """Find and play the channel matching the selected program."""

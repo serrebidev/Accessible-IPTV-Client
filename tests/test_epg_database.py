@@ -1115,6 +1115,42 @@ def test_a_non_finite_length_costs_one_programme_not_the_source(tmp_path):
     assert "Last" in titles, "the bad length took the rest of the source with it"
 
 
+def test_a_live_imports_lock_is_not_stolen(tmp_path):
+    """An import that runs for hours is still an import.
+
+    The lock was reclaimed after two hours whatever the owner was doing, so
+    a long import and a second one could run at the same time - and the
+    second one deleted the first one's lock.
+    """
+    import os
+    import time
+
+    db = str(tmp_path / "epg.db")
+    assert playlist._try_acquire_import_lock(db, 5) is True
+    lock_path, _pid_path = playlist._import_lock_paths(db)
+    # Make the lock look old.
+    old = time.time() - 3 * 60 * 60
+    os.utime(lock_path, (old, old))
+    try:
+        assert playlist._try_acquire_import_lock(db, 1) is False
+    finally:
+        playlist._release_import_lock(db)
+
+
+def test_a_reclaimed_lock_survives_its_old_owner(tmp_path):
+    """A lock that was taken by another import belongs to whoever holds it now."""
+    db = str(tmp_path / "epg.db")
+    lock_path, pid_path = playlist._import_lock_paths(db)
+    with open(lock_path, "w", encoding="ascii") as handle:
+        handle.write("")
+    with open(pid_path, "w", encoding="ascii") as handle:
+        handle.write("424242")  # another process
+
+    playlist._release_import_lock(db)
+
+    assert os.path.exists(lock_path), "the new owner's lock was removed"
+
+
 def test_a_huge_duration_costs_one_programme_not_the_source(tmp_path):
     """A duration with a huge component is not a duration.
 

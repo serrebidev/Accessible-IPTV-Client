@@ -15,10 +15,14 @@ from typing import Dict, List, Optional
 
 STRIP_TAGS = [
     'hd', 'sd', 'hevc', 'fhd', 'uhd', '4k', '8k', 'hdr', 'dash', 'hq', 'st',
-    'us', 'usa', 'ca', 'canada', 'car', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
+    'us', 'usa', 'ca', 'canada', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
     'au', 'aus', 'nz', 'ukhd', 'uksd', 'fhd', 'uhd', 'h.265', 'h265', 'h.264', 'h264',
     '50fps', '60fps', 'eu'
 ]
+# "car" is deliberately not a strip tag: it is an ordinary English word, and
+# stripping it made "Car SOS" and "SOS" the same channel - the guide of one
+# and the playlist of the other, matched to each other. The country is still
+# recognised by the group synonyms ("CAR" is Canada there).
 
 NOISE_WORDS = [
     'backup', 'alt', 'feed', 'main', 'extra', 'mirror', 'test', 'temp',

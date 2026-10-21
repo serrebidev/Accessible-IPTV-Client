@@ -69,6 +69,20 @@ def test_an_ordinary_word_is_not_a_country_code():
     assert extract_group("(CA) News") == "ca"
 
 
+def test_a_word_is_not_stripped_as_a_country_tag():
+    """"Car SOS" and "SOS" are not the same channel.
+
+    "car" was a strip tag, so the two names canonicalised to the same
+    thing and the guide of one matched the playlist of the other.
+    """
+    assert canonicalize_name("Car SOS") == "car sos"
+    assert canonicalize_name("SOS") == "sos"
+    assert canonicalize_name("Car SOS") != canonicalize_name("SOS")
+    # The other tags are still stripped.
+    assert canonicalize_name("BBC One HD") == "bbc one"
+    assert canonicalize_name("CA TV") == "tv"
+
+
 def test_names_are_normalised_the_same_way_everywhere():
     assert canonicalize_name("  Sky   Mix  HD ") == canonicalize_name("Sky Mix HD")
     assert strip_noise_words("Sky Mix HD") == "sky mix"

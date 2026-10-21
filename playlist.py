@@ -260,14 +260,20 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
             except Exception:
                 age = 0
             owner_exited = False
+            owner_known = False
             try:
                 with open(pid_path, encoding='ascii') as pf:
                     owner_pid = int(pf.read().strip())
                 import psutil
+                owner_known = True
                 owner_exited = age > 1 and not psutil.pid_exists(owner_pid)
             except (OSError, ValueError, ImportError):
                 _logger.debug("EPG import owner PID unavailable; using age fallback", exc_info=True)
-            if owner_exited or age > 2 * 60 * 60:
+            # The age is a fallback for a lock whose owner cannot be checked.
+            # It must never take a live import's lock: an import that runs
+            # for hours is still an import.
+            stale = owner_exited or (not owner_known and age > 2 * 60 * 60)
+            if stale:
                 try:
                     os.remove(lock_path)
                 except Exception:
@@ -289,6 +295,15 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
 
 def _release_import_lock(db_path: str):
     lock_path, pid_path = _import_lock_paths(db_path)
+    # Only our own lock: a lock that was reclaimed (or taken by another
+    # copy of the app) belongs to whoever holds it now, and removing it
+    # would let two imports run at once.
+    try:
+        with open(pid_path, encoding='ascii') as pf:
+            if int(pf.read().strip()) != os.getpid():
+                return
+    except (OSError, ValueError):
+        _logger.debug("_release_import_lock: owner PID unavailable", exc_info=True)
     try:
         if os.path.exists(lock_path):
             os.remove(lock_path)
