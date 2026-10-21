@@ -9,7 +9,10 @@ import queue
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -203,4 +206,30 @@ def test_full_player_queue_keeps_newest_chunks_without_blocking_recording(monkey
         output.resume.set()
         pipe.end()
         reader.join(5)
+        relay.close()
+
+
+def test_the_relay_refuses_a_request_without_its_token():
+    """The relay serves the recording being made.
+
+    Any process on the machine could find the port and watch it, so the URL
+    carries a token and a request without it is refused.
+    """
+    pipe = _Pipe()
+    pipe.feed(b"payload")
+    relay = recording_relay.RecordingRelay(pipe)
+    try:
+        assert relay.url.endswith("/live.ts")
+        assert relay.url.count("/") == 4, "the URL carries no token"
+
+        port = relay.url.split(":")[2].split("/")[0]
+        stranger = "http://127.0.0.1:%s/live.ts" % port
+        with pytest.raises(urllib.error.HTTPError) as excinfo:
+            urllib.request.urlopen(stranger, timeout=5)
+        assert excinfo.value.code == 404
+
+        with urllib.request.urlopen(relay.url, timeout=5) as response:
+            assert response.status == 200
+    finally:
+        pipe.end()
         relay.close()

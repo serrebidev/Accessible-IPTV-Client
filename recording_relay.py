@@ -15,6 +15,7 @@ quickly instead of waiting for the next one.
 import collections
 import http.server
 import logging
+import secrets
 import socketserver
 import threading
 from time import monotonic
@@ -49,6 +50,11 @@ class RecordingRelay:
         self._backlog_size = 0
         self._clients: "list[_Client]" = []
         self._closed = False
+        # A token in the path: the relay serves the recording being made, and
+        # any process on the machine could otherwise find the port and watch
+        # it.
+        self._token = secrets.token_urlsafe(16)
+        self._path = "/%s/live.ts" % self._token
         relay = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -57,6 +63,9 @@ class RecordingRelay:
             def log_message(self, format, *args):  # noqa: A002 - base class name
                 pass
 
+            def _authorized(self) -> bool:
+                return self.path.split("?")[0] == relay._path
+
             def _send_headers(self):
                 self.send_response(200)
                 self.send_header("Content-Type", "video/mp2t")
@@ -64,14 +73,18 @@ class RecordingRelay:
                 self.end_headers()
 
             def do_HEAD(self):
+                if not self._authorized():
+                    return self.send_error(404)
                 self._send_headers()
 
             def do_GET(self):
+                if not self._authorized():
+                    return self.send_error(404)
                 self._send_headers()
                 relay._serve(self.wfile)
 
         self._server = _Server((host, 0), Handler)
-        self.url = "http://%s:%d/live.ts" % (host, self._server.server_address[1])
+        self.url = "http://%s:%d%s" % (host, self._server.server_address[1], self._path)
         threading.Thread(target=self._server.serve_forever, daemon=True,
                          name="RecordingRelayServer").start()
         threading.Thread(target=self._pump, daemon=True, name="RecordingRelayPump").start()
