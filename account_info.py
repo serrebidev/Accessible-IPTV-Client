@@ -86,8 +86,8 @@ class Account:
 
     @property
     def host(self) -> str:
-        parsed = urllib.parse.urlparse(self.base_url)
-        return parsed.netloc or self.base_url
+        # The host without the credentials a pasted URL may carry.
+        return _redact_server_host(self.base_url)
 
     @property
     def dedupe_key(self) -> Tuple[str, str, str]:
@@ -376,11 +376,52 @@ def _status_label(raw: str) -> str:
     return known.get((raw or "").strip().lower(), raw)
 
 
+def _redact_server_url(url: str) -> str:
+    """The server address without the credentials it may carry.
+
+    A pasted Xtream URL can be ``http://host/get.php?username=u&password=p``
+    or ``http://user:pw@host``. The report is read aloud, copied to the
+    clipboard and pasted into issue trackers, and this module promises that
+    passwords never reach it.
+    """
+    text = str(url or "")
+    try:
+        parts = urllib.parse.urlsplit(text)
+    except ValueError:
+        return text
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = "***@" + netloc.rsplit("@", 1)[1]
+    query = parts.query
+    if query:
+        pairs = []
+        for part in query.split("&"):
+            key, _, _value = part.partition("=")
+            if key.lower() in ("username", "password", "token", "mac", "serial"):
+                pairs.append(key + "=***")
+            else:
+                pairs.append(part)
+        query = "&".join(pairs)
+    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
+
+
+def _redact_server_host(url: str) -> str:
+    """The host of a server URL, without the credentials in it."""
+    try:
+        parts = urllib.parse.urlsplit(str(url or ""))
+    except ValueError:
+        return str(url or "")
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = netloc.rsplit("@", 1)[1]
+    return netloc or str(url or "")
+
+
 def _header_lines(account: Account) -> List[str]:
     lines = [
         _line(_("Account"), account.name or account.username or account.host),
         _line(_("Type"), kind_label(account.kind)),
-        _line(_("Server"), account.base_url),
+        _line(_("Server"), _redact_server_url(account.base_url)),
     ]
     if account.username:
         lines.append(_line(_("Username"), account.username))

@@ -441,5 +441,35 @@ class TestFetching:
         assert "action=" not in requested
 
 
+def test_the_server_line_never_carries_the_credentials():
+    """A pasted Xtream URL can hold the password.
+
+    The report is read aloud, copied to the clipboard and pasted into issue
+    trackers, and this module promises that passwords never reach it.
+    """
+    account = Account(kind=account_info.KIND_XTREAM,
+                      base_url="http://host.example.com/get.php?username=u&password=p",
+                      username="u", password="p")
+    lines = "\n".join(account_info._header_lines(account))
+    assert "password=p" not in lines
+    assert "username=u" not in lines
+    assert "password=***" in lines
+    assert "host.example.com" in lines
+
+    with_userinfo = Account(kind=account_info.KIND_XTREAM,
+                            base_url="http://user:pw@host.example.com",
+                            username="user", password="pw")
+    lines = "\n".join(account_info._header_lines(with_userinfo))
+    assert "pw@" not in lines
+    assert "host.example.com" in lines
+
+
+def test_the_detected_host_has_no_credentials():
+    account = Account(kind=account_info.KIND_XTREAM,
+                      base_url="http://user:pw@host.example.com")
+    assert "pw" not in account.host
+    assert "host.example.com" in account.host
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
