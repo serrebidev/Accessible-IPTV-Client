@@ -289,6 +289,70 @@ schedule. The last imported source wins, so that id's guide is always one
 provider's. Telling the two apart needs the source recorded per programme,
 which the database does not do.
 
+## Fourteenth pass: the exit, the guide, the player and the portal
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the exit gate asked about a scheduled recording or about a running download, never both | a scheduled recording hid the download warning, so the download was truncated without the user ever being asked |
+| SEVERE | `casting.py` | the Sonos and Kodi paths started the receiver without checking whether the cast had been stopped | a speaker played a channel the user had already stopped, and the audio proxy held the provider's one connection |
+| SEVERE | `external_player.py` | launching another player left the application-owned MPV running | the old channel kept playing next to the new one |
+| SEVERE | `external_player.py` | the MPV adapter worker had no launch generation | the adapter's handshake took seconds, and when it failed afterwards the plain handoff started the old channel over the new one |
+| SEVERE | `vod.py` | a null entry in the provider's JSON was read as a dictionary | one bad row dropped every movie (or every series) in the catalogue |
+| SEVERE | `main.py` | the programme-match index was built on the GUI thread when a programme was played or scheduled from "What's on Now" | the app froze for seconds, silent to the screen reader, on a full playlist |
+| MINOR | `providers.py` | a portal reply with a null "js" was read as a dictionary | "'NoneType' object has no attribute 'get'" instead of a provider message |
+| MINOR | `account_info.py` | the expiry line was printed even when the server had rejected the password | a dead account was reported as "Expires: Never" |
+| MINOR | `recorder.py` | "stopped by the user" was set before the process was checked | a download that had already finished was deleted when the user pressed Cancel |
+| MINOR | `main.py` | the EPG Manager dialog was destroyed only after the save | a save that raised left the dialog allocated and parent-owned |
+| MINOR | `main.py` | an empty Video on Demand catalogue was only an unselected row | the view looked empty with nothing said about it |
+| MINOR | `main.py` | a playlist reload accepted the Video on Demand catalogue that was being built | the old playlist's catalogue was shown, including a playlist that was gone |
+| MINOR | `subtitle_speech.py` | the automatic speech was checked when the cue arrived, not when it was spoken | a cue queued before the speech was turned off was still spoken |
+| MINOR | `main.py` | the application voice was never purged | a caption line kept talking after the user switched channel or stopped playback |
+
+### Two warnings for two things
+
+The exit gate asked about the scheduled recordings or about the running
+download, never both: the download warning was in the branch that the
+recording warning took. A scheduled recording therefore hid the download, and
+the download was truncated without the user ever being asked. Each kind of
+work now gets its own warning, and each can be refused on its own.
+
+### A cast that started after the stop
+
+The Sonos and Kodi paths probe the stream before they start the receiver,
+and the probe takes as long as the provider answers. The other receivers
+check whether the cast is still wanted after their probe; these two did not,
+so a stop during the probe was accepted and the speaker started anyway. They
+carry the launch generation now and refuse to start a cast that was stopped.
+
+### Two players at once
+
+The application-owned MPV - the one the subtitle adapter drives - was only
+closed when another adapter launch replaced it. Launching VLC left it
+playing the previous channel. Every launch that is not the adapter's own
+closes it now.
+
+The adapter's handshake takes as long as MPV answers, and the worker that
+waits for it had no idea whether a newer launch had been asked for in the
+meantime: when the handshake failed afterwards, the plain handoff started
+the old channel over the new one. Every launch carries a generation now,
+and a superseded launch neither installs its player nor hands off.
+
+### One bad row, one whole catalogue
+
+The provider's JSON is untrusted input. A null entry in the category list or
+in the stream list was read as a dictionary, and the exception took the
+whole section with it - the user saw "No Video on Demand content found".
+A null row is skipped now, like the broken numbers the earlier passes
+already handled.
+
+### An index on the GUI thread
+
+Playing or scheduling a programme from "What's on Now" resolves its channel
+in the playlist. That lookup is an index over every channel, and building it
+takes seconds on a full playlist - the app froze and the screen reader said
+nothing. The index is built in the worker now, before the dialog appears,
+like the EPG search already does.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
@@ -315,3 +379,9 @@ which the database does not do.
   master playlist when the host is slow. The probe is off by default
   (`internal_player_variant_max_mbps` is 0), and the fallback costs the
   variant selection, not playback.
+- Quitting while a recording is still finalizing waits for the container on
+  the GUI thread, so the window is "Not Responding" for the length of that
+  wait (minutes for a large faststart MP4). The wait has to stay there: the
+  ffmpeg that is finalizing has to be gone before the app exits, or it
+  outlives us and holds the provider's stream slot. The window has to stay
+  alive while it waits.
