@@ -20,6 +20,39 @@ from stream_proxy import (
 )
 
 
+def test_a_refreshed_credential_replaces_the_running_converter():
+    """The running ffmpeg has the credentials it started with.
+
+    A provider that rotates its session cookie refuses the old one, so the
+    cast died until the converter happened to be retired.
+    """
+    proxy = StreamProxy()
+    url = "https://provider.example.test/live.ts"
+
+    proxy.get_transcoded_url(url, {"Cookie": "old"})
+    assert len(proxy.converters) == 1
+    session_id, converter = next(iter(proxy.converters.items()))
+    assert converter.headers["Cookie"] == "old"
+
+    proxy.get_transcoded_url(url, {"Cookie": "new"})
+
+    assert len(proxy.converters) == 1, "a second converter was left running"
+    assert proxy.converters[session_id].headers["Cookie"] == "new"
+
+
+def test_an_unchanged_credential_keeps_the_running_converter():
+    """Re-issuing the same URL must not restart the transcode."""
+    proxy = StreamProxy()
+    url = "https://provider.example.test/live.ts"
+
+    proxy.get_transcoded_url(url, {"Cookie": "same"})
+    session_id, converter = next(iter(proxy.converters.items()))
+
+    proxy.get_transcoded_url(url, {"Cookie": "same"})
+
+    assert proxy.converters[session_id] is converter
+
+
 def test_an_http_error_is_not_a_drop_to_reopen():
     """A live source that ends is reopened at the edge; a refused session is not.
 

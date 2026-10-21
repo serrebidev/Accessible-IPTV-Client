@@ -1466,7 +1466,18 @@ class StreamProxy:
                 self.converter_sources[source_key] = session_id
             elif session_id not in self.converters:
                 self.converters[session_id] = HLSConverter(target_url, headers, transcode_profile)
-            else: self.converters[session_id].touch()
+            else:
+                existing = self.converters[session_id]
+                if existing.headers != normalize_request_headers(headers):
+                    # The channel's credentials changed - a provider that
+                    # rotates its session cookie. The running ffmpeg still
+                    # has the old ones and the provider refuses it, so the
+                    # cast died until the converter was retired.
+                    retired.append(existing)
+                    self.converters[session_id] = HLSConverter(
+                        target_url, headers, transcode_profile)
+                else:
+                    existing.touch()
         for old_converter in retired:
             try:
                 old_converter.stop()
