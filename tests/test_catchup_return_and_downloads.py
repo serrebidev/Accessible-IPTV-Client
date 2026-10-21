@@ -47,7 +47,18 @@ _BOUND = (
 )
 
 
+class _SubtitleSession:
+    """The subtitle session the app owns, stubbed for the partial clients here."""
+
+    def activate_session(self, source_name=""):
+        return "token"
+
+    def cancel_session(self):
+        return None
+
+
 def _client(**attrs):
+    attrs.setdefault("_subtitle_session", _SubtitleSession())
     client = types.SimpleNamespace(**attrs)
     for name in _BOUND:
         setattr(client, name, getattr(main.IPTVClient, name).__get__(client))

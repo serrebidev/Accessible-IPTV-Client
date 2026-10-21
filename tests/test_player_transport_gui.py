@@ -124,6 +124,19 @@ def test_pause_toggle_updates_accessible_name_while_switching_and_playing(player
     assert frame.play_pause_btn.GetLabel() == frame.play_pause_btn.GetName() == "Resume"
 
 
+def test_the_fullscreen_button_name_follows_its_label(player_frame):
+    """The label changes between "Full Screen" and "Exit Full Screen".
+
+    NVDA announces the name, so a button whose label says one thing and whose
+    name says another reads as two different buttons.
+    """
+    frame = player_frame
+    frame._set_fullscreen(True)
+    assert frame.fullscreen_btn.GetLabel() == frame.fullscreen_btn.GetName() == "Exit Full Screen"
+    frame._set_fullscreen(False)
+    assert frame.fullscreen_btn.GetLabel() == frame.fullscreen_btn.GetName() == "Full Screen"
+
+
 @pytest.mark.parametrize("manual_stop", [False, True])
 def test_resume_paths_update_accessible_name_immediately(player_frame, manual_stop):
     frame = player_frame

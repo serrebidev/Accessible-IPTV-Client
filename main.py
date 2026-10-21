@@ -8413,6 +8413,8 @@ class IPTVClient(wx.Frame):
         was_catchup = getattr(self, "_internal_player_stream_kind", "live") == "catchup"
         catchup_return = getattr(self, "_catchup_return", None)
         self._catchup_return = None
+        # Nothing is playing any more, so no subtitle session is active.
+        self._subtitle_session.cancel_session()
         self._internal_player_frame = None
         self._internal_player_channel = None
         self._internal_player_audio_key = ""
@@ -9061,6 +9063,11 @@ class IPTVClient(wx.Frame):
                 if callable(index_setter):
                     index_setter(self._remembered_channel_audio_track_index(
                         self._internal_player_audio_key))
+                # A new stream is a new subtitle session: the shared manager
+                # drops the previous channel's cues, so "Read current
+                # subtitle" cannot answer with the last line of the channel
+                # the user just left.
+                self._subtitle_session.activate_session(display_title)
                 frame.play(
                     url,
                     display_title,
@@ -9160,7 +9167,9 @@ class IPTVClient(wx.Frame):
         def cast_failed(err):
             message_box(_("Failed to cast: {error}").format(error=err), _("Casting Error"),
                         wx.OK | wx.ICON_ERROR, owner)
-            if owner is player and player.IsShown():
+            # The player can be closed while this box waits; a destroyed
+            # wx object raises on every call.
+            if owner is player and _window_alive(player) and player.IsShown():
                 player.Raise()
                 player.cast_btn.SetFocus()
 
@@ -11012,6 +11021,11 @@ class WhatsOnNowDialog(wx.Dialog):
         
         # Bind events - use KEY_DOWN to intercept space before ListCtrl handles it
         self.listbox.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
+        # Enter, though, has to come from the char hook: a dialog consumes Enter
+        # before the focused control ever sees a key-down, and this dialog has
+        # no default button for wx to press instead (the Play button is not
+        # one), so pressing Enter on a programme did nothing at all.
+        self.listbox.Bind(wx.EVT_CHAR_HOOK, self._on_list_char_hook)
         self.listbox.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_activate)
         # Right-click / Shift+F10 / Applications key on a programme row.
         self.listbox.Bind(wx.EVT_CONTEXT_MENU, lambda _evt: self._show_context_menu())
@@ -11026,6 +11040,14 @@ class WhatsOnNowDialog(wx.Dialog):
             self.listbox.Focus(0)
         self.listbox.SetFocus()
     
+    def _on_list_char_hook(self, event):
+        """Enter on a programme, before the list ever sees a key-down."""
+        if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            if self.listbox.GetSelectedItemCount() > 0:
+                self.EndModal(wx.ID_OK)
+            return
+        event.Skip()
+
     def _on_key_down(self, event):
         """Handle key input for type-ahead search - intercept before ListCtrl."""
         key = event.GetKeyCode()

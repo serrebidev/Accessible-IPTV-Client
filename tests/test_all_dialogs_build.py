@@ -73,11 +73,17 @@ def test_cast_discovery_dialog_builds(host):
         dlg.Destroy()
 
 
-def test_account_info_dialog_builds(host):
+def test_account_info_dialog_builds(host, monkeypatch):
     accounts = [
         account_info.Account(kind="xtream", base_url="http://panel.example/", username="u"),
         account_info.Account(kind="stalker", base_url="http://portal.example/c/", mac="00:1A:79:00:00:01"),
     ]
+    # The first account is looked up on a daemon thread and the answer comes
+    # back with wx.CallAfter. A pending CallAfter that fires after the wx.App
+    # is torn down fails on that thread, so block the fetch for good instead
+    # - the same reason the cast discovery test above does.
+    monkeypatch.setattr(account_info, "fetch_account_report",
+                        lambda *a, **k: threading.Event().wait())
     dlg = AccountInfoDialog(host, accounts)
     try:
         assert dlg.listbox.GetCount() == 2

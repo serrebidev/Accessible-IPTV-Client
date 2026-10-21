@@ -2817,6 +2817,10 @@ class InternalPlayerFrame(wx.Frame):
         self.ShowFullScreen(enable, style=wx.FULLSCREEN_ALL)
         self.controls_panel.Show(not enable)
         self.fullscreen_btn.SetLabel(_("Exit Full Screen") if enable else _("Full Screen"))
+        # The name has to follow the label: NVDA announces the name, so a
+        # button that says "Exit Full Screen" and is named "Toggle Full
+        # Screen" reads as two different buttons.
+        self.fullscreen_btn.SetName(self.fullscreen_btn.GetLabel())
         self.Layout()
         wx.CallAfter(self.video_panel.SetFocus)
 

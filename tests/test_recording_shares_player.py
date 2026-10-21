@@ -35,6 +35,16 @@ class _Frame:
         self._manual_stop = self._manual_stop or manual
 
 
+class _SubtitleSession:
+    """The subtitle session the app owns, stubbed for the partial clients here."""
+
+    def activate_session(self, source_name=""):
+        return "token"
+
+    def cancel_session(self):
+        return None
+
+
 class _Recorder:
     def __init__(self, events):
         self.events = events
@@ -163,6 +173,7 @@ def test_relay_handoff_keeps_the_existing_focus_in_the_player():
         _remember_played_channel=lambda _channel: None,
         _channel_audio_key=lambda _channel: "tvp 1",
         _sync_internal_player_record_state=lambda: None,
+        _subtitle_session=_SubtitleSession(),
     )
     _bind(client, "_launch_stream")
 

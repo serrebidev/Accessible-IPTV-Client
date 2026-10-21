@@ -216,6 +216,26 @@ def test_channel_epg_dialog_tab_ring_is_two_controls(host):
         dlg.Destroy()
 
 
+def test_whats_on_now_enter_on_a_programme_opens_it(host):
+    """Enter on a programme has to reach the list.
+
+    A dialog consumes Enter before the focused control ever sees an
+    ``EVT_KEY_DOWN``, and this dialog has no default button for wx to press
+    instead - the Play button is not one - so pressing Enter on a programme
+    did nothing at all. The catch-up list hits the same wall and answers it
+    with a char hook.
+    """
+    dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES)
+    ended = []
+    dlg.EndModal = lambda code: ended.append(code)  # type: ignore[assignment]
+    try:
+        dlg.listbox.Select(0)
+        dlg.listbox.GetEventHandler().ProcessEvent(_char_hook(wx.WXK_RETURN))
+        assert ended == [wx.ID_OK]
+    finally:
+        dlg.Destroy()
+
+
 def test_whats_on_now_context_menu_offers_play_and_schedule(host, monkeypatch):
     scheduled = []
     dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES,

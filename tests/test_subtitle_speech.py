@@ -175,6 +175,31 @@ def test_speech_marshalled_through_ui_thread():
     assert spoken == ["Hello"]
 
 
+def test_a_queued_speech_is_dropped_when_the_cues_are_cleared():
+    """A cue that was queued for speech must not be spoken after a switch.
+
+    The speech runs on the UI thread, so it can still be pending when the
+    source changes. Speaking it then would say a line from the channel the
+    user just left.
+    """
+    queued = []
+    spoken = []
+
+    def fake_ui_thread(fn, *args):
+        queued.append((fn, args))
+
+    mgr = SubtitleSpeechManager(spoken.append, ui_thread=fake_ui_thread)
+    mgr.set_auto_speech(True)
+    mgr.on_cue("From the old channel")
+
+    assert len(queued) == 1
+    mgr.clear()  # the source switch
+
+    fn, args = queued[0]
+    fn(*args)
+    assert spoken == [], "a cue from the previous source was spoken"
+
+
 def test_capability_baseline_is_honest():
     mgr, _spoken = _manager()
     assert mgr.get_capability("built-in", "timed_cues") == AVAILABLE
