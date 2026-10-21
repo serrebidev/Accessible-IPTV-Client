@@ -165,6 +165,27 @@ end is a drop and is reopened at the live edge; an error exit is a source
 that failed and ends the cast. A source that ends again straight away was
 never working, so a few of those end it too.
 
+## Eighth pass: the right-clicked row, and the values nobody checks
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the programme lists built their context menu from the selected row, and a right-click does not move the selection | the user pointed at one programme and the app played, recorded or deleted another |
+| SEVERE | `main.py`, `catchup_direct.py` | the catch-up download handed ffmpeg the channel's cookie for the direct archive file, which can live on another host | the provider's credential went to whichever host the provider redirected to |
+| SEVERE | `playlist.py` | a duration with a huge component was converted without a guard, and `int()` refuses one | the refusal escaped the per-programme loop: the whole guide was dropped over one programme |
+| MINOR | `stream_proxy.py` | ffmpeg was taken from the current working directory | Windows resolves the current directory first, so an `ffmpeg.exe` that happened to sit there ran instead of the real one, with the user's privileges, on every transcode |
+| MINOR | `vod.py` | an episode number, a season number and a category name were used as they came | one broken value from the provider took the whole episode list - or the whole catalogue - with it |
+
+The channel list has always hit-tested the row the user pointed at; the
+programme lists did not, and a right-click in a list control does not move
+the selection. The three list controls now hit-test too, and a
+multi-selection keeps its selection when the right-clicked row is part of
+it.
+
+The catch-up probe already knew that the credentials must not follow a
+redirect, and it strips them for the probe - but the download that
+followed was handed the original headers, which undid it. The headers are
+now filtered for the host the file actually lives on.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
