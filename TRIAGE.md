@@ -214,6 +214,26 @@ worker and only logs it, and gives a cold mpv more time to answer. It also
 stops forcing a window when the caller asked for no video: mpv stops
 answering its own IPC while it tries to open a window it cannot.
 
+## Eleventh pass: the credential that went stale
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| MINOR | `stream_proxy.py` | a re-issued URL with refreshed headers only touched the running converter, so the ffmpeg kept the credentials it started with | a provider that rotates its session cookie refused the old one, and the channel did not play until the converter was retired - up to a minute, for no visible reason |
+
+The converter is replaced when the headers change and kept when they do
+not, so re-issuing the same URL does not restart the transcode.
+
+### Still open: the watchdog and a still video track
+
+The A/V watchdog restarts the stream when **either** track stops
+progressing. A radio source whose cover art decodes twice and then freezes
+arms the video watchdog, and the player reconnects every ten seconds
+while the audio plays perfectly well. The app knows the stream is
+audio-only (the attached-picture rule in `media_type.py`), but the player
+is not told: `main.py` passes `video_visible` and nothing else. The fix is
+to hand the media hint to the player, so an audio-only source never arms
+the video watchdog.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
