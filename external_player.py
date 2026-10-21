@@ -63,9 +63,16 @@ class ExternalPlayerLauncher:
         if subtitle_manager is not None and MpvSubtitleAdapter is not None:
             resolved = self._resolve_player_name(player_name, custom_path)
             if resolved == "MPV":
-                if self._launch_mpv_subtitled(url, subtitle_manager, subtitle_state_cb, custom_path):
-                    return True, ""
-                LOG.info("MPV subtitle adapter unavailable; plain handoff instead")
+                # The adapter's handshake (connect + version) takes as long as
+                # MPV answers, and it used to run on the GUI thread: pressing
+                # Enter on a channel froze the window - and silenced the
+                # screen reader - for the whole handshake. The launch happens on
+                # a worker now; the plain handoff is its fallback, so
+                # playback is never blocked.
+                self._launch_mpv_subtitled_async(url, subtitle_manager,
+                                                subtitle_state_cb, custom_path,
+                                                player_name)
+                return True, ""
 
         # If using mpv, try to reuse an existing instance via IPC first.
         if player_name == "MPV":
@@ -178,6 +185,34 @@ class ExternalPlayerLauncher:
         if system == "Darwin":
             return None  # no bundled macOS path known; keep honest
         return None
+
+    def _launch_mpv_subtitled_async(self, url, manager, state_cb=None,
+                                    custom_path: str = "", player_name: str = "MPV") -> None:
+        """Start MPV behind the subtitle adapter on a worker thread.
+
+        The caller returns as soon as the player is asked to start; the
+        adapter's handshake and, if it cannot attach, the plain MPV handoff
+        happen here.
+        """
+
+        def worker():
+            try:
+                if self._launch_mpv_subtitled(url, manager, state_cb, custom_path):
+                    return
+            except Exception:
+                LOG.warning("MPV subtitle adapter launch failed", exc_info=True)
+            LOG.info("MPV subtitle adapter unavailable; plain handoff instead")
+            try:
+                # The launch that queued this worker already used the
+                # debounce, so the fallback has to be allowed through.
+                with self._launch_guard_lock:
+                    self._last_launch_ts = 0.0
+                    self._last_launch_key = None
+                self.launch(player_name, url, custom_path)
+            except Exception:
+                LOG.warning("MPV plain handoff failed", exc_info=True)
+
+        threading.Thread(target=worker, name="mpv-adapter-launch", daemon=True).start()
 
     def _launch_mpv_subtitled(self, url, manager, state_cb=None, custom_path: str = "") -> bool:
         """Launch our own MPV behind the subtitle-text session adapter."""
