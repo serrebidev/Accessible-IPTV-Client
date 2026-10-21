@@ -148,6 +148,23 @@ parameter at 0, so the helper read the *Idle* process (PID 0) instead of
 the app. The parameter is named to match its call sites now, and the
 reused-PID guard compares the process's start time with the helper's.
 
+## Seventh pass: the scheduler and the caster
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `dvr.py`, `main.py` | starting a recording ran inside the scheduler tick | the tick could not run while it did: a recording that came due started late, and one whose window passed was marked missed and never recorded - the same class the fifth pass removed from the series scan |
+| SEVERE | `casting.py` | the AirPlay runner reopened a live source without looking at ffmpeg's exit code | a cast to a source that failed (a 403 from the provider) reported success, and ffmpeg was respawned every second for good, holding the provider's stream slot |
+
+The start now claims the job and hands the blocking work to a worker, so
+the tick keeps running; the job is claimed before the worker starts, so a
+second tick cannot start it twice, and a cancel during the start is still
+caught by the check that stops the abandoned recording.
+
+The AirPlay runner now reads ffmpeg's exit code before it reopens. A clean
+end is a drop and is reopened at the live edge; an error exit is a source
+that failed and ends the cast. A source that ends again straight away was
+never working, so a few of those end it too.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
