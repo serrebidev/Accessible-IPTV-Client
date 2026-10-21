@@ -522,6 +522,7 @@ class TestPlaybackHealthWatchdog:
             media=media,
             _current_stream_kind="live",
             _video_visible=video_visible,
+            _audio_only=False,
             _has_seen_playing=True,
             _play_start_monotonic=1.0,
             _av_last_stats=None,
@@ -603,6 +604,24 @@ class TestPlaybackHealthWatchdog:
 
         assert frame.restarts == []
         assert frame._av_video_progress_samples == 0
+
+    def test_an_audio_only_source_ignores_its_cover_art(self):
+        """A radio station with cover art is not a frozen video.
+
+        The app knows the source is audio-only; without that, a still cover
+        that decodes twice and then freezes arms the video watchdog, and the
+        stream is restarted every ten seconds while the audio plays well.
+        """
+        frame = self._frame()
+        frame._audio_only = True
+        self._sample(frame, 20.0, (1000, 100, 100, 100, 100))
+        self._sample(frame, 20.5, (1100, 110, 110, 110, 110))
+        self._sample(frame, 21.0, (1200, 120, 120, 120, 120))
+        # The video freezes, the audio keeps going.
+        self._sample(frame, 25.0, (1300, 120, 120, 130, 130))
+        self._sample(frame, 31.1, (1400, 120, 120, 140, 140))
+
+        assert frame.restarts == []
 
     def test_position_watchdog_remains_fallback_when_stats_unavailable(self):
         frame = self._frame()

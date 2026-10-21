@@ -9126,6 +9126,12 @@ class IPTVClient(wx.Frame):
                     video_visible=show_internal_player,
                     focus_controls=focus_player,
                     dispatcharr=bool((channel or {}).get("dispatcharr")),
+                    # A radio station may carry cover art. The player has to
+                    # know the media is audio-only, or its still video track
+                    # arms the video watchdog and restarts the stream every
+                    # ten seconds while the audio plays perfectly well.
+                    audio_only=(media_type.channel_media_from_metadata(channel or {})
+                                == media_type.MEDIA_AUDIO),
                 )
                 announce = getattr(frame, "_update_status_label", None)
                 if callable(announce):

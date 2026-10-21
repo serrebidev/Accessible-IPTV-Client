@@ -339,6 +339,11 @@ class InternalPlayerFrame(wx.Frame):
         # Whether the stream now playing was started with video. Reconnects
         # inherit it so a background channel never pops a video window open.
         self._video_visible = True
+        # An audio-only source (a radio station) may carry cover art. Its
+        # video track is not the media, so it must not arm the video
+        # watchdog: a still cover that decodes twice and then freezes would
+        # restart the stream every ten seconds while the audio plays well.
+        self._audio_only = False
         self._audio_track_label = ""
         self._audio_reapply_pending = False
         # The track the user last chose by hand (menu, choice control, or cycle
@@ -673,6 +678,7 @@ class InternalPlayerFrame(wx.Frame):
         video_visible: bool = True,
         focus_controls: bool = True,
         dispatcharr: bool = False,
+        audio_only: bool = False,
     ) -> None:
         """Start playback of the given URL with buffering and recovery hooks.
 
@@ -719,6 +725,7 @@ class InternalPlayerFrame(wx.Frame):
             self._first_play_request_ts = time.monotonic()
             self._played_since_request = False
             self._video_visible = bool(video_visible)
+            self._audio_only = bool(audio_only)
             self._dispatcharr = bool(dispatcharr)
             self._begin_new_stream_audio_state()
             # Retry adjustments belong to this stream, not every later channel.
@@ -1660,6 +1667,7 @@ class InternalPlayerFrame(wx.Frame):
 
         video_armed = bool(
             self._video_visible
+            and not self._audio_only
             and self._av_video_progress_samples >= self._av_min_progress_samples
         )
         audio_armed = self._av_audio_progress_samples >= self._av_min_progress_samples
