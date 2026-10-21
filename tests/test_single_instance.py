@@ -1,34 +1,41 @@
 import os
 import threading
 import time
-import uuid
 
 import pytest
 
 import single_instance
 
 
-def _name():
-    # A private mutex per test, so a running copy of the app cannot interfere.
-    return "Local\\AccessibleIPTVClient-test-" + uuid.uuid4().hex
-
-
 def test_second_copy_is_refused_while_the_first_holds_the_guard(tmp_path):
-    name = _name()
-    first = single_instance.acquire(str(tmp_path), name)
+    first = single_instance.acquire(str(tmp_path))
     assert first is not None
     try:
-        assert single_instance.acquire(str(tmp_path), name) is None
+        assert single_instance.acquire(str(tmp_path)) is None
     finally:
         first.release()
-    again = single_instance.acquire(str(tmp_path), name)
+    again = single_instance.acquire(str(tmp_path))
     assert again is not None, "the guard must be free once the first copy lets go"
     again.release()
 
 
+def test_the_guard_is_per_user_not_per_session(tmp_path):
+    """The lock lives in the config directory, so it is shared by every session.
+
+    A named mutex in the session namespace gave the console and an RDP session
+    of the same account a copy each, and the two copies then shared one config
+    directory, one EPG database and one log.
+    """
+    first = single_instance.acquire(str(tmp_path))
+    try:
+        assert first is not None
+        assert (tmp_path / "instance.lock").exists()
+    finally:
+        first.release()
+
+
 def test_hand_over_reports_shown_once_the_running_copy_takes_the_request(tmp_path):
-    name = _name()
-    first = single_instance.acquire(str(tmp_path), name)
+    first = single_instance.acquire(str(tmp_path))
     try:
         def running_copy():
             # The running copy's timer, compressed.
@@ -40,7 +47,7 @@ def test_hand_over_reports_shown_once_the_running_copy_takes_the_request(tmp_pat
 
         watcher = threading.Thread(target=running_copy)
         watcher.start()
-        assert single_instance.hand_over(str(tmp_path), timeout=5, poll=0.05, name=name) == "shown"
+        assert single_instance.hand_over(str(tmp_path), timeout=5, poll=0.05) == "shown"
         watcher.join()
     finally:
         first.release()
@@ -48,21 +55,18 @@ def test_hand_over_reports_shown_once_the_running_copy_takes_the_request(tmp_pat
 
 def test_hand_over_runs_after_all_when_the_other_copy_exits(tmp_path):
     """A copy that was closing must not leave the user with nothing running."""
-    name = _name()
-    first = single_instance.acquire(str(tmp_path), name)
+    first = single_instance.acquire(str(tmp_path))
     threading.Timer(0.3, first.release).start()
-    outcome = single_instance.hand_over(str(tmp_path), timeout=5, poll=0.05, name=name)
+    outcome = single_instance.hand_over(str(tmp_path), timeout=5, poll=0.05)
     assert isinstance(outcome, single_instance.InstanceGuard)
     assert not os.path.exists(tmp_path / single_instance.SHOW_REQUEST_FILE)
     outcome.release()
 
 
 def test_hand_over_gives_up_on_a_copy_that_never_answers(tmp_path):
-    name = _name()
-    first = single_instance.acquire(str(tmp_path), name)
+    first = single_instance.acquire(str(tmp_path))
     try:
-        assert single_instance.hand_over(str(tmp_path), timeout=0.4, poll=0.05,
-                                         name=name) == "unresponsive"
+        assert single_instance.hand_over(str(tmp_path), timeout=0.4, poll=0.05) == "unresponsive"
         assert not os.path.exists(tmp_path / single_instance.SHOW_REQUEST_FILE)
     finally:
         first.release()

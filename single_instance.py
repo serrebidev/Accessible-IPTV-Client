@@ -30,8 +30,7 @@ HANDED_OVER_EXIT_CODE = 12
 
 LOG = logging.getLogger(__name__)
 
-_MUTEX_NAME = "Local\\AccessibleIPTVClient-single-instance"
-_ERROR_ALREADY_EXISTS = 183
+_LOCK_FILE_NAME = "instance.lock"
 
 
 class InstanceGuard:
@@ -42,10 +41,11 @@ class InstanceGuard:
         self._lock_file = lock_file
 
     def release(self) -> None:
-        if self._handle is not None and sys.platform == "win32":
-            import ctypes
-
-            ctypes.windll.kernel32.CloseHandle(self._handle)
+        if self._handle is not None:
+            try:
+                self._handle.close()
+            except OSError:
+                LOG.debug("InstanceGuard.release: close failed", exc_info=True)
             self._handle = None
         if self._lock_file is not None:
             try:
@@ -55,28 +55,35 @@ class InstanceGuard:
             self._lock_file = None
 
 
-def acquire(config_dir: str, name: str = _MUTEX_NAME) -> Optional[InstanceGuard]:
-    """The guard for this process, or None when another copy already holds it."""
-    if sys.platform == "win32":
-        import ctypes
-        from ctypes import wintypes
+def acquire(config_dir: str) -> Optional[InstanceGuard]:
+    """The guard for this process, or None when another copy already holds it.
 
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        create = kernel32.CreateMutexW
-        create.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
-        create.restype = wintypes.HANDLE
-        handle = create(None, False, name)
-        if not handle:
-            # Cannot tell: run rather than refuse to start at all.
-            return InstanceGuard()
-        if ctypes.get_last_error() == _ERROR_ALREADY_EXISTS:
-            kernel32.CloseHandle(handle)
+    The lock is a file in the config directory, not a named mutex: a
+    ``Local\\`` mutex lives in the Terminal Services session namespace, so the
+    same account in the console and in an RDP session each got their own copy,
+    and two copies then shared one config directory, one EPG database and one
+    log - the duplicate scheduled recordings and the 403s the guard exists to
+    prevent.
+    """
+    os.makedirs(config_dir, exist_ok=True)
+    lock_path = os.path.join(config_dir, _LOCK_FILE_NAME)
+    if sys.platform == "win32":
+        import msvcrt
+
+        lock_file = open(lock_path, "a+")
+        try:
+            # One byte, locked for the life of the process; the OS releases
+            # it when the process dies.
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            lock_file.close()
             return None
-        return InstanceGuard(handle=handle)
+        return InstanceGuard(lock_file=lock_file)
+
     import fcntl
 
-    os.makedirs(config_dir, exist_ok=True)
-    lock_file = open(os.path.join(config_dir, "instance.lock"), "a+")
+    lock_file = open(lock_path, "a+")
     try:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -122,8 +129,7 @@ def clear_show_request(config_dir: str) -> None:
     take_show_request(config_dir)
 
 
-def hand_over(config_dir: str, timeout: float = 15.0, poll: float = 0.25,
-              name: str = _MUTEX_NAME):
+def hand_over(config_dir: str, timeout: float = 15.0, poll: float = 0.25):
     """Second launch: pass the request on and wait for the answer.
 
     Returns ``"shown"`` once the running copy took the request, an
@@ -135,7 +141,7 @@ def hand_over(config_dir: str, timeout: float = 15.0, poll: float = 0.25,
     while time.monotonic() < deadline:
         if not os.path.exists(_request_path(config_dir)):
             return "shown"
-        guard = acquire(config_dir, name)
+        guard = acquire(config_dir)
         if guard is not None:
             clear_show_request(config_dir)
             return guard
