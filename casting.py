@@ -60,10 +60,6 @@ class CastError(Exception):
     """Casting failed; the message says why."""
 
 
-class DeviceNotFoundError(CastError):
-    pass
-
-
 class ConnectionError(CastError):  # noqa: A001 - kept for existing callers
     pass
 
