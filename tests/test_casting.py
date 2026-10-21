@@ -128,6 +128,11 @@ def upstream():
     finally:
         server.shutdown()
         server.server_close()
+        # The handler threads keep the connection sockets; without this the
+        # sockets are only released when the garbage collector runs.
+        for thread in list(threading.enumerate()):
+            if thread.daemon and thread is not threading.current_thread():
+                thread.join(timeout=1)
 
 
 def test_gateway_fetches_with_the_channel_headers(local_proxy, upstream):
