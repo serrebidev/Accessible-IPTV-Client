@@ -35,10 +35,10 @@ LOG = logging.getLogger(__name__)
 _IS_WINDOWS = platform.system() == "Windows"
 
 # Timeouts / pacing.
-CONNECT_TIMEOUT_S = 5.0
+CONNECT_TIMEOUT_S = 1.5
 CONNECT_POLL_S = 0.1
 READ_POLL_S = 0.05
-REQUEST_TIMEOUT_S = 4.0
+REQUEST_TIMEOUT_S = 1.0
 
 # observe_property ids.
 _OBS_SUB_TEXT = 2

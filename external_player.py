@@ -47,7 +47,11 @@ class ExternalPlayerLauncher:
         """
         # Guard against accidental double-invocation of the same stream.
         with self._launch_guard_lock:
-            now = time.time()
+            # A monotonic clock: the wall clock can step backwards (a manual
+            # change, an NTP step, a VM restore), and a negative delta would
+            # leave the debounce permanently open - the player would refuse to
+            # start at all until the app was restarted.
+            now = time.monotonic()
             # Same stream in the same player only: switching players is a new playback.
             key = (player_name, custom_path, url)
             if (now - self._last_launch_ts) < 0.75 and self._last_launch_key == key:

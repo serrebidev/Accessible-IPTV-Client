@@ -7,8 +7,24 @@ import time
 
 import pytest
 
-from mpv_subtitle_adapter import MpvSubtitleAdapter, _session_endpoint
+from mpv_subtitle_adapter import (
+    CONNECT_TIMEOUT_S,
+    REQUEST_TIMEOUT_S,
+    MpvSubtitleAdapter,
+    _session_endpoint,
+)
 from subtitle_speech import SubtitleSpeechManager
+
+
+def test_the_handshake_is_bounded():
+    """The launch runs on the GUI thread.
+
+    The adapter's connect and version request used to allow five and four
+    seconds, so a slow or missing MPV froze the whole window - and silenced
+    the screen reader - for as long as the handshake took.
+    """
+    assert CONNECT_TIMEOUT_S <= 2.0
+    assert REQUEST_TIMEOUT_S <= 2.0
 
 
 def _adapter():
