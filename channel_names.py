@@ -160,10 +160,17 @@ def _group_synonym_patterns():
     """
     global _GROUP_SYNONYM_PATTERNS_CACHE
     if _GROUP_SYNONYM_PATTERNS_CACHE is None:
-        _GROUP_SYNONYM_PATTERNS_CACHE = [
-            (tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in variants) + r')\b'))
-            for tag, variants in group_synonyms().items()
-        ]
+        patterns = []
+        for tag, variants in group_synonyms().items():
+            # The bare code ("at", "no", "is", "de") is matched only as a
+            # leading or parenthesised code. As a free word it hits ordinary
+            # English: "News at Ten" is not Austrian and "No Limits" is not
+            # Norwegian.
+            words = [v for v in variants if v != tag]
+            if not words:
+                continue
+            patterns.append((tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in words) + r')\b')))
+        _GROUP_SYNONYM_PATTERNS_CACHE = patterns
     return _GROUP_SYNONYM_PATTERNS_CACHE
 
 
@@ -197,9 +204,21 @@ def strip_noise_words(text: str) -> str:
     text = _NOISE_SEP_RE.sub(' ', text)
     return text.strip()
 
+def _looks_like_a_code(original: str) -> bool:
+    """Whether the title's first token is written the way a code is.
+
+    Providers name a channel "AT Sports 1" and "DE Film 2", in capitals. A
+    title that starts with an ordinary word - "No Limits", "By Example" - is
+    not a country code, whatever the two letters happen to be.
+    """
+    token = str(original or "").strip().split(" ", 1)[0]
+    return len(token) >= 2 and token.isupper()
+
+
 def extract_group(title: str) -> str:
     if not title:
         return ''
+    original = title
     title = title.lower()
     for norm_tag, rx in _group_synonym_patterns():
         if rx.search(title):
@@ -208,7 +227,7 @@ def extract_group(title: str) -> str:
     m = _LEADING_CODE_RE.match(title)
     if m:
         code = m.group(1)
-        if code in syn:
+        if code in syn and _looks_like_a_code(original):
             return code
     m = _PAREN_CODE_RE.search(title)
     if m:
