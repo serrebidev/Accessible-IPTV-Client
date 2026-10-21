@@ -223,7 +223,7 @@ answering its own IPC while it tries to open a window it cannot.
 The converter is replaced when the headers change and kept when they do
 not, so re-issuing the same URL does not restart the transcode.
 
-### The watchdog and a still video track
+## Twelfth pass: the watchdog and a still video track
 
 The A/V watchdog restarts the stream when **either** track stops
 progressing. A radio source whose cover art decodes twice and then freezes
@@ -233,6 +233,61 @@ audio-only (the attached-picture rule in `media_type.py`), but the player
 was not told: `main.py` passed `video_visible` and nothing else. The media
 hint now reaches the player, and an audio-only source never arms the video
 watchdog.
+
+## Thirteenth pass: the scheduler, the guide and the playlist
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `dvr.py` | the start-failure handler wrote "failed" over a job the user had canceled, and queued its next daily occurrence | a recording canceled while it was starting came back the next day, and the user was told it had failed |
+| SEVERE | `dvr.py` | the schedule write shared the try block of the start, so a schedule that could not be written marked the running recording as failed | ffmpeg kept recording past the end of the window, and the provider's one stream slot stayed held for good |
+| SEVERE | `main.py`, `playlist.py` | an import in which every source failed reported success | the box said the programme guide was up to date, and the run was recorded as fresh, so the automatic import skipped its next run |
+| SEVERE | `main.py` | a playlist refresh that failed dropped the source's channels and announced "Playlist refreshed" | one provider that was briefly down took the user's playlist with it, with nothing said about it |
+| MINOR | `shortcuts.py` | a shortcut read from the config was used without the check the app applies when it writes one | a hand-edited bare key in the config swallowed ordinary typing in the search box |
+
+### A canceled recording that came back
+
+Starting a recording resolves the stream URL and probes the channel, which
+takes seconds. A cancel in that window found no recording to stop, so the job
+stayed "recording" until the start itself failed - and the failure handler
+wrote "failed" over the cancellation and queued the next daily occurrence.
+The `mark_finished` path already kept a canceled job canceled; the start
+path did not, and it does now.
+
+### A schedule that cannot be written
+
+The DVR schedule is a convenience: the jobs live in memory and the app keeps
+working without the file. A write that fails (a full disk, a locked file)
+must therefore never change a job's state. It did: the write that records
+the running recording's id failed, the failure handler marked the job
+"failed" and cleared the id, and the scheduler - which only stops jobs that
+are "recording" - never stopped it. The schedule writes are now guarded, and
+a write that fails is logged instead of changing anything.
+
+### A guide that loaded nothing
+
+Every EPG source fails on its own and the importer logs it and moves on, so
+the import itself never fails. The run used to report success anyway: the
+box said the guide was up to date and the run was recorded as a fresh
+import, which is what suppresses the next automatic one. The importer now
+returns how many guides came in, and a run that imported nothing is a
+failure.
+
+### A playlist that vanished
+
+A source that could not be fetched contributed no channels, so its channels
+were gone from the list - and the refresh still announced "Playlist
+refreshed". A failed source now keeps the channels and the provider session
+it had, and the failure is announced instead. A playlist that is one refresh
+out of date is better than a playlist that is gone.
+
+### Two guides, one channel id
+
+Two guides that list the same channel id under different names overwrite
+each other's schedule: the importer deletes a channel's programmes when the
+stored name differs, which is how a renumbered channel loses the old
+schedule. The last imported source wins, so that id's guide is always one
+provider's. Telling the two apart needs the source recorded per programme,
+which the database does not do.
 
 ## Checked and not a defect
 
