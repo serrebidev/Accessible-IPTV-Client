@@ -88,16 +88,10 @@ Every fix has a regression test that fails without it.
 
 ## Still open
 
-- The MPV adapter launch still runs on the GUI thread - the handshake is
-  bounded to 2.5 s now, but the proper fix is to start the player on a worker
-  and hand the plain MPV handoff to that worker when the adapter cannot
-  attach. It touches the launch path, so it wants its own change.
 - The MPV IPC endpoint used to reuse a running instance is a fixed, machine-wide
   named pipe, and the URL it carries the provider's user and password - in the
-  process list and in the player's own media history.
-- The single-instance guard uses a `Local\` mutex on Windows, which is per
-  Terminal Services session: the same account in the console and in an RDP
-  session gets two copies sharing one config directory, EPG database and log.
+  process list and in the player's own media history. The adapter's own
+  endpoint is per session; this one is not.
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
   application can still veto it afterwards, and the app has already closed by
   then.
