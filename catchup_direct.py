@@ -166,6 +166,31 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _CREDENTIAL_HEADERS = ("authorization", "cookie", "proxy-authorization", "x-api-key")
 
 
+def _same_host(base_url: str, target_url: str) -> bool:
+    """Whether two URLs name the same host.
+
+    Host names are case-insensitive - "Provider.Example" and
+    "provider.example" are one host - and the port is part of the host: a
+    redirect to another port is another service.
+    """
+    def _host(url: str) -> Tuple[str, Optional[int]]:
+        try:
+            parts = urllib.parse.urlsplit(url)
+            port = parts.port
+        except ValueError:
+            return "", None
+        scheme = parts.scheme.lower()
+        return (parts.hostname or "").lower(), port or {"http": 80, "https": 443}.get(scheme)
+
+    base_host, base_port = _host(base_url)
+    target_host, target_port = _host(target_url)
+    if not base_host or not target_host:
+        # A URL that cannot be parsed: send the credentials, so a malformed
+        # URL does not break the request.
+        return True
+    return base_host == target_host and base_port == target_port
+
+
 def _headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
                       target_url: str) -> Dict[str, object]:
     """The channel's headers, without the credentials for another host.
@@ -176,12 +201,7 @@ def _headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
     clean = dict(headers or {})
     if not clean:
         return clean
-    try:
-        same = (urllib.parse.urlsplit(base_url).netloc ==
-                urllib.parse.urlsplit(target_url).netloc)
-    except ValueError:
-        same = True
-    if same:
+    if _same_host(base_url, target_url):
         return clean
     return {key: value for key, value in clean.items()
             if str(key).lower() not in _CREDENTIAL_HEADERS}

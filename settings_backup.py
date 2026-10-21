@@ -45,17 +45,26 @@ def export_settings(path: str, config: dict, password: str) -> None:
 def import_settings(path: str, password: str) -> dict:
     if os.path.getsize(path) > _MAX_BACKUP_BYTES:
         raise ValueError(_("Backup file is too large."))
-    with open(path, "r", encoding="utf-8") as source:
-        data = json.load(source)
+    try:
+        with open(path, "r", encoding="utf-8") as source:
+            data = json.load(source)
+    except (OSError, ValueError) as err:
+        # A file that is not a backup at all, or not even JSON: the parser's
+        # own message ("Expecting value: line 1 column 1") tells the user
+        # nothing about what to do next.
+        raise ValueError(_("Not an Accessible IPTV settings backup.")) from err
     if not isinstance(data, dict) or data.get("format") != "accessible-iptv-settings-v1":
         raise ValueError(_("Not an Accessible IPTV settings backup."))
     try:
         salt = base64.b64decode(data["salt"], validate=True)
-        if len(salt) != 16:
-            raise ValueError(_("Invalid backup salt."))
+    except (KeyError, ValueError) as err:
+        raise ValueError(_("Wrong password or damaged backup.")) from err
+    if len(salt) != 16:
+        raise ValueError(_("Invalid backup salt."))
+    try:
         contents = _cipher(password, salt).decrypt(data["data"].encode("ascii"))
         config = json.loads(contents)
-    except (InvalidToken, KeyError, UnicodeError) as err:
+    except (InvalidToken, KeyError, UnicodeError, ValueError) as err:
         raise ValueError(_("Wrong password or damaged backup.")) from err
     if not isinstance(config, dict) or not isinstance(config.get("playlists"), list) or not isinstance(config.get("epgs"), list):
         raise ValueError(_("Backup settings are invalid."))

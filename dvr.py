@@ -55,6 +55,19 @@ def iso_from_ts(ts: float) -> str:
     return datetime.datetime.fromtimestamp(float(ts), datetime.timezone.utc).isoformat()
 
 
+def _number(value, default: float = 0.0) -> float:
+    """A number out of the schedule file, or ``default`` when it is not one.
+
+    The file is written by the app, but it can be hand-edited or left
+    half-written, and one bad value must not take the scheduler - or the
+    startup that loads it - down with it.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def program_title(program: Dict[str, str]) -> str:
     return (
         program.get("show_title")
@@ -189,7 +202,7 @@ class DVRScheduler:
                     # stop time passes); only call it failed when the window has
                     # already closed and there is nothing left to record.
                     job["recording_id"] = None
-                    stop_ts = float(job.get("stop_ts") or 0)
+                    stop_ts = _number(job.get("stop_ts"))
                     if stop_ts and float(self.clock()) >= stop_ts:
                         job["status"] = STATUS_FAILED
                         job["message"] = job.get("message") or "Interrupted by application restart."
@@ -206,7 +219,7 @@ class DVRScheduler:
             with self._lock:
                 # Serialize while holding the lock: the job dicts are live and
                 # another thread may be changing them.
-                jobs = sorted(self._jobs.values(), key=lambda j: float(j.get("start_ts") or 0))
+                jobs = sorted(self._jobs.values(), key=lambda j: _number(j.get("start_ts")))
                 text = json.dumps({"version": 1, "jobs": jobs}, indent=2, sort_keys=True)
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
@@ -241,7 +254,7 @@ class DVRScheduler:
             jobs = list(self._jobs.values())
         if not include_done:
             jobs = [j for j in jobs if j.get("status") not in DONE_STATUSES]
-        return sorted(jobs, key=lambda j: float(j.get("start_ts") or 0))
+        return sorted(jobs, key=lambda j: _number(j.get("start_ts")))
 
     def get_job(self, job_id: str) -> Optional[Dict[str, object]]:
         with self._lock:
@@ -338,8 +351,8 @@ class DVRScheduler:
         for job in self.list_jobs(include_done=False):
             status = job.get("status")
             job_id = str(job.get("id") or "")
-            start_ts = float(job.get("start_ts") or 0)
-            stop_ts = float(job.get("stop_ts") or 0)
+            start_ts = _number(job.get("start_ts"))
+            stop_ts = _number(job.get("stop_ts"))
             if status == STATUS_SCHEDULED:
                 if stop_ts and now >= stop_ts:
                     self._set_status(job_id, STATUS_MISSED, "Scheduled recording was missed.")
@@ -470,19 +483,19 @@ class DVRScheduler:
         next_job["id"] = uuid.uuid4().hex
         now = float(self.clock())
         for field in ("start_ts", "stop_ts"):
-            next_job[field] = float(job[field])
-        while float(next_job["stop_ts"]) <= now:
+            next_job[field] = _number(job.get(field))
+        while _number(next_job["stop_ts"]) <= now:
             for field in ("start_ts", "stop_ts"):
-                local = datetime.datetime.fromtimestamp(float(next_job[field]))
+                local = datetime.datetime.fromtimestamp(_number(next_job[field]))
                 next_job[field] = (local + datetime.timedelta(days=days)).timestamp()
         # A completed occurrence can finish before its planned stop; its next
         # occurrence still starts on the following day/week, never now.
-        if float(next_job["start_ts"]) <= float(job["start_ts"]):
+        if _number(next_job["start_ts"]) <= _number(job.get("start_ts")):
             for field in ("start_ts", "stop_ts"):
-                local = datetime.datetime.fromtimestamp(float(next_job[field]))
+                local = datetime.datetime.fromtimestamp(_number(next_job[field]))
                 next_job[field] = (local + datetime.timedelta(days=days)).timestamp()
-        next_job["start_at"] = iso_from_ts(float(next_job["start_ts"]) + 60 * int(job.get("pre_padding_minutes") or 0))
-        next_job["end_at"] = iso_from_ts(float(next_job["stop_ts"]) - 60 * int(job.get("post_padding_minutes") or 0))
+        next_job["start_at"] = iso_from_ts(_number(next_job["start_ts"]) + 60 * int(_number(job.get("pre_padding_minutes"))))
+        next_job["end_at"] = iso_from_ts(_number(next_job["stop_ts"]) - 60 * int(_number(job.get("post_padding_minutes"))))
         next_job.update(status=STATUS_SCHEDULED, recording_id=None, output_path="",
                         message="", created_at=iso_from_ts(now))
         self._jobs[str(next_job["id"])] = next_job

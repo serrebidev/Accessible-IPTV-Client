@@ -188,6 +188,26 @@ def test_credentials_do_not_follow_a_redirect_to_another_host():
     assert other["User-Agent"] == "ChannelUA"
 
 
+def test_the_credentials_survive_a_host_name_in_another_case():
+    """Host names are case-insensitive.
+
+    The comparison was on the raw netloc, so a provider whose name differed
+    only in case lost the channel's cookie and answered 403.
+    """
+    headers = {"Cookie": "session=secret"}
+    same = catchup_direct._headers_for_host(
+        headers, "https://Provider.Example/catchup", "https://provider.example/live.ts")
+    assert same["Cookie"] == "session=secret"
+    # Another port is another service.
+    other_port = catchup_direct._headers_for_host(
+        headers, "https://provider.example/catchup", "https://provider.example:8443/live.ts")
+    assert "Cookie" not in other_port
+    # Another host is another host.
+    other = catchup_direct._headers_for_host(
+        headers, "https://provider.example/catchup", "https://cdn.example.test/live.ts")
+    assert "Cookie" not in other
+
+
 def test_the_probe_never_follows_a_redirect():
     """Following one opened the programme's stream and held the account's slot.
 

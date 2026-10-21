@@ -165,3 +165,35 @@ def test_concurrent_saves_do_not_collide(tmp_path, monkeypatch):
     assert errors == []
     assert json.loads(target.read_text(encoding="utf-8"))["n"] in (0, 1, 2, 3)
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_missing_probe_file_does_not_make_the_folder_look_read_only(tmp_path, monkeypatch):
+    """Another writer may have removed the probe file already.
+
+    The probe used one fixed name, so two writers (the GUI thread and the
+    playlist worker) fought over it and the loser decided the folder was not
+    writable - which sent the config to a different folder.
+    """
+    monkeypatch.setattr(options.os, "remove",
+                        lambda path: (_ for _ in ()).throw(FileNotFoundError(path)))
+    assert options._is_writable_dir(str(tmp_path)) is True
+
+
+def test_a_failed_config_write_leaves_no_temp_file(tmp_path, monkeypatch):
+    """A config that cannot be serialized must not leave a temp file behind.
+
+    The write failed, so the temp file was junk; one was dropped per failed
+    save and the directory filled up with them.
+    """
+    target = tmp_path / "iptvclient.conf"
+    monkeypatch.setattr(options, "get_config_write_target", lambda: str(target))
+    monkeypatch.setattr(options, "get_config_read_candidates", lambda: [str(target)])
+
+    options.save_config({"good": 1})
+    assert not list(tmp_path.glob("*.tmp"))
+
+    options.save_config({"bad": {1, 2, 3}})  # a set is not JSON
+
+    assert not list(tmp_path.glob("*.tmp")), "the failed write left a temp file"
+    assert json.loads(target.read_text(encoding="utf-8")).get("good") == 1, \
+        "the failed write must not damage the config that was there"

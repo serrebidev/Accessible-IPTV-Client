@@ -107,10 +107,18 @@ def _is_writable_dir(path: str) -> bool:
     try:
         if not os.path.isdir(path):
             return False
-        testfile = os.path.join(path, ".iptvclient_write_test.tmp")
-        with open(testfile, "w", encoding="utf-8") as f:
-            f.write("test")
-        os.remove(testfile)
+        # A fixed name collides: two writers (the GUI thread and the
+        # playlist worker) probing the same folder at the same time, and the
+        # loser failed to remove its own test file and decided the folder was
+        # not writable - which sent the config to a different folder.
+        handle, testfile = tempfile.mkstemp(
+            dir=path, prefix=".iptvclient_write_test.", suffix=".tmp")
+        os.close(handle)
+        try:
+            os.remove(testfile)
+        except OSError:
+            # Someone else removed it first; the folder is still writable.
+            LOG.debug("save probe file was already gone: %s", testfile, exc_info=True)
         return True
     except Exception:
         return False
@@ -567,10 +575,19 @@ def save_config(cfg: Dict):
         # gets a unique name in the same directory, so the replace stays atomic.
         handle, tmp_path = tempfile.mkstemp(
             dir=dir_path or ".", prefix=os.path.basename(path) + ".", suffix=".tmp")
-        with os.fdopen(handle, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+        except Exception:
+            # The write failed, so the temp file is junk: leaving it behind
+            # dropped one file per failed save.
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                LOG.debug("save_config: ignored exception", exc_info=True)
+            raise
         try:
             os.replace(tmp_path, path)
         except Exception:

@@ -1,5 +1,6 @@
 import datetime
 import http.server
+import json
 import os
 import socketserver
 import subprocess
@@ -151,6 +152,28 @@ def test_scheduler_persists_jobs_and_resets_interrupted_recording(tmp_path):
     loaded = reloaded.get_job("job1")
     assert loaded["status"] == dvr.STATUS_SCHEDULED
     assert loaded["recording_id"] is None
+
+
+def test_a_schedule_file_with_a_bad_timestamp_does_not_break_startup(tmp_path):
+    """The schedule file can be hand-edited or left half-written.
+
+    One bad value must not take the scheduler - or the startup that loads
+    it - down with it: the timestamp was read outside any try, so a
+    non-numeric stop_ts raised out of the constructor.
+    """
+    schedule_path = tmp_path / "schedule.json"
+    schedule_path.write_text(json.dumps({"jobs": [
+        {"id": "job1", "status": dvr.STATUS_RECORDING, "start_ts": "later",
+         "stop_ts": "soon", "recording_id": 7},
+    ]}), encoding="utf-8")
+
+    scheduler = dvr.DVRScheduler(str(schedule_path), on_start=lambda job: 1, on_stop=lambda job: None)
+
+    job = scheduler.get_job("job1")
+    assert job is not None
+    assert job["status"] == dvr.STATUS_SCHEDULED
+    # The tick must survive it too.
+    scheduler.tick()
 
 
 def test_scheduler_fails_interrupted_recording_whose_window_closed(tmp_path):

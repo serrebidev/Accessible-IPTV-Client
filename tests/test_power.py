@@ -67,8 +67,12 @@ class TestShutdownCommands:
         # The absolute path: Windows resolves the current directory before
         # System32, so a "shutdown.exe" next to the app would be executed
         # instead - with the user's privileges, while the machine powers off.
+        # The Windows directory is not always C:\, so it comes from the
+        # environment.
+        expected = os.path.join(os.environ.get("SYSTEMROOT", r"C:\Windows"),
+                                "System32", "shutdown.exe")
         assert power.shutdown_commands("Windows") == [
-            [r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
+            [expected, "/s", "/t", "0"]]
 
     def test_windows_does_not_force_apps_closed(self):
         # /f would kill whatever else the user left open without letting it save.
@@ -90,8 +94,10 @@ class TestShutdownComputer:
     def test_returns_the_command_that_worked(self):
         calls = []
         used = power.shutdown_computer(system="Windows", runner=calls.append)
-        assert calls == [[r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
-        assert used == [r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]
+        expected = os.path.join(os.environ.get("SYSTEMROOT", r"C:\Windows"),
+                                "System32", "shutdown.exe")
+        assert calls == [[expected, "/s", "/t", "0"]]
+        assert used == [expected, "/s", "/t", "0"]
 
     def test_falls_through_to_the_next_candidate(self):
         calls = []
@@ -113,3 +119,20 @@ class TestShutdownComputer:
             power.shutdown_computer(system="Windows", runner=runner)
         # The user has to be told why nothing happened.
         assert "access denied" in str(err.value)
+
+
+def test_the_shutdown_command_uses_the_windows_system_root(monkeypatch, tmp_path):
+    """Windows is not always installed on C:.
+
+    The command is an absolute path so a shutdown.exe sitting next to the app
+    is never executed instead, but a hard-coded C: broke on a machine whose
+    Windows lives on another drive.
+    """
+    root = tmp_path / "Windows"
+    monkeypatch.setenv("SYSTEMROOT", str(root))
+    monkeypatch.setenv("SystemRoot", str(root))
+
+    cmd = power.shutdown_commands("Windows")[0]
+
+    assert cmd[0] == os.path.join(str(root), "System32", "shutdown.exe")
+    assert cmd[1:] == ["/s", "/t", "0"]
