@@ -145,6 +145,45 @@ def test_new_commands_are_offered_in_the_keyboard_shortcuts_dialog():
         assert '("player", "%s"' % action in source
 
 
+def test_the_players_cue_reaches_the_speech_manager():
+    """The built-in player's cues have to reach the shared manager.
+
+    Without a cue sink the manager never saw them, so "Read current subtitle"
+    and "Review recent subtitles" always answered "No subtitle text available
+    yet." - the app's own player could not use the feature its menu offers.
+    """
+    import main as appmod
+
+    seen = []
+
+    class FakeManager:
+        def on_cue(self, text, start_ms=None, end_ms=None, source="", track="", generation=0):
+            seen.append((text, start_ms, end_ms, source))
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client._subtitle_manager = FakeManager()
+
+    appmod.IPTVClient._on_player_subtitle_cue(
+        client, "Hello", start_ms=1000, end_ms=3000, source="builtin-file")
+
+    assert seen == [("Hello", 1000, 3000, "builtin-file")]
+
+
+def test_the_builtin_player_sends_the_cue_timing():
+    """The player looked for cue.start_ms, which the cue never has.
+
+    Every cue reached the manager without a timing, so the duplicate rule
+    fell back to the wording and two consecutive lines with the same text
+    were merged - the second was never spoken.
+    """
+    import inspect
+    import internal_player
+
+    source = inspect.getsource(internal_player.InternalPlayerFrame)
+    assert "cue.start_ms" not in source
+    assert 'getattr(cue, "start", None)' in source
+
+
 def test_the_subtitle_speech_toggle_saves_the_setting(monkeypatch):
     """The toggle called a method the frame does not have.
 

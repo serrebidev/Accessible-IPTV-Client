@@ -2572,8 +2572,8 @@ class InternalPlayerFrame(wx.Frame):
             if self._on_cue_cb is not None:
                 self._on_cue_cb(
                     text=text,
-                    start_ms=cue.start_ms if hasattr(cue, 'start_ms') else None,
-                    end_ms=cue.end_ms if hasattr(cue, 'end_ms') else None,
+                    start_ms=getattr(cue, "start", None),
+                    end_ms=getattr(cue, "end", None),
                     source="builtin-file",
                     track="",
                     generation=self._subtitle_generation,

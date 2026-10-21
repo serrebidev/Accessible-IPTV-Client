@@ -8504,9 +8504,25 @@ class IPTVClient(wx.Frame):
             shortcut_config=self.config,
             speak_subtitles=self._bool_pref(self.config.get("speak_subtitles", False)),
             on_speak_subtitles=self._on_player_speak_subtitles,
+            on_cue=self._on_player_subtitle_cue,
         )
         self._internal_player_frame = frame
         return frame
+
+    def _on_player_subtitle_cue(self, text: str, start_ms=None, end_ms=None,
+                                source: str = "", track: str = "", generation: int = 0) -> None:
+        """Route a cue from the built-in player into the shared speech manager.
+
+        Without this the built-in player's cues never reached the manager, so
+        the review commands ("Read current subtitle", "Review recent
+        subtitles") always answered "No subtitle text available yet." - the
+        app's own player could not use the feature the menu offers.
+        """
+        manager = getattr(self, "_subtitle_manager", None)
+        if manager is None:
+            return
+        manager.on_cue(text=text, start_ms=start_ms, end_ms=end_ms,
+                      source=source, track=track, generation=generation)
 
     @staticmethod
     def _channel_audio_key(channel: Optional[Dict[str, str]]) -> str:
