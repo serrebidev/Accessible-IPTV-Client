@@ -102,11 +102,19 @@ def _headers_look_like_media(resp_headers) -> bool:
 
 def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
                      timeout: float = 6.0) -> bool:
-    """True when ``url`` answers like a real downloadable media file."""
+    """True when ``url`` answers like a real downloadable media file.
+
+    The probe never follows a redirect: the default opener follows one and
+    rewrites the HEAD into a GET, so a candidate that redirects was fetched
+    as media - which opened the programme's stream on the media server and
+    held the account's one stream, and the real file (and ffmpeg after it)
+    then came back 403.
+    """
     request_headers = _clean_headers(headers)
+    opener = urllib.request.build_opener(_NoRedirect, urllib.request.HTTPSHandler(context=_ssl_context()))
     try:
         req = urllib.request.Request(url, headers=request_headers, method="HEAD")
-        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
+        with opener.open(req, timeout=timeout) as resp:
             if not _headers_look_like_media(resp.headers):
                 return False
             length = resp.headers.get("Content-Length")
@@ -123,7 +131,7 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
             ranged = dict(request_headers)
             ranged["Range"] = "bytes=0-0"
             req = urllib.request.Request(url, headers=ranged)
-            with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
+            with opener.open(req, timeout=timeout) as resp:
                 return _headers_look_like_media(resp.headers)
         except urllib.error.HTTPError as err:
             # Same leak as the outer handler: close before GC reports it.
@@ -152,6 +160,31 @@ _MEDIA_SESSION_SETTLE_SECONDS = 2.5
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *_args, **_kwargs):
         return None
+
+
+# The headers that carry the account's identity.
+_CREDENTIAL_HEADERS = ("authorization", "cookie", "proxy-authorization", "x-api-key")
+
+
+def _headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
+                      target_url: str) -> Dict[str, object]:
+    """The channel's headers, without the credentials for another host.
+
+    A catch-up server can redirect anywhere, and the provider's cookie and
+    authorization must not follow it to a host the app never chose.
+    """
+    clean = dict(headers or {})
+    if not clean:
+        return clean
+    try:
+        same = (urllib.parse.urlsplit(base_url).netloc ==
+                urllib.parse.urlsplit(target_url).netloc)
+    except ValueError:
+        same = True
+    if same:
+        return clean
+    return {key: value for key, value in clean.items()
+            if str(key).lower() not in _CREDENTIAL_HEADERS}
 
 
 def _next_hop(url: str, headers: Optional[Dict[str, object]],
@@ -248,13 +281,13 @@ def direct_download_url(url: str, windows: List[Tuple[int, int]],
         return None
     tried = set()
 
-    def probe_around(base: str) -> Optional[str]:
+    def probe_around(base: str, base_headers: Dict[str, object]) -> Optional[str]:
         for utc, duration in windows:
             for candidate in candidate_direct_urls(base, utc, duration):
                 if candidate in tried or candidate == base:
                     continue
                 tried.add(candidate)
-                if probe_direct_url(candidate, headers, timeout):
+                if probe_direct_url(candidate, base_headers, timeout):
                     return candidate
         return None
 
@@ -263,17 +296,20 @@ def direct_download_url(url: str, windows: List[Tuple[int, int]],
     seen = {url}
     found = None
     for _hop in range(_MAX_REDIRECT_HOPS):
-        target, is_media = _next_hop(current, headers, timeout)
+        # A catch-up server can redirect anywhere. The provider's cookie and
+        # authorization must not follow it to a host the app never chose.
+        hop_headers = _headers_for_host(headers, url, current)
+        target, is_media = _next_hop(current, hop_headers, timeout)
         touched_media = touched_media or is_media
         if not target or target in seen:
             break
         seen.add(target)
-        found = probe_around(target)
+        found = probe_around(target, _headers_for_host(headers, url, target))
         if found:
             break
         current = target
     if not found:
-        found = probe_around(url)
+        found = probe_around(url, dict(headers or {}))
     # Verifying the file IS a request for the media (a HEAD, or a 1-byte GET
     # where HEAD is refused), so the provider holds the account's one stream
     # for a moment after it. ffmpeg starting straight after the probe was that

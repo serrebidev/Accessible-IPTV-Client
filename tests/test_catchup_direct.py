@@ -170,3 +170,33 @@ def test_media_header_check_rejects_html_fallbacks():
     assert catchup_direct._headers_look_like_media(Headers(""))
     assert not catchup_direct._headers_look_like_media(Headers("text/html"))
     assert not catchup_direct._headers_look_like_media(Headers("application/json"))
+
+
+def test_credentials_do_not_follow_a_redirect_to_another_host():
+    """A catch-up server can redirect anywhere.
+
+    The provider's cookie and authorization must not follow it to a host the
+    app never chose.
+    """
+    headers = {"Cookie": "session=secret", "Authorization": "Bearer secret",
+                "User-Agent": "ChannelUA"}
+    same = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://a.test/y")
+    assert same["Cookie"] == "session=secret"
+    other = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://b.test/y")
+    assert "Cookie" not in other
+    assert "Authorization" not in other
+    assert other["User-Agent"] == "ChannelUA"
+
+
+def test_the_probe_never_follows_a_redirect():
+    """Following one opened the programme's stream and held the account's slot.
+
+    The default opener follows a redirect and rewrites the HEAD into a GET, so
+    a candidate that redirects was fetched as media - and the real file, and
+    ffmpeg after it, then came back 403.
+    """
+    import inspect
+
+    source = inspect.getsource(catchup_direct.probe_direct_url)
+    assert "urllib.request.urlopen" not in source
+    assert "_NoRedirect" in source
