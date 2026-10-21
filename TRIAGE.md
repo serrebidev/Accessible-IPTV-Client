@@ -198,6 +198,22 @@ The codes still work where a code is meant: a leading or parenthesised
 code in capitals ("CAN TV", "(CA) News") and the spelled-out names
 ("CANADA TV", "USA News"). "Fox USA" is still American.
 
+## Tenth pass: the words, the lock and the MPV handshake
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `channel_names.py` | "car" was a strip tag, so "Car SOS" and "SOS" canonicalised to the same name | the guide of one and the playlist of the other matched to each other, and the wrong programme showed |
+| SEVERE | `playlist.py` | the import lock was reclaimed after two hours whatever the owner was doing, and the release removed whichever lock was there | a long import and a second one ran at once, and the second one deleted the first one's lock |
+| SEVERE | `mpv_subtitle_adapter.py` | the transport had no read lock, and the reader thread and a request's inline pump both read the pipe | two readers split a message between them, the JSON failed to parse and the message was lost |
+| MINOR | `main.py` | Enter on a hierarchy-only category expanded it and then pulled the focus to the channel list | a screen-reader user browsing the categories lost their place |
+| MINOR | `main.py` | the "What's on Now" dialog was not destroyed in a `try/finally` | a dialog that raised left itself allocated and parent-owned |
+| MINOR | `mpv_subtitle_adapter.py` | the version check gated the whole session, and the launch budget was 1.5 s plus 1 s | a slow mpv cost the user their subtitles entirely - the session was dropped and the plain handoff used instead |
+
+The adapter now observes before it asks anything, asks the version on a
+worker and only logs it, and gives a cold mpv more time to answer. It also
+stops forcing a window when the caller asked for no video: mpv stops
+answering its own IPC while it tries to open a window it cannot.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
