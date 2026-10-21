@@ -55,3 +55,21 @@ def test_load_falls_back_from_utf8(tmp_path):
                    for i, line in enumerate(lines))
     path.write_bytes(text.encode("cp1252"))
     assert [c.text for c in subtitle_cues.load(str(path))] == lines
+
+
+def test_load_survives_an_encoding_python_does_not_have(tmp_path, monkeypatch):
+    """chardet can name an encoding Python has no codec for (EUC-TW, ISO-2022-CN).
+
+    The lookup raised before the decode was tried, the cue thread died, and
+    the status line had already said the file loaded.
+    """
+    import chardet
+
+    class _Unknown:
+        encoding = "EUC-TW"
+
+    monkeypatch.setattr(chardet, "detect", lambda raw: _Unknown())
+    path = tmp_path / "legacy.srt"
+    path.write_bytes("1\n00:00:01,000 --> 00:00:02,500\nHello there\n".encode("cp1252"))
+
+    assert [c.text for c in subtitle_cues.load(str(path))] == ["Hello there"]

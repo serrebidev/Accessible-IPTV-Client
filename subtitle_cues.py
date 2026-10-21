@@ -6,9 +6,12 @@ parses the file it loaded itself and looks cues up against the media clock.
 
 import bisect
 import html
+import logging
 import re
 from pathlib import Path
 from typing import List, NamedTuple, Optional
+
+LOG = logging.getLogger(__name__)
 
 MAX_FILE_BYTES = 20 * 1024 * 1024
 SPEAKABLE_SUFFIXES = (".srt", ".vtt")
@@ -57,7 +60,15 @@ def load(path: str) -> List[Cue]:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
         import chardet
-        text = raw.decode(chardet.detect(raw).get("encoding") or "cp1252", errors="replace")
+
+        # chardet can name an encoding Python has no codec for (EUC-TW,
+        # ISO-2022-CN), and the lookup raises before the decode is tried.
+        encoding = chardet.detect(raw).get("encoding") or "cp1252"
+        try:
+            text = raw.decode(encoding, errors="replace")
+        except LookupError:
+            LOG.debug("subtitle_cues: unknown encoding %r, using cp1252", encoding)
+            text = raw.decode("cp1252", errors="replace")
     return parse(text)
 
 
