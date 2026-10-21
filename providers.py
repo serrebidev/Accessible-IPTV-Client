@@ -226,7 +226,10 @@ class StalkerPortalClient:
         self._portal_endpoint = self._derive_portal_endpoint()
         self._token: Optional[str] = None
         self._token_issued: float = 0.0
-        self._token_lock = threading.Lock()
+        # Reentrant: _ensure_token holds this lock across _portal_call, and
+        # that call takes it again on a 401/403. A plain Lock deadlocked
+        # there, so a rejected portal token hung the thread forever.
+        self._token_lock = threading.RLock()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 
     def _derive_portal_endpoint(self) -> str:

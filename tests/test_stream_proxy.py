@@ -19,6 +19,28 @@ from stream_proxy import (
 )
 
 
+def test_a_gateway_session_keeps_every_host_it_was_issued_for():
+    """One header set serves every URL the app issues with it.
+
+    A provider's channels share one cookie, so they share one session, and a
+    redirect the provider taught the proxy about has to survive the next URL.
+    Replacing the host set lost those hosts, and the channel's credentials
+    stopped going to them.
+    """
+    proxy = StreamProxy()
+    headers = {"Cookie": "session=secret"}
+    url = proxy.get_gateway_url("https://provider.example.test/live/one.ts", headers)
+    sid = url.split("/g/")[1].split("/")[0]
+    proxy.note_gateway_host(sid, "cdn.example.test")
+
+    proxy.get_gateway_url("https://second.example.test/live/two.ts", headers)
+
+    for host in ("provider.example.test", "second.example.test", "cdn.example.test"):
+        assert proxy.gateway_headers_for(sid, host)["Cookie"] == "session=secret"
+    # A host nobody named still gets nothing.
+    assert proxy.gateway_headers_for(sid, "attacker.example") == {}
+
+
 def test_the_gateway_keeps_the_channel_credentials_on_its_own_host():
     """The gateway URL carries the upstream host, and the token in it goes out
     to every receiver on the LAN.
@@ -563,3 +585,26 @@ def test_an_unused_gateway_session_is_dropped():
     proxy._expire_gateway_sessions(time.time() + 2 * 3600)
     assert sid not in proxy._gateway_sessions
     assert proxy.gateway_headers_for(sid, "provider.example.test") is None
+
+
+def test_the_cleanup_path_does_not_deadlock_on_the_proxy_lock():
+    """The cleanup loop holds the proxy lock and calls the gateway expiry,
+    which takes that same lock again on the same thread.
+
+    A non-reentrant lock deadlocked there: the cleanup thread wedged for
+    good with the lock held, and every converter, playlist and segment
+    request blocked ten seconds after the proxy started.
+    """
+    import time
+
+    proxy = StreamProxy()
+    done = threading.Event()
+
+    def _cleanup_once():
+        with proxy.lock:
+            proxy._expire_gateway_sessions(time.time())
+        done.set()
+
+    worker = threading.Thread(target=_cleanup_once, daemon=True)
+    worker.start()
+    assert done.wait(5), "the cleanup path deadlocked on the proxy lock"

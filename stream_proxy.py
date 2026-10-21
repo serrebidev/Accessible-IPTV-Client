@@ -1239,7 +1239,10 @@ class StreamProxy:
         self._gateway_sessions = {}
         self.converters = {}
         self.converter_sources = {}
-        self.lock = threading.Lock()
+        # Reentrant: the cleanup loop holds this lock and calls
+        # _expire_gateway_sessions, which takes it again on the same thread.
+        # A plain Lock deadlocked there and wedged every other user of it.
+        self.lock = threading.RLock()
         self._cleanup_thread = None
         self._running = False
         # Wakes the cleanup loop at once on stop(). Its old flat sleep(10) meant
@@ -1344,8 +1347,17 @@ class StreamProxy:
         sid = hashlib.sha256(json.dumps(clean, sort_keys=True).encode()).hexdigest()[:20]
         host = urllib.parse.urlsplit(str(target_url or "")).netloc.lower()
         with self.lock:
+            entry = self._gateway_sessions.get(sid)
+            # The hosts accumulate: one header set serves every URL the app
+            # issues with it (a provider's channels share one cookie), and a
+            # redirect the provider taught the proxy about has to survive the
+            # next URL. Replacing the set lost those hosts, and the channel's
+            # credentials stopped going to them.
+            hosts = set(entry["hosts"]) if entry else set()
+            if host:
+                hosts.add(host)
             self._gateway_sessions[sid] = {"headers": clean,
-                                           "hosts": {host} if host else set(),
+                                           "hosts": hosts,
                                            "used": time.time()}
         return self.gateway_url(target_url, sid)
 

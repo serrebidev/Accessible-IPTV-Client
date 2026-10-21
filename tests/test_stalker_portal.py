@@ -5,9 +5,11 @@ import pytest
 import json
 import time
 import types
+import urllib.error
 import urllib.parse
 import os
 import sys
+import threading
 from unittest.mock import patch
 
 # Add parent directory to path for imports
@@ -251,6 +253,46 @@ class TestStalkerHandshake:
             "JsHttpRequest": "1-xml"
         }
         assert client._token == "session_token_456"
+
+    def test_a_rejected_portal_token_does_not_deadlock(self):
+        """A portal that answers 401 must report the failure, not hang.
+
+        _ensure_token holds the token lock across the handshake, and the
+        401/403 path takes that same lock again on the same thread. With a
+        non-reentrant lock that deadlocked, so a wrong MAC or an expired
+        trial hung the thread for good instead of raising.
+        """
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            username="user",
+            password="pass",
+            mac="00:1A:79:00:00:01"
+        )
+        client = StalkerPortalClient(cfg)
+
+        class UnauthorizedOpener:
+            def open(self, request, timeout=None):
+                raise urllib.error.HTTPError(
+                    "http://portal.example.com/portal.php", 401,
+                    "Unauthorized", None, None)
+
+        client._opener = UnauthorizedOpener()
+
+        errors = []
+        done = threading.Event()
+
+        def _ensure():
+            try:
+                client._ensure_token()
+            except ProviderError as err:
+                errors.append(err)
+            finally:
+                done.set()
+
+        worker = threading.Thread(target=_ensure, daemon=True)
+        worker.start()
+        assert done.wait(5), "the portal client deadlocked on a rejected token"
+        assert errors, "a rejected portal token must raise ProviderError"
 
     @patch.object(StalkerPortalClient, '_portal_call')
     def test_mac_only_handshake_skips_login(self, mock_portal_call):
