@@ -517,9 +517,32 @@ def test_shutdown_terminates_ffmpeg_that_will_not_stop(tmp_path):
 
     recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
 
-    assert proc.wait_timeouts == [recorder.DETACH_WAIT_SECONDS, recorder.TERMINATE_GRACE_SECONDS]
+    expected = max(recorder.DETACH_WAIT_SECONDS,
+                   recorder.finalize_timeout_seconds(rec.fmt, rec.written_path))
+    assert proc.wait_timeouts == [expected, recorder.TERMINATE_GRACE_SECONDS]
     assert proc.terminated
     assert rec.detached
+
+
+def test_shutdown_gives_a_large_faststart_recording_its_finalize_budget(tmp_path, monkeypatch):
+    """The shutdown path must not truncate the recording it is saving.
+
+    A faststart MP4 rewrites the whole file when it finalizes, so the cost
+    scales with the capture: seconds on an internal SSD, minutes on the USB
+    or network drives recordings usually live on. A flat few seconds killed
+    ffmpeg mid-rewrite, leaving ftyp + one enormous mdat and no moov atom -
+    "moov atom not found", unplayable, with the whole capture stranded
+    inside it.
+    """
+    monkeypatch.setattr(recorder.os.path, "getsize", lambda _p: 5 * 1024 ** 3)
+    proc = _StubProcess()  # finalizes on the first wait
+    rec = _stub_recording(proc, tmp_path / "big.mp4")
+
+    recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
+
+    assert proc.wait_timeouts and proc.wait_timeouts[0] > 300, proc.wait_timeouts
+    assert not proc.terminated and not proc.killed
+    assert not rec.finalize_timed_out
 
 
 def test_a_wedged_ffmpeg_is_still_escalated(tmp_path, monkeypatch):

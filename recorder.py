@@ -72,10 +72,11 @@ FINALIZE_GRACE_SECONDS = 30.0
 FINALIZE_REWRITE_BYTES_PER_SECOND = 8 * 1024 * 1024  # pessimistic: USB 2.0 / SMB share
 FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
 TERMINATE_GRACE_SECONDS = 15.0
-# On shutdown we ask FFmpeg to stop and give it a short clean-finalize window.  If it
-# remains alive, it must be terminated: an orphan can keep a provider's only stream
-# slot occupied and makes a restarted scheduled recording fail until Task Manager is
-# used to kill it.
+# On shutdown we ask FFmpeg to stop and give it the same clean-finalize window
+# every other stop gets, derived from the size of the capture.  If it is still
+# alive after that, it must be terminated: an orphan can keep a provider's only
+# stream slot occupied and makes a restarted scheduled recording fail until
+# Task Manager is used to kill it.  The constant is the floor for that window.
 DETACH_WAIT_SECONDS = 5.0
 
 # ffmpeg's stderr for each recording is kept next to the recordings themselves, so a
@@ -1357,18 +1358,24 @@ class RecordingManager:
 
     @staticmethod
     def _stop_for_exit(rec: Recording, proc: "subprocess.Popen") -> None:
-        """Shutdown: a short clean-finalize window, then terminate, then kill.
+        """Shutdown: a clean-finalize window, then terminate, then kill.
 
         Never orphan ffmpeg: it can keep the provider stream open after the
         application is gone, so the scheduler re-arms the job at next launch and
         starts a second competing capture.
+
+        The window is the same size-derived finalization budget every other
+        stop gets, not a flat few seconds: a faststart MP4 rewrites the whole
+        file when it finalizes, and killing it mid-rewrite leaves the capture
+        unplayable with every byte of it stranded inside.
         """
+        budget = max(DETACH_WAIT_SECONDS, finalize_timeout_seconds(rec.fmt, rec.written_path))
         try:
-            proc.wait(timeout=DETACH_WAIT_SECONDS)
+            proc.wait(timeout=budget)
             return
         except Exception:
             LOG.warning("ffmpeg did not stop %s within %.0fs during shutdown; "
-                        "terminating it.", rec.out_path, DETACH_WAIT_SECONDS)
+                        "terminating it.", rec.out_path, budget)
         rec.detached = True
         try:
             proc.terminate()
