@@ -718,6 +718,29 @@ def test_exit_stops_ffmpeg_that_is_still_finalizing_an_earlier_stop(tmp_path):
     assert rec.detached
 
 
+def test_a_cancel_after_ffmpeg_exited_keeps_the_finished_download(tmp_path):
+    """The capture finished on its own; the Cancel button must not delete it.
+
+    "Stopped by the user" was set before the process was checked, so a
+    download that had already completed was deleted as if it were junk, and
+    the user was told the incomplete file had been discarded.
+    """
+    proc = _StubProcess(exits_after_waits=0)  # ffmpeg has already exited
+    rec = _stub_recording(proc, tmp_path / "news.mp4")
+    rec.partial_path = str(tmp_path / "news.mp4.part")
+    with open(rec.partial_path, "w", encoding="utf-8") as handle:
+        handle.write("finished")
+
+    manager = recorder.RecordingManager()
+    manager._graceful_stop(rec, wait=False)
+
+    assert not rec.stopped_by_user, "a finished capture was marked as stopped by the user"
+
+    # The watcher settles the output when ffmpeg exits.
+    manager._settle_partial_output(rec, 0)
+    assert os.path.exists(str(tmp_path / "news.mp4")), "the finished download was deleted"
+
+
 def test_relay_failure_does_not_leave_ffmpeg_running(tmp_path, monkeypatch):
     """Nothing would drain ffmpeg's stdout copy, so the recording itself would stall."""
     import recording_relay

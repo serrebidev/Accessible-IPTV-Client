@@ -235,6 +235,49 @@ def test_play_without_a_device_raises(manager):
         manager.play("http://h/x.ts", "News")
 
 
+def test_a_stop_during_the_sonos_probe_does_not_start_playback(manager, monkeypatch):
+    """The stop landed while the probe was still running.
+
+    The receiver was started anyway, so the speaker played a channel the user
+    had already stopped, and the audio proxy held the provider's one
+    connection.
+    """
+    import caster_devices
+    import caster_engine
+    probing = threading.Event()
+    release = threading.Event()
+    played = []
+
+    def _probe(url):
+        probing.set()
+        release.wait(5)
+        return {"url": url, "mime": "audio/mpeg", "is_audio": True, "is_live": True}
+
+    monkeypatch.setattr(caster_engine, "probe_media", _probe)
+    monkeypatch.setattr(caster_devices, "sonos_play",
+                        lambda ip, url, title="", mime="": played.append((ip, url)))
+    manager.connect(_device("sonos", {"ip": "10.0.0.5"}))
+
+    def _play():
+        try:
+            manager.play("http://h/live/1.ts", "News", headers={})
+        except Exception:
+            pass  # the cast was stopped; that is the point of the test
+
+    worker = threading.Thread(target=_play, daemon=True)
+    worker.start()
+    assert probing.wait(5), "the probe never ran"
+
+    # What a stop does to a cast that is still starting: the generation moves
+    # on, and the play that is still probing has to notice.
+    with manager._lock:
+        manager._generation += 1
+    release.set()
+    worker.join(5)
+
+    assert played == [], "playback started after the cast was stopped"
+
+
 def test_exclusive_provider_probes_one_step_at_a_time(manager, monkeypatch):
     """A one-stream provider gets a pause between each request of the stream."""
     import caster_devices

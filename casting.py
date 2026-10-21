@@ -461,11 +461,12 @@ class CastingManager:
             self._play_upnp(device, source, title, generation, exclusive, request_headers,
                             fetch_url)
         elif kind == "sonos":
-            self._play_sonos(device, source, title, exclusive, request_headers, fetch_url)
+            self._play_sonos(device, source, title, generation, exclusive, request_headers,
+                             fetch_url)
         elif kind == "roku":
             self._play_roku(device, source, title, generation, exclusive)
         elif kind == "kodi":
-            self._play_kodi(device, source)
+            self._play_kodi(device, source, generation)
         else:
             raise CastError(f"{device.display_name} cannot be cast to.")
 
@@ -1048,8 +1049,8 @@ class CastingManager:
         except Exception as err:
             raise PlaybackError(f"{device.name} refused the stream: {err}") from err
 
-    def _play_sonos(self, device: CastDevice, url: str, title: str, exclusive: bool,
-                    headers: Dict[str, object], fetch_url: str) -> None:
+    def _play_sonos(self, device: CastDevice, url: str, title: str, generation: int,
+                    exclusive: bool, headers: Dict[str, object], fetch_url: str) -> None:
         from caster_devices import sonos_play
         engine = _engine()
         probe = engine.probe_media(url)
@@ -1059,6 +1060,11 @@ class CastingManager:
         else:
             # Sonos is speakers: a TV channel goes as its sound.
             play_url, mime = self._speaker_url(fetch_url, headers), "audio/mpeg"
+        if self._abandoned(generation):
+            # The stop landed while the probe was running: starting playback
+            # now would play a channel the user already stopped, and the audio
+            # proxy would hold the provider's one connection.
+            raise PlaybackError("Casting was stopped.")
         try:
             sonos_play(device.device.key["ip"], play_url, title, mime)
         except Exception as err:
@@ -1088,11 +1094,12 @@ class CastingManager:
             self._drop_relay(relay)
             raise PlaybackError(f"Roku error: {err}") from err
 
-    @staticmethod
-    def _play_kodi(device: CastDevice, url: str) -> None:
+    def _play_kodi(self, device: CastDevice, url: str, generation: int) -> None:
         import urllib.error
         from caster_devices import kodi_play
         # Kodi plays anything ffmpeg does, MPEG-TS included.
+        if self._abandoned(generation):
+            raise PlaybackError("Casting was stopped.")
         try:
             kodi_play(device.device.key["base"], url)
         except urllib.error.HTTPError as err:

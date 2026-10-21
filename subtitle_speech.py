@@ -216,7 +216,7 @@ class SubtitleSpeechManager:
             auto = self._auto_speech
             epoch = self._epoch
         if auto:
-            self._speak_text(text, epoch)
+            self._speak_text(text, epoch, require_auto=True)
 
     def update_cue_timing(
         self,
@@ -240,8 +240,14 @@ class SubtitleSpeechManager:
             if end_ms is not None:
                 current.end_ms = end_ms
 
-    def _speak_text(self, text: str, epoch: Optional[int] = None) -> None:
-        """Speak on the UI thread; route failures to the error callback."""
+    def _speak_text(self, text: str, epoch: Optional[int] = None, *,
+                    require_auto: bool = False) -> None:
+        """Speak on the UI thread; route failures to the error callback.
+
+        ``require_auto`` marks the automatic speech: a cue queued while the
+        user had it on is not spoken when it is turned off before the queue
+        runs. An explicit "read this subtitle" always speaks.
+        """
         if epoch is None:
             with self._lock:
                 epoch = self._epoch
@@ -252,6 +258,10 @@ class SubtitleSpeechManager:
                     # The cues were cleared after this speech was queued - a
                     # source switch or a stop - so it belongs to the source
                     # that is gone.
+                    return
+                if require_auto and not self._auto_speech:
+                    # The user turned the automatic speech off after this cue
+                    # was queued: speaking it now would ignore that.
                     return
             try:
                 self._speak(text)

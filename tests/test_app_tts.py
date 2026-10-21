@@ -52,3 +52,31 @@ def test_volume_clamped_without_backend():
         assert backend.volume == 100
     finally:
         backend.close()
+
+
+def test_the_application_voice_is_purged_when_the_subtitle_session_changes():
+    """The app voice speaks asynchronously.
+
+    A caption line kept talking after the user stopped playback, closed the
+    player or switched channel: the previous channel's words were read out
+    after the switch.
+    """
+    import types
+
+    import main
+
+    stopped = []
+    client = types.SimpleNamespace(
+        _app_tts=types.SimpleNamespace(stop=lambda: stopped.append(True)))
+
+    main.IPTVClient._purge_app_voice(client)
+
+    assert stopped == [True]
+
+
+def test_purging_the_application_voice_without_a_backend_is_harmless():
+    import types
+
+    import main
+
+    main.IPTVClient._purge_app_voice(types.SimpleNamespace())

@@ -7,7 +7,7 @@ import socket
 import threading
 import time
 import tempfile
-from typing import Tuple
+from typing import Optional, Tuple
 
 from i18n import gettext as _
 import logging
@@ -26,6 +26,9 @@ class ExternalPlayerLauncher:
         self._last_launch_ts = 0.0
         self._last_launch_key = None
         self._mpv_adapter = None
+        # Counts the launches: a worker that belongs to an older launch must
+        # not start playback after a newer one has been asked for.
+        self._launch_generation = 0
 
     def launch(
         self,
@@ -58,6 +61,9 @@ class ExternalPlayerLauncher:
                 return True, "" # Debounced
             self._last_launch_ts = now
             self._last_launch_key = key
+            # Every launch supersedes the one before it.
+            self._launch_generation += 1
+            generation = self._launch_generation
 
         # MPV with subtitle speech: use our own session adapter.
         if subtitle_manager is not None and MpvSubtitleAdapter is not None:
@@ -71,8 +77,12 @@ class ExternalPlayerLauncher:
                 # playback is never blocked.
                 self._launch_mpv_subtitled_async(url, subtitle_manager,
                                                 subtitle_state_cb, custom_path,
-                                                player_name)
+                                                player_name, generation)
                 return True, ""
+
+        # The application-owned MPV is playing the previous channel: another
+        # player would play over it, and the old stream would keep running.
+        self.close_subtitle_adapter()
 
         # If using mpv, try to reuse an existing instance via IPC first.
         if player_name == "MPV":
@@ -187,7 +197,8 @@ class ExternalPlayerLauncher:
         return None
 
     def _launch_mpv_subtitled_async(self, url, manager, state_cb=None,
-                                    custom_path: str = "", player_name: str = "MPV") -> None:
+                                    custom_path: str = "", player_name: str = "MPV",
+                                    generation: int = 0) -> None:
         """Start MPV behind the subtitle adapter on a worker thread.
 
         The caller returns as soon as the player is asked to start; the
@@ -197,24 +208,31 @@ class ExternalPlayerLauncher:
 
         def worker():
             try:
-                if self._launch_mpv_subtitled(url, manager, state_cb, custom_path):
+                if self._launch_mpv_subtitled(url, manager, state_cb, custom_path,
+                                              generation):
                     return
             except Exception:
                 LOG.warning("MPV subtitle adapter launch failed", exc_info=True)
-            LOG.info("MPV subtitle adapter unavailable; plain handoff instead")
-            try:
+            # The adapter could not be attached. The plain handoff is the
+            # fallback - unless a newer launch has been asked for since, which
+            # would start the old channel over the new one.
+            with self._launch_guard_lock:
+                if generation != self._launch_generation:
+                    LOG.info("MPV adapter launch superseded; no plain handoff")
+                    return
                 # The launch that queued this worker already used the
                 # debounce, so the fallback has to be allowed through.
-                with self._launch_guard_lock:
-                    self._last_launch_ts = 0.0
-                    self._last_launch_key = None
+                self._last_launch_ts = 0.0
+                self._last_launch_key = None
+            try:
                 self.launch(player_name, url, custom_path)
             except Exception:
                 LOG.warning("MPV plain handoff failed", exc_info=True)
 
         threading.Thread(target=worker, name="mpv-adapter-launch", daemon=True).start()
 
-    def _launch_mpv_subtitled(self, url, manager, state_cb=None, custom_path: str = "") -> bool:
+    def _launch_mpv_subtitled(self, url, manager, state_cb=None, custom_path: str = "",
+                               generation: Optional[int] = None) -> bool:
         """Launch our own MPV behind the subtitle-text session adapter."""
         self.close_subtitle_adapter()
         exe = self._find_mpv_exe(custom_path)
@@ -228,7 +246,19 @@ class ExternalPlayerLauncher:
             return False
         if adapter is None:
             return False
-        self._mpv_adapter = adapter
+        with self._launch_guard_lock:
+            superseded = generation is not None and generation != self._launch_generation
+            if not superseded:
+                self._mpv_adapter = adapter
+        if superseded:
+            # A newer launch was asked for while this one was starting: this
+            # MPV would play the old channel over it.
+            LOG.info("MPV adapter launch superseded; stopping it")
+            try:
+                adapter.close()
+            except Exception:
+                LOG.debug("close of a superseded MPV adapter failed", exc_info=True)
+            return False
         return True
 
     def close_subtitle_adapter(self) -> None:

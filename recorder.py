@@ -1391,9 +1391,12 @@ class RecordingManager:
 
     def _graceful_stop(self, rec: Recording, *, wait: bool = False, detach: bool = False) -> None:
         proc = rec.process
-        rec.stopped_by_user = True
         if not proc or proc.poll() is not None:
+            # ffmpeg is already gone: the capture finished on its own. Saying
+            # the user stopped it would make a finished download look
+            # discarded, and the finished file was deleted for that reason.
             return
+        rec.stopped_by_user = True
         if rec.stopping:
             if detach:
                 # Exit while an earlier stop is still finalizing (a big MP4 can

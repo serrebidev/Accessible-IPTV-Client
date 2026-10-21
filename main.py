@@ -3253,7 +3253,9 @@ class IPTVClient(wx.Frame):
             self.vod_group_order = []
             self._fill_playlist_scope_combo()
             if self.view_mode == "vod":
-                self._load_vod_catalog()
+                # The catalogue being built belongs to the playlist that was
+                # just replaced, so it must not be shown.
+                self._load_vod_catalog(supersede=True)
             else:
                 self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
@@ -6653,7 +6655,10 @@ class IPTVClient(wx.Frame):
                         self._exit_requested = False
                         event.Veto()
                         return
-                elif self._catchup_downloads:
+                # A running download is warned about on its own: a scheduled
+                # recording must not hide it, or the download is truncated
+                # without the user ever being asked.
+                if self._catchup_downloads:
                     answer = message_box(
                         _("A download is still in progress.\n\n"
                           "If you exit now it will stop, and only the part captured "
@@ -7167,10 +7172,15 @@ class IPTVClient(wx.Frame):
                 except Exception:
                     LOG.debug("IPTVClient._sync_view_menu: ignored exception", exc_info=True)
 
-    def _load_vod_catalog(self):
+    def _load_vod_catalog(self, *, supersede: bool = False):
         """Build the VOD catalogue in the background, then show it."""
         if self.vod_loading:
-            return
+            if not supersede:
+                return
+            # A catalogue is already being built and its result belongs to the
+            # playlist that was loaded before this one: drop it and build the
+            # current one instead.
+            self._vod_load_token += 1
         self.vod_loading = True
         self._vod_load_token += 1
         token = self._vod_load_token
@@ -7242,7 +7252,10 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
             if not self.vod_group_order:
                 self.group_list.Append(_("No Video on Demand content found."))
+                self.group_list.SetSelection(0)
                 self.url_display.SetValue("")
+                # An empty list is silent to a screen-reader user: say it.
+                live_announce.speak(_("No Video on Demand content found."))
                 return
             for label in self.vod_group_order:
                 count = len(self.vod_groups.get(label, []))
@@ -7624,14 +7637,18 @@ class IPTVClient(wx.Frame):
         # provider was removed or the playlist checkbox was turned off.
         dlg = EPGManagerDialog(self, list(self.config.get("epgs", [])), self.config.get("epg_names"),
                                use_playlist_epg=bool(self.config.get("use_playlist_epg", True)))
-        if dlg.ShowModal() == wx.ID_OK:
-            self.config["epgs"] = dlg.GetResult()
-            self.config["epg_names"] = dlg.GetNames()
-            self.config["use_playlist_epg"] = dlg.GetUsePlaylistEpg()
-            save_config(self.config)
-            self.reload_epg_sources()
-            wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
-        dlg.Destroy()
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.config["epgs"] = dlg.GetResult()
+                self.config["epg_names"] = dlg.GetNames()
+                self.config["use_playlist_epg"] = dlg.GetUsePlaylistEpg()
+                save_config(self.config)
+                self.reload_epg_sources()
+                wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
+        finally:
+            # A save that raised used to leave the dialog allocated and
+            # parent-owned.
+            dlg.Destroy()
 
     def show_account_info(self, _event):
         """Show subscription status for configured and autodetected accounts."""
@@ -7714,6 +7731,12 @@ class IPTVClient(wx.Frame):
                     db.close()
             except Exception as e:
                 error = e
+            # Playing or scheduling a programme resolves its channel on the
+            # GUI thread; build that lookup's index here, off it.
+            try:
+                self._program_match_index()
+            except Exception:
+                LOG.debug("IPTVClient.show_whats_on_now: index warm-up failed", exc_info=True)
             wx.CallAfter(self._present_whats_on_now, programs, error)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -8515,6 +8538,7 @@ class IPTVClient(wx.Frame):
         self._catchup_return = None
         # Nothing is playing any more, so no subtitle session is active.
         self._subtitle_session.cancel_session()
+        IPTVClient._purge_app_voice(self)
         self._internal_player_frame = None
         self._internal_player_channel = None
         self._internal_player_audio_key = ""
@@ -8799,6 +8823,22 @@ class IPTVClient(wx.Frame):
     # (JAWS/NVDA) keeps ownership of its voice, volume and audio endpoint;
     # the optional application-owned TTS backend owns its own volume and
     # output device instead. Neither ever affects the other.
+
+    def _purge_app_voice(self) -> None:
+        """Stop the application voice mid-sentence.
+
+        The app voice speaks asynchronously, so a caption line kept talking
+        after the user stopped playback, closed the player or switched
+        channel - the previous channel's words were read out after the
+        switch.
+        """
+        backend = getattr(self, "_app_tts", None)
+        if backend is None:
+            return
+        try:
+            backend.stop()
+        except Exception:
+            LOG.debug("IPTVClient._purge_app_voice: ignored exception", exc_info=True)
 
     def _speak_subtitle_cue(self, text: str) -> None:
         """Route one subtitle cue to the configured speech backend.
@@ -9168,6 +9208,7 @@ class IPTVClient(wx.Frame):
                 # subtitle" cannot answer with the last line of the channel
                 # the user just left.
                 self._subtitle_session.activate_session(display_title)
+                IPTVClient._purge_app_voice(self)
                 frame.play(
                     url,
                     display_title,

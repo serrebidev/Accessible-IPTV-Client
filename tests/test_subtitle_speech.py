@@ -245,3 +245,38 @@ def test_describe_capability_uses_translation():
     assert mgr.describe_capability("VLC", "timed_cues", fake_gettext).startswith("XX:")
     assert mgr.describe_capability("MPV", "timed_cues", fake_gettext).startswith("XX:")
     assert seen == ["available", "not supported by this player", "not verified yet"]
+
+
+def test_a_cue_queued_before_the_speech_was_turned_off_is_not_spoken():
+    """The automatic speech is checked when the cue arrives, not when it is spoken.
+
+    A cue that was queued while the speech was on was still spoken after the
+    user turned it off, so the subtitle kept talking.
+    """
+    queued = []
+    spoken = []
+    mgr = SubtitleSpeechManager(spoken.append, ui_thread=lambda fn, *a: queued.append((fn, a)))
+    mgr.set_auto_speech(True)
+    mgr.on_cue("Hello")
+    assert queued, "the cue was not queued"
+
+    mgr.set_auto_speech(False)
+    for fn, args in queued:
+        fn(*args)
+
+    assert spoken == []
+
+
+def test_an_explicit_read_still_speaks_with_the_automatic_speech_off():
+    """Reading a subtitle is a request, not the automatic speech."""
+    queued = []
+    spoken = []
+    mgr = SubtitleSpeechManager(spoken.append, ui_thread=lambda fn, *a: queued.append((fn, a)))
+    mgr.set_auto_speech(False)
+    mgr.on_cue("Hello")
+
+    assert mgr.read_current() is True
+    for fn, args in queued:
+        fn(*args)
+
+    assert spoken == ["Hello"]

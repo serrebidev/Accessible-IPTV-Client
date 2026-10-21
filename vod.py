@@ -213,7 +213,11 @@ def categorize_m3u_vod(channels: List[Dict]) -> Tuple[List[str], Dict[str, List[
 # --------------------------------------------------------------------------- #
 def _category_map(rows: List[Dict]) -> Dict[str, str]:
     out: Dict[str, str] = {}
-    for row in rows:
+    for row in rows or []:
+        # A provider can answer with a null entry; reading it raised and
+        # took the whole category with it.
+        if not isinstance(row, dict):
+            continue
         cid = row.get("category_id")
         if cid is None:
             continue
@@ -235,6 +239,8 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
     try:
         vod_cats = _category_map(client.get_vod_categories())
         for s in client.get_vod_streams():
+            if not isinstance(s, dict):
+                continue
             sid = s.get("stream_id")
             if sid is None:
                 continue
@@ -257,6 +263,8 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
     try:
         ser_cats = _category_map(client.get_series_categories())
         for s in client.get_series():
+            if not isinstance(s, dict):
+                continue
             series_id = s.get("series_id")
             if series_id is None:
                 continue

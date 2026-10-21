@@ -299,6 +299,21 @@ class TestXtreamReport:
         report = format_account_report(_xtream_account(), _payload(), now=NOW)
         assert "s3cr3tvalue" not in report
 
+    def test_a_rejected_password_does_not_claim_the_account_never_expires(self):
+        """A wrong password answers with the auth flag alone.
+
+        The report said "Expires: Never (no expiry date set)" right below the
+        authentication failure, so the user was told their dead account never
+        expires.
+        """
+        payload = _payload(auth=0)
+        payload["user_info"].pop("exp_date")
+        report = format_account_report(_xtream_account(), payload, now=NOW)
+        fields = _fields(report)
+        assert "Authentication failed" in fields["Status"]
+        assert "Expires" not in fields
+        assert "Never" not in report
+
     def test_expired_account_counts_days_since(self):
         expired = str(int(datetime.datetime(2026, 7, 19, 12, 0).timestamp()))
         report = format_account_report(

@@ -199,6 +199,33 @@ class TestStalkerHandshake:
     """Test Stalker Portal handshake process."""
 
     @patch.object(StalkerPortalClient, '_portal_call')
+    def test_a_null_js_raises_a_provider_error(self, mock_portal_call):
+        """A rejected request answers with a null "js".
+
+        Reading through it raised AttributeError, so the user saw
+        "'NoneType' object has no attribute 'get'" instead of a provider
+        message.
+        """
+        mock_portal_call.return_value = {"js": None}
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            username="user",
+            password="pass",
+            mac="00:1A:79:00:00:01"
+        )
+        client = StalkerPortalClient(cfg)
+
+        with pytest.raises(ProviderError):
+            client.fetch_channels()
+
+        # The stream link path as well: that is the one the user sees as
+        # "Could not resolve stream URL".
+        client._token = "token"
+        client._token_issued = time.time()
+        with pytest.raises(ProviderError):
+            client.resolve_stream({"cmd": "some_cmd"})
+
+    @patch.object(StalkerPortalClient, '_portal_call')
     def test_handshake_returns_token(self, mock_portal_call):
         """Test that handshake returns a token."""
         mock_portal_call.return_value = {

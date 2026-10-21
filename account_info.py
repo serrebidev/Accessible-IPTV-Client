@@ -523,14 +523,19 @@ def _format_xtream_report(payload: Dict, now: datetime.datetime) -> List[str]:
     server = server if isinstance(server, dict) else {}
 
     lines = ["", _("Subscription")]
-    if "auth" in user and not _truthy_flag(user.get("auth")):
+    auth_failed = "auth" in user and not _truthy_flag(user.get("auth"))
+    if auth_failed:
         lines.append(_line(_("Status"), _("Authentication failed – the server rejected these credentials")))
     elif user.get("status"):
         lines.append(_line(_("Status"), _status_label(str(user.get("status")))))
     else:
         lines.append(_line(_("Status"), _("Not reported by the server")))
 
-    lines.extend(_expiry_lines(user.get("exp_date"), now))
+    if not auth_failed:
+        # A rejected password answers with the auth flag alone: there is no
+        # expiry to report, and "Never" would tell the user that their dead
+        # account never expires.
+        lines.extend(_expiry_lines(user.get("exp_date"), now))
     if "is_trial" in user:
         lines.append(_line(_("Trial account"), _yes_no(_truthy_flag(user.get("is_trial")))))
     if user.get("active_cons") not in (None, ""):
