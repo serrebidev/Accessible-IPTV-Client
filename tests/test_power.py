@@ -64,7 +64,11 @@ class TestPendingJobCount:
 
 class TestShutdownCommands:
     def test_windows(self):
-        assert power.shutdown_commands("Windows") == [["shutdown", "/s", "/t", "0"]]
+        # The absolute path: Windows resolves the current directory before
+        # System32, so a "shutdown.exe" next to the app would be executed
+        # instead - with the user's privileges, while the machine powers off.
+        assert power.shutdown_commands("Windows") == [
+            [r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
 
     def test_windows_does_not_force_apps_closed(self):
         # /f would kill whatever else the user left open without letting it save.
@@ -86,8 +90,8 @@ class TestShutdownComputer:
     def test_returns_the_command_that_worked(self):
         calls = []
         used = power.shutdown_computer(system="Windows", runner=calls.append)
-        assert calls == [["shutdown", "/s", "/t", "0"]]
-        assert used == ["shutdown", "/s", "/t", "0"]
+        assert calls == [[r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
+        assert used == [r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]
 
     def test_falls_through_to_the_next_candidate(self):
         calls = []

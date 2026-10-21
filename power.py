@@ -33,7 +33,11 @@ def shutdown_commands(system: Optional[str] = None) -> List[List[str]]:
     """
     name = (system or platform.system() or "").strip()
     if name == "Windows":
-        return [["shutdown", "/s", "/t", "0"]]
+        # The absolute path, not the bare name: Windows resolves the current
+        # directory before System32, so a "shutdown.exe" sitting in the
+        # folder the app was started from would be executed instead - with the
+        # user's privileges, at the moment the machine powers off.
+        return [[r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
     if name == "Darwin":
         return [["osascript", "-e", 'tell application "System Events" to shut down']]
     return [
