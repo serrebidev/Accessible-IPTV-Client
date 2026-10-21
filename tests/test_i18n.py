@@ -15,7 +15,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import i18n  # noqa: E402
 
-
 def test_a_hand_edited_language_value_does_not_crash_the_startup():
     """The config is whatever the file says.
 
@@ -26,6 +25,22 @@ def test_a_hand_edited_language_value_does_not_crash_the_startup():
     assert i18n.set_language(5)
     assert i18n.set_language(None)
     assert i18n.set_language("hu")
+
+
+def test_the_windows_ui_language_wins_over_a_posix_lang_variable(monkeypatch):
+    """A Git Bash or MSYS shell sets LANG, and that must not decide the language.
+
+    The POSIX variables are read only off Windows now: a Hungarian Windows with
+    a Git Bash window open would otherwise start in English.
+    """
+    import sys
+
+    if not sys.platform.startswith("win"):
+        pytest.skip("the Windows branch is what this test is about")
+    monkeypatch.setenv("LANG", "hu_HU.UTF-8")
+    monkeypatch.setenv("LC_ALL", "hu_HU.UTF-8")
+    detected = i18n.detect_system_language()
+    assert detected != "hu", "the POSIX LANG variable decided the language"
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCALE = os.path.join(REPO, "locale")

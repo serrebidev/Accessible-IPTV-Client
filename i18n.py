@@ -78,14 +78,9 @@ def available_languages():
 
 def detect_system_language() -> str:
     """Best-effort two-letter code for the OS UI language. Defaults to ``"en"``."""
-    # 1) Environment variables (Linux/macOS, or an explicit override anywhere).
-    for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
-        raw = os.environ.get(var)
-        if raw:
-            token = raw.split(":")[0].split(".")[0].split("@")[0].strip()
-            if token:
-                return token.replace("-", "_").split("_")[0].lower()
-    # 2) Windows: the actual user UI language (env vars are usually unset there).
+    # 1) Windows: the actual user UI language. The POSIX variables are read
+    # only off Windows: a Git Bash or MSYS shell sets LANG, and that would
+    # put a Hungarian Windows into English.
     if sys.platform.startswith("win"):
         try:
             import ctypes
@@ -99,6 +94,14 @@ def detect_system_language() -> str:
                 return buf.value.replace("-", "_").split("_")[0].lower()
         except Exception:
             LOG.debug("detect_system_language: ignored exception", exc_info=True)
+    else:
+        # 2) Environment variables (Linux/macOS, or an explicit override).
+        for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+            raw = os.environ.get(var)
+            if raw:
+                token = raw.split(":")[0].split(".")[0].split("@")[0].strip()
+                if token:
+                    return token.replace("-", "_").split("_")[0].lower()
     # 3) Generic default locale (deprecated API; guarded + warning-suppressed).
     try:
         import locale as _locale
