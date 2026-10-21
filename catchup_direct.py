@@ -191,8 +191,8 @@ def _same_host(base_url: str, target_url: str) -> bool:
     return base_host == target_host and base_port == target_port
 
 
-def _headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
-                      target_url: str) -> Dict[str, object]:
+def headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
+                    target_url: str) -> Dict[str, object]:
     """The channel's headers, without the credentials for another host.
 
     A catch-up server can redirect anywhere, and the provider's cookie and
@@ -318,13 +318,13 @@ def direct_download_url(url: str, windows: List[Tuple[int, int]],
     for _hop in range(_MAX_REDIRECT_HOPS):
         # A catch-up server can redirect anywhere. The provider's cookie and
         # authorization must not follow it to a host the app never chose.
-        hop_headers = _headers_for_host(headers, url, current)
+        hop_headers = headers_for_host(headers, url, current)
         target, is_media = _next_hop(current, hop_headers, timeout)
         touched_media = touched_media or is_media
         if not target or target in seen:
             break
         seen.add(target)
-        found = probe_around(target, _headers_for_host(headers, url, target))
+        found = probe_around(target, headers_for_host(headers, url, target))
         if found:
             break
         current = target

@@ -362,10 +362,23 @@ def get_ffmpeg_path():
         if os.path.exists(adjacent):
             return adjacent
     
-    # Fallback to PATH or local file
-    if os.path.exists("ffmpeg.exe"):
-        return os.path.abspath("ffmpeg.exe")
-        
+    # A source run: the ffmpeg next to this file. Never the one in the
+    # current directory - Windows resolves the current directory first, so
+    # an ffmpeg.exe that happens to sit there would be executed instead,
+    # with the user's privileges, on every transcode.
+    beside = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ffmpeg.exe')
+    if os.path.exists(beside):
+        return beside
+
+    # Then PATH, as an absolute path: a bare name would find the current
+    # directory first.
+    for directory in os.environ.get('PATH', '').split(os.pathsep):
+        if not directory:
+            continue
+        candidate = os.path.join(directory, 'ffmpeg.exe')
+        if os.path.exists(candidate):
+            return os.path.abspath(candidate)
+
     return "ffmpeg"
 
 class HLSConverter:

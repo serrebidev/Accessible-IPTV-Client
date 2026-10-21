@@ -899,10 +899,15 @@ def _parse_duration_to_seconds(s: str) -> Optional[int]:
             return None
     m = _ISO8601_DUR_RX.match(s)
     if m:
-        days = int(m.group('days') or 0)
-        hours = int(m.group('hours') or 0)
-        minutes = int(m.group('minutes') or 0)
-        seconds = int(m.group('seconds') or 0)
+        try:
+            days = int(m.group('days') or 0)
+            hours = int(m.group('hours') or 0)
+            minutes = int(m.group('minutes') or 0)
+            seconds = int(m.group('seconds') or 0)
+        except (TypeError, ValueError, OverflowError):
+            # A duration with a huge component is not a duration, and int()
+            # refuses one: raising here aborted the whole source.
+            return None
         return days*86400 + hours*3600 + minutes*60 + seconds
     return None
 

@@ -12,11 +12,28 @@ from stream_proxy import (
     HLSConverter,
     StreamProxy,
     filter_unstable_hls_start,
+    get_ffmpeg_path,
     hls_playlist_is_ready,
     hls_playlist_stats,
     normalize_request_headers,
     rewrite_hls_playlist,
 )
+
+
+def test_the_ffmpeg_comes_from_the_app_not_the_current_directory(tmp_path, monkeypatch):
+    """Windows resolves the current directory before PATH.
+
+    An ffmpeg.exe that happens to sit in the folder the app was started
+    from would be executed instead of the real one - with the user's
+    privileges, on every transcode.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ffmpeg.exe").write_bytes(b"not ffmpeg")
+
+    path = get_ffmpeg_path()
+
+    assert os.path.dirname(path), "ffmpeg would be taken from the current directory"
+    assert os.path.abspath(str(tmp_path)) not in os.path.abspath(path)
 
 
 def test_a_gateway_session_keeps_every_host_it_was_issued_for():

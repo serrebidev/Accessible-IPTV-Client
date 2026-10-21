@@ -217,7 +217,7 @@ def _category_map(rows: List[Dict]) -> Dict[str, str]:
         cid = row.get("category_id")
         if cid is None:
             continue
-        out[str(cid)] = row.get("category_name") or _("Uncategorized")
+        out[str(cid)] = str(row.get("category_name") or _("Uncategorized"))
     return out
 
 
@@ -293,7 +293,10 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
     for season_key, entries in season_items:
         if not isinstance(entries, list):
             continue
-        s_no = int(season_key) if str(season_key).isdigit() else 0
+        try:
+            s_no = int(season_key) if str(season_key).isdigit() else 0
+        except (TypeError, ValueError, OverflowError):
+            s_no = 0
         if list_form:
             s_no += 1
         for idx, ep in enumerate(entries):
@@ -304,7 +307,7 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
                 continue
             try:
                 e_no = int(ep.get("episode_num") or 0)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 e_no = 0
             if not e_no:
                 e_no = idx + 1

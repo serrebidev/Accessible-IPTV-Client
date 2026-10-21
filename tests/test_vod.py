@@ -126,3 +126,34 @@ def test_xtream_series_episodes_ordered():
     assert [e["_se"] for e in eps] == [(1, 1), (1, 2), (2, 1)]
     assert eps[0]["url"] == "http://host/series/u/p/101.mp4"
     assert eps[0]["name"].startswith("S01E01")
+
+
+class _BrokenXtream(_FakeXtream):
+    """A provider that answers with values the app has to survive."""
+
+    def get_vod_categories(self):
+        # A category name that is not a string at all.
+        return [{"category_id": "1", "category_name": 7}]
+
+    def get_series_info(self, series_id):
+        return {"episodes": {
+            # A season number with thousands of digits, and an episode
+            # number that is not a number.
+            "9" * 5000: [{"id": 300, "episode_num": float("inf"),
+                           "title": "Ep", "container_extension": "mp4"}],
+        }}
+
+
+def test_a_broken_provider_value_does_not_kill_the_catalogue():
+    """The provider's JSON is untrusted input.
+
+    int() of "inf" raises OverflowError and int() refuses a season number
+    with thousands of digits; both were uncaught, so one bad value took the
+    whole episode list - or the whole catalogue - with it.
+    """
+    order, groups = vod.build_xtream_catalog(_BrokenXtream(), "prov1")
+    assert groups, "the catalogue was lost to one broken value"
+
+    eps = vod.xtream_series_episodes(_BrokenXtream(), 7, "prov1")
+    assert len(eps) == 1
+    assert eps[0]["url"] == "http://host/series/u/p/300.mp4"

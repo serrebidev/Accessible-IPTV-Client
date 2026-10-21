@@ -1115,6 +1115,38 @@ def test_a_non_finite_length_costs_one_programme_not_the_source(tmp_path):
     assert "Last" in titles, "the bad length took the rest of the source with it"
 
 
+def test_a_huge_duration_costs_one_programme_not_the_source(tmp_path):
+    """A duration with a huge component is not a duration.
+
+    int() refuses one ("Exceeds the limit (4300 digits)") and the refusal
+    escaped the per-programme loop, so the source was abandoned and every
+    programme after the bad one was dropped.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    huge = "9" * 5000
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv>'
+             '<channel id="c"><display-name>C</display-name></channel>']
+    parts.append(f'<programme start="{now.strftime(fmt)}" channel="c">'
+                 f'<title>Broken</title><duration>P{huge}D</duration></programme>')
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=2)).strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(hours=2, minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>Last</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        titles = {row[0] for row in
+                  db.conn.execute("SELECT title FROM programmes").fetchall()}
+    finally:
+        db.close()
+
+    assert "Last" in titles, "the bad duration took the rest of the source with it"
+
+
 def test_import_forgets_channels_the_guide_no_longer_lists(tmp_path):
     """A retired id kept counting as "this channel has its own guide", so a
     playlist channel still carrying it never fell back to a current namesake."""

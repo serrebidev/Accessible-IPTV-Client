@@ -236,6 +236,48 @@ def test_whats_on_now_enter_on_a_programme_opens_it(host):
         dlg.Destroy()
 
 
+def test_a_right_click_acts_on_the_row_under_the_pointer(host):
+    """A right-click does not move the selection in a list control.
+
+    The context menu was built from the selected row, so the user pointed at
+    one programme and the app took another: the wrong one was played, the
+    wrong one was recorded, the wrong one was deleted.
+    """
+    ctrl = wx.ListCtrl(host, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+    ctrl.InsertColumn(0, "Job")
+    for index in range(3):
+        ctrl.InsertItem(index, f"Job {index}")
+    ctrl.Select(0)
+    rect = ctrl.GetItemRect(2)
+    # A context menu carries a screen position.
+    screen = ctrl.ClientToScreen(wx.Point(5, rect.y + 1))
+    event = types.SimpleNamespace(GetPosition=lambda: screen)
+
+    assert appmod._context_row_index(ctrl, event) == 2
+    assert ctrl.GetFirstSelected() == 2
+
+
+def test_the_channel_epg_context_menu_uses_the_right_clicked_programme(host, monkeypatch):
+    programmes = [
+        {"title": "Evening News", "start": "20260907190000", "end": "20260907200000"},
+        {"title": "Late Film", "start": "20260907200000", "end": "20260907220000"},
+    ]
+    dlg = ChannelEPGDialog(host, "Sky Mix", programmes)
+    try:
+        # The menu itself must not pop up in a test.
+        monkeypatch.setattr(type(dlg.list_ctrl), "PopupMenu", lambda *a, **k: True)
+        dlg.list_ctrl.Select(0)
+        rect = dlg.list_ctrl.GetItemRect(1)
+        screen = dlg.list_ctrl.ClientToScreen(wx.Point(5, rect.y + 1))
+        event = types.SimpleNamespace(GetPosition=lambda: screen)
+
+        dlg._show_context_menu(event)
+
+        assert dlg.list_ctrl.GetFirstSelected() == 1
+    finally:
+        dlg.Destroy()
+
+
 def test_whats_on_now_context_menu_offers_play_and_schedule(host, monkeypatch):
     scheduled = []
     dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES,

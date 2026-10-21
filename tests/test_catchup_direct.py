@@ -180,9 +180,9 @@ def test_credentials_do_not_follow_a_redirect_to_another_host():
     """
     headers = {"Cookie": "session=secret", "Authorization": "Bearer secret",
                 "User-Agent": "ChannelUA"}
-    same = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://a.test/y")
+    same = catchup_direct.headers_for_host(headers, "http://a.test/x", "http://a.test/y")
     assert same["Cookie"] == "session=secret"
-    other = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://b.test/y")
+    other = catchup_direct.headers_for_host(headers, "http://a.test/x", "http://b.test/y")
     assert "Cookie" not in other
     assert "Authorization" not in other
     assert other["User-Agent"] == "ChannelUA"
@@ -195,15 +195,15 @@ def test_the_credentials_survive_a_host_name_in_another_case():
     only in case lost the channel's cookie and answered 403.
     """
     headers = {"Cookie": "session=secret"}
-    same = catchup_direct._headers_for_host(
+    same = catchup_direct.headers_for_host(
         headers, "https://Provider.Example/catchup", "https://provider.example/live.ts")
     assert same["Cookie"] == "session=secret"
     # Another port is another service.
-    other_port = catchup_direct._headers_for_host(
+    other_port = catchup_direct.headers_for_host(
         headers, "https://provider.example/catchup", "https://provider.example:8443/live.ts")
     assert "Cookie" not in other_port
     # Another host is another host.
-    other = catchup_direct._headers_for_host(
+    other = catchup_direct.headers_for_host(
         headers, "https://provider.example/catchup", "https://cdn.example.test/live.ts")
     assert "Cookie" not in other
 

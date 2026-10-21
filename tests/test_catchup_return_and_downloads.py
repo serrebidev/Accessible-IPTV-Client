@@ -139,6 +139,46 @@ def test_closing_a_catchup_playback_reopens_its_list(monkeypatch):
     assert client._internal_player_stream_kind == "live"
 
 
+def test_the_catchup_download_does_not_carry_the_credentials_to_another_host(monkeypatch):
+    """The direct archive file can live on another host.
+
+    The provider redirected there, and ffmpeg was handed the channel's
+    cookie for it: the provider's own credential went to a stranger.
+    """
+    import datetime
+
+    import main as appmod
+
+    monkeypatch.setattr(
+        appmod.catchup_direct, "direct_download_url",
+        lambda url, windows, headers=None, timeout=6.0:
+        "https://cdn.example.test/index-20260907190000-1800.mp4")
+
+    started = {}
+    monkeypatch.setattr(appmod.wx, "CallAfter", lambda fn, *a, **k: started.update(
+        {"url": a[0], "headers": a[6]}))
+
+    client = types.SimpleNamespace(
+        _parse_epg_time=lambda value: datetime.datetime(
+            2026, 9, 7, 19, 0, tzinfo=datetime.timezone.utc),
+        _padded_catchup_window=lambda show: None,
+        _recording_audio_choice=lambda *a, **k: None,
+        _start_catchup_recording=lambda *a, **k: None,
+    )
+    channel = {"name": "Sky Mix", "http-cookie": "session=secret",
+               "http-user-agent": "ChannelUA"}
+
+    appmod.IPTVClient._begin_catchup_download(
+        client, channel, "http://provider.invalid/live.ts", "Evening News", "key",
+        {"start": "20260907190000", "end": "20260907200000"}, 1800, "provider_mkv",
+        None, None)
+
+    assert started["url"] == "https://cdn.example.test/index-20260907190000-1800.mp4"
+    assert "cookie" not in started["headers"], "the credential followed the redirect"
+    # The headers that are not credentials still travel.
+    assert started["headers"].get("user-agent") == "ChannelUA"
+
+
 def test_closing_a_live_playback_does_not_reopen_catchup(monkeypatch):
     queued = []
     monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: queued.append(fn))
