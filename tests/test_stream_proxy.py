@@ -20,6 +20,20 @@ from stream_proxy import (
 )
 
 
+def test_an_http_error_is_not_a_drop_to_reopen():
+    """A live source that ends is reopened at the edge; a refused session is not.
+
+    Reopening a 403 for ever held ffmpeg and the provider's stream slot
+    with nothing reported.
+    """
+    import urllib.error
+
+    refused = urllib.error.HTTPError("http://h/live.m3u8", 403, "Forbidden", None, None)
+    assert stream_proxy_module._is_upstream_gone(refused)
+    # A transport error is a drop.
+    assert not stream_proxy_module._is_upstream_gone(OSError("connection reset"))
+
+
 def test_the_ffmpeg_comes_from_the_app_not_the_current_directory(tmp_path, monkeypatch):
     """Windows resolves the current directory before PATH.
 

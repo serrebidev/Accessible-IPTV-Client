@@ -51,6 +51,24 @@ def test_an_ordinary_english_word_is_not_a_country():
     assert extract_group("Ma Home") == ""
 
 
+def test_an_ordinary_word_is_not_a_country_code():
+    """"Car SOS" is not Canadian, and "You Can Do It" is not either.
+
+    The country-code variants are matched as free words, and a few of them
+    are ordinary English: a US channel was tagged Canadian and then looked
+    for a Canadian guide.
+    """
+    assert extract_group("Car SOS") == ""
+    assert extract_group("You Can Do It") == ""
+    assert extract_group("Kids per Hour") == ""
+    # Where a code is meant, the code still works.
+    assert extract_group("CAN TV") == "ca"
+    assert extract_group("CANADA TV") == "ca"
+    assert extract_group("USA News") == "us"
+    assert extract_group("Fox USA") == "us"
+    assert extract_group("(CA) News") == "ca"
+
+
 def test_names_are_normalised_the_same_way_everywhere():
     assert canonicalize_name("  Sky   Mix  HD ") == canonicalize_name("Sky Mix HD")
     assert strip_noise_words("Sky Mix HD") == "sky mix"

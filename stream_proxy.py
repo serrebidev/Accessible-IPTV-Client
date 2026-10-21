@@ -343,6 +343,16 @@ def is_fresh_transcode_profile(profile):
     return str(profile or "").startswith("chromecast")
 
 
+def _is_upstream_gone(error) -> bool:
+    """Whether the upstream answered with an error rather than dropping.
+
+    A live source that ends is reopened at the edge. A session the provider
+    answered with 401 or 403 is gone, and reopening that for ever held
+    ffmpeg and the provider's stream slot with nothing reported.
+    """
+    return getattr(error, "code", None) is not None
+
+
 def get_ffmpeg_path():
     """Resolve ffmpeg path, prioritizing bundled executable in frozen mode."""
     # PyInstaller onefile
@@ -525,6 +535,12 @@ class HLSConverter:
                             break
                         except Exception as e:
                             last_error = e
+                            if _is_upstream_gone(e):
+                                # The upstream answered with an error: the
+                                # session is gone, not a drop. Reopening that
+                                # for ever held ffmpeg and the provider's
+                                # stream slot with nothing reported.
+                                break
                             if got_any_data:
                                 LOG.info("HLS upstream read ended; reopening live stream: %s", e)
                                 time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)

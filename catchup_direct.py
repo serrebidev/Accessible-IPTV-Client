@@ -41,11 +41,51 @@ _REJECT_CONTENT_TYPES = frozenset({
 })
 
 
+def _iter_extra(value):
+    """The channel's custom headers, which travel in "_extra"."""
+    if not value:
+        return
+    if isinstance(value, str):
+        values = [value]
+    elif isinstance(value, (list, tuple, set)):
+        values = value
+    else:
+        values = [value]
+    for header in values:
+        text = str(header).strip()
+        if ":" not in text:
+            continue
+        name, val = text.split(":", 1)
+        name = name.strip()
+        val = val.strip()
+        if name and val:
+            yield name, val
+
+
+def _extra_header_names(headers: Optional[Dict[str, object]]) -> set:
+    """The names of the channel's custom headers."""
+    return {name.lower() for name, _value in _iter_extra((headers or {}).get("_extra"))}
+
+
 def _clean_headers(headers: Optional[Dict[str, object]]) -> Dict[str, str]:
-    return {
-        str(name): str(value) for name, value in (headers or {}).items()
-        if value
-    }
+    """The channel's headers as real HTTP headers.
+
+    The custom headers travel in "_extra" - the app's convention for headers
+    to expand. Sending that list as one header named "_extra" meant the
+    provider never saw them, and the list itself, which can carry a secret,
+    went out under a name nobody asked for.
+    """
+    clean: Dict[str, str] = {}
+    for name, value in (headers or {}).items():
+        if value is None or value == "":
+            continue
+        key = str(name).strip()
+        if key.lower() == "_extra":
+            continue
+        clean[key] = str(value)
+    for name, value in _iter_extra((headers or {}).get("_extra")):
+        clean.setdefault(name, value)
+    return clean
 
 
 def candidate_direct_urls(url: str, utc: int, duration: int) -> List[str]:
@@ -196,15 +236,17 @@ def headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
     """The channel's headers, without the credentials for another host.
 
     A catch-up server can redirect anywhere, and the provider's cookie and
-    authorization must not follow it to a host the app never chose.
+    authorization must not follow it to a host the app never chose. The
+    channel's custom headers are credentials too, and they go with them.
     """
-    clean = dict(headers or {})
+    clean = _clean_headers(headers)
     if not clean:
         return clean
     if _same_host(base_url, target_url):
         return clean
+    drop = set(_CREDENTIAL_HEADERS) | _extra_header_names(headers)
     return {key: value for key, value in clean.items()
-            if str(key).lower() not in _CREDENTIAL_HEADERS}
+            if str(key).lower() not in drop}
 
 
 def _next_hop(url: str, headers: Optional[Dict[str, object]],

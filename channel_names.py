@@ -152,6 +152,30 @@ _PAREN_CODE_RE = re.compile(r'\(([a-z]{2,3})\)')
 _GROUP_SYNONYM_PATTERNS_CACHE = None
 
 
+# Country-code variants that are ordinary English words. They are matched
+# only where a code is meant - a leading or parenthesised code, written in
+# capitals - never as a free word.
+_WORD_VARIANTS = frozenset({"can", "car", "nor", "per", "ind"})
+
+_VARIANT_TAGS_CACHE = None
+
+
+def _variant_tags() -> Dict[str, str]:
+    """Every country-code variant, mapped to the tag it means.
+
+    A code can be written in more than one way ("CA", "CAN", "CANADA"), and
+    a leading code in capitals is what the codes look like.
+    """
+    global _VARIANT_TAGS_CACHE
+    if _VARIANT_TAGS_CACHE is None:
+        mapping: Dict[str, str] = {}
+        for tag, variants in group_synonyms().items():
+            for variant in variants:
+                mapping.setdefault(str(variant).strip().lower(), tag)
+        _VARIANT_TAGS_CACHE = mapping
+    return _VARIANT_TAGS_CACHE
+
+
 def _group_synonym_patterns():
     """[(norm_tag, compiled \\b(?:variant|...)\\b regex)] in group_synonyms() order.
 
@@ -165,8 +189,10 @@ def _group_synonym_patterns():
             # The bare code ("at", "no", "is", "de") is matched only as a
             # leading or parenthesised code. As a free word it hits ordinary
             # English: "News at Ten" is not Austrian and "No Limits" is not
-            # Norwegian.
-            words = [v for v in variants if v != tag]
+            # Norwegian. The same holds for the variants that are words too:
+            # "Car SOS" is not Canadian and "You Can Do It" is not either.
+            words = [v for v in variants
+                     if v != tag and v.lower() not in _WORD_VARIANTS]
             if not words:
                 continue
             patterns.append((tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in words) + r')\b')))
@@ -223,15 +249,16 @@ def extract_group(title: str) -> str:
     for norm_tag, rx in _group_synonym_patterns():
         if rx.search(title):
             return norm_tag
-    syn = group_synonyms()
+    tags = _variant_tags()
     m = _LEADING_CODE_RE.match(title)
     if m:
         code = m.group(1)
-        if code in syn and _looks_like_a_code(original):
-            return code
+        tag = tags.get(code)
+        if tag and _looks_like_a_code(original):
+            return tag
     m = _PAREN_CODE_RE.search(title)
     if m:
-        code = m.group(1)
-        if code in syn:
-            return code
+        tag = tags.get(m.group(1))
+        if tag:
+            return tag
     return ''

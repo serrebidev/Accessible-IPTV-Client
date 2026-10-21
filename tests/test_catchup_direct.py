@@ -188,6 +188,33 @@ def test_credentials_do_not_follow_a_redirect_to_another_host():
     assert other["User-Agent"] == "ChannelUA"
 
 
+def test_the_custom_headers_reach_the_provider_and_not_a_stranger():
+    """The channel's custom headers travel in "_extra".
+
+    Sending that list as one header named "_extra" meant the provider never
+    saw them - so the probe was refused and the direct file was never
+    found - and the list, which can carry a secret, went out under a name
+    nobody asked for.
+    """
+    headers = {"_extra": ["X-Auth-Token: secret"], "User-Agent": "ChannelUA"}
+
+    same = catchup_direct.headers_for_host(
+        headers, "https://provider.example/live.ts", "https://provider.example/live.ts")
+    assert same.get("X-Auth-Token") == "secret"
+
+    other = catchup_direct.headers_for_host(
+        headers, "https://provider.example/live.ts", "https://cdn.example/live.ts")
+    assert "X-Auth-Token" not in other
+    assert other.get("User-Agent") == "ChannelUA"
+
+
+def test_the_probe_sends_the_custom_headers_as_headers():
+    """The probe has to send them the way the provider expects them."""
+    cleaned = catchup_direct._clean_headers({"_extra": ["X-Auth-Token: secret"],
+                                             "User-Agent": "ChannelUA"})
+    assert cleaned == {"User-Agent": "ChannelUA", "X-Auth-Token": "secret"}
+
+
 def test_the_credentials_survive_a_host_name_in_another_case():
     """Host names are case-insensitive.
 
