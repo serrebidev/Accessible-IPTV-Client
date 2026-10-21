@@ -227,6 +227,7 @@ def test_the_relay_refuses_a_request_without_its_token():
         with pytest.raises(urllib.error.HTTPError) as excinfo:
             urllib.request.urlopen(stranger, timeout=5)
         assert excinfo.value.code == 404
+        excinfo.value.close()  # the error holds the socket
 
         with urllib.request.urlopen(relay.url, timeout=5) as response:
             assert response.status == 200
