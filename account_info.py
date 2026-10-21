@@ -417,6 +417,22 @@ def _redact_server_host(url: str) -> str:
     return netloc or str(url or "")
 
 
+def _mask_mac(mac: str) -> str:
+    """A MAC address with everything but the first two octets hidden.
+
+    The Stalker portal authenticates with the MAC, so the report - which is
+    read aloud, copied to the clipboard and pasted into issue trackers - shows
+    enough to recognise the device and nothing that works.
+    """
+    text = str(mac or "").strip()
+    if not text:
+        return ""
+    parts = text.split(":")
+    if len(parts) < 3:
+        return text
+    return ":".join(parts[:2] + ["**"] * (len(parts) - 2))
+
+
 def _header_lines(account: Account) -> List[str]:
     lines = [
         _line(_("Account"), account.name or account.username or account.host),
@@ -426,7 +442,10 @@ def _header_lines(account: Account) -> List[str]:
     if account.username:
         lines.append(_line(_("Username"), account.username))
     if account.mac:
-        lines.append(_line(_("MAC address"), account.mac))
+        # The MAC is what the Stalker portal authenticates with, so it is a
+        # credential: the report shows enough to recognise the device and
+        # nothing that works.
+        lines.append(_line(_("MAC address"), _mask_mac(account.mac)))
     if account.detected:
         lines.append(_line(_("Detected from"), _detected_from_label(account.detected_from)))
     return lines

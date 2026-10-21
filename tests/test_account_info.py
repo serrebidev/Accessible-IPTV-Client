@@ -379,7 +379,7 @@ class TestStalkerReport:
         }
         fields = _fields(format_account_report(account, payload, now=NOW))
         assert fields["Type"] == "Stalker Portal"
-        assert fields["MAC address"] == "00:1A:79:00:00:01"
+        assert fields["MAC address"] == "00:1A:**:**:**:**"
         assert fields["Status"] == "Active"
         assert fields["Expires"] == "October 25, 2026"
         assert fields["Package"] == "Full package"
