@@ -223,16 +223,16 @@ answering its own IPC while it tries to open a window it cannot.
 The converter is replaced when the headers change and kept when they do
 not, so re-issuing the same URL does not restart the transcode.
 
-### Still open: the watchdog and a still video track
+### The watchdog and a still video track
 
 The A/V watchdog restarts the stream when **either** track stops
 progressing. A radio source whose cover art decodes twice and then freezes
-arms the video watchdog, and the player reconnects every ten seconds
-while the audio plays perfectly well. The app knows the stream is
+armed the video watchdog, and the player reconnected every ten seconds
+while the audio played perfectly well. The app already knows the stream is
 audio-only (the attached-picture rule in `media_type.py`), but the player
-is not told: `main.py` passes `video_visible` and nothing else. The fix is
-to hand the media hint to the player, so an audio-only source never arms
-the video watchdog.
+was not told: `main.py` passed `video_visible` and nothing else. The media
+hint now reaches the player, and an audio-only source never arms the video
+watchdog.
 
 ## Checked and not a defect
 
