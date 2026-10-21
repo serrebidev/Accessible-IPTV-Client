@@ -15,6 +15,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import i18n  # noqa: E402
 
+
+def test_a_hand_edited_language_value_does_not_crash_the_startup():
+    """The config is whatever the file says.
+
+    ``"language": 5`` in a hand-edited iptvclient.conf used to raise
+    AttributeError while the frame was starting, and the app died with no
+    window at all.
+    """
+    assert i18n.set_language(5)
+    assert i18n.set_language(None)
+    assert i18n.set_language("hu")
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCALE = os.path.join(REPO, "locale")
 HU_PO = os.path.join(LOCALE, "hu", "LC_MESSAGES", "iptvclient.po")

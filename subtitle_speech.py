@@ -189,6 +189,9 @@ class SubtitleSpeechManager:
                      or start_ms == current.start_ms)
             ):
                 # Same cue, timing/track arriving separately: merge in place.
+                # A cue that carries no timing at all is a different cue: two
+                # consecutive lines can read the same, and merging them on the
+                # wording alone would silence the second.
                 if start_ms is not None:
                     current.start_ms = start_ms
                 if end_ms is not None:

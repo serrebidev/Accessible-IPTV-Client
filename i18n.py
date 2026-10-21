@@ -116,7 +116,9 @@ def detect_system_language() -> str:
 
 def _resolve_candidates(lang_code: str):
     """Map a stored preference to a gettext language list, or ``None`` for source English."""
-    code = (lang_code or LANG_AUTO).strip().lower()
+    # A hand-edited config must not crash the startup: the value is whatever
+    # the file says, so it is coerced rather than trusted.
+    code = str(lang_code or LANG_AUTO).strip().lower()
     if code in ("", LANG_AUTO, "automatic", "system", "default"):
         resolved = detect_system_language()
     else:
@@ -130,7 +132,9 @@ def _resolve_candidates(lang_code: str):
 def set_language(lang_code: str) -> str:
     """Activate ``lang_code`` ("auto"/"en"/"hu"/...). Returns the stored preference code."""
     global _translation, _notes_translation, _active_code
-    code = (lang_code or LANG_AUTO).strip().lower()
+    # A hand-edited config must not crash the startup: the value is whatever
+    # the file says, so it is coerced rather than trusted.
+    code = str(lang_code or LANG_AUTO).strip().lower()
     if code in ("", "automatic", "system", "default"):
         code = LANG_AUTO
     _active_code = code
