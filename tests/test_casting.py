@@ -250,3 +250,19 @@ def test_exclusive_provider_probes_one_step_at_a_time(manager, monkeypatch):
     manager.connect(_device("sonos", {"ip": "10.0.0.5"}))
     manager.play("http://h/radio", "Radio", headers={}, exclusive=True)
     assert order == ["probe", "settle", "play"]
+
+
+def test_a_live_source_that_failed_is_not_reopened_for_good():
+    """A source that failed is not a drop to recover from.
+
+    The AirPlay runner reopened a live source for ever: the cast reported
+    success while ffmpeg was respawned every second, and the provider's
+    stream slot was held the whole time.
+    """
+    # ffmpeg exited with an error: the source failed (a 403, say).
+    assert casting._live_source_error(1, 0) is not None
+    # A clean end is a drop: reopen it at the live edge.
+    assert casting._live_source_error(0, 0) is None
+    assert casting._live_source_error(None, 0) is None
+    # A source that ends again straight away was never working.
+    assert casting._live_source_error(0, casting.LIVE_REOPEN_LIMIT) is not None

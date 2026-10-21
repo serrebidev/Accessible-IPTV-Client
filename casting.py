@@ -51,6 +51,14 @@ LOAD_TIMEOUT = 12.0
 LOAD_POLL = 0.15
 #: Idle reasons that describe the END of a previous playback, not a rejection.
 STALE_IDLE_REASONS = ("INTERRUPTED", "CANCELLED")
+
+# A live source that drops ends ffmpeg cleanly and is reopened at the live
+# edge. One that ends again straight away was never working: after a few of
+# those the cast has failed, and the old loop reopened for ever - the cast
+# reported success while ffmpeg was respawned every second.
+LIVE_REOPEN_LIMIT = 3
+# A source that drops sooner than this had not been running.
+LIVE_QUICK_DROP_SECONDS = 5.0
 #: Caster's quality preset for the relay: 2 s segments, a 16 s start cushion
 #: and 45 s of history, deep enough for IPTV sources that stutter.
 RELAY_PRESET = "balanced"
@@ -114,6 +122,22 @@ class CastDevice:
 
     def __repr__(self) -> str:
         return f"CastDevice({self.kind}, {self.name!r})"
+
+
+def _live_source_error(code: Optional[int], reopen_attempts: int) -> Optional[BaseException]:
+    """Why a live source cannot be reopened, or None when it can.
+
+    A live source that drops ends ffmpeg cleanly (exit code 0) and is
+    reopened at the live edge on the same session. A source that failed
+    outright - a 403 from the provider - exits with an error, and the old
+    loop reopened that for ever: the cast reported success while ffmpeg was
+    respawned every second for good.
+    """
+    if code is not None and code != 0:
+        return RuntimeError(f"ffmpeg could not read the stream (exit code {code})")
+    if reopen_attempts >= LIVE_REOPEN_LIMIT:
+        return RuntimeError("the live source kept dropping")
+    return None
 
 
 class CastingManager:
@@ -861,7 +885,9 @@ class CastingManager:
                 live = bool(probe["is_live"]) and not probe["is_audio"]
                 if exclusive:
                     await loop.run_in_executor(None, self._settle, True)
+                reopen_attempts = 0
                 while not shutdown.is_set():
+                    attempt_started = loop.time()
                     proc, reader = await self._raop_source(url, live)
                     stream_task = asyncio.create_task(atv.stream.stream_file(reader))
                     started.set()
@@ -881,13 +907,23 @@ class CastingManager:
                         stream_task = None
                         if shutdown.is_set():
                             break
+                        code = proc.poll()
                         if live:
                             # Live sources drop every few seconds; ffmpeg exits
                             # and the stream reopens at the live edge on the
-                            # same RAOP session.
+                            # same RAOP session. A source that failed is not a
+                            # drop, though: the old loop reopened that for
+                            # ever, so the cast reported success while ffmpeg
+                            # was respawned every second.
+                            source_error = _live_source_error(code, reopen_attempts)
+                            if source_error is not None:
+                                raise source_error
+                            if loop.time() - attempt_started < LIVE_QUICK_DROP_SECONDS:
+                                reopen_attempts += 1
+                            else:
+                                reopen_attempts = 0
                             await asyncio.sleep(1)
                             continue
-                        code = proc.poll()
                         if error is None and code not in (None, 0):
                             error = RuntimeError(f"ffmpeg could not read the stream (exit code {code})")
                         if error is not None:

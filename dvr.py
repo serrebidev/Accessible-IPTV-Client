@@ -409,8 +409,17 @@ class DVRScheduler:
             job["message"] = ""
         self.save()
         self._notify_update()
+        # Starting a recording resolves the stream URL, classifies the media
+        # and probes its audio tracks, which takes seconds. On the scheduler
+        # thread that stopped the tick: a job that came due started late, and
+        # one whose whole window passed was marked missed and never recorded.
+        # The job is claimed above, so the next tick cannot start it twice.
+        threading.Thread(target=self._start_job_worker, args=(job_id, dict(job)),
+                         name="dvr-start", daemon=True).start()
+
+    def _start_job_worker(self, job_id: str, job: Dict[str, object]) -> None:
         try:
-            recording = self.on_start(dict(job))
+            recording = self.on_start(job)
             rec_id = getattr(recording, "id", recording)
             out_path = getattr(recording, "out_path", "")
             with self._lock:
