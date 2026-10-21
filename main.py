@@ -2649,13 +2649,22 @@ class IPTVClient(wx.Frame):
             keep = (list(self.all_channels), dict(getattr(self, "provider_clients", None) or {}),
                     list(getattr(self, "provider_epg_sources", None) or []),
                     dict(getattr(self, "playlist_epg_by_source", None) or {}))
+        # What every source had before this load, so a source that cannot be
+        # fetched keeps its channels and its provider session instead of
+        # disappearing from the list. A partial refresh carries that in `keep`.
+        previous = None
+        if keep is None:
+            previous = {
+                "channels": list(self.all_channels),
+                "clients": dict(getattr(self, "provider_clients", None) or {}),
+            }
         self._playlist_load_token += 1
         self._pending_epg_autostart = True
         self._pending_epg_autostart_token = self._playlist_load_token
         self._cancel_epg_autostart_timer()
         threading.Thread(
             target=self._do_playlist_refresh,
-            args=(self._playlist_load_token, only, keep),
+            args=(self._playlist_load_token, only, keep, previous),
             daemon=True
         ).start()
 
@@ -2903,7 +2912,7 @@ class IPTVClient(wx.Frame):
         # This full cycle can be triggered by the timer.
         self.start_playlist_load()
 
-    def _do_playlist_refresh(self, refresh_token: int, only=None, keep=None):
+    def _do_playlist_refresh(self, refresh_token: int, only=None, keep=None, previous=None):
         """
         Loads playlists from cache for a fast UI update, then refreshes from the network.
         Crucially, it only starts the EPG import *after* playlists are loaded.
@@ -2923,6 +2932,17 @@ class IPTVClient(wx.Frame):
         all_channels: List[Dict[str, str]] = []
         valid_caches = set()
         seen_channel_keys = set()
+        previous = previous or {}
+        previous_channels = list(keep[0]) if keep else list(previous.get("channels") or [])
+        previous_clients = dict(keep[1]) if keep else dict(previous.get("clients") or {})        # The channels each source had before this load. A source that cannot
+        # be fetched keeps them: a playlist that vanishes because one download
+        # failed is worse than a playlist that is one refresh out of date.
+        previous_by_scope: Dict[str, List[Dict[str, str]]] = {}
+        for ch in previous_channels:
+            scope_id = ch.get("playlist-id")
+            if scope_id:
+                previous_by_scope.setdefault(scope_id, []).append(ch)
+        failed_sources: List[str] = []
 
         # Fast prefill from parsed caches (no network) so UI shows something immediately.
         prefilled_by_group: Dict[str, List[Dict[str, str]]] = {}
@@ -3149,8 +3169,21 @@ class IPTVClient(wx.Frame):
                     pass # Invalid source
             except Exception as e:
                 result["error"] = str(e)
-                # LOG.error(f"Error fetching playlist {src}: {e}")
-            
+                if isinstance(src, dict):
+                    source_label = src.get("name") or src.get("base_url") or src.get("url") or ""
+                else:
+                    source_label = src
+                LOG.warning("Could not fetch playlist %s: %s", source_label, e)
+                # The source keeps the channels and the provider session it
+                # had: a playlist that disappears because one download failed
+                # is worse than one that is a single refresh out of date.
+                scope_id = _source_scope_id(src)
+                result["channels"] = list(previous_by_scope.get(scope_id, []))
+                if isinstance(src, dict):
+                    pid = src.get("id") or src.get("provider_id")
+                    if pid in previous_clients:
+                        result["clients"][pid] = previous_clients[pid]
+
             return result
 
         # Execute in parallel (fetching AND parsing) with a CPU-friendly cap.
@@ -3164,8 +3197,13 @@ class IPTVClient(wx.Frame):
                 src = futures[future]
                 res = future.result()
                 if res["error"]:
-                    continue
-                
+                    failed_sources.append(src)
+                    if not res["channels"]:
+                        continue
+                    # The source kept the channels it had, but its downloaded
+                    # copy is stale: it must not count as a fresh cache.
+                    res["valid_cache"] = None
+
                 if res["valid_cache"]:
                     valid_caches.add(res["valid_cache"])
                 
@@ -3220,8 +3258,14 @@ class IPTVClient(wx.Frame):
                 self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
             done = getattr(self, "_announce_playlists_refreshed", None)
-            if done:
-                self._announce_playlists_refreshed = None
+            failed = getattr(self, "_announce_playlists_refresh_failed", None)
+            self._announce_playlists_refreshed = None
+            self._announce_playlists_refresh_failed = None
+            if failed_sources and failed:
+                # The refresh was announced as done, but a source failed: say
+                # so, or the user believes a stale playlist was updated.
+                self._speak(failed)
+            elif done:
                 self._speak(done)
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
@@ -7461,8 +7505,11 @@ class IPTVClient(wx.Frame):
                 db = EPGDatabase(get_db_path(), for_threading=True)
                 # Pass a coarse progress callback (per-source). The DB importer writes as it streams,
                 # so readers can pick up newly inserted rows during import.
-                db.import_epg_xml(sources)
-                success = True
+                imported = db.import_epg_xml(sources)
+                # Every source can fail on its own and the importer logs it and
+                # moves on, so the import itself never fails. A guide that
+                # loaded nothing is not an up-to-date guide.
+                success = bool(imported)
                 try:
                     if hasattr(db, "close"):
                         db.close()
@@ -7560,10 +7607,13 @@ class IPTVClient(wx.Frame):
                     LOG.debug("IPTVClient._refresh_playlist_sources: no cached copy to drop", exc_info=True)
         if label is None:
             self._announce_playlists_refreshed = _("All playlists refreshed.")
+            self._announce_playlists_refresh_failed = _("Playlist refresh failed: {name}").format(
+                name=_("All playlists"))
             self._speak(_("Refreshing all playlists..."))
             self.start_playlist_load()
         else:
             self._announce_playlists_refreshed = _("Playlist refreshed: {name}").format(name=label)
+            self._announce_playlists_refresh_failed = _("Playlist refresh failed: {name}").format(name=label)
             self._speak(_("Refreshing playlist: {name}").format(name=label))
             self.start_playlist_load(only=list(sources))
 

@@ -228,6 +228,20 @@ class DVRScheduler:
                 os.fsync(fh.fileno())
             os.replace(tmp, self.path)
 
+    def _save_schedule(self) -> None:
+        """Write the schedule, reporting a failure instead of raising it.
+
+        The schedule file is a convenience: the jobs live in memory and the
+        app keeps working without it. A write that fails (a full disk, a
+        locked file) must never change a job's state - a recording marked
+        "failed" because the file could not be written is never stopped by the
+        scheduler, and it holds the provider's one stream slot for good.
+        """
+        try:
+            self.save()
+        except Exception:
+            LOG.exception("Could not save the DVR schedule: %s", self.path)
+
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
             return
@@ -343,7 +357,7 @@ class DVRScheduler:
                 job["status"] = STATUS_COMPLETED if success else STATUS_FAILED
                 job["message"] = message
                 self._schedule_next_occurrence(job)
-        self.save()
+        self._save_schedule()
         self._notify_update()
 
     def tick(self) -> None:
@@ -407,7 +421,7 @@ class DVRScheduler:
                 return
             job["status"] = STATUS_RECORDING
             job["message"] = ""
-        self.save()
+        self._save_schedule()
         self._notify_update()
         # Starting a recording resolves the stream URL, classifies the media
         # and probes its audio tracks, which takes seconds. On the scheduler
@@ -434,25 +448,32 @@ class DVRScheduler:
                 # runs forever: the scheduler never stops a canceled job.
                 abandoned = not current or current.get("status") != STATUS_RECORDING
                 snapshot = dict(current) if current else dict(job, recording_id=rec_id)
-            self.save()
-            self._notify_update()
-            if abandoned:
-                LOG.info("Scheduled recording %s was canceled while starting; stopping it", job_id)
-                try:
-                    self.on_stop(snapshot)
-                except Exception:
-                    LOG.exception("Could not stop a recording canceled while starting")
         except Exception as err:
             LOG.exception("Scheduled recording failed to start")
             with self._lock:
-                job = self._jobs.get(job_id)
-                if job:
-                    job["status"] = STATUS_FAILED
-                    job["recording_id"] = None
-                    job["message"] = str(err)
-                    self._schedule_next_occurrence(job)
-            self.save()
+                current = self._jobs.get(job_id)
+                if current and current.get("status") != STATUS_CANCELED:
+                    # A job the user canceled while it was starting stays
+                    # canceled: it must not come back as "failed", and no new
+                    # occurrence may be queued for it.
+                    current["status"] = STATUS_FAILED
+                    current["recording_id"] = None
+                    current["message"] = str(err)
+                    self._schedule_next_occurrence(current)
+            self._save_schedule()
             self._notify_update()
+            return
+        # The recording is running. A schedule that cannot be written must not
+        # turn it into a failed job: the scheduler would never stop it, and it
+        # would hold the provider's one stream slot for good.
+        self._save_schedule()
+        self._notify_update()
+        if abandoned:
+            LOG.info("Scheduled recording %s was canceled while starting; stopping it", job_id)
+            try:
+                self.on_stop(snapshot)
+            except Exception:
+                LOG.exception("Could not stop a recording canceled while starting")
 
     def _stop_job(self, job_id: str) -> None:
         with self._lock:
@@ -462,7 +483,7 @@ class DVRScheduler:
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
             self._stopping_since[job_id] = float(self.clock())
-        self.save()
+        self._save_schedule()
         self._notify_update()
         try:
             self.on_stop(dict(job))
@@ -479,7 +500,7 @@ class DVRScheduler:
             job["message"] = message
             if status in {STATUS_MISSED, STATUS_FAILED}:
                 self._schedule_next_occurrence(job)
-        self.save()
+        self._save_schedule()
         self._notify_update()
 
     def _schedule_next_occurrence(self, job: Dict[str, object]) -> None:

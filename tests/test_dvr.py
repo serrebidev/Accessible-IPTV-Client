@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -600,3 +601,104 @@ def test_the_series_scan_does_not_block_the_scheduler(tmp_path):
     finally:
         release.set()
         scheduler.stop()
+
+
+def test_a_job_canceled_while_it_starts_stays_canceled(tmp_path):
+    """Canceling a daily recording must not bring it back tomorrow.
+
+    The start resolves the stream URL and probes the channel, which takes
+    seconds. A cancel in that window found no recording to stop, so the job
+    stayed "recording" until the start itself failed - and the failure
+    handler wrote "failed" over the cancellation and queued the next daily
+    occurrence, so the recording the user had just canceled came back.
+    """
+    now = [1000.0]
+    in_start = threading.Event()
+    release = threading.Event()
+    failed = threading.Event()
+
+    def on_start(job):
+        in_start.set()
+        release.wait(10)
+        raise RuntimeError("the provider is unreachable")
+
+    scheduler = dvr.DVRScheduler(str(tmp_path / "schedule.json"),
+                                 on_start=on_start, on_stop=lambda _job: None,
+                                 clock=lambda: now[0])
+    start = datetime.datetime.fromtimestamp(1010, datetime.timezone.utc)
+    end = datetime.datetime.fromtimestamp(1020, datetime.timezone.utc)
+    job = dvr.build_job(
+        {"name": "DVR Test Channel", "url": "http://example/stream"},
+        _sample_program(start, end),
+        "provider_mkv",
+        job_id="job1",
+        repeat="daily",
+    )
+    scheduler.add_job(job)
+
+    now[0] = 1010
+    scheduler.tick()
+    assert in_start.wait(5), "the start never ran"
+
+    # The user cancels while the stream is still being resolved.
+    scheduler.cancel_job("job1")
+    scheduler._notify_update = failed.set
+    release.set()
+    assert failed.wait(5), "the start worker never finished"
+
+    assert scheduler.get_job("job1")["status"] == dvr.STATUS_CANCELED
+    # No new occurrence was queued for a recording the user canceled.
+    assert [j["id"] for j in scheduler.list_jobs()] == ["job1"]
+
+
+def test_a_schedule_that_cannot_be_written_does_not_orphan_the_recording(tmp_path):
+    """A full disk must not turn a running recording into a failed job.
+
+    The start writes the schedule to claim the job and to record the
+    recording's id. When that write failed, the failure handler marked the
+    job "failed" and cleared the recording id, so the scheduler never stopped
+    it: ffmpeg kept recording past the end of the window and held the
+    provider's one stream slot for good.
+    """
+    now = [1000.0]
+    in_start = threading.Event()
+    release = threading.Event()
+    notified = []
+
+    def on_start(job):
+        in_start.set()
+        release.wait(10)
+        return types.SimpleNamespace(id=7, out_path="C:/x/rec.mkv")
+
+    scheduler = dvr.DVRScheduler(str(tmp_path / "schedule.json"),
+                                 on_start=on_start, on_stop=lambda _job: None,
+                                 clock=lambda: now[0])
+    start = datetime.datetime.fromtimestamp(1010, datetime.timezone.utc)
+    end = datetime.datetime.fromtimestamp(1020, datetime.timezone.utc)
+    job = dvr.build_job(
+        {"name": "DVR Test Channel", "url": "http://example/stream"},
+        _sample_program(start, end),
+        "provider_mkv",
+        job_id="job1",
+    )
+    scheduler.add_job(job)
+
+    # The schedule file cannot be written any more.
+    def _no_save():
+        raise OSError("the disk is full")
+
+    scheduler.save = _no_save
+    # The claim notifies once, the finished start notifies again.
+    scheduler._notify_update = lambda: notified.append(1)
+
+    now[0] = 1010
+    scheduler.tick()
+    assert in_start.wait(5), "the start never ran"
+    release.set()
+    deadline = time.time() + 5
+    while len(notified) < 2 and time.time() < deadline:
+        time.sleep(0.05)
+
+    active = scheduler.get_job("job1")
+    assert active["status"] == dvr.STATUS_RECORDING
+    assert active["recording_id"] == 7

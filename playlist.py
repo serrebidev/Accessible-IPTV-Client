@@ -2586,7 +2586,7 @@ class EPGDatabase:
         # stale lock file behind and block every later import.
         _wait_for_import_lock(self.db_path)
         try:
-            self._import_epg_xml_locked(xml_sources, progress_callback)
+            return self._import_epg_xml_locked(xml_sources, progress_callback)
         finally:
             try:
                 _release_import_lock(self.db_path)
@@ -2594,6 +2594,12 @@ class EPGDatabase:
                 _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
     def _import_epg_xml_locked(self, xml_sources: List[str], progress_callback=None):
+        """Import every guide and return how many of them came in.
+
+        A source that cannot be reached is logged and skipped, so the import
+        itself never fails: the count is what tells the caller whether the
+        guide is up to date or nothing could be loaded at all.
+        """
         trace_mem = DEBUG or os.getenv("EPG_TRACE_MEM", "0").strip().lower() in {"1", "true", "yes"}
         if trace_mem and tracemalloc.is_tracing():
             tracemalloc.stop()
@@ -2960,6 +2966,11 @@ class EPGDatabase:
             _logger.info("EPG SUMMARY total_added ch=%d pg=%d | db_final ch=%s pg=%s | mem=%sMB peak_trace=%sKB",
                          grand_chan, grand_prog, row_c[0] if row_c else '?', row_p[0] if row_p else '?', _mem_mb(), int(peak/1024))
         except Exception as e: _logger.debug("EPG SUMMARY failed to query DB counts: %s", e)
+
+        # The number of guides that actually came in. A run where every source
+        # failed imported nothing, and the caller has to say so instead of
+        # reporting an up-to-date guide.
+        return len(imported_sources)
 
 
 # =========================
