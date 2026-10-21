@@ -1078,6 +1078,43 @@ def _guide_xml(path, channels):
     return str(path)
 
 
+def test_a_non_finite_length_costs_one_programme_not_the_source(tmp_path):
+    """A length of "inf" is not a duration.
+
+    float("inf") parses, so the guard around the float() let it through and
+    int(inf) raised OverflowError inside the per-programme loop. The source
+    was abandoned there and every programme after the bad one was dropped.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv>'
+             '<channel id="c"><display-name>C</display-name></channel>']
+    parts.append(f'<programme start="{now.strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>First</title></programme>')
+    # No stop, and a length that is not a number at all.
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+                 f'channel="c"><title>Broken</title>'
+                 f'<length units="minutes">inf</length></programme>')
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=2)).strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(hours=2, minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>Last</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        titles = {row[0] for row in
+                  db.conn.execute("SELECT title FROM programmes").fetchall()}
+    finally:
+        db.close()
+
+    assert "First" in titles
+    assert "Last" in titles, "the bad length took the rest of the source with it"
+
+
 def test_import_forgets_channels_the_guide_no_longer_lists(tmp_path):
     """A retired id kept counting as "this channel has its own guide", so a
     playlist channel still carrying it never fell back to a current namesake."""

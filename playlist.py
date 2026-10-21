@@ -921,10 +921,16 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
         except Exception:
             val = None
         if val is not None:
-            if units in {"", "minute", "minutes", "mins", "min"}:
-                dur_seconds = int(val * 60)
-            elif units in {"second", "seconds", "sec", "secs"}:
-                dur_seconds = int(val)
+            try:
+                if units in {"", "minute", "minutes", "mins", "min"}:
+                    dur_seconds = int(val * 60)
+                elif units in {"second", "seconds", "sec", "secs"}:
+                    dur_seconds = int(val)
+            except (ValueError, OverflowError):
+                # "inf" or "nan" parses as a float but is not a duration.
+                # Raising here aborted the whole source, dropping every
+                # programme after this one.
+                dur_seconds = None
     if dur_seconds is None:
         # <duration>PT1H30M</duration>
         dur_elem = elem.find(".//duration")
@@ -2800,7 +2806,7 @@ class EPGDatabase:
                     parser.close() # Finalize
                     self.commit()
                     try:
-                        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+                        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE);").fetchall()
                     except Exception:
                         _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     _logger.debug("EPG DONE src=%s channels=%d progs=%d elapsed=%.1fs mem=%sMB",
