@@ -92,27 +92,12 @@ Every fix has a regression test that fails without it.
   bounded to 2.5 s now, but the proper fix is to start the player on a worker
   and hand the plain MPV handoff to that worker when the adapter cannot
   attach. It touches the launch path, so it wants its own change.
-- The recording relay's HTTP server has no token: any process on the machine
-  can find the port and watch the recording being made.
 - The MPV IPC endpoint used to reuse a running instance is a fixed, machine-wide
   named pipe, and the URL it carries the provider's user and password - in the
   process list and in the player's own media history.
-- The Stalker MAC address is in the account report, and the MAC is what the
-  portal authenticates with. A test pins that behaviour, so removing it is a
-  decision, not a silent fix.
 - The single-instance guard uses a `Local\` mutex on Windows, which is per
   Terminal Services session: the same account in the console and in an RDP
   session gets two copies sharing one config directory, EPG database and log.
-- The country-code synonyms in `channel_names.py` match bare English words
-  ("News at Ten" -> Austria, "No Limits" -> Norway, "It Always Sunny" -> Italy),
-  so the guide's region can point at the wrong country.
-- `chardet` can name an encoding Python has no codec for (EUC-TW, ISO-2022-CN)
-  and the cue loader only catches `OSError` and `ValueError`, so a legacy CJK
-  subtitle file kills the cue thread after the status line already said it
-  loaded.
-- The automatic language detection reads the POSIX `LANG` variables before
-  the Windows branch, so a Git Bash or MSYS shell can put the app in English
-  on a non-English Windows.
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
   application can still veto it afterwards, and the app has already closed by
   then.
