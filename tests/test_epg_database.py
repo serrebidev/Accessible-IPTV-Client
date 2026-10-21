@@ -544,6 +544,37 @@ def test_an_out_of_range_date_costs_one_programme_not_the_source():
     # programme feed imported as zero channels and zero programmes.
     assert _parse_xmltv_to_utc_str("00010101000000 +1400") is None
     assert _parse_xmltv_to_utc_str("202609270600 +0100") == "20260927050000"
+
+
+def test_the_guide_check_is_cached_against_the_database_file(tmp_path):
+    """The usability check scans the programme index.
+
+    There is no index that can seek `end`, so on a guide with millions of rows
+    it costs a few hundred milliseconds - on the GUI thread, where it holds the
+    window and the screen reader silent. The answer only changes when the
+    database does, so it is cached against the file's size and mtime.
+    """
+    import main as appmod
+
+    db_file = tmp_path / "epg.db"
+    db_file.write_bytes(b"sqlite")
+    calls = []
+
+    def fake_check(path):
+        calls.append(path)
+        return True
+
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.config = {"epg_enabled": True}
+    monkey = pytest.MonkeyPatch()
+    try:
+        monkey.setattr(appmod, "epg_database_has_usable_data", fake_check)
+        monkey.setattr(appmod, "get_db_path", lambda: str(db_file))
+        assert client._epg_guide_is_usable() is True
+        assert client._epg_guide_is_usable() is True
+        assert len(calls) == 1, "the check ran again although nothing changed"
+    finally:
+        monkey.undo()
     # Malformed digit counts and invalid fields stay rejected.
     assert _parse_xmltv_to_utc_str("20260927123") is None      # 11 digits
     assert _parse_xmltv_to_utc_str("20261327000000") is None   # month 13

@@ -44,6 +44,26 @@ was already wrong: the suite has ~1970 tests.
 | MINOR | `main.py` | quitting waited for the recorder on the GUI thread | the still-visible window froze for up to half a minute per recording ("Not Responding") |
 | MINOR | `main.py` | the Scheduled Recordings dialog selected row 0 and took the focus on every refresh | a screen-reader user browsing the schedule lost their place whenever a recording started or finished |
 | MINOR | `main.py` | the EPG import's refresh of the row labels was swallowed by the 30 s throttle | the app said the guide was up to date while the rows still showed the previous programme |
+| MINOR | `main.py` | the "is the EPG database usable" check scanned the whole programme index on the GUI thread | a fraction of a second of silent window every time the check ran |
+
+### The EPG usability check, measured
+
+The check is `SELECT 1 FROM programmes p JOIN channels c ON c.id = p.channel_id
+WHERE p.end > ? LIMIT 1`, and no index can seek `end`: the covering index leads
+with `start`. Measured on a synthetic guide (400 000 programmes, the indexes the
+app creates):
+
+| | bulk insert | database | the check |
+|---|---|---|---|
+| as it is | 19.9 s | 77.3 MB | 0.078 s |
+| with an index on `end` | 20.2 s | 86.2 MB (+11%) | 0.000 s |
+
+So the finding is real but smaller than it looked: at the size of a real guide
+it is a fraction of a second, not a multi-second freeze - and an index would
+buy that fraction for eleven percent more disk on a database that is already
+large, plus a slower import. The check is therefore not indexed; its answer is
+cached against the database file's size and mtime instead, so it runs once per
+guide change and every later call is free.
 
 Every fix has a regression test that fails without it.
 

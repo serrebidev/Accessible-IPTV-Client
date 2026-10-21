@@ -4220,7 +4220,7 @@ class IPTVClient(wx.Frame):
             return
 
         self._ensure_dvr_scheduler(start=True).add_job(job)
-        if not epg_database_has_usable_data(get_db_path()):
+        if not self._epg_guide_is_usable():
             # The guide is not imported (or not current), so this is the only
             # programme the user could see and the schedule can offer no
             # picture of what is coming. Say so: an empty Scheduled Recordings
@@ -7336,6 +7336,29 @@ class IPTVClient(wx.Frame):
             return 0.0
         return hours * 3600.0
 
+    def _epg_guide_is_usable(self) -> bool:
+        """Whether the EPG database has current data.
+
+        The check scans the programme index, and there is no index that can
+        seek ``end``, so it costs a few hundred milliseconds on a guide with
+        millions of rows - on the GUI thread, where it holds the window and
+        the screen reader silent. The answer only changes when the database
+        does, so it is cached against the file's size and mtime: the first
+        check after an import pays, every later one is free.
+        """
+        path = get_db_path()
+        try:
+            stat = os.stat(path)
+        except OSError:
+            return False
+        stamp = (path, stat.st_size, stat.st_mtime)
+        cached = getattr(self, "_epg_guide_usable_cache", None)
+        if cached and cached[0] == stamp:
+            return cached[1]
+        usable = epg_database_has_usable_data(path)
+        self._epg_guide_usable_cache = (stamp, usable)
+        return usable
+
     def _should_auto_import_epg(self, sources: List[str]) -> bool:
         interval = self._get_epg_auto_interval_seconds()
         if interval <= 0:
@@ -7347,8 +7370,7 @@ class IPTVClient(wx.Frame):
         current_hash = self._hash_epg_sources(sources)
         if current_hash and current_hash != last_hash:
             return True
-        db_path = get_db_path()
-        if not epg_database_has_usable_data(db_path):
+        if not self._epg_guide_is_usable():
             return True
         try:
             last_import = float(self.config.get("epg_last_import_epoch", 0) or 0)
