@@ -186,6 +186,18 @@ redirect, and it strips them for the probe - but the download that
 followed was handed the original headers, which undid it. The headers are
 now filtered for the host the file actually lives on.
 
+## Ninth pass: the words that are not codes, and the headers that are not headers
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `channel_names.py` | the country-code variants were matched as free words, and a few of them are ordinary English | "Car SOS" and "You Can Do It" were tagged Canadian, and the channel then looked for a Canadian guide |
+| SEVERE | `catchup_direct.py` | the channel's custom headers travel in `_extra`, and the catch-up probe sent that list as one header named `_extra` | the provider never saw the custom headers, so the probe was refused and the direct file was never found - and the list, which can carry a secret, went out under a name nobody asked for |
+| MINOR | `stream_proxy.py` | a live upstream that answered with an HTTP error was reopened like a drop | a refused session was reopened for ever, holding ffmpeg and the provider's stream slot with nothing reported |
+
+The codes still work where a code is meant: a leading or parenthesised
+code in capitals ("CAN TV", "(CA) News") and the spelled-out names
+("CANADA TV", "USA News"). "Fox USA" is still American.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
