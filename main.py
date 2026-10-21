@@ -61,7 +61,7 @@ import single_instance
 import updater
 from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
-    epg_database_has_programmes, epg_database_has_usable_data
+    epg_database_has_programmes, epg_database_has_usable_data, epg_tables_present
 )
 from playlist import (source_name_key, normalize_source_names,
                       _expand_tvg_id_candidates)
@@ -2629,17 +2629,7 @@ class IPTVClient(wx.Frame):
             uri = f"file:{path}?cache=shared"
             conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
             cur = conn.cursor()
-            tables = {
-                row[0]
-                for row in cur.execute(
-                    """
-                    SELECT name
-                    FROM sqlite_master
-                    WHERE type = 'table' AND name IN ('channels', 'programmes')
-                    """
-                ).fetchall()
-            }
-            if {"channels", "programmes"} - tables:
+            if not epg_tables_present(cur):
                 return
             cur.execute("PRAGMA journal_mode=WAL;")
             cur.execute("PRAGMA synchronous=NORMAL;")
@@ -6799,17 +6789,7 @@ class IPTVClient(wx.Frame):
                 return False
             conn = sqlite3.connect(f"file:{path}?mode=ro&cache=shared", uri=True, timeout=0.5)
             try:
-                tables = {
-                    row[0]
-                    for row in conn.execute(
-                        """
-                        SELECT name
-                        FROM sqlite_master
-                        WHERE type = 'table' AND name IN ('channels', 'programmes')
-                        """
-                    ).fetchall()
-                }
-                return not ({"channels", "programmes"} - tables)
+                return epg_tables_present(conn.cursor())
             finally:
                 conn.close()
         except Exception:

@@ -1035,6 +1035,25 @@ PRAGMA_READONLY = [
 ]
 
 
+def epg_tables_present(cur) -> bool:
+    """Whether the EPG database has the tables the app reads.
+
+    One place, because the check was written out three times and one copy
+    could drift from the others.
+    """
+    tables = {
+        row[0]
+        for row in cur.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name IN ('channels', 'programmes')
+            """
+        ).fetchall()
+    }
+    return not ({"channels", "programmes"} - tables)
+
+
 def epg_database_has_programmes(db_path: str) -> bool:
     """True when the EPG database exists and holds at least one programme.
 
@@ -1068,17 +1087,7 @@ def epg_database_has_usable_data(db_path: str, now_utc: Optional[datetime.dateti
             uri = f"file:{urllib.parse.quote(db_path)}?mode=ro&cache=shared"
             conn = sqlite3.connect(uri, uri=True, timeout=2.0)
             cur = conn.cursor()
-            tables = {
-                row[0]
-                for row in cur.execute(
-                    """
-                    SELECT name
-                    FROM sqlite_master
-                    WHERE type = 'table' AND name IN ('channels', 'programmes')
-                    """
-                ).fetchall()
-            }
-            if {"channels", "programmes"} - tables:
+            if not epg_tables_present(cur):
                 return False
 
             if now_utc is None:
