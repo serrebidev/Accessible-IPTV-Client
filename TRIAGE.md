@@ -67,6 +67,18 @@ guide change and every later call is free.
 
 Every fix has a regression test that fails without it.
 
+## Fourth pass: the capture, subtitle and support modules
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py`, `internal_player.py` | the built-in player's cues never reached the speech manager, and they carried no timing | "Read current subtitle" and "Review recent subtitles" always answered "No subtitle text available yet." for the app's own player, and two consecutive lines with the same text were merged - the second was never spoken |
+| SEVERE | `account_info.py` | the report printed the server URL as it stood | a pasted Xtream URL can carry the password in it, and the report is read aloud, copied to the clipboard and pasted into issue trackers |
+| SEVERE | `catchup_direct.py` | the direct-file probe followed redirects, and the channel's credentials followed the redirect target | the probe fetched the programme's stream as media and held the account's one stream, and the provider's cookie went to whatever host the server named |
+| SEVERE | `i18n.py` | the language value from the config was used as a string without checking | `"language": 5` in a hand-edited config raised `AttributeError` while the frame was starting: no window at all, and in the windowed build, silence |
+| SEVERE | `mpv_subtitle_adapter.py` | the adapter's connect and version request allowed five and four seconds, on the GUI thread | pressing Enter with MPV selected froze the window - and silenced the screen reader - for as long as the handshake took |
+| MINOR | `external_player.py` | the launch debounce used the wall clock | a backwards clock step left the debounce permanently open: the player refused to start until the app was restarted |
+| MINOR | `power.py` | the shutdown command was the bare name | Windows resolves the current directory before System32, so a `shutdown.exe` next to the app was executed instead of the real one, with the user's privileges |
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
@@ -76,10 +88,34 @@ Every fix has a regression test that fails without it.
 
 ## Still open
 
-- The "is the EPG database usable" check runs on the GUI thread and its query
-  cannot use an index on `end`: on a 2 million programme guide that is a
-  multi-second freeze. The index is a schema change, so it wants its own
-  migration and a schema version bump.
+- The MPV adapter launch still runs on the GUI thread - the handshake is
+  bounded to 2.5 s now, but the proper fix is to start the player on a worker
+  and hand the plain MPV handoff to that worker when the adapter cannot
+  attach. It touches the launch path, so it wants its own change.
+- The recording relay's HTTP server has no token: any process on the machine
+  can find the port and watch the recording being made.
+- The MPV IPC endpoint used to reuse a running instance is a fixed, machine-wide
+  named pipe, and the URL it carries the provider's user and password - in the
+  process list and in the player's own media history.
+- The Stalker MAC address is in the account report, and the MAC is what the
+  portal authenticates with. A test pins that behaviour, so removing it is a
+  decision, not a silent fix.
+- The single-instance guard uses a `Local\` mutex on Windows, which is per
+  Terminal Services session: the same account in the console and in an RDP
+  session gets two copies sharing one config directory, EPG database and log.
+- The country-code synonyms in `channel_names.py` match bare English words
+  ("News at Ten" -> Austria, "No Limits" -> Norway, "It Always Sunny" -> Italy),
+  so the guide's region can point at the wrong country.
+- `chardet` can name an encoding Python has no codec for (EUC-TW, ISO-2022-CN)
+  and the cue loader only catches `OSError` and `ValueError`, so a legacy CJK
+  subtitle file kills the cue thread after the status line already said it
+  loaded.
+- The automatic language detection reads the POSIX `LANG` variables before
+  the Windows branch, so a Git Bash or MSYS shell can put the app in English
+  on a non-English Windows.
+- `shutdown.exe` returning 0 only means the shutdown was scheduled: an
+  application can still veto it afterwards, and the app has already closed by
+  then.
 - The spoken behaviour of the Cast error box (NVDA reading it, the focus
   returning to the Cast button) is covered by GUI tests only. It still needs
   a real screen reader.
