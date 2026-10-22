@@ -16,6 +16,7 @@ import collections
 import http.server
 import logging
 import secrets
+import socket
 import socketserver
 import threading
 from time import monotonic
@@ -36,8 +37,9 @@ class _Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 class _Client:
-    def __init__(self, backlog):
+    def __init__(self, backlog, connection=None):
         self.chunks = collections.deque(backlog, maxlen=_CLIENT_QUEUE_CHUNKS)
+        self.connection = connection
 
 
 class RecordingRelay:
@@ -50,6 +52,11 @@ class RecordingRelay:
         self._backlog_size = 0
         self._clients: "list[_Client]" = []
         self._closed = False
+        # close() runs when ffmpeg exits, but its pipe can still hold bytes the
+        # pump has not read. Serving stops trimming by age from then on, so a
+        # lagging player receives the tail instead of losing it.
+        self._closing = False
+        self._drained = False
         # A token in the path: the relay serves the recording being made, and
         # any process on the machine could otherwise find the port and watch
         # it.
@@ -81,7 +88,7 @@ class RecordingRelay:
                 if not self._authorized():
                     return self.send_error(404)
                 self._send_headers()
-                relay._serve(self.wfile)
+                relay._serve(self.wfile, self.connection)
 
         self._server = _Server((host, 0), Handler)
         self.url = "http://%s:%d%s" % (host, self._server.server_address[1], self._path)
@@ -124,22 +131,24 @@ class RecordingRelay:
             LOG.debug("RecordingRelay._pump: ignored exception", exc_info=True)
         finally:
             with self._cond:
+                self._drained = True
                 self._closed = True
                 self._cond.notify_all()
 
-    def _serve(self, wfile) -> None:
+    def _serve(self, wfile, connection=None) -> None:
         with self._cond:
             self._trim_backlog(monotonic())
-            client = _Client(self._backlog)
+            client = _Client(self._backlog, connection)
             self._clients.append(client)
         try:
             while True:
                 with self._cond:
                     while not client.chunks and not self._closed:
                         self._cond.wait(1.0)
-                    now = monotonic()
-                    while client.chunks and now - client.chunks[0][0] > _BACKLOG_SECONDS:
-                        client.chunks.popleft()
+                    if not self._closed and not self._closing:
+                        now = monotonic()
+                        while client.chunks and now - client.chunks[0][0] > _BACKLOG_SECONDS:
+                            client.chunks.popleft()
                     if not client.chunks:
                         if self._closed:
                             return  # the recording ended and everything was sent
@@ -154,11 +163,22 @@ class RecordingRelay:
             with self._cond:
                 self._clients = [c for c in self._clients if c is not client]
 
-    def close(self) -> None:
+    def close(self, timeout: float = 2.0) -> None:
         """Stop serving. Players still connected get what is left, then EOF."""
         with self._cond:
-            self._closed = True
+            self._closing = True
             self._cond.notify_all()
+            if not self._cond.wait_for(lambda: self._drained, timeout):
+                # ffmpeg's pipe never reached EOF (a killed process, or a
+                # handle still open): end the stream, and drop blocked writers
+                # so their threads do not outlive the recording.
+                self._closed = True
+                self._cond.notify_all()
+                for client in self._clients:
+                    try:
+                        client.connection.shutdown(socket.SHUT_RDWR)
+                    except Exception:
+                        LOG.debug("RecordingRelay.close: ignored exception", exc_info=True)
         try:
             self._server.shutdown()
             self._server.server_close()

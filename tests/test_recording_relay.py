@@ -155,7 +155,10 @@ class _SlowWriter(io.BytesIO):
         return result
 
 
-def test_slow_player_skips_old_chunks_after_a_write_stalls(monkeypatch):
+def test_a_lagging_player_gets_the_tail_after_the_recording_ends(monkeypatch):
+    """Chunks are dropped by age only while the stream is live. Once it ends
+    there is nothing fresher to wait for, so the rest is delivered: the old
+    pruning deleted up to two seconds of the recording's tail."""
     now = [0.0]
     monkeypatch.setattr(recording_relay, "monotonic", lambda: now[0], raising=False)
     pipe = _Pipe()
@@ -175,7 +178,7 @@ def test_slow_player_skips_old_chunks_after_a_write_stalls(monkeypatch):
         output.resume.set()
         reader.join(5)
         assert not reader.is_alive()
-        assert output.getvalue() == b"first-live"
+        assert output.getvalue() == b"first-stale-live"
     finally:
         output.resume.set()
         pipe.end()
@@ -207,6 +210,30 @@ def test_full_player_queue_keeps_newest_chunks_without_blocking_recording(monkey
         pipe.end()
         reader.join(5)
         relay.close()
+
+
+def test_close_ends_the_stream_when_the_pipe_never_does(monkeypatch):
+    """A killed ffmpeg can leave its stdout handle open. close() must not hang
+    the recording watcher, and the player must still get what is queued."""
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    pipe = _Pipe()
+    relay = recording_relay.RecordingRelay(pipe)
+    output = io.BytesIO()
+    reader = threading.Thread(target=relay._serve, args=(output,))
+    try:
+        pipe.feed(b"queued-")
+        assert _wait_for(lambda: relay._backlog_size == 7)
+        reader.start()
+        assert _wait_for(lambda: relay._clients)
+        relay.close(timeout=0.2)
+        assert relay.closed
+        reader.join(5)
+        assert not reader.is_alive()
+        assert output.getvalue() == b"queued-"
+    finally:
+        pipe.end()
+        reader.join(5)
+        relay.close(timeout=0.2)
 
 
 def test_the_relay_refuses_a_request_without_its_token():
