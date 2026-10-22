@@ -1724,6 +1724,18 @@ def _channel_numbers(channel: Dict[str, str]) -> frozenset:
     )
 
 
+def _recording_produced_media(rec) -> bool:
+    """True when the capture left a file with bytes in it.
+
+    ffmpeg exits 0 when the stream closes before it writes a frame, and the
+    report said "Recording saved" pointing at nothing.
+    """
+    try:
+        return os.path.getsize(rec.out_path) > 0
+    except OSError:
+        return False
+
+
 class IPTVClient(wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
@@ -4757,15 +4769,33 @@ class IPTVClient(wx.Frame):
         pending.add(key)
 
         def probe():
-            if share:
-                # libVLC closes the player's connection on its own thread, and
-                # the provider still counts it for a moment after that.
-                _wait_for_player_stop(player_stopped)
-                catchup_direct.settle_media_session()
-            choice = self._recording_audio_choice(url, headers, intent) if intent else None
-            if share and intent:
-                catchup_direct.settle_media_session()  # ...and the track probe's
+            try:
+                if share:
+                    # libVLC closes the player's connection on its own thread, and
+                    # the provider still counts it for a moment after that.
+                    _wait_for_player_stop(player_stopped)
+                    catchup_direct.settle_media_session()
+                choice = self._recording_audio_choice(url, headers, intent) if intent else None
+                if share and intent:
+                    catchup_direct.settle_media_session()  # ...and the track probe's
+            except Exception as err:
+                # Without this the key stayed in `pending` for the rest of the
+                # session: every later press said it was stopping and nothing
+                # recorded, and the shared player was never resumed.
+                LOG.exception("Recording track probe failed")
+                wx.CallAfter(abandon, err)
+                return
             wx.CallAfter(finish, choice)
+
+        def abandon(err):
+            if key not in pending:
+                return
+            pending.discard(key)
+            if share:
+                self._resume_direct_playback(channel, player_shown)
+            message_box(_("Could not start recording:\n{error}").format(error=err),
+                        _("Recording"), wx.OK | wx.ICON_ERROR)
+            self._sync_internal_player_record_state()
 
         def finish(choice):
             if key not in pending:
@@ -5222,6 +5252,12 @@ class IPTVClient(wx.Frame):
             _("Recording saved:\n{path}").format(path=rec.out_path),
             _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
 
+    def _report_nothing_recorded(self, rec) -> None:
+        """ffmpeg exited 0 having written nothing: say so, do not say "saved"."""
+        self._show_or_queue_message_box(
+            _("Nothing was recorded: the stream ended before it wrote anything."),
+            _("Recording Warning"), wx.OK | wx.ICON_WARNING)
+
     def _report_recording_warning(self, rec, rc: int) -> None:
         self._show_or_queue_message_box(
             _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
@@ -5253,11 +5289,18 @@ class IPTVClient(wx.Frame):
         if job_id:
             detail = "\n".join(rec.stderr_tail[-6:])
             suppressed = getattr(self, "_suppress_recording_notifications", False)
+            produced = _recording_produced_media(rec)
+            if suppressed:
+                message = "Stopped because the app exited."
+            elif rc:
+                message = detail
+            else:
+                message = "" if produced else _("Nothing was recorded: the stream ended before it wrote anything.")
             self._ensure_dvr_scheduler(start=True).mark_finished(
                 str(job_id),
-                success=(rc == 0 and not suppressed),
+                success=(produced and not suppressed),
                 output_path=rec.out_path,
-                message=("Stopped because the app exited." if suppressed else (detail if rc else "")),
+                message=message,
             )
         if getattr(self, "_suppress_recording_notifications", False):
             return
@@ -5272,8 +5315,10 @@ class IPTVClient(wx.Frame):
         wx.CallAfter(self._sync_internal_player_record_state)
 
         def report():
-            if rc == 0:
+            if rc == 0 and _recording_produced_media(rec):
                 self._report_recording_saved(rec)
+            elif rc == 0 and not rec.stopped_by_user:
+                self._report_nothing_recorded(rec)
             elif rec.stopped_by_user:
                 self._report_recording_warning(rec, rc)
             else:
