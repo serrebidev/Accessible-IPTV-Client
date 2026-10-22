@@ -107,6 +107,18 @@ def test_the_found_file_is_free_when_ffmpeg_asks_for_it(provider, monkeypatch):
         assert response.status == 200
 
 
+def test_a_403_on_head_does_not_open_the_media(provider):
+    """403 means the account's one stream is busy, not that HEAD is unsupported.
+
+    The probe treated it as "server rejects HEAD" and sent a ranged GET, which
+    is a second request for the media this module exists to avoid opening.
+    """
+    _OneStreamProvider.busy_until = time.monotonic() + 30
+    url = provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
+    assert catchup_direct.probe_direct_url(url) is False
+    assert [r for r in _OneStreamProvider.requests if r[0] == "GET"] == []
+
+
 def test_nothing_to_wait_for_when_the_media_was_never_asked(provider, monkeypatch):
     settled = []
     monkeypatch.setattr(catchup_direct, "settle_media_session", lambda: settled.append(True))
