@@ -759,13 +759,18 @@ A playlist written by a Windows tool - which is most of them - opened with a
 channel that cannot play, and the header's attributes (the catch-up clock
 Dispatcharr sends there) were never read.
 
-The files are read with "utf-8-sig" now, and the parser strips the mark as
-well, so every path is covered:
+The files the user adds from disk and the answer a provider sends are read
+with "utf-8-sig" now, and the parser strips the mark as well, so no path can
+open with a garbage channel:
 
 ```
 channels: 11362, first url: 'https://jmp2.uk/plu-62ba60f059624e000781'
 garbage channels: 0
 ```
+
+The parsed-playlist cache version moved with it: the parser now produces
+different channels from the same text, and a cache written by the previous
+build would have kept the garbage first channel.
 
 ### What the real playlist says about the parser
 
