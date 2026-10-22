@@ -23,22 +23,43 @@ class TestMatchGuideChannel:
     def test_a_numbered_channel_does_not_take_its_siblings_guide(self):
         """A name that only fits after the noise is stripped is not enough.
 
-        The guide spells some channels out - "BBC One", "BBC Two" - and
-        numbers others - "BBC 3". The noise stripped names of "BBC Two" and
-        "BBC 3" are both "bbc", so a playlist channel with no guide of its
-        own used to land on whichever sibling the guide listed first.
+        The noise stripped names of "BBC 2" and "BBC 3" are both "bbc", so a
+        playlist channel with no guide of its own used to land on whichever
+        sibling the guide listed first.
         """
-        guide = _guide(**{"bbc-one": "BBC One", "bbc-two": "BBC Two", "bbc3": "BBC 3"})
+        guide = _guide(**{"bbc3": "BBC 3"})
         indexes = guide_indexes(guide)
         hit = match_guide_channel({"name": "BBC 2", "tvg-id": "", "tvg-name": ""}, indexes)
-        assert hit is None or hit["display_name"] == "BBC 2"
+        assert hit is None
+
+    def test_a_numbered_channel_picks_the_sibling_that_agrees(self):
+        """Guide order does not decide between a sibling that fits and one that does not."""
+        guide = _guide(**{"bbc3": "BBC 3", "bbc-two": "BBC Two"})
+        indexes = guide_indexes(guide)
+        hit = match_guide_channel({"name": "BBC 2", "tvg-id": "", "tvg-name": ""}, indexes)
+        assert hit and hit["display_name"] == "BBC Two"
 
     def test_a_word_number_counts_as_the_number(self):
         """"BBC Two" and "BBC 2" are the same channel."""
         guide = _guide(**{"bbc-1": "BBC One", "bbc-2": "BBC Two"})
         indexes = guide_indexes(guide)
-        hit = match_guide_channel({"name": "BBC Two", "tvg-id": "", "tvg-name": ""}, indexes)
+        hit = match_guide_channel({"name": "BBC 2", "tvg-id": "", "tvg-name": ""}, indexes)
         assert hit and hit["display_name"] == "BBC Two"
+
+    def test_the_playlist_id_does_not_mask_the_name_number(self):
+        """An id's digits are a database key, so they cannot make "BBC 2" fit "BBC 3"."""
+        guide = _guide(**{"epg-3": "BBC 3"})
+        indexes = guide_indexes(guide)
+        hit = match_guide_channel(
+            {"name": "BBC 2", "tvg-id": "bbc3.uk", "tvg-name": ""}, indexes)
+        assert hit is None
+
+    def test_the_guide_id_does_not_mask_the_display_name_number(self):
+        """Same on the guide side: the name it shows is what carries the number."""
+        guide = _guide(**{"bbc2.uk": "BBC 3"})
+        indexes = guide_indexes(guide)
+        hit = match_guide_channel({"name": "BBC 2", "tvg-id": "", "tvg-name": ""}, indexes)
+        assert hit is None
 
     def test_a_channel_without_a_number_still_matches(self):
         """Only two names that both carry a number can disagree."""

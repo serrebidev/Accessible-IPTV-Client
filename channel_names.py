@@ -213,10 +213,10 @@ _NAME_CACHE_SIZE = 1 << 18
 
 
 # The numbers in a channel name are the channel: "BBC 1" and "BBC 2" are
-# different channels, and "BBC One" is "BBC 1". The canonical name drops a
-# standalone digit as a noise word, so these helpers are what tells the two
-# apart. They live here, with the rest of the matching vocabulary, because
-# both the database matcher and the playlist-side matcher need them.
+# different channels, and "BBC One" is "BBC 1". The noise-stripped name drops
+# a standalone digit as noise, so these helpers are what tells the two apart.
+# They live here, with the rest of the matching vocabulary, because both the
+# database matcher and the playlist-side matcher need them.
 _WORD_NUMBERS = {
     "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
     "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
@@ -252,6 +252,19 @@ def significant_channel_numbers(*texts: str) -> frozenset:
             if re.search(r'\b' + re.escape(word) + r'\b', s):
                 numbers.add(value)
     return frozenset(numbers)
+
+
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
+def replace_word_numbers(text: str) -> str:
+    """Write the word numbers in a name as digits: "BBC Two" -> "BBC 2".
+
+    Lets one matcher's normalized name reach the other's: a guide that spells
+    a channel out and a playlist that numbers it are the same channel.
+    """
+    text = (text or "").lower()
+    for word, value in _WORD_NUMBERS.items():
+        text = re.sub(r'\b' + re.escape(word) + r'\b', value, text)
+    return text
 
 
 def id_number_text(channel_id: str) -> str:

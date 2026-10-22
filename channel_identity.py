@@ -13,8 +13,9 @@ the app.
 import re
 from typing import Dict, List, NamedTuple, Optional, Set
 
-from channel_names import (canonicalize_name, id_number_text, numbers_disagree,
-                           significant_channel_numbers, strip_noise_words)
+from channel_names import (canonicalize_name, numbers_disagree,
+                           replace_word_numbers, significant_channel_numbers,
+                           strip_noise_words)
 
 
 def expand_tvg_id_candidates(tvg_id: str) -> List[str]:
@@ -76,18 +77,27 @@ class GuideIndexes(NamedTuple):
 
 
 def guide_indexes(channels: Dict[str, Dict[str, object]]) -> GuideIndexes:
-    """Index the guide's channels by id, by name and by noise stripped name."""
+    """Index the guide's channels by id, by name and by noise stripped name.
+
+    Names are indexed both as written and with their word numbers as digits,
+    because a guide may spell out "BBC Two" where the playlist says "BBC 2".
+    """
     by_id_lower = {str(cid).lower(): cid for cid in channels}
     name_index: Dict[str, List[str]] = {}
     stripped_index: Dict[str, List[str]] = {}
     for channel_id, entry in channels.items():
-        display = entry.get("display_name") or ""
+        display = str(entry.get("display_name") or "")
         for key, index in (
             (canonicalize_name(display), name_index),
             (canonicalize_name(strip_noise_words(display)), stripped_index),
+            (canonicalize_name(replace_word_numbers(display)), name_index),
+            (canonicalize_name(strip_noise_words(replace_word_numbers(display))),
+             stripped_index),
         ):
             if key:
-                index.setdefault(key, []).append(channel_id)
+                bucket = index.setdefault(key, [])
+                if channel_id not in bucket:
+                    bucket.append(channel_id)
     return GuideIndexes(channels, by_id_lower, name_index, stripped_index)
 
 
@@ -96,15 +106,21 @@ def match_guide_channel(channel, indexes: GuideIndexes,
     """The guide entry for a playlist channel, or None.
 
     1) tvg-id, including the common XMLTV id variants, case-insensitive
-    and tolerant of one extra dotted segment ("chan.tv" vs "chan").
+    and tolerant of one extra dotted segment ("chan.tv" vs "chan"). An id is
+    the channel's identity, not its name, so no number check applies.
     2) names: exact normalized, then noise-stripped, for the channel
-    name and then the tvg-name.
+    name and then the tvg-name, with word numbers read as digits.
 
     ``known_ids`` holds every guide channel id (lower case), including
     ones with nothing on air right now. A channel whose tvg-id is among
     them has a guide of its own, so when that guide is empty at the
     moment it gets no label rather than a namesake's: the noise-stripped
     name of "48 Hours" is "hours", which matched an unrelated channel.
+
+    Numbers are read from the names only. Noise stripping turns "BBC 2" and
+    "BBC 3" into the same key "bbc", so the number the name still carries is
+    what keeps them apart; a number in an id is a database key and would
+    only mask the name's disagreement.
     """
     raw_id = str(channel.get("tvg-id") or "").strip()
     candidates = expand_tvg_id_candidates(raw_id)
@@ -118,30 +134,27 @@ def match_guide_channel(channel, indexes: GuideIndexes,
     if known_ids and any(c.strip().lower() in known_ids for c in candidates if c.strip()):
         return None
     playlist_numbers = significant_channel_numbers(
-        id_number_text(raw_id),
         str(channel.get("tvg-name") or ""),
         str(channel.get("name") or ""))
     for source in (channel.get("name"), channel.get("tvg-name")):
         text = str(source or "").strip()
         if not text:
             continue
+        spelled = replace_word_numbers(text)
         for key, index in (
             (canonicalize_name(text), indexes.name_index),
+            (canonicalize_name(spelled), indexes.name_index),
             (canonicalize_name(strip_noise_words(text)), indexes.stripped_index),
+            (canonicalize_name(strip_noise_words(spelled)), indexes.stripped_index),
         ):
             for channel_id in index.get(key, ()):
                 entry = indexes.by_id[channel_id]
-                if numbers_disagree(playlist_numbers, _guide_numbers(channel_id, entry)):
+                if numbers_disagree(playlist_numbers, _guide_numbers(entry)):
                     continue
                 return entry
     return None
 
 
-def _guide_numbers(channel_id, entry) -> frozenset:
-    """The numbers a guide channel names.
-
-    A purely numeric guide id is a database key, not a channel number, so
-    it is left out the same way the playlist's own id is.
-    """
-    return significant_channel_numbers(
-        id_number_text(str(channel_id)), str(entry.get("display_name") or ""))
+def _guide_numbers(entry) -> frozenset:
+    """The numbers a guide channel's name carries."""
+    return significant_channel_numbers(str(entry.get("display_name") or ""))
