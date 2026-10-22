@@ -1154,3 +1154,21 @@ def test_stopping_a_known_recording_reports_that_it_was_stopped(monkeypatch):
 
     assert manager.stop(7) is True
     assert stopped == [rec]
+
+
+def test_a_locked_target_keeps_the_finished_download(tmp_path, monkeypatch):
+    """The capture finished; a scanner or share holding the target must not
+    cost the user the programme. Keep the .part and report that path."""
+    manager = recorder.RecordingManager()
+    final = tmp_path / "out.mkv"
+    partial = tmp_path / "out.mkv.part"
+    partial.write_bytes(b"123")
+    rec = recorder.Recording(1, "key", "url", "Title", "provider_mkv",
+                             str(final), None, partial_path=str(partial))
+    monkeypatch.setattr(recorder.os, "replace",
+                        lambda *_a, **_k: (_ for _ in ()).throw(PermissionError("busy")))
+
+    manager._settle_partial_output(rec, 0)
+
+    assert partial.exists(), "the finished download was deleted"
+    assert rec.out_path == str(partial)

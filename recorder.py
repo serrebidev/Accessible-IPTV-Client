@@ -1351,6 +1351,11 @@ class RecordingManager:
                 return
             except OSError:
                 LOG.exception("Could not finalize download output %s", rec.out_path)
+                # The capture itself finished: a scanner or a network share
+                # holding the target must not cost the user the programme.
+                # Keep the .part and report that path instead.
+                rec.out_path = rec.partial_path
+                return
         try:
             os.remove(rec.partial_path)
         except OSError:
