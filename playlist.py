@@ -349,6 +349,8 @@ from channel_names import (
     canonicalize_name,
     strip_noise_words,
     extract_group,
+    significant_channel_numbers,
+    id_number_text,
 )
 
 
@@ -399,57 +401,9 @@ def _ordered_channel_tokens(*names: str) -> List[str]:
     return out
 
 
-def _significant_channel_numbers(*texts: str) -> Set[str]:
-    numbers: Set[str] = set()
-    word_numbers = {
-        "one": "1",
-        "two": "2",
-        "three": "3",
-        "four": "4",
-        "five": "5",
-        "six": "6",
-        "seven": "7",
-        "eight": "8",
-        "nine": "9",
-        "ten": "10",
-    }
-    ignored = {
-        "240", "360", "480", "540", "576", "720", "1080", "1440", "2160", "4320",
-        "50", "60",
-    }
-    for text in texts:
-        s = (text or "").lower()
-        if not s:
-            continue
-        s = re.sub(r'\b(?:au|ca|ie|uk|gb|us)\d+\b', ' ', s)
-        for raw in re.findall(r'\d+', s):
-            normalized = raw.lstrip("0") or "0"
-            if normalized in ignored:
-                continue
-            if len(normalized) > 3:
-                continue
-            numbers.add(normalized)
-        for word, value in word_numbers.items():
-            if re.search(r'\b' + re.escape(word) + r'\b', s):
-                numbers.add(value)
-    return numbers
-
-
 def _like_escape(text: str) -> str:
     """``text`` for a ``LIKE ... ESCAPE '\\'`` pattern, matched literally."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-def _id_number_text(channel_id: str) -> str:
-    """A channel id as text for ``_significant_channel_numbers``.
-
-    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
-    "151") is a database key, not a channel number. Counting it made "ESPN"
-    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
-    channel that lacked the number.
-    """
-    text = (channel_id or "").strip()
-    return "" if text.isdigit() else text
 
 
 def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
@@ -1863,7 +1817,7 @@ class EPGDatabase:
         # whichever came first in the guide - TVN 7 - won, so View EPG showed
         # another channel's schedule while the channel list, which matches by
         # name, was right.
-        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
+        playlist_numbers = significant_channel_numbers(id_number_text(tvg_id), tvg_name, name)
         seen_norms = set()
         for source_text, base_score, base_why in ((tvg_name, 96, 'exact-tvg-name'),
                                                   (name, 92, 'exact-name')):
@@ -1873,7 +1827,7 @@ class EPGDatabase:
             seen_norms.add(norm)
             rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm,)).fetchall()
             for r in rows:
-                candidate_numbers = _significant_channel_numbers(_id_number_text(r[0]), r[2])
+                candidate_numbers = significant_channel_numbers(id_number_text(r[0]), r[2])
                 existing = candidates.get(r[0])
                 score = base_score
                 why = base_why
@@ -1938,14 +1892,14 @@ class EPGDatabase:
         playlist_zone = _detect_zone(" ".join([channel.get("group",""), tvg_name, name]))
         playlist_brand_key = _brand_key(name)
         playlist_ts = _detect_timeshift(" ".join([tvg_name, name]))
-        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
+        playlist_numbers = significant_channel_numbers(id_number_text(tvg_id), tvg_name, name)
         brand_text = canonicalize_name(strip_noise_words(name)).lower()
         playlist_brand_family = _reverse_brand_lookup(brand_text)
         pl_calls = extract_callsigns(" ".join([tvg_name, name, channel.get("group",""), tvg_id]))
         pl_tokens = tokenize_channel_name(name)
 
         # HBO variant extraction (playlist side)
-        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), _id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
+        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
         pl_hbo_variant = _normalize_hbo_variant(playlist_region, pl_hbo_variant_raw)
 
         c = self.conn.cursor()
@@ -2071,7 +2025,7 @@ class EPGDatabase:
                     why.append('-timeshift-extra-epg')
 
             if playlist_numbers:
-                epg_numbers = _significant_channel_numbers(_id_number_text(ch_id), disp)
+                epg_numbers = significant_channel_numbers(id_number_text(ch_id), disp)
                 if epg_numbers & playlist_numbers:
                     score += 16
                     why.append('+number')
@@ -2084,7 +2038,7 @@ class EPGDatabase:
 
             # ---- HBO variant-aware boosting ----
             if playlist_brand_family == "hbo" and epg_brand_family == "hbo":
-                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, _id_number_text(ch_id)]))
+                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, id_number_text(ch_id)]))
                 epg_hbo_variant = _normalize_hbo_variant(grp, epg_hbo_variant_raw)
 
                 if pl_hbo_variant or epg_hbo_variant:

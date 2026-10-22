@@ -11,7 +11,7 @@ than rebuilt per call.
 
 import functools
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 STRIP_TAGS = [
     'hd', 'sd', 'hevc', 'fhd', 'uhd', '4k', '8k', 'hdr', 'dash', 'hq', 'st',
@@ -210,6 +210,71 @@ def _group_synonym_patterns():
 # holds the whole working set makes repeat passes nearly free. Bounded so a
 # long session of playlist reloads cannot grow it without limit.
 _NAME_CACHE_SIZE = 1 << 18
+
+
+# The numbers in a channel name are the channel: "BBC 1" and "BBC 2" are
+# different channels, and "BBC One" is "BBC 1". The canonical name drops a
+# standalone digit as a noise word, so these helpers are what tells the two
+# apart. They live here, with the rest of the matching vocabulary, because
+# both the database matcher and the playlist-side matcher need them.
+_WORD_NUMBERS = {
+    "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+    "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
+}
+# Resolutions and frame rates are not channel numbers.
+_IGNORED_NUMBERS = {
+    "240", "360", "480", "540", "576", "720", "1080", "1440", "2160", "4320",
+    "50", "60",
+}
+
+
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
+def significant_channel_numbers(*texts: str) -> frozenset:
+    """The channel numbers the given texts name.
+
+    Cached like the other name helpers: the matcher asks for the numbers of
+    every channel in the playlist, and the texts barely change.
+    """
+    numbers: Set[str] = set()
+    for text in texts:
+        s = (text or "").lower()
+        if not s:
+            continue
+        s = re.sub(r'\b(?:au|ca|ie|uk|gb|us)\d+\b', ' ', s)
+        for raw in re.findall(r'\d+', s):
+            normalized = raw.lstrip("0") or "0"
+            if normalized in _IGNORED_NUMBERS:
+                continue
+            if len(normalized) > 3:
+                continue
+            numbers.add(normalized)
+        for word, value in _WORD_NUMBERS.items():
+            if re.search(r'\b' + re.escape(word) + r'\b', s):
+                numbers.add(value)
+    return frozenset(numbers)
+
+
+def id_number_text(channel_id: str) -> str:
+    """A channel id as text for :func:`significant_channel_numbers`.
+
+    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
+    "151") is a database key, not a channel number. Counting it made "ESPN"
+    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
+    channel that lacked the number.
+    """
+    text = (channel_id or "").strip()
+    return "" if text.isdigit() else text
+
+
+def numbers_disagree(first: Set[str], second: Set[str]) -> bool:
+    """True when two names name different channels by their number.
+
+    A name without a number says nothing about it, so only two names that
+    both carry one can disagree.
+    """
+    if not first or not second:
+        return False
+    return not (first & second)
 
 
 @functools.lru_cache(maxsize=_NAME_CACHE_SIZE)

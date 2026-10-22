@@ -13,6 +13,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from channel_names import (  # noqa: E402
     canonicalize_name,
     extract_group,
+    id_number_text,
+    numbers_disagree,
+    significant_channel_numbers,
     strip_noise_words,
 )
 
@@ -86,3 +89,26 @@ def test_a_word_is_not_stripped_as_a_country_tag():
 def test_names_are_normalised_the_same_way_everywhere():
     assert canonicalize_name("  Sky   Mix  HD ") == canonicalize_name("Sky Mix HD")
     assert strip_noise_words("Sky Mix HD") == "sky mix"
+
+
+def test_the_channel_numbers_in_a_name_are_told_apart():
+    """A number in a name is the channel: BBC 1 and BBC 2 are two channels.
+
+    The canonical name drops a standalone digit as a noise word, so the
+    numbers are what tell them apart.
+    """
+    assert significant_channel_numbers("BBC 1") == {"1"}
+    assert significant_channel_numbers("BBC One") == {"1"}
+    assert significant_channel_numbers("BBC 2") == {"2"}
+    assert numbers_disagree(significant_channel_numbers("BBC 1"),
+                            significant_channel_numbers("BBC 2"))
+    assert not numbers_disagree(significant_channel_numbers("BBC 1"),
+                                significant_channel_numbers("BBC One"))
+    # A name without a number says nothing about it.
+    assert not numbers_disagree(significant_channel_numbers("ESPN"),
+                                significant_channel_numbers("ESPN 2"))
+    # Resolutions and frame rates are not channel numbers.
+    assert significant_channel_numbers("CNN 1080p") == set()
+    # A numeric id is a row number, not a channel number.
+    assert id_number_text("151") == ""
+    assert id_number_text("BBCOne.uk") == "BBCOne.uk"

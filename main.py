@@ -54,7 +54,8 @@ from options import (
 )
 # Same normalization the EPG database indexes with - importing it from anywhere
 # else is how the UI and the database drift apart.
-from channel_names import canonicalize_name, strip_noise_words
+from channel_names import (canonicalize_name, strip_noise_words, id_number_text,
+                           numbers_disagree, significant_channel_numbers)
 import app_meta
 import release_notes
 import single_instance
@@ -1697,6 +1698,19 @@ class _ProgramMatchIndex(NamedTuple):
     by_canon: Dict[str, tuple]
     by_base: Dict[str, tuple]
     tvg_id_rows: List[tuple]
+
+
+def _channel_numbers(channel: Dict[str, str]) -> frozenset:
+    """The channel numbers a playlist channel names.
+
+    The id counts too, but a purely numeric one is a row number rather than a
+    channel number.
+    """
+    return significant_channel_numbers(
+        id_number_text(str(channel.get("tvg-id") or "")),
+        str(channel.get("name") or ""),
+        str(channel.get("tvg-name") or ""),
+    )
 
 
 class IPTVClient(wx.Frame):
@@ -4278,6 +4292,12 @@ class IPTVClient(wx.Frame):
         channel_name_norm = canonicalize_name(strip_noise_words(channel_name)) if channel_name else ""
         channel_base = IPTVClient._program_match_base(channel_name_lower)
         words_epg = set(channel_name_norm.split())
+        # The numbers in a name are the channel: "BBC 1" and "BBC 2" are
+        # different channels. The canonical name drops a standalone digit as a
+        # noise word, so without this the guide's "BBC 1" landed on the
+        # playlist's "BBC 2".
+        programme_numbers = significant_channel_numbers(
+            id_number_text(channel_id), channel_name)
 
         # The strong rules are equality rules, so they are dictionary lookups.
         # The weak ones (a substring, a word in common) score 40 and at most 30,
@@ -4297,6 +4317,8 @@ class IPTVClient(wx.Frame):
             if hit is None:
                 continue
             row_index, channel = hit
+            if numbers_disagree(programme_numbers, _channel_numbers(channel)):
+                continue
             if score > best_score or (score == best_score and row_index < best_index):
                 best_score = score
                 best_index = row_index
@@ -4318,6 +4340,11 @@ class IPTVClient(wx.Frame):
         # Nothing matched strongly: the weak rules need every channel.
         for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in index.rows:
             score = 0
+
+            if numbers_disagree(programme_numbers, _channel_numbers(ch)):
+                # A different number is a different channel, whatever else the
+                # two names have in common.
+                continue
 
             if channel_id_lower and ch_tvg_id:
                 if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
