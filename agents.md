@@ -352,4 +352,5 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - A diagnostic that cannot run must say why. The F1 smoke test sent its keys to whatever held the foreground and reported 22 failures with nothing to say so; it now names the session as the cause.
 - The numbers in a channel name are the channel. The canonical name drops a standalone digit as a noise word, so "BBC 1" and "BBC 2" looked the same and the guide's programme landed on the wrong channel; the number helpers live in `channel_names.py` now, and every matcher compares them.
 - Test the name machinery against a real corpus. The 31,645 channels of the iptv-org catalogue showed 510 families whose members the canonical name merges - something no amount of reading the name code had made obvious.
+- Read every file the way a user's file arrives. A playlist that starts with a UTF-8 mark was read as if the mark were part of the first line: the playlist opened with a channel that cannot play. The download path stripped the mark and the file paths did not; every path reads "utf-8-sig" now, and the parser strips it too.
 

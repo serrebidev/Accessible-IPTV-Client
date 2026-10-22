@@ -734,6 +734,52 @@ find the playlist's "BBC One", because the canonical name keeps the number
 word and drops the digit. That pairing is found by the channel id, which is
 what the id is for.
 
+## Twenty-second pass: a real playlist, read the way users read it
+
+The evidence this time was a real playlist: the iptv-org catalogue, 11,362
+channels with the attributes real providers ship.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | a playlist file that starts with a UTF-8 byte order mark was read as if the mark were part of the first line | the playlist opened with a channel whose URL was the mark and the header, and the header's own attributes were lost |
+
+### The mark at the start of the file
+
+The download path decodes with "utf-8-sig", which strips the mark. The two
+paths that read a file did not: a playlist the user added from disk, and the
+cached copy. The mark made the first line not a comment, so it was taken for
+a URL:
+
+```
+channels parsed: 11363
+first channel: name='' url='﻿#EXTM3U'
+```
+
+A playlist written by a Windows tool - which is most of them - opened with a
+channel that cannot play, and the header's attributes (the catch-up clock
+Dispatcharr sends there) were never read.
+
+The files are read with "utf-8-sig" now, and the parser strips the mark as
+well, so every path is covered:
+
+```
+channels: 11362, first url: 'https://jmp2.uk/plu-62ba60f059624e000781'
+garbage channels: 0
+```
+
+### What the real playlist says about the parser
+
+Everything else the app does with it holds up. The 11,362 #EXTINF lines
+become 11,362 channels, with no name and no group lost, and the attributes
+that matter for playback - the user agent and the referrer - are kept:
+
+| | |
+|---|---|
+| #EXTINF lines in the source | 11,362 |
+| channels the app parses | 11,362 |
+| channels with an empty name or no group | 0 |
+| http-user-agent / http-referrer kept | 589 / 235 |
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
