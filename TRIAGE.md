@@ -815,16 +815,15 @@ of the provider's answer at the time. They say what is true now.
 ## Twenty-fourth pass: the number in the name
 
 Wave fourteen taught the programme matcher that the numbers in a name are
-the channel: "BBC 1" and "BBC 2" are different channels, and the canonical
-name drops a standalone digit as a noise word. The other matcher never
-learned it.
+the channel: "BBC 1" and "BBC 2" are different channels, and the
+noise-stripped name drops a standalone digit as noise. The other matcher
+never learned it.
 
-The now-playing matcher looks a playlist channel up in the guide by name.
-The guide spells some channels out - "BBC One", "BBC Two" - and numbers
-others - "BBC 3" - and the noise-stripped names of "BBC Two" and "BBC 3"
-are both "bbc". A playlist channel called "BBC 2" with no guide of its own
-therefore landed on whichever sibling the guide listed first, and the row
-showed that channel's programme:
+The now-playing matcher looks a playlist channel up in the guide by name,
+and the noise-stripped names of "BBC 2" and "BBC 3" are both "bbc". A
+playlist channel called "BBC 2" with no guide of its own therefore landed on
+whichever sibling the guide listed first, and the row showed that channel's
+programme:
 
 ```
 playlist 'BBC 2' -> guide 'BBC 3'
@@ -845,15 +844,18 @@ so it can be tested without the app. The name vocabulary stays in
 
 ### What the real playlist says about it
 
-The user's own playlist (257,583 channels) against the iptv-org channel
-list (31,645 channels), through the app's own matcher and the app's own
-parsed cache:
+The user's own playlist (257,604 channels, the app's own parsed cache)
+against the iptv-org channel list (31,645 channels), counted with the
+shipped matcher:
 
-| | |
-|---|---|
-| channels matched by name | 1,142 |
-| of those, landing on a different number | 1 |
-| the one it was | `UK: 5 Star` was on the guide's `Star 4K` |
+| | before | after |
+|---|---|---|
+| channels matched by name | 1,157 | 1,153 |
+| landing on a guide channel that names a different number | 5 | 0 |
+
+One channel was relabelled: `UK: 5 Star` was on the guide's `Star 4K` and is
+now on `Star Plus`. Four lost a label that was another channel's: `Good One`
+was on `Good 2`, `One on One` on `On 6`, `UK: RTE Two HD` on `RTE One`.
 
 The provider's own guide was not available for the same check: this
 machine's cached playlist carries no guide URL, and a playlist refresh
@@ -862,13 +864,41 @@ window, so no `epg.db` was ever created. The check above therefore uses the
 app's own parsed channel list against the iptv-org channel list, and the
 provider's guide remains a manual check on a box that has one.
 
+### What the review of the fix found
+
+The two-axis review of the first fix (the twenty-third pass's method, run on
+the fix itself) found four ways the rule still leaked and one wrong
+explanation in the docs:
+
+- The playlist's numbers were gathered from the id as well as the names, so
+  an id that happened to carry "3" made the name's "2" agree with a guide's
+  "BBC 3". Numbers now come from the names only.
+- The guide's numbers took the guide id too, so an id like `bbc2.uk` masked
+  a display name that said "BBC 3". Same fix, guide side.
+- A playlist that numbers a channel and a guide that spells it out never
+  matched at all in either direction: "BBC 2" against "BBC Two" produced the
+  keys `bbc` and `bbc two`. `replace_word_numbers` now indexes both forms, so
+  the two are the same channel, and the number rule has something to agree
+  with.
+- The test for the reported bug asserted `hit is None or hit["display_name"]
+  == "BBC 2"`, and the guide in it had no "BBC 2", so the second half could
+  never be true. It now asserts `None` and a sibling that agrees is a test of
+  its own.
+
+The review also caught that this pass described the collision as "BBC Two"
+against "BBC 3" stripping to the same key. They do not: stripping leaves
+"bbc two" and "bbc". The collision is "BBC 2" against "BBC 3", which is what
+the code and the reported bug are about.
+
 ### Deliberately not done
 
 - The other matcher - the one that finds the playlist channel for a guide
-  programme - keeps its own index and its own scoring. It already applies
-  the number rule, and it is the other direction: guide to playlist, with
-  its own memo and its own tie-breaks. It can move into `channel_identity`
-  when something in it needs to change.
+  programme - keeps its own index and its own scoring. It applies the number
+  rule as a score penalty (`score = 20`), not a rejection, so a same-named
+  channel with a different number can still outscore a poorer fit; making it
+  a rejection changes that matcher's rankings, and it is the other direction:
+  guide to playlist, with its own memo and its own tie-breaks. It can move
+  into `channel_identity` when something in it needs to change.
 
 ## Checked and not a defect
 
