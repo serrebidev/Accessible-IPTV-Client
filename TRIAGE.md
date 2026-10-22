@@ -688,6 +688,52 @@ opens the guide at the right topic with the focus in the guide's text - and
 the tool now says which of the two it is. It passes 30 of 30 where the
 window can take the foreground.
 
+## Twenty-first pass: the numbers in a channel name
+
+The evidence this time was a real channel corpus: the 31,645 channels of
+the iptv-org catalogue, with their alternative names, run through the app's
+own name machinery.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py`, `channel_names.py` | the canonical name drops a standalone digit as a noise word, so two channels that differ only by their number looked the same | the guide's "BBC 1" landed on the playlist's "BBC 2" |
+
+### BBC 1 is not BBC 2
+
+The canonical name is what the matcher compares, and it strips a standalone
+digit as a noise word - "BBC 1" and "BBC 2" both become "bbc". The matcher
+then found whichever of them came first in the playlist:
+
+```
+the guide says BBC 1, the playlist has BBC One and BBC 2  -> BBC 2
+```
+
+The guide's programme for BBC 1 was shown on BBC 2, and BBC 2's own guide
+was never reached.
+
+The database matcher already knew this: it compares the numbers a name
+carries, and a candidate whose number disagrees is not a match. The
+playlist-side matcher - the one that finds the channel to play or to record
+from a guide row - had no such rule.
+
+The number helpers moved to `channel_names.py`, with the rest of the
+matching vocabulary, and the playlist-side matcher now refuses a channel
+whose number disagrees with the programme's. A name without a number still
+guesses, as it did before: the guide's "ESPN" cannot rule out the
+playlist's "ESPN 2" and "ESPN 3".
+
+### What the corpus says
+
+Of the 31,645 real channels, 510 families - 2,170 channels - share a
+canonical name with a channel of the same name and a different number:
+"ESPN 2" and "ESPN 3", "3Cat Exclusiu 1", "2" and "3", "BBC 1" and "BBC 2".
+Every one of them could show another channel's programme.
+
+The other half of the pair is unchanged: the guide's "BBC 1" still does not
+find the playlist's "BBC One", because the canonical name keeps the number
+word and drops the digit. That pairing is found by the channel id, which is
+what the id is for.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local

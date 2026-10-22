@@ -350,4 +350,6 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Say how long the phases take. The playlist load's phases were nowhere in the log, so a slow load could not be told apart from a slow provider; they are in the log now.
 - Never wait on the GUI thread for a long job. The exit waited for a recording that was still finalizing, for the whole size-derived budget - an hour for a large faststart MP4 - with the window "Not Responding" and the screen reader silent. The wait runs on a thread; the shutdown's own loop keeps the window alive.
 - A diagnostic that cannot run must say why. The F1 smoke test sent its keys to whatever held the foreground and reported 22 failures with nothing to say so; it now names the session as the cause.
+- The numbers in a channel name are the channel. The canonical name drops a standalone digit as a noise word, so "BBC 1" and "BBC 2" looked the same and the guide's programme landed on the wrong channel; the number helpers live in `channel_names.py` now, and every matcher compares them.
+- Test the name machinery against a real corpus. The 31,645 channels of the iptv-org catalogue showed 510 families whose members the canonical name merges - something no amount of reading the name code had made obvious.
 
