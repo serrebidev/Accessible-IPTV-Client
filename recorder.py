@@ -1402,7 +1402,12 @@ class RecordingManager:
                 # Exit while an earlier stop is still finalizing (a big MP4 can
                 # take minutes). Its own thread dies with the app, so without
                 # this ffmpeg outlived us and held the provider's stream slot.
-                self._stop_for_exit(rec, proc)
+                # The wait runs on a thread: it can be an hour, and the caller
+                # is the GUI thread, where a wait of that length leaves the
+                # window "Not Responding" and the screen reader silent. The
+                # shutdown waits for the recording to finish in the meantime.
+                threading.Thread(target=self._stop_for_exit, args=(rec, proc),
+                                 name="recorder-exit-stop", daemon=True).start()
             elif wait:
                 try:
                     proc.wait(timeout=finalize_timeout_seconds(rec.fmt, rec.out_path))

@@ -577,6 +577,8 @@ def changelog_path() -> str:
 
 
 class ChangelogDialog(wx.Dialog):
+    # F1 inside this window opens the guide at its own section.
+    help_topic = "updates"
     """A read-only, copyable view of the complete bundled release history.
 
     Section labels and the notes of the newest releases are shown in the
@@ -10242,6 +10244,8 @@ class CastDiscoveryDialog(wx.Dialog):
 
 
 class AccountInfoDialog(wx.Dialog):
+    # F1 inside this window opens the guide at its own section.
+    help_topic = "account-info"
     """Subscription status for every provider account the app can find.
 
     Deliberately two controls: a list of accounts and one read-only multiline
@@ -10437,6 +10441,8 @@ def _show_on_taskbar(window) -> None:
 
 
 class CatchupDownloadDialog(wx.Dialog):
+    # F1 inside this window opens the guide at its own section.
+    help_topic = "catch-up-downloads"
     """Live progress for one catch-up download.
 
     ffmpeg reports the media time it has written through periodic stats lines

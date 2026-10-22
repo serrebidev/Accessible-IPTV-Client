@@ -714,8 +714,35 @@ def test_exit_stops_ffmpeg_that_is_still_finalizing_an_earlier_stop(tmp_path):
 
     recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
 
+    # The wait runs on a thread: it can be an hour, and the caller is the GUI
+    # thread, where a wait of that length leaves the window "Not Responding".
+    deadline = time.time() + 5
+    while not proc.terminated and time.time() < deadline:
+        time.sleep(0.02)
     assert proc.terminated
     assert rec.detached
+
+
+def test_the_exit_does_not_wait_for_the_recording_on_the_caller_thread(tmp_path):
+    """The wait can be an hour, and the caller is the GUI thread.
+
+    Waiting there leaves the window "Not Responding" and the screen reader
+    silent while the app quits.
+    """
+    class _SlowStub(_StubProcess):
+        def wait(self, timeout=None):
+            time.sleep(2.0)
+            raise subprocess.TimeoutExpired("ffmpeg", timeout)
+
+    proc = _SlowStub(exits_after_waits=99)
+    rec = _stub_recording(proc, tmp_path / "big.mp4")
+    rec.stopping = True
+
+    began = time.monotonic()
+    recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
+    elapsed = time.monotonic() - began
+
+    assert elapsed < 1.0, "the exit waited on the calling thread"
 
 
 def test_a_cancel_after_ffmpeg_exited_keeps_the_finished_download(tmp_path):

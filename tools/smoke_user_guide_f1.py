@@ -274,12 +274,80 @@ def build_script(frame):
     s.run()
 
 
+def take_foreground(frame):
+    """Bring the window to the foreground: the simulated keys go there.
+
+    Windows refuses a foreground change from a process that does not own the
+    foreground, so the thread inputs are attached for the call - the same
+    trick the update helper uses.
+    """
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        hwnd = frame.GetHandle()
+        target = kernel32.GetWindowThreadProcessId(hwnd, None)
+        current = kernel32.GetCurrentThreadId()
+        attached = bool(target) and target != current
+        if attached:
+            user32.AttachThreadInput(current, target, True)
+        try:
+            user32.BringWindowToTop(hwnd)
+            user32.SetForegroundWindow(hwnd)
+            user32.SetActiveWindow(hwnd)
+        finally:
+            if attached:
+                user32.AttachThreadInput(current, target, False)
+        frame.Raise()
+    except Exception:
+        pass
+
+
+def foreground_is_ours():
+    """True when this process owns the foreground window.
+
+    The simulated keys go to the foreground window, so a session where the
+    app cannot take the foreground (a service session, an agent shell) sends
+    every key somewhere else and every check below fails for that reason
+    alone.
+    """
+    if not sys.platform.startswith("win"):
+        return True
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return False
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        return pid.value == os.getpid()
+    except Exception:
+        return True
+
+
 if __name__ == "__main__":
     if not sys.platform.startswith("win"):
         print("skipped: Windows only")
         sys.exit(0)
     app = wx.App()
     main_frame = build_frame()
+    main_frame.Show()
+    app.Yield()
+    take_foreground(main_frame)
+    # The keys go to the foreground window, so check that this is it before
+    # the run rather than after the window is gone.
+    had_foreground = foreground_is_ours()
     build_script(main_frame)
     app.MainLoop()
+    if RESULTS and not had_foreground:
+        print("NOTE: this process did not own the foreground window, so the "
+              "simulated keys went elsewhere. F1 failures are then the "
+              "session, not the application: the same F1 through the app's own "
+              "char hook opens the guide at the right topic.")
     sys.exit(EXIT["code"])
