@@ -354,7 +354,6 @@ class StalkerPortalClient:
                 "url": "",  # resolved on demand
                 "tvg-id": row.get("epg_id", ""),
                 "tvg-name": row.get("display_name", name),
-                "tvg-logo": row.get("logo", ""),
                 "provider-type": "stalker",
                 "provider-data": {
                     "cmd": cmd,

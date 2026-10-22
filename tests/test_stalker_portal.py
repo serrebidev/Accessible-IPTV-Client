@@ -382,7 +382,6 @@ class TestStalkerChannelFetch:
                 "group": row.get("tv_genre_title", "Stalker"),
                 "url": "",  # resolved on demand
                 "tvg-id": row.get("epg_id", ""),
-                "tvg-logo": row.get("logo", ""),
                 "provider-type": "stalker",
                 "provider-data": {
                     "cmd": row.get("cmd", ""),

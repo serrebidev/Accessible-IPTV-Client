@@ -139,3 +139,68 @@ def test_a_failed_refresh_in_a_full_load_keeps_the_channels_too(monkeypatch, tmp
 
     assert finished.wait(10), "the refresh never finished"
     assert [ch["name"] for ch in app.all_channels] == ["Sports 1"]
+
+class _FakeGroupList:
+    def __init__(self):
+        self.items = []
+
+    def Freeze(self):
+        pass
+
+    def Thaw(self):
+        pass
+
+    def Clear(self):
+        self.items = []
+
+    def Append(self, item):
+        self.items.append(item)
+
+    def SetSelection(self, _index):
+        pass
+
+
+def test_the_categories_say_the_playlist_is_loading():
+    """A search during the load replaced "Loading playlists..." with
+    "No channels found."
+
+    The app's own log shows three minutes and twenty seconds of it on the
+    first run of the installed build, on a 257,000-channel playlist: the user
+    was told the app had no channels while it was still fetching them.
+    """
+    import main
+
+    group_list = _FakeGroupList()
+    client = types.SimpleNamespace(
+        group_list=group_list,
+        channel_list=types.SimpleNamespace(Clear=lambda: None),
+        scoped_all_channels=lambda: [],
+        scoped_channels_by_group=lambda: {},
+        _group_keys=[],
+        _playlist_loading=True,
+        _maybe_autostart_epg_import=lambda: None,
+    )
+
+    main.IPTVClient._refresh_group_ui(client)
+
+    assert group_list.items == ["Loading playlists..."], group_list.items
+
+
+def test_the_categories_say_when_there_is_nothing_to_show():
+    """When the load is over and there is nothing, the app says so."""
+    import main
+
+    group_list = _FakeGroupList()
+    client = types.SimpleNamespace(
+        group_list=group_list,
+        channel_list=types.SimpleNamespace(Clear=lambda: None),
+        scoped_all_channels=lambda: [],
+        scoped_channels_by_group=lambda: {},
+        _group_keys=[],
+        _playlist_loading=False,
+        _maybe_autostart_epg_import=lambda: None,
+    )
+
+    main.IPTVClient._refresh_group_ui(client)
+
+    assert group_list.items == ["No channels found."], group_list.items

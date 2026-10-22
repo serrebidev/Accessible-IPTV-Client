@@ -145,6 +145,30 @@ http://stream.example.com/hbo
         # An explicit group-title is still honoured verbatim.
         assert by_name["ESPN"]["group"] == "Sports"
 
+    def test_the_parsed_channels_do_not_carry_a_logo(self):
+        """The app never shows a channel logo.
+
+        The logo URLs were parsed, cached and kept in memory for nothing: on
+        the 257,000-channel playlist of this machine they were a quarter of
+        the parsed cache file and about a tenth of the memory the playlist
+        costs.
+        """
+        import main
+
+        class _FakeFrame:
+            def _extract_stream_id(self, url):
+                return ""
+
+        text = (
+            "#EXTM3U\n"
+            '#EXTINF:-1 tvg-id="abc.us" tvg-name="ABC East" '
+            'tvg-logo="http://logo.com/abc.png" group-title="USA News",ABC East HD\n'
+            "http://stream.example.com/abc\n"
+        )
+        channels = main.IPTVClient._parse_m3u_return(_FakeFrame(), text)
+
+        assert channels and "tvg-logo" not in channels[0], channels[0]
+
     def test_comma_inside_a_quoted_attribute_does_not_become_the_name(self):
         """A comma inside an attribute value must not be read as the name separator.
 

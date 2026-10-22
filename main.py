@@ -1433,7 +1433,9 @@ def _now_playing_key(channel: Dict[str, str]) -> str:
 
 # Bump whenever _parse_m3u_return starts producing different channel dicts
 # from the same playlist text; it salts the parsed-playlist cache key.
-_PARSED_PLAYLIST_CACHE_VERSION = "3"
+# 4: the channel logo is not carried any more - the app never shows it, and
+#    on a 257,000-channel playlist it was a quarter of the cache file.
+_PARSED_PLAYLIST_CACHE_VERSION = "4"
 
 # Xtream Codes live URL: /live/USER/PASS/ID[.ext] or the short /USER/PASS/ID[.ext].
 _XTREAM_LIVE_PATH_RE = re.compile(r"^/(?:live/)?([^/]+)/([^/]+)/(\d+)(?:\.[A-Za-z0-9]+)?$")
@@ -1933,6 +1935,9 @@ class IPTVClient(wx.Frame):
         self.Centre()
 
         self.group_list.Append(_("Loading playlists..."))
+        # The playlist is still loading: a search that rebuilds the categories
+        # must not replace that with "No channels found.".
+        self._playlist_loading = True
         self.Show()
 
         # Defer non-UI startup work until the frame has had a chance to paint.
@@ -2664,6 +2669,9 @@ class IPTVClient(wx.Frame):
         ``only`` (a list of sources) fetches just those again; every other
         playlist keeps the channels and provider session it already has.
         """
+        # The categories must say that a load is running, not that the app has
+        # no channels.
+        self._playlist_loading = True
         keep = None
         if only is not None:
             keep = (list(self.all_channels), dict(getattr(self, "provider_clients", None) or {}),
@@ -3259,6 +3267,9 @@ class IPTVClient(wx.Frame):
                 return
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            # The load is over: the categories can say what there is (or that
+            # there is nothing) now.
+            self._playlist_loading = False
             self._program_match_cache = None  # holds the old channel list
             IPTVClient._warm_program_match_index(self)
             self._invalidate_favorites_cache()
@@ -7176,7 +7187,12 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
 
             if not scoped_channels:
-                self.group_list.Append(_("No channels found."))
+                # The playlist may still be loading. Saying "No channels
+                # found." then is the opposite of the truth: the app's own log
+                # shows three minutes of it on a 257,000-channel playlist.
+                self.group_list.Append(
+                    _("Loading playlists...") if getattr(self, "_playlist_loading", False)
+                    else _("No channels found."))
                 self._group_keys = []
                 self._maybe_autostart_epg_import()
                 return
@@ -7927,7 +7943,6 @@ class IPTVClient(wx.Frame):
         group = ""
         tvg_id = ""
         tvg_name = ""
-        tvg_logo = ""
         tvg_rec = ""
         media_hint = ""
         timeshift = ""
@@ -7967,7 +7982,6 @@ class IPTVClient(wx.Frame):
                     group = ""
                     tvg_id = ""
                     tvg_name = ""
-                    tvg_logo = ""
                     tvg_rec = ""
                     media_hint = ""
                     timeshift = ""
@@ -8002,7 +8016,6 @@ class IPTVClient(wx.Frame):
                             group = attrs.get("group-title", "")
                             tvg_id = attrs.get("tvg-id", "")
                             tvg_name = attrs.get("tvg-name", "")
-                            tvg_logo = attrs.get("tvg-logo") or attrs.get("logo") or ""
                             tvg_rec = attrs.get("tvg-rec", "")
                             # Authoritative media-type metadata (issue #33):
                             # radio="true" and recognized equivalents. Parsed
@@ -8098,8 +8111,6 @@ class IPTVClient(wx.Frame):
                 channel["provider-id"] = provider_id
             if provider_type:
                 channel["provider-type"] = provider_type
-            if tvg_logo:
-                channel["tvg-logo"] = tvg_logo
             if tvg_rec:
                 channel["tvg-rec"] = tvg_rec
             if media_hint:
@@ -8161,7 +8172,6 @@ class IPTVClient(wx.Frame):
             group = ""
             tvg_id = ""
             tvg_name = ""
-            tvg_logo = ""
             tvg_rec = ""
             media_hint = ""
             timeshift = ""
