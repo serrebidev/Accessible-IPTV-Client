@@ -172,6 +172,26 @@ class TestGenericCatchupUrl:
         url = main.IPTVClient._build_generic_catchup_url(client, channel, START, END)
         assert url == f"https://host/live/1234?utc={int(START.timestamp()) - 7200}"
 
+    def test_wall_clock_tokens_use_the_channels_timezone(self):
+        """A date/hour template was filled from UTC, not the provider's clock.
+
+        A programme at 12:00 UTC on a "date={Y}{m}{d}{H}{M}" archive is
+        14:00 in Berlin; the URL asked for 1200 and the provider answered 404.
+        """
+        channel = {
+            "url": "https://host/live/1234",
+            "catchup-source": "http://archive.example/x?date={Y}{m}{d}{H}{M}",
+            "catchup-timezone": "Europe/Berlin",
+        }
+        url = main.IPTVClient._build_generic_catchup_url(_client(), channel, START, END)
+        assert url == "http://archive.example/x?date=202609061400"
+
+    def test_an_inverted_programme_window_is_refused(self):
+        """A guide row ending before it starts asked for an impossible window."""
+        channel = {"url": "https://host/live/1", "catchup": "xc"}
+        with pytest.raises(main.ProviderError):
+            main.IPTVClient._resolve_catchup_url(_client(), channel, END, START)
+
 
 class TestLegacyTimeshiftMetadata:
     def test_teleelevidenie_timeshift_enables_catchup(self):

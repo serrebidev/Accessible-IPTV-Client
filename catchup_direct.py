@@ -164,9 +164,12 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
         # Close it now, or it leaks until GC and -W error reports the
         # ResourceWarning as an unraisable blamed on whichever test runs next.
         err.close()
-        if err.code not in (403, 404, 405, 410, 501):
-            return False
         # Some servers reject HEAD outright; a 1-byte ranged GET settles it.
+        # Only 405/501 say "HEAD is not supported". A 403 is a busy account and
+        # a 404 is an ordinary miss: opening the media there held the user's one
+        # stream, which is what this probe exists to avoid.
+        if err.code not in (405, 501):
+            return False
         try:
             ranged = dict(request_headers)
             ranged["Range"] = "bytes=0-0"

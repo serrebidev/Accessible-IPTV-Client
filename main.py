@@ -1295,8 +1295,16 @@ _CATCHUP_TEMPLATE_TOKENS = (
 )
 
 
-def _catchup_token_value(kind: str, start_dt, end_dt, now) -> str:
-    """Render one catchup-source placeholder as a string."""
+def _catchup_token_value(kind: str, start_dt, end_dt, now, wall_start=None, wall_end=None) -> str:
+    """Render one catchup-source placeholder as a string.
+
+    Epoch tokens are instants and stay on the UTC value. The date-and-hour
+    tokens name a time on the provider's own clock, so they use the channel's
+    ``catchup-timezone``: an archive asked for 12:00 UTC by a provider reading
+    local time answers with a programme from the wrong hour.
+    """
+    wall_start = wall_start if wall_start is not None else start_dt
+    wall_end = wall_end if wall_end is not None else end_dt
     if kind == "start":
         return str(int(start_dt.timestamp()))
     if kind == "end":
@@ -1306,27 +1314,28 @@ def _catchup_token_value(kind: str, start_dt, end_dt, now) -> str:
     if kind == "duration":
         return str(max(1, int((end_dt - start_dt).total_seconds())))
     if kind == "start_year":
-        return start_dt.strftime("%Y")
+        return wall_start.strftime("%Y")
     if kind == "start_month":
-        return start_dt.strftime("%m")
+        return wall_start.strftime("%m")
     if kind == "start_day":
-        return start_dt.strftime("%d")
+        return wall_start.strftime("%d")
     if kind == "start_hour":
-        return start_dt.strftime("%H")
+        return wall_start.strftime("%H")
     if kind == "start_minute":
-        return start_dt.strftime("%M")
+        return wall_start.strftime("%M")
     if kind == "end_year":
-        return end_dt.strftime("%Y")
+        return wall_end.strftime("%Y")
     if kind == "end_day":
-        return end_dt.strftime("%d")
+        return wall_end.strftime("%d")
     if kind == "end_hour":
-        return end_dt.strftime("%H")
+        return wall_end.strftime("%H")
     if kind == "end_minute":
-        return end_dt.strftime("%M")
+        return wall_end.strftime("%M")
     return ""
 
 
-def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float = 0.0):
+def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float = 0.0,
+                             tz_name: str = ""):
     """Fill an EPG-template ``catchup-source`` in, or return None if it is not one.
 
     Providers such as teleelevidenie ship ``catchup="append"`` plus a template
@@ -1354,12 +1363,14 @@ def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float 
             shift = datetime.timedelta(0)
         start_dt = start_dt - shift
         end_dt = end_dt - shift
+    wall_start = _catchup_wall_clock(start_dt, tz_name)
+    wall_end = _catchup_wall_clock(end_dt, tz_name)
     now = datetime.datetime.now(datetime.timezone.utc)
     for token, kind in _CATCHUP_TEMPLATE_TOKENS:
         while token in expanded:
             expanded = expanded.replace(
                 token,
-                _catchup_token_value(kind, start_dt, end_dt, now),
+                _catchup_token_value(kind, start_dt, end_dt, now, wall_start, wall_end),
                 1,
             )
     return expanded
@@ -8505,6 +8516,11 @@ class IPTVClient(wx.Frame):
         return url
 
     def _resolve_catchup_url(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> str:
+        # A guide row with its end before its start (or a zero length) made every
+        # archive request ask for a window that cannot exist: the provider
+        # answered 404 and the app retried a download that could never work.
+        if end_dt <= start_dt:
+            raise ProviderError(_("This programme's start and end times are invalid."))
         provider_type = channel.get("provider-type")
         provider_id = channel.get("provider-id")
         if provider_type == "stalker" and provider_id:
@@ -8539,7 +8555,8 @@ class IPTVClient(wx.Frame):
 
         # Absolute archive templates stand alone; relative templates append
         # to the live URL (e.g. teleelevidenie's "?utc=${start}").
-        expanded = _expand_catchup_template(source, start_dt, end_dt, offset_hours)
+        expanded = _expand_catchup_template(
+            source, start_dt, end_dt, offset_hours, channel.get("catchup-timezone", ""))
         if expanded is not None:
             if expanded.lower().startswith(("http://", "https://")):
                 url = expanded
