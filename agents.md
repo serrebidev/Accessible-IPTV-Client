@@ -348,4 +348,6 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Start the background work after the foreground work. The match index is built over every channel in the playlist, and starting it before the channel list was applied made the apply take 10.8 s instead of 0.8 s: both run in threads and fight over the interpreter lock.
 - Run the app. Starting it on the user's own playlist and watching it settle found in minutes what reading the code did not: the channel list arriving twenty-four seconds late, the categories saying the wrong thing, and the guide that could not be opened.
 - Say how long the phases take. The playlist load's phases were nowhere in the log, so a slow load could not be told apart from a slow provider; they are in the log now.
+- Never wait on the GUI thread for a long job. The exit waited for a recording that was still finalizing, for the whole size-derived budget - an hour for a large faststart MP4 - with the window "Not Responding" and the screen reader silent. The wait runs on a thread; the shutdown's own loop keeps the window alive.
+- A diagnostic that cannot run must say why. The F1 smoke test sent its keys to whatever held the foreground and reported 22 failures with nothing to say so; it now names the session as the cause.
 

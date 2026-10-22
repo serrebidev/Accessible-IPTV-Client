@@ -649,6 +649,45 @@ The application is fine. The same F1, sent through the app's own char hook,
 opens the guide at the right topic with the focus in the guide's text. The
 tool's docstring says so now.
 
+## Twentieth pass: the help, the exit, and the tools that check them
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `recorder.py` | the exit waited for a recording that was still finalizing on the GUI thread | the window was "Not Responding" and the screen reader silent while the app quit - for the length of the finalize, which is an hour for a large faststart MP4 |
+| MINOR | `main.py` | the "What's New" window declared no help topic | F1 there opened the main window's section; the guide has an "Updates" section for it |
+| MINOR | `tools/smoke_user_guide_f1.py` | the tool never checked that it owned the foreground window | 22 failures that were the session, not the application, with nothing to say so |
+
+### The exit that froze the window
+
+A recording that was already finalizing when the app quit was waited for
+inline, on the GUI thread, for the whole size-derived budget - minutes for
+a large faststart MP4, an hour in the worst case. The window was
+"Not Responding" and the screen reader said nothing, on the way out.
+
+The wait runs on a thread now. The shutdown keeps its own loop, which waits
+for the recording to finish while the event loop is pumped, so the window
+stays alive and the FFmpeg is still gone before the app exits.
+
+### The help that was not there
+
+Every one of the app's 116 menu items has a help topic, and so does every
+dialog - the "What's New" window was the one that did not. F1 inside it
+opened the main window's section, while the guide has an "Updates" section
+written for exactly that window.
+
+### The tool that reported the session
+
+`tools/smoke_user_guide_f1.py` failed 22 checks here, and it has failed the
+same way since the commit that added it. The simulated keys go to the
+foreground window, and a session that cannot give the foreground to the app
+sends every key somewhere else: the guide never opened, and every check
+failed with the focus still where it was.
+
+The application is fine - the same F1, sent through the app's own char hook,
+opens the guide at the right topic with the focus in the guide's text - and
+the tool now says which of the two it is. It passes 30 of 30 where the
+window can take the foreground.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
