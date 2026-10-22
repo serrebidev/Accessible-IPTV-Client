@@ -546,3 +546,26 @@ class TestParsedPlaylistCache:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+def test_a_playlist_that_starts_with_a_byte_order_mark_opens_cleanly():
+    """A file that starts with a UTF-8 BOM opened with a garbage channel.
+
+    The mark made the first line not a comment, so the playlist opened with a
+    channel whose URL was the mark and the header, and the header's own
+    attributes were lost.
+    """
+    import types
+
+    import main
+
+    text = (
+        "\ufeff#EXTM3U catchup-timezone=UTC\n"
+        '#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+        "http://example.com/a\n"
+    )
+    frame = types.SimpleNamespace(_extract_stream_id=main.IPTVClient._extract_stream_id)
+
+    channels = main.IPTVClient._parse_m3u_return(frame, text)
+
+    assert [c["name"] for c in channels] == ["Alpha"]
+    assert channels[0]["url"] == "http://example.com/a"

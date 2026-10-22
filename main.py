@@ -3181,7 +3181,10 @@ class IPTVClient(wx.Frame):
                         with open(cache_path, "w", encoding="utf-8") as f:
                             f.write(text)
                     else:
-                        with open(cache_path, "r", encoding="utf-8", errors="ignore") as f:
+                        # utf-8-sig: a playlist that starts with a byte order
+                        # mark would otherwise open with a garbage channel and
+                        # lose the header's attributes.
+                        with open(cache_path, "r", encoding="utf-8-sig", errors="ignore") as f:
                             text = f.read()
                             
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
@@ -3202,7 +3205,10 @@ class IPTVClient(wx.Frame):
                     result["channels"] = channels or []
 
                 elif isinstance(src, str) and os.path.exists(src):
-                    with open(src, "r", encoding="utf-8", errors="ignore") as f:
+                    # utf-8-sig: a file that starts with a byte order mark
+                    # would otherwise open with a garbage channel and lose the
+                    # header's attributes.
+                    with open(src, "r", encoding="utf-8-sig", errors="ignore") as f:
                         text = f.read()
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
@@ -8009,6 +8015,11 @@ class IPTVClient(wx.Frame):
 
         for raw_line in text.splitlines():
             s = raw_line.strip()
+            if s.startswith("\ufeff"):
+                # A byte order mark at the start of the file: without it the
+                # first line is not a comment, and the playlist opens with a
+                # channel whose URL is the mark and the header.
+                s = s[1:].strip()
             if not s:
                 continue
 
@@ -8257,7 +8268,9 @@ class IPTVClient(wx.Frame):
         result (e.g. the playlist-load prefill pass) can share it instead of paying
         for the disk read + JSON decode a second time."""
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
+            # utf-8-sig: a cache written with a byte order mark would not
+            # parse as JSON at all.
+            with open(cache_path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             channels = data.get("channels")
             if not isinstance(channels, list):
