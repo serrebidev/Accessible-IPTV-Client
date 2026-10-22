@@ -424,6 +424,60 @@ long as a cast was playing. They are daemon threads now. A provider that
 stalled while its playlist was being read also killed the handler with an
 unhandled error, and the receiver saw an empty reply; it gets a 502 now.
 
+## Sixteenth pass: the lookup that read the whole playlist
+
+This pass started from evidence rather than from reading code: the
+provider's own 66 MB playlist and the app's parsed copy of it on this
+machine, 257,280 channels, and the timings the app's own code produces on
+that data.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | resolving a programme to a playlist channel scanned every channel in the playlist | half a second of frozen window and silence for every row the user highlighted in the EPG search - 23 seconds for one page of results |
+| SEVERE | `main.py` | the index those lookups need was built on the GUI thread | the first lookup after a playlist load froze the app for seconds |
+
+### What the measurements said
+
+On the playlist this machine has (257,280 channels):
+
+| | before | after |
+|---|---|---|
+| one lookup of a programme that matches | 491 ms | 0.021 ms |
+| one page of 50 EPG search results | 23 s | 0.03 s |
+| the index build | 12.9 s | 12.9 s, off the GUI thread |
+
+The answers did not change: 360 lookups - exact, fuzzy and guide-style -
+returned the same channel as the scan they replaced, on all 257,280
+channels.
+
+### Why the scan was there
+
+The match rules are a scoring list: an exact tvg-id (100), an exact name
+(90), the same canonical name (70), the same name without its quality tag
+(60), a substring (40) and a word in common (at most 30). The first four
+are equality rules, and an equality rule is a dictionary lookup. Only the
+last two need every channel, and they score so low that they cannot beat a
+strong match.
+
+So the index now carries a table per equality rule, and the scan runs only
+when nothing matched strongly - the case where the answer is a guess anyway.
+The tie-break is the same as the scan's: the first channel wins.
+
+The index itself covers every channel in the playlist, and building it took
+thelve seconds with a cold name cache, so it is built on a worker when the
+playlist changes instead of on the GUI thread when the user highlights
+something.
+
+### What the data said that was right
+
+The same pass checked the rest of the playlist against the app's own
+output: all 257,280 channels keep their name, group, tvg-id, tvg-name,
+logo and URL, and a channel whose display name contains a comma (the
+provider ships "24/7: Trapper John, M.D.") is split at the right comma.
+The 1,391 channel names that share a canonical name are mostly the same
+channel in two spellings ("Sky Sports F1 HD" and "Sky Sports F1 4K"), and
+the guide names the channel once, so the first match is the right answer.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
