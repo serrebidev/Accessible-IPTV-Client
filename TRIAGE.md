@@ -930,6 +930,63 @@ connect, and Windows lets such a process enumerate pipes regardless. The
 change stops a blind guess and stops one session's mpv from answering
 another's; it is not a boundary against the user's own processes.
 
+## Twenty-sixth pass: what the account dialog says when it knows nothing
+
+Four ways the account report said something it had not been told, or died
+saying nothing:
+
+* A panel marking a lifetime line with `exp_date: "inf"` crashed
+  `_as_timestamp` with `OverflowError` - a type the `int(float(...))` guard
+  did not name - and the whole check reported "cannot convert float infinity
+  to integer".
+* A 200 with no `user_info` (an empty or reshaped body) printed "Expires:
+  Never (no expiry date set)" next to "Status: not reported by the server".
+  Nothing had been reported, so nothing can be said about when it ends: an
+  unknown line now reads "Not reported by the server" like the status above
+  it.
+* A Ministra portal reports a blocked line as `status: 0`, which the label
+  table has no word for, so the user heard "Status: 0". `0` and `1` now read
+  as Disabled and Active.
+* A provider entry whose `name` (or MAC, or username) was a number rather
+  than text aborted the whole account scan with `'int' object has no
+  attribute 'strip'`; every field is coerced to text first.
+
+Also in the same file: a path-form Xtream base URL
+(`http://host/live/user/pass/1.ts`) reached the "Server:" line with the
+password intact, because only query and `user@` credentials were masked. The
+segments the module's own `xtream_credentials_from_url` recognises as the
+account are now `***`. The verdict for the whole dialog is unchanged: two
+languages of report (Xtream, Stalker) over one formatter, and no test covers
+a live panel.
+
+## Twenty-seventh pass: the archive window on the wrong clock
+
+Three defects in the catch-up path, all of which end in a 404 or a wasted
+request rather than a wrong programme:
+
+* A channel's `catchup-timezone` is an IANA name, and Windows ships no time
+  zone database. `ZoneInfo` raised, the fallback quietly used the PC's own
+  zone, and the same channel was requested hours off the provider's clock -
+  measured on this machine as 07:00 local for a 12:00Z programme that Berlin
+  archives at 14:00. `tzdata` is now a dependency, and the previously
+  skipping test (`test_iana_catchup_timezone_is_honoured`) runs on Windows.
+* `catchup-source` date/hour tokens (`{Y}{m}{d}{H}{M}`, `{y}{e}{h}{i}`) were
+  filled from the UTC instant while the path style used the channel's zone.
+  A provider expecting local time answered 404 for a programme it had. The
+  template now renders those tokens on the same wall clock as the path style;
+  epoch tokens stay UTC, because they are instants.
+* A guide row whose end was before its start (or zero-length, which the
+  parser can produce from `<length>0</length>`) asked the archive for a
+  window that cannot exist, then retried a download that could never work.
+  It now raises `ProviderError` with a translated message, the same guard
+  `dvr.py` applies to recording jobs.
+
+And in `catchup_direct`, a HEAD answered 403 or 404 was treated as "this
+server rejects HEAD" and answered with a ranged GET. A 403 on these panels
+means the account's one stream is busy and a 404 is an ordinary miss, so the
+probe was opening the media it exists to avoid opening. Only 405 and 501 now
+trigger the ranged GET.
+
 ## Still open
 
 - The player's URL is on its own command line and in its media history, so a
