@@ -58,6 +58,23 @@ class TestChannelKey:
         assert favorites.channel_key(None) == ""
         assert favorites.channel_key("not a channel") == ""
 
+    def test_a_pipe_in_a_name_cannot_stand_in_for_two_fields(self):
+        """Names do contain "|": "ITV|1" as one name must not key the same as
+        tvg-id "ITV" plus name "1", or starring one stars the other and
+        un-starring removes both."""
+        named = favorites.channel_key({"name": "ITV|1"})
+        split = favorites.channel_key({"tvg-id": "ITV", "name": "1"})
+        assert named != split
+
+        keys, _added = favorites.toggle([], {"name": "ITV|1"})
+        assert favorites.filter_channels([{"tvg-id": "ITV", "name": "1"}], keys) == []
+        keys, _added = favorites.toggle(keys, {"tvg-id": "ITV", "name": "1"})
+        assert len(keys) == 2
+
+    def test_a_backslash_cannot_escape_the_separator(self):
+        assert (favorites.channel_key({"name": "a\\|b"})
+                != favorites.channel_key({"name": "a", "tvg-id": "b"}))
+
 
 class TestNormalize:
     def test_drops_blanks_duplicates_and_non_strings(self):

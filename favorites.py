@@ -52,7 +52,12 @@ def channel_key(channel: object) -> str:
         display_name(channel),
     ]
     cleaned = [str(part).strip() for part in parts if part is not None and str(part).strip()]
-    return "|".join(cleaned)
+    return "|".join(_escape_key_part(part) for part in cleaned)
+
+
+def _escape_key_part(part: str) -> str:
+    """Keep the separator out of a field: playlists do name channels "A|B"."""
+    return part.replace("\\", "\\\\").replace("|", "\\|")
 
 
 def normalize(values: Optional[Iterable[object]]) -> List[str]:
