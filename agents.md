@@ -342,4 +342,6 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - Everything the app starts has to be stopped when the app quits. The cast proxy was never stopped, so the FFmpeg that transcodes a cast outlived the app: it kept the provider's stream slot, kept writing into its temp folder and left the firewall rule behind. The proxy is stopped in the exit path now.
 - A read-only open of a database that does not exist yet fails with "unable to open database file". That is not an error: there is no guide yet, and every view has to show an empty guide rather than a raw SQLite message.
 - The machine's own leftovers are evidence: the temp folders, the crash dumps, the firewall rules and the app's log say what the installed build did, which the source alone does not.
+- Say what is happening while it is happening. The categories said "No channels found." while the playlist was still loading, because a search rebuilt them; the app's own log shows three minutes and twenty seconds of it.
+- Do not carry what nothing reads. Every channel's logo URL was parsed, cached and kept in memory, and the app has no channel icon: 17 MB of a 64 MB cache file and about a tenth of the memory the playlist costs.
 

@@ -529,6 +529,58 @@ The test suite had left 34 `iptv_remux_*` folders in the temp directory,
 one per converter it started and never stopped. The two tests that started
 a converter now stop it, and the folders go with them.
 
+## Eighteenth pass: what the app says while it is working
+
+The evidence this time was the app's own log of its first run on this
+machine, and the playlist it was working with: 257,280 channels, 67 MB.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | a search during the playlist load replaced "Loading playlists..." with "No channels found." | three minutes and twenty seconds of being told the app had no channels, while it was still fetching them |
+| MINOR | `main.py`, `providers.py` | every channel's logo URL was parsed, cached and kept in memory, and the app never shows a logo | a quarter of the parsed cache file and about a tenth of the memory the playlist costs |
+
+### The categories said the app had no channels
+
+The app says "Loading playlists..." when it starts. A search - the user
+pressing Enter or Tab in the search box, which is what one does while
+waiting - rebuilds the categories, and the rebuild wrote "No channels found."
+instead. The app's own log, from the first run of the installed build:
+
+```
+17:31:17  search start: '' group=No channels found. source=0
+...
+17:34:40  search start: '' group=All Channels source=257236
+```
+
+Three minutes and twenty seconds of the wrong message. The categories now
+say that a load is running while it runs, and say that there is nothing only
+when the load is over.
+
+### The logo that is never shown
+
+The playlist carries a logo URL for 252,755 of the 257,280 channels, and the
+app parsed it, wrote it into the parsed cache and kept it in memory. Nothing
+reads it: there is no channel icon in the interface, and the guide, the
+recordings and the user guide never mention one.
+
+On this machine's playlist the logo text is 17.2 MB of the 63.8 MB parsed
+cache file, and about 17 MB of the 170 MB the channel list costs. The field
+is not parsed any more.
+
+### What the measurements said that was right
+
+The startup path on the real playlist, measured with the app's own code:
+
+| | |
+|---|---|
+| parsing the 67 MB playlist | 9.6 s, on a worker |
+| reading the 64 MB parsed cache | 0.62 s |
+| filling the virtual list with 257,280 rows | 0.04 s |
+| the channel list in memory | 170 MB of objects, 207 MB resident |
+
+The list is virtual, the work is off the GUI thread, and the cache makes the
+second start quick. Only the message was wrong.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
