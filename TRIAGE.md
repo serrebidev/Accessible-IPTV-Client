@@ -1011,6 +1011,27 @@ Four ways the recording path told the user something that was not true:
   a setting. And a config holding valid JSON of the wrong shape (`[]`) was
   neither used nor kept: the next save replaced it, taking the user's
   playlists with it. All four now keep the user's data and start.
+## Twenty-ninth pass: favourited by the wrong channel, and the tail of a relay
+
+Two files probed for the first time. `favorites.py` builds a channel's
+identity by joining fields with `|`, and playlists do name channels
+`ITV|1`. As shipped, `{"name": "ITV|1"}` and `{"tvg-id": "ITV", "name":
+"1"}` produced the same key, so starring one marked both in the list, and
+un-starring removed both. The fields are escaped now, and a backslash cannot
+be used to forge a separator either. Stored keys for ordinary channels do
+not change; a channel whose name contains `|` or `\` loses its existing star
+once, which is the price of telling the two apart.
+
+`recording_relay.py` dropped up to two seconds of the end of every relayed
+recording. Pruning by age ran even after ffmpeg had exited, so a player that
+was a little behind when the recording ended had its remaining chunks
+deleted and saw a short file; and `close()` raced the pump, marking the
+stream finished while ffmpeg's pipe could still hold bytes. Age pruning now
+stops as soon as the relay is closing, and `close()` gives the pump a
+bounded moment to reach EOF before forcing the end (and shutting down client
+sockets that are stuck writing, so their threads do not outlive the
+recording). A relay that never starts is still reported as before; the pipe
+is only closed through the pump.
 
 ## Still open
 
@@ -1045,3 +1066,14 @@ Four ways the recording path told the user something that was not true:
   manifest, so a tampered DLL beside the signed exe would install. The pin
   for the archive would have to come from outside the release, the way the
   certificate pin does.
+- A favourite is matched by exact key. A provider that starts sending a
+  `tvg-id` (or drops one, or renames the channel) changes the key, so the
+  favourite silently disappears from the list while its key stays in the
+  config with no way to remove it in the app. Re-linking old keys by their
+  trailing name would fix it, but a name-only match can attach a favourite to
+  a different channel, so it is a product decision, not a patch.
+- A relayed recording holds one server thread per connected player for as
+  long as that player is not reading (a paused VLC with a full TCP window).
+  `close()` now ends it, but while the recording is live the thread waits in
+  a socket write. A write timeout would end it sooner at the cost of dropping
+  a player paused for longer than the timeout.
