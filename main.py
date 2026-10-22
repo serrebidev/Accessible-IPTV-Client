@@ -1436,6 +1436,9 @@ def _now_playing_key(channel: Dict[str, str]) -> str:
 # 4: the channel logo is not carried any more - the app never shows it, and
 #    on a 257,000-channel playlist it was a quarter of the cache file.
 _PARSED_PLAYLIST_CACHE_VERSION = "4"
+# One writer at a time for the parsed playlist cache: two loads can write the
+# same cache, and one truncating the other's file would publish a broken one.
+_PLAYLIST_CACHE_WRITE_LOCK = threading.Lock()
 
 # Xtream Codes live URL: /live/USER/PASS/ID[.ext] or the short /USER/PASS/ID[.ext].
 _XTREAM_LIVE_PATH_RE = re.compile(r"^/(?:live/)?([^/]+)/([^/]+)/(\d+)(?:\.[A-Za-z0-9]+)?$")
@@ -3103,7 +3106,8 @@ class IPTVClient(wx.Frame):
                         if channels is None:
                             channels = self._parse_m3u_return(text, provider_info=provider_meta)
                             if parsed_cache and text_hash:
-                                self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta)
+                                self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                                 channels, provider_meta)
                         
                         result["channels"] = channels or []
                         result["clients"][provider_id] = client
@@ -3166,15 +3170,19 @@ class IPTVClient(wx.Frame):
                             
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
-                    
+
                     channels = None
                     if parsed_cache and text_hash:
                         channels = _cached_channels_for(parsed_cache, text_hash, provider_meta=None)
                     if channels is None:
+                        started = time.monotonic()
                         channels = self._parse_m3u_return(text, provider_info=None)
+                        LOG.info("Playlist parsed: %d channels in %.1f s",
+                                 len(channels), time.monotonic() - started)
                         if parsed_cache and text_hash:
-                            self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta=None)
-                    
+                            self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                             channels, provider_meta=None)
+
                     result["channels"] = channels or []
 
                 elif isinstance(src, str) and os.path.exists(src):
@@ -3191,8 +3199,9 @@ class IPTVClient(wx.Frame):
                     if channels is None:
                         channels = self._parse_m3u_return(text, provider_info=None)
                         if parsed_cache and text_hash:
-                            self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta=None)
-                            
+                            self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                             channels, provider_meta=None)
+
                     result["channels"] = channels or []
                 else:
                     pass # Invalid source
@@ -3265,13 +3274,13 @@ class IPTVClient(wx.Frame):
             # initial load) must not clobber newer channels/EPG sources.
             if refresh_token != self._playlist_load_token:
                 return
+            started = time.monotonic()
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
             # The load is over: the categories can say what there is (or that
             # there is nothing) now.
             self._playlist_loading = False
             self._program_match_cache = None  # holds the old channel list
-            IPTVClient._warm_program_match_index(self)
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
@@ -3305,6 +3314,12 @@ class IPTVClient(wx.Frame):
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
             self._schedule_auto_update_check()
+            LOG.info("Playlist load finished: %d channels applied in %.1f s",
+                     len(all_channels), time.monotonic() - started)
+            # The match index is built here, not before the channel list is
+            # applied: it is seconds of work, and it competes with the GUI
+            # thread for the interpreter lock. The user waits for the list.
+            IPTVClient._warm_program_match_index(self)
 
         wx.CallAfter(finish_playlist_load_and_start_background_tasks)
 
@@ -8253,6 +8268,28 @@ class IPTVClient(wx.Frame):
         except Exception:
             return None
 
+    def _store_cached_playlist_async(
+        self,
+        cache_path: str,
+        text_hash: str,
+        channels: List[Dict[str, str]],
+        provider_meta: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Write the parsed playlist cache on its own thread.
+
+        Writing it is seconds on a big playlist (43 MB of JSON for 257,000
+        channels), and the channels must not wait for it: the load worker
+        writes it before the channel list is applied, so the list appeared ten
+        seconds late.
+        """
+        threading.Thread(
+            target=self._store_cached_playlist,
+            args=(cache_path, text_hash, channels),
+            kwargs={"provider_meta": provider_meta},
+            name="playlist-cache-write",
+            daemon=True,
+        ).start()
+
     def _store_cached_playlist(
         self,
         cache_path: str,
@@ -8265,9 +8302,12 @@ class IPTVClient(wx.Frame):
             payload["provider"] = provider_meta
         tmp_path = cache_path + ".tmp"
         try:
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, separators=(",", ":"))
-            os.replace(tmp_path, cache_path)
+            # One writer at a time: two loads can write the same cache, and
+            # one truncating the other's file would publish a broken cache.
+            with _PLAYLIST_CACHE_WRITE_LOCK:
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, separators=(",", ":"))
+                os.replace(tmp_path, cache_path)
         except Exception:
             try:
                 if os.path.exists(tmp_path):

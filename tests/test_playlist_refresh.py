@@ -1,4 +1,5 @@
 import threading
+import time
 import types
 
 import main
@@ -204,3 +205,37 @@ def test_the_categories_say_when_there_is_nothing_to_show():
     main.IPTVClient._refresh_group_ui(client)
 
     assert group_list.items == ["No channels found."], group_list.items
+
+def test_the_parsed_cache_is_written_off_the_load_path():
+    """Writing the cache is seconds on a big playlist.
+
+    It ran inside the load worker, before the channel list was applied, so the
+    list appeared ten seconds late: 43 MB of JSON for 257,000 channels.
+    """
+    import main
+
+    names = []
+    client = types.SimpleNamespace()
+    client._store_cached_playlist = (
+        lambda *args, **kwargs: names.append(threading.current_thread().name))
+
+    main.IPTVClient._store_cached_playlist_async(client, "p", "h", [])
+
+    deadline = time.time() + 5
+    while not names and time.time() < deadline:
+        time.sleep(0.02)
+    assert names == ["playlist-cache-write"], names
+
+
+def test_the_playlist_cache_is_written_by_one_writer_at_a_time():
+    """Two loads can write the same cache.
+
+    One truncating the other's file would publish a broken cache, so the
+    writes are serialised.
+    """
+    import inspect
+
+    import main
+
+    source = inspect.getsource(main.IPTVClient._store_cached_playlist)
+    assert "_PLAYLIST_CACHE_WRITE_LOCK" in source

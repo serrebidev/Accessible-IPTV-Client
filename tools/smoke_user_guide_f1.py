@@ -12,6 +12,13 @@ neither the user's iptvclient.conf nor the network. Windows only (menus and
 WM_HELP are what is being tested). Keep the window in the foreground while it
 runs; it takes about half a minute.
 
+The simulated keys go to the foreground window, so this needs a real desktop:
+run from a session where the window can come to the front. In a session
+without one (a service session, an agent shell) every F1 check fails with
+the focus still where it was, and the failures are the environment, not the
+application - the same F1 sent through the app's own char hook opens the
+guide at the right topic.
+
 Run: python tools/smoke_user_guide_f1.py
 """
 import os
