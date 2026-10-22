@@ -581,6 +581,74 @@ The startup path on the real playlist, measured with the app's own code:
 The list is virtual, the work is off the GUI thread, and the cache makes the
 second start quick. Only the message was wrong.
 
+## Nineteenth pass: the app, run for real
+
+The evidence this time was the application itself: started with the user's
+own configuration and its own 257,000-channel playlist, watched while it
+settled, and closed the way a user closes it.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the parsed playlist cache was written inside the load worker, before the channels were applied | the channel list appeared ten seconds late on a 257,000-channel playlist |
+| SEVERE | `main.py` | the background match-index build started before the channel list was applied, and competed with it for the interpreter lock | applying the list took 10.8 s instead of 0.8 s |
+| MINOR | `main.py` | the playlist load's phases were nowhere in the log | a slow load could not be told apart from a slow provider |
+
+### The channel list, ten seconds late
+
+Writing the parsed cache is 43 MB of JSON for this playlist, and it took
+9.9 s. The load worker did it before handing the channels over, so the
+channel list waited for a file nobody was waiting for.
+
+The match index is the other half. It is built over every channel in the
+playlist - 13.3 s the first time, half a second once the names are cached
+- and it was started *before* the channel list was applied. Both run in
+threads, so they fought over the interpreter lock and the apply, which is
+what the user waits for, took 10.8 s.
+
+| | before | after |
+|---|---|---|
+| the channel list, first load after a playlist change | 24.1 s | 13.3 s |
+| applying the channel list | 10.8 s | 0.8 s |
+| the channel list, second start (the cache is warm) | 1.0 s | 1.0 s |
+
+The parse is 9.0 s of what is left, and it is the playlist itself.
+
+The load's phases are in the log now, so the next slow load can be told
+apart from a slow provider:
+
+```
+Playlist parsed: 257583 channels in 9.0 s
+Playlist load finished: 257539 channels applied in 0.8 s
+```
+
+### The measurements that cleared the rest
+
+Taken with the app's own code, on the real playlist:
+
+| | |
+|---|---|
+| parsing the 67 MB playlist | 9.0 s, on a worker |
+| reading the 64 MB parsed cache | 0.62 s |
+| filling the virtual list with 257,280 rows | 0.04 s |
+| one programme lookup | 0.021 ms |
+| the channel list in memory | 170 MB of objects, 207 MB resident |
+| the background index build, against the GUI thread | a 0.26 s worst tick, no freeze |
+
+The category tree shows "All Channels" twice - once at the root and once
+under the playlist's own branch - but that is the tree's shape, and it goes
+away when the view is scoped to a single playlist.
+
+### The F1 smoke test is not broken
+
+`tools/smoke_user_guide_f1.py` fails 22 checks here, and it has failed the
+same way since the commit that added it. The simulated keys go to the
+foreground window, and this session has no foreground window for the app to
+take: every F1 check fails with the focus still where it was.
+
+The application is fine. The same F1, sent through the app's own char hook,
+opens the guide at the right topic with the focus in the guide's text. The
+tool's docstring says so now.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local

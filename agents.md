@@ -344,4 +344,8 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - The machine's own leftovers are evidence: the temp folders, the crash dumps, the firewall rules and the app's log say what the installed build did, which the source alone does not.
 - Say what is happening while it is happening. The categories said "No channels found." while the playlist was still loading, because a search rebuilt them; the app's own log shows three minutes and twenty seconds of it.
 - Do not carry what nothing reads. Every channel's logo URL was parsed, cached and kept in memory, and the app has no channel icon: 17 MB of a 64 MB cache file and about a tenth of the memory the playlist costs.
+- Write the cache off the path the user is waiting on. The parsed playlist cache is 43 MB of JSON on a big playlist and took ten seconds to write, inside the load worker, before the channel list was applied: the list appeared ten seconds late for a file nobody was waiting for.
+- Start the background work after the foreground work. The match index is built over every channel in the playlist, and starting it before the channel list was applied made the apply take 10.8 s instead of 0.8 s: both run in threads and fight over the interpreter lock.
+- Run the app. Starting it on the user's own playlist and watching it settle found in minutes what reading the code did not: the channel list arriving twenty-four seconds late, the categories saying the wrong thing, and the guide that could not be opened.
+- Say how long the phases take. The playlist load's phases were nowhere in the log, so a slow load could not be told apart from a slow provider; they are in the log now.
 
