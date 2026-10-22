@@ -785,6 +785,91 @@ that matter for playback - the user agent and the referrer - are kept:
 | channels with an empty name or no group | 0 |
 | http-user-agent / http-referrer kept | 589 / 235 |
 
+## Twenty-third pass: what the review found
+
+The twenty-second pass was closed the way a build closes: the two-axis
+review of the diff, Standards and Spec, in parallel sub-agents, over the
+wave before it. The review found that the byte order mark fix did not reach
+every path, and that the parsed-playlist cache version did not move with
+the parser.
+
+A provider's playlist was still decoded with plain "utf-8", so an Xtream
+answer that starts with a mark kept its byte-identical text and the same
+cache key: the cached garbage first channel came back and the fix never
+reached it. The provider's answer is decoded with "utf-8-sig" now, and the
+parsed-playlist cache version moved to 5.
+
+The mark was handled in five places - three reads and per line - and is
+stripped in one now: the parser. The two reads of files the app writes
+itself are back to plain "utf-8", because they cannot carry a mark.
+
+The tests the review asked for are there: the header's own attributes are
+asserted again (the catch-up clock Dispatcharr sends there), the file the
+user adds from disk is read through the app's own path, and the provider's
+answer is decoded with the mark in front of it.
+
+The review also caught the two claims that overstated the fix: this file
+and `agents.md` said every path reads "utf-8-sig" now, which was not true
+of the provider's answer at the time. They say what is true now.
+
+## Twenty-fourth pass: the number in the name
+
+Wave fourteen taught the programme matcher that the numbers in a name are
+the channel: "BBC 1" and "BBC 2" are different channels, and the canonical
+name drops a standalone digit as a noise word. The other matcher never
+learned it.
+
+The now-playing matcher looks a playlist channel up in the guide by name.
+The guide spells some channels out - "BBC One", "BBC Two" - and numbers
+others - "BBC 3" - and the noise-stripped names of "BBC Two" and "BBC 3"
+are both "bbc". A playlist channel called "BBC 2" with no guide of its own
+therefore landed on whichever sibling the guide listed first, and the row
+showed that channel's programme:
+
+```
+playlist 'BBC 2' -> guide 'BBC 3'
+```
+
+The rule is the one wave fourteen wrote down: names say whether two
+channels are the same, numbers say when they are not. The now-playing
+matcher applies it now, and a name that answers to several guide channels
+picks the one whose number agrees - the guide's indexes keep every channel
+that answers to a key, in the guide's own order, so "BBC 2" still finds
+"BBC 2" when the guide has it.
+
+The matcher moved out of the frame while it was there. The guide-side
+matching now lives in `channel_identity.py`, which owns the tvg-id variant
+expansion, the guide's indexes and the matching policy, and is free of wx
+so it can be tested without the app. The name vocabulary stays in
+`channel_names.py`, which is where it has always been.
+
+### What the real playlist says about it
+
+The user's own playlist (257,583 channels) against the iptv-org channel
+list (31,645 channels), through the app's own matcher and the app's own
+parsed cache:
+
+| | |
+|---|---|
+| channels matched by name | 1,142 |
+| of those, landing on a different number | 1 |
+| the one it was | `UK: 5 Star` was on the guide's `Star 4K` |
+
+The provider's own guide was not available for the same check: this
+machine's cached playlist carries no guide URL, and a playlist refresh
+(257,604 channels parsed in 63.5 s) discovered no EPG source within the
+window, so no `epg.db` was ever created. The check above therefore uses the
+app's own parsed channel list against the iptv-org channel list, and the
+provider's guide remains a manual check on a box that has one.
+
+### Deliberately not done
+
+- The other matcher - the one that finds the playlist channel for a guide
+  programme - keeps its own index and its own scoring. It already applies
+  the number rule, and it is the other direction: guide to playlist, with
+  its own memo and its own tie-breaks. It can move into `channel_identity`
+  when something in it needs to change.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
