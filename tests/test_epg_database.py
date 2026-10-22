@@ -17,11 +17,11 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import playlist
+from channel_identity import expand_tvg_id_candidates
 from playlist import (
     EPGDatabase,
     _derive_playlist_region,
     _detect_region_from_id,
-    _expand_tvg_id_candidates,
     _http_download_gz_with_resume,
     _ordered_channel_tokens,
     _parse_xmltv_to_utc_str,
@@ -198,17 +198,17 @@ def test_detect_region_from_id_handles_non_latin_scripts():
 
 
 def test_iptv_org_tvg_id_expansion_adds_city_variant():
-    assert _expand_tvg_id_candidates("9Gem.au@Sydney") == [
+    assert expand_tvg_id_candidates("9Gem.au@Sydney") == [
         "9Gem.au@Sydney",
         "9Gem.au",
         "9GemSydney.au",
     ]
-    assert _expand_tvg_id_candidates("DareToDreamNetwork.us@SD") == [
+    assert expand_tvg_id_candidates("DareToDreamNetwork.us@SD") == [
         "DareToDreamNetwork.us@SD",
         "DareToDreamNetwork.us",
     ]
-    assert "antennatv.us" in _expand_tvg_id_candidates("antennatvhd.us")
-    assert "altitudesports.us" in _expand_tvg_id_candidates("altitudesport.us")
+    assert "antennatv.us" in expand_tvg_id_candidates("antennatvhd.us")
+    assert "altitudesports.us" in expand_tvg_id_candidates("altitudesport.us")
 
 
 def test_playlist_region_prefers_tvg_id_country_over_california_abbreviation():

@@ -306,9 +306,6 @@ class TestNowPlayingMatching:
         ]
         for name in ("_build_now_playing_labels", "_programme_label"):
             setattr(client, name, _bind(IPTVClient, name, client))
-        for name in ("_epg_channel_indexes", "_match_epg_channel"):
-            # Static methods: callable directly, no instance binding.
-            setattr(client, name, getattr(IPTVClient, name))
         return client
 
     def test_noise_words_do_not_block_the_match(self):
@@ -397,9 +394,6 @@ class TestNowPlayingDescriptions:
         ]
         setattr(client, "_build_now_playing_descriptions",
                 lambda *a, **k: IPTVClient._build_now_playing_descriptions(client, *a, **k))
-        for name in ("_epg_channel_indexes", "_match_epg_channel"):
-            # Static methods: callable directly, no instance binding.
-            setattr(client, name, getattr(IPTVClient, name))
         return client
 
     def test_descriptions_carry_the_on_air_text(self):

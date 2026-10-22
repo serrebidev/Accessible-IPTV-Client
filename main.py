@@ -64,8 +64,8 @@ from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
     epg_database_has_programmes, epg_database_has_usable_data, epg_tables_present
 )
-from playlist import (source_name_key, normalize_source_names,
-                      _expand_tvg_id_candidates)
+from playlist import (source_name_key, normalize_source_names)
+from channel_identity import guide_indexes, match_guide_channel
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
     StalkerPortalClient, StalkerPortalConfig,
@@ -2286,63 +2286,6 @@ class IPTVClient(wx.Frame):
             # row the user is sitting on.
             wx.CallAfter(self.on_highlight)
 
-    @staticmethod
-    def _epg_channel_indexes(channels: Dict[str, Dict[str, object]]):
-        """(by_id, by_id_lower, name_index, stripped_index) for EPG matching."""
-        by_id = channels
-        by_id_lower = {str(cid).lower(): cid for cid in channels}
-        name_index: Dict[str, str] = {}
-        stripped_index: Dict[str, str] = {}
-        for channel_id, entry in channels.items():
-            display = entry.get("display_name") or ""
-            for key, index in (
-                (canonicalize_name(display), name_index),
-                (canonicalize_name(strip_noise_words(display)), stripped_index),
-            ):
-                if key and key not in index:
-                    index[key] = channel_id
-        return by_id, by_id_lower, name_index, stripped_index
-
-    @staticmethod
-    def _match_epg_channel(channel, by_id, by_id_lower, name_index, stripped_index,
-                           known_ids=None):
-        """The EPG entry for a playlist channel, or None.
-
-        1) tvg-id, including the common XMLTV id variants, case-insensitive
-        and tolerant of one extra dotted segment ("chan.tv" vs "chan").
-        2) names: exact normalized, then noise-stripped, for the channel
-        name and then the tvg-name.
-
-        ``known_ids`` holds every guide channel id (lower case), including
-        ones with nothing on air right now. A channel whose tvg-id is among
-        them has a guide of its own, so when that guide is empty at the
-        moment it gets no label rather than a namesake's: the noise-stripped
-        name of "48 Hours" is "hours", which matched an unrelated channel.
-        """
-        raw_id = str(channel.get("tvg-id") or "").strip()
-        candidates = _expand_tvg_id_candidates(raw_id)
-        candidates.append(raw_id)
-        if "." in raw_id:
-            candidates.append(raw_id.rsplit(".", 1)[0])
-        for candidate in candidates:
-            channel_id = by_id_lower.get(candidate.strip().lower())
-            if channel_id is not None:
-                return by_id[channel_id]
-        if known_ids and any(c.strip().lower() in known_ids for c in candidates if c.strip()):
-            return None
-        for source in (channel.get("name"), channel.get("tvg-name")):
-            text = str(source or "").strip()
-            if not text:
-                continue
-            for key, index in (
-                (canonicalize_name(text), name_index),
-                (canonicalize_name(strip_noise_words(text)), stripped_index),
-            ):
-                channel_id = index.get(key)
-                if channel_id is not None:
-                    return by_id[channel_id]
-        return None
-
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
                                   known_ids=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
@@ -2355,7 +2298,7 @@ class IPTVClient(wx.Frame):
         same-named channels with different guides (a provider's several
         "CBC News" feeds) each keep their own programme.
         """
-        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
+        indexes = guide_indexes(channels)
 
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
@@ -2363,8 +2306,7 @@ class IPTVClient(wx.Frame):
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
-            entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
+            entry = match_guide_channel(channel, indexes, known_ids)
             if not entry:
                 continue
             suffix = ""
@@ -2391,15 +2333,14 @@ class IPTVClient(wx.Frame):
         the short row suffix. Channels with no match or no on-air
         description are simply absent; the field shows a placeholder.
         """
-        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
+        indexes = guide_indexes(channels)
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
-            entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
+            entry = match_guide_channel(channel, indexes, known_ids)
             if not entry:
                 continue
             now_show = entry.get("now")

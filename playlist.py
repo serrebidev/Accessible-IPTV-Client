@@ -17,6 +17,7 @@ import hashlib
 import threading
 from http.client import IncompleteRead
 from providers import generate_provider_id
+from channel_identity import expand_tvg_id_candidates
 from options import get_epg_log_path
 from modal_guard import message_box
 from typing import Dict, List, Optional, Tuple, Set
@@ -404,51 +405,6 @@ def _ordered_channel_tokens(*names: str) -> List[str]:
 def _like_escape(text: str) -> str:
     """``text`` for a ``LIKE ... ESCAPE '\\'`` pattern, matched literally."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
-    """Expand common XMLTV id variants such as IPTV-org channel.au@City."""
-    raw = (tvg_id or "").strip()
-    if not raw:
-        return []
-    candidates: List[str] = []
-    seen: Set[str] = set()
-
-    def add(value: str):
-        value = (value or "").strip()
-        key = value.lower()
-        if value and key not in seen:
-            seen.add(key)
-            candidates.append(value)
-
-    add(raw)
-    base, sep, suffix = raw.partition("@")
-    base_for_variants = base or raw
-
-    def add_base_variants(value: str):
-        m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', value or "")
-        if not m:
-            return
-        name_part, region_part = m.groups()
-        lowered_name = name_part.lower()
-        for quality in ("fhd", "uhd", "hd", "sd", "4k", "8k"):
-            if lowered_name.endswith(quality) and len(name_part) > len(quality):
-                add(f"{name_part[:-len(quality)]}.{region_part}")
-                break
-        if lowered_name.endswith("sport"):
-            add(f"{name_part}s.{region_part}")
-
-    add_base_variants(base_for_variants)
-    if sep and base:
-        add(base)
-        add_base_variants(base)
-        suffix_clean = re.sub(r'[^A-Za-z0-9]+', '', suffix or "")
-        if suffix_clean and suffix_clean.lower() not in {"sd", "hd", "fhd", "uhd", "4k", "8k"}:
-            m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', base)
-            if m:
-                name_part, region_part = m.groups()
-                add(f"{name_part}{suffix_clean}.{region_part}")
-    return candidates
 
 
 def _tvg_id_has_region_hint(tvg_id: str) -> bool:
@@ -1791,7 +1747,7 @@ class EPGDatabase:
     def _collect_candidates_by_id_and_name(self, c, tvg_id: str, tvg_name: str, name: str):
         candidates = {}
 
-        tvg_id_candidates = _expand_tvg_id_candidates(tvg_id)
+        tvg_id_candidates = expand_tvg_id_candidates(tvg_id)
         tvg_id_candidate_keys = {candidate.strip().lower() for candidate in tvg_id_candidates}
 
         for candidate_id in tvg_id_candidates:
