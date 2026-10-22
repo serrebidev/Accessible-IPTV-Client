@@ -8,7 +8,7 @@ import urllib.parse
 import sqlite3
 import threading
 import logging
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, NamedTuple, Optional, Tuple
 import wx
 import datetime
 import re
@@ -1672,6 +1672,26 @@ class TrayIcon(wx.adv.TaskBarIcon):
         elif eid == self.TBMENU_EXIT:
             self.on_exit()
 
+class _ProgramMatchIndex(NamedTuple):
+    """The per-playlist match features and the tables that answer a lookup.
+
+    The strong match rules are equality rules, so they are dictionary
+    lookups: a scan over every channel in the playlist cost half a second on
+    a provider with 257,000 channels, on the GUI thread, for every row the
+    user highlighted.
+    """
+
+    channels: List[Dict[str, str]]
+    rows: List[tuple]
+    by_tvg_id: Dict[str, Dict[str, str]]
+    memo: Dict[tuple, Optional[Dict[str, str]]]
+    by_name: Dict[str, tuple]
+    by_tvg_name: Dict[str, tuple]
+    by_canon: Dict[str, tuple]
+    by_base: Dict[str, tuple]
+    tvg_id_rows: List[tuple]
+
+
 class IPTVClient(wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
@@ -3012,6 +3032,7 @@ class IPTVClient(wx.Frame):
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
                 self._program_match_cache = None  # holds the old channel list
+                IPTVClient._warm_program_match_index(self)
                 self._invalidate_favorites_cache()
                 self._fill_playlist_scope_combo()
                 self._refresh_group_ui()
@@ -3239,6 +3260,7 @@ class IPTVClient(wx.Frame):
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
             self._program_match_cache = None  # holds the old channel list
+            IPTVClient._warm_program_match_index(self)
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
@@ -4130,30 +4152,76 @@ class IPTVClient(wx.Frame):
         """
         channels = self.all_channels
         cached = getattr(self, "_program_match_cache", None)
-        if cached is not None and cached[0] is channels:
-            return cached[1], cached[2], cached[3]
+        if cached is not None and cached.channels is channels:
+            return cached
         rows = []
         by_tvg_id: Dict[str, Dict[str, str]] = {}
-        for ch in channels:
+        by_name: Dict[str, tuple] = {}
+        by_tvg_name: Dict[str, tuple] = {}
+        by_canon: Dict[str, tuple] = {}
+        by_base: Dict[str, tuple] = {}
+        tvg_id_rows: List[tuple] = []
+        for position, ch in enumerate(channels):
             ch_name = ch.get("name", "")
             ch_tvg_name = ch.get("tvg-name", "")
             ch_tvg_id = (ch.get("tvg-id", "") or "").lower()
             if ch_tvg_id and ch_tvg_id not in by_tvg_id:
                 by_tvg_id[ch_tvg_id] = ch
             ch_name_lower = ch_name.lower()
+            ch_tvg_lower = ch_tvg_name.lower()
             ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
+            ch_base = IPTVClient._program_match_base(ch_name_lower)
             rows.append((
                 ch,
                 ch_tvg_id,
                 ch_name_lower,
-                ch_tvg_name.lower(),
+                ch_tvg_lower,
                 ch_name_norm,
                 canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else "",
-                IPTVClient._program_match_base(ch_name_lower),
+                ch_base,
             ))
+            if ch_tvg_id:
+                tvg_id_rows.append((position, ch, ch_tvg_id))
+            # The first channel of a name wins, like the scan it replaces.
+            by_name.setdefault(ch_name_lower, (position, ch))
+            if ch_tvg_lower:
+                by_tvg_name.setdefault(ch_tvg_lower, (position, ch))
+            if ch_name_norm:
+                by_canon.setdefault(ch_name_norm, (position, ch))
+            if ch_tvg_name:
+                ch_tvg_norm = canonicalize_name(strip_noise_words(ch_tvg_name))
+                by_canon.setdefault(ch_tvg_norm, (position, ch))
+            if ch_base:
+                by_base.setdefault(ch_base, (position, ch))
         memo: Dict[tuple, Optional[Dict[str, str]]] = {}
-        self._program_match_cache = (channels, rows, by_tvg_id, memo)
-        return rows, by_tvg_id, memo
+        index = _ProgramMatchIndex(
+            channels=channels,
+            rows=rows,
+            by_tvg_id=by_tvg_id,
+            memo=memo,
+            by_name=by_name,
+            by_tvg_name=by_tvg_name,
+            by_canon=by_canon,
+            by_base=by_base,
+            tvg_id_rows=tvg_id_rows,
+        )
+        self._program_match_cache = index
+        return index
+
+    def _warm_program_match_index(self) -> None:
+        """Build the match index off the GUI thread.
+
+        It covers every channel in the playlist: on a provider with 257,000
+        channels that is seconds of work, and the user must not pay it while
+        highlighting a row.
+        """
+        def worker():
+            try:
+                IPTVClient._program_match_index(self)
+            except Exception:
+                LOG.debug("IPTVClient._warm_program_match_index: ignored exception", exc_info=True)
+
+        threading.Thread(target=worker, name="program-match-index", daemon=True).start()
 
     def _find_matching_channel_for_program(self, program: Dict[str, str]) -> Optional[Dict[str, str]]:
         """Find the playlist channel that best matches an EPG/search program row."""
@@ -4163,14 +4231,15 @@ class IPTVClient(wx.Frame):
             return None
 
         # Through the class: test doubles stand in for the frame here.
-        rows, by_tvg_id, memo = IPTVClient._program_match_index(self)
+        index = IPTVClient._program_match_index(self)
+        memo = index.memo
         memo_key = (channel_name, channel_id)
         if memo_key in memo:
             return memo[memo_key]
         channel_id_lower = channel_id.lower() if channel_id else ""
         # An exact tvg-id scores 100, which nothing else reaches, and ties keep
         # the first channel: the same answer the full scan below would give.
-        exact = by_tvg_id.get(channel_id_lower) if channel_id_lower else None
+        exact = index.by_tvg_id.get(channel_id_lower) if channel_id_lower else None
         if exact is not None:
             memo[memo_key] = exact
             return exact
@@ -4182,7 +4251,44 @@ class IPTVClient(wx.Frame):
         channel_base = IPTVClient._program_match_base(channel_name_lower)
         words_epg = set(channel_name_norm.split())
 
-        for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in rows:
+        # The strong rules are equality rules, so they are dictionary lookups.
+        # The weak ones (a substring, a word in common) score 40 and at most 30,
+        # so they cannot beat a strong match - and the scan that used to look
+        # for them cost half a second on a 257,000-channel playlist, on the GUI
+        # thread, for every row the user highlighted.
+        best_index = -1
+        for score, table, key in (
+            (90, index.by_name, channel_name_lower),
+            (90, index.by_tvg_name, channel_name_lower),
+            (70, index.by_canon, channel_name_norm),
+            (60, index.by_base, channel_base),
+        ):
+            if not key:
+                continue
+            hit = table.get(key)
+            if hit is None:
+                continue
+            row_index, channel = hit
+            if score > best_score or (score == best_score and row_index < best_index):
+                best_score = score
+                best_index = row_index
+                matching_channel = channel
+        # The tvg-id rule scores 80 and matches when one id contains the other,
+        # so it needs the channels that carry an id at all.
+        if channel_id_lower and best_score < 90:
+            for row_index, channel, ch_tvg_id in index.tvg_id_rows:
+                if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
+                    if 80 > best_score:
+                        best_score = 80
+                        best_index = row_index
+                        matching_channel = channel
+                    break
+        if matching_channel is not None and best_score >= 60:
+            memo[memo_key] = matching_channel
+            return matching_channel
+
+        # Nothing matched strongly: the weak rules need every channel.
+        for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in index.rows:
             score = 0
 
             if channel_id_lower and ch_tvg_id:

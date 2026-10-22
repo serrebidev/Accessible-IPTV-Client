@@ -66,3 +66,87 @@ def test_the_index_is_dropped_when_the_channel_list_is_replaced():
     main.IPTVClient._program_match_index(client)
     rows, _by_tvg_id, _memo = client._program_match_cache[1], None, None
     assert len(rows) == 2
+
+
+class _CountingRows(list):
+    """The rows of the index, counting how many of them are looked at."""
+
+    def __init__(self, rows):
+        super().__init__(rows)
+        self.visited = 0
+
+    def __iter__(self):
+        for row in super().__iter__():
+            self.visited += 1
+            yield row
+
+
+CHANNELS = [
+    {"name": "BBC One HD", "tvg-name": "BBC One", "tvg-id": "bbc.one.uk", "url": "u1"},
+    {"name": "BBC Two", "tvg-name": "BBC Two", "tvg-id": "bbc.two.uk", "url": "u2"},
+    {"name": "CNN International", "tvg-name": "CNN Intl", "tvg-id": "cnn.int", "url": "u3"},
+    {"name": "Sky Sports Main Event", "tvg-name": "", "tvg-id": "", "url": "u4"},
+]
+
+
+def _client_with_rows(channels):
+    client = _client(channels)
+    main.IPTVClient._program_match_index(client)
+    index = client._program_match_cache
+    counting = _CountingRows(index.rows)
+    client._program_match_cache = index._replace(rows=counting)
+    return client, counting
+
+
+def test_a_matched_programme_does_not_scan_the_whole_playlist():
+    """The strong match rules are equality rules, so they are lookups.
+
+    The scan they replaced touched every channel in the playlist: half a
+    second on a 257,000-channel provider, on the GUI thread, for every row
+    the user highlighted.
+    """
+    client, rows = _client_with_rows(CHANNELS)
+
+    got = main.IPTVClient._find_matching_channel_for_program(
+        client, {"channel_name": "CNN International", "channel_id": ""})
+
+    assert got is not None and got["url"] == "u3"
+    assert rows.visited == 0, "the lookup still scanned the playlist"
+
+
+def test_a_fuzzy_programme_still_finds_its_channel():
+    """When nothing matches strongly, the weak rules still run."""
+    client, rows = _client_with_rows(CHANNELS)
+
+    got = main.IPTVClient._find_matching_channel_for_program(
+        client, {"channel_name": "Sky Sports Main", "channel_id": ""})
+
+    assert got is not None and got["url"] == "u4"
+    assert rows.visited > 0, "the fuzzy rules never ran"
+
+
+def test_the_first_channel_wins_when_two_match_the_same_way():
+    """Ties keep the first channel, like the scan the lookups replaced."""
+    channels = [
+        {"name": "Feed A", "tvg-name": "Feed A", "tvg-id": "", "url": "a"},
+        {"name": "Feed B", "tvg-name": "Feed B", "tvg-id": "", "url": "b"},
+    ]
+    client, _rows = _client_with_rows(channels)
+
+    got = main.IPTVClient._find_matching_channel_for_program(
+        client, {"channel_name": "Feed B", "channel_id": ""})
+
+    assert got["url"] == "b"
+
+
+def test_the_index_is_built_off_the_gui_thread():
+    """The build covers every channel; the user must not wait for it."""
+    client = _client(CHANNELS)
+    client._program_match_cache = None
+
+    main.IPTVClient._warm_program_match_index(client)
+
+    deadline = time.monotonic() + 5
+    while client._program_match_cache is None and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert client._program_match_cache is not None, "the index was not built"
