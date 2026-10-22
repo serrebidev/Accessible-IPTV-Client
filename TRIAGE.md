@@ -980,6 +980,38 @@ means the account's one stream is busy and a 404 is an ordinary miss, so the
 probe was opening the media it exists to avoid opening. Only 405 and 501 now
 trigger the ranged GET.
 
+## Twenty-eighth pass: a finished download is not junk
+
+Four ways the recording path told the user something that was not true:
+
+* `recorder.py` `_settle_partial_output` treated every failed rename as a
+  failed capture. A clean download whose target was held open - a scanner, a
+  network share, another player - went to the `except`, fell through, and the
+  finished `.part` was **deleted**, while `main.py` still reported "Download
+  complete". The rename failure now keeps the file and reports the `.part`
+  path, because the bytes are the user's programme and the name is not.
+* `main.py` `_on_recording_finished` reported success from the exit code
+  alone. ffmpeg exits 0 when the stream closes before the first frame, so the
+  user was told "Recording saved" about a file that was missing or empty. The
+  report now checks the file has bytes, in the message box and in the DVR
+  job's recorded outcome. A capture stopped by the user still warns; a
+  non-zero exit still errors.
+* The track probe ran on a worker thread with no handler. Any exception left
+  the record key in `pending` for the rest of the session: every later press
+  said the recording was stopping, nothing was ever recorded, and the shared
+  player was never resumed. The probe now reports through the existing
+  "Could not start recording" message, drops the key and resumes playback.
+* `options.py`, found in the same file: the first-run default player was
+  "VLC" while the installer bundles libVLC, not VLC, so a new user's first
+  Play said the player could not be found (the player code already fell back
+  to "Built-in Player"). The Windows-installed data migration ran outside
+  the loader's error handling, so a locked legacy file stopped the app from
+  starting. The two save paths (GUI and playlist worker) wrote the same file
+  without a lock, which can land the older snapshot last and silently revert
+  a setting. And a config holding valid JSON of the wrong shape (`[]`) was
+  neither used nor kept: the next save replaced it, taking the user's
+  playlists with it. All four now keep the user's data and start.
+
 ## Still open
 
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
