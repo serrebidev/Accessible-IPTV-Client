@@ -353,6 +353,77 @@ takes seconds on a full playlist - the app froze and the screen reader said
 nothing. The index is built in the worker now, before the dialog appears,
 like the EPG search already does.
 
+## Fifteenth pass: the token, the signature, the guide and the proxy
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `updater.py` | the request that carries the GitHub token followed a redirect to any host | the user's own GitHub credential went to whatever host the (unsigned) manifest named |
+| SEVERE | `tools/release.py` | the release published the assets before the signature was checked, and the installer's certificate was never compared with the pinned one | a wrongly signed release was public before the check failed, and an installer signed with another certificate would be refused by every installed client |
+| SEVERE | `playlist.py` | the importer read the children of a namespaced feed without the namespace | every channel came in without a name and every programme without a title, and the next import overwrote the good ones with the blanks |
+| SEVERE | `internal_player.py` | the cue timer was not stopped when the player was torn down | the timer asked a released libVLC for the subtitle position: a native crash, not an exception Python can catch |
+| SEVERE | `internal_player.py` | the chosen audio track was re-applied by name only | a provider that renamed its tracks left the stream on its default track while the status line still claimed the chosen one |
+| SEVERE | `internal_player.py` | the audio-track choice was disabled while it had the focus | the player was left with no focus at all, and the tracks came back a moment later |
+| SEVERE | `stream_proxy.py` | the proxy's handler threads were ordinary threads | the app did not go away while a cast was playing: the interpreter joined the streaming handlers |
+| MINOR | `stream_proxy.py` | a stalled upstream killed the gateway handler instead of answering | the receiver saw an empty reply instead of a 502 |
+| MINOR | `stream_proxy.py` | a drive-relative segment name was accepted | a client with the cast token could name a file beside the application |
+| MINOR | `playlist.py` | a programme that gave its length in hours was dropped | the end time could not be computed, so the programme never reached the database |
+| MINOR | `main.py` | the scheduled-recordings dialog was re-centred after every context menu | the window moved under the user each time they opened the menu |
+
+### The token and the redirect
+
+The token in the environment is the user's own GitHub credential, and the
+release manifest travels unsigned, so the token only went to a GitHub host.
+urllib copies a request's headers into the redirected request, so a manifest
+URL on GitHub that answered with a redirect took the credential with it. The
+updater follows redirects through its own handler now, and the credential
+stays behind when the redirect leaves GitHub.
+
+### The signature, before the release
+
+The cloud workflow published the release - and marked it the latest - and
+only then checked the signature. A wrongly signed artifact was already
+public when the check failed, and nothing took it back. The release driver
+checks the signature itself now, before it commits, pushes or publishes, and
+it checks the installer against the same certificate the updater pins: an
+installer signed with another one is refused by every installed client.
+
+### A guide in a namespace
+
+Some feeds carry a default namespace. ElementTree keeps the namespace in the
+tag, so the importer's plain lookups found nothing: every channel came in
+without a name, every programme without a title, and the next import
+overwrote the good names with the blanks. The lookups take any namespace now.
+A programme that gives its length in hours - a unit XMLTV allows - was
+dropped for the same kind of reason: the end time could not be computed, so
+it never reached the database.
+
+### The player, the tracks and the focus
+
+The cue timer asks libVLC for the subtitle position. It was not stopped
+when the player was torn down, so it could call a player that was being
+released: a native crash, and not an exception Python can catch.
+
+The chosen audio track was re-applied by name after a reconnect. The
+provider's track names drift between connections - the slot usually does
+not - so a rename left the stream on its default track while the status
+line still claimed the one the user had chosen. The slot is used when the
+name no longer matches, and the label follows the name the provider now
+uses.
+
+The audio-track choice is disabled while libVLC has not published the track
+list yet. Disabling the focused control leaves the player with no focus at
+all, and the screen reader says nothing until the user finds the window
+again. The focus moves to the next control instead.
+
+### The proxy that would not let the app go
+
+The proxy's handler threads stream for as long as the receiver listens. As
+ordinary threads they were joined when the server closed and when the
+interpreter exited, so the app stayed alive - with its window gone - for as
+long as a cast was playing. They are daemon threads now. A provider that
+stalled while its playlist was being read also killed the handler with an
+unhandled error, and the receiver saw an empty reply; it gets a 502 now.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
@@ -385,3 +456,15 @@ like the EPG search already does.
   ffmpeg that is finalizing has to be gone before the app exits, or it
   outlives us and holds the provider's stream slot. The window has to stay
   alive while it waits.
+- A portable update that installs but does not start leaves no rollback: the
+  helper deletes the backup before it restarts the app, because the recursive
+  delete competed with the freshly started app's own file loading. Putting
+  the delete after the restart would keep the backup, but a rollback also
+  needs a message of its own in every language, and the result file is
+  written before the restart (the app reports the update within
+  milliseconds of showing its window), so it would still say "completed".
+- The Authenticode pin covers the executable and the installer, not the rest
+  of the portable archive: the hash of the zip comes from the same unsigned
+  manifest, so a tampered DLL beside the signed exe would install. The pin
+  for the archive would have to come from outside the release, the way the
+  certificate pin does.

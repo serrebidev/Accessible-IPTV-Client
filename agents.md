@@ -329,4 +329,11 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 - The automatic subtitle speech is checked when the cue is spoken, not only when it arrives: a cue queued while the speech was on is not spoken after the user turns it off. An explicit "read this subtitle" always speaks.
 - The application voice speaks asynchronously, so a caption line outlives the channel it belongs to. The voice is purged whenever the subtitle session changes - a new stream, or the player closing.
 - A provider that rejects the password has told the caller nothing about the account. The report must not add an expiry line to it: "Expires: Never" told the user their dead account never expires.
+- urllib copies a request's headers into the redirected request. A credential that may only go to one host has to be dropped when the redirect leaves it: the updater's GitHub token now goes through its own redirect handler.
+- A release verifies what it is about to publish, and the check comes before the commit, the push and the release. The cloud workflow published the release first and checked the signature afterwards, and a published release cannot be taken back. The installer carries the same certificate the updater pins, or the release stops.
+- The feed is untrusted input down to its namespaces. ElementTree keeps the namespace in the tag, so the importer's child lookups have to take any namespace - a namespaced feed came in with blank names and blank titles, and every import overwrote the good ones.
+- A timer that talks to libVLC is stopped when the player is torn down. The cue timer asked a released player for the subtitle position: a native crash, not an exception Python can catch.
+- A track's name drifts between connections; its slot usually does not. A chosen audio track is re-applied by name first and by slot when the name no longer matches, and the label follows the name the provider now uses.
+- Disabling the focused control leaves the player with no focus at all, so the focus moves to the next control instead. `wx.Window.FindFocus()` also raises when there is no application object, so it is asked through a helper that answers None.
+- The proxy's handler threads are daemon threads. As ordinary threads they are joined when the server closes and when the interpreter exits, so the app stays alive for as long as a cast is playing.
 
