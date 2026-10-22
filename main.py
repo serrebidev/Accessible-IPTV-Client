@@ -6800,6 +6800,10 @@ class IPTVClient(wx.Frame):
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             try:
+                self.player_launcher.close_mpv()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: mpv close failed", exc_info=True)
+            try:
                 self.player_launcher.close_subtitle_adapter()
             except Exception:
                 LOG.debug("IPTVClient.on_close: subtitle adapter close failed", exc_info=True)

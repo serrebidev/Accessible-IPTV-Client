@@ -14,9 +14,16 @@ from i18n import gettext as _
 import logging
 
 try:
-    from mpv_subtitle_adapter import MpvSubtitleAdapter
+    from mpv_subtitle_adapter import MpvSubtitleAdapter, session_endpoint
 except Exception:  # pragma: no cover - adapter is optional at runtime
     MpvSubtitleAdapter = None
+
+    def session_endpoint() -> str:
+        """Same shape as the adapter's, for when that module is not shipped."""
+        token = uuid.uuid4().hex[:8]
+        if platform.system() == "Windows":
+            return r"\\.\pipe\iptvclient-mpv-" + token
+        return os.path.join(tempfile.gettempdir(), f"iptvclient-mpv-{token}.sock")
 
 LOG = logging.getLogger(__name__)
 
@@ -30,9 +37,9 @@ class ExternalPlayerLauncher:
         # Counts the launches: a worker that belongs to an older launch must
         # not start playback after a newer one has been asked for.
         self._launch_generation = 0
-        # This session's mpv pipe. A fixed name was machine-wide: any local
-        # process could connect to it and drive, or watch, the session.
-        self._mpv_ipc_endpoint = self._new_mpv_ipc_path()
+        # This session's mpv pipe. A fixed name could be found, and guessed,
+        # by anything on the machine.
+        self._mpv_ipc_endpoint = session_endpoint()
 
     def launch(
         self,
@@ -290,7 +297,7 @@ class ExternalPlayerLauncher:
             # handle reuse; always pass the URL directly for predictable playback.
             return [exe_or_cmd, url]
         if player_name == "MPV":
-            ipc = self._mpv_ipc_path()
+            ipc = self._mpv_ipc_endpoint
             flags = [f"--input-ipc-server={ipc}", "--force-window=yes", "--idle=yes", "--no-terminal"]
             # On POSIX, if the IPC socket path exists but connect failed above, it's likely stale; try to remove it.
             if not is_windows and os.path.exists(ipc):
@@ -321,25 +328,9 @@ class ExternalPlayerLauncher:
         except Exception as e:
             return False, str(e)
 
-    @staticmethod
-    def _new_mpv_ipc_path() -> str:
-        """A pipe name that belongs to this session only.
-
-        The subtitle adapter builds its own endpoint the same way; this one is
-        for the plain MPV handoff, which is a separate mpv process.
-        """
-        token = uuid.uuid4().hex[:8]
-        if platform.system() == "Windows":
-            return r"\\.\pipe\iptvclient-mpv-" + token
-        return os.path.join(tempfile.gettempdir(), f"iptvclient-mpv-{token}.sock")
-
-    def _mpv_ipc_path(self) -> str:
-        return self._mpv_ipc_endpoint
-
-    def _mpv_try_send(self, url: str) -> bool:
-        """If an mpv instance with our IPC is running, send loadfile and return True."""
-        ipc = self._mpv_ipc_path()
-        payload = (json.dumps({"command": ["loadfile", url, "replace"]}) + "\n").encode("utf-8")
+    def _mpv_send(self, payload: bytes) -> bool:
+        """Write one command line to this session's mpv pipe; False if absent."""
+        ipc = self._mpv_ipc_endpoint
         if platform.system() == "Windows":
             try:
                 # Minimal win32 named pipe client via ctypes
@@ -381,3 +372,19 @@ class ExternalPlayerLauncher:
                         s.close()
                     except Exception:
                         LOG.debug("mpv IPC socket close failed", exc_info=True)
+
+    def _mpv_try_send(self, url: str) -> bool:
+        """If an mpv instance with our IPC is running, send loadfile and return True."""
+        payload = (json.dumps({"command": ["loadfile", url, "replace"]}) + "\n").encode("utf-8")
+        return self._mpv_send(payload)
+
+    def close_mpv(self) -> None:
+        """Quit the mpv this session started.
+
+        The plain handoff keeps no process handle, so the pipe is the only way
+        to stop it. An `--idle=yes` mpv would otherwise keep playing the last
+        channel after the app is gone, and a restart could not reach it: the
+        pipe name belongs to the session that made it.
+        """
+        payload = (json.dumps({"command": ["quit"]}) + "\n").encode("utf-8")
+        self._mpv_send(payload)

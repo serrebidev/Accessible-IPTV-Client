@@ -11,7 +11,7 @@ from mpv_subtitle_adapter import (
     CONNECT_TIMEOUT_S,
     REQUEST_TIMEOUT_S,
     MpvSubtitleAdapter,
-    _session_endpoint,
+    session_endpoint,
 )
 from subtitle_speech import SubtitleSpeechManager
 
@@ -133,7 +133,7 @@ def test_request_response_matching():
 
 
 def test_session_endpoints_are_unique_per_session():
-    assert _session_endpoint() != _session_endpoint()
+    assert session_endpoint() != session_endpoint()
 
 
 def test_disconnect_reports_unavailable_and_clears():

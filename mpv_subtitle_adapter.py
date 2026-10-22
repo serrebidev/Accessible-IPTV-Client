@@ -56,7 +56,7 @@ _OBS_SID = 5
 _MIN_TESTED_MPV = (0, 37, 0)
 
 
-def _session_endpoint() -> str:
+def session_endpoint() -> str:
     """A per-session IPC endpoint that cannot collide with other instances."""
     token = uuid.uuid4().hex[:8]
     if _IS_WINDOWS:
@@ -286,7 +286,7 @@ class MpvSubtitleAdapter:
     ) -> "Optional[MpvSubtitleAdapter]":
         """Spawn our own MPV with a per-session endpoint and attach to it."""
         self = cls(manager, on_state_change)
-        endpoint = _session_endpoint()
+        endpoint = session_endpoint()
         extra = [str(arg) for arg in (extra_args or [])]
         # A forced window is what makes a radio stream show something, but a
         # caller that asked for no video does not want one - and mpv stops
