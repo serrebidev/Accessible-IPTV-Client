@@ -97,7 +97,9 @@ class XtreamCodesClient:
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
             raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
-            text = raw.decode("utf-8")
+            # utf-8-sig: a playlist that starts with a byte order mark would
+            # otherwise open with a garbage first channel.
+            text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = raw.decode("latin-1", "ignore")
         # A wrong or expired password answers with HTTP 200 and a body that is
@@ -138,7 +140,8 @@ class XtreamCodesClient:
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
             raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
-            text = raw.decode("utf-8")
+            # utf-8-sig: a JSON body may start with a byte order mark.
+            text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = raw.decode("latin-1", "ignore")
         try:

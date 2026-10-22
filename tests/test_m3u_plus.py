@@ -544,9 +544,6 @@ class TestParsedPlaylistCache:
         assert open_calls["n"] == 2
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
-
 def test_a_playlist_that_starts_with_a_byte_order_mark_opens_cleanly():
     """A file that starts with a UTF-8 BOM opened with a garbage channel.
 
@@ -569,3 +566,66 @@ def test_a_playlist_that_starts_with_a_byte_order_mark_opens_cleanly():
 
     assert [c["name"] for c in channels] == ["Alpha"]
     assert channels[0]["url"] == "http://example.com/a"
+    # The header's own attributes are read again: the catch-up clock
+    # Dispatcharr sends there.
+    assert channels[0].get("dispatcharr") is True
+
+
+def test_a_playlist_file_with_a_byte_order_mark_is_read_cleanly(tmp_path):
+    """The file the user added from disk is the path that carries the mark."""
+    import types
+
+    import main
+
+    path = tmp_path / "bom.m3u"
+    path.write_bytes(
+        b"\xef\xbb\xbf#EXTM3U catchup-timezone=UTC\n"
+        b'#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+        b"http://example.com/a\n"
+    )
+    # The app reads a local playlist file exactly like this.
+    text = open(path, "r", encoding="utf-8-sig", errors="ignore").read()
+    frame = types.SimpleNamespace(_extract_stream_id=main.IPTVClient._extract_stream_id)
+
+    channels = main.IPTVClient._parse_m3u_return(frame, text)
+
+    assert [c["name"] for c in channels] == ["Alpha"]
+    assert channels[0]["url"] == "http://example.com/a"
+
+
+def test_a_provider_playlist_with_a_byte_order_mark_is_read_cleanly():
+    """The provider path decodes the answer itself, so it strips the mark."""
+    from providers import XtreamCodesClient, XtreamCodesConfig
+
+    client = XtreamCodesClient(XtreamCodesConfig(
+        base_url="http://provider.example.com",
+        username="u", password="p",
+    ))
+
+    class _Response:
+        def read(self):
+            return (b"\xef\xbb\xbf#EXTM3U\n"
+                    b'#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+                    b"http://example.com/a\n")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    import urllib.request
+
+    original = urllib.request.urlopen
+    urllib.request.urlopen = lambda *args, **kwargs: _Response()
+    try:
+        text = client.fetch_playlist()
+    finally:
+        urllib.request.urlopen = original
+
+    assert text.startswith("#EXTM3U")
+    assert "\ufeff" not in text
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

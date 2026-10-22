@@ -1436,9 +1436,9 @@ def _now_playing_key(channel: Dict[str, str]) -> str:
 
 # Bump whenever _parse_m3u_return starts producing different channel dicts
 # from the same playlist text; it salts the parsed-playlist cache key.
-# 4: the channel logo is not carried any more - the app never shows it, and
-#    on a 257,000-channel playlist it was a quarter of the cache file.
-_PARSED_PLAYLIST_CACHE_VERSION = "4"
+# 5: a playlist that starts with a byte order mark is read without it, so
+#    the same text produces different channel dicts than before.
+_PARSED_PLAYLIST_CACHE_VERSION = "5"
 # One writer at a time for the parsed playlist cache: two loads can write the
 # same cache, and one truncating the other's file would publish a broken one.
 _PLAYLIST_CACHE_WRITE_LOCK = threading.Lock()
@@ -3181,10 +3181,7 @@ class IPTVClient(wx.Frame):
                         with open(cache_path, "w", encoding="utf-8") as f:
                             f.write(text)
                     else:
-                        # utf-8-sig: a playlist that starts with a byte order
-                        # mark would otherwise open with a garbage channel and
-                        # lose the header's attributes.
-                        with open(cache_path, "r", encoding="utf-8-sig", errors="ignore") as f:
+                        with open(cache_path, "r", encoding="utf-8", errors="ignore") as f:
                             text = f.read()
                             
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
@@ -7982,6 +7979,10 @@ class IPTVClient(wx.Frame):
         provider_info = provider_info or {}
         provider_id = provider_info.get("provider-id")
         provider_type = provider_info.get("provider-type")
+        # A playlist may start with a UTF-8 byte order mark. It is not a
+        # comment, so the playlist would open with a channel whose URL is the
+        # mark and the header, and the header's own attributes would be lost.
+        text = text.lstrip("\ufeff")
 
         out: List[Dict[str, str]] = []
         append = out.append
@@ -8015,11 +8016,6 @@ class IPTVClient(wx.Frame):
 
         for raw_line in text.splitlines():
             s = raw_line.strip()
-            if s.startswith("\ufeff"):
-                # A byte order mark at the start of the file: without it the
-                # first line is not a comment, and the playlist opens with a
-                # channel whose URL is the mark and the header.
-                s = s[1:].strip()
             if not s:
                 continue
 
@@ -8268,9 +8264,7 @@ class IPTVClient(wx.Frame):
         result (e.g. the playlist-load prefill pass) can share it instead of paying
         for the disk read + JSON decode a second time."""
         try:
-            # utf-8-sig: a cache written with a byte order mark would not
-            # parse as JSON at all.
-            with open(cache_path, "r", encoding="utf-8-sig") as f:
+            with open(cache_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             channels = data.get("channels")
             if not isinstance(channels, list):
