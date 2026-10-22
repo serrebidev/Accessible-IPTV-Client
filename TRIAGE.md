@@ -1012,6 +1012,31 @@ Four ways the recording path told the user something that was not true:
   neither used nor kept: the next save replaced it, taking the user's
   playlists with it. All four now keep the user's data and start.
 
+## Twenty-ninth pass: favourited by the wrong channel, and the tail of a relay
+
+Two files probed for the first time. `favorites.py` builds a channel's
+identity by joining fields with `|`, and playlists do name channels
+`ITV|1`. As shipped, `{"name": "ITV|1"}` and `{"tvg-id": "ITV", "name":
+"1"}` produced the same key, so starring one marked both in the list, and
+un-starring removed both. The fields are escaped now, and a backslash cannot
+be used to forge a separator either. Stored keys for ordinary channels do
+not change; a channel with `|` or `\` in any keyed field (and the recent
+channels list, which uses the same key) loses its existing entry once, which
+is the price of telling the two apart. An old key can also re-attach: a
+stored `A|B` is now the valid key of tvg-id `A` with name `B`.
+
+`recording_relay.py` dropped the tail of a relayed recording. Pruning by age
+ran even after ffmpeg had exited, so a player that was a little behind when
+the recording ended had its remaining chunks deleted and saw a short file;
+and `close()` raced the pump, marking the stream finished while ffmpeg's pipe
+could still hold bytes. Age pruning now stops as soon as the relay is
+closing, `close()` gives the pump a bounded moment to reach EOF before
+forcing the end, and the forced path closes ffmpeg's pipe and shuts down
+sockets that are stuck writing (a player that joins during that window gets
+the queued tail instead of a trimmed backlog). A relay whose pipe never
+reaches EOF still costs the watcher up to two seconds before it reports the
+  recording finished.
+
 ## Still open
 
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
@@ -1045,3 +1070,21 @@ Four ways the recording path told the user something that was not true:
   manifest, so a tampered DLL beside the signed exe would install. The pin
   for the archive would have to come from outside the release, the way the
   certificate pin does.
+- A favourite is matched by exact key. A provider that starts sending a
+  `tvg-id` (or drops one, or renames the channel) changes the key, so the
+  favourite silently disappears from the list while its key stays in the
+  config with no way to remove it in the app. Re-linking old keys by their
+  trailing name would fix it, but a name-only match can attach a favourite to
+  a different channel, so it is a product decision, not a patch.
+- A favourite key still depends on which fields are present: the join drops
+  empty fields, so a Stalker `provider-id` `7` named "Dave" and an Xtream
+  `stream-id` `7` named "Dave" both key as `7|Dave`. Encoding each field's
+  position would fix it but re-keys every stored favourite, so it needs a
+  migration that re-links by name - a product decision, not a patch.
+- A relayed recording holds one server thread per connected player for as
+  long as that player is not reading (a paused VLC with a full TCP window).
+  `close()` shuts those sockets down on the forced path only, so a player
+  paused while the recording is still live keeps its thread until the
+  recording ends. Aborting a blocked `send` with `shutdown` is also unproven
+  on Windows here. A write timeout would end it sooner at the cost of
+  dropping a player paused longer than the timeout.
