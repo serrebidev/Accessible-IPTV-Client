@@ -560,10 +560,23 @@ def sign_executable(exe_path):
 
 
 def get_signing_thumbprint(exe_path):
+    """The certificate the release pins.
+
+    The override is what the updater is told to expect; the file's own
+    certificate is what :func:`read_signature` returns.
+    """
     override = os.environ.get("SIGN_CERT_THUMBPRINT", "").strip()
     if override:
         return override
+    return read_signature(exe_path)[0]
 
+
+def read_signature(path):
+    """The signing certificate and the signature status of a file.
+
+    Returns ``(thumbprint, status)`` as PowerShell sees them: the certificate
+    the file carries, and the status of the signature itself.
+    """
     powershell = "powershell"
     clean_env = os.environ.copy()
     if os.name == "nt":
@@ -589,7 +602,7 @@ def get_signing_thumbprint(exe_path):
             "Modules",
         )
 
-    literal_path = os.path.abspath(exe_path).replace("'", "''")
+    literal_path = os.path.abspath(path).replace("'", "''")
     result = subprocess.run(
         [
             powershell,
@@ -602,7 +615,7 @@ def get_signing_thumbprint(exe_path):
                 "$ErrorActionPreference = 'Stop'; "
                 f"$sig = Get-AuthenticodeSignature -LiteralPath '{literal_path}'; "
                 "if (-not $sig.SignerCertificate) { throw 'No signer certificate found.' }; "
-                "$sig.SignerCertificate.Thumbprint"
+                "\"$($sig.SignerCertificate.Thumbprint)|$($sig.Status)\""
             ),
         ],
         cwd=REPO_ROOT,
@@ -611,14 +624,37 @@ def get_signing_thumbprint(exe_path):
         text=True,
         env=clean_env,
     )
-    thumbprint = (result.stdout or "").strip()
+    thumbprint, _, status = (result.stdout or "").strip().partition("|")
     if result.returncode != 0 or not thumbprint:
         detail = (result.stderr or result.stdout or "").strip()
         raise RuntimeError(
             "Failed to read signing thumbprint from signed executable."
             + (f" {detail}" if detail else "")
         )
-    return thumbprint
+    return thumbprint, status.strip()
+
+
+# A good signature whose certificate is not in the local store reads as one of
+# these; the workflow that checks the signatures accepts the same list.
+_TRUSTED_SIGNATURE_STATUSES = ("Valid", "UnknownError", "NotTrusted")
+
+
+def verify_signature(path, expected_thumbprint):
+    """The artifact must carry the certificate the updater pins.
+
+    The updater refuses an update whose file carries another certificate, so
+    a release that shipped an installer signed with a different one would be
+    rejected by every installed client. The check has to happen before the
+    release is published: a published release cannot be taken back.
+    """
+    thumbprint, status = read_signature(path)
+    if status not in _TRUSTED_SIGNATURE_STATUSES:
+        raise RuntimeError(f"{os.path.basename(path)} signature is {status}.")
+    wanted = str(expected_thumbprint or "").replace(" ", "").upper()
+    if thumbprint.replace(" ", "").upper() != wanted:
+        raise RuntimeError(
+            f"{os.path.basename(path)} is signed with {thumbprint}, "
+            f"but the release pins {expected_thumbprint}.")
 
 
 def zip_folder(source_dir, zip_path):
@@ -941,8 +977,13 @@ def main():
         validate_bundled_changelog()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
+        # The updater pins this certificate: an artifact signed with another
+        # one is refused by every installed client, and a release that is
+        # published before it is checked cannot be taken back.
+        verify_signature(exe_path, signing_thumbprint)
         installer_path = build_installer(next_version)
         sign_executable(installer_path)
+        verify_signature(installer_path, signing_thumbprint)
         assets = build_assets(next_version, release_notes, signing_thumbprint, installer_path=installer_path)
         git_commit_and_tag(next_version)
         git_push(next_version)
@@ -963,11 +1004,13 @@ def main():
         validate_bundled_changelog()
         sign_executable(exe_path)
         signing_thumbprint = get_signing_thumbprint(exe_path)
+        verify_signature(exe_path, signing_thumbprint)
         installer_path = None
         compiler = find_inno_setup_compiler()
         if compiler:
             installer_path = build_installer(app_meta.APP_VERSION, compiler=compiler)
             sign_executable(installer_path)
+            verify_signature(installer_path, signing_thumbprint)
         else:
             print("Inno Setup compiler not found; skipping local installer build.")
         build_assets(app_meta.APP_VERSION, release_notes, signing_thumbprint, installer_path=installer_path)

@@ -815,6 +815,10 @@ def _is_safe_segment_name(name: str) -> bool:
         return False
     if ".." in name or "/" in name or "\\" in name or "\x00" in name:
         return False
+    # A drive-relative name ("C:file") escapes the folder it is joined to:
+    # Windows resolves it against that drive's current directory.
+    if ":" in name:
+        return False
     return True
 
 
@@ -938,19 +942,30 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
             path_lower = final.path.lower()
             playlist = 'mpegurl' in ctype or path_lower.endswith(('.m3u8', '.m3u'))
             if playlist and not head:
-                body = resp.read(self._GATEWAY_PLAYLIST_LIMIT + 1)
+                try:
+                    body = resp.read(self._GATEWAY_PLAYLIST_LIMIT + 1)
+                except OSError as err:
+                    # The provider stalled or reset while the playlist was
+                    # being read. The handler used to die here, and the
+                    # receiver saw an empty reply instead of an answer.
+                    LOG.info("Gateway could not read the playlist: %s", type(err).__name__)
+                    return self.send_error(502)
                 if len(body) <= self._GATEWAY_PLAYLIST_LIMIT:
-                    text = body.decode('utf-8-sig', errors='replace')
-                    data = rewrite_playlist_for_gateway(
-                        text, resp.geturl(), lambda url: proxy.gateway_url(url, sid)).encode('utf-8')
-                    self.send_response(resp.status)
-                    self.send_header('Content-Type', resp.headers.get('Content-Type')
-                                     or 'application/vnd.apple.mpegurl')
-                    self.send_header('Content-Length', str(len(data)))
-                    self.send_header('Access-Control-Allow-Origin', '*')
-                    self._send_no_cache_headers()
-                    self.end_headers()
-                    self.wfile.write(data)
+                    try:
+                        text = body.decode('utf-8-sig', errors='replace')
+                        data = rewrite_playlist_for_gateway(
+                            text, resp.geturl(), lambda url: proxy.gateway_url(url, sid)).encode('utf-8')
+                        self.send_response(resp.status)
+                        self.send_header('Content-Type', resp.headers.get('Content-Type')
+                                         or 'application/vnd.apple.mpegurl')
+                        self.send_header('Content-Length', str(len(data)))
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self._send_no_cache_headers()
+                        self.end_headers()
+                        self.wfile.write(data)
+                    except OSError as err:
+                        # The receiver went away in the middle of the answer.
+                        LOG.info("Gateway could not send the playlist: %s", type(err).__name__)
                     return
                 prefix = body
             else:
@@ -1312,6 +1327,11 @@ class StreamProxy:
     def start(self):
         if self.server: return
         self.server = socketserver.ThreadingTCPServer((self.host, 0), StreamProxyHandler)
+        # The handler threads stream for as long as the receiver listens. As
+        # ordinary threads they would be joined when the server closes and
+        # when the interpreter exits, so the app would not go away while a
+        # cast was playing.
+        self.server.daemon_threads = True
         self.port = self.server.server_address[1]
         self._running = True
         self._stop_event.clear()

@@ -1306,3 +1306,75 @@ def test_an_id_two_sources_share_survives_one_of_them_dropping_it(tmp_path):
         assert db.get_channel_ids_lower() == {"y", "z"}
     finally:
         db.close()
+
+def test_a_namespaced_feed_keeps_its_names_and_titles(tmp_path):
+    """Some feeds carry a default namespace.
+
+    ElementTree keeps the namespace in the tag, so the plain lookups found
+    nothing: every channel came in without a name and every programme
+    without a title - and the next import overwrote the good ones with the
+    blanks.
+    """
+    import datetime
+
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    feed = tmp_path / "ns.xml"
+    feed.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<tv xmlns="http://www.tvguide.com/xmltv/0.17/">'
+        '<channel id="cnn"><display-name>CNN</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" '
+        f'stop="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+        'channel="cnn"><title>News at Ten</title><desc>The news.</desc></programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(feed)])
+        channels = db.conn.execute("SELECT display_name FROM channels").fetchall()
+        programmes = db.conn.execute("SELECT title, description FROM programmes").fetchall()
+    finally:
+        db.close()
+
+    assert channels == [("CNN",)]
+    assert programmes == [("News at Ten", "The news.")]
+
+
+def test_a_length_in_hours_computes_the_end_time(tmp_path):
+    """A programme that gives its length in hours was dropped.
+
+    The end time could not be computed, so the programme never reached the
+    database at all.
+    """
+    import datetime
+
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    feed = tmp_path / "hours.xml"
+    feed.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<tv>'
+        '<channel id="c"><display-name>C</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" channel="c">'
+        '<title>Two Hours</title>'
+        '<length units="hours">2</length>'
+        '</programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(feed)])
+        rows = db.conn.execute("SELECT start, end FROM programmes").fetchall()
+    finally:
+        db.close()
+
+    assert len(rows) == 1, "the programme was dropped"
+    start, end = rows[0]
+    fmt = "%Y%m%d%H%M%S"
+    assert (datetime.datetime.strptime(end, fmt)
+            - datetime.datetime.strptime(start, fmt)).total_seconds() == 7200

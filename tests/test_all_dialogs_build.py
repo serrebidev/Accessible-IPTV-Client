@@ -170,6 +170,24 @@ def test_scheduled_recordings_dialog_populates_on_open(host):
         parent.Destroy()
 
 
+def test_the_scheduled_recordings_context_menu_does_not_move_the_dialog(host, monkeypatch):
+    """The dialog jumped back to the middle of the main window every time.
+
+    The user opened the context menu with the Applications key or Shift+F10
+    and the window moved under them for no reason.
+    """
+    scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [])
+    dlg = ScheduledRecordingsDialog(host, scheduler)
+    centred = []
+    monkeypatch.setattr(dlg, "CenterOnParent", lambda: centred.append(True))
+    monkeypatch.setattr(dlg.list_ctrl, "PopupMenu", lambda menu, pos: None)
+    try:
+        dlg._show_context_menu(keyboard=True)
+        assert centred == [], "the dialog was moved while the context menu was open"
+    finally:
+        dlg.Destroy()
+
+
 def test_scheduled_recordings_delete_shortcut_is_silent_when_empty(host, monkeypatch):
     scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [])
     dlg = ScheduledRecordingsDialog(host, scheduler)

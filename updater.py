@@ -514,6 +514,27 @@ def _build_request(url: str) -> urllib.request.Request:
     return urllib.request.Request(url, headers=headers)
 
 
+class _HostBoundRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """A redirect must not carry the GitHub token to another host.
+
+    urllib copies the original request's headers into the redirected one, so a
+    manifest URL on github.com that answers with a redirect would take the
+    user's own credential with it - and the manifest travels unsigned.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and not _is_github_host(newurl):
+            new.remove_header("Authorization")
+        return new
+
+
+def _open(req: urllib.request.Request, timeout: float):
+    """Open a request whose credentials must not follow it off GitHub."""
+    opener = urllib.request.build_opener(_HostBoundRedirectHandler)
+    return opener.open(req, timeout=timeout)
+
+
 def _normalize_thumbprint(value: Optional[str]) -> str:
     if not value:
         return ""
@@ -603,7 +624,7 @@ def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dic
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     req = _build_request(url)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _open(req, timeout) as resp:
             payload = resp.read().decode("utf-8-sig")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
@@ -680,7 +701,7 @@ def fetch_update_manifest(
 def download_json(url: str, *, timeout: float = 20.0) -> dict:
     req = _build_request(url)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _open(req, timeout) as resp:
             payload = resp.read().decode("utf-8-sig")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
@@ -699,7 +720,7 @@ def download_file_with_sha256(url: str, dest_path: str, *, progress_cb=None) -> 
     req = _build_request(url)
     digest = hashlib.sha256()
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp, open(dest_path, "wb") as handle:
+        with _open(req, 60) as resp, open(dest_path, "wb") as handle:
             try:
                 total = int(resp.headers.get("Content-Length") or 0)
             except (TypeError, ValueError):

@@ -672,3 +672,29 @@ def test_the_cleanup_path_does_not_deadlock_on_the_proxy_lock():
     worker = threading.Thread(target=_cleanup_once, daemon=True)
     worker.start()
     assert done.wait(5), "the cleanup path deadlocked on the proxy lock"
+
+def test_the_proxy_handlers_are_daemon_threads():
+    """The handler threads stream for as long as the receiver listens.
+
+    As ordinary threads they are joined when the server closes and when the
+    interpreter exits, so the app does not go away while a cast is playing.
+    """
+    proxy = StreamProxy()
+    proxy.start()
+    try:
+        assert proxy.server is not None
+        assert proxy.server.daemon_threads is True
+    finally:
+        proxy.stop()
+
+
+def test_a_drive_relative_segment_name_is_refused():
+    """A name like "C:file" escapes the folder it is joined to.
+
+    Windows resolves it against that drive's current directory, so a client
+    with the cast token could read a file from beside the application.
+    """
+    assert stream_proxy_module._is_safe_segment_name("seg1.ts") is True
+    assert stream_proxy_module._is_safe_segment_name("..") is False
+    assert stream_proxy_module._is_safe_segment_name("C:iptvclient.conf") is False
+    assert stream_proxy_module._is_safe_segment_name("a:b") is False

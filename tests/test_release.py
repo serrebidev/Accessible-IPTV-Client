@@ -156,3 +156,65 @@ def test_release_note_only_commits_alone_give_no_notable_changes():
                 "files": ["locale/hu/LC_MESSAGES/release_notes.po"]}]
     assert release.build_release_notes(commits).endswith("No notable changes.")
     assert release.determine_bump(commits) == "patch"
+
+
+# --------------------------------------------------------------------------- #
+# The signature check
+# --------------------------------------------------------------------------- #
+def test_an_artifact_signed_with_another_certificate_is_refused(monkeypatch):
+    """The updater pins one certificate.
+
+    A release that ships an installer signed with another one is refused by
+    every installed client, and a published release cannot be taken back.
+    """
+    monkeypatch.setattr(release, "read_signature", lambda path: ("OTHER0000", "Valid"))
+    with pytest.raises(RuntimeError, match="signed with"):
+        release.verify_signature("installer.exe", "MYPIN0000")
+
+
+def test_an_artifact_with_a_broken_signature_is_refused(monkeypatch):
+    """A signature that does not match its file (HashMismatch) is not good."""
+    monkeypatch.setattr(release, "read_signature", lambda path: ("MYPIN0000", "HashMismatch"))
+    with pytest.raises(RuntimeError, match="signature is"):
+        release.verify_signature("installer.exe", "MYPIN0000")
+
+
+def test_the_release_does_not_publish_what_it_has_not_verified(monkeypatch):
+    """Nothing is committed, pushed or published before the check."""
+    published = []
+    calls = []
+
+    monkeypatch.setattr(sys, "argv", ["release.py", "release"])
+    monkeypatch.setattr(release, "compute_next_version",
+                        lambda: ("v1.2.3", "1.2.3", [], "patch"))
+    monkeypatch.setattr(release, "build_release_notes", lambda commits: "## Bug fixes\n- x\n")
+    monkeypatch.setattr(release.translation_audit, "require_complete", lambda *a, **k: None)
+    monkeypatch.setattr(release, "update_version_file", lambda version: None)
+    monkeypatch.setattr(release, "update_changelog", lambda version, notes, **k: None)
+    monkeypatch.setattr(release, "sync_translations", lambda: None)
+    monkeypatch.setattr(release, "validate_ffmpeg_binary", lambda *a, **k: None)
+    monkeypatch.setattr(release, "clean_build_artifacts", lambda: None)
+    monkeypatch.setattr(release, "run_pyinstaller", lambda: None)
+    monkeypatch.setattr(release, "validate_no_bundled_config", lambda: None)
+    monkeypatch.setattr(release, "validate_bundled_user_guide", lambda *a, **k: None)
+    monkeypatch.setattr(release, "validate_bundled_changelog", lambda *a, **k: None)
+    monkeypatch.setattr(release, "sign_executable", lambda path: None)
+    monkeypatch.setattr(release, "get_signing_thumbprint", lambda path: "MYPIN0000")
+    monkeypatch.setattr(release, "build_installer", lambda version, **k: "installer.exe")
+    monkeypatch.setattr(release, "build_assets", lambda *a, **k: {})
+    monkeypatch.setattr(release, "git_commit_and_tag", lambda version: calls.append("commit"))
+    monkeypatch.setattr(release, "git_push", lambda version: calls.append("push"))
+    monkeypatch.setattr(release, "gh_release_create",
+                        lambda version, assets: published.append(version))
+    monkeypatch.setattr(release, "release_other_platforms", lambda version: None)
+    # The installer was signed with another certificate than the app.
+    monkeypatch.setattr(
+        release, "read_signature",
+        lambda path: ("OTHER0000", "Valid") if "installer" in path else ("MYPIN0000", "Valid"),
+    )
+
+    with pytest.raises(RuntimeError, match="signed with"):
+        release.main()
+
+    assert published == [], "the release was published without a verified signature"
+    assert calls == [], "the release was committed or pushed before it was verified"

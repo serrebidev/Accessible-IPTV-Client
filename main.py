@@ -11012,8 +11012,6 @@ class ScheduledRecordingsDialog(wx.Dialog):
         finally:
             menu.Destroy()
 
-        self.CenterOnParent()
-
     def _status_label(self, status: str) -> str:
         labels = {
             dvr.STATUS_SCHEDULED: _("Scheduled"),

@@ -932,7 +932,7 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
     if not start_utc:
         return None
     # <length units="minutes">NN</length> or units="seconds"
-    length_elem = elem.find(".//length")
+    length_elem = elem.find(".//{*}length")
     dur_seconds = None
     if length_elem is not None and (length_elem.text or "").strip():
         units = (length_elem.get("units") or "").strip().lower()
@@ -946,6 +946,8 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
                     dur_seconds = int(val * 60)
                 elif units in {"second", "seconds", "sec", "secs"}:
                     dur_seconds = int(val)
+                elif units in {"hour", "hours", "hr", "hrs"}:
+                    dur_seconds = int(val * 3600)
             except (ValueError, OverflowError):
                 # "inf" or "nan" parses as a float but is not a duration.
                 # Raising here aborted the whole source, dropping every
@@ -953,7 +955,7 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
                 dur_seconds = None
     if dur_seconds is None:
         # <duration>PT1H30M</duration>
-        dur_elem = elem.find(".//duration")
+        dur_elem = elem.find(".//{*}duration")
         if dur_elem is not None and (dur_elem.text or "").strip():
             dur_seconds = _parse_duration_to_seconds(dur_elem.text.strip())
     if dur_seconds is None:
@@ -2776,7 +2778,12 @@ class EPGDatabase:
                             tag = elem.tag.rsplit('}', 1)[-1]
                             if tag == 'channel':
                                 ch_id = elem.get("id", "")
-                                dn_elem = elem.find("./display-name")
+                                # The wildcard finds the child in a feed that
+                                # carries a default namespace: ElementTree
+                                # keeps the namespace in the tag, so a plain
+                                # lookup found nothing and the channel came
+                                # in without a name.
+                                dn_elem = elem.find("./{*}display-name")
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
                                 if (ch_id or disp) and ch_id not in seen_channel_ids:
                                     seen_channel_ids.add(ch_id)
@@ -2784,10 +2791,10 @@ class EPGDatabase:
                                     chan_count += 1
                             elif tag == 'programme':
                                 ch_id = elem.get("channel", "")
-                                title_elem = elem.find("./title")
+                                title_elem = elem.find("./{*}title")
                                 title_txt = title_elem.text.strip() if title_elem is not None and title_elem.text else ""
                                 desc_txt = ""
-                                for desc_elem in elem.findall("./desc"):
+                                for desc_elem in elem.findall("./{*}desc"):
                                     if desc_elem.text and desc_elem.text.strip():
                                         desc_txt = desc_elem.text.strip()
                                         break

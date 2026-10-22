@@ -1241,12 +1241,104 @@ def test_audio_track_reapply_waits_for_published_tracks():
         _audio_reapply_pending=True, _wanted_audio_track_name='English',
         _audio_track_label='', _get_audio_tracks=lambda: [],
         player=types.SimpleNamespace(audio_set_track=picked.append),
+        _update_status_label=lambda *a, **k: None,
     )
     internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
     assert frame._audio_reapply_pending is True
     frame._get_audio_tracks = lambda: [(1, 'Spanish'), (2, 'English')]
     internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
     assert picked == [2] and frame._audio_reapply_pending is False
+
+
+def test_a_renamed_track_is_reapplied_by_its_slot():
+    """The provider renames its tracks between connections; the slot does not.
+
+    The chosen track was found by name only, so a rename left the stream on
+    its default track while the status line still claimed the chosen one.
+    """
+    picked = []
+    frame = types.SimpleNamespace(
+        _audio_reapply_pending=True, _wanted_audio_track_name='English',
+        _audio_track_fallback_index=1, _audio_track_label='English',
+        _get_audio_tracks=lambda: [(1, 'Spanish'), (2, 'Inglisch')],
+        player=types.SimpleNamespace(audio_set_track=picked.append),
+        _update_status_label=lambda *a, **k: None,
+    )
+
+    internal_player.InternalPlayerFrame._maybe_reapply_audio_track(frame)
+
+    assert picked == [2]
+    assert frame._audio_track_label == 'Inglisch'
+
+
+def test_the_focus_leaves_the_audio_track_choice_before_it_is_disabled():
+    """Disabling the focused control leaves the player with no focus.
+
+    The audio-track choice is disabled while the tracks are not published
+    yet, and the screen-reader user is left on nothing.
+    """
+    wx = pytest.importorskip("wx")
+    try:
+        app = wx.App()
+    except Exception as exc:  # pragma: no cover - headless CI without a display
+        pytest.skip(f"no usable display for wxPython: {exc}")
+
+    frame = wx.Frame(None)
+    choice = wx.Choice(frame, choices=["English"])
+    other = wx.Button(frame, label="Other")
+    sizer = wx.BoxSizer(wx.VERTICAL)
+    sizer.Add(other, 0, wx.ALL, 5)
+    sizer.Add(choice, 0, wx.ALL, 5)
+    frame.SetSizer(sizer)
+    frame.Show()
+    app.Yield()
+    choice.SetFocus()
+    app.Yield()
+    assert wx.Window.FindFocus() is choice
+
+    stub = types.SimpleNamespace(
+        audio_track_choice=choice,
+        _get_audio_tracks=lambda: [],
+        _current_audio_track_id=lambda: -1,
+        _audio_track_choice_signature=(("English",),),
+        _audio_track_choice_ids=[],
+        _wanted_audio_track_name=None,
+        _controls_focus_order=[other, choice],
+    )
+    stub._focus_control_step = types.MethodType(
+        internal_player.InternalPlayerFrame._focus_control_step, stub)
+
+    internal_player.InternalPlayerFrame._refresh_audio_track_choice(stub)
+
+    focused = wx.Window.FindFocus()
+    assert focused is not None, "the player was left with no focus"
+    assert focused is not choice, "the focus stayed on the disabled control"
+    frame.Destroy()
+
+
+def test_quiesce_stops_the_subtitle_cue_timer():
+    """The cue timer asks libVLC for the subtitle position.
+
+    It must not tick while the player is being released: the call lands on a
+    released player, which is a native crash and not an exception Python can
+    catch.
+    """
+    stopped = []
+
+    class _Timer:
+        def Stop(self):
+            stopped.append(True)
+
+    frame = types.SimpleNamespace(
+        _destroyed=False, _allow_close=False, _manual_stop=False,
+        _pending_restart=False, _pending_xtream_refresh=False, _current_url='http://x',
+        _status_timer=types.SimpleNamespace(Stop=lambda: None),
+        _cue_timer=_Timer(),
+    )
+
+    internal_player.InternalPlayerFrame._quiesce(frame)
+
+    assert stopped == [True], "the cue timer still runs while the player is released"
 
 
 def test_backed_off_retry_does_not_reopen_a_newer_channel(monkeypatch):

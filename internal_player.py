@@ -1789,6 +1789,18 @@ class InternalPlayerFrame(wx.Frame):
             return True
         return (length - current) > self._end_near_threshold_ms
 
+    @staticmethod
+    def _focused_window():
+        """The window that has the keyboard focus, or None.
+
+        wx raises when there is no application object at all, and the focus
+        is nothing there anyway.
+        """
+        try:
+            return wx.Window.FindFocus()
+        except Exception:
+            return None
+
     def _focus_control_step(self, forward: bool) -> None:
         order = [ctrl for ctrl in self._controls_focus_order
                  if ctrl and ctrl.IsShown() and ctrl.IsEnabled()]
@@ -2354,7 +2366,16 @@ class InternalPlayerFrame(wx.Frame):
             self._audio_track_choice_signature = signature
             self._audio_track_choice_ids = [track_id for track_id, _name in tracks]
             choice.SetItems([name for _track_id, name in tracks])
+            # Disabling the focused control leaves the player with no focus
+            # at all (or with the focus on an unusable control), and the
+            # tracks come back a moment later. Through the class: test
+            # doubles stand in for the frame here.
+            focused = InternalPlayerFrame._focused_window()
             choice.Enable(bool(tracks))
+            if focused is choice and not choice.IsEnabled():
+                now = InternalPlayerFrame._focused_window()
+                if now is None or now is choice:
+                    self._focus_control_step(True)
         if not tracks:
             choice.SetName(_("No audio tracks available"))
             return
@@ -2808,14 +2829,30 @@ class InternalPlayerFrame(wx.Frame):
             return
         self._audio_reapply_pending = False
         wanted = self._wanted_audio_track_name
+        chosen = None
         for tid, name in tracks:
             if name == wanted:
-                try:
-                    self.player.audio_set_track(tid)
-                except Exception:
-                    LOG.debug("InternalPlayerFrame._maybe_reapply_audio_track: ignored exception", exc_info=True)
-                self._audio_track_label = wanted
+                chosen = (tid, name)
                 break
+        if chosen is None:
+            # The provider renamed the track between connections. The slot
+            # usually does not drift, so the chosen track is re-applied by
+            # position - and the label follows the name the provider now
+            # uses, so the status line does not claim a track that is not
+            # playing.
+            index = self._audio_track_fallback_index
+            if index is not None and 0 <= index < len(tracks):
+                chosen = tracks[index]
+        if chosen is None:
+            return
+        track_id, name = chosen
+        try:
+            self.player.audio_set_track(track_id)
+        except Exception:
+            LOG.debug("InternalPlayerFrame._maybe_reapply_audio_track: ignored exception", exc_info=True)
+            return
+        self._audio_track_label = name
+        self._update_status_label()
 
     def _set_fullscreen(self, enable: bool) -> None:
         enable = bool(enable)
@@ -2858,6 +2895,14 @@ class InternalPlayerFrame(wx.Frame):
         self._current_url = None
         try:
             self._status_timer.Stop()
+        except Exception:
+            LOG.debug("InternalPlayerFrame._quiesce: ignored exception", exc_info=True)
+        try:
+            # The cue timer asks libVLC for the subtitle position. It must not
+            # tick while the player is being released: the call lands on a
+            # released player, which is a native crash and not an exception
+            # Python can catch.
+            self._cue_timer.Stop()
         except Exception:
             LOG.debug("InternalPlayerFrame._quiesce: ignored exception", exc_info=True)
 
