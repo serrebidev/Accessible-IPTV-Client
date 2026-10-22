@@ -907,24 +907,35 @@ the code and the reported bug are about.
   wall-clock time across a DST change. Only a recording scheduled inside the
   missing hour itself is off, and that is an edge case.
 
-## Twenty-fifth pass: the pipe nobody else can open
+## Twenty-fifth pass: the pipe belongs to one session
 
 The app hands a channel to an external MPV with `--input-ipc-server`, and
-used one fixed name for it: `\\.\pipe\iptvclient-mpv`. Any local process
-could open that pipe, read `media-title` and the playlist, and send
+used one fixed name for it: `\\.\pipe\iptvclient-mpv`. Anything on the
+machine could open that pipe, read `media-title` and the playlist, and send
 `loadfile` or `quit`; the adapter that carries subtitle speech had already
-built its own endpoint per session, so the two halves of the same feature
+built its endpoint per session, so the two halves of the same player
 disagreed.
 
-The pipe name is now built per session (`iptvclient-mpv-<8 hex>`), the way
-the adapter's is, and stays stable for the life of the launcher so a second
-channel still replaces the first in the same mpv. Nothing else changes: the
-URL is still on mpv's own command line, which is how an external player is
-launched, and that stays recorded as a limitation of the external-player
-handoff.
+The name now comes from one shared helper, `session_endpoint()`, and belongs
+to the launcher that asked for it, so two sessions cannot collide and a
+guess does not land. Because a restart can no longer take over the mpv the
+last run left running, the app now quits that mpv itself on exit
+(`ExternalPlayerLauncher.close_mpv`): it kept no process handle, so the pipe
+was the only way to stop it, and without this an `--idle=yes` mpv would have
+outlived the app still playing the last channel.
+
+What this does not do: the endpoint is still an argument on mpv's own
+command line, so a process running as the same user can read it there and
+connect, and Windows lets such a process enumerate pipes regardless. The
+change stops a blind guess and stops one session's mpv from answering
+another's; it is not a boundary against the user's own processes.
 
 ## Still open
 
+- The player's URL is on its own command line and in its media history, so a
+  provider user and password carried in that URL is visible in the process
+  list and in the player's history. That is how an external player is handed
+  a stream, and nothing in this app can hide it from the player itself.
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
   application can still veto it afterwards, and the app has already closed by
   then.
