@@ -478,6 +478,57 @@ The 1,391 channel names that share a canonical name are mostly the same
 channel in two spellings ("Sky Sports F1 HD" and "Sky Sports F1 4K"), and
 the guide names the channel once, so the first match is the right answer.
 
+## Seventeenth pass: what the app leaves behind
+
+This pass started from the machine's own leftovers: the temp folders the app
+and its test suite had accumulated, the crash dumps, the firewall rules, and
+the app's own log - the only record of what the installed build actually
+did.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `stream_proxy.py`, `main.py` | nothing stopped the cast proxy when the app quit | the FFmpeg that transcodes a cast outlived the app: it kept the provider's stream slot, kept writing segments into its temp folder, and the firewall rule it added stayed behind |
+| SEVERE | `playlist.py` | a read-only open of the guide that does not exist yet failed | "Failed to fetch EPG data: unable to open database file" in "What's on Now", and a traceback in the log on every refresh until the first import |
+
+### The proxy that was never stopped
+
+The proxy is created on demand and lives for the life of the process. Its
+converters are FFmpeg child processes, and the only thing that stopped them
+was the proxy's own cleanup loop, which runs every ten seconds - so an app
+that quit while a cast was running left the FFmpeg behind. Nothing called
+`stop()`: not the exit path, not the caster, not the shutdown.
+
+The proxy is stopped when the app quits now, which ends the FFmpeg
+processes, removes their temp folders and takes the firewall rule with them.
+
+### The guide that did not exist yet
+
+The app's own log, from the first run of the installed build:
+
+```
+[DEBUG] EPG.ui: IPTVClient._refresh_now_playing_labels: ignored exception
+  File "main.py", line 2201, in _refresh_now_playing_labels
+  File "playlist.py", line 1364, in __init__
+  File "playlist.py", line 1371, in _open
+sqlite3.OperationalError: unable to open database file
+```
+
+Every view of the guide opens the database read-only, and SQLite refuses a
+read-only open of a file that does not exist. Before the first import there
+is no file, so "What's on Now" answered with that raw message and the
+now-playing refresh logged the traceback on every tick.
+
+There is no guide yet - that is not an error. A missing guide is now an
+empty guide: the read-only open falls back to an empty database, so the views
+say what they mean ("No programs are currently airing, or EPG data has not
+been imported yet") and the log stays quiet.
+
+### What the leftovers said that was right
+
+The test suite had left 34 `iptv_remux_*` folders in the temp directory,
+one per converter it started and never stopped. The two tests that started
+a converter now stop it, and the folders go with them.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
