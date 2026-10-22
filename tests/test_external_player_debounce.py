@@ -4,6 +4,22 @@ import time
 from external_player import ExternalPlayerLauncher
 
 
+def test_the_mpv_pipe_belongs_to_this_session_only():
+    """A fixed pipe name was machine-wide: any local process could connect.
+
+    The pipe carries the player's media title and accepts commands, so the
+    name has to be one nobody else can guess.
+    """
+    first = ExternalPlayerLauncher()
+    second = ExternalPlayerLauncher()
+
+    assert first._mpv_ipc_path() != second._mpv_ipc_path()
+    assert "iptvclient-mpv-" in first._mpv_ipc_path()
+    assert first._mpv_ipc_path() != r"\\.\pipe\iptvclient-mpv"
+    # Stable within one session, or a second launch would miss the first mpv.
+    assert first._mpv_ipc_path() == first._mpv_ipc_path()
+
+
 def test_the_mpv_adapter_launch_does_not_block_the_caller(monkeypatch):
     """The adapter's handshake takes as long as MPV answers.
 

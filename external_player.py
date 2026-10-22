@@ -7,6 +7,7 @@ import socket
 import threading
 import time
 import tempfile
+import uuid
 from typing import Optional, Tuple
 
 from i18n import gettext as _
@@ -29,6 +30,9 @@ class ExternalPlayerLauncher:
         # Counts the launches: a worker that belongs to an older launch must
         # not start playback after a newer one has been asked for.
         self._launch_generation = 0
+        # This session's mpv pipe. A fixed name was machine-wide: any local
+        # process could connect to it and drive, or watch, the session.
+        self._mpv_ipc_endpoint = self._new_mpv_ipc_path()
 
     def launch(
         self,
@@ -317,11 +321,20 @@ class ExternalPlayerLauncher:
         except Exception as e:
             return False, str(e)
 
-    def _mpv_ipc_path(self) -> str:
+    @staticmethod
+    def _new_mpv_ipc_path() -> str:
+        """A pipe name that belongs to this session only.
+
+        The subtitle adapter builds its own endpoint the same way; this one is
+        for the plain MPV handoff, which is a separate mpv process.
+        """
+        token = uuid.uuid4().hex[:8]
         if platform.system() == "Windows":
-            return r"\\.\pipe\iptvclient-mpv"
-        # POSIX: use a socket in temp
-        return os.path.join(tempfile.gettempdir(), "iptvclient-mpv.sock")
+            return r"\\.\pipe\iptvclient-mpv-" + token
+        return os.path.join(tempfile.gettempdir(), f"iptvclient-mpv-{token}.sock")
+
+    def _mpv_ipc_path(self) -> str:
+        return self._mpv_ipc_endpoint
 
     def _mpv_try_send(self, url: str) -> bool:
         """If an mpv instance with our IPC is running, send loadfile and return True."""
