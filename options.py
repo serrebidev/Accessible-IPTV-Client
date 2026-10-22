@@ -23,6 +23,9 @@ import logging
 LOG = logging.getLogger(__name__)
 
 CONFIG_FILE = "iptvclient.conf"
+# One save at a time: the GUI thread and the playlist worker both write, and
+# two atomic replaces can land in the wrong order, silently reverting a setting.
+_SAVE_LOCK = threading.Lock()
 APP_DATA_DIR_NAME = "AccessibleIPTVClient"
 LEGACY_APP_DATA_DIR_NAME = "IPTVClient"
 WINDOWS_INSTALL_MARKER = ".windows-installed"
@@ -465,11 +468,17 @@ def resolve_internal_player_settings(cfg: Dict) -> InternalPlayerSettings:
 
 def load_config() -> Dict:
     global _CONFIG_PATH
-    _prepare_windows_installed_data()
+    try:
+        _prepare_windows_installed_data()
+    except Exception as e:
+        # A locked legacy file must not stop the app from starting.
+        _log_error(f"Failed to migrate data from an older install: {e}")
     default = {
         "playlists": [],
         "epgs": [],
-        "media_player": "VLC",
+        # The installer bundles libVLC, not VLC; a first run that defaulted to
+        # VLC told every user it could not find the player.
+        "media_player": "Built-in Player",
         "custom_player_path": "",
         "internal_player_buffer_seconds": DEFAULT_INTERNAL_PLAYER_BUFFER_SECONDS,
         "internal_player_max_buffer_seconds": DEFAULT_INTERNAL_PLAYER_MAX_BUFFER_SECONDS,
@@ -511,26 +520,29 @@ def load_config() -> Dict:
             try:
                 with open(p, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                if isinstance(data, dict):
-                    # Ensure all default keys are present. The per-media-type
-                    # recording preferences are seeded from the legacy single
-                    # ``recording_format`` by the migration below instead, so
-                    # an old config's choice is not lost to the new defaults.
-                    for k, v in default.items():
-                        if k in ("recording_format_audio", "recording_format_video"):
-                            continue
-                        data.setdefault(k, v)
-                    data["recording_format"] = normalize_recording_format(data.get("recording_format"))
-                    migrate_recording_format_prefs(data)
-                    normalize_recording_padding(data)
-                    normalize_channel_and_audio_settings(data)
-                    try:
-                        data["announcement_level"] = max(0, min(3, int(data["announcement_level"])))
-                    except (TypeError, ValueError):
-                        data["announcement_level"] = 2
-                    resolve_internal_player_settings(data)
-                    _CONFIG_PATH = p
-                    return data
+                if not isinstance(data, dict):
+                    # Valid JSON of the wrong shape is as unreadable as a
+                    # parse error, and the next save would overwrite it.
+                    raise ValueError("config is not a JSON object")
+                # Ensure all default keys are present. The per-media-type
+                # recording preferences are seeded from the legacy single
+                # ``recording_format`` by the migration below instead, so
+                # an old config's choice is not lost to the new defaults.
+                for k, v in default.items():
+                    if k in ("recording_format_audio", "recording_format_video"):
+                        continue
+                    data.setdefault(k, v)
+                data["recording_format"] = normalize_recording_format(data.get("recording_format"))
+                migrate_recording_format_prefs(data)
+                normalize_recording_padding(data)
+                normalize_channel_and_audio_settings(data)
+                try:
+                    data["announcement_level"] = max(0, min(3, int(data["announcement_level"])))
+                except (TypeError, ValueError):
+                    data["announcement_level"] = 2
+                resolve_internal_player_settings(data)
+                _CONFIG_PATH = p
+                return data
             except Exception as e:
                 _log_error(f"Failed to load config from {p}: {e}")
                 # Keep the unreadable file: the first save would overwrite it,
@@ -553,6 +565,11 @@ def load_config() -> Dict:
     return default
 
 def save_config(cfg: Dict):
+    with _SAVE_LOCK:
+        _save_config_locked(cfg)
+
+
+def _save_config_locked(cfg: Dict):
     global _CONFIG_PATH
     cfg["recording_format"] = normalize_recording_format(cfg.get("recording_format"))
     migrate_recording_format_prefs(cfg)
@@ -833,8 +850,12 @@ def _windows_videos_dir():
 def get_recordings_dir(cfg: Dict) -> str:
     """Resolve the directory recordings are written to (creating it)."""
     configured = (cfg or {}).get("recordings_dir") or ""
+    fallback = ""
     if configured.strip():
-        target = os.path.expanduser(configured.strip())
+        # A stored path can carry %VARIABLES% or be relative; used literally, a
+        # relative path lands in the install directory.
+        target = os.path.abspath(os.path.expandvars(os.path.expanduser(configured.strip())))
+        fallback = target
     else:
         if _IS_WINDOWS:
             videos = _windows_videos_dir()
@@ -845,6 +866,10 @@ def get_recordings_dir(cfg: Dict) -> str:
         os.makedirs(target, exist_ok=True)
     except Exception:
         LOG.debug("get_recordings_dir: ignored exception", exc_info=True)
+        if fallback:
+            # The configured folder cannot be created: record somewhere that
+            # works rather than let ffmpeg fail with an opaque error.
+            return get_recordings_dir({"recordings_dir": ""})
     return target
 
 def get_dvr_schedule_path() -> str:

@@ -113,6 +113,45 @@ def test_an_unreadable_config_is_kept_before_it_is_overwritten(tmp_path, monkeyp
     assert kept.read_text(encoding="utf-8") == "{ this is not json"
 
 
+def test_a_first_run_opens_with_the_player_that_ships(tmp_path, monkeypatch):
+    """The installer bundles libVLC, not VLC: the old default said the player
+    could not be found the moment a new user pressed Play."""
+    monkeypatch.setattr(options, "get_config_read_candidates", lambda: [str(tmp_path / "none.conf")])
+    monkeypatch.setattr(options, "get_config_write_target", lambda: str(tmp_path / "written.conf"))
+    assert options.load_config()["media_player"] == "Built-in Player"
+
+
+def test_valid_json_of_the_wrong_shape_is_kept_before_it_is_overwritten(tmp_path, monkeypatch):
+    """``[]`` parses, so the old code returned it and the next save replaced
+    the user's whole config with defaults."""
+    cfg_file = tmp_path / "iptvclient.conf"
+    cfg_file.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(options, "get_config_read_candidates", lambda: [str(cfg_file)])
+    monkeypatch.setattr(options, "get_config_write_target", lambda: str(tmp_path / "written.conf"))
+
+    cfg = options.load_config()
+
+    assert cfg["media_player"] == "Built-in Player"
+    kept = tmp_path / "iptvclient.conf.corrupt"
+    assert kept.exists() and kept.read_text(encoding="utf-8") == "[]"
+
+
+def test_a_relative_recording_folder_does_not_land_in_the_install_directory(tmp_path, monkeypatch):
+    """Used literally, "recordings" was relative to wherever the app started."""
+    monkeypatch.chdir(tmp_path)
+    path = options.get_recordings_dir({"recordings_dir": "recordings"})
+    assert os.path.isabs(path)
+    assert path == str(tmp_path / "recordings")
+
+
+def test_a_recording_folder_expands_variables_from_the_environment(tmp_path, monkeypatch):
+    monkeypatch.setenv("IPTVCLIENT_TEST_DIR", str(tmp_path))
+    pattern = "%IPTVCLIENT_TEST_DIR%" if os.name == "nt" else "$IPTVCLIENT_TEST_DIR"
+    path = options.get_recordings_dir({"recordings_dir": pattern + os.sep + "recs"})
+    assert path == str(tmp_path / "recs")
+    assert os.path.isdir(path)
+
+
 def test_a_read_only_config_folder_sends_the_cache_to_the_temp_folder(tmp_path, monkeypatch):
     """A read-only config folder must not take every playlist refresh down."""
     import tempfile
