@@ -907,12 +907,24 @@ the code and the reported bug are about.
   wall-clock time across a DST change. Only a recording scheduled inside the
   missing hour itself is off, and that is an edge case.
 
+## Twenty-fifth pass: the pipe nobody else can open
+
+The app hands a channel to an external MPV with `--input-ipc-server`, and
+used one fixed name for it: `\\.\pipe\iptvclient-mpv`. Any local process
+could open that pipe, read `media-title` and the playlist, and send
+`loadfile` or `quit`; the adapter that carries subtitle speech had already
+built its own endpoint per session, so the two halves of the same feature
+disagreed.
+
+The pipe name is now built per session (`iptvclient-mpv-<8 hex>`), the way
+the adapter's is, and stays stable for the life of the launcher so a second
+channel still replaces the first in the same mpv. Nothing else changes: the
+URL is still on mpv's own command line, which is how an external player is
+launched, and that stays recorded as a limitation of the external-player
+handoff.
+
 ## Still open
 
-- The MPV IPC endpoint used to reuse a running instance is a fixed, machine-wide
-  named pipe, and the URL it carries the provider's user and password - in the
-  process list and in the player's own media history. The adapter's own
-  endpoint is per session; this one is not.
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
   application can still veto it afterwards, and the app has already closed by
   then.
