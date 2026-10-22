@@ -29,15 +29,20 @@ def test_a_refreshed_credential_replaces_the_running_converter():
     proxy = StreamProxy()
     url = "https://provider.example.test/live.ts"
 
-    proxy.get_transcoded_url(url, {"Cookie": "old"})
-    assert len(proxy.converters) == 1
-    session_id, converter = next(iter(proxy.converters.items()))
-    assert converter.headers["Cookie"] == "old"
+    try:
+        proxy.get_transcoded_url(url, {"Cookie": "old"})
+        assert len(proxy.converters) == 1
+        session_id, converter = next(iter(proxy.converters.items()))
+        assert converter.headers["Cookie"] == "old"
 
-    proxy.get_transcoded_url(url, {"Cookie": "new"})
+        proxy.get_transcoded_url(url, {"Cookie": "new"})
 
-    assert len(proxy.converters) == 1, "a second converter was left running"
-    assert proxy.converters[session_id].headers["Cookie"] == "new"
+        assert len(proxy.converters) == 1, "a second converter was left running"
+        assert proxy.converters[session_id].headers["Cookie"] == "new"
+    finally:
+        # The converter is an FFmpeg child process: a test that leaves it
+        # running leaves it behind for good, and its temp folder with it.
+        proxy.stop()
 
 
 def test_an_unchanged_credential_keeps_the_running_converter():
@@ -45,12 +50,15 @@ def test_an_unchanged_credential_keeps_the_running_converter():
     proxy = StreamProxy()
     url = "https://provider.example.test/live.ts"
 
-    proxy.get_transcoded_url(url, {"Cookie": "same"})
-    session_id, converter = next(iter(proxy.converters.items()))
+    try:
+        proxy.get_transcoded_url(url, {"Cookie": "same"})
+        session_id, converter = next(iter(proxy.converters.items()))
 
-    proxy.get_transcoded_url(url, {"Cookie": "same"})
+        proxy.get_transcoded_url(url, {"Cookie": "same"})
 
-    assert proxy.converters[session_id] is converter
+        assert proxy.converters[session_id] is converter
+    finally:
+        proxy.stop()
 
 
 def test_an_http_error_is_not_a_drop_to_reopen():
@@ -698,3 +706,24 @@ def test_a_drive_relative_segment_name_is_refused():
     assert stream_proxy_module._is_safe_segment_name("..") is False
     assert stream_proxy_module._is_safe_segment_name("C:iptvclient.conf") is False
     assert stream_proxy_module._is_safe_segment_name("a:b") is False
+
+def test_stopping_the_global_proxy_ends_it_and_its_converters(monkeypatch):
+    """Nothing stopped the proxy when the app quit.
+
+    Its FFmpeg converters are child processes: they outlived the app, kept the
+    provider's stream slot and kept writing segments into their temp folder.
+    """
+    stopped = []
+
+    class _Proxy:
+        def stop(self):
+            stopped.append(True)
+
+    monkeypatch.setattr(stream_proxy_module, "_PROXY", _Proxy())
+
+    stream_proxy_module.stop_proxy()
+
+    assert stopped == [True], "the proxy was not stopped"
+    assert stream_proxy_module._PROXY is None, "the stopped proxy was left behind"
+    # A second call must not raise.
+    stream_proxy_module.stop_proxy()

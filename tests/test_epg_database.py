@@ -1378,3 +1378,21 @@ def test_a_length_in_hours_computes_the_end_time(tmp_path):
     fmt = "%Y%m%d%H%M%S"
     assert (datetime.datetime.strptime(end, fmt)
             - datetime.datetime.strptime(start, fmt)).total_seconds() == 7200
+
+def test_a_guide_that_does_not_exist_yet_is_an_empty_guide(tmp_path):
+    """A read-only open of a database that does not exist yet failed.
+
+    SQLite answers "unable to open database file", and the user saw exactly
+    that in the "What's on Now" box the first time they opened it, before
+    any guide had been imported. There is no guide yet - that is not an
+    error, and every view has to show an empty guide.
+    """
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path), readonly=True)
+    try:
+        assert db.get_all_now_playing() == []
+        assert db.get_channel_ids_lower() == set()
+    finally:
+        db.close()
+    # A read-only open must not create the file.
+    assert not path.exists()

@@ -6810,6 +6810,15 @@ class IPTVClient(wx.Frame):
                 LOG.debug("IPTVClient.on_close: app TTS close failed", exc_info=True)
             if self.caster:
                 self.caster.stop()
+            try:
+                # The proxy's FFmpeg converters are child processes: nothing
+                # else stopped them, so they outlived the app, kept the
+                # provider's stream slot and kept writing segments into their
+                # temp folder. The firewall rule the proxy added goes with them.
+                from stream_proxy import stop_proxy
+                stop_proxy()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: proxy stop failed", exc_info=True)
             if self.tray_icon:
                 try:
                     self.tray_icon.RemoveIcon()

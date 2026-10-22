@@ -1576,3 +1576,22 @@ def get_proxy():
             if _PROXY is None:
                 _PROXY = StreamProxy()
     return _PROXY
+
+
+def stop_proxy() -> None:
+    """Stop the global proxy and the FFmpeg it started, if there is one.
+
+    The proxy's converters are child processes: when the app quits without
+    stopping them they outlive it, keep the provider's stream slot and keep
+    writing segments into their temp folder. The firewall rule the proxy
+    added goes with them.
+    """
+    global _PROXY
+    with _PROXY_LOCK:
+        proxy, _PROXY = _PROXY, None
+    if proxy is None:
+        return
+    try:
+        proxy.stop()
+    except Exception:
+        LOG.debug("stop_proxy: ignored exception", exc_info=True)

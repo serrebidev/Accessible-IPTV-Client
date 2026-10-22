@@ -1412,6 +1412,16 @@ class EPGDatabase:
     def _open(self):
         timeout = 30.0
         if self.readonly:
+            if not os.path.exists(self.db_path):
+                # A read-only open of a database that does not exist yet fails
+                # with "unable to open database file". That is not an error:
+                # there is no guide yet, and every view has to show an empty
+                # guide - not a raw SQLite message - until the first import
+                # writes one.
+                self.conn = sqlite3.connect(":memory:", check_same_thread=False, timeout=timeout)
+                self._create_tables()
+                self._missing_columns = []
+                return
             # Open as read-only, shared cache; set reader-friendly pragmas
             uri = f"file:{self.db_path}?mode=ro&cache=shared"
             self.conn = sqlite3.connect(uri, uri=True, check_same_thread=False, timeout=timeout)
