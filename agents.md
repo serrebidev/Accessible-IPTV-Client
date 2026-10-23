@@ -16,6 +16,20 @@ Make sure the PyInstaller spec file includes all runtime requirements, dynamic i
 
 When building, always check for warnings, errors, and dependency mismatches in the build output. If any are found, fix them before proceeding. Never ship a build that had unresolved warnings or errors.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub issues on the fork `thebetterfarhan/Accessible-IPTV-Client` (pass `--repo`, since `gh` infers the upstream `origin`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 ## Project Overview
 
 Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EPG import/search/matching, accessible channel browsing, internal/external playback, casting, and Windows self-updates.
