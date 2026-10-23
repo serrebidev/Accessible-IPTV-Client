@@ -9,6 +9,7 @@
 * Escape and Alt+F4 hide a download window without cancelling it, and
   View > Show Downloads brings the windows back, cycling through several.
 """
+import inspect
 import os
 import sys
 import types
@@ -358,7 +359,7 @@ def _download_client(returned, **overrides):
     values.update(overrides)
     client = types.SimpleNamespace(**values)
     for name in ("_padded_catchup_window",):
-        setattr(client, name, main.IPTVClient.__dict__[name].__get__(client, main.IPTVClient))
+        setattr(client, name, inspect.getattr_static(main.IPTVClient, name).__get__(client, main.IPTVClient))
     client._return_to_catchup_after_download = types.MethodType(
         main.IPTVClient._return_to_catchup_after_download, client)
     return client
