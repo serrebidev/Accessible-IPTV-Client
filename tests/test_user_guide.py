@@ -18,7 +18,8 @@ import i18n  # noqa: E402
 import user_guide  # noqa: E402
 
 HELP_DIR = os.path.join(ROOT, "docs", "help")
-APP_SOURCES = ("main.py", "internal_player.py", "playlist.py", "options.py")
+APP_SOURCES = ("main.py", "dialogs_misc.py", "channel_widgets.py",
+               "internal_player.py", "playlist.py", "options.py")
 _TOPIC_PATTERNS = (
     re.compile(r'help_topic\s*=\s*"([a-z0-9-]+)"'),
     re.compile(r'set_help_topic\(\s*[^,()]+,\s*"([a-z0-9-]+)"'),
