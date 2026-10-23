@@ -114,7 +114,9 @@ from playlist_headers import (
 from app_links import (  # noqa: F401 - re-exported: tests and tools read main.*
     PROJECT_GITHUB_URL, SERREBI_GITHUB_URL, TELEGRAM_SUPPORT_URL,
 )
-from channel_widgets import _AccessibleCategoryTree
+from channel_widgets import (  # noqa: F401 - tools/smoke_virtual_list_nvda.py reads main.*
+    _AccessibleCategoryTree, _VirtualChannelList, _VirtualWhatsOnList,
+)
 from client_m3u import M3uCacheMixin
 from client_ui import (  # noqa: F401 - re-exported: tests read main.*
     _MAIN_ACCEL_SHOW_PLAYER_ID, UiMixin, _main_window_accelerator_entries,

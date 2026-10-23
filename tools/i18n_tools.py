@@ -41,6 +41,10 @@ NO_NOTABLE_CHANGES = "No notable changes."  # an iptvclient string, not a note
 # (no marker calls = no strings), but listing them keeps extraction deterministic.
 SOURCE_FILES = [
     "main.py",
+    "client_ui.py",
+    "dialogs_misc.py",
+    "channel_widgets.py",
+    "catchup_urls.py",  # _ffmpeg_exit_reason() translates provider errors
     "internal_player.py",
     "playlist.py",
     "options.py",
