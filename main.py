@@ -9432,18 +9432,27 @@ class IPTVClient(wx.Frame):
                 message_box(_("Failed to start built-in player:\n{error}").format(error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
             return
 
-        # Collect MPV cues even with automatic speech off, for on-demand
-        # reading. The launcher activates ownership after its debounce guard.
+        def playback_result(ok, error):
+            # For asynchronous MPV this runs only after the process is owned,
+            # on the UI dispatcher and after validating the playback token.
+            if not ok:
+                self._subtitle_session.cancel_session()
+                message_box(_("Failed to launch {player}:\n{error}").format(
+                    player=player, error=error), _("Launch Error"), wx.OK | wx.ICON_ERROR)
+            elif stream_kind == "live":
+                self._remember_played_channel(channel)
+
+        # Accepting a background request is not proof that a player started.
+        # Collect captions even with automatic speech off; commit history only
+        # from the launch result, including the owned playback-only fallback.
         ok, err = self.player_launcher.launch(
             player, url, custom_path,
             subtitle_session=self._subtitle_session,
             subtitle_state_cb=self._on_mpv_subtitle_state,
+            playback_result_cb=playback_result,
         )
         if not ok:
-            self._subtitle_session.cancel_session()
-            message_box(_("Failed to launch {player}:\n{error}").format(player=player, error=err), _("Launch Error"), wx.OK | wx.ICON_ERROR)
-        elif stream_kind == "live":
-            self._remember_played_channel(channel)
+            playback_result(False, err)
 
     def _restore_main_focus(self) -> None:
         """Restore focus to channel list only if this window is active."""

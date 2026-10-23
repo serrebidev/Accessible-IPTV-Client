@@ -43,10 +43,16 @@ class ExternalPlayerLauncher:
         subtitle_state_cb=None,
         subtitle_session=None,
         expected_generation=None,
+        playback_result_cb=None,
     ) -> Tuple[bool, str]:
         """
         Launches the specified external player with the given URL.
-        Returns (success, error_message).
+        Returns (accepted, error_message). For asynchronous MPV launches,
+        acceptance only schedules work. ``playback_result_cb(ok, error)``
+        reports process creation/ownership, not successful media decoding.
+        Owned MPV results are marshalled through the session UI dispatcher.
+        Synchronous failures are returned; synchronous success also notifies
+        the callback. Debounced/obsolete requests do not notify again.
 
         When ``subtitle_manager`` is given and the player is MPV, the launch
         goes through the application-owned MPV session adapter (issue #37) so
@@ -100,9 +106,18 @@ class ExternalPlayerLauncher:
                 # screen reader - for the whole handshake. The launch happens on
                 # a worker now; the plain handoff is its fallback, so
                 # playback is never blocked.
-                self._launch_mpv_subtitled_async(url, subtitle_manager,
-                                                subtitle_state_cb, custom_path if player_name == "Custom" else "",
-                                                player_name, generation, subtitle_session, token)
+                try:
+                    self._launch_mpv_subtitled_async(url, subtitle_manager,
+                                                    subtitle_state_cb, custom_path if player_name == "Custom" else "",
+                                                    player_name, generation, subtitle_session, token,
+                                                    playback_result_cb)
+                except Exception as exc:
+                    LOG.warning("could not start MPV launch worker", exc_info=True)
+                    with self._launch_guard_lock:
+                        if generation == self._launch_generation:
+                            self._last_launch_key = None
+                            self._last_launch_ts = 0.0
+                    return False, str(exc)
                 return True, ""
 
         # The application-owned MPV is playing the previous channel: another
@@ -112,6 +127,7 @@ class ExternalPlayerLauncher:
         # If using mpv, try to reuse an existing instance via IPC first.
         if player_name == "MPV":
             if self._mpv_try_send(url):
+                self._notify_playback_result(playback_result_cb, True, "", generation)
                 return True, ""
 
         win_paths = {
@@ -179,7 +195,29 @@ class ExternalPlayerLauncher:
                     ok, err = self._spawn_posix(argv)
                 else: err = _("{player} is not configured for Linux.").format(player=player_name)
         
+        if ok:
+            self._notify_playback_result(playback_result_cb, True, "", generation)
         return ok, err
+
+    def _notify_playback_result(self, callback, ok, error, generation, session=None, token=None):
+        """Deliver only for the request that still owns playback.
+
+        A callback exception is not a process-launch failure and must never
+        trigger another player or fallback.
+        """
+        def deliver():
+            with self._launch_guard_lock:
+                if generation != self._launch_generation:
+                    return
+            if callback is not None:
+                try:
+                    callback(ok, error)
+                except Exception:
+                    LOG.exception("playback result callback failed")
+        if session is not None:
+            session.dispatch(token, deliver)
+        else:
+            deliver()
 
     @staticmethod
     def _resolve_player_name(player_name: str, custom_path: str = "") -> str:
@@ -223,7 +261,8 @@ class ExternalPlayerLauncher:
 
     def _launch_mpv_subtitled_async(self, url, manager, state_cb=None,
                                     custom_path: str = "", player_name: str = "MPV",
-                                    generation: int = 0, subtitle_session=None, token=None) -> None:
+                                    generation: int = 0, subtitle_session=None, token=None,
+                                    playback_result_cb=None) -> None:
         """Start MPV behind the subtitle adapter on a worker thread.
 
         The caller returns as soon as the player is asked to start; the
@@ -237,17 +276,28 @@ class ExternalPlayerLauncher:
                     return
             if subtitle_session is not None and not subtitle_session.is_current(token):
                 return
+            error = ""
             try:
                 if self._launch_mpv_subtitled(url, manager, state_cb, custom_path,
                                               generation, subtitle_session, token):
+                    self._notify_playback_result(
+                        playback_result_cb, True, "", generation, subtitle_session, token)
                     return
-            except Exception:
-                LOG.warning("MPV subtitle adapter launch failed", exc_info=True)
+            except Exception as exc:
+                error = str(exc)
+                LOG.warning("MPV playback launch failed", exc_info=True)
             if subtitle_session is not None:
-                # An accepted process (including playback-only fallback) is
-                # registered below. Never attach to an unrelated shared player.
-                if state_cb:
-                    state_cb("unavailable")
+                with self._launch_guard_lock:
+                    if generation != self._launch_generation:
+                        return
+                    # A failed request must be retryable immediately.
+                    self._last_launch_ts = 0.0
+                    self._last_launch_key = None
+                self._notify_playback_result(
+                    playback_result_cb, False, error or _("No error details were reported."),
+                    generation, subtitle_session, token)
+                if playback_result_cb is None and state_cb:
+                    state_cb("playback_failed")
                 return
             # The adapter could not be attached. The plain handoff is the
             # fallback - unless a newer launch has been asked for since, which
@@ -261,9 +311,15 @@ class ExternalPlayerLauncher:
                 self._last_launch_ts = 0.0
                 self._last_launch_key = None
             try:
-                self.launch(player_name, url, custom_path, expected_generation=generation)
-            except Exception:
+                ok, fallback_error = self.launch(
+                    player_name, url, custom_path, expected_generation=generation,
+                    playback_result_cb=playback_result_cb)
+                if not ok:
+                    self._notify_playback_result(
+                        playback_result_cb, False, fallback_error or error, generation + 1)
+            except Exception as exc:
                 LOG.warning("MPV plain handoff failed", exc_info=True)
+                self._notify_playback_result(playback_result_cb, False, str(exc), generation + 1)
 
         threading.Thread(target=worker, name="mpv-adapter-launch", daemon=True).start()
 
@@ -273,18 +329,23 @@ class ExternalPlayerLauncher:
         exe = self._find_mpv_exe(custom_path)
         if not exe:
             LOG.info("MPV subtitle adapter: mpv executable not found")
-            return False
+            raise RuntimeError(_("Could not locate {player} executable.").format(player="MPV"))
         try:
             adapter = MpvSubtitleAdapter.launch(exe, url, manager, state_cb)
         except Exception:
             LOG.warning("MPV subtitle adapter: launch failed", exc_info=True)
-            return False
+            adapter = None
         if adapter is None:
+            with self._launch_guard_lock:
+                if generation is not None and generation != self._launch_generation:
+                    return False
+            if subtitle_session is not None and not subtitle_session.is_current(token):
+                return False
             if subtitle_session is None:
                 return False
             adapter = MpvSubtitleAdapter.launch_playback_only(exe, url, manager, state_cb)
             if adapter is None:
-                return False
+                raise RuntimeError(_("No error details were reported."))
         with self._launch_guard_lock:
             superseded = generation is not None and generation != self._launch_generation
             if not superseded:
