@@ -1034,6 +1034,7 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         self._app_tts_failure_announced = False
         if self._app_tts.available:
             self._app_tts.set_volume(self.config.get("subtitle_app_volume", 100))
+            self._app_tts.set_rate(self.config.get("subtitle_app_rate", 0))
             saved_output = self.config.get("subtitle_app_output", "")
             if saved_output and not self._app_tts.set_output(saved_output):
                 # Saved device is gone (unplugged Bluetooth/USB, ...): apply
@@ -7146,6 +7147,39 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         finally:
             dlg.Destroy()
 
+    def _set_app_tts_rate(self) -> None:
+        if not self._app_tts.available:
+            return
+        dlg = wx.Dialog(self, title=_("Application voice speed"))
+        user_guide.set_help_topic(dlg, "subtitle-speech")
+        try:
+            panel = wx.Panel(dlg)
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            caption = _("Speech speed (-10 to 10; 0 is normal):")
+            label = wx.StaticText(panel, label=caption)
+            slider = wx.Slider(panel, value=self._app_tts.rate, minValue=-10, maxValue=10,
+                               style=wx.SL_HORIZONTAL | wx.SL_LABELS)
+            slider.SetName(caption)
+            sizer.Add(label, 0, wx.ALL, 8)
+            sizer.Add(slider, 0, wx.EXPAND | wx.ALL, 8)
+            buttons = wx.StdDialogButtonSizer()
+            buttons.AddButton(wx.Button(panel, wx.ID_OK, _("OK")))
+            buttons.AddButton(wx.Button(panel, wx.ID_CANCEL, _("Cancel")))
+            buttons.Realize()
+            sizer.Add(buttons, 0, wx.ALIGN_CENTER | wx.ALL, 8)
+            panel.SetSizer(sizer)
+            sizer.Fit(dlg)
+            slider.SetFocus()
+            if dlg.ShowModal() == wx.ID_OK:
+                if self._app_tts.set_rate(slider.GetValue()):
+                    self.config["subtitle_app_rate"] = self._app_tts.rate
+                    save_config(self.config)
+                else:
+                    message_box(_("Could not change the application voice speed."),
+                                _("Subtitle Speech"), wx.OK | wx.ICON_ERROR)
+        finally:
+            dlg.Destroy()
+
     def _choose_app_tts_output(self) -> None:
         """Preview a stable output ID, restoring the exact prior choice on No."""
         if not self._app_tts.available:
@@ -7226,10 +7260,11 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         for player in players:
             desc = self._subtitle_manager.describe_capability(
                 player, "timed_cues", _)
-            lines.append(f"{player}: {desc}")
+            label = _("Built-in Player") if player == "built-in" else player
+            lines.append(f"{label}: {desc}")
         lines.append("")
         lines.append(_("Only players with a documented timed-text API can provide "
-                        "subtitle words. The built-in player reads SRT and WebVTT "
+                        "subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT "
                         "files; MPV works through the application's own session."))
         message_box("\n".join(lines), _("Subtitle Capabilities"),
                     wx.OK | wx.ICON_INFORMATION)

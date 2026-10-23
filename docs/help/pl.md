@@ -235,10 +235,9 @@ Wybrana ścieżka jest zapamiętywana dla tego kanału i wraca następnym razem.
 
 ### Odczytywanie napisów {#subtitle-speech}
 
-Tekst napisów pojawia się w filmie, jeśli dostarcza go strumień. Odtwarzanie > Załaduj plik z napisami przyjmuje zewnętrzny plik napisów. Włącz Odtwarzanie > Odczytuj napisy (Shift+S), a czytnik ekranu odczyta każdy napis z wczytanego pliku SRT lub WebVTT w chwili jego pojawienia się, także przy ukrytym oknie odtwarzacza. Bieżący napis jest też wyświetlany jako tekst na końcu elementów sterujących odtwarzacza. Napisów dostarczanych w samym strumieniu oraz plików ASS lub SSA nie można jeszcze odczytywać.
+Tekst napisów pojawia się w filmie, jeśli dostarcza go strumień. Odtwarzanie > Załaduj plik z napisami przyjmuje zewnętrzny plik napisów. Włącz Odtwarzanie > Odczytuj napisy (Shift+S), a wybrany głos odczyta każdy napis z wczytanego pliku SRT, ASS, SSA lub WebVTT w chwili jego pojawienia się, także przy ukrytym oknie odtwarzacza. Bieżący napis jest też wyświetlany jako tekst na końcu elementów sterujących odtwarzacza. Wbudowany odtwarzacz nie może jeszcze odczytywać napisów zawartych w samym strumieniu.
 
-Odtwarzanie > Odczytaj bieżący napis (C) odczytuje napis widoczny na ekranie albo ostatni wyświetlony, gdy żaden nie jest widoczny. Odtwarzanie > Poprzedni napis (Page Up) i Następny napis (Page Down) przechodzą po już wyświetlonych napisach, więc możesz ponownie usłyszeć przegapioną linię. Nigdy nie wyprzedzają odtwarzania i działają niezależnie od tego, czy Odczytuj napisy jest włączone.
-
+Odtwarzanie > Odczytaj bieżący napis (C) odczytuje napis widoczny na ekranie albo ostatni wyświetlony, gdy żaden nie jest widoczny. Odtwarzanie > Poprzedni napis (Page Up) i Następny napis (Page Down) przechodzą po już wyświetlonych napisach, więc możesz ponownie usłyszeć przegapioną linię. Nigdy nie wyprzedzają odtwarzania i działają niezależnie od tego, czy Odczytuj napisy jest włączone. W systemie Windows pozycja Opcje > Czytanie napisów > Tempo głosu aplikacji… pozwala wybrać wartość od -10 do 10; 0 oznacza zwykłe tempo. Nie zmienia to prędkości odtwarzania ani ustawień czytnika ekranu.
 ### Urządzenie wyjścia audio {#audio-output-device}
 
 Odtwarzanie > Urządzenie wyjścia audio... (D) wybiera głośniki albo słuchawki, których używa odtwarzacz, na przykład aby odsunąć dźwięk telewizji od czytnika ekranu. Domyślne systemu podąża za domyślnym urządzeniem Windows. Wybór jest zapamiętywany.

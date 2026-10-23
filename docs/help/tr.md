@@ -234,10 +234,9 @@ Seçtiğiniz bir parça o kanal için hatırlanır ve gelecek sefer geri gelir. 
 
 ### Altyazı seslendirme {#subtitle-speech}
 
-Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda ekran okuyucunuz, yüklenen SRT veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Akışın kendisiyle gelen altyazılar ve ASS veya SSA dosyaları henüz seslendirilemez.
+Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda seçili ses, yüklenen SRT, ASS, SSA veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Yerleşik oynatıcı, akışın kendisiyle gelen altyazıları henüz seslendiremez.
 
-Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı yoksa son gösterileni okur. Oynatma > Önceki altyazı (Page Up) ve Sonraki altyazı (Page Down), daha önce gösterilen altyazılar arasında gezinir; böylece kaçırdığınız bir satırı yeniden dinleyebilirsiniz. Hiçbir zaman oynatmanın önüne geçip okumazlar ve Altyazıları seslendir açık da olsa kapalı da olsa çalışırlar.
-
+Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı yoksa son gösterileni okur. Oynatma > Önceki altyazı (Page Up) ve Sonraki altyazı (Page Down), daha önce gösterilen altyazılar arasında gezinir; böylece kaçırdığınız bir satırı yeniden dinleyebilirsiniz. Hiçbir zaman oynatmanın önüne geçip okumazlar ve Altyazıları seslendir açık da olsa kapalı da olsa çalışırlar. Windows’ta Seçenekler > Altyazı seslendirme > Uygulama sesinin konuşma hızı… ile -10 ile 10 arasında bir değer seçilebilir; 0 normal hızdır. Bu ayar oynatma hızını veya ekran okuyucu ayarlarını değiştirmez.
 ### Ses çıkış cihazı {#audio-output-device}
 
 Oynatma > Ses çıkış cihazı... (D), oynatıcının hangi hoparlörleri ya da kulaklıkları kullanacağını seçer; örneğin TV sesini ekran okuyucunuzdan uzak tutmak için. Sistem varsayılanı, Windows'un varsayılan cihazını izler. Seçim hatırlanır.

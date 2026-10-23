@@ -92,7 +92,7 @@ class FileSubtitleSample:
 
 
 class TimedTextSource:
-    """One reusable SRT/WebVTT timeline for any bridge with a media clock.
+    """One reusable timed-text timeline for any bridge with a media clock.
 
     Called serially by its owner. The bridge owns clock acquisition, file/track
     selection and the timer; it does not implement subtitle scheduling. Reuse

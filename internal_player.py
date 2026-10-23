@@ -2543,6 +2543,16 @@ class InternalPlayerFrame(wx.Frame):
             path = dlg.GetPath()
         try:
             previous_tracks = {tid for tid, _name in self._subtitle_tracks()}
+            source_id = Path(path).resolve().as_uri()
+            previous_binding = None
+            bound_track = getattr(self, "_subtitle_file_track", None)
+            if (source_id == getattr(self, "_subtitle_source_id", "")
+                    and bound_track is not None and bound_track in previous_tracks
+                    and self._subtitle_cues):
+                # libVLC may reuse the same SPU ID for a file it already has.
+                # Retain proof of that earlier binding, but reuse it only if
+                # the new parser result has identical text AND cue timings.
+                previous_binding = (bound_track, tuple(self._subtitle_cues))
             if self.player.add_slave(vlc.MediaSlaveType.subtitle, Path(path).as_uri(), True) != 0:
                 raise RuntimeError(_("Could not load subtitle file."))
         except Exception as err:
@@ -2550,11 +2560,11 @@ class InternalPlayerFrame(wx.Frame):
             return
         self._update_status_label(_("Subtitle file loaded: {name}").format(name=Path(path).name), priority=2)
         self._set_subtitle_cues([])
-        self._subtitle_source_id = Path(path).resolve().as_uri()
+        self._subtitle_source_id = source_id
         self._subtitle_prior_track_ids = previous_tracks
         if Path(path).suffix.lower() not in subtitle_cues.SPEAKABLE_SUFFIXES:
             if self._speak_subtitles:
-                self._update_status_label(_("Subtitle speech needs an SRT or WebVTT file."), priority=1)
+                self._update_status_label(_("Subtitle speech needs a supported text subtitle file."), priority=1)
             return
         generation = self._subtitle_generation
 
@@ -2564,16 +2574,22 @@ class InternalPlayerFrame(wx.Frame):
             except (OSError, ValueError):
                 LOG.warning("Could not read subtitle cues from %s", path, exc_info=True)
                 cues = []
-            wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues)
+            wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues, previous_binding)
 
         threading.Thread(target=_read, name="subtitle-cues", daemon=True).start()
 
-    def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue]) -> None:
+    def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue],
+                                 previous_binding=None) -> None:
         if self._destroyed or generation != self._subtitle_generation:
             return
         if not cues:
             self._update_status_label(_("No subtitle text found in this file."), priority=1)
         self._set_subtitle_cues(cues)
+        if previous_binding is not None and cues:
+            track_id, previous_cues = previous_binding
+            if (tuple(cues) == previous_cues
+                    and track_id in {tid for tid, _name in self._subtitle_tracks()}):
+                self._subtitle_file_track = track_id
 
     def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue]) -> None:
         self._subtitle_generation += 1
@@ -2673,7 +2689,7 @@ class InternalPlayerFrame(wx.Frame):
         ahead of playback. ``step`` 0 reads the cue on screen, or the last one.
         """
         if not self._subtitle_cues:
-            return _("No subtitle text to read. Load an SRT or WebVTT file.")
+            return _("No subtitle text to read. Load a supported subtitle file.")
         if self._last_cue_index is None:
             return _("No subtitle has been shown yet.")
         if step == 0:
@@ -2721,7 +2737,7 @@ class InternalPlayerFrame(wx.Frame):
         elif self._subtitle_cues:
             message = _("Subtitle speech on")
         else:
-            message = _("Subtitle speech on. Load an SRT or WebVTT file to hear subtitles.")
+            message = _("Subtitle speech on. Load a subtitle file to hear subtitles.")
         self._update_status_label(message, priority=2)
 
     def _on_audio_track_menu_open(self, _event: Optional[wx.MenuEvent] = None) -> None:

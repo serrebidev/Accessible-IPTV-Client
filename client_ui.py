@@ -385,6 +385,9 @@ class UiMixin:
             out_item = speech_menu.Append(wx.ID_ANY, _("Application voice output..."))
             self.Bind(wx.EVT_MENU, lambda _evt: self._choose_app_tts_output(), out_item)
             self._subtitle_app_tts_items.append(out_item)
+            rate_item = speech_menu.Append(wx.ID_ANY, _("Application voice speed..."))
+            self.Bind(wx.EVT_MENU, lambda _evt: self._set_app_tts_rate(), rate_item)
+            self._subtitle_app_tts_items.append(rate_item)
             # Device-loss policy (issue #37): what the application voice does
             # when its selected output disappears (unplugged USB/Bluetooth).
             # "pause" is the privacy-preserving default: never silently
