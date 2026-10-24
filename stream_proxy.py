@@ -343,6 +343,16 @@ def is_fresh_transcode_profile(profile):
     return str(profile or "").startswith("chromecast")
 
 
+def _is_upstream_gone(error) -> bool:
+    """Whether the upstream answered with an error rather than dropping.
+
+    A live source that ends is reopened at the edge. A session the provider
+    answered with 401 or 403 is gone, and reopening that for ever held
+    ffmpeg and the provider's stream slot with nothing reported.
+    """
+    return getattr(error, "code", None) is not None
+
+
 def get_ffmpeg_path():
     """Resolve ffmpeg path, prioritizing bundled executable in frozen mode."""
     # PyInstaller onefile
@@ -362,10 +372,23 @@ def get_ffmpeg_path():
         if os.path.exists(adjacent):
             return adjacent
     
-    # Fallback to PATH or local file
-    if os.path.exists("ffmpeg.exe"):
-        return os.path.abspath("ffmpeg.exe")
-        
+    # A source run: the ffmpeg next to this file. Never the one in the
+    # current directory - Windows resolves the current directory first, so
+    # an ffmpeg.exe that happens to sit there would be executed instead,
+    # with the user's privileges, on every transcode.
+    beside = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ffmpeg.exe')
+    if os.path.exists(beside):
+        return beside
+
+    # Then PATH, as an absolute path: a bare name would find the current
+    # directory first.
+    for directory in os.environ.get('PATH', '').split(os.pathsep):
+        if not directory:
+            continue
+        candidate = os.path.join(directory, 'ffmpeg.exe')
+        if os.path.exists(candidate):
+            return os.path.abspath(candidate)
+
     return "ffmpeg"
 
 class HLSConverter:
@@ -476,7 +499,7 @@ class HLSConverter:
                             break
                         try:
                             req = urllib.request.Request(self.source_url, headers=self.headers)
-                            with urllib.request.urlopen(
+                            with _open_upstream(
                                 req,
                                 timeout=_HLS_UPSTREAM_READ_TIMEOUT_SECONDS
                             ) as resp:
@@ -512,6 +535,12 @@ class HLSConverter:
                             break
                         except Exception as e:
                             last_error = e
+                            if _is_upstream_gone(e):
+                                # The upstream answered with an error: the
+                                # session is gone, not a drop. Reopening that
+                                # for ever held ffmpeg and the provider's
+                                # stream slot with nothing reported.
+                                break
                             if got_any_data:
                                 LOG.info("HLS upstream read ended; reopening live stream: %s", e)
                                 time.sleep(_HLS_UPSTREAM_STARTUP_RETRY_DELAY_SECONDS)
@@ -735,6 +764,42 @@ class StreamBuffer:
 
 
 _ALLOWED_UPSTREAM_SCHEMES = ("http", "https")
+_REDIRECT_SAFE_HEADERS = frozenset(("accept", "range", "if-range", "user-agent"))
+
+
+def _url_origin(url):
+    """Return the scheme, host and effective port used for redirect checks."""
+    try:
+        parts = urllib.parse.urlsplit(str(url or ""))
+        scheme = parts.scheme.lower()
+        host = (parts.hostname or "").lower().rstrip(".")
+        port = parts.port
+    except (TypeError, ValueError):
+        return None
+    if scheme not in _ALLOWED_UPSTREAM_SCHEMES or not host:
+        return None
+    return scheme, host, port if port is not None else (443 if scheme == "https" else 80)
+
+
+class _CrossOriginRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Keep channel headers off a host the channel did not name explicitly."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        current_origin = _url_origin(req.full_url)
+        target_origin = _url_origin(newurl)
+        if redirected is None or (current_origin is not None and current_origin == target_origin):
+            return redirected
+        for collection in (redirected.headers, redirected.unredirected_hdrs):
+            for name in list(collection):
+                if name.lower() not in _REDIRECT_SAFE_HEADERS:
+                    del collection[name]
+        return redirected
+
+
+def _open_upstream(req, timeout):
+    """Open an upstream URL with credential-safe redirect handling."""
+    return urllib.request.build_opener(_CrossOriginRedirectHandler()).open(req, timeout=timeout)
 
 
 def is_allowed_upstream_url(url) -> bool:
@@ -785,6 +850,10 @@ def _is_safe_segment_name(name: str) -> bool:
     if not name or name in (".", ".."):
         return False
     if ".." in name or "/" in name or "\\" in name or "\x00" in name:
+        return False
+    # A drive-relative name ("C:file") escapes the folder it is joined to:
+    # Windows resolves it against that drive's current directory.
+    if ":" in name:
         return False
     return True
 
@@ -885,7 +954,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         req = urllib.request.Request(upstream, headers=request_headers,
                                      method='HEAD' if head else 'GET')
         try:
-            resp = urllib.request.urlopen(req, timeout=20)
+            resp = _open_upstream(req, timeout=20)
         except urllib.error.HTTPError as err:
             try:
                 self.send_response(err.code)
@@ -901,27 +970,33 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         with resp:
             ctype = (resp.headers.get('Content-Type') or '').lower()
             final = urllib.parse.urlsplit(resp.geturl())
-            if final.netloc.lower() != netloc.lower() and netloc.lower() in proxy.gateway_hosts(sid):
-                # The provider redirected this session to another host: that
-                # host is part of the session now, so its requests may carry
-                # the channel's headers.
-                proxy.note_gateway_host(sid, final.netloc)
             path_lower = final.path.lower()
             playlist = 'mpegurl' in ctype or path_lower.endswith(('.m3u8', '.m3u'))
             if playlist and not head:
-                body = resp.read(self._GATEWAY_PLAYLIST_LIMIT + 1)
+                try:
+                    body = resp.read(self._GATEWAY_PLAYLIST_LIMIT + 1)
+                except OSError as err:
+                    # The provider stalled or reset while the playlist was
+                    # being read. The handler used to die here, and the
+                    # receiver saw an empty reply instead of an answer.
+                    LOG.info("Gateway could not read the playlist: %s", type(err).__name__)
+                    return self.send_error(502)
                 if len(body) <= self._GATEWAY_PLAYLIST_LIMIT:
-                    text = body.decode('utf-8-sig', errors='replace')
-                    data = rewrite_playlist_for_gateway(
-                        text, resp.geturl(), lambda url: proxy.gateway_url(url, sid)).encode('utf-8')
-                    self.send_response(resp.status)
-                    self.send_header('Content-Type', resp.headers.get('Content-Type')
-                                     or 'application/vnd.apple.mpegurl')
-                    self.send_header('Content-Length', str(len(data)))
-                    self.send_header('Access-Control-Allow-Origin', '*')
-                    self._send_no_cache_headers()
-                    self.end_headers()
-                    self.wfile.write(data)
+                    try:
+                        text = body.decode('utf-8-sig', errors='replace')
+                        data = rewrite_playlist_for_gateway(
+                            text, resp.geturl(), lambda url: proxy.gateway_url(url, sid)).encode('utf-8')
+                        self.send_response(resp.status)
+                        self.send_header('Content-Type', resp.headers.get('Content-Type')
+                                         or 'application/vnd.apple.mpegurl')
+                        self.send_header('Content-Length', str(len(data)))
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self._send_no_cache_headers()
+                        self.end_headers()
+                        self.wfile.write(data)
+                    except OSError as err:
+                        # The receiver went away in the middle of the answer.
+                        LOG.info("Gateway could not send the playlist: %s", type(err).__name__)
                     return
                 prefix = body
             else:
@@ -1014,7 +1089,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                             def _feeder():
                                 try:
                                     req = urllib.request.Request(target_url, headers=req_headers)
-                                    with urllib.request.urlopen(req, timeout=15) as resp:
+                                    with _open_upstream(req, timeout=15) as resp:
                                         while proc and proc.poll() is None and not stream_buffer.is_closed():
                                             # Use smaller chunks (8KB) for smoother flow
                                             chunk = resp.read(8192)
@@ -1049,7 +1124,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                         else:
                             # Direct download -> buffer
                             req = urllib.request.Request(target_url, headers=req_headers)
-                            with urllib.request.urlopen(req, timeout=15) as resp:
+                            with _open_upstream(req, timeout=15) as resp:
                                 while not stream_buffer.is_closed():
                                     chunk = resp.read(8192)
                                     if not chunk: break
@@ -1239,7 +1314,10 @@ class StreamProxy:
         self._gateway_sessions = {}
         self.converters = {}
         self.converter_sources = {}
-        self.lock = threading.Lock()
+        # Reentrant: the cleanup loop holds this lock and calls
+        # _expire_gateway_sessions, which takes it again on the same thread.
+        # A plain Lock deadlocked there and wedged every other user of it.
+        self.lock = threading.RLock()
         self._cleanup_thread = None
         self._running = False
         # Wakes the cleanup loop at once on stop(). Its old flat sleep(10) meant
@@ -1280,6 +1358,11 @@ class StreamProxy:
     def start(self):
         if self.server: return
         self.server = socketserver.ThreadingTCPServer((self.host, 0), StreamProxyHandler)
+        # The handler threads stream for as long as the receiver listens. As
+        # ordinary threads they would be joined when the server closes and
+        # when the interpreter exits, so the app would not go away while a
+        # cast was playing.
+        self.server.daemon_threads = True
         self.port = self.server.server_address[1]
         self._running = True
         self._stop_event.clear()
@@ -1344,8 +1427,17 @@ class StreamProxy:
         sid = hashlib.sha256(json.dumps(clean, sort_keys=True).encode()).hexdigest()[:20]
         host = urllib.parse.urlsplit(str(target_url or "")).netloc.lower()
         with self.lock:
+            entry = self._gateway_sessions.get(sid)
+            # The hosts accumulate: one header set serves every URL the app
+            # issues with it (a provider's channels share one cookie), and a
+            # redirect the provider taught the proxy about has to survive the
+            # next URL. Replacing the set lost those hosts, and the channel's
+            # credentials stopped going to them.
+            hosts = set(entry["hosts"]) if entry else set()
+            if host:
+                hosts.add(host)
             self._gateway_sessions[sid] = {"headers": clean,
-                                           "hosts": {host} if host else set(),
+                                           "hosts": hosts,
                                            "used": time.time()}
         return self.gateway_url(target_url, sid)
 
@@ -1425,7 +1517,18 @@ class StreamProxy:
                 self.converter_sources[source_key] = session_id
             elif session_id not in self.converters:
                 self.converters[session_id] = HLSConverter(target_url, headers, transcode_profile)
-            else: self.converters[session_id].touch()
+            else:
+                existing = self.converters[session_id]
+                if existing.headers != normalize_request_headers(headers):
+                    # The channel's credentials changed - a provider that
+                    # rotates its session cookie. The running ffmpeg still
+                    # has the old ones and the provider refuses it, so the
+                    # cast died until the converter was retired.
+                    retired.append(existing)
+                    self.converters[session_id] = HLSConverter(
+                        target_url, headers, transcode_profile)
+                else:
+                    existing.touch()
         for old_converter in retired:
             try:
                 old_converter.stop()
@@ -1504,3 +1607,22 @@ def get_proxy():
             if _PROXY is None:
                 _PROXY = StreamProxy()
     return _PROXY
+
+
+def stop_proxy() -> None:
+    """Stop the global proxy and the FFmpeg it started, if there is one.
+
+    The proxy's converters are child processes: when the app quits without
+    stopping them they outlive it, keep the provider's stream slot and keep
+    writing segments into their temp folder. The firewall rule the proxy
+    added goes with them.
+    """
+    global _PROXY
+    with _PROXY_LOCK:
+        proxy, _PROXY = _PROXY, None
+    if proxy is None:
+        return
+    try:
+        proxy.stop()
+    except Exception:
+        LOG.debug("stop_proxy: ignored exception", exc_info=True)

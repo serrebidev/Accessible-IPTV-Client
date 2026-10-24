@@ -79,6 +79,827 @@ Every fix has a regression test that fails without it.
 | MINOR | `external_player.py` | the launch debounce used the wall clock | a backwards clock step left the debounce permanently open: the player refused to start until the app was restarted |
 | MINOR | `power.py` | the shutdown command was the bare name | Windows resolves the current directory before System32, so a `shutdown.exe` next to the app was executed instead of the real one, with the user's privileges |
 
+## Fifth pass: the locks, the recorder and the subtitle session
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| BLOCKER | `stream_proxy.py` | the cleanup loop held the proxy's lock and called the gateway expiry, which took that same non-reentrant lock again | ten seconds after the proxy started, the cleanup thread wedged for good with the lock held, and every converter, playlist and segment request blocked: casting died |
+| SEVERE | `providers.py` | the portal token lock was taken twice by the same thread when the portal answered 401 or 403 | a wrong MAC or an expired trial hung the thread for good instead of reporting that the portal could not be reached |
+| SEVERE | `playlist.py` | `<length units="minutes">inf</length>` raised `OverflowError` out of the per-programme handler | one bad programme aborted the whole source, so every programme after it in that feed was dropped |
+| SEVERE | `main.py` | the deferred cast-failure box used the player frame without probing it first | the player was closed while the box waited, and the callback raised `RuntimeError: wrapped C/C++ object of type Frame has been deleted` |
+| SEVERE | `recorder.py` | the shutdown path killed ffmpeg after a flat five seconds instead of the size-derived finalize budget | quitting during a multi-gigabyte MP4 left `ftyp` + one enormous `mdat` and no moov atom: unplayable, with the whole capture stranded inside it |
+| MINOR | `main.py`, `subtitle_speech.py` | the built-in player never cleared the shared subtitle manager, and a speech queued before the switch was still spoken | "Read current subtitle" and "Review recent subtitles" answered with the last line of the channel the user had just left |
+| MINOR | `options.py` | a config write that failed during serialization left its temp file behind | one `iptvclient.conf.*.tmp` per failed save |
+| MINOR | `power.py` | the shutdown command was hard-coded to `C:\Windows\System32` | the machine did not power off when Windows was installed on another drive |
+| MINOR | `internal_player.py` | the fullscreen button's label changed but its accessible name did not | NVDA announced "Toggle Full Screen" on a button that said "Exit Full Screen" |
+
+### The two deadlocks
+
+Both were the same mistake: a `threading.Lock` taken twice by the same thread.
+`StreamProxy._cleanup_loop` holds the lock and calls `_expire_gateway_sessions`,
+which takes it again; `StalkerPortalClient._ensure_token` holds the token lock
+across `_portal_call`, which takes it again on a 401/403. In both cases the
+second acquisition waits for a lock the same thread already holds, so the
+thread waits for itself. The tests missed both because the inner method was
+called directly in one case, and because no test drove a rejected portal token
+in the other. Both locks are `RLock` now.
+
+### The shutdown budget
+
+The same file stopped the same way got two different budgets: the normal path
+waited `finalize_timeout_seconds` (30 s plus the file's size at 8 MiB/s, so
+more than ten minutes for a 5 GB MP4), and the shutdown path waited five
+seconds. A faststart MP4 rewrites the whole file when it finalizes, so the
+shutdown path killed ffmpeg mid-rewrite - exactly the failure the other path
+was written to prevent. The shutdown budget is now
+`max(DETACH_WAIT_SECONDS, finalize_timeout_seconds(...))`, and the
+terminate/kill escalation still guarantees that no ffmpeg is left holding a
+provider's one stream slot.
+
+## Sixth pass: the updater, the dialogs and the schedule file
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `updater.py` | the `GITHUB_TOKEN` from the environment was attached to every request, including the download URL the release manifest names | the user's own GitHub credential was sent to whatever host an (unsigned) manifest pointed at |
+| SEVERE | `main.py` | Enter on a programme in "What's on Now" was handled by the list's `EVT_KEY_DOWN`, which a dialog never delivers | pressing Enter on a programme did nothing at all: the dialog takes Enter first, and the Play button is not a native default button |
+| SEVERE | `dvr.py` | a non-numeric timestamp in the schedule file was read outside any `try` | the value raised out of the scheduler's constructor, so the app did not start |
+| SEVERE | `update_helper.ps1` | the helper killed whatever held the app's PID | the app exited and Windows handed that PID to another program, which was then killed with it |
+| MINOR | `updater.py` | the PowerShell path fell back to the bare name `powershell.exe` | Windows resolves the current directory before System32, so a `powershell.exe` next to the app would run instead - with the user's privileges, during an update |
+| MINOR | `catchup_direct.py` | the host comparison was case-sensitive | a provider whose name differed only in case lost the channel's cookie and answered 403 |
+| MINOR | `options.py` | the write probe used one fixed file name | two writers probing the same folder collided, and the loser decided the folder was not writable - which sent the config somewhere else |
+| MINOR | `stream_proxy.py` | issuing a gateway URL replaced the session's host set | a redirect the provider had taught the proxy about lost the channel's credentials |
+| MINOR | `playlist.py` | the final `wal_checkpoint(TRUNCATE)` was not drained | the statement stayed in progress, so the WAL was not truncated |
+| MINOR | `settings_backup.py` | a damaged backup raised the JSON parser's own error | the import box said "Expecting value: line 1 column 1 (char 0)" instead of what to do about it |
+
+### Enter in a dialog
+
+A `wx.Dialog` consumes Enter before the focused control sees an
+`EVT_KEY_DOWN`, so a list inside one has to take Enter from the char hook -
+the catch-up list and the scheduled-recordings list already do. The
+"What's on Now" list was the last one still on the key-down, and its Play
+button is not a native default button: its Win32 style carries no
+`BS_DEFPUSHBUTTON`, so wx had nothing to press instead.
+
+### The one parameter name
+
+PowerShell 5.1 silently ignores a named argument that matches no
+parameter: `Get-ParentAppProcess -Id $pid` bound nothing and left the
+parameter at 0, so the helper read the *Idle* process (PID 0) instead of
+the app. The parameter is named to match its call sites now, and the
+reused-PID guard compares the process's start time with the helper's.
+
+## Seventh pass: the scheduler and the caster
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `dvr.py`, `main.py` | starting a recording ran inside the scheduler tick | the tick could not run while it did: a recording that came due started late, and one whose window passed was marked missed and never recorded - the same class the fifth pass removed from the series scan |
+| SEVERE | `casting.py` | the AirPlay runner reopened a live source without looking at ffmpeg's exit code | a cast to a source that failed (a 403 from the provider) reported success, and ffmpeg was respawned every second for good, holding the provider's stream slot |
+
+The start now claims the job and hands the blocking work to a worker, so
+the tick keeps running; the job is claimed before the worker starts, so a
+second tick cannot start it twice, and a cancel during the start is still
+caught by the check that stops the abandoned recording.
+
+The AirPlay runner now reads ffmpeg's exit code before it reopens. A clean
+end is a drop and is reopened at the live edge; an error exit is a source
+that failed and ends the cast. A source that ends again straight away was
+never working, so a few of those end it too.
+
+## Eighth pass: the right-clicked row, and the values nobody checks
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the programme lists built their context menu from the selected row, and a right-click does not move the selection | the user pointed at one programme and the app played, recorded or deleted another |
+| SEVERE | `main.py`, `catchup_direct.py` | the catch-up download handed ffmpeg the channel's cookie for the direct archive file, which can live on another host | the provider's credential went to whichever host the provider redirected to |
+| SEVERE | `playlist.py` | a duration with a huge component was converted without a guard, and `int()` refuses one | the refusal escaped the per-programme loop: the whole guide was dropped over one programme |
+| MINOR | `stream_proxy.py` | ffmpeg was taken from the current working directory | Windows resolves the current directory first, so an `ffmpeg.exe` that happened to sit there ran instead of the real one, with the user's privileges, on every transcode |
+| MINOR | `vod.py` | an episode number, a season number and a category name were used as they came | one broken value from the provider took the whole episode list - or the whole catalogue - with it |
+
+The channel list has always hit-tested the row the user pointed at; the
+programme lists did not, and a right-click in a list control does not move
+the selection. The three list controls now hit-test too, and a
+multi-selection keeps its selection when the right-clicked row is part of
+it.
+
+The catch-up probe already knew that the credentials must not follow a
+redirect, and it strips them for the probe - but the download that
+followed was handed the original headers, which undid it. The headers are
+now filtered for the host the file actually lives on.
+
+## Ninth pass: the words that are not codes, and the headers that are not headers
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `channel_names.py` | the country-code variants were matched as free words, and a few of them are ordinary English | "Car SOS" and "You Can Do It" were tagged Canadian, and the channel then looked for a Canadian guide |
+| SEVERE | `catchup_direct.py` | the channel's custom headers travel in `_extra`, and the catch-up probe sent that list as one header named `_extra` | the provider never saw the custom headers, so the probe was refused and the direct file was never found - and the list, which can carry a secret, went out under a name nobody asked for |
+| MINOR | `stream_proxy.py` | a live upstream that answered with an HTTP error was reopened like a drop | a refused session was reopened for ever, holding ffmpeg and the provider's stream slot with nothing reported |
+
+The codes still work where a code is meant: a leading or parenthesised
+code in capitals ("CAN TV", "(CA) News") and the spelled-out names
+("CANADA TV", "USA News"). "Fox USA" is still American.
+
+## Tenth pass: the words, the lock and the MPV handshake
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `channel_names.py` | "car" was a strip tag, so "Car SOS" and "SOS" canonicalised to the same name | the guide of one and the playlist of the other matched to each other, and the wrong programme showed |
+| SEVERE | `playlist.py` | the import lock was reclaimed after two hours whatever the owner was doing, and the release removed whichever lock was there | a long import and a second one ran at once, and the second one deleted the first one's lock |
+| SEVERE | `mpv_subtitle_adapter.py` | the transport had no read lock, and the reader thread and a request's inline pump both read the pipe | two readers split a message between them, the JSON failed to parse and the message was lost |
+| MINOR | `main.py` | Enter on a hierarchy-only category expanded it and then pulled the focus to the channel list | a screen-reader user browsing the categories lost their place |
+| MINOR | `main.py` | the "What's on Now" dialog was not destroyed in a `try/finally` | a dialog that raised left itself allocated and parent-owned |
+| MINOR | `mpv_subtitle_adapter.py` | the version check gated the whole session, and the launch budget was 1.5 s plus 1 s | a slow mpv cost the user their subtitles entirely - the session was dropped and the plain handoff used instead |
+
+The adapter now observes before it asks anything, asks the version on a
+worker and only logs it, and gives a cold mpv more time to answer. It also
+stops forcing a window when the caller asked for no video: mpv stops
+answering its own IPC while it tries to open a window it cannot.
+
+## Eleventh pass: the credential that went stale
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| MINOR | `stream_proxy.py` | a re-issued URL with refreshed headers only touched the running converter, so the ffmpeg kept the credentials it started with | a provider that rotates its session cookie refused the old one, and the channel did not play until the converter was retired - up to a minute, for no visible reason |
+
+The converter is replaced when the headers change and kept when they do
+not, so re-issuing the same URL does not restart the transcode.
+
+## Twelfth pass: the watchdog and a still video track
+
+The A/V watchdog restarts the stream when **either** track stops
+progressing. A radio source whose cover art decodes twice and then freezes
+armed the video watchdog, and the player reconnected every ten seconds
+while the audio played perfectly well. The app already knows the stream is
+audio-only (the attached-picture rule in `media_type.py`), but the player
+was not told: `main.py` passed `video_visible` and nothing else. The media
+hint now reaches the player, and an audio-only source never arms the video
+watchdog.
+
+## Thirteenth pass: the scheduler, the guide and the playlist
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `dvr.py` | the start-failure handler wrote "failed" over a job the user had canceled, and queued its next daily occurrence | a recording canceled while it was starting came back the next day, and the user was told it had failed |
+| SEVERE | `dvr.py` | the schedule write shared the try block of the start, so a schedule that could not be written marked the running recording as failed | ffmpeg kept recording past the end of the window, and the provider's one stream slot stayed held for good |
+| SEVERE | `main.py`, `playlist.py` | an import in which every source failed reported success | the box said the programme guide was up to date, and the run was recorded as fresh, so the automatic import skipped its next run |
+| SEVERE | `main.py` | a playlist refresh that failed dropped the source's channels and announced "Playlist refreshed" | one provider that was briefly down took the user's playlist with it, with nothing said about it |
+| MINOR | `shortcuts.py` | a shortcut read from the config was used without the check the app applies when it writes one | a hand-edited bare key in the config swallowed ordinary typing in the search box |
+
+### A canceled recording that came back
+
+Starting a recording resolves the stream URL and probes the channel, which
+takes seconds. A cancel in that window found no recording to stop, so the job
+stayed "recording" until the start itself failed - and the failure handler
+wrote "failed" over the cancellation and queued the next daily occurrence.
+The `mark_finished` path already kept a canceled job canceled; the start
+path did not, and it does now.
+
+### A schedule that cannot be written
+
+The DVR schedule is a convenience: the jobs live in memory and the app keeps
+working without the file. A write that fails (a full disk, a locked file)
+must therefore never change a job's state. It did: the write that records
+the running recording's id failed, the failure handler marked the job
+"failed" and cleared the id, and the scheduler - which only stops jobs that
+are "recording" - never stopped it. The schedule writes are now guarded, and
+a write that fails is logged instead of changing anything.
+
+### A guide that loaded nothing
+
+Every EPG source fails on its own and the importer logs it and moves on, so
+the import itself never fails. The run used to report success anyway: the
+box said the guide was up to date and the run was recorded as a fresh
+import, which is what suppresses the next automatic one. The importer now
+returns how many guides came in, and a run that imported nothing is a
+failure.
+
+### A playlist that vanished
+
+A source that could not be fetched contributed no channels, so its channels
+were gone from the list - and the refresh still announced "Playlist
+refreshed". A failed source now keeps the channels and the provider session
+it had, and the failure is announced instead. A playlist that is one refresh
+out of date is better than a playlist that is gone.
+
+### Two guides, one channel id
+
+Two guides that list the same channel id under different names overwrite
+each other's schedule: the importer deletes a channel's programmes when the
+stored name differs, which is how a renumbered channel loses the old
+schedule. The last imported source wins, so that id's guide is always one
+provider's. Telling the two apart needs the source recorded per programme,
+which the database does not do.
+
+## Fourteenth pass: the exit, the guide, the player and the portal
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the exit gate asked about a scheduled recording or about a running download, never both | a scheduled recording hid the download warning, so the download was truncated without the user ever being asked |
+| SEVERE | `casting.py` | the Sonos and Kodi paths started the receiver without checking whether the cast had been stopped | a speaker played a channel the user had already stopped, and the audio proxy held the provider's one connection |
+| SEVERE | `external_player.py` | launching another player left the application-owned MPV running | the old channel kept playing next to the new one |
+| SEVERE | `external_player.py` | the MPV adapter worker had no launch generation | the adapter's handshake took seconds, and when it failed afterwards the plain handoff started the old channel over the new one |
+| SEVERE | `vod.py` | a null entry in the provider's JSON was read as a dictionary | one bad row dropped every movie (or every series) in the catalogue |
+| SEVERE | `main.py` | the programme-match index was built on the GUI thread when a programme was played or scheduled from "What's on Now" | the app froze for seconds, silent to the screen reader, on a full playlist |
+| MINOR | `providers.py` | a portal reply with a null "js" was read as a dictionary | "'NoneType' object has no attribute 'get'" instead of a provider message |
+| MINOR | `account_info.py` | the expiry line was printed even when the server had rejected the password | a dead account was reported as "Expires: Never" |
+| MINOR | `recorder.py` | "stopped by the user" was set before the process was checked | a download that had already finished was deleted when the user pressed Cancel |
+| MINOR | `main.py` | the EPG Manager dialog was destroyed only after the save | a save that raised left the dialog allocated and parent-owned |
+| MINOR | `main.py` | an empty Video on Demand catalogue was only an unselected row | the view looked empty with nothing said about it |
+| MINOR | `main.py` | a playlist reload accepted the Video on Demand catalogue that was being built | the old playlist's catalogue was shown, including a playlist that was gone |
+| MINOR | `subtitle_speech.py` | the automatic speech was checked when the cue arrived, not when it was spoken | a cue queued before the speech was turned off was still spoken |
+| MINOR | `main.py` | the application voice was never purged | a caption line kept talking after the user switched channel or stopped playback |
+
+### Two warnings for two things
+
+The exit gate asked about the scheduled recordings or about the running
+download, never both: the download warning was in the branch that the
+recording warning took. A scheduled recording therefore hid the download, and
+the download was truncated without the user ever being asked. Each kind of
+work now gets its own warning, and each can be refused on its own.
+
+### A cast that started after the stop
+
+The Sonos and Kodi paths probe the stream before they start the receiver,
+and the probe takes as long as the provider answers. The other receivers
+check whether the cast is still wanted after their probe; these two did not,
+so a stop during the probe was accepted and the speaker started anyway. They
+carry the launch generation now and refuse to start a cast that was stopped.
+
+### Two players at once
+
+The application-owned MPV - the one the subtitle adapter drives - was only
+closed when another adapter launch replaced it. Launching VLC left it
+playing the previous channel. Every launch that is not the adapter's own
+closes it now.
+
+The adapter's handshake takes as long as MPV answers, and the worker that
+waits for it had no idea whether a newer launch had been asked for in the
+meantime: when the handshake failed afterwards, the plain handoff started
+the old channel over the new one. Every launch carries a generation now,
+and a superseded launch neither installs its player nor hands off.
+
+### One bad row, one whole catalogue
+
+The provider's JSON is untrusted input. A null entry in the category list or
+in the stream list was read as a dictionary, and the exception took the
+whole section with it - the user saw "No Video on Demand content found".
+A null row is skipped now, like the broken numbers the earlier passes
+already handled.
+
+### An index on the GUI thread
+
+Playing or scheduling a programme from "What's on Now" resolves its channel
+in the playlist. That lookup is an index over every channel, and building it
+takes seconds on a full playlist - the app froze and the screen reader said
+nothing. The index is built in the worker now, before the dialog appears,
+like the EPG search already does.
+
+## Fifteenth pass: the token, the signature, the guide and the proxy
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `updater.py` | the request that carries the GitHub token followed a redirect to any host | the user's own GitHub credential went to whatever host the (unsigned) manifest named |
+| SEVERE | `tools/release.py` | the release published the assets before the signature was checked, and the installer's certificate was never compared with the pinned one | a wrongly signed release was public before the check failed, and an installer signed with another certificate would be refused by every installed client |
+| SEVERE | `playlist.py` | the importer read the children of a namespaced feed without the namespace | every channel came in without a name and every programme without a title, and the next import overwrote the good ones with the blanks |
+| SEVERE | `internal_player.py` | the cue timer was not stopped when the player was torn down | the timer asked a released libVLC for the subtitle position: a native crash, not an exception Python can catch |
+| SEVERE | `internal_player.py` | the chosen audio track was re-applied by name only | a provider that renamed its tracks left the stream on its default track while the status line still claimed the chosen one |
+| SEVERE | `internal_player.py` | the audio-track choice was disabled while it had the focus | the player was left with no focus at all, and the tracks came back a moment later |
+| SEVERE | `stream_proxy.py` | the proxy's handler threads were ordinary threads | the app did not go away while a cast was playing: the interpreter joined the streaming handlers |
+| MINOR | `stream_proxy.py` | a stalled upstream killed the gateway handler instead of answering | the receiver saw an empty reply instead of a 502 |
+| MINOR | `stream_proxy.py` | a drive-relative segment name was accepted | a client with the cast token could name a file beside the application |
+| MINOR | `playlist.py` | a programme that gave its length in hours was dropped | the end time could not be computed, so the programme never reached the database |
+| MINOR | `main.py` | the scheduled-recordings dialog was re-centred after every context menu | the window moved under the user each time they opened the menu |
+
+### The token and the redirect
+
+The token in the environment is the user's own GitHub credential, and the
+release manifest travels unsigned, so the token only went to a GitHub host.
+urllib copies a request's headers into the redirected request, so a manifest
+URL on GitHub that answered with a redirect took the credential with it. The
+updater follows redirects through its own handler now, and the credential
+stays behind when the redirect leaves GitHub.
+
+### The signature, before the release
+
+The cloud workflow published the release - and marked it the latest - and
+only then checked the signature. A wrongly signed artifact was already
+public when the check failed, and nothing took it back. The release driver
+checks the signature itself now, before it commits, pushes or publishes, and
+it checks the installer against the same certificate the updater pins: an
+installer signed with another one is refused by every installed client.
+
+### A guide in a namespace
+
+Some feeds carry a default namespace. ElementTree keeps the namespace in the
+tag, so the importer's plain lookups found nothing: every channel came in
+without a name, every programme without a title, and the next import
+overwrote the good names with the blanks. The lookups take any namespace now.
+A programme that gives its length in hours - a unit XMLTV allows - was
+dropped for the same kind of reason: the end time could not be computed, so
+it never reached the database.
+
+### The player, the tracks and the focus
+
+The cue timer asks libVLC for the subtitle position. It was not stopped
+when the player was torn down, so it could call a player that was being
+released: a native crash, and not an exception Python can catch.
+
+The chosen audio track was re-applied by name after a reconnect. The
+provider's track names drift between connections - the slot usually does
+not - so a rename left the stream on its default track while the status
+line still claimed the one the user had chosen. The slot is used when the
+name no longer matches, and the label follows the name the provider now
+uses.
+
+The audio-track choice is disabled while libVLC has not published the track
+list yet. Disabling the focused control leaves the player with no focus at
+all, and the screen reader says nothing until the user finds the window
+again. The focus moves to the next control instead.
+
+### The proxy that would not let the app go
+
+The proxy's handler threads stream for as long as the receiver listens. As
+ordinary threads they were joined when the server closed and when the
+interpreter exited, so the app stayed alive - with its window gone - for as
+long as a cast was playing. They are daemon threads now. A provider that
+stalled while its playlist was being read also killed the handler with an
+unhandled error, and the receiver saw an empty reply; it gets a 502 now.
+
+## Sixteenth pass: the lookup that read the whole playlist
+
+This pass started from evidence rather than from reading code: the
+provider's own 66 MB playlist and the app's parsed copy of it on this
+machine, 257,280 channels, and the timings the app's own code produces on
+that data.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | resolving a programme to a playlist channel scanned every channel in the playlist | half a second of frozen window and silence for every row the user highlighted in the EPG search - 23 seconds for one page of results |
+| SEVERE | `main.py` | the index those lookups need was built on the GUI thread | the first lookup after a playlist load froze the app for seconds |
+
+### What the measurements said
+
+On the playlist this machine has (257,280 channels):
+
+| | before | after |
+|---|---|---|
+| one lookup of a programme that matches | 491 ms | 0.021 ms |
+| one page of 50 EPG search results | 23 s | 0.03 s |
+| the index build | 12.9 s | 12.9 s, off the GUI thread |
+
+The answers did not change: 360 lookups - exact, fuzzy and guide-style -
+returned the same channel as the scan they replaced, on all 257,280
+channels.
+
+### Why the scan was there
+
+The match rules are a scoring list: an exact tvg-id (100), an exact name
+(90), the same canonical name (70), the same name without its quality tag
+(60), a substring (40) and a word in common (at most 30). The first four
+are equality rules, and an equality rule is a dictionary lookup. Only the
+last two need every channel, and they score so low that they cannot beat a
+strong match.
+
+So the index now carries a table per equality rule, and the scan runs only
+when nothing matched strongly - the case where the answer is a guess anyway.
+The tie-break is the same as the scan's: the first channel wins.
+
+The index itself covers every channel in the playlist, and building it took
+thelve seconds with a cold name cache, so it is built on a worker when the
+playlist changes instead of on the GUI thread when the user highlights
+something.
+
+### What the data said that was right
+
+The same pass checked the rest of the playlist against the app's own
+output: all 257,280 channels keep their name, group, tvg-id, tvg-name,
+logo and URL, and a channel whose display name contains a comma (the
+provider ships "24/7: Trapper John, M.D.") is split at the right comma.
+The 1,391 channel names that share a canonical name are mostly the same
+channel in two spellings ("Sky Sports F1 HD" and "Sky Sports F1 4K"), and
+the guide names the channel once, so the first match is the right answer.
+
+## Seventeenth pass: what the app leaves behind
+
+This pass started from the machine's own leftovers: the temp folders the app
+and its test suite had accumulated, the crash dumps, the firewall rules, and
+the app's own log - the only record of what the installed build actually
+did.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `stream_proxy.py`, `main.py` | nothing stopped the cast proxy when the app quit | the FFmpeg that transcodes a cast outlived the app: it kept the provider's stream slot, kept writing segments into its temp folder, and the firewall rule it added stayed behind |
+| SEVERE | `playlist.py` | a read-only open of the guide that does not exist yet failed | "Failed to fetch EPG data: unable to open database file" in "What's on Now", and a traceback in the log on every refresh until the first import |
+
+### The proxy that was never stopped
+
+The proxy is created on demand and lives for the life of the process. Its
+converters are FFmpeg child processes, and the only thing that stopped them
+was the proxy's own cleanup loop, which runs every ten seconds - so an app
+that quit while a cast was running left the FFmpeg behind. Nothing called
+`stop()`: not the exit path, not the caster, not the shutdown.
+
+The proxy is stopped when the app quits now, which ends the FFmpeg
+processes, removes their temp folders and takes the firewall rule with them.
+
+### The guide that did not exist yet
+
+The app's own log, from the first run of the installed build:
+
+```
+[DEBUG] EPG.ui: IPTVClient._refresh_now_playing_labels: ignored exception
+  File "main.py", line 2201, in _refresh_now_playing_labels
+  File "playlist.py", line 1364, in __init__
+  File "playlist.py", line 1371, in _open
+sqlite3.OperationalError: unable to open database file
+```
+
+Every view of the guide opens the database read-only, and SQLite refuses a
+read-only open of a file that does not exist. Before the first import there
+is no file, so "What's on Now" answered with that raw message and the
+now-playing refresh logged the traceback on every tick.
+
+There is no guide yet - that is not an error. A missing guide is now an
+empty guide: the read-only open falls back to an empty database, so the views
+say what they mean ("No programs are currently airing, or EPG data has not
+been imported yet") and the log stays quiet.
+
+### What the leftovers said that was right
+
+The test suite had left 34 `iptv_remux_*` folders in the temp directory,
+one per converter it started and never stopped. The two tests that started
+a converter now stop it, and the folders go with them.
+
+## Eighteenth pass: what the app says while it is working
+
+The evidence this time was the app's own log of its first run on this
+machine, and the playlist it was working with: 257,280 channels, 67 MB.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | a search during the playlist load replaced "Loading playlists..." with "No channels found." | three minutes and twenty seconds of being told the app had no channels, while it was still fetching them |
+| MINOR | `main.py`, `providers.py` | every channel's logo URL was parsed, cached and kept in memory, and the app never shows a logo | a quarter of the parsed cache file and about a tenth of the memory the playlist costs |
+
+### The categories said the app had no channels
+
+The app says "Loading playlists..." when it starts. A search - the user
+pressing Enter or Tab in the search box, which is what one does while
+waiting - rebuilds the categories, and the rebuild wrote "No channels found."
+instead. The app's own log, from the first run of the installed build:
+
+```
+17:31:17  search start: '' group=No channels found. source=0
+...
+17:34:40  search start: '' group=All Channels source=257236
+```
+
+Three minutes and twenty seconds of the wrong message. The categories now
+say that a load is running while it runs, and say that there is nothing only
+when the load is over.
+
+### The logo that is never shown
+
+The playlist carries a logo URL for 252,755 of the 257,280 channels, and the
+app parsed it, wrote it into the parsed cache and kept it in memory. Nothing
+reads it: there is no channel icon in the interface, and the guide, the
+recordings and the user guide never mention one.
+
+On this machine's playlist the logo text is 17.2 MB of the 63.8 MB parsed
+cache file, and about 17 MB of the 170 MB the channel list costs. The field
+is not parsed any more.
+
+### What the measurements said that was right
+
+The startup path on the real playlist, measured with the app's own code:
+
+| | |
+|---|---|
+| parsing the 67 MB playlist | 9.6 s, on a worker |
+| reading the 64 MB parsed cache | 0.62 s |
+| filling the virtual list with 257,280 rows | 0.04 s |
+| the channel list in memory | 170 MB of objects, 207 MB resident |
+
+The list is virtual, the work is off the GUI thread, and the cache makes the
+second start quick. Only the message was wrong.
+
+## Nineteenth pass: the app, run for real
+
+The evidence this time was the application itself: started with the user's
+own configuration and its own 257,000-channel playlist, watched while it
+settled, and closed the way a user closes it.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | the parsed playlist cache was written inside the load worker, before the channels were applied | the channel list appeared ten seconds late on a 257,000-channel playlist |
+| SEVERE | `main.py` | the background match-index build started before the channel list was applied, and competed with it for the interpreter lock | applying the list took 10.8 s instead of 0.8 s |
+| MINOR | `main.py` | the playlist load's phases were nowhere in the log | a slow load could not be told apart from a slow provider |
+
+### The channel list, ten seconds late
+
+Writing the parsed cache is 43 MB of JSON for this playlist, and it took
+9.9 s. The load worker did it before handing the channels over, so the
+channel list waited for a file nobody was waiting for.
+
+The match index is the other half. It is built over every channel in the
+playlist - 13.3 s the first time, half a second once the names are cached
+- and it was started *before* the channel list was applied. Both run in
+threads, so they fought over the interpreter lock and the apply, which is
+what the user waits for, took 10.8 s.
+
+| | before | after |
+|---|---|---|
+| the channel list, first load after a playlist change | 24.1 s | 13.3 s |
+| applying the channel list | 10.8 s | 0.8 s |
+| the channel list, second start (the cache is warm) | 1.0 s | 1.0 s |
+
+The parse is 9.0 s of what is left, and it is the playlist itself.
+
+The load's phases are in the log now, so the next slow load can be told
+apart from a slow provider:
+
+```
+Playlist parsed: 257583 channels in 9.0 s
+Playlist load finished: 257539 channels applied in 0.8 s
+```
+
+### The measurements that cleared the rest
+
+Taken with the app's own code, on the real playlist:
+
+| | |
+|---|---|
+| parsing the 67 MB playlist | 9.0 s, on a worker |
+| reading the 64 MB parsed cache | 0.62 s |
+| filling the virtual list with 257,280 rows | 0.04 s |
+| one programme lookup | 0.021 ms |
+| the channel list in memory | 170 MB of objects, 207 MB resident |
+| the background index build, against the GUI thread | a 0.26 s worst tick, no freeze |
+
+The category tree shows "All Channels" twice - once at the root and once
+under the playlist's own branch - but that is the tree's shape, and it goes
+away when the view is scoped to a single playlist.
+
+### The F1 smoke test is not broken
+
+`tools/smoke_user_guide_f1.py` fails 22 checks here, and it has failed the
+same way since the commit that added it. The simulated keys go to the
+foreground window, and this session has no foreground window for the app to
+take: every F1 check fails with the focus still where it was.
+
+The application is fine. The same F1, sent through the app's own char hook,
+opens the guide at the right topic with the focus in the guide's text. The
+tool's docstring says so now.
+
+## Twentieth pass: the help, the exit, and the tools that check them
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `recorder.py` | the exit waited for a recording that was still finalizing on the GUI thread | the window was "Not Responding" and the screen reader silent while the app quit - for the length of the finalize, which is an hour for a large faststart MP4 |
+| MINOR | `main.py` | the "What's New" window declared no help topic | F1 there opened the main window's section; the guide has an "Updates" section for it |
+| MINOR | `tools/smoke_user_guide_f1.py` | the tool never checked that it owned the foreground window | 22 failures that were the session, not the application, with nothing to say so |
+
+### The exit that froze the window
+
+A recording that was already finalizing when the app quit was waited for
+inline, on the GUI thread, for the whole size-derived budget - minutes for
+a large faststart MP4, an hour in the worst case. The window was
+"Not Responding" and the screen reader said nothing, on the way out.
+
+The wait runs on a thread now. The shutdown keeps its own loop, which waits
+for the recording to finish while the event loop is pumped, so the window
+stays alive and the FFmpeg is still gone before the app exits.
+
+### The help that was not there
+
+Every one of the app's 116 menu items has a help topic, and so does every
+dialog - the "What's New" window was the one that did not. F1 inside it
+opened the main window's section, while the guide has an "Updates" section
+written for exactly that window.
+
+### The tool that reported the session
+
+`tools/smoke_user_guide_f1.py` failed 22 checks here, and it has failed the
+same way since the commit that added it. The simulated keys go to the
+foreground window, and a session that cannot give the foreground to the app
+sends every key somewhere else: the guide never opened, and every check
+failed with the focus still where it was.
+
+The application is fine - the same F1, sent through the app's own char hook,
+opens the guide at the right topic with the focus in the guide's text - and
+the tool now says which of the two it is. It passes 30 of 30 where the
+window can take the foreground.
+
+## Twenty-first pass: the numbers in a channel name
+
+The evidence this time was a real channel corpus: the 31,645 channels of
+the iptv-org catalogue, with their alternative names, run through the app's
+own name machinery.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py`, `channel_names.py` | the canonical name drops a standalone digit as a noise word, so two channels that differ only by their number looked the same | the guide's "BBC 1" landed on the playlist's "BBC 2" |
+
+### BBC 1 is not BBC 2
+
+The canonical name is what the matcher compares, and it strips a standalone
+digit as a noise word - "BBC 1" and "BBC 2" both become "bbc". The matcher
+then found whichever of them came first in the playlist:
+
+```
+the guide says BBC 1, the playlist has BBC One and BBC 2  -> BBC 2
+```
+
+The guide's programme for BBC 1 was shown on BBC 2, and BBC 2's own guide
+was never reached.
+
+The database matcher already knew this: it compares the numbers a name
+carries, and a candidate whose number disagrees is not a match. The
+playlist-side matcher - the one that finds the channel to play or to record
+from a guide row - had no such rule.
+
+The number helpers moved to `channel_names.py`, with the rest of the
+matching vocabulary, and the playlist-side matcher now refuses a channel
+whose number disagrees with the programme's. A name without a number still
+guesses, as it did before: the guide's "ESPN" cannot rule out the
+playlist's "ESPN 2" and "ESPN 3".
+
+### What the corpus says
+
+Of the 31,645 real channels, 510 families - 2,170 channels - share a
+canonical name with a channel of the same name and a different number:
+"ESPN 2" and "ESPN 3", "3Cat Exclusiu 1", "2" and "3", "BBC 1" and "BBC 2".
+Every one of them could show another channel's programme.
+
+The other half of the pair is unchanged: the guide's "BBC 1" still does not
+find the playlist's "BBC One", because the canonical name keeps the number
+word and drops the digit. That pairing is found by the channel id, which is
+what the id is for.
+
+## Twenty-second pass: a real playlist, read the way users read it
+
+The evidence this time was a real playlist: the iptv-org catalogue, 11,362
+channels with the attributes real providers ship.
+
+| Severity | Where | Defect | What the user saw |
+|---|---|---|---|
+| SEVERE | `main.py` | a playlist file that starts with a UTF-8 byte order mark was read as if the mark were part of the first line | the playlist opened with a channel whose URL was the mark and the header, and the header's own attributes were lost |
+
+### The mark at the start of the file
+
+The download path decodes with "utf-8-sig", which strips the mark. The two
+paths that read a file did not: a playlist the user added from disk, and the
+cached copy. The mark made the first line not a comment, so it was taken for
+a URL:
+
+```
+channels parsed: 11363
+first channel: name='' url='﻿#EXTM3U'
+```
+
+A playlist written by a Windows tool - which is most of them - opened with a
+channel that cannot play, and the header's attributes (the catch-up clock
+Dispatcharr sends there) were never read.
+
+The files the user adds from disk and the answer a provider sends are read
+with "utf-8-sig" now, and the parser strips the mark as well, so no path can
+open with a garbage channel:
+
+```
+channels: 11362, first url: 'https://jmp2.uk/plu-62ba60f059624e000781'
+garbage channels: 0
+```
+
+The parsed-playlist cache version moved with it: the parser now produces
+different channels from the same text, and a cache written by the previous
+build would have kept the garbage first channel.
+
+### What the real playlist says about the parser
+
+Everything else the app does with it holds up. The 11,362 #EXTINF lines
+become 11,362 channels, with no name and no group lost, and the attributes
+that matter for playback - the user agent and the referrer - are kept:
+
+| | |
+|---|---|
+| #EXTINF lines in the source | 11,362 |
+| channels the app parses | 11,362 |
+| channels with an empty name or no group | 0 |
+| http-user-agent / http-referrer kept | 589 / 235 |
+
+## Twenty-third pass: what the review found
+
+The twenty-second pass was closed the way a build closes: the two-axis
+review of the diff, Standards and Spec, in parallel sub-agents, over the
+wave before it. The review found that the byte order mark fix did not reach
+every path, and that the parsed-playlist cache version did not move with
+the parser.
+
+A provider's playlist was still decoded with plain "utf-8", so an Xtream
+answer that starts with a mark kept its byte-identical text and the same
+cache key: the cached garbage first channel came back and the fix never
+reached it. The provider's answer is decoded with "utf-8-sig" now, and the
+parsed-playlist cache version moved to 5.
+
+The mark was handled in five places - three reads and per line - and is
+stripped in one now: the parser. The two reads of files the app writes
+itself are back to plain "utf-8", because they cannot carry a mark.
+
+The tests the review asked for are there: the header's own attributes are
+asserted again (the catch-up clock Dispatcharr sends there), the file the
+user adds from disk is read through the app's own path, and the provider's
+answer is decoded with the mark in front of it.
+
+The review also caught the two claims that overstated the fix: this file
+and `agents.md` said every path reads "utf-8-sig" now, which was not true
+of the provider's answer at the time. They say what is true now.
+
+## Twenty-fourth pass: the number in the name
+
+Wave fourteen taught the programme matcher that the numbers in a name are
+the channel: "BBC 1" and "BBC 2" are different channels, and the
+noise-stripped name drops a standalone digit as noise. The other matcher
+never learned it.
+
+The now-playing matcher looks a playlist channel up in the guide by name,
+and the noise-stripped names of "BBC 2" and "BBC 3" are both "bbc". A
+playlist channel called "BBC 2" with no guide of its own therefore landed on
+whichever sibling the guide listed first, and the row showed that channel's
+programme:
+
+```
+playlist 'BBC 2' -> guide 'BBC 3'
+```
+
+The rule is the one wave fourteen wrote down: names say whether two
+channels are the same, numbers say when they are not. The now-playing
+matcher applies it now, and a name that answers to several guide channels
+picks the one whose number agrees - the guide's indexes keep every channel
+that answers to a key, in the guide's own order, so "BBC 2" still finds
+"BBC 2" when the guide has it.
+
+The matcher moved out of the frame while it was there. The guide-side
+matching now lives in `channel_identity.py`, which owns the tvg-id variant
+expansion, the guide's indexes and the matching policy, and is free of wx
+so it can be tested without the app. The name vocabulary stays in
+`channel_names.py`, which is where it has always been.
+
+### What the real playlist says about it
+
+The user's own playlist (257,604 channels, the app's own parsed cache)
+against the iptv-org channel list (31,645 channels), counted with the
+shipped matcher:
+
+| | before | after |
+|---|---|---|
+| channels matched by name | 1,157 | 1,153 |
+| landing on a guide channel that names a different number | 5 | 0 |
+
+One channel was relabelled: `UK: 5 Star` was on the guide's `Star 4K` and is
+now on `Star Plus`. Four lost a label that was another channel's: `Good One`
+was on `Good 2`, `One on One` on `On 6`, `UK: RTE Two HD` on `RTE One`.
+
+The provider's own guide was not available for the same check: this
+machine's cached playlist carries no guide URL, and a playlist refresh
+(257,604 channels parsed in 63.5 s) discovered no EPG source within the
+window, so no `epg.db` was ever created. The check above therefore uses the
+app's own parsed channel list against the iptv-org channel list, and the
+provider's guide remains a manual check on a box that has one.
+
+### What the review of the fix found
+
+The two-axis review of the first fix (the twenty-third pass's method, run on
+the fix itself) found four ways the rule still leaked and one wrong
+explanation in the docs:
+
+- The playlist's numbers were gathered from the id as well as the names, so
+  an id that happened to carry "3" made the name's "2" agree with a guide's
+  "BBC 3". Numbers now come from the names only.
+- The guide's numbers took the guide id too, so an id like `bbc2.uk` masked
+  a display name that said "BBC 3". Same fix, guide side.
+- A playlist that numbers a channel and a guide that spells it out never
+  matched at all in either direction: "BBC 2" against "BBC Two" produced the
+  keys `bbc` and `bbc two`. `replace_word_numbers` now indexes both forms, so
+  the two are the same channel, and the number rule has something to agree
+  with.
+- The test for the reported bug asserted `hit is None or hit["display_name"]
+  == "BBC 2"`, and the guide in it had no "BBC 2", so the second half could
+  never be true. It now asserts `None` and a sibling that agrees is a test of
+  its own.
+
+The review also caught that this pass described the collision as "BBC Two"
+against "BBC 3" stripping to the same key. They do not: stripping leaves
+"bbc two" and "bbc". The collision is "BBC 2" against "BBC 3", which is what
+the code and the reported bug are about.
+
+### Deliberately not done
+
+- The other matcher - the one that finds the playlist channel for a guide
+  programme - keeps its own index and its own scoring. It applies the number
+  rule as a score penalty (`score = 20`), not a rejection, so a same-named
+  channel with a different number can still outscore a poorer fit; making it
+  a rejection changes that matcher's rankings, and it is the other direction:
+  guide to playlist, with its own memo and its own tie-breaks. It can move
+  into `channel_identity` when something in it needs to change.
+
 ## Checked and not a defect
 
 - The next daily or weekly DVR occurrence is advanced through naive local
@@ -86,12 +907,138 @@ Every fix has a regression test that fails without it.
   wall-clock time across a DST change. Only a recording scheduled inside the
   missing hour itself is off, and that is an edge case.
 
+## Twenty-fifth pass: the pipe nobody else can open
+
+The app hands a channel to an external MPV with `--input-ipc-server`, and
+used one fixed name for it: `\\.\pipe\iptvclient-mpv`. Any local process
+could open that pipe, read `media-title` and the playlist, and send
+`loadfile` or `quit`; the adapter that carries subtitle speech had already
+built its own endpoint per session, so the two halves of the same feature
+disagreed.
+
+The pipe name is now built per session (`iptvclient-mpv-<8 hex>`), the way
+the adapter's is, and stays stable for the life of the launcher so a second
+channel still replaces the first in the same mpv. Nothing else changes: the
+URL is still on mpv's own command line, which is how an external player is
+launched, and that stays recorded as a limitation of the external-player
+handoff.
+
+## Twenty-sixth pass: what the account dialog says when it knows nothing
+
+Four ways the account report said something it had not been told, or died
+saying nothing:
+
+* A panel marking a lifetime line with `exp_date: "inf"` crashed
+  `_as_timestamp` with `OverflowError` - a type the `int(float(...))` guard
+  did not name - and the whole check reported "cannot convert float infinity
+  to integer".
+* A 200 with no `user_info` (an empty or reshaped body) printed "Expires:
+  Never (no expiry date set)" next to "Status: not reported by the server".
+  Nothing had been reported, so nothing can be said about when it ends: an
+  unknown line now reads "Not reported by the server" like the status above
+  it.
+* A Ministra portal reports a blocked line as `status: 0`, which the label
+  table has no word for, so the user heard "Status: 0". `0` and `1` now read
+  as Disabled and Active.
+* A provider entry whose `name` (or MAC, or username) was a number rather
+  than text aborted the whole account scan with `'int' object has no
+  attribute 'strip'`; every field is coerced to text first.
+
+Also in the same file: a path-form Xtream base URL
+(`http://host/live/user/pass/1.ts`) reached the "Server:" line with the
+password intact, because only query and `user@` credentials were masked. The
+segments the module's own `xtream_credentials_from_url` recognises as the
+account are now `***`. The verdict for the whole dialog is unchanged: two
+languages of report (Xtream, Stalker) over one formatter, and no test covers
+a live panel.
+
+## Twenty-seventh pass: the archive window on the wrong clock
+
+Three defects in the catch-up path, all of which end in a 404 or a wasted
+request rather than a wrong programme:
+
+* A channel's `catchup-timezone` is an IANA name, and Windows ships no time
+  zone database. `ZoneInfo` raised, the fallback quietly used the PC's own
+  zone, and the same channel was requested hours off the provider's clock -
+  measured on this machine as 07:00 local for a 12:00Z programme that Berlin
+  archives at 14:00. `tzdata` is now a dependency, and the previously
+  skipping test (`test_iana_catchup_timezone_is_honoured`) runs on Windows.
+* `catchup-source` date/hour tokens (`{Y}{m}{d}{H}{M}`, `{y}{e}{h}{i}`) were
+  filled from the UTC instant while the path style used the channel's zone.
+  A provider expecting local time answered 404 for a programme it had. The
+  template now renders those tokens on the same wall clock as the path style;
+  epoch tokens stay UTC, because they are instants.
+* A guide row whose end was before its start (or zero-length, which the
+  parser can produce from `<length>0</length>`) asked the archive for a
+  window that cannot exist, then retried a download that could never work.
+  It now raises `ProviderError` with a translated message, the same guard
+  `dvr.py` applies to recording jobs.
+
+And in `catchup_direct`, a HEAD answered 403 or 404 was treated as "this
+server rejects HEAD" and answered with a ranged GET. A 403 on these panels
+means the account's one stream is busy and a 404 is an ordinary miss, so the
+probe was opening the media it exists to avoid opening. Only 405 and 501 now
+trigger the ranged GET.
+
+## Twenty-eighth pass: a finished download is not junk
+
+Four ways the recording path told the user something that was not true:
+
+* `recorder.py` `_settle_partial_output` treated every failed rename as a
+  failed capture. A clean download whose target was held open - a scanner, a
+  network share, another player - went to the `except`, fell through, and the
+  finished `.part` was **deleted**, while `main.py` still reported "Download
+  complete". The rename failure now keeps the file and reports the `.part`
+  path, because the bytes are the user's programme and the name is not.
+* `main.py` `_on_recording_finished` reported success from the exit code
+  alone. ffmpeg exits 0 when the stream closes before the first frame, so the
+  user was told "Recording saved" about a file that was missing or empty. The
+  report now checks the file has bytes, in the message box and in the DVR
+  job's recorded outcome. A capture stopped by the user still warns; a
+  non-zero exit still errors.
+* The track probe ran on a worker thread with no handler. Any exception left
+  the record key in `pending` for the rest of the session: every later press
+  said the recording was stopping, nothing was ever recorded, and the shared
+  player was never resumed. The probe now reports through the existing
+  "Could not start recording" message, drops the key and resumes playback.
+* `options.py`, found in the same file: the first-run default player was
+  "VLC" while the installer bundles libVLC, not VLC, so a new user's first
+  Play said the player could not be found (the player code already fell back
+  to "Built-in Player"). The Windows-installed data migration ran outside
+  the loader's error handling, so a locked legacy file stopped the app from
+  starting. The two save paths (GUI and playlist worker) wrote the same file
+  without a lock, which can land the older snapshot last and silently revert
+  a setting. And a config holding valid JSON of the wrong shape (`[]`) was
+  neither used nor kept: the next save replaced it, taking the user's
+  playlists with it. All four now keep the user's data and start.
+
+## Twenty-ninth pass: favourited by the wrong channel, and the tail of a relay
+
+Two files probed for the first time. `favorites.py` builds a channel's
+identity by joining fields with `|`, and playlists do name channels
+`ITV|1`. As shipped, `{"name": "ITV|1"}` and `{"tvg-id": "ITV", "name":
+"1"}` produced the same key, so starring one marked both in the list, and
+un-starring removed both. The fields are escaped now, and a backslash cannot
+be used to forge a separator either. Stored keys for ordinary channels do
+not change; a channel with `|` or `\` in any keyed field (and the recent
+channels list, which uses the same key) loses its existing entry once, which
+is the price of telling the two apart. An old key can also re-attach: a
+stored `A|B` is now the valid key of tvg-id `A` with name `B`.
+
+`recording_relay.py` dropped the tail of a relayed recording. Pruning by age
+ran even after ffmpeg had exited, so a player that was a little behind when
+the recording ended had its remaining chunks deleted and saw a short file;
+and `close()` raced the pump, marking the stream finished while ffmpeg's pipe
+could still hold bytes. Age pruning now stops as soon as the relay is
+closing, `close()` gives the pump a bounded moment to reach EOF before
+forcing the end, and the forced path closes ffmpeg's pipe and shuts down
+sockets that are stuck writing (a player that joins during that window gets
+the queued tail instead of a trimmed backlog). A relay whose pipe never
+reaches EOF still costs the watcher up to two seconds before it reports the
+  recording finished.
+
 ## Still open
 
-- The MPV IPC endpoint used to reuse a running instance is a fixed, machine-wide
-  named pipe, and the URL it carries the provider's user and password - in the
-  process list and in the player's own media history. The adapter's own
-  endpoint is per session; this one is not.
 - `shutdown.exe` returning 0 only means the shutdown was scheduled: an
   application can still veto it afterwards, and the app has already closed by
   then.
@@ -105,3 +1052,39 @@ Every fix has a regression test that fails without it.
   master playlist when the host is slow. The probe is off by default
   (`internal_player_variant_max_mbps` is 0), and the fallback costs the
   variant selection, not playback.
+- Quitting while a recording is still finalizing waits for the container on
+  the GUI thread, so the window is "Not Responding" for the length of that
+  wait (minutes for a large faststart MP4). The wait has to stay there: the
+  ffmpeg that is finalizing has to be gone before the app exits, or it
+  outlives us and holds the provider's stream slot. The window has to stay
+  alive while it waits.
+- A portable update that installs but does not start leaves no rollback: the
+  helper deletes the backup before it restarts the app, because the recursive
+  delete competed with the freshly started app's own file loading. Putting
+  the delete after the restart would keep the backup, but a rollback also
+  needs a message of its own in every language, and the result file is
+  written before the restart (the app reports the update within
+  milliseconds of showing its window), so it would still say "completed".
+- The Authenticode pin covers the executable and the installer, not the rest
+  of the portable archive: the hash of the zip comes from the same unsigned
+  manifest, so a tampered DLL beside the signed exe would install. The pin
+  for the archive would have to come from outside the release, the way the
+  certificate pin does.
+- A favourite is matched by exact key. A provider that starts sending a
+  `tvg-id` (or drops one, or renames the channel) changes the key, so the
+  favourite silently disappears from the list while its key stays in the
+  config with no way to remove it in the app. Re-linking old keys by their
+  trailing name would fix it, but a name-only match can attach a favourite to
+  a different channel, so it is a product decision, not a patch.
+- A favourite key still depends on which fields are present: the join drops
+  empty fields, so a Stalker `provider-id` `7` named "Dave" and an Xtream
+  `stream-id` `7` named "Dave" both key as `7|Dave`. Encoding each field's
+  position would fix it but re-keys every stored favourite, so it needs a
+  migration that re-links by name - a product decision, not a patch.
+- A relayed recording holds one server thread per connected player for as
+  long as that player is not reading (a paused VLC with a full TCP window).
+  `close()` shuts those sockets down on the forced path only, so a player
+  paused while the recording is still live keeps its thread until the
+  recording ends. Aborting a blocked `send` with `shutdown` is also unproven
+  on Windows here. A write timeout would end it sooner at the cost of
+  dropping a player paused longer than the timeout.

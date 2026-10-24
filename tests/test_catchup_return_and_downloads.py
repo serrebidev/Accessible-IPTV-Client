@@ -9,6 +9,7 @@
 * Escape and Alt+F4 hide a download window without cancelling it, and
   View > Show Downloads brings the windows back, cycling through several.
 """
+import inspect
 import os
 import sys
 import types
@@ -47,7 +48,18 @@ _BOUND = (
 )
 
 
+class _SubtitleSession:
+    """The subtitle session the app owns, stubbed for the partial clients here."""
+
+    def activate_session(self, source_name=""):
+        return "token"
+
+    def cancel_session(self):
+        return None
+
+
 def _client(**attrs):
+    attrs.setdefault("_subtitle_session", _SubtitleSession())
     client = types.SimpleNamespace(**attrs)
     for name in _BOUND:
         setattr(client, name, getattr(main.IPTVClient, name).__get__(client))
@@ -126,6 +138,46 @@ def test_closing_a_catchup_playback_reopens_its_list(monkeypatch):
     assert client._catchup_return is None
     assert client._internal_player_frame is None
     assert client._internal_player_stream_kind == "live"
+
+
+def test_the_catchup_download_does_not_carry_the_credentials_to_another_host(monkeypatch):
+    """The direct archive file can live on another host.
+
+    The provider redirected there, and ffmpeg was handed the channel's
+    cookie for it: the provider's own credential went to a stranger.
+    """
+    import datetime
+
+    import main as appmod
+
+    monkeypatch.setattr(
+        appmod.catchup_direct, "direct_download_url",
+        lambda url, windows, headers=None, timeout=6.0:
+        "https://cdn.example.test/index-20260907190000-1800.mp4")
+
+    started = {}
+    monkeypatch.setattr(appmod.wx, "CallAfter", lambda fn, *a, **k: started.update(
+        {"url": a[0], "headers": a[6]}))
+
+    client = types.SimpleNamespace(
+        _parse_epg_time=lambda value: datetime.datetime(
+            2026, 9, 7, 19, 0, tzinfo=datetime.timezone.utc),
+        _padded_catchup_window=lambda show: None,
+        _recording_audio_choice=lambda *a, **k: None,
+        _start_catchup_recording=lambda *a, **k: None,
+    )
+    channel = {"name": "Sky Mix", "http-cookie": "session=secret",
+               "http-user-agent": "ChannelUA"}
+
+    appmod.IPTVClient._begin_catchup_download(
+        client, channel, "http://provider.invalid/live.ts", "Evening News", "key",
+        {"start": "20260907190000", "end": "20260907200000"}, 1800, "provider_mkv",
+        None, None)
+
+    assert started["url"] == "https://cdn.example.test/index-20260907190000-1800.mp4"
+    assert "cookie" not in started["headers"], "the credential followed the redirect"
+    # The headers that are not credentials still travel.
+    assert started["headers"].get("user-agent") == "ChannelUA"
 
 
 def test_closing_a_live_playback_does_not_reopen_catchup(monkeypatch):
@@ -307,7 +359,7 @@ def _download_client(returned, **overrides):
     values.update(overrides)
     client = types.SimpleNamespace(**values)
     for name in ("_padded_catchup_window",):
-        setattr(client, name, main.IPTVClient.__dict__[name].__get__(client, main.IPTVClient))
+        setattr(client, name, inspect.getattr_static(main.IPTVClient, name).__get__(client, main.IPTVClient))
     client._return_to_catchup_after_download = types.MethodType(
         main.IPTVClient._return_to_catchup_after_download, client)
     return client

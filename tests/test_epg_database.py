@@ -17,11 +17,11 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import playlist
+from channel_identity import expand_tvg_id_candidates
 from playlist import (
     EPGDatabase,
     _derive_playlist_region,
     _detect_region_from_id,
-    _expand_tvg_id_candidates,
     _http_download_gz_with_resume,
     _ordered_channel_tokens,
     _parse_xmltv_to_utc_str,
@@ -198,17 +198,17 @@ def test_detect_region_from_id_handles_non_latin_scripts():
 
 
 def test_iptv_org_tvg_id_expansion_adds_city_variant():
-    assert _expand_tvg_id_candidates("9Gem.au@Sydney") == [
+    assert expand_tvg_id_candidates("9Gem.au@Sydney") == [
         "9Gem.au@Sydney",
         "9Gem.au",
         "9GemSydney.au",
     ]
-    assert _expand_tvg_id_candidates("DareToDreamNetwork.us@SD") == [
+    assert expand_tvg_id_candidates("DareToDreamNetwork.us@SD") == [
         "DareToDreamNetwork.us@SD",
         "DareToDreamNetwork.us",
     ]
-    assert "antennatv.us" in _expand_tvg_id_candidates("antennatvhd.us")
-    assert "altitudesports.us" in _expand_tvg_id_candidates("altitudesport.us")
+    assert "antennatv.us" in expand_tvg_id_candidates("antennatvhd.us")
+    assert "altitudesports.us" in expand_tvg_id_candidates("altitudesport.us")
 
 
 def test_playlist_region_prefers_tvg_id_country_over_california_abbreviation():
@@ -1078,6 +1078,111 @@ def _guide_xml(path, channels):
     return str(path)
 
 
+def test_a_non_finite_length_costs_one_programme_not_the_source(tmp_path):
+    """A length of "inf" is not a duration.
+
+    float("inf") parses, so the guard around the float() let it through and
+    int(inf) raised OverflowError inside the per-programme loop. The source
+    was abandoned there and every programme after the bad one was dropped.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv>'
+             '<channel id="c"><display-name>C</display-name></channel>']
+    parts.append(f'<programme start="{now.strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>First</title></programme>')
+    # No stop, and a length that is not a number at all.
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+                 f'channel="c"><title>Broken</title>'
+                 f'<length units="minutes">inf</length></programme>')
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=2)).strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(hours=2, minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>Last</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        titles = {row[0] for row in
+                  db.conn.execute("SELECT title FROM programmes").fetchall()}
+    finally:
+        db.close()
+
+    assert "First" in titles
+    assert "Last" in titles, "the bad length took the rest of the source with it"
+
+
+def test_a_live_imports_lock_is_not_stolen(tmp_path):
+    """An import that runs for hours is still an import.
+
+    The lock was reclaimed after two hours whatever the owner was doing, so
+    a long import and a second one could run at the same time - and the
+    second one deleted the first one's lock.
+    """
+    import os
+    import time
+
+    db = str(tmp_path / "epg.db")
+    assert playlist._try_acquire_import_lock(db, 5) is True
+    lock_path, _pid_path = playlist._import_lock_paths(db)
+    # Make the lock look old.
+    old = time.time() - 3 * 60 * 60
+    os.utime(lock_path, (old, old))
+    try:
+        assert playlist._try_acquire_import_lock(db, 1) is False
+    finally:
+        playlist._release_import_lock(db)
+
+
+def test_a_reclaimed_lock_survives_its_old_owner(tmp_path):
+    """A lock that was taken by another import belongs to whoever holds it now."""
+    db = str(tmp_path / "epg.db")
+    lock_path, pid_path = playlist._import_lock_paths(db)
+    with open(lock_path, "w", encoding="ascii") as handle:
+        handle.write("")
+    with open(pid_path, "w", encoding="ascii") as handle:
+        handle.write("424242")  # another process
+
+    playlist._release_import_lock(db)
+
+    assert os.path.exists(lock_path), "the new owner's lock was removed"
+
+
+def test_a_huge_duration_costs_one_programme_not_the_source(tmp_path):
+    """A duration with a huge component is not a duration.
+
+    int() refuses one ("Exceeds the limit (4300 digits)") and the refusal
+    escaped the per-programme loop, so the source was abandoned and every
+    programme after the bad one was dropped.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    huge = "9" * 5000
+    parts = ['<?xml version="1.0" encoding="UTF-8"?><tv>'
+             '<channel id="c"><display-name>C</display-name></channel>']
+    parts.append(f'<programme start="{now.strftime(fmt)}" channel="c">'
+                 f'<title>Broken</title><duration>P{huge}D</duration></programme>')
+    parts.append(f'<programme start="{(now + datetime.timedelta(hours=2)).strftime(fmt)}" '
+                 f'stop="{(now + datetime.timedelta(hours=2, minutes=30)).strftime(fmt)}" '
+                 f'channel="c"><title>Last</title></programme>')
+    parts.append("</tv>")
+    xml_path = tmp_path / "guide.xml"
+    xml_path.write_text("".join(parts), encoding="utf-8")
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(xml_path)])
+        titles = {row[0] for row in
+                  db.conn.execute("SELECT title FROM programmes").fetchall()}
+    finally:
+        db.close()
+
+    assert "Last" in titles, "the bad duration took the rest of the source with it"
+
+
 def test_import_forgets_channels_the_guide_no_longer_lists(tmp_path):
     """A retired id kept counting as "this channel has its own guide", so a
     playlist channel still carrying it never fell back to a current namesake."""
@@ -1201,3 +1306,93 @@ def test_an_id_two_sources_share_survives_one_of_them_dropping_it(tmp_path):
         assert db.get_channel_ids_lower() == {"y", "z"}
     finally:
         db.close()
+
+def test_a_namespaced_feed_keeps_its_names_and_titles(tmp_path):
+    """Some feeds carry a default namespace.
+
+    ElementTree keeps the namespace in the tag, so the plain lookups found
+    nothing: every channel came in without a name and every programme
+    without a title - and the next import overwrote the good ones with the
+    blanks.
+    """
+    import datetime
+
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    feed = tmp_path / "ns.xml"
+    feed.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<tv xmlns="http://www.tvguide.com/xmltv/0.17/">'
+        '<channel id="cnn"><display-name>CNN</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" '
+        f'stop="{(now + datetime.timedelta(hours=1)).strftime(fmt)}" '
+        'channel="cnn"><title>News at Ten</title><desc>The news.</desc></programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(feed)])
+        channels = db.conn.execute("SELECT display_name FROM channels").fetchall()
+        programmes = db.conn.execute("SELECT title, description FROM programmes").fetchall()
+    finally:
+        db.close()
+
+    assert channels == [("CNN",)]
+    assert programmes == [("News at Ten", "The news.")]
+
+
+def test_a_length_in_hours_computes_the_end_time(tmp_path):
+    """A programme that gives its length in hours was dropped.
+
+    The end time could not be computed, so the programme never reached the
+    database at all.
+    """
+    import datetime
+
+    now = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    fmt = "%Y%m%d%H%M%S +0000"
+    feed = tmp_path / "hours.xml"
+    feed.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<tv>'
+        '<channel id="c"><display-name>C</display-name></channel>'
+        f'<programme start="{now.strftime(fmt)}" channel="c">'
+        '<title>Two Hours</title>'
+        '<length units="hours">2</length>'
+        '</programme>'
+        '</tv>',
+        encoding="utf-8",
+    )
+
+    db = EPGDatabase(str(tmp_path / "epg.db"))
+    try:
+        db.import_epg_xml([str(feed)])
+        rows = db.conn.execute("SELECT start, end FROM programmes").fetchall()
+    finally:
+        db.close()
+
+    assert len(rows) == 1, "the programme was dropped"
+    start, end = rows[0]
+    fmt = "%Y%m%d%H%M%S"
+    assert (datetime.datetime.strptime(end, fmt)
+            - datetime.datetime.strptime(start, fmt)).total_seconds() == 7200
+
+def test_a_guide_that_does_not_exist_yet_is_an_empty_guide(tmp_path):
+    """A read-only open of a database that does not exist yet failed.
+
+    SQLite answers "unable to open database file", and the user saw exactly
+    that in the "What's on Now" box the first time they opened it, before
+    any guide had been imported. There is no guide yet - that is not an
+    error, and every view has to show an empty guide.
+    """
+    path = tmp_path / "epg.db"
+    db = EPGDatabase(str(path), readonly=True)
+    try:
+        assert db.get_all_now_playing() == []
+        assert db.get_channel_ids_lower() == set()
+    finally:
+        db.close()
+    # A read-only open must not create the file.
+    assert not path.exists()

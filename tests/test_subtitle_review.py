@@ -184,6 +184,111 @@ def test_the_builtin_player_sends_the_cue_timing():
     assert 'getattr(cue, "start", None)' in source
 
 
+def test_starting_a_channel_drops_the_previous_channels_cues():
+    """A new stream is a new subtitle session.
+
+    The built-in player cleared its own cue list but never the shared
+    manager, so "Read current subtitle" and "Review recent subtitles"
+    answered with the last line of the channel the user had just left.
+    """
+    import main as appmod
+    from subtitle_speech import SubtitleSpeechManager
+    from subtitle_session import SubtitleSessionController
+
+    spoken = []
+    manager = SubtitleSpeechManager(spoken.append)
+    session = SubtitleSessionController(manager)
+    played = []
+
+    class FakeFrame:
+        def Enable(self, *_a):
+            pass
+
+        def Show(self):
+            pass
+
+        def Hide(self):
+            pass
+
+        def Raise(self):
+            pass
+
+        def SetFocus(self):
+            pass
+
+        def play(self, url, title, **_kwargs):
+            played.append((url, title))
+
+        def set_channel_audio_track(self, _track):
+            pass
+
+        def set_channel_audio_track_index(self, _index):
+            pass
+
+        def _update_status_label(self, *_a, **_k):
+            pass
+
+    frame = FakeFrame()
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.default_player = "Built-in Player"
+    client.show_player_on_enter = True
+    client.config = {}
+    client.recorder = None
+    client.recent_channel_keys = []
+    client._subtitle_manager = manager
+    client._subtitle_session = session
+    client._ensure_internal_player = lambda: frame
+    client._internal_player_frame = frame
+    client._internal_player_channel = None
+    client._internal_player_audio_key = ""
+    client._internal_player_stream_kind = "live"
+    client._channel_audio_key = lambda channel: ""
+    client._remembered_channel_audio_track = lambda key: ""
+    client._remembered_channel_audio_track_index = lambda key: -1
+    client._remember_played_channel = lambda channel: None
+    client._sync_internal_player_record_state = lambda: None
+    client._restore_main_focus = lambda: None
+
+    # The old channel is playing and has spoken a line.
+    session.activate_session("old channel")
+    manager.on_cue("The last line of the old channel")
+
+    appmod.IPTVClient._launch_stream(
+        client, "http://example.invalid/live.ts", "New channel")
+
+    assert played, "the stream was not played"
+    assert session.session_token is not None, "the new stream started no session"
+    assert manager.read_current() is False, "the previous channel's cue survived"
+    assert manager.get_recent(10) == []
+
+
+def test_closing_the_player_cancels_the_subtitle_session():
+    """Nothing is playing any more, so no subtitle session is active."""
+    import main as appmod
+    from subtitle_speech import SubtitleSpeechManager
+    from subtitle_session import SubtitleSessionController
+
+    manager = SubtitleSpeechManager(lambda _text: None)
+    session = SubtitleSessionController(manager)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client._subtitle_manager = manager
+    client._subtitle_session = session
+    client._internal_player_frame = object()
+    client._internal_player_channel = None
+    client._internal_player_audio_key = ""
+    client._internal_player_stream_kind = "live"
+    client._catchup_return = None
+
+    session.activate_session("a channel")
+    manager.on_cue("A line")
+
+    appmod.IPTVClient._on_internal_player_closed(client)
+
+    assert session.session_token is None
+    assert manager.read_current() is False
+    assert manager.get_recent(10) == []
+
+
 def test_the_subtitle_speech_toggle_saves_the_setting(monkeypatch):
     """The toggle called a method the frame does not have.
 

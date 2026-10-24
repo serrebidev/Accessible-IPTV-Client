@@ -55,6 +55,19 @@ def iso_from_ts(ts: float) -> str:
     return datetime.datetime.fromtimestamp(float(ts), datetime.timezone.utc).isoformat()
 
 
+def _number(value, default: float = 0.0) -> float:
+    """A number out of the schedule file, or ``default`` when it is not one.
+
+    The file is written by the app, but it can be hand-edited or left
+    half-written, and one bad value must not take the scheduler - or the
+    startup that loads it - down with it.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def program_title(program: Dict[str, str]) -> str:
     return (
         program.get("show_title")
@@ -189,7 +202,7 @@ class DVRScheduler:
                     # stop time passes); only call it failed when the window has
                     # already closed and there is nothing left to record.
                     job["recording_id"] = None
-                    stop_ts = float(job.get("stop_ts") or 0)
+                    stop_ts = _number(job.get("stop_ts"))
                     if stop_ts and float(self.clock()) >= stop_ts:
                         job["status"] = STATUS_FAILED
                         job["message"] = job.get("message") or "Interrupted by application restart."
@@ -206,7 +219,7 @@ class DVRScheduler:
             with self._lock:
                 # Serialize while holding the lock: the job dicts are live and
                 # another thread may be changing them.
-                jobs = sorted(self._jobs.values(), key=lambda j: float(j.get("start_ts") or 0))
+                jobs = sorted(self._jobs.values(), key=lambda j: _number(j.get("start_ts")))
                 text = json.dumps({"version": 1, "jobs": jobs}, indent=2, sort_keys=True)
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
@@ -214,6 +227,20 @@ class DVRScheduler:
                 fh.flush()
                 os.fsync(fh.fileno())
             os.replace(tmp, self.path)
+
+    def _save_schedule(self) -> None:
+        """Write the schedule, reporting a failure instead of raising it.
+
+        The schedule file is a convenience: the jobs live in memory and the
+        app keeps working without it. A write that fails (a full disk, a
+        locked file) must never change a job's state - a recording marked
+        "failed" because the file could not be written is never stopped by the
+        scheduler, and it holds the provider's one stream slot for good.
+        """
+        try:
+            self.save()
+        except Exception:
+            LOG.exception("Could not save the DVR schedule: %s", self.path)
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -241,7 +268,7 @@ class DVRScheduler:
             jobs = list(self._jobs.values())
         if not include_done:
             jobs = [j for j in jobs if j.get("status") not in DONE_STATUSES]
-        return sorted(jobs, key=lambda j: float(j.get("start_ts") or 0))
+        return sorted(jobs, key=lambda j: _number(j.get("start_ts")))
 
     def get_job(self, job_id: str) -> Optional[Dict[str, object]]:
         with self._lock:
@@ -330,7 +357,7 @@ class DVRScheduler:
                 job["status"] = STATUS_COMPLETED if success else STATUS_FAILED
                 job["message"] = message
                 self._schedule_next_occurrence(job)
-        self.save()
+        self._save_schedule()
         self._notify_update()
 
     def tick(self) -> None:
@@ -338,8 +365,8 @@ class DVRScheduler:
         for job in self.list_jobs(include_done=False):
             status = job.get("status")
             job_id = str(job.get("id") or "")
-            start_ts = float(job.get("start_ts") or 0)
-            stop_ts = float(job.get("stop_ts") or 0)
+            start_ts = _number(job.get("start_ts"))
+            stop_ts = _number(job.get("stop_ts"))
             if status == STATUS_SCHEDULED:
                 if stop_ts and now >= stop_ts:
                     self._set_status(job_id, STATUS_MISSED, "Scheduled recording was missed.")
@@ -394,10 +421,19 @@ class DVRScheduler:
                 return
             job["status"] = STATUS_RECORDING
             job["message"] = ""
-        self.save()
+        self._save_schedule()
         self._notify_update()
+        # Starting a recording resolves the stream URL, classifies the media
+        # and probes its audio tracks, which takes seconds. On the scheduler
+        # thread that stopped the tick: a job that came due started late, and
+        # one whose whole window passed was marked missed and never recorded.
+        # The job is claimed above, so the next tick cannot start it twice.
+        threading.Thread(target=self._start_job_worker, args=(job_id, dict(job)),
+                         name="dvr-start", daemon=True).start()
+
+    def _start_job_worker(self, job_id: str, job: Dict[str, object]) -> None:
         try:
-            recording = self.on_start(dict(job))
+            recording = self.on_start(job)
             rec_id = getattr(recording, "id", recording)
             out_path = getattr(recording, "out_path", "")
             with self._lock:
@@ -412,25 +448,32 @@ class DVRScheduler:
                 # runs forever: the scheduler never stops a canceled job.
                 abandoned = not current or current.get("status") != STATUS_RECORDING
                 snapshot = dict(current) if current else dict(job, recording_id=rec_id)
-            self.save()
-            self._notify_update()
-            if abandoned:
-                LOG.info("Scheduled recording %s was canceled while starting; stopping it", job_id)
-                try:
-                    self.on_stop(snapshot)
-                except Exception:
-                    LOG.exception("Could not stop a recording canceled while starting")
         except Exception as err:
             LOG.exception("Scheduled recording failed to start")
             with self._lock:
-                job = self._jobs.get(job_id)
-                if job:
-                    job["status"] = STATUS_FAILED
-                    job["recording_id"] = None
-                    job["message"] = str(err)
-                    self._schedule_next_occurrence(job)
-            self.save()
+                current = self._jobs.get(job_id)
+                if current and current.get("status") != STATUS_CANCELED:
+                    # A job the user canceled while it was starting stays
+                    # canceled: it must not come back as "failed", and no new
+                    # occurrence may be queued for it.
+                    current["status"] = STATUS_FAILED
+                    current["recording_id"] = None
+                    current["message"] = str(err)
+                    self._schedule_next_occurrence(current)
+            self._save_schedule()
             self._notify_update()
+            return
+        # The recording is running. A schedule that cannot be written must not
+        # turn it into a failed job: the scheduler would never stop it, and it
+        # would hold the provider's one stream slot for good.
+        self._save_schedule()
+        self._notify_update()
+        if abandoned:
+            LOG.info("Scheduled recording %s was canceled while starting; stopping it", job_id)
+            try:
+                self.on_stop(snapshot)
+            except Exception:
+                LOG.exception("Could not stop a recording canceled while starting")
 
     def _stop_job(self, job_id: str) -> None:
         with self._lock:
@@ -440,7 +483,7 @@ class DVRScheduler:
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
             self._stopping_since[job_id] = float(self.clock())
-        self.save()
+        self._save_schedule()
         self._notify_update()
         try:
             self.on_stop(dict(job))
@@ -457,7 +500,7 @@ class DVRScheduler:
             job["message"] = message
             if status in {STATUS_MISSED, STATUS_FAILED}:
                 self._schedule_next_occurrence(job)
-        self.save()
+        self._save_schedule()
         self._notify_update()
 
     def _schedule_next_occurrence(self, job: Dict[str, object]) -> None:
@@ -470,19 +513,19 @@ class DVRScheduler:
         next_job["id"] = uuid.uuid4().hex
         now = float(self.clock())
         for field in ("start_ts", "stop_ts"):
-            next_job[field] = float(job[field])
-        while float(next_job["stop_ts"]) <= now:
+            next_job[field] = _number(job.get(field))
+        while _number(next_job["stop_ts"]) <= now:
             for field in ("start_ts", "stop_ts"):
-                local = datetime.datetime.fromtimestamp(float(next_job[field]))
+                local = datetime.datetime.fromtimestamp(_number(next_job[field]))
                 next_job[field] = (local + datetime.timedelta(days=days)).timestamp()
         # A completed occurrence can finish before its planned stop; its next
         # occurrence still starts on the following day/week, never now.
-        if float(next_job["start_ts"]) <= float(job["start_ts"]):
+        if _number(next_job["start_ts"]) <= _number(job.get("start_ts")):
             for field in ("start_ts", "stop_ts"):
-                local = datetime.datetime.fromtimestamp(float(next_job[field]))
+                local = datetime.datetime.fromtimestamp(_number(next_job[field]))
                 next_job[field] = (local + datetime.timedelta(days=days)).timestamp()
-        next_job["start_at"] = iso_from_ts(float(next_job["start_ts"]) + 60 * int(job.get("pre_padding_minutes") or 0))
-        next_job["end_at"] = iso_from_ts(float(next_job["stop_ts"]) - 60 * int(job.get("post_padding_minutes") or 0))
+        next_job["start_at"] = iso_from_ts(_number(next_job["start_ts"]) + 60 * int(_number(job.get("pre_padding_minutes"))))
+        next_job["end_at"] = iso_from_ts(_number(next_job["stop_ts"]) - 60 * int(_number(job.get("post_padding_minutes"))))
         next_job.update(status=STATUS_SCHEDULED, recording_id=None, output_path="",
                         message="", created_at=iso_from_ts(now))
         self._jobs[str(next_job["id"])] = next_job

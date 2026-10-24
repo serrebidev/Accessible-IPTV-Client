@@ -126,6 +126,55 @@ class TestAutomaticImportStaysSilent:
         assert client.boxes == []
 
 
+class TestAnImportThatLoadedNothing:
+    """A guide that could not be reached is not an up-to-date guide.
+
+    Every source fails on its own and the importer logs it and moves on, so
+    the import itself never fails. The run used to report success anyway:
+    the box said the guide was up to date, and the run was recorded as a
+    fresh import, which suppressed the next automatic one.
+    """
+
+    def _run_the_worker(self, monkeypatch, imported):
+        client = _client(monkeypatch)
+
+        class _DB:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def import_epg_xml(self, sources):
+                return imported
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(main, "EPGDatabase", _DB)
+        calls = []
+        monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: calls.append((fn, a)))
+
+        client.start_epg_import_background(force=True, notify=True)
+        client.threads[-1]()  # the import worker
+
+        assert calls, "the worker never reported back"
+        assert calls[0][0] == client.finish_import_background
+        return client, calls[0][1][0]
+
+    def test_a_run_that_imported_nothing_is_a_failure(self, monkeypatch):
+        client, success = self._run_the_worker(monkeypatch, 0)
+
+        assert success is False
+        client.finish_import_background(success)
+        assert [cap for _msg, cap, _style in client.queued] == ["Import Failed"]
+        # A failed run must not be recorded as a fresh import, or the
+        # automatic import would skip its next run.
+        assert "epg_last_import_epoch" not in client.config
+
+    def test_a_run_that_imported_a_guide_is_a_success(self, monkeypatch):
+        _client_, success = self._run_the_worker(monkeypatch, 2)
+
+        assert success is True
+
+
 class TestImportThatNeverStarts:
     def test_no_sources_warns_and_promises_nothing(self, monkeypatch):
         client = _client(monkeypatch, sources=())

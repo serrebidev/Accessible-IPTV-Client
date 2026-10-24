@@ -104,3 +104,32 @@ def test_first_exact_tvg_id_wins_over_later_duplicates():
     ]
     got = _match(channels, {"channel_name": "Feed B", "channel_id": "SAME.ID"})
     assert got["url"] == "a"
+
+
+def test_a_different_channel_number_is_not_a_match():
+    """The guide says BBC 1; the playlist has BBC One and BBC 2.
+
+    The canonical name drops a standalone digit as a noise word, so BBC 1 and
+    BBC 2 looked the same and the guide's programme landed on the wrong
+    channel.
+    """
+    channels = [
+        {"name": "BBC One", "url": "u1"},
+        {"name": "BBC 2", "url": "u2"},
+    ]
+    got = _match(channels, {"channel_name": "BBC 1", "channel_id": ""})
+    assert not got or got["url"] == "u1", got
+
+
+def test_a_name_without_a_number_still_guesses():
+    """The guide says ESPN; the playlist has ESPN 2 and ESPN 3.
+
+    Nothing in the guide's name rules the numbered channels out, so the
+    matcher still offers one of them - the same guess it made before.
+    """
+    channels = [
+        {"name": "ESPN 2", "url": "u2"},
+        {"name": "ESPN 3", "url": "u3"},
+    ]
+    got = _match(channels, {"channel_name": "ESPN", "channel_id": ""})
+    assert got is not None and got["url"] == "u2"

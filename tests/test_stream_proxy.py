@@ -12,11 +12,105 @@ from stream_proxy import (
     HLSConverter,
     StreamProxy,
     filter_unstable_hls_start,
+    get_ffmpeg_path,
     hls_playlist_is_ready,
     hls_playlist_stats,
     normalize_request_headers,
     rewrite_hls_playlist,
 )
+
+
+def test_a_refreshed_credential_replaces_the_running_converter():
+    """The running ffmpeg has the credentials it started with.
+
+    A provider that rotates its session cookie refuses the old one, so the
+    cast died until the converter happened to be retired.
+    """
+    proxy = StreamProxy()
+    url = "https://provider.example.test/live.ts"
+
+    try:
+        proxy.get_transcoded_url(url, {"Cookie": "old"})
+        assert len(proxy.converters) == 1
+        session_id, converter = next(iter(proxy.converters.items()))
+        assert converter.headers["Cookie"] == "old"
+
+        proxy.get_transcoded_url(url, {"Cookie": "new"})
+
+        assert len(proxy.converters) == 1, "a second converter was left running"
+        assert proxy.converters[session_id].headers["Cookie"] == "new"
+    finally:
+        # The converter is an FFmpeg child process: a test that leaves it
+        # running leaves it behind for good, and its temp folder with it.
+        proxy.stop()
+
+
+def test_an_unchanged_credential_keeps_the_running_converter():
+    """Re-issuing the same URL must not restart the transcode."""
+    proxy = StreamProxy()
+    url = "https://provider.example.test/live.ts"
+
+    try:
+        proxy.get_transcoded_url(url, {"Cookie": "same"})
+        session_id, converter = next(iter(proxy.converters.items()))
+
+        proxy.get_transcoded_url(url, {"Cookie": "same"})
+
+        assert proxy.converters[session_id] is converter
+    finally:
+        proxy.stop()
+
+
+def test_an_http_error_is_not_a_drop_to_reopen():
+    """A live source that ends is reopened at the edge; a refused session is not.
+
+    Reopening a 403 for ever held ffmpeg and the provider's stream slot
+    with nothing reported.
+    """
+    import urllib.error
+
+    refused = urllib.error.HTTPError("http://h/live.m3u8", 403, "Forbidden", None, None)
+    assert stream_proxy_module._is_upstream_gone(refused)
+    # A transport error is a drop.
+    assert not stream_proxy_module._is_upstream_gone(OSError("connection reset"))
+
+
+def test_the_ffmpeg_comes_from_the_app_not_the_current_directory(tmp_path, monkeypatch):
+    """Windows resolves the current directory before PATH.
+
+    An ffmpeg.exe that happens to sit in the folder the app was started
+    from would be executed instead of the real one - with the user's
+    privileges, on every transcode.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ffmpeg.exe").write_bytes(b"not ffmpeg")
+
+    path = get_ffmpeg_path()
+
+    assert os.path.dirname(path), "ffmpeg would be taken from the current directory"
+    assert os.path.abspath(str(tmp_path)) not in os.path.abspath(path)
+
+
+def test_a_gateway_session_keeps_every_host_it_was_issued_for():
+    """One header set serves every URL the app issues with it.
+
+    A provider's channels share one cookie, so they share one session, and a
+    redirect the provider taught the proxy about has to survive the next URL.
+    Replacing the host set lost those hosts, and the channel's credentials
+    stopped going to them.
+    """
+    proxy = StreamProxy()
+    headers = {"Cookie": "session=secret"}
+    url = proxy.get_gateway_url("https://provider.example.test/live/one.ts", headers)
+    sid = url.split("/g/")[1].split("/")[0]
+    proxy.note_gateway_host(sid, "cdn.example.test")
+
+    proxy.get_gateway_url("https://second.example.test/live/two.ts", headers)
+
+    for host in ("provider.example.test", "second.example.test", "cdn.example.test"):
+        assert proxy.gateway_headers_for(sid, host)["Cookie"] == "session=secret"
+    # A host nobody named still gets nothing.
+    assert proxy.gateway_headers_for(sid, "attacker.example") == {}
 
 
 def test_the_gateway_keeps_the_channel_credentials_on_its_own_host():
@@ -498,6 +592,57 @@ def test_proxy_only_fetches_http_upstreams():
     assert not stream_proxy_module.is_allowed_upstream_url("")
 
 
+def test_cross_origin_redirect_drops_channel_headers():
+    handler = stream_proxy_module._CrossOriginRedirectHandler()
+    request = urllib.request.Request(
+        "https://provider.example.test/live.ts",
+        headers={
+            "Cookie": "session=secret",
+            "Authorization": "Bearer secret",
+            "X-Provider-Secret": "secret",
+            "User-Agent": "channel-agent",
+            "Range": "bytes=0-1",
+        },
+    )
+
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {"Location": "https://cdn.example.test/live.ts"},
+        "https://cdn.example.test/live.ts",
+    )
+
+    assert redirected is not None
+    assert "Cookie" not in redirected.headers
+    assert "Authorization" not in redirected.headers
+    assert "X-Provider-Secret" not in redirected.headers
+    assert redirected.headers["User-agent"] == "channel-agent"
+    assert redirected.headers["Range"] == "bytes=0-1"
+
+
+def test_same_origin_redirect_keeps_channel_headers():
+    handler = stream_proxy_module._CrossOriginRedirectHandler()
+    request = urllib.request.Request(
+        "https://provider.example.test/live.ts",
+        headers={"Cookie": "session=secret", "Authorization": "Bearer secret"},
+    )
+
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {"Location": "https://provider.example.test/live-2.ts"},
+        "https://provider.example.test/live-2.ts",
+    )
+
+    assert redirected is not None
+    assert redirected.headers["Cookie"] == "session=secret"
+    assert redirected.headers["Authorization"] == "Bearer secret"
+
+
 def test_proxy_urls_carry_the_access_token():
     proxy = StreamProxy()
     proxy.host = "127.0.0.1"
@@ -563,3 +708,73 @@ def test_an_unused_gateway_session_is_dropped():
     proxy._expire_gateway_sessions(time.time() + 2 * 3600)
     assert sid not in proxy._gateway_sessions
     assert proxy.gateway_headers_for(sid, "provider.example.test") is None
+
+
+def test_the_cleanup_path_does_not_deadlock_on_the_proxy_lock():
+    """The cleanup loop holds the proxy lock and calls the gateway expiry,
+    which takes that same lock again on the same thread.
+
+    A non-reentrant lock deadlocked there: the cleanup thread wedged for
+    good with the lock held, and every converter, playlist and segment
+    request blocked ten seconds after the proxy started.
+    """
+    import time
+
+    proxy = StreamProxy()
+    done = threading.Event()
+
+    def _cleanup_once():
+        with proxy.lock:
+            proxy._expire_gateway_sessions(time.time())
+        done.set()
+
+    worker = threading.Thread(target=_cleanup_once, daemon=True)
+    worker.start()
+    assert done.wait(5), "the cleanup path deadlocked on the proxy lock"
+
+def test_the_proxy_handlers_are_daemon_threads():
+    """The handler threads stream for as long as the receiver listens.
+
+    As ordinary threads they are joined when the server closes and when the
+    interpreter exits, so the app does not go away while a cast is playing.
+    """
+    proxy = StreamProxy()
+    proxy.start()
+    try:
+        assert proxy.server is not None
+        assert proxy.server.daemon_threads is True
+    finally:
+        proxy.stop()
+
+
+def test_a_drive_relative_segment_name_is_refused():
+    """A name like "C:file" escapes the folder it is joined to.
+
+    Windows resolves it against that drive's current directory, so a client
+    with the cast token could read a file from beside the application.
+    """
+    assert stream_proxy_module._is_safe_segment_name("seg1.ts") is True
+    assert stream_proxy_module._is_safe_segment_name("..") is False
+    assert stream_proxy_module._is_safe_segment_name("C:iptvclient.conf") is False
+    assert stream_proxy_module._is_safe_segment_name("a:b") is False
+
+def test_stopping_the_global_proxy_ends_it_and_its_converters(monkeypatch):
+    """Nothing stopped the proxy when the app quit.
+
+    Its FFmpeg converters are child processes: they outlived the app, kept the
+    provider's stream slot and kept writing segments into their temp folder.
+    """
+    stopped = []
+
+    class _Proxy:
+        def stop(self):
+            stopped.append(True)
+
+    monkeypatch.setattr(stream_proxy_module, "_PROXY", _Proxy())
+
+    stream_proxy_module.stop_proxy()
+
+    assert stopped == [True], "the proxy was not stopped"
+    assert stream_proxy_module._PROXY is None, "the stopped proxy was left behind"
+    # A second call must not raise.
+    stream_proxy_module.stop_proxy()

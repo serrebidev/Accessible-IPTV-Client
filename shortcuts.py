@@ -1,7 +1,11 @@
 """Validated keyboard shortcuts shared by the main window and player."""
 
+import logging
+
 import wx
 from i18n import gettext as _, N_
+
+LOG = logging.getLogger(__name__)
 
 MAIN = {
     "playlist_manager": ("Ctrl+M", 4001),
@@ -95,7 +99,26 @@ def parse(value: str):
     return entry.GetFlags(), entry.GetKeyCode(), entry.ToString()
 
 
+def _allowed(context: str, flags: int, key: int) -> bool:
+    """True when the app can live with this shortcut.
+
+    A main-window shortcut without Ctrl or Alt would swallow ordinary typing
+    in the search box, and F1 is the help key.
+    """
+    if key == wx.WXK_F1:
+        return False
+    if context == "main" and not flags & (wx.ACCEL_CTRL | wx.ACCEL_ALT):
+        return False
+    return True
+
+
 def effective(config: dict, context: str) -> dict:
+    """The shortcuts in force: the defaults with the valid overrides applied.
+
+    An override is checked here as well as where the app writes one: the
+    config file is the user's, and a hand-edited entry must not install a
+    shortcut that swallows ordinary typing.
+    """
     defaults = MAIN if context == "main" else PLAYER
     saved = config.get("shortcuts") if isinstance(config, dict) else {}
     saved = saved if isinstance(saved, dict) else {}
@@ -103,10 +126,16 @@ def effective(config: dict, context: str) -> dict:
     for action, spec in defaults.items():
         default = spec[0] if context == "main" else spec
         override = saved.get(context + "." + action)
-        try:
-            result[action] = parse(override)[2] if override else default
-        except ValueError:
-            result[action] = default
+        value = default
+        if override:
+            try:
+                flags, key, label = parse(override)
+            except ValueError:
+                LOG.debug("Ignoring an invalid shortcut override: %r", override, exc_info=True)
+            else:
+                if _allowed(context, flags, key):
+                    value = label
+        result[action] = value
     return result
 
 
@@ -117,10 +146,10 @@ def set_shortcut(config: dict, context: str, action: str, value: str) -> None:
     default = defaults[action][0] if context == "main" else defaults[action]
     value = parse(value)[2] if value.strip() else default
     flags, key, _label = parse(value)
-    if context == "main" and not flags & (wx.ACCEL_CTRL | wx.ACCEL_ALT):
+    if not _allowed(context, flags, key):
+        if key == wx.WXK_F1:
+            raise ValueError(_("F1 is reserved for Help."))
         raise ValueError(_("Main-window shortcuts need Ctrl or Alt."))
-    if key == wx.WXK_F1:
-        raise ValueError(_("F1 is reserved for Help."))
     current = effective(config, context)
     for other, existing in current.items():
         if other != action and parse(existing)[:2] == (flags, key):

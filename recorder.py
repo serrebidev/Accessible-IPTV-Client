@@ -72,10 +72,11 @@ FINALIZE_GRACE_SECONDS = 30.0
 FINALIZE_REWRITE_BYTES_PER_SECOND = 8 * 1024 * 1024  # pessimistic: USB 2.0 / SMB share
 FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
 TERMINATE_GRACE_SECONDS = 15.0
-# On shutdown we ask FFmpeg to stop and give it a short clean-finalize window.  If it
-# remains alive, it must be terminated: an orphan can keep a provider's only stream
-# slot occupied and makes a restarted scheduled recording fail until Task Manager is
-# used to kill it.
+# On shutdown we ask FFmpeg to stop and give it the same clean-finalize window
+# every other stop gets, derived from the size of the capture.  If it is still
+# alive after that, it must be terminated: an orphan can keep a provider's only
+# stream slot occupied and makes a restarted scheduled recording fail until
+# Task Manager is used to kill it.  The constant is the floor for that window.
 DETACH_WAIT_SECONDS = 5.0
 
 # ffmpeg's stderr for each recording is kept next to the recordings themselves, so a
@@ -1350,6 +1351,11 @@ class RecordingManager:
                 return
             except OSError:
                 LOG.exception("Could not finalize download output %s", rec.out_path)
+                # The capture itself finished: a scanner or a network share
+                # holding the target must not cost the user the programme.
+                # Keep the .part and report that path instead.
+                rec.out_path = rec.partial_path
+                return
         try:
             os.remove(rec.partial_path)
         except OSError:
@@ -1357,18 +1363,24 @@ class RecordingManager:
 
     @staticmethod
     def _stop_for_exit(rec: Recording, proc: "subprocess.Popen") -> None:
-        """Shutdown: a short clean-finalize window, then terminate, then kill.
+        """Shutdown: a clean-finalize window, then terminate, then kill.
 
         Never orphan ffmpeg: it can keep the provider stream open after the
         application is gone, so the scheduler re-arms the job at next launch and
         starts a second competing capture.
+
+        The window is the same size-derived finalization budget every other
+        stop gets, not a flat few seconds: a faststart MP4 rewrites the whole
+        file when it finalizes, and killing it mid-rewrite leaves the capture
+        unplayable with every byte of it stranded inside.
         """
+        budget = max(DETACH_WAIT_SECONDS, finalize_timeout_seconds(rec.fmt, rec.written_path))
         try:
-            proc.wait(timeout=DETACH_WAIT_SECONDS)
+            proc.wait(timeout=budget)
             return
         except Exception:
             LOG.warning("ffmpeg did not stop %s within %.0fs during shutdown; "
-                        "terminating it.", rec.out_path, DETACH_WAIT_SECONDS)
+                        "terminating it.", rec.out_path, budget)
         rec.detached = True
         try:
             proc.terminate()
@@ -1384,15 +1396,23 @@ class RecordingManager:
 
     def _graceful_stop(self, rec: Recording, *, wait: bool = False, detach: bool = False) -> None:
         proc = rec.process
-        rec.stopped_by_user = True
         if not proc or proc.poll() is not None:
+            # ffmpeg is already gone: the capture finished on its own. Saying
+            # the user stopped it would make a finished download look
+            # discarded, and the finished file was deleted for that reason.
             return
+        rec.stopped_by_user = True
         if rec.stopping:
             if detach:
                 # Exit while an earlier stop is still finalizing (a big MP4 can
                 # take minutes). Its own thread dies with the app, so without
                 # this ffmpeg outlived us and held the provider's stream slot.
-                self._stop_for_exit(rec, proc)
+                # The wait runs on a thread: it can be an hour, and the caller
+                # is the GUI thread, where a wait of that length leaves the
+                # window "Not Responding" and the screen reader silent. The
+                # shutdown waits for the recording to finish in the meantime.
+                threading.Thread(target=self._stop_for_exit, args=(rec, proc),
+                                 name="recorder-exit-stop", daemon=True).start()
             elif wait:
                 try:
                     proc.wait(timeout=finalize_timeout_seconds(rec.fmt, rec.out_path))

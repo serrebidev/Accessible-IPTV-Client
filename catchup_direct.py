@@ -41,11 +41,51 @@ _REJECT_CONTENT_TYPES = frozenset({
 })
 
 
+def _iter_extra(value):
+    """The channel's custom headers, which travel in "_extra"."""
+    if not value:
+        return
+    if isinstance(value, str):
+        values = [value]
+    elif isinstance(value, (list, tuple, set)):
+        values = value
+    else:
+        values = [value]
+    for header in values:
+        text = str(header).strip()
+        if ":" not in text:
+            continue
+        name, val = text.split(":", 1)
+        name = name.strip()
+        val = val.strip()
+        if name and val:
+            yield name, val
+
+
+def _extra_header_names(headers: Optional[Dict[str, object]]) -> set:
+    """The names of the channel's custom headers."""
+    return {name.lower() for name, _value in _iter_extra((headers or {}).get("_extra"))}
+
+
 def _clean_headers(headers: Optional[Dict[str, object]]) -> Dict[str, str]:
-    return {
-        str(name): str(value) for name, value in (headers or {}).items()
-        if value
-    }
+    """The channel's headers as real HTTP headers.
+
+    The custom headers travel in "_extra" - the app's convention for headers
+    to expand. Sending that list as one header named "_extra" meant the
+    provider never saw them, and the list itself, which can carry a secret,
+    went out under a name nobody asked for.
+    """
+    clean: Dict[str, str] = {}
+    for name, value in (headers or {}).items():
+        if value is None or value == "":
+            continue
+        key = str(name).strip()
+        if key.lower() == "_extra":
+            continue
+        clean[key] = str(value)
+    for name, value in _iter_extra((headers or {}).get("_extra")):
+        clean.setdefault(name, value)
+    return clean
 
 
 def candidate_direct_urls(url: str, utc: int, duration: int) -> List[str]:
@@ -124,9 +164,12 @@ def probe_direct_url(url: str, headers: Optional[Dict[str, object]] = None,
         # Close it now, or it leaks until GC and -W error reports the
         # ResourceWarning as an unraisable blamed on whichever test runs next.
         err.close()
-        if err.code not in (403, 404, 405, 410, 501):
-            return False
         # Some servers reject HEAD outright; a 1-byte ranged GET settles it.
+        # Only 405/501 say "HEAD is not supported". A 403 is a busy account and
+        # a 404 is an ordinary miss: opening the media there held the user's one
+        # stream, which is what this probe exists to avoid.
+        if err.code not in (405, 501):
+            return False
         try:
             ranged = dict(request_headers)
             ranged["Range"] = "bytes=0-0"
@@ -166,25 +209,47 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _CREDENTIAL_HEADERS = ("authorization", "cookie", "proxy-authorization", "x-api-key")
 
 
-def _headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
-                      target_url: str) -> Dict[str, object]:
+def _same_host(base_url: str, target_url: str) -> bool:
+    """Whether two URLs name the same host.
+
+    Host names are case-insensitive - "Provider.Example" and
+    "provider.example" are one host - and the port is part of the host: a
+    redirect to another port is another service.
+    """
+    def _host(url: str) -> Tuple[str, Optional[int]]:
+        try:
+            parts = urllib.parse.urlsplit(url)
+            port = parts.port
+        except ValueError:
+            return "", None
+        scheme = parts.scheme.lower()
+        return (parts.hostname or "").lower(), port or {"http": 80, "https": 443}.get(scheme)
+
+    base_host, base_port = _host(base_url)
+    target_host, target_port = _host(target_url)
+    if not base_host or not target_host:
+        # A URL that cannot be parsed: send the credentials, so a malformed
+        # URL does not break the request.
+        return True
+    return base_host == target_host and base_port == target_port
+
+
+def headers_for_host(headers: Optional[Dict[str, object]], base_url: str,
+                    target_url: str) -> Dict[str, object]:
     """The channel's headers, without the credentials for another host.
 
     A catch-up server can redirect anywhere, and the provider's cookie and
-    authorization must not follow it to a host the app never chose.
+    authorization must not follow it to a host the app never chose. The
+    channel's custom headers are credentials too, and they go with them.
     """
-    clean = dict(headers or {})
+    clean = _clean_headers(headers)
     if not clean:
         return clean
-    try:
-        same = (urllib.parse.urlsplit(base_url).netloc ==
-                urllib.parse.urlsplit(target_url).netloc)
-    except ValueError:
-        same = True
-    if same:
+    if _same_host(base_url, target_url):
         return clean
+    drop = set(_CREDENTIAL_HEADERS) | _extra_header_names(headers)
     return {key: value for key, value in clean.items()
-            if str(key).lower() not in _CREDENTIAL_HEADERS}
+            if str(key).lower() not in drop}
 
 
 def _next_hop(url: str, headers: Optional[Dict[str, object]],
@@ -298,13 +363,13 @@ def direct_download_url(url: str, windows: List[Tuple[int, int]],
     for _hop in range(_MAX_REDIRECT_HOPS):
         # A catch-up server can redirect anywhere. The provider's cookie and
         # authorization must not follow it to a host the app never chose.
-        hop_headers = _headers_for_host(headers, url, current)
+        hop_headers = headers_for_host(headers, url, current)
         target, is_media = _next_hop(current, hop_headers, timeout)
         touched_media = touched_media or is_media
         if not target or target in seen:
             break
         seen.add(target)
-        found = probe_around(target, _headers_for_host(headers, url, target))
+        found = probe_around(target, headers_for_host(headers, url, target))
         if found:
             break
         current = target

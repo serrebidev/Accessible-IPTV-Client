@@ -145,6 +145,30 @@ http://stream.example.com/hbo
         # An explicit group-title is still honoured verbatim.
         assert by_name["ESPN"]["group"] == "Sports"
 
+    def test_the_parsed_channels_do_not_carry_a_logo(self):
+        """The app never shows a channel logo.
+
+        The logo URLs were parsed, cached and kept in memory for nothing: on
+        the 257,000-channel playlist of this machine they were a quarter of
+        the parsed cache file and about a tenth of the memory the playlist
+        costs.
+        """
+        import main
+
+        class _FakeFrame:
+            def _extract_stream_id(self, url):
+                return ""
+
+        text = (
+            "#EXTM3U\n"
+            '#EXTINF:-1 tvg-id="abc.us" tvg-name="ABC East" '
+            'tvg-logo="http://logo.com/abc.png" group-title="USA News",ABC East HD\n'
+            "http://stream.example.com/abc\n"
+        )
+        channels = main.IPTVClient._parse_m3u_return(_FakeFrame(), text)
+
+        assert channels and "tvg-logo" not in channels[0], channels[0]
+
     def test_comma_inside_a_quoted_attribute_does_not_become_the_name(self):
         """A comma inside an attribute value must not be read as the name separator.
 
@@ -518,6 +542,89 @@ class TestParsedPlaylistCache:
         # Cache stale (hash changed): falls back to a real (re-)read.
         cached_channels_for("differenthash")
         assert open_calls["n"] == 2
+
+
+def test_a_playlist_that_starts_with_a_byte_order_mark_opens_cleanly():
+    """A file that starts with a UTF-8 BOM opened with a garbage channel.
+
+    The mark made the first line not a comment, so the playlist opened with a
+    channel whose URL was the mark and the header, and the header's own
+    attributes were lost.
+    """
+    import types
+
+    import main
+
+    text = (
+        "\ufeff#EXTM3U catchup-timezone=UTC\n"
+        '#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+        "http://example.com/a\n"
+    )
+    frame = types.SimpleNamespace(_extract_stream_id=main.IPTVClient._extract_stream_id)
+
+    channels = main.IPTVClient._parse_m3u_return(frame, text)
+
+    assert [c["name"] for c in channels] == ["Alpha"]
+    assert channels[0]["url"] == "http://example.com/a"
+    # The header's own attributes are read again: the catch-up clock
+    # Dispatcharr sends there.
+    assert channels[0].get("dispatcharr") is True
+
+
+def test_a_playlist_file_with_a_byte_order_mark_is_read_cleanly(tmp_path):
+    """The file the user added from disk is the path that carries the mark."""
+    import types
+
+    import main
+
+    path = tmp_path / "bom.m3u"
+    path.write_bytes(
+        b"\xef\xbb\xbf#EXTM3U catchup-timezone=UTC\n"
+        b'#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+        b"http://example.com/a\n"
+    )
+    # The app reads a local playlist file exactly like this.
+    text = open(path, "r", encoding="utf-8-sig", errors="ignore").read()
+    frame = types.SimpleNamespace(_extract_stream_id=main.IPTVClient._extract_stream_id)
+
+    channels = main.IPTVClient._parse_m3u_return(frame, text)
+
+    assert [c["name"] for c in channels] == ["Alpha"]
+    assert channels[0]["url"] == "http://example.com/a"
+
+
+def test_a_provider_playlist_with_a_byte_order_mark_is_read_cleanly():
+    """The provider path decodes the answer itself, so it strips the mark."""
+    from providers import XtreamCodesClient, XtreamCodesConfig
+
+    client = XtreamCodesClient(XtreamCodesConfig(
+        base_url="http://provider.example.com",
+        username="u", password="p",
+    ))
+
+    class _Response:
+        def read(self):
+            return (b"\xef\xbb\xbf#EXTM3U\n"
+                    b'#EXTINF:-1 tvg-id="a" group-title="News",Alpha\n'
+                    b"http://example.com/a\n")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    import urllib.request
+
+    original = urllib.request.urlopen
+    urllib.request.urlopen = lambda *args, **kwargs: _Response()
+    try:
+        text = client.fetch_playlist()
+    finally:
+        urllib.request.urlopen = original
+
+    assert text.startswith("#EXTM3U")
+    assert "\ufeff" not in text
 
 
 if __name__ == "__main__":

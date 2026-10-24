@@ -1,6 +1,140 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.150.36 - 2026-10-22
+
+### Bug fixes
+
+- A finished download is not junk, and a first run works (#80)
+
+## v1.150.35 - 2026-10-22
+
+### Bug fixes
+
+- The account dialog stops inventing, and catch-up asks on the provider's clock (#79)
+
+## v1.150.34 - 2026-10-22
+
+### Bug fixes
+
+- The MPV pipe belongs to one session (#77)
+
+### Documentation
+
+- Move the learnings out of agents.md, one file per subject (#75)
+
+### Other changes
+
+- Run the suite and the lint on every push and pull request (#76)
+
+## v1.150.33 - 2026-10-22
+
+### Bug fixes
+
+- A number in an id cannot make two names agree (#72)
+
+## v1.150.32 - 2026-10-22
+
+### Bug fixes
+
+- The channel that showed another channel's programme (#71)
+
+## v1.150.31 - 2026-10-22
+
+### Bug fixes
+
+- The gaps the two-axis review found in the byte order mark fix (#70)
+
+## v1.150.30 - 2026-10-22
+
+### Bug fixes
+
+- The playlist that opened with a byte order mark as its first channel (#69)
+
+## v1.150.29 - 2026-10-22
+
+### Bug fixes
+
+- BBC 1 is not BBC 2 (#68)
+
+## v1.150.28 - 2026-10-22
+
+### Bug fixes
+
+- The exit that froze the window, the help that was not there, and the tool that reported the session (#67)
+
+## v1.150.27 - 2026-10-22
+
+### Bug fixes
+
+- The channel list that appeared ten seconds late, and the load that could not be measured (#66)
+
+## v1.150.26 - 2026-10-22
+
+### Bug fixes
+
+- The categories that said no channels while the playlist was loading, and the logo nobody shows (#65)
+
+## v1.150.25 - 2026-10-22
+
+### Bug fixes
+
+- The proxy that was never stopped, and the guide that did not exist yet (#64)
+
+## v1.150.24 - 2026-10-22
+
+### Bug fixes
+
+- The lookup that read the whole playlist (#63)
+
+## v1.150.23 - 2026-10-22
+
+### Bug fixes
+
+- The token that followed a redirect, the signature that was checked too late, and the guide that came in blank (#62)
+
+## v1.150.22 - 2026-10-21
+
+### Bug fixes
+
+- The exit warning, the cast that started after the stop, and the row that took the catalogue (#61)
+
+## v1.150.21 - 2026-10-21
+
+### Bug fixes
+
+- The canceled recording, the guide that loaded nothing, and the playlist that vanished (#60)
+
+## v1.150.20 - 2026-10-21
+
+### Bug fixes
+
+- The player is told what the media is (#59)
+
+## v1.150.19 - 2026-10-21
+
+### Bug fixes
+
+- A refreshed credential replaces the running transcode (#58)
+
+## v1.150.18 - 2026-10-21
+
+### Bug fixes
+
+- The words that are not tags, the lock that is not ours, and the MPV handshake (#57)
+
+## v1.150.17 - 2026-10-21
+
+### Bug fixes
+
+- The words that are not country codes, and the headers that are not headers (#56)
+
+## v1.150.16 - 2026-10-21
+
+### Bug fixes
+
+- Two deadlocks, a recording that was truncated on the way out, and the wrong row acted on (#55)
+
 ## v1.150.15 - 2026-10-21
 
 ### Bug fixes

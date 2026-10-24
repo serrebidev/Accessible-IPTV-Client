@@ -107,6 +107,18 @@ def test_the_found_file_is_free_when_ffmpeg_asks_for_it(provider, monkeypatch):
         assert response.status == 200
 
 
+def test_a_403_on_head_does_not_open_the_media(provider):
+    """403 means the account's one stream is busy, not that HEAD is unsupported.
+
+    The probe treated it as "server rejects HEAD" and sent a ranged GET, which
+    is a second request for the media this module exists to avoid opening.
+    """
+    _OneStreamProvider.busy_until = time.monotonic() + 30
+    url = provider + "/PL_TVP1_HD/index-1789065000-3300.mp4?token=abc"
+    assert catchup_direct.probe_direct_url(url) is False
+    assert [r for r in _OneStreamProvider.requests if r[0] == "GET"] == []
+
+
 def test_nothing_to_wait_for_when_the_media_was_never_asked(provider, monkeypatch):
     settled = []
     monkeypatch.setattr(catchup_direct, "settle_media_session", lambda: settled.append(True))
@@ -180,12 +192,59 @@ def test_credentials_do_not_follow_a_redirect_to_another_host():
     """
     headers = {"Cookie": "session=secret", "Authorization": "Bearer secret",
                 "User-Agent": "ChannelUA"}
-    same = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://a.test/y")
+    same = catchup_direct.headers_for_host(headers, "http://a.test/x", "http://a.test/y")
     assert same["Cookie"] == "session=secret"
-    other = catchup_direct._headers_for_host(headers, "http://a.test/x", "http://b.test/y")
+    other = catchup_direct.headers_for_host(headers, "http://a.test/x", "http://b.test/y")
     assert "Cookie" not in other
     assert "Authorization" not in other
     assert other["User-Agent"] == "ChannelUA"
+
+
+def test_the_custom_headers_reach_the_provider_and_not_a_stranger():
+    """The channel's custom headers travel in "_extra".
+
+    Sending that list as one header named "_extra" meant the provider never
+    saw them - so the probe was refused and the direct file was never
+    found - and the list, which can carry a secret, went out under a name
+    nobody asked for.
+    """
+    headers = {"_extra": ["X-Auth-Token: secret"], "User-Agent": "ChannelUA"}
+
+    same = catchup_direct.headers_for_host(
+        headers, "https://provider.example/live.ts", "https://provider.example/live.ts")
+    assert same.get("X-Auth-Token") == "secret"
+
+    other = catchup_direct.headers_for_host(
+        headers, "https://provider.example/live.ts", "https://cdn.example/live.ts")
+    assert "X-Auth-Token" not in other
+    assert other.get("User-Agent") == "ChannelUA"
+
+
+def test_the_probe_sends_the_custom_headers_as_headers():
+    """The probe has to send them the way the provider expects them."""
+    cleaned = catchup_direct._clean_headers({"_extra": ["X-Auth-Token: secret"],
+                                             "User-Agent": "ChannelUA"})
+    assert cleaned == {"User-Agent": "ChannelUA", "X-Auth-Token": "secret"}
+
+
+def test_the_credentials_survive_a_host_name_in_another_case():
+    """Host names are case-insensitive.
+
+    The comparison was on the raw netloc, so a provider whose name differed
+    only in case lost the channel's cookie and answered 403.
+    """
+    headers = {"Cookie": "session=secret"}
+    same = catchup_direct.headers_for_host(
+        headers, "https://Provider.Example/catchup", "https://provider.example/live.ts")
+    assert same["Cookie"] == "session=secret"
+    # Another port is another service.
+    other_port = catchup_direct.headers_for_host(
+        headers, "https://provider.example/catchup", "https://provider.example:8443/live.ts")
+    assert "Cookie" not in other_port
+    # Another host is another host.
+    other = catchup_direct.headers_for_host(
+        headers, "https://provider.example/catchup", "https://cdn.example.test/live.ts")
+    assert "Cookie" not in other
 
 
 def test_the_probe_never_follows_a_redirect():

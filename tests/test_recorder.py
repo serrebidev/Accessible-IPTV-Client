@@ -517,9 +517,32 @@ def test_shutdown_terminates_ffmpeg_that_will_not_stop(tmp_path):
 
     recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
 
-    assert proc.wait_timeouts == [recorder.DETACH_WAIT_SECONDS, recorder.TERMINATE_GRACE_SECONDS]
+    expected = max(recorder.DETACH_WAIT_SECONDS,
+                   recorder.finalize_timeout_seconds(rec.fmt, rec.written_path))
+    assert proc.wait_timeouts == [expected, recorder.TERMINATE_GRACE_SECONDS]
     assert proc.terminated
     assert rec.detached
+
+
+def test_shutdown_gives_a_large_faststart_recording_its_finalize_budget(tmp_path, monkeypatch):
+    """The shutdown path must not truncate the recording it is saving.
+
+    A faststart MP4 rewrites the whole file when it finalizes, so the cost
+    scales with the capture: seconds on an internal SSD, minutes on the USB
+    or network drives recordings usually live on. A flat few seconds killed
+    ffmpeg mid-rewrite, leaving ftyp + one enormous mdat and no moov atom -
+    "moov atom not found", unplayable, with the whole capture stranded
+    inside it.
+    """
+    monkeypatch.setattr(recorder.os.path, "getsize", lambda _p: 5 * 1024 ** 3)
+    proc = _StubProcess()  # finalizes on the first wait
+    rec = _stub_recording(proc, tmp_path / "big.mp4")
+
+    recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
+
+    assert proc.wait_timeouts and proc.wait_timeouts[0] > 300, proc.wait_timeouts
+    assert not proc.terminated and not proc.killed
+    assert not rec.finalize_timed_out
 
 
 def test_a_wedged_ffmpeg_is_still_escalated(tmp_path, monkeypatch):
@@ -691,8 +714,58 @@ def test_exit_stops_ffmpeg_that_is_still_finalizing_an_earlier_stop(tmp_path):
 
     recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
 
+    # The wait runs on a thread: it can be an hour, and the caller is the GUI
+    # thread, where a wait of that length leaves the window "Not Responding".
+    deadline = time.time() + 5
+    while not proc.terminated and time.time() < deadline:
+        time.sleep(0.02)
     assert proc.terminated
     assert rec.detached
+
+
+def test_the_exit_does_not_wait_for_the_recording_on_the_caller_thread(tmp_path):
+    """The wait can be an hour, and the caller is the GUI thread.
+
+    Waiting there leaves the window "Not Responding" and the screen reader
+    silent while the app quits.
+    """
+    class _SlowStub(_StubProcess):
+        def wait(self, timeout=None):
+            time.sleep(2.0)
+            raise subprocess.TimeoutExpired("ffmpeg", timeout)
+
+    proc = _SlowStub(exits_after_waits=99)
+    rec = _stub_recording(proc, tmp_path / "big.mp4")
+    rec.stopping = True
+
+    began = time.monotonic()
+    recorder.RecordingManager()._graceful_stop(rec, wait=True, detach=True)
+    elapsed = time.monotonic() - began
+
+    assert elapsed < 1.0, "the exit waited on the calling thread"
+
+
+def test_a_cancel_after_ffmpeg_exited_keeps_the_finished_download(tmp_path):
+    """The capture finished on its own; the Cancel button must not delete it.
+
+    "Stopped by the user" was set before the process was checked, so a
+    download that had already completed was deleted as if it were junk, and
+    the user was told the incomplete file had been discarded.
+    """
+    proc = _StubProcess(exits_after_waits=0)  # ffmpeg has already exited
+    rec = _stub_recording(proc, tmp_path / "news.mp4")
+    rec.partial_path = str(tmp_path / "news.mp4.part")
+    with open(rec.partial_path, "w", encoding="utf-8") as handle:
+        handle.write("finished")
+
+    manager = recorder.RecordingManager()
+    manager._graceful_stop(rec, wait=False)
+
+    assert not rec.stopped_by_user, "a finished capture was marked as stopped by the user"
+
+    # The watcher settles the output when ffmpeg exits.
+    manager._settle_partial_output(rec, 0)
+    assert os.path.exists(str(tmp_path / "news.mp4")), "the finished download was deleted"
 
 
 def test_relay_failure_does_not_leave_ffmpeg_running(tmp_path, monkeypatch):
@@ -1081,3 +1154,21 @@ def test_stopping_a_known_recording_reports_that_it_was_stopped(monkeypatch):
 
     assert manager.stop(7) is True
     assert stopped == [rec]
+
+
+def test_a_locked_target_keeps_the_finished_download(tmp_path, monkeypatch):
+    """The capture finished; a scanner or share holding the target must not
+    cost the user the programme. Keep the .part and report that path."""
+    manager = recorder.RecordingManager()
+    final = tmp_path / "out.mkv"
+    partial = tmp_path / "out.mkv.part"
+    partial.write_bytes(b"123")
+    rec = recorder.Recording(1, "key", "url", "Title", "provider_mkv",
+                             str(final), None, partial_path=str(partial))
+    monkeypatch.setattr(recorder.os, "replace",
+                        lambda *_a, **_k: (_ for _ in ()).throw(PermissionError("busy")))
+
+    manager._settle_partial_output(rec, 0)
+
+    assert partial.exists(), "the finished download was deleted"
+    assert rec.out_path == str(partial)

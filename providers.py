@@ -97,7 +97,9 @@ class XtreamCodesClient:
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
             raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
-            text = raw.decode("utf-8")
+            # utf-8-sig: a playlist that starts with a byte order mark would
+            # otherwise open with a garbage first channel.
+            text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = raw.decode("latin-1", "ignore")
         # A wrong or expired password answers with HTTP 200 and a body that is
@@ -138,7 +140,8 @@ class XtreamCodesClient:
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as err:
             raise ProviderError(_("Could not reach the Xtream server: {error}").format(error=err)) from err
         try:
-            text = raw.decode("utf-8")
+            # utf-8-sig: a JSON body may start with a byte order mark.
+            text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = raw.decode("latin-1", "ignore")
         try:
@@ -214,6 +217,16 @@ class StalkerPortalConfig:
     timezone: str = "UTC"
 
 
+def _portal_js(payload) -> dict:
+    """The portal's "js" object, or an empty one.
+
+    A rejected request answers with a null "js", and reading through it
+    raised AttributeError instead of the provider error the caller expects.
+    """
+    js = payload.get("js") if isinstance(payload, dict) else None
+    return js if isinstance(js, dict) else {}
+
+
 class StalkerPortalClient:
     """
     Minimal Stalker/Ministra portal client that performs the MAG-style handshake
@@ -226,7 +239,10 @@ class StalkerPortalClient:
         self._portal_endpoint = self._derive_portal_endpoint()
         self._token: Optional[str] = None
         self._token_issued: float = 0.0
-        self._token_lock = threading.Lock()
+        # Reentrant: _ensure_token holds this lock across _portal_call, and
+        # that call takes it again on a 401/403. A plain Lock deadlocked
+        # there, so a rejected portal token hung the thread forever.
+        self._token_lock = threading.RLock()
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 
     def _derive_portal_endpoint(self) -> str:
@@ -271,11 +287,14 @@ class StalkerPortalClient:
             raise ProviderError(_("Could not reach the portal: {error}").format(error=err)) from err
         text = raw.decode("utf-8", "ignore")
         try:
-            return json.loads(text)
+            data = json.loads(text)
         except json.JSONDecodeError:
             import logging
             logging.getLogger("EPG.providers").debug("Portal returned non-JSON body: %r", text[:500])
             raise ProviderError(_("Invalid response from portal"))
+        if not isinstance(data, dict):
+            raise ProviderError(_("Invalid response from portal"))
+        return data
 
     def _ensure_token(self):
         # Serialize refreshes: this client is shared across background resolve threads,
@@ -292,7 +311,7 @@ class StalkerPortalClient:
                 "prehash": "0",
                 "JsHttpRequest": "1-xml"
             }, include_token=False)
-            token = data.get("token") or data.get("js", {}).get("token")
+            token = data.get("token") or _portal_js(data).get("token")
             if not token:
                 raise ProviderError(_("Portal handshake failed: no token returned"))
             self._token = token
@@ -308,7 +327,7 @@ class StalkerPortalClient:
                     "password": self.cfg.password,
                     "JsHttpRequest": "1-xml"
                 })
-                new_token = auth.get("token") or auth.get("js", {}).get("token")
+                new_token = auth.get("token") or _portal_js(auth).get("token")
                 if new_token:
                     self._token = new_token
                     self._token_issued = time.time()
@@ -322,9 +341,11 @@ class StalkerPortalClient:
             "force_ch_link_check": "1",
             "JsHttpRequest": "1-xml"
         })
-        data = payload.get("js", {}).get("data") or []
+        data = _portal_js(payload).get("data") or []
         channels: List[Dict] = []
         for row in data:
+            if not isinstance(row, dict):
+                continue
             name = row.get("name") or row.get("tv_genre_title") or ""
             cmd = row.get("cmd") or ""
             if not name or not cmd:
@@ -336,7 +357,6 @@ class StalkerPortalClient:
                 "url": "",  # resolved on demand
                 "tvg-id": row.get("epg_id", ""),
                 "tvg-name": row.get("display_name", name),
-                "tvg-logo": row.get("logo", ""),
                 "provider-type": "stalker",
                 "provider-data": {
                     "cmd": cmd,
@@ -392,7 +412,7 @@ class StalkerPortalClient:
             "JsHttpRequest": "1-xml"
         }
         payload = self._portal_call(params, timeout=timeout)
-        link = payload.get("js", {}).get("cmd") or payload.get("cmd")
+        link = _portal_js(payload).get("cmd") or payload.get("cmd")
         if not link:
             raise ProviderError(_("Portal did not return stream URL"))
         # Responses are usually prefixed with ffmpeg/auto tokens. Strip them while keeping the actual URL.
@@ -419,7 +439,7 @@ class StalkerPortalClient:
             "duration": str(duration)
         }
         payload = self._portal_call(params)
-        link = payload.get("js", {}).get("cmd") or payload.get("cmd")
+        link = _portal_js(payload).get("cmd") or payload.get("cmd")
         if not link:
             raise ProviderError(_("Portal did not provide catch-up link"))
         for prefix in ("ffmpeg ", "auto "):

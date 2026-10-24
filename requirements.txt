@@ -17,6 +17,13 @@ cryptography>=50.0.2
 psutil>=7.0.0
 # Native Windows certificate-chain validation fetches missing issuer certs.
 truststore>=0.10.4; sys_platform == "win32"
+# Windows ships no IANA time zone database, and a channel's catchup-timezone
+# is an IANA name: without this every archive window silently used the PC's
+# own zone, hours off the provider's.
+tzdata>=2025.2
 
 # Development dependencies
 pytest>=9.1.1
+# The lint gate in .github/workflows/checks.yml runs this; keep it here so a
+# clean checkout has the same ruff the gate uses.
+ruff>=0.17.0

@@ -483,6 +483,51 @@ def test_exit_quits_even_when_minimize_to_tray_is_on(monkeypatch):
     assert destroyed == [True]
 
 
+def test_quitting_stops_the_stream_proxy(monkeypatch):
+    """The proxy's FFmpeg converters are child processes.
+
+    Nothing stopped them when the app quit, so they outlived it, kept the
+    provider's stream slot and kept writing segments into their temp folder.
+    """
+    import stream_proxy
+
+    stopped = []
+    monkeypatch.setattr(stream_proxy, "stop_proxy", lambda: stopped.append(True))
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: fn(*a, **k))
+
+    frame = types.SimpleNamespace(
+        minimize_to_tray=True,
+        _update_install_pending=False,
+        _exit_forced=False,
+        _exit_requested=True,
+        _catchup_downloads={},
+        _upcoming_dvr_jobs=lambda: [],
+        _search_token=0,
+        _populate_token=0,
+        caster=None,
+        tray_icon=None,
+        _internal_player_frame=None,
+        recorder=types.SimpleNamespace(has_active=lambda: False),
+        show_tray_icon=lambda: None,
+    )
+    for name in ("_stop_epg_poll_timer", "_cancel_epg_autostart_timer",
+                 "_stop_dvr_scheduler", "_release_recordings_on_exit"):
+        setattr(frame, name, lambda *a, **k: None)
+    frame._epg_executor = types.SimpleNamespace(shutdown=lambda wait: None)
+    frame.Destroy = lambda: None
+
+    class Event:
+        def CanVeto(self):
+            return True
+
+        def Veto(self):
+            raise AssertionError("an explicit Exit must not be vetoed")
+
+    main.IPTVClient.on_close(frame, Event())
+
+    assert stopped == [True], "the proxy was left running when the app quit"
+
+
 def test_close_button_still_minimizes_to_tray(monkeypatch):
     """The close button keeps hiding to the tray when that option is on."""
     hidden = []

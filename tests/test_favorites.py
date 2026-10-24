@@ -58,6 +58,25 @@ class TestChannelKey:
         assert favorites.channel_key(None) == ""
         assert favorites.channel_key("not a channel") == ""
 
+    def test_a_pipe_in_a_name_cannot_stand_in_for_two_fields(self):
+        """Names do contain "|": "ITV|1" as one name must not key the same as
+        tvg-id "ITV" plus name "1", or starring one stars the other and
+        un-starring removes both."""
+        named = favorites.channel_key({"name": "ITV|1"})
+        split = favorites.channel_key({"tvg-id": "ITV", "name": "1"})
+        assert named != split
+
+        keys, _added = favorites.toggle([], {"name": "ITV|1"})
+        assert favorites.filter_channels([{"tvg-id": "ITV", "name": "1"}], keys) == []
+        keys, _added = favorites.toggle(keys, {"tvg-id": "ITV", "name": "1"})
+        assert len(keys) == 2
+
+    def test_a_backslash_cannot_escape_the_separator(self):
+        """Without escaping the escape character, "a\" + "b" joins to the
+        same text as the single field "a|b"."""
+        assert (favorites.channel_key({"provider-type": "a\\", "provider-id": "b"})
+                != favorites.channel_key({"provider-type": "a|b"}))
+
 
 class TestNormalize:
     def test_drops_blanks_duplicates_and_non_strings(self):
@@ -306,9 +325,6 @@ class TestNowPlayingMatching:
         ]
         for name in ("_build_now_playing_labels", "_programme_label"):
             setattr(client, name, _bind(IPTVClient, name, client))
-        for name in ("_epg_channel_indexes", "_match_epg_channel"):
-            # Static methods: callable directly, no instance binding.
-            setattr(client, name, getattr(IPTVClient, name))
         return client
 
     def test_noise_words_do_not_block_the_match(self):
@@ -397,9 +413,6 @@ class TestNowPlayingDescriptions:
         ]
         setattr(client, "_build_now_playing_descriptions",
                 lambda *a, **k: IPTVClient._build_now_playing_descriptions(client, *a, **k))
-        for name in ("_epg_channel_indexes", "_match_epg_channel"):
-            # Static methods: callable directly, no instance binding.
-            setattr(client, name, getattr(IPTVClient, name))
         return client
 
     def test_descriptions_carry_the_on_air_text(self):

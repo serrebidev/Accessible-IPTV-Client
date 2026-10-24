@@ -197,17 +197,19 @@ def xtream_credentials_from_url(url) -> Optional[Tuple[str, str, str]]:
 
 def _account_from_source(src: Dict) -> Optional[Account]:
     """Build an Account from a configured provider entry in ``playlists``."""
-    kind = (src.get("type") or "").lower()
-    base_url = (src.get("base_url") or src.get("url") or "").strip()
+    # A hand-edited or odd provider file can hold a number where a name is
+    # expected; one of those used to abort the whole account scan.
+    kind = str(src.get("type") or "").lower()
+    base_url = str(src.get("base_url") or src.get("url") or "").strip()
     if not base_url or kind not in (KIND_XTREAM, KIND_STALKER):
         return None
     return Account(
         kind=kind,
         base_url=base_url,
-        username=(src.get("username") or "").strip(),
+        username=str(src.get("username") or "").strip(),
         password=src.get("password") or "",
-        mac=(src.get("mac") or "").strip(),
-        name=(src.get("name") or "").strip(),
+        mac=str(src.get("mac") or "").strip(),
+        name=str(src.get("name") or "").strip(),
         provider_id=src.get("id") or src.get("provider_id") or "",
         user_agent=src.get("user_agent") or DEFAULT_UA,
     )
@@ -336,7 +338,7 @@ def _as_timestamp(value) -> Optional[int]:
         return None
     try:
         ts = int(float(str(value).strip()))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     return ts if ts > 0 else None
 
@@ -376,6 +378,17 @@ def _status_label(raw: str) -> str:
     return known.get((raw or "").strip().lower(), raw)
 
 
+def _stalker_status_label(value) -> str:
+    """Ministra portals say 0 or 1 where Xtream says a word.
+
+    Passed through, a blocked line was read aloud as "Status: 0".
+    """
+    text = str(value).strip().lower()
+    if text in ("0", "1"):
+        return _("Active") if text == "1" else _("Disabled")
+    return _status_label(str(value))
+
+
 def _redact_server_url(url: str) -> str:
     """The server address without the credentials it may carry.
 
@@ -385,6 +398,15 @@ def _redact_server_url(url: str) -> str:
     passwords never reach it.
     """
     text = str(url or "")
+    found = xtream_credentials_from_url(text)
+    if found is not None:
+        _root, user, password = found
+        # Path-form Xtream URLs carry the account in /live/user/pass/1.ts, and
+        # the report is read aloud and pasted into issue trackers.
+        text = "/".join(
+            "***" if urllib.parse.unquote(seg).strip() in (user, password) else seg
+            for seg in text.split("/")
+        )
     try:
         parts = urllib.parse.urlsplit(text)
     except ValueError:
@@ -523,14 +545,23 @@ def _format_xtream_report(payload: Dict, now: datetime.datetime) -> List[str]:
     server = server if isinstance(server, dict) else {}
 
     lines = ["", _("Subscription")]
-    if "auth" in user and not _truthy_flag(user.get("auth")):
+    auth_failed = "auth" in user and not _truthy_flag(user.get("auth"))
+    if auth_failed:
         lines.append(_line(_("Status"), _("Authentication failed – the server rejected these credentials")))
     elif user.get("status"):
         lines.append(_line(_("Status"), _status_label(str(user.get("status")))))
     else:
         lines.append(_line(_("Status"), _("Not reported by the server")))
 
-    lines.extend(_expiry_lines(user.get("exp_date"), now))
+    if not auth_failed:
+        # A rejected password answers with the auth flag alone: there is no
+        # expiry to report, and "Never" would tell the user that their dead
+        # account never expires. The same goes for a panel that answers with
+        # no user block at all.
+        if user:
+            lines.extend(_expiry_lines(user.get("exp_date"), now))
+        else:
+            lines.append(_line(_("Expires"), _("Not reported by the server")))
     if "is_trial" in user:
         lines.append(_line(_("Trial account"), _yes_no(_truthy_flag(user.get("is_trial")))))
     if user.get("active_cons") not in (None, ""):
@@ -572,7 +603,7 @@ def _format_xtream_report(payload: Dict, now: datetime.datetime) -> List[str]:
 def _format_stalker_report(payload: Dict) -> List[str]:
     lines = ["", _("Subscription")]
     if payload.get("status") not in (None, ""):
-        lines.append(_line(_("Status"), _status_label(str(payload.get("status")))))
+        lines.append(_line(_("Status"), _stalker_status_label(payload.get("status"))))
     end_date = str(payload.get("end_date") or "").strip()
     # Portals send either a formatted date or an epoch, depending on the build.
     if end_date:

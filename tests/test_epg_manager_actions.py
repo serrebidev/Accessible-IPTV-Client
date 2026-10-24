@@ -100,3 +100,42 @@ def test_epg_manager_playlist_guide_checkbox(wx_app):
         assert dlg.GetUsePlaylistEpg() is False
     finally:
         dlg.Destroy()
+
+
+def test_the_epg_manager_dialog_is_destroyed_when_the_save_raises(monkeypatch):
+    """A dialog that raised used to stay allocated and parent-owned."""
+    import main
+
+    destroyed = []
+
+    class _Dialog:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def ShowModal(self):
+            import wx
+            return wx.ID_OK
+
+        def GetResult(self):
+            return []
+
+        def GetNames(self):
+            return {}
+
+        def GetUsePlaylistEpg(self):
+            return True
+
+        def Destroy(self):
+            destroyed.append(True)
+
+    def _boom(_config):
+        raise OSError("the disk is full")
+
+    monkeypatch.setattr(main, "EPGManagerDialog", _Dialog)
+    monkeypatch.setattr(main, "save_config", _boom)
+    client = types.SimpleNamespace(config={"epgs": [], "epg_names": {}})
+
+    with pytest.raises(OSError):
+        main.IPTVClient.show_epg_manager(client, None)
+
+    assert destroyed, "the dialog was left allocated and parent-owned"

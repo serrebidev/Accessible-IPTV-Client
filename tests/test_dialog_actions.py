@@ -216,6 +216,119 @@ def test_channel_epg_dialog_tab_ring_is_two_controls(host):
         dlg.Destroy()
 
 
+def test_whats_on_now_enter_on_a_programme_opens_it(host):
+    """Enter on a programme has to reach the list.
+
+    A dialog consumes Enter before the focused control ever sees an
+    ``EVT_KEY_DOWN``, and this dialog has no default button for wx to press
+    instead - the Play button is not one - so pressing Enter on a programme
+    did nothing at all. The catch-up list hits the same wall and answers it
+    with a char hook.
+    """
+    dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES)
+    ended = []
+    dlg.EndModal = lambda code: ended.append(code)  # type: ignore[assignment]
+    try:
+        dlg.listbox.Select(0)
+        dlg.listbox.GetEventHandler().ProcessEvent(_char_hook(wx.WXK_RETURN))
+        assert ended == [wx.ID_OK]
+    finally:
+        dlg.Destroy()
+
+
+def test_enter_on_a_hierarchy_only_category_keeps_the_focus_in_the_tree():
+    """Expanding a branch is not activating a category.
+
+    The focus was pulled to the channel list, so a screen-reader user
+    browsing the categories lost their place.
+    """
+    focused = []
+    client = types.SimpleNamespace(
+        group_list=types.SimpleNamespace(
+            GetSelection=lambda: wx.NOT_FOUND,
+            ToggleSelectedBranch=lambda: focused.append("expanded")),
+        channel_list=types.SimpleNamespace(SetFocus=lambda: focused.append("channels")),
+        filter_box=types.SimpleNamespace(SetFocus=lambda: focused.append("filter")),
+        _activate_selected_group=lambda: focused.append("expanded") or False,
+    )
+    event = types.SimpleNamespace(GetKeyCode=lambda: wx.WXK_RETURN, ShiftDown=lambda: False)
+
+    appmod.IPTVClient.on_group_key(client, event)
+
+    assert focused == ["expanded"]
+
+
+def test_the_whats_on_now_dialog_is_destroyed_even_when_the_selection_fails(monkeypatch):
+    """A dialog that raised left itself allocated and parent-owned."""
+    destroyed = []
+
+    class FakeDialog:
+        def __init__(self, *_a, **_k):
+            pass
+
+        def ShowModal(self):
+            return wx.ID_OK
+
+        def get_selection(self):
+            raise RuntimeError("boom")
+
+        def Destroy(self):
+            destroyed.append(True)
+
+    monkeypatch.setattr(appmod, "WhatsOnNowDialog", FakeDialog)
+    client = types.SimpleNamespace(
+        _schedule_epg_program_recording=lambda *_a: None,
+        _play_from_whats_on_now=lambda *_a: None,
+    )
+
+    with pytest.raises(RuntimeError):
+        appmod.IPTVClient._present_whats_on_now(client, [{"title": "x"}], None)
+
+    assert destroyed == [True]
+
+
+def test_a_right_click_acts_on_the_row_under_the_pointer(host):
+    """A right-click does not move the selection in a list control.
+
+    The context menu was built from the selected row, so the user pointed at
+    one programme and the app took another: the wrong one was played, the
+    wrong one was recorded, the wrong one was deleted.
+    """
+    ctrl = wx.ListCtrl(host, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
+    ctrl.InsertColumn(0, "Job")
+    for index in range(3):
+        ctrl.InsertItem(index, f"Job {index}")
+    ctrl.Select(0)
+    rect = ctrl.GetItemRect(2)
+    # A context menu carries a screen position.
+    screen = ctrl.ClientToScreen(wx.Point(5, rect.y + 1))
+    event = types.SimpleNamespace(GetPosition=lambda: screen)
+
+    assert appmod._context_row_index(ctrl, event) == 2
+    assert ctrl.GetFirstSelected() == 2
+
+
+def test_the_channel_epg_context_menu_uses_the_right_clicked_programme(host, monkeypatch):
+    programmes = [
+        {"title": "Evening News", "start": "20260907190000", "end": "20260907200000"},
+        {"title": "Late Film", "start": "20260907200000", "end": "20260907220000"},
+    ]
+    dlg = ChannelEPGDialog(host, "Sky Mix", programmes)
+    try:
+        # The menu itself must not pop up in a test.
+        monkeypatch.setattr(type(dlg.list_ctrl), "PopupMenu", lambda *a, **k: True)
+        dlg.list_ctrl.Select(0)
+        rect = dlg.list_ctrl.GetItemRect(1)
+        screen = dlg.list_ctrl.ClientToScreen(wx.Point(5, rect.y + 1))
+        event = types.SimpleNamespace(GetPosition=lambda: screen)
+
+        dlg._show_context_menu(event)
+
+        assert dlg.list_ctrl.GetFirstSelected() == 1
+    finally:
+        dlg.Destroy()
+
+
 def test_whats_on_now_context_menu_offers_play_and_schedule(host, monkeypatch):
     scheduled = []
     dlg = WhatsOnNowDialog(host, _EPG_PROGRAMMES,

@@ -137,6 +137,18 @@ class TestDiscoverAccounts:
         assert accounts[0].detected is False
         assert accounts[1].mac == "00:1A:79:00:00:01"
 
+    def test_a_number_where_a_name_belongs_does_not_stop_the_scan(self):
+        """One odd provider entry aborted discovery for every account."""
+        sources = [{
+            "type": "xtream",
+            "name": 12345,
+            "base_url": "http://host.example.com:8080",
+            "username": "testuser",
+            "password": "testpass",
+        }]
+        accounts = discover_accounts(sources)
+        assert [a.name for a in accounts] == ["12345"]
+
     def test_plain_url_playlist_is_detected(self):
         sources = ["http://host.example.com/get.php?username=testuser&password=testpass"]
         accounts = discover_accounts(sources)
@@ -299,6 +311,21 @@ class TestXtreamReport:
         report = format_account_report(_xtream_account(), _payload(), now=NOW)
         assert "s3cr3tvalue" not in report
 
+    def test_a_rejected_password_does_not_claim_the_account_never_expires(self):
+        """A wrong password answers with the auth flag alone.
+
+        The report said "Expires: Never (no expiry date set)" right below the
+        authentication failure, so the user was told their dead account never
+        expires.
+        """
+        payload = _payload(auth=0)
+        payload["user_info"].pop("exp_date")
+        report = format_account_report(_xtream_account(), payload, now=NOW)
+        fields = _fields(report)
+        assert "Authentication failed" in fields["Status"]
+        assert "Expires" not in fields
+        assert "Never" not in report
+
     def test_expired_account_counts_days_since(self):
         expired = str(int(datetime.datetime(2026, 7, 19, 12, 0).timestamp()))
         report = format_account_report(
@@ -348,6 +375,24 @@ class TestXtreamReport:
         report = format_account_report(_xtream_account(), {}, now=NOW)
         assert "did not report any account details" in report
 
+    def test_a_payload_without_a_user_block_never_claims_never_expires(self):
+        """An empty or reshaped body answered 200, so no expiry was reported.
+
+        The report said "Expires: Never (no expiry date set)" under "Status:
+        not reported", telling the user a line it knows nothing about lasts
+        forever.
+        """
+        report = format_account_report(_xtream_account(), {"user_info": {}}, now=NOW)
+        fields = _fields(report)
+        assert fields["Expires"] == "Not reported by the server"
+        assert "Never" not in report
+
+    def test_infinite_expiry_does_not_kill_the_lookup(self):
+        """Some panels mark a lifetime line with "inf"; it crashed int()."""
+        report = format_account_report(
+            _xtream_account(), _payload(exp_date="inf"), now=NOW)
+        assert _fields(report)["Expires"] == "Never (no expiry date set)"
+
     def test_non_dict_payload_does_not_raise(self):
         report = format_account_report(_xtream_account(), None, now=NOW)
         assert "Fast TV" in report
@@ -386,6 +431,13 @@ class TestStalkerReport:
         assert fields["Account balance"] == "0.00"
         assert fields["Phone"] == "555-0100"
         assert fields["sn"] == "SN12345"
+
+    def test_a_numeric_status_is_not_read_aloud_as_a_digit(self):
+        """Ministra sends 0 for a blocked line; the report said "Status: 0"."""
+        account = Account(kind=KIND_STALKER, base_url="http://portal.example.com/c",
+                          mac="00:1A:79:00:00:01")
+        assert _fields(format_account_report(account, {"status": 0}))["Status"] == "Disabled"
+        assert _fields(format_account_report(account, {"status": 1}))["Status"] == "Active"
 
     def test_epoch_end_date_is_formatted(self):
         account = Account(kind=KIND_STALKER, base_url="http://portal.example.com", mac="00:1A:79:00:00:01")
@@ -461,6 +513,13 @@ def test_the_server_line_never_carries_the_credentials():
                             username="user", password="pw")
     lines = "\n".join(account_info._header_lines(with_userinfo))
     assert "pw@" not in lines
+
+    path_form = Account(kind=account_info.KIND_XTREAM,
+                        base_url="http://host.example.com/live/user/pw/1234.ts",
+                        username="user", password="pw")
+    lines = "\n".join(account_info._header_lines(path_form))
+    assert "user/pw" not in lines
+    assert "/live/***/***/1234.ts" in lines
     assert "host.example.com" in lines
 
 

@@ -28,7 +28,7 @@ def test_fetch_latest_release_uses_supplied_timeout(monkeypatch):
         calls.append((req.full_url, timeout))
         return _Response({"tag_name": "v1.2.3"})
 
-    monkeypatch.setattr(updater.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(updater, "_open", fake_urlopen)
 
     release = updater.fetch_latest_release("owner", "repo", timeout=4.5)
 
@@ -59,7 +59,7 @@ def test_fetch_update_manifest_uses_supplied_timeout(monkeypatch):
         calls.append((req.full_url, timeout))
         return _Response(manifest_payload)
 
-    monkeypatch.setattr(updater.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(updater, "_open", fake_urlopen)
 
     manifest = updater.fetch_update_manifest(
         release,
@@ -84,8 +84,8 @@ def test_download_json_accepts_utf8_bom(monkeypatch):
             return b"\xef\xbb\xbf{\"ok\": true}"
 
     monkeypatch.setattr(
-        updater.urllib.request,
-        "urlopen",
+        updater,
+        "_open",
         lambda req, timeout: BomResponse(),
     )
 
@@ -119,7 +119,8 @@ class _DownloadResponse:
 def test_download_reports_progress_and_hashes(monkeypatch, tmp_path):
     payload = b"accessible-iptv-client update payload, streamed in small chunks"
     monkeypatch.setattr(
-        updater.urllib.request, "urlopen",
+        updater,
+        "_open",
         lambda req, timeout: _DownloadResponse(payload),
     )
     fractions = []
@@ -143,7 +144,7 @@ def test_download_reports_progress_and_hashes(monkeypatch, tmp_path):
 def test_download_without_content_length_reports_none(monkeypatch, tmp_path):
     payload = b"no content-length header on this response"
     monkeypatch.setattr(
-        updater.urllib.request, "urlopen",
+        updater, "_open",
         lambda req, timeout: _DownloadResponse(payload, content_length=False),
     )
     seen = []
@@ -157,7 +158,7 @@ def test_download_without_content_length_reports_none(monkeypatch, tmp_path):
 
 def test_download_cancel_raises_update_cancelled(monkeypatch, tmp_path):
     monkeypatch.setattr(
-        updater.urllib.request, "urlopen",
+        updater, "_open",
         lambda req, timeout: _DownloadResponse(b"x" * 64, chunk_size=4),
     )
     dest = tmp_path / "update.zip"
@@ -251,8 +252,8 @@ def test_fetch_update_manifest_reads_installer_metadata(monkeypatch):
     }
 
     monkeypatch.setattr(
-        updater.urllib.request,
-        "urlopen",
+        updater,
+        "_open",
         lambda req, timeout: _Response(manifest_payload),
     )
 
@@ -285,8 +286,8 @@ def test_the_manifest_cannot_pin_its_own_certificate(monkeypatch):
         "signing_thumbprints": ["ATTACKER0000000000000000000000000000000000"],
     }
     monkeypatch.setattr(
-        updater.urllib.request,
-        "urlopen",
+        updater,
+        "_open",
         lambda req, timeout: _Response(manifest_payload),
     )
     monkeypatch.setenv("ACCESSIBLEIPTVCLIENT_TRUSTED_SIGNING_THUMBPRINTS",
@@ -319,8 +320,8 @@ def test_a_manifest_without_an_out_of_band_pin_is_only_a_last_resort(monkeypatch
         "signing_thumbprints": ["DECLARED000000000000000000000000000000000"],
     }
     monkeypatch.setattr(
-        updater.urllib.request,
-        "urlopen",
+        updater,
+        "_open",
         lambda req, timeout: _Response(manifest_payload),
     )
     monkeypatch.delenv("ACCESSIBLEIPTVCLIENT_TRUSTED_SIGNING_THUMBPRINTS", raising=False)
@@ -415,6 +416,69 @@ def test_sweep_stale_update_dirs_removes_only_old_update_dirs(tmp_path):
 
 def test_sweep_stale_update_dirs_tolerates_missing_temp_dir(tmp_path):
     assert updater.sweep_stale_update_dirs(str(tmp_path / "missing")) == 0
+
+
+def test_the_github_token_is_not_carried_to_another_host(monkeypatch):
+    """urllib copies a request's headers into the redirected request.
+
+    The token in the environment is the user's own GitHub credential, and
+    the release manifest travels unsigned: a manifest URL that redirects
+    elsewhere must not take the credential with it.
+    """
+    import http.server
+    import threading
+
+    seen = []
+
+    class _Target(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 - the name is the stdlib's
+            seen.append(self.headers.get("Authorization"))
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"{}")
+
+        def log_message(self, *_args):
+            pass
+
+    target = http.server.HTTPServer(("127.0.0.1", 0), _Target)
+    threading.Thread(target=target.serve_forever, daemon=True).start()
+
+    class _Redirector(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 - the name is the stdlib's
+            self.send_response(302)
+            self.send_header(
+                "Location",
+                "http://127.0.0.1:%d/manifest.json" % target.server_address[1],
+            )
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, *_args):
+            pass
+
+    redirector = http.server.HTTPServer(("127.0.0.1", 0), _Redirector)
+    threading.Thread(target=redirector.serve_forever, daemon=True).start()
+
+    try:
+        monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
+        # The first host is treated as GitHub (that is where the token may
+        # go); the redirect target is not.
+        monkeypatch.setattr(
+            updater, "_is_github_host",
+            lambda url: url.startswith("http://127.0.0.1:%d" % redirector.server_address[1]),
+        )
+        url = "http://127.0.0.1:%d/manifest.json" % redirector.server_address[1]
+
+        assert updater.download_json(url) == {}
+
+        assert seen == [None], "the token followed the redirect to another host"
+    finally:
+        redirector.shutdown()
+        redirector.server_close()
+        target.shutdown()
+        target.server_close()
 
 
 def test_update_helper_command_runs_powershell_without_cmd(tmp_path):
@@ -538,6 +602,86 @@ def test_collect_update_logs_joins_every_log_and_trims_the_installer_log(tmp_pat
     # The end of the installer log is where the failure is; its start goes.
     assert logs.endswith("Rolling back changes.")
     assert "early line" not in logs
+
+
+def test_the_github_token_never_leaves_github(monkeypatch):
+    """The token in the environment is the user's own GitHub credential.
+
+    The release manifest names the download URLs and travels unsigned, so a
+    token sent to whatever host it names hands that host the credential.
+    """
+    monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
+
+    api = updater._build_request("https://api.github.com/repos/o/r/releases/latest")
+    assert api.get_header("Authorization") == "token secret-token"
+
+    # The release assets are served from github.com and its CDN.
+    for url in ("https://github.com/o/r/releases/download/v1/app.zip",
+                "https://objects.githubusercontent.com/o/r/blob/x"):
+        assert updater._build_request(url).get_header("Authorization"), url
+
+    stranger = updater._build_request("https://cdn.example.test/update.zip")
+    assert not stranger.get_header("Authorization")
+    # A host that only looks like GitHub is not GitHub.
+    for url in ("https://github.com.example.test/update.zip",
+                "https://evil-github.com/update.zip"):
+        assert not updater._build_request(url).get_header("Authorization"), url
+
+
+def test_the_helper_never_runs_a_bare_powershell(monkeypatch):
+    """Windows resolves the current directory before System32.
+
+    A "powershell.exe" next to the app would be executed instead of the real
+    one - with the user's privileges, during an update. The old code fell
+    back to the bare name whenever the full path was not there, which is
+    exactly the case where it must not.
+    """
+    monkeypatch.setenv("SYSTEMROOT", r"C:\NoSuchWindows")
+    monkeypatch.setenv("WINDIR", r"C:\NoSuchWindows")
+    path = updater.windows_powershell_path()
+    assert os.path.dirname(path), "the helper would run whatever powershell.exe is on PATH"
+    assert path.lower().endswith(
+        os.path.join("system32", "windowspowershell", "v1.0", "powershell.exe"))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="needs Windows PowerShell")
+def test_the_helper_never_kills_a_reused_pid(tmp_path):
+    """A PID can be handed to another process after the app exits.
+
+    The helper waits up to thirty seconds for the app, and Windows is free
+    to reuse the PID in that window. Killing whatever holds it then would
+    take an unrelated program down with it.
+    """
+    import subprocess
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "update_helper.ps1"), encoding="ascii") as handle:
+        helper = handle.read()
+    start = helper.index("function Get-ParentAppProcess")
+    function = helper[start:helper.index("\nfunction ", start + 10)]
+
+    script = tmp_path / "t.ps1"
+    script.write_text(
+        function + "\n"
+        "$script:HelperStartedAt = Get-Date\n"
+        "Start-Sleep -Milliseconds 300\n"
+        "$child = Start-Process -PassThru -FilePath 'powershell' "
+        "-ArgumentList '-NoProfile','-Command','Start-Sleep 10'\n"
+        "Start-Sleep -Milliseconds 300\n"
+        "if (Get-ParentAppProcess -Id $child.Id) { Write-Output 'KILLED' } "
+        "else { Write-Output 'SAFE' }\n"
+        "Stop-Process -Id $child.Id -Force -ErrorAction SilentlyContinue\n"
+        "if (Get-ParentAppProcess -Id $PID) { Write-Output 'FOUND' } "
+        "else { Write-Output 'MISSING' }\n",
+        encoding="utf-8-sig")
+    out = subprocess.run(
+        [updater.windows_powershell_path(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+        capture_output=True, text=True, timeout=60, env=updater.clean_powershell_env())
+    assert out.returncode == 0, out.stderr
+    # A process that started after the helper is not the app.
+    assert "SAFE" in out.stdout, out.stdout
+    # A process that started before it is.
+    assert "FOUND" in out.stdout, out.stdout
 
 
 @pytest.mark.skipif(os.name != "nt", reason="needs Windows PowerShell")

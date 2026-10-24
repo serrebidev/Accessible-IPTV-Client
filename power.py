@@ -13,6 +13,7 @@ are done" means the whole queue, not just the capture in progress.
 from __future__ import annotations
 
 import logging
+import os
 import platform
 import subprocess
 from typing import Iterable, List, Optional, Sequence
@@ -37,7 +38,10 @@ def shutdown_commands(system: Optional[str] = None) -> List[List[str]]:
         # directory before System32, so a "shutdown.exe" sitting in the
         # folder the app was started from would be executed instead - with the
         # user's privileges, at the moment the machine powers off.
-        return [[r"C:\Windows\System32\shutdown.exe", "/s", "/t", "0"]]
+        # The Windows directory is not always C:\, so it comes from the
+        # environment; the fallback is only for a machine without one.
+        system_root = os.environ.get("SYSTEMROOT") or os.environ.get("SystemRoot") or r"C:\Windows"
+        return [[os.path.join(system_root, "System32", "shutdown.exe"), "/s", "/t", "0"]]
     if name == "Darwin":
         return [["osascript", "-e", 'tell application "System Events" to shut down']]
     return [

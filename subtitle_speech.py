@@ -145,6 +145,9 @@ class SubtitleSpeechManager:
         self._previous: Optional[CueEvent] = None
         self._capabilities: Dict[str, Dict[str, str]] = {}
         self._source_name = ""
+        # Bumped by clear(): a speech queued for a cue that has since been
+        # cleared belongs to the previous source and must not be spoken.
+        self._epoch = 0
 
     # -- Configuration ----------------------------------------------------
 
@@ -211,8 +214,9 @@ class SubtitleSpeechManager:
             self._current = event
             self._recent.append(event)
             auto = self._auto_speech
+            epoch = self._epoch
         if auto:
-            self._speak_text(text)
+            self._speak_text(text, epoch, require_auto=True)
 
     def update_cue_timing(
         self,
@@ -236,10 +240,29 @@ class SubtitleSpeechManager:
             if end_ms is not None:
                 current.end_ms = end_ms
 
-    def _speak_text(self, text: str) -> None:
-        """Speak on the UI thread; route failures to the error callback."""
+    def _speak_text(self, text: str, epoch: Optional[int] = None, *,
+                    require_auto: bool = False) -> None:
+        """Speak on the UI thread; route failures to the error callback.
+
+        ``require_auto`` marks the automatic speech: a cue queued while the
+        user had it on is not spoken when it is turned off before the queue
+        runs. An explicit "read this subtitle" always speaks.
+        """
+        if epoch is None:
+            with self._lock:
+                epoch = self._epoch
 
         def _do() -> None:
+            with self._lock:
+                if epoch != self._epoch:
+                    # The cues were cleared after this speech was queued - a
+                    # source switch or a stop - so it belongs to the source
+                    # that is gone.
+                    return
+                if require_auto and not self._auto_speech:
+                    # The user turned the automatic speech off after this cue
+                    # was queued: speaking it now would ignore that.
+                    return
             try:
                 self._speak(text)
             except Exception as exc:
@@ -266,6 +289,7 @@ class SubtitleSpeechManager:
             self._current = None
             self._previous = None
             self._recent.clear()
+            self._epoch += 1
 
     def set_source(self, name: str) -> None:
         """Switch the active cue source, clearing stale state first."""

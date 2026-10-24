@@ -11,14 +11,18 @@ than rebuilt per call.
 
 import functools
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 STRIP_TAGS = [
     'hd', 'sd', 'hevc', 'fhd', 'uhd', '4k', '8k', 'hdr', 'dash', 'hq', 'st',
-    'us', 'usa', 'ca', 'canada', 'car', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
+    'us', 'usa', 'ca', 'canada', 'uk', 'u.k.', 'u.k', 'uk.', 'u.s.', 'u.s', 'us.',
     'au', 'aus', 'nz', 'ukhd', 'uksd', 'fhd', 'uhd', 'h.265', 'h265', 'h.264', 'h264',
     '50fps', '60fps', 'eu'
 ]
+# "car" is deliberately not a strip tag: it is an ordinary English word, and
+# stripping it made "Car SOS" and "SOS" the same channel - the guide of one
+# and the playlist of the other, matched to each other. The country is still
+# recognised by the group synonyms ("CAR" is Canada there).
 
 NOISE_WORDS = [
     'backup', 'alt', 'feed', 'main', 'extra', 'mirror', 'test', 'temp',
@@ -152,6 +156,30 @@ _PAREN_CODE_RE = re.compile(r'\(([a-z]{2,3})\)')
 _GROUP_SYNONYM_PATTERNS_CACHE = None
 
 
+# Country-code variants that are ordinary English words. They are matched
+# only where a code is meant - a leading or parenthesised code, written in
+# capitals - never as a free word.
+_WORD_VARIANTS = frozenset({"can", "car", "nor", "per", "ind"})
+
+_VARIANT_TAGS_CACHE = None
+
+
+def _variant_tags() -> Dict[str, str]:
+    """Every country-code variant, mapped to the tag it means.
+
+    A code can be written in more than one way ("CA", "CAN", "CANADA"), and
+    a leading code in capitals is what the codes look like.
+    """
+    global _VARIANT_TAGS_CACHE
+    if _VARIANT_TAGS_CACHE is None:
+        mapping: Dict[str, str] = {}
+        for tag, variants in group_synonyms().items():
+            for variant in variants:
+                mapping.setdefault(str(variant).strip().lower(), tag)
+        _VARIANT_TAGS_CACHE = mapping
+    return _VARIANT_TAGS_CACHE
+
+
 def _group_synonym_patterns():
     """[(norm_tag, compiled \\b(?:variant|...)\\b regex)] in group_synonyms() order.
 
@@ -165,8 +193,10 @@ def _group_synonym_patterns():
             # The bare code ("at", "no", "is", "de") is matched only as a
             # leading or parenthesised code. As a free word it hits ordinary
             # English: "News at Ten" is not Austrian and "No Limits" is not
-            # Norwegian.
-            words = [v for v in variants if v != tag]
+            # Norwegian. The same holds for the variants that are words too:
+            # "Car SOS" is not Canadian and "You Can Do It" is not either.
+            words = [v for v in variants
+                     if v != tag and v.lower() not in _WORD_VARIANTS]
             if not words:
                 continue
             patterns.append((tag, re.compile(r'\b(?:' + '|'.join(re.escape(v) for v in words) + r')\b')))
@@ -180,6 +210,84 @@ def _group_synonym_patterns():
 # holds the whole working set makes repeat passes nearly free. Bounded so a
 # long session of playlist reloads cannot grow it without limit.
 _NAME_CACHE_SIZE = 1 << 18
+
+
+# The numbers in a channel name are the channel: "BBC 1" and "BBC 2" are
+# different channels, and "BBC One" is "BBC 1". The noise-stripped name drops
+# a standalone digit as noise, so these helpers are what tells the two apart.
+# They live here, with the rest of the matching vocabulary, because both the
+# database matcher and the playlist-side matcher need them.
+_WORD_NUMBERS = {
+    "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+    "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
+}
+# Resolutions and frame rates are not channel numbers.
+_IGNORED_NUMBERS = {
+    "240", "360", "480", "540", "576", "720", "1080", "1440", "2160", "4320",
+    "50", "60",
+}
+
+
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
+def significant_channel_numbers(*texts: str) -> frozenset:
+    """The channel numbers the given texts name.
+
+    Cached like the other name helpers: the matcher asks for the numbers of
+    every channel in the playlist, and the texts barely change.
+    """
+    numbers: Set[str] = set()
+    for text in texts:
+        s = (text or "").lower()
+        if not s:
+            continue
+        s = re.sub(r'\b(?:au|ca|ie|uk|gb|us)\d+\b', ' ', s)
+        for raw in re.findall(r'\d+', s):
+            normalized = raw.lstrip("0") or "0"
+            if normalized in _IGNORED_NUMBERS:
+                continue
+            if len(normalized) > 3:
+                continue
+            numbers.add(normalized)
+        for word, value in _WORD_NUMBERS.items():
+            if re.search(r'\b' + re.escape(word) + r'\b', s):
+                numbers.add(value)
+    return frozenset(numbers)
+
+
+@functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
+def replace_word_numbers(text: str) -> str:
+    """Write the word numbers in a name as digits: "BBC Two" -> "BBC 2".
+
+    Lets one matcher's normalized name reach the other's: a guide that spells
+    a channel out and a playlist that numbers it are the same channel.
+    """
+    text = (text or "").lower()
+    for word, value in _WORD_NUMBERS.items():
+        text = re.sub(r'\b' + re.escape(word) + r'\b', value, text)
+    return text
+
+
+def id_number_text(channel_id: str) -> str:
+    """A channel id as text for :func:`significant_channel_numbers`.
+
+    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
+    "151") is a database key, not a channel number. Counting it made "ESPN"
+    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
+    channel that lacked the number.
+    """
+    text = (channel_id or "").strip()
+    return "" if text.isdigit() else text
+
+
+def numbers_disagree(first: Set[str], second: Set[str]) -> bool:
+    """True when two names name different channels by their number.
+
+    A name without a number says nothing about it, so only two names that
+    both carry one can disagree.
+    """
+    if not first or not second:
+        return False
+    return not (first & second)
 
 
 @functools.lru_cache(maxsize=_NAME_CACHE_SIZE)
@@ -223,15 +331,16 @@ def extract_group(title: str) -> str:
     for norm_tag, rx in _group_synonym_patterns():
         if rx.search(title):
             return norm_tag
-    syn = group_synonyms()
+    tags = _variant_tags()
     m = _LEADING_CODE_RE.match(title)
     if m:
         code = m.group(1)
-        if code in syn and _looks_like_a_code(original):
-            return code
+        tag = tags.get(code)
+        if tag and _looks_like_a_code(original):
+            return tag
     m = _PAREN_CODE_RE.search(title)
     if m:
-        code = m.group(1)
-        if code in syn:
-            return code
+        tag = tags.get(m.group(1))
+        if tag:
+            return tag
     return ''

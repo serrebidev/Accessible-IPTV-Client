@@ -38,6 +38,23 @@ function Write-Log {
 # leaves a line saying the helper ran at all (issue #26 left no trace).
 Write-Log "Update helper started (PID $PID, PowerShell $($PSVersionTable.PSVersion)). InstallDir=$InstallDir InstallerPath=$InstallerPath StagingDir=$StagingDir"
 
+# When this helper started. The app it waits for is always older than this,
+# so a process that started later is not the app - see Get-ParentAppProcess.
+$script:HelperStartedAt = Get-Date
+
+function Get-ParentAppProcess {
+    param([int]$Id)
+    # The app can exit and Windows can hand its PID to something else while
+    # the helper waits for it. Only the process that was the app may be
+    # killed: a reused PID belongs to an unrelated program.
+    $proc = Get-Process -Id $Id -ErrorAction SilentlyContinue
+    if (-not $proc -or $Id -le 0) { return $null }
+    try {
+        if ($proc.StartTime -ge $script:HelperStartedAt) { return $null }
+    } catch { }
+    return $proc
+}
+
 function Restore-InstallBackup {
     param([string]$BackupDir, [string]$InstallDir)
     # Put the previous version back after a failed move.
@@ -1220,15 +1237,17 @@ if (-not $InstallDir -or -not $ExeName) {
 Write-Log "Updater started. Waiting for PID $ParentPid."
 
 $deadline = (Get-Date).AddSeconds(30)
-while ((Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) {
+while ((Get-ParentAppProcess -Id $ParentPid) -and (Get-Date) -lt $deadline) {
     Wait-Pumped -Milliseconds 500 -Window $statusWindow
 }
 
-$parentProcess = Get-Process -Id $ParentPid -ErrorAction SilentlyContinue
+$parentProcess = Get-ParentAppProcess -Id $ParentPid
 if ($parentProcess) {
     Write-Log "Process $ParentPid did not exit within timeout; terminating it."
     Stop-Process -Id $ParentPid -Force -ErrorAction SilentlyContinue
     Wait-Pumped -Milliseconds 1000 -Window $statusWindow
+} elseif (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) {
+    Write-Log "PID $ParentPid now belongs to a process that started after this helper; leaving it alone."
 }
 
 # The app's own window is gone now, and Windows hands focus to whatever is

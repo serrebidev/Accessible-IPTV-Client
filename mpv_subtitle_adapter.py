@@ -39,6 +39,12 @@ CONNECT_TIMEOUT_S = 1.5
 CONNECT_POLL_S = 0.1
 READ_POLL_S = 0.05
 REQUEST_TIMEOUT_S = 1.0
+# The launch handshake runs on a worker, so it can wait longer than a runtime
+# request: a cold mpv on a busy machine answers the version question a
+# second or two late, and a failed version check silently drops the whole
+# subtitle session (the app falls back to the plain handoff).
+LAUNCH_CONNECT_TIMEOUT_S = 6.0
+VERSION_TIMEOUT_S = 5.0
 
 # observe_property ids.
 _OBS_SUB_TEXT = 2
@@ -65,14 +71,15 @@ class _Transport:
         self.endpoint = endpoint
         self._stop = threading.Event()
         self._write_lock = threading.Lock()
+        self._read_lock = threading.Lock()
         self._sock = None
         self._pipe = None
         self._buffer = b""
 
     # -- connect ---------------------------------------------------------
 
-    def connect(self) -> bool:
-        deadline = time.monotonic() + CONNECT_TIMEOUT_S
+    def connect(self, timeout: float = CONNECT_TIMEOUT_S) -> bool:
+        deadline = time.monotonic() + timeout
         while time.monotonic() < deadline and not self._stop.is_set():
             try:
                 if _IS_WINDOWS:
@@ -159,16 +166,19 @@ class _Transport:
         """
         try:
             while not self._stop.is_set():
-                if b"\n" in self._buffer:
-                    line, self._buffer = self._buffer.split(b"\n", 1)
-                    return line
-                if deadline is not None and time.monotonic() >= deadline:
-                    return None
-                chunk = self._read_chunk()
-                if chunk is None:
-                    return None
-                if chunk:
-                    self._buffer += chunk
+                # One reader at a time: the reader thread and a request's
+                # inline pump both read this pipe, and two readers split a
+                # message between them - the JSON then fails to parse and
+                # the message is lost.
+                with self._read_lock:
+                    if b"\n" in self._buffer:
+                        line, self._buffer = self._buffer.split(b"\n", 1)
+                        return line
+                    chunk = self._read_chunk()
+                    if chunk is None:
+                        return None
+                    if chunk:
+                        self._buffer += chunk
             return None
         except Exception:
             LOG.debug("mpv adapter: read failed", exc_info=True)
@@ -277,13 +287,18 @@ class MpvSubtitleAdapter:
         """Spawn our own MPV with a per-session endpoint and attach to it."""
         self = cls(manager, on_state_change)
         endpoint = _session_endpoint()
+        extra = [str(arg) for arg in (extra_args or [])]
+        # A forced window is what makes a radio stream show something, but a
+        # caller that asked for no video does not want one - and mpv stops
+        # answering its own IPC while it tries to open a window it cannot.
+        force_window = not any(arg.startswith("--vo=null") for arg in extra)
         argv = [
             mpv_exe,
             f"--input-ipc-server={endpoint}",
-            "--force-window=yes",
+            *(["--force-window=yes"] if force_window else []),
             "--idle=yes",
             "--no-terminal",
-            *(extra_args or []),
+            *extra,
             url,
         ]
         try:
@@ -298,15 +313,17 @@ class MpvSubtitleAdapter:
             LOG.warning("mpv adapter: could not launch %s", mpv_exe, exc_info=True)
             return None
         self._transport = _Transport(endpoint)
-        if not self._transport.connect():
+        if not self._transport.connect(timeout=LAUNCH_CONNECT_TIMEOUT_S):
             LOG.warning("mpv adapter: IPC endpoint never appeared")
             self._shutdown_process()
             return None
-        if not self._verify_version():
-            LOG.warning("mpv adapter: version check failed")
-            self.close()
-            return None
+        # Observe before anything else: the cues are what the session is for,
+        # and a slow mpv must not make the app wait for them. The version is
+        # a nicety - a failed check used to drop the whole session, so it is
+        # asked on a worker and only logged.
         self._observe()
+        threading.Thread(target=self._verify_version, name="mpv-version",
+                         daemon=True).start()
         self._manager.set_source("mpv-ipc")
         self._reader = threading.Thread(
             target=self._read_loop, name="mpv-ipc", daemon=True)
@@ -314,10 +331,12 @@ class MpvSubtitleAdapter:
         self.available = True
         self._report("available")
         return self
-
     def _verify_version(self) -> bool:
-        resp = self._request(["get_property", "mpv-version"])
+        resp = self._request(["get_property", "mpv-version"], timeout=VERSION_TIMEOUT_S)
         if not resp or resp.get("error") != "success":
+            # Not a gate: the session is already observing, and the cues are
+            # what the user is after. A slow mpv must not cost them.
+            LOG.warning("mpv adapter: version check failed; carrying on without it")
             return False
         self._mpv_version = str(resp.get("data") or "")
         try:

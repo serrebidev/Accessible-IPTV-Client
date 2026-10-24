@@ -16,6 +16,7 @@ import collections
 import http.server
 import logging
 import secrets
+import socket
 import socketserver
 import threading
 from time import monotonic
@@ -36,8 +37,9 @@ class _Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 class _Client:
-    def __init__(self, backlog):
+    def __init__(self, backlog, connection=None):
         self.chunks = collections.deque(backlog, maxlen=_CLIENT_QUEUE_CHUNKS)
+        self.connection = connection
 
 
 class RecordingRelay:
@@ -50,6 +52,11 @@ class RecordingRelay:
         self._backlog_size = 0
         self._clients: "list[_Client]" = []
         self._closed = False
+        # close() runs when ffmpeg exits, but its pipe can still hold bytes the
+        # pump has not read. Serving stops trimming by age from then on, so a
+        # lagging player receives the tail instead of losing it.
+        self._closing = False
+        self._drained = False
         # A token in the path: the relay serves the recording being made, and
         # any process on the machine could otherwise find the port and watch
         # it.
@@ -81,7 +88,7 @@ class RecordingRelay:
                 if not self._authorized():
                     return self.send_error(404)
                 self._send_headers()
-                relay._serve(self.wfile)
+                relay._serve(self.wfile, self.connection)
 
         self._server = _Server((host, 0), Handler)
         self.url = "http://%s:%d%s" % (host, self._server.server_address[1], self._path)
@@ -124,22 +131,28 @@ class RecordingRelay:
             LOG.debug("RecordingRelay._pump: ignored exception", exc_info=True)
         finally:
             with self._cond:
+                self._drained = True
                 self._closed = True
                 self._cond.notify_all()
 
-    def _serve(self, wfile) -> None:
+    def _serve(self, wfile, connection=None) -> None:
         with self._cond:
-            self._trim_backlog(monotonic())
-            client = _Client(self._backlog)
+            # A player joining while the recording ends (the pump has not
+            # reached EOF yet) must not lose the tail it is about to be handed.
+            # Once the stream is over, a late join is still trimmed.
+            if not self._closing or self._closed:
+                self._trim_backlog(monotonic())
+            client = _Client(self._backlog, connection)
             self._clients.append(client)
         try:
             while True:
                 with self._cond:
                     while not client.chunks and not self._closed:
                         self._cond.wait(1.0)
-                    now = monotonic()
-                    while client.chunks and now - client.chunks[0][0] > _BACKLOG_SECONDS:
-                        client.chunks.popleft()
+                    if not self._closed and not self._closing:
+                        now = monotonic()
+                        while client.chunks and now - client.chunks[0][0] > _BACKLOG_SECONDS:
+                            client.chunks.popleft()
                     if not client.chunks:
                         if self._closed:
                             return  # the recording ended and everything was sent
@@ -154,13 +167,48 @@ class RecordingRelay:
             with self._cond:
                 self._clients = [c for c in self._clients if c is not client]
 
-    def close(self) -> None:
-        """Stop serving. Players still connected get what is left, then EOF."""
+    def close(self, timeout: float = 2.0) -> None:
+        """Stop serving. Players still connected get what is left, then EOF.
+
+        Normal path: ffmpeg has exited, the pump reads the pipe to EOF, and
+        every queue is delivered. If the pipe never reaches EOF (a killed
+        process whose stdout handle is still open) the wait is bounded, the
+        stream is ended, the source is closed so the pump stops, and client
+        sockets are shut down so blocked writers do not outlive it. The
+        recorder's watcher calls this, so the wait is not on the GUI thread.
+        """
+        connections = []
         with self._cond:
-            self._closed = True
+            self._closing = True
             self._cond.notify_all()
+            drained = self._drained or self._closed
+            if not drained:
+                drained = self._cond.wait_for(lambda: self._drained, timeout)
+            if not drained:
+                self._closed = True
+                self._cond.notify_all()
+                connections = [c.connection for c in self._clients if c.connection is not None]
+        if connections:
+            self._abort_source()
+            for connection in connections:
+                try:
+                    connection.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    # Already gone: the handler's own error path cleaned up.
+                    LOG.debug("RecordingRelay.close: player socket already closed",
+                              exc_info=True)
         try:
             self._server.shutdown()
             self._server.server_close()
         except Exception:
             LOG.debug("RecordingRelay.close: ignored exception", exc_info=True)
+
+    def _abort_source(self) -> None:
+        """Unblock the pump when the pipe will not reach EOF by itself."""
+        close = getattr(self._source, "close", None)
+        if not callable(close):
+            return
+        try:
+            close()
+        except Exception:
+            LOG.debug("RecordingRelay._abort_source: ignored exception", exc_info=True)

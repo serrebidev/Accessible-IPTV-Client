@@ -17,6 +17,7 @@ import hashlib
 import threading
 from http.client import IncompleteRead
 from providers import generate_provider_id
+from channel_identity import expand_tvg_id_candidates
 from options import get_epg_log_path
 from modal_guard import message_box
 from typing import Dict, List, Optional, Tuple, Set
@@ -260,14 +261,20 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
             except Exception:
                 age = 0
             owner_exited = False
+            owner_known = False
             try:
                 with open(pid_path, encoding='ascii') as pf:
                     owner_pid = int(pf.read().strip())
                 import psutil
+                owner_known = True
                 owner_exited = age > 1 and not psutil.pid_exists(owner_pid)
             except (OSError, ValueError, ImportError):
                 _logger.debug("EPG import owner PID unavailable; using age fallback", exc_info=True)
-            if owner_exited or age > 2 * 60 * 60:
+            # The age is a fallback for a lock whose owner cannot be checked.
+            # It must never take a live import's lock: an import that runs
+            # for hours is still an import.
+            stale = owner_exited or (not owner_known and age > 2 * 60 * 60)
+            if stale:
                 try:
                     os.remove(lock_path)
                 except Exception:
@@ -289,6 +296,15 @@ def _try_acquire_import_lock(db_path: str, max_wait_sec: int = 90) -> bool:
 
 def _release_import_lock(db_path: str):
     lock_path, pid_path = _import_lock_paths(db_path)
+    # Only our own lock: a lock that was reclaimed (or taken by another
+    # copy of the app) belongs to whoever holds it now, and removing it
+    # would let two imports run at once.
+    try:
+        with open(pid_path, encoding='ascii') as pf:
+            if int(pf.read().strip()) != os.getpid():
+                return
+    except (OSError, ValueError):
+        _logger.debug("_release_import_lock: owner PID unavailable", exc_info=True)
     try:
         if os.path.exists(lock_path):
             os.remove(lock_path)
@@ -334,6 +350,8 @@ from channel_names import (
     canonicalize_name,
     strip_noise_words,
     extract_group,
+    significant_channel_numbers,
+    id_number_text,
 )
 
 
@@ -384,102 +402,9 @@ def _ordered_channel_tokens(*names: str) -> List[str]:
     return out
 
 
-def _significant_channel_numbers(*texts: str) -> Set[str]:
-    numbers: Set[str] = set()
-    word_numbers = {
-        "one": "1",
-        "two": "2",
-        "three": "3",
-        "four": "4",
-        "five": "5",
-        "six": "6",
-        "seven": "7",
-        "eight": "8",
-        "nine": "9",
-        "ten": "10",
-    }
-    ignored = {
-        "240", "360", "480", "540", "576", "720", "1080", "1440", "2160", "4320",
-        "50", "60",
-    }
-    for text in texts:
-        s = (text or "").lower()
-        if not s:
-            continue
-        s = re.sub(r'\b(?:au|ca|ie|uk|gb|us)\d+\b', ' ', s)
-        for raw in re.findall(r'\d+', s):
-            normalized = raw.lstrip("0") or "0"
-            if normalized in ignored:
-                continue
-            if len(normalized) > 3:
-                continue
-            numbers.add(normalized)
-        for word, value in word_numbers.items():
-            if re.search(r'\b' + re.escape(word) + r'\b', s):
-                numbers.add(value)
-    return numbers
-
-
 def _like_escape(text: str) -> str:
     """``text`` for a ``LIKE ... ESCAPE '\\'`` pattern, matched literally."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-def _id_number_text(channel_id: str) -> str:
-    """A channel id as text for ``_significant_channel_numbers``.
-
-    A purely numeric id (Dispatcharr/Xtream key guides by row number: "4",
-    "151") is a database key, not a channel number. Counting it made "ESPN"
-    with tvg-id "2" match "ESPN 2", and penalised every same-named guide
-    channel that lacked the number.
-    """
-    text = (channel_id or "").strip()
-    return "" if text.isdigit() else text
-
-
-def _expand_tvg_id_candidates(tvg_id: str) -> List[str]:
-    """Expand common XMLTV id variants such as IPTV-org channel.au@City."""
-    raw = (tvg_id or "").strip()
-    if not raw:
-        return []
-    candidates: List[str] = []
-    seen: Set[str] = set()
-
-    def add(value: str):
-        value = (value or "").strip()
-        key = value.lower()
-        if value and key not in seen:
-            seen.add(key)
-            candidates.append(value)
-
-    add(raw)
-    base, sep, suffix = raw.partition("@")
-    base_for_variants = base or raw
-
-    def add_base_variants(value: str):
-        m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', value or "")
-        if not m:
-            return
-        name_part, region_part = m.groups()
-        lowered_name = name_part.lower()
-        for quality in ("fhd", "uhd", "hd", "sd", "4k", "8k"):
-            if lowered_name.endswith(quality) and len(name_part) > len(quality):
-                add(f"{name_part[:-len(quality)]}.{region_part}")
-                break
-        if lowered_name.endswith("sport"):
-            add(f"{name_part}s.{region_part}")
-
-    add_base_variants(base_for_variants)
-    if sep and base:
-        add(base)
-        add_base_variants(base)
-        suffix_clean = re.sub(r'[^A-Za-z0-9]+', '', suffix or "")
-        if suffix_clean and suffix_clean.lower() not in {"sd", "hd", "fhd", "uhd", "4k", "8k"}:
-            m = re.match(r'^(.+)\.([A-Za-z]{2,3}\d*)$', base)
-            if m:
-                name_part, region_part = m.groups()
-                add(f"{name_part}{suffix_clean}.{region_part}")
-    return candidates
 
 
 def _tvg_id_has_region_hint(tvg_id: str) -> bool:
@@ -899,10 +824,15 @@ def _parse_duration_to_seconds(s: str) -> Optional[int]:
             return None
     m = _ISO8601_DUR_RX.match(s)
     if m:
-        days = int(m.group('days') or 0)
-        hours = int(m.group('hours') or 0)
-        minutes = int(m.group('minutes') or 0)
-        seconds = int(m.group('seconds') or 0)
+        try:
+            days = int(m.group('days') or 0)
+            hours = int(m.group('hours') or 0)
+            minutes = int(m.group('minutes') or 0)
+            seconds = int(m.group('seconds') or 0)
+        except (TypeError, ValueError, OverflowError):
+            # A duration with a huge component is not a duration, and int()
+            # refuses one: raising here aborted the whole source.
+            return None
         return days*86400 + hours*3600 + minutes*60 + seconds
     return None
 
@@ -912,7 +842,7 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
     if not start_utc:
         return None
     # <length units="minutes">NN</length> or units="seconds"
-    length_elem = elem.find(".//length")
+    length_elem = elem.find(".//{*}length")
     dur_seconds = None
     if length_elem is not None and (length_elem.text or "").strip():
         units = (length_elem.get("units") or "").strip().lower()
@@ -921,13 +851,21 @@ def _calc_end_from_length_or_duration(start_utc: Optional[str], elem: ET.Element
         except Exception:
             val = None
         if val is not None:
-            if units in {"", "minute", "minutes", "mins", "min"}:
-                dur_seconds = int(val * 60)
-            elif units in {"second", "seconds", "sec", "secs"}:
-                dur_seconds = int(val)
+            try:
+                if units in {"", "minute", "minutes", "mins", "min"}:
+                    dur_seconds = int(val * 60)
+                elif units in {"second", "seconds", "sec", "secs"}:
+                    dur_seconds = int(val)
+                elif units in {"hour", "hours", "hr", "hrs"}:
+                    dur_seconds = int(val * 3600)
+            except (ValueError, OverflowError):
+                # "inf" or "nan" parses as a float but is not a duration.
+                # Raising here aborted the whole source, dropping every
+                # programme after this one.
+                dur_seconds = None
     if dur_seconds is None:
         # <duration>PT1H30M</duration>
-        dur_elem = elem.find(".//duration")
+        dur_elem = elem.find(".//{*}duration")
         if dur_elem is not None and (dur_elem.text or "").strip():
             dur_seconds = _parse_duration_to_seconds(dur_elem.text.strip())
     if dur_seconds is None:
@@ -1384,6 +1322,16 @@ class EPGDatabase:
     def _open(self):
         timeout = 30.0
         if self.readonly:
+            if not os.path.exists(self.db_path):
+                # A read-only open of a database that does not exist yet fails
+                # with "unable to open database file". That is not an error:
+                # there is no guide yet, and every view has to show an empty
+                # guide - not a raw SQLite message - until the first import
+                # writes one.
+                self.conn = sqlite3.connect(":memory:", check_same_thread=False, timeout=timeout)
+                self._create_tables()
+                self._missing_columns = []
+                return
             # Open as read-only, shared cache; set reader-friendly pragmas
             uri = f"file:{self.db_path}?mode=ro&cache=shared"
             self.conn = sqlite3.connect(uri, uri=True, check_same_thread=False, timeout=timeout)
@@ -1799,7 +1747,7 @@ class EPGDatabase:
     def _collect_candidates_by_id_and_name(self, c, tvg_id: str, tvg_name: str, name: str):
         candidates = {}
 
-        tvg_id_candidates = _expand_tvg_id_candidates(tvg_id)
+        tvg_id_candidates = expand_tvg_id_candidates(tvg_id)
         tvg_id_candidate_keys = {candidate.strip().lower() for candidate in tvg_id_candidates}
 
         for candidate_id in tvg_id_candidates:
@@ -1825,7 +1773,7 @@ class EPGDatabase:
         # whichever came first in the guide - TVN 7 - won, so View EPG showed
         # another channel's schedule while the channel list, which matches by
         # name, was right.
-        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
+        playlist_numbers = significant_channel_numbers(id_number_text(tvg_id), tvg_name, name)
         seen_norms = set()
         for source_text, base_score, base_why in ((tvg_name, 96, 'exact-tvg-name'),
                                                   (name, 92, 'exact-name')):
@@ -1835,7 +1783,7 @@ class EPGDatabase:
             seen_norms.add(norm)
             rows = c.execute("SELECT id, group_tag, display_name FROM channels WHERE norm_name = ?", (norm,)).fetchall()
             for r in rows:
-                candidate_numbers = _significant_channel_numbers(_id_number_text(r[0]), r[2])
+                candidate_numbers = significant_channel_numbers(id_number_text(r[0]), r[2])
                 existing = candidates.get(r[0])
                 score = base_score
                 why = base_why
@@ -1900,14 +1848,14 @@ class EPGDatabase:
         playlist_zone = _detect_zone(" ".join([channel.get("group",""), tvg_name, name]))
         playlist_brand_key = _brand_key(name)
         playlist_ts = _detect_timeshift(" ".join([tvg_name, name]))
-        playlist_numbers = _significant_channel_numbers(_id_number_text(tvg_id), tvg_name, name)
+        playlist_numbers = significant_channel_numbers(id_number_text(tvg_id), tvg_name, name)
         brand_text = canonicalize_name(strip_noise_words(name)).lower()
         playlist_brand_family = _reverse_brand_lookup(brand_text)
         pl_calls = extract_callsigns(" ".join([tvg_name, name, channel.get("group",""), tvg_id]))
         pl_tokens = tokenize_channel_name(name)
 
         # HBO variant extraction (playlist side)
-        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), _id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
+        pl_hbo_variant_raw = _extract_hbo_variant(" ".join([tvg_name, name, channel.get("group",""), id_number_text(tvg_id)])) if playlist_brand_family == "hbo" else ""
         pl_hbo_variant = _normalize_hbo_variant(playlist_region, pl_hbo_variant_raw)
 
         c = self.conn.cursor()
@@ -2033,7 +1981,7 @@ class EPGDatabase:
                     why.append('-timeshift-extra-epg')
 
             if playlist_numbers:
-                epg_numbers = _significant_channel_numbers(_id_number_text(ch_id), disp)
+                epg_numbers = significant_channel_numbers(id_number_text(ch_id), disp)
                 if epg_numbers & playlist_numbers:
                     score += 16
                     why.append('+number')
@@ -2046,7 +1994,7 @@ class EPGDatabase:
 
             # ---- HBO variant-aware boosting ----
             if playlist_brand_family == "hbo" and epg_brand_family == "hbo":
-                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, _id_number_text(ch_id)]))
+                epg_hbo_variant_raw = _extract_hbo_variant(" ".join([disp, id_number_text(ch_id)]))
                 epg_hbo_variant = _normalize_hbo_variant(grp, epg_hbo_variant_raw)
 
                 if pl_hbo_variant or epg_hbo_variant:
@@ -2560,7 +2508,7 @@ class EPGDatabase:
         # stale lock file behind and block every later import.
         _wait_for_import_lock(self.db_path)
         try:
-            self._import_epg_xml_locked(xml_sources, progress_callback)
+            return self._import_epg_xml_locked(xml_sources, progress_callback)
         finally:
             try:
                 _release_import_lock(self.db_path)
@@ -2568,6 +2516,12 @@ class EPGDatabase:
                 _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
 
     def _import_epg_xml_locked(self, xml_sources: List[str], progress_callback=None):
+        """Import every guide and return how many of them came in.
+
+        A source that cannot be reached is logged and skipped, so the import
+        itself never fails: the count is what tells the caller whether the
+        guide is up to date or nothing could be loaded at all.
+        """
         trace_mem = DEBUG or os.getenv("EPG_TRACE_MEM", "0").strip().lower() in {"1", "true", "yes"}
         if trace_mem and tracemalloc.is_tracing():
             tracemalloc.stop()
@@ -2744,7 +2698,12 @@ class EPGDatabase:
                             tag = elem.tag.rsplit('}', 1)[-1]
                             if tag == 'channel':
                                 ch_id = elem.get("id", "")
-                                dn_elem = elem.find("./display-name")
+                                # The wildcard finds the child in a feed that
+                                # carries a default namespace: ElementTree
+                                # keeps the namespace in the tag, so a plain
+                                # lookup found nothing and the channel came
+                                # in without a name.
+                                dn_elem = elem.find("./{*}display-name")
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
                                 if (ch_id or disp) and ch_id not in seen_channel_ids:
                                     seen_channel_ids.add(ch_id)
@@ -2752,10 +2711,10 @@ class EPGDatabase:
                                     chan_count += 1
                             elif tag == 'programme':
                                 ch_id = elem.get("channel", "")
-                                title_elem = elem.find("./title")
+                                title_elem = elem.find("./{*}title")
                                 title_txt = title_elem.text.strip() if title_elem is not None and title_elem.text else ""
                                 desc_txt = ""
-                                for desc_elem in elem.findall("./desc"):
+                                for desc_elem in elem.findall("./{*}desc"):
                                     if desc_elem.text and desc_elem.text.strip():
                                         desc_txt = desc_elem.text.strip()
                                         break
@@ -2800,7 +2759,7 @@ class EPGDatabase:
                     parser.close() # Finalize
                     self.commit()
                     try:
-                        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+                        self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE);").fetchall()
                     except Exception:
                         _logger.debug("EPGDatabase.import_epg_xml: ignored exception", exc_info=True)
                     _logger.debug("EPG DONE src=%s channels=%d progs=%d elapsed=%.1fs mem=%sMB",
@@ -2934,6 +2893,11 @@ class EPGDatabase:
             _logger.info("EPG SUMMARY total_added ch=%d pg=%d | db_final ch=%s pg=%s | mem=%sMB peak_trace=%sKB",
                          grand_chan, grand_prog, row_c[0] if row_c else '?', row_p[0] if row_p else '?', _mem_mb(), int(peak/1024))
         except Exception as e: _logger.debug("EPG SUMMARY failed to query DB counts: %s", e)
+
+        # The number of guides that actually came in. A run where every source
+        # failed imported nothing, and the caller has to say so instead of
+        # reporting an up-to-date guide.
+        return len(imported_sources)
 
 
 # =========================

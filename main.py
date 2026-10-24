@@ -8,7 +8,7 @@ import urllib.parse
 import sqlite3
 import threading
 import logging
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, NamedTuple, Optional, Tuple
 import wx
 import datetime
 import re
@@ -54,7 +54,8 @@ from options import (
 )
 # Same normalization the EPG database indexes with - importing it from anywhere
 # else is how the UI and the database drift apart.
-from channel_names import canonicalize_name, strip_noise_words
+from channel_names import (canonicalize_name, strip_noise_words, id_number_text,
+                           numbers_disagree, significant_channel_numbers)
 import app_meta
 import release_notes
 import single_instance
@@ -63,8 +64,8 @@ from playlist import (
     EPGDatabase, EPGManagerDialog, PlaylistManagerDialog,
     epg_database_has_programmes, epg_database_has_usable_data, epg_tables_present
 )
-from playlist import (source_name_key, normalize_source_names,
-                      _expand_tvg_id_candidates)
+from playlist import (source_name_key, normalize_source_names)
+from channel_identity import guide_indexes, match_guide_channel
 from providers import (
     XtreamCodesClient, XtreamCodesConfig,
     StalkerPortalClient, StalkerPortalConfig,
@@ -94,11 +95,39 @@ import settings_backup
 import shortcuts
 import power
 import user_guide
-
-TELEGRAM_SUPPORT_URL = "https://t.me/SerrebiProjects"
-PROJECT_GITHUB_URL = "https://github.com/{owner}/Accessible-IPTV-Client".format(
-    owner=app_meta.GITHUB_OWNER)
-SERREBI_GITHUB_URL = "https://github.com/serrebidev"
+# Pure helpers live outside this module: the dialogs and the worker code import
+# them too, and they must not import main (main imports them).
+from catchup_urls import (
+    _CATCHUP_RETRY_BASE_DELAY_SECONDS, _CATCHUP_RETRY_MAX_ATTEMPTS,
+    _CATCHUP_SHORT_COMPLETION_RATIO, _catchup_failure_is_retryable,
+    _catchup_wall_clock, _expand_catchup_template, _ffmpeg_error_tag,  # noqa: F401 - tests read it
+    _ffmpeg_exit_reason,
+    _implicit_catchup_source, _schedule_retry,
+    _xtream_timeshift_url, single_stream_provider_key,
+)
+from dialog_utils import _context_row_index, _show_on_taskbar, _window_alive
+from playlist_headers import (
+    _extinf_name_comma,  # noqa: F401 - tests read main._extinf_name_comma
+    _merge_playlist_header_guides,
+    _playlist_header_epg_urls,
+)
+from app_links import (  # noqa: F401 - re-exported: tests and tools read main.*
+    PROJECT_GITHUB_URL, SERREBI_GITHUB_URL, TELEGRAM_SUPPORT_URL,
+)
+from channel_widgets import (  # noqa: F401 - tools/smoke_virtual_list_nvda.py reads main.*
+    _AccessibleCategoryTree, _VirtualChannelList, _VirtualWhatsOnList,
+)
+from client_m3u import M3uCacheMixin
+from client_epg import EpgRoutingMixin, _now_playing_key
+from client_recording import RecordingReportsMixin, _recording_produced_media  # noqa: F401 - tests read main.*
+from client_ui import (  # noqa: F401 - re-exported: tests read main.*
+    _MAIN_ACCEL_SHOW_PLAYER_ID, UiMixin, _main_window_accelerator_entries,
+)
+from dialogs_misc import (
+    AccessibleAboutDialog, AccountInfoDialog, AudioTrackPreferenceDialog,
+    CastDiscoveryDialog, CatchupDialog, ChangelogDialog,
+    RecordingPaddingDialog, ShutdownCountdownDialog, WhatsOnNowDialog,
+)
 
 _INTERNAL_PLAYER_FRAME_CLASS = None
 _INTERNAL_PLAYER_IMPORT_ATTEMPTED = False
@@ -108,17 +137,6 @@ _INTERNAL_PLAYER_IMPORT_ERROR = None
 # when no single playlist is selected: categories and channels come from every
 # loaded playlist.
 ALL_PLAYLISTS_SCOPE = ""
-
-# Fixed command id shared by the Player menu item and the explicit accelerator
-# table. Keeping the shortcut in the table makes it work consistently on both
-# menu-bar and button-menu platforms; the menu label remains its visible hint.
-_MAIN_ACCEL_SHOW_PLAYER_ID = 4021
-
-
-def _main_window_accelerator_entries(config=None):
-    """Return the main-window shortcuts as one duplicate-checkable mapping."""
-    return shortcuts.main_entries(config or {})
-
 
 def _source_scope_id(src) -> str:
     """The stable id that tags a playlist's channels for the scope filter."""
@@ -200,22 +218,6 @@ def _wait_for_player_stop(stopped) -> None:
         LOG.debug("_wait_for_player_stop: ignored exception", exc_info=True)
 
 
-def _window_alive(window) -> bool:
-    """True while the wx window still exists.
-
-    A destroyed window raises on every call, so any code that keeps a window
-    around for later - a queued notification, a focus restore - has to probe
-    it before it uses it.
-    """
-    if window is None:
-        return False
-    try:
-        window.IsShown()
-    except RuntimeError:
-        return False
-    return True
-
-
 def _message_box_owner(parent, frame):
     """The window a box belongs to, or None when that window is gone.
 
@@ -240,97 +242,6 @@ def _modal_dialog_is_open() -> bool:
 
 class InternalPlayerUnavailableError(RuntimeError):
     """Raised when the built-in VLC player cannot be loaded."""
-
-
-class AccessibleAboutDialog(wx.Dialog):
-    """A keyboard-first About dialog whose support links are real tab stops."""
-
-    help_topic = "support"
-
-    def __init__(self, parent):
-        from app_meta import APP_DISPLAY_NAME, APP_VERSION
-
-        super().__init__(
-            parent,
-            title=_("About {name}").format(name=APP_DISPLAY_NAME),
-            style=wx.DEFAULT_DIALOG_STYLE,
-        )
-        panel = wx.Panel(self)
-        layout = wx.BoxSizer(wx.VERTICAL)
-
-        heading = wx.StaticText(
-            panel,
-            label=_("{name} {version}").format(name=APP_DISPLAY_NAME, version=APP_VERSION),
-        )
-        heading.SetFont(heading.GetFont().Bold())
-        layout.Add(heading, 0, wx.ALL, 12)
-
-        description = wx.StaticText(
-            panel,
-            label=_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
-                    "Supports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, "
-                    "built-in VLC playback, casting, and XMLTV EPG."),
-        )
-        description.Wrap(500)
-        layout.Add(description, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
-
-        support = wx.StaticText(panel, label=_("Community and support"))
-        support.SetFont(support.GetFont().Bold())
-        layout.Add(support, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
-        for label, url in (
-            (_("Join the SerrebiProjects Telegram group"), TELEGRAM_SUPPORT_URL),
-            (_("Open the Accessible IPTV Client project on GitHub"), PROJECT_GITHUB_URL),
-            (_("Follow Serrebi on GitHub"), SERREBI_GITHUB_URL),
-        ):
-            link = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
-            link.SetName(label)
-            # wxMSW's HyperlinkCtrl has no key handling of its own: with the
-            # dialog's default OK button present, Enter and Space closed the
-            # About dialog instead of opening the link. Route those two keys
-            # (and the click) to the browser -- and *only* those two. The
-            # handler used to open the link for every key, so Tab (and every
-            # arrow key) launched a browser window while merely moving through
-            # the dialog; a few presses buried the screen in windows.
-            def _open_link(_event=None, _url=url):
-                wx.LaunchDefaultBrowser(_url)
-
-            def _on_link_key(event, _open=_open_link):
-                if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_SPACE):
-                    _open()
-                    return
-                event.Skip()
-
-            link.Bind(wx.EVT_CHAR_HOOK, _on_link_key)
-            link.Bind(wx.adv.EVT_HYPERLINK, _open_link)
-            link.Bind(wx.EVT_LEFT_DCLICK, _open_link)
-            layout.Add(link, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
-
-        # Create buttons on the panel and handle both exit paths explicitly.
-        # ``CreateButtonSizer`` creates children of the dialog itself; placing
-        # those children in a panel sizer leaves wxMSW without a usable command
-        # route, which made the original About dialog impossible to dismiss.
-        button_sizer = wx.StdDialogButtonSizer()
-        self.ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("OK"))
-        self.close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        button_sizer.AddButton(self.ok_btn)
-        button_sizer.AddButton(self.close_btn)
-        button_sizer.Realize()
-        layout.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 12)
-        panel.SetSizerAndFit(layout)
-        self.SetMinSize((540, -1))
-        self.Fit()
-        self.CentreOnParent()
-        self.ok_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_OK))
-        self.close_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_CANCEL))
-        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish(wx.ID_CANCEL))
-        self.SetEscapeId(wx.ID_CANCEL)
-        self.ok_btn.SetDefault()
-
-    def _finish(self, result):
-        if self.IsModal():
-            self.EndModal(result)
-        else:
-            self.Destroy()
 
 
 class UserGuideDialog(wx.Dialog):
@@ -527,94 +438,6 @@ class UserGuideDialog(wx.Dialog):
             self.Destroy()
 
 
-def changelog_path() -> str:
-    """Absolute path of the release history shipped with this application."""
-    if getattr(sys, "frozen", False):
-        base = getattr(sys, "_MEIPASS", None) or os.path.dirname(sys.executable)
-    else:
-        base = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, "CHANGELOG.md")
-
-
-class ChangelogDialog(wx.Dialog):
-    """A read-only, copyable view of the complete bundled release history.
-
-    Section labels and the notes of the newest releases are shown in the
-    interface language when translated (see release_notes.py); the rest stays
-    English.
-    """
-
-    def __init__(self, parent, path: Optional[str] = None):
-        super().__init__(parent, title=_("What's New"), size=(820, 580),
-                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
-        try:
-            with open(path or changelog_path(), "r", encoding="utf-8") as handle:
-                history = release_notes.localize_changelog(
-                    handle.read(), app_meta.APP_DISPLAY_NAME)
-        except OSError:
-            LOG.exception("Could not read the bundled changelog")
-            history = _("No release history is available.")
-
-        panel = wx.Panel(self)
-        layout = wx.BoxSizer(wx.VERTICAL)
-        recent_history, older_history = release_notes.split_changelog_window(history)
-        self._recent_history = recent_history
-        self._older_history = older_history
-        self._older_shown = False
-        self.text = wx.TextCtrl(panel, value=recent_history,
-                                style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
-        self.text.SetName(_("Release history"))
-        # The full history stays one screen-reader document: the toggle only
-        # appends the older English entries below a labelled separator, so
-        # nothing is ever unloaded from the text control (issue #28).
-        self.toggle_btn = None
-        if older_history.strip():
-            self.toggle_btn = wx.Button(panel, label=_("Show older releases (English)"))
-            self.toggle_btn.Bind(wx.EVT_BUTTON, self._on_toggle_older)
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        layout.Add(self.text, 1, wx.EXPAND | wx.ALL, 10)
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        if self.toggle_btn is not None:
-            btn_sizer.Add(self.toggle_btn, 0, wx.LEFT | wx.BOTTOM, 10)
-        btn_sizer.AddStretchSpacer(1)
-        btn_sizer.Add(close_btn, 0, wx.RIGHT | wx.BOTTOM, 10)
-        layout.Add(btn_sizer, 0, wx.EXPAND)
-        panel.SetSizer(layout)
-        self.SetMinSize((520, 380))
-        self.CentreOnParent()
-        close_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish())
-        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish())
-        self.SetEscapeId(wx.ID_CANCEL)
-        wx.CallAfter(self.text.SetFocus)
-
-    def _on_toggle_older(self, _event) -> None:
-        """Show or hide the older English release entries in place."""
-        if self.toggle_btn is None:
-            return
-        if self._older_shown:
-            self.text.SetValue(self._recent_history)
-            self.text.SetInsertionPoint(0)
-            self.toggle_btn.SetLabel(_("Show older releases (English)"))
-            self._older_shown = False
-        else:
-            separator = _("Older releases (English)")
-            self.text.SetValue(
-                self._recent_history.rstrip() + "\n\n" + separator + "\n\n"
-                + self._older_history.lstrip())
-            # Land the caret at the separator so screen readers announce the
-            # newly revealed section; the toggle keeps focus for a quick hide.
-            self.text.SetInsertionPoint(len(self._recent_history.rstrip()) + 2)
-            self.toggle_btn.SetLabel(_("Hide older releases"))
-            self._older_shown = True
-        self.toggle_btn.SetFocus()
-
-    def _finish(self) -> None:
-        if self.IsModal():
-            self.EndModal(wx.ID_CANCEL)
-        else:
-            self.Destroy()
-
-
 # The guide window on screen, so F1 inside it moves it instead of opening another.
 _OPEN_USER_GUIDE: Optional[UserGuideDialog] = None
 _LAST_HELP_REQUEST = 0.0
@@ -785,217 +608,6 @@ def install_help_hooks(app) -> None:
     app.Bind(wx.EVT_HELP, _on_app_help)
 
 
-class _AccessibleCategoryTree(wx.TreeCtrl):
-    """Native, NVDA-friendly category tree with ListBox-compatible helpers.
-
-    The surrounding application stores category selection as a stable integer
-    into ``_group_keys``.  Keeping that small compatibility layer lets us use
-    the native tree's hierarchy, expansion state and MSAA/UIA role without
-    changing category identity to a display string.
-    """
-
-    _COUNT_SUFFIX = re.compile(r" \(\d+\)$")
-
-    def __init__(self, parent):
-        super().__init__(
-            parent,
-            style=wx.TR_HIDE_ROOT | wx.TR_HAS_BUTTONS | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE,
-            name="Categories",
-        )
-        self.SetName(_("Categories"))
-        if hasattr(self, "SetAccessibleName"):
-            self.SetAccessibleName(_("Categories"))
-        self._labels: List[str] = []
-        # An optional display path keeps a category's identity separate from
-        # its position. In particular, two playlists may both have a "News"
-        # category, but they must remain separate branches in All playlists.
-        self._paths: Dict[int, List[object]] = {}
-        self._selection = wx.NOT_FOUND
-        self._batch_depth = 0
-        self._rebuilding = False
-        self._item_indexes: Dict[int, int] = {}
-        self._index_items: Dict[int, object] = {}
-        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_tree_selection)
-        self._rebuild()
-
-    @classmethod
-    def _path_parts(cls, label: str) -> List[str]:
-        base = cls._COUNT_SUFFIX.sub("", label or "").strip()
-        # IPTV providers commonly encode a hierarchy with either slash or a
-        # spaced greater-than sign. Keep all other punctuation literal: it can
-        # be part of a broadcaster's actual category name.
-        if " > " in base:
-            parts = base.split(" > ")
-        else:
-            parts = base.split("/")
-        return [part.strip() for part in parts if part.strip()] or [base]
-
-    def Freeze(self):
-        self._batch_depth += 1
-        return super().Freeze()
-
-    def Thaw(self):
-        result = super().Thaw()
-        self._batch_depth = max(0, self._batch_depth - 1)
-        if not self._batch_depth:
-            self._rebuild()
-        return result
-
-    def _changed(self):
-        if not self._batch_depth:
-            self._rebuild()
-
-    def Clear(self):
-        self._labels = []
-        self._paths = {}
-        self._selection = wx.NOT_FOUND
-        self._changed()
-
-    def Append(self, label: str, tree_path: Optional[List[object]] = None):
-        self._labels.append(str(label))
-        if tree_path:
-            self._paths[len(self._labels) - 1] = list(tree_path)
-        self._changed()
-        return len(self._labels) - 1
-
-    def Insert(self, label: str, index: int, tree_path: Optional[List[object]] = None):
-        index = max(0, min(int(index), len(self._labels)))
-        self._labels.insert(index, str(label))
-        self._paths = {
-            existing + 1 if existing >= index else existing: path
-            for existing, path in self._paths.items()
-        }
-        if tree_path:
-            self._paths[index] = list(tree_path)
-        if self._selection >= index:
-            self._selection += 1
-        self._changed()
-        return index
-
-    def Delete(self, index: int):
-        if not 0 <= index < len(self._labels):
-            return
-        self._labels.pop(index)
-        self._paths = {
-            existing - 1 if existing > index else existing: path
-            for existing, path in self._paths.items()
-            if existing != index
-        }
-        if self._selection == index:
-            self._selection = wx.NOT_FOUND
-        elif self._selection > index:
-            self._selection -= 1
-        self._changed()
-
-    def SetString(self, index: int, label: str):
-        if 0 <= index < len(self._labels):
-            self._labels[index] = str(label)
-            self._changed()
-
-    def GetString(self, index: int) -> str:
-        return self._labels[index] if 0 <= index < len(self._labels) else ""
-
-    def GetCount(self) -> int:
-        return len(self._labels)
-
-    def GetSelection(self) -> int:
-        return self._selection
-
-    def SetSelection(self, index: int):
-        if not 0 <= index < len(self._labels):
-            self._selection = wx.NOT_FOUND
-            return
-        self._selection = index
-        if self._batch_depth:
-            return
-        item = self._index_items.get(index)
-        if item is not None and item.IsOk():
-            self.SelectItem(item)
-            self.EnsureVisible(item)
-
-    def ToggleSelectedBranch(self):
-        item = super().GetSelection()
-        if item is not None and item.IsOk() and self.ItemHasChildren(item):
-            if self.IsExpanded(item):
-                self.Collapse(item)
-            else:
-                self.Expand(item)
-
-    def ExpandSelectedBranch(self):
-        item = super().GetSelection()
-        if item is not None and item.IsOk() and self.ItemHasChildren(item):
-            self.Expand(item)
-
-    def CollapseSelectedBranch(self):
-        item = super().GetSelection()
-        if item is not None and item.IsOk() and self.ItemHasChildren(item):
-            self.Collapse(item)
-
-    @classmethod
-    def _leaf_text(cls, label: str, leaf: object) -> str:
-        """Display just the last path segment, retaining its channel count."""
-        suffix_match = cls._COUNT_SUFFIX.search(label or "")
-        suffix = suffix_match.group(0) if suffix_match else ""
-        if isinstance(leaf, tuple):
-            leaf = leaf[-1]
-        return str(leaf) + suffix
-
-    def _on_tree_selection(self, event):
-        if self._rebuilding:
-            event.Skip()
-            return
-        item = event.GetItem()
-        # wxMSW returns a fresh ``sip.voidptr`` wrapper from GetID() on each
-        # call, so it is not a stable dictionary key. TreeItemId comparison is.
-        self._selection = next(
-            (index for index, known_item in self._index_items.items() if item == known_item),
-            wx.NOT_FOUND,
-        )
-        event.Skip()
-
-    def _rebuild(self):
-        # Rebuild only when a batched category refresh is complete. TreeCtrl
-        # exposes the hierarchy to NVDA, unlike an owner-drawn replacement.
-        self._rebuilding = True
-        try:
-            self.DeleteAllItems()
-            self._index_items = {}
-            root = self.AddRoot(_("Categories"))
-            path_items: Dict[Tuple[object, ...], object] = {}
-            for index, label in enumerate(self._labels):
-                parent = root
-                path: List[object] = []
-                parts = self._paths.get(index) or self._path_parts(label)
-                for part_index, part in enumerate(parts):
-                    path.append(part)
-                    path_key = tuple(path)
-                    item = path_items.get(path_key)
-                    if item is None:
-                        text = self._leaf_text(label, part) if part_index == len(parts) - 1 else (
-                            str(part[-1]) if isinstance(part, tuple) else str(part)
-                        )
-                        item = self.AppendItem(parent, text)
-                        path_items[path_key] = item
-                    elif part_index == len(parts) - 1:
-                        # The category itself may also be a branch. Its own label
-                        # includes its channel count, while its children stay put.
-                        self.SetItemText(item, self._leaf_text(label, part))
-                    parent = item
-                self._index_items[index] = parent
-            # A source's categories are visible immediately under its branch.
-            # The user can still collapse any branch with Left; this only sets
-            # the useful initial state after a playlist/category refresh.
-            for item in path_items.values():
-                if item.IsOk() and self.ItemHasChildren(item):
-                    self.Expand(item)
-        finally:
-            self._rebuilding = False
-        if 0 <= self._selection < len(self._labels):
-            item = self._index_items.get(self._selection)
-            if item is not None and item.IsOk():
-                self.SelectItem(item)
-
-
 def _load_internal_player_frame_class():
     global _INTERNAL_PLAYER_FRAME_CLASS
     global _INTERNAL_PLAYER_IMPORT_ATTEMPTED
@@ -1021,93 +633,6 @@ def _load_internal_player_frame_class():
     return _INTERNAL_PLAYER_FRAME_CLASS
 
 
-_M3U_ATTR_RE = re.compile(r'([A-Za-z0-9_\-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^",\s]+))')
-
-
-# #EXTM3U header attributes that name the playlist's own XMLTV guide.
-_PLAYLIST_EPG_ATTRS = ("x-tvg-url", "url-tvg")
-
-
-def _playlist_header_epg_urls(text: str) -> List[str]:
-    """Guide URLs a playlist advertises in its #EXTM3U header.
-
-    ``x-tvg-url`` (and its older alias ``url-tvg``) may list several guides
-    separated by commas. Only http(s) URLs are used: a header cannot be
-    allowed to point the importer at a file on the user's computer. Only the
-    first line is read, so a 12 MB playlist is not split for this.
-    """
-    if not text:
-        return []
-    head = text.lstrip("﻿ \t\r\n")
-    end = head.find("\n")
-    first = (head if end == -1 else head[:end]).strip()
-    if not first[:7].upper() == "#EXTM3U":
-        return []
-    urls: List[str] = []
-    for match in _M3U_ATTR_RE.finditer(first[7:]):
-        if match.group(1).lower() not in _PLAYLIST_EPG_ATTRS:
-            continue
-        value = match.group(2) or match.group(3) or ""
-        if match.group(4):
-            # _M3U_ATTR_RE ends an unquoted value at a comma, but an unquoted
-            # guide list (x-tvg-url=https://a/1.xml,https://b/2.xml) runs to
-            # the next whitespace.
-            value = re.match(r"\S*", match.string[match.start(4):]).group(0)
-        for part in value.split(","):
-            url = part.strip()
-            scheme, sep, rest = url.partition("://")
-            if not sep or scheme.lower() not in ("http", "https"):
-                continue
-            # The importer recognises only lowercase schemes; "HTTP://..."
-            # would otherwise be opened as a local file path and fail.
-            url = f"{scheme.lower()}://{rest}"
-            if url not in urls:
-                urls.append(url)
-    return urls
-
-
-def _merge_playlist_header_guides(previous, fetched, playlist_sources):
-    """(guides per playlist, flat guide list) after a playlist load.
-
-    A playlist read in this load replaces its own entry, also with an empty
-    list when its header dropped the guide; one kept from the previous load
-    in a partial refresh keeps its entry; a playlist no longer configured
-    loses it.
-    """
-    merged = dict(previous)
-    merged.update(fetched)
-    by_source = {src: list(guides) for src, guides in merged.items() if src in playlist_sources}
-    flat: List[str] = []
-    for guides in by_source.values():
-        for epg in guides:
-            if epg not in flat:
-                flat.append(epg)
-    return by_source, flat
-
-
-def _extinf_name_comma(line: str) -> int:
-    """Index of the comma separating an #EXTINF's attributes from its name.
-
-    The separator is the first comma *outside* a quoted attribute value. Real
-    playlists ship values that contain commas — iptv-org, for one, emits
-    http-user-agent="Mozilla/5.0 (... (KHTML, like Gecko) Chrome/145 ..." — and
-    splitting on the first raw comma made the rest of the attribute list the
-    channel name while truncating the attributes themselves, losing the
-    channel's group and headers with it.
-
-    Returns -1 when the line holds no comma, and falls back to the first raw
-    comma when quoting is unbalanced, which is what a malformed line used to get.
-    """
-    quote = ""
-    for index, char in enumerate(line):
-        if quote:
-            if char == quote:
-                quote = ""
-        elif char in ('"', "'"):
-            quote = char
-        elif char == ",":
-            return index
-    return line.find(",")
 _AUTO_UPDATE_DELAY_AFTER_PLAYLIST_MS = 5000
 _AUTO_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000  # hourly
 _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS = 5.0
@@ -1123,239 +648,9 @@ _UPDATE_HANDOFF_POLL_MS = 250
 _UPDATE_HANDOFF_MAX_WAIT_SECONDS = 15.0
 _UPDATE_HANDOFF_POLL_MS = 250
 
-# Catch-up downloads: providers refuse bursts of connections with 403s and
-# flaky networks drop streams, so a failed download is retried automatically
-# (with the delay doubled per attempt) instead of making the user start over.
-# User cancellations are never retried; the budget is small on purpose.
-_CATCHUP_RETRY_MAX_ATTEMPTS = 3
-_CATCHUP_RETRY_BASE_DELAY_SECONDS = 2.0
-
-# A catch-up download counts as complete when ffmpeg wrote at least this
-# share of the programme length. Stats rounding and streams that end a
-# second early are normal; anything shorter means the provider closed the
-# connection mid-file and the download is retried rather than celebrated.
-_CATCHUP_SHORT_COMPLETION_RATIO = 0.95
-_CATCHUP_RETRYABLE_RE = re.compile(
-r"403\b|429\b|50[0-9]\b|connection (?:reset|refused|closed)|timed? ?out|"
-r"temporarily unavailable|no route to host|server returned", re.IGNORECASE)
-
-# Teleelevidenie counts every media request against an account-wide, one-stream
-# allowance.  Keep this deliberately narrow: ``timeshift`` alone does not say
-# that an unrelated provider has the same restriction.
-_ONE_STREAM_PROVIDER_SUFFIXES = ("teleelevidenie.com",)
-
-
-def single_stream_provider_key(url: str) -> str:
-    """The exclusive-connection key for a known one-stream provider, or ``""``."""
-    if not url:
-        return ""
-    try:
-        base_url, _headers = split_stream_modifiers(url)
-        host = (urllib.parse.urlsplit(base_url).hostname or "").lower().rstrip(".")
-    except (TypeError, ValueError):
-        return ""
-    for suffix in _ONE_STREAM_PROVIDER_SUFFIXES:
-        if host == suffix or host.endswith("." + suffix):
-            return suffix
-    return ""
-
-
 # How far ahead View EPG looks. It starts at the programme on air now: finished
 # programmes are what Catch-up is for, and cannot be recorded any more.
 _CHANNEL_EPG_HORIZON = datetime.timedelta(days=7)
-
-
-def _ffmpeg_error_tag(a, b, c, d) -> int:
-    """FFmpeg's FFERRTAG: the negative code ffmpeg exits with for that error."""
-    def byte(ch):
-        return ch if isinstance(ch, int) else ord(ch)
-    return -(byte(a) | (byte(b) << 8) | (byte(c) << 16) | (byte(d) << 24))
-
-
-# ffmpeg exits with the AVERROR of whatever stopped it, and Windows reports that
-# as an unsigned 32-bit number: a refused download read "code 3436169992", which
-# is HTTP 403 Forbidden. These put the common ones into words.
-_FFMPEG_EXIT_REASONS = (
-    ((_ffmpeg_error_tag(0xF8, "4", "0", "3"),),
-     N_("The provider refused access (HTTP 403 Forbidden). Many providers allow "
-        "only one stream per account at a time: stop other playback or downloads "
-        "from this account and try again.")),
-    ((_ffmpeg_error_tag(0xF8, "4", "0", "1"),),
-     N_("The provider asked for a login (HTTP 401 Unauthorized). Check the "
-        "playlist's user name and password.")),
-    ((_ffmpeg_error_tag(0xF8, "4", "0", "4"),),
-     N_("The provider does not have this programme (HTTP 404 Not Found). It may "
-        "be older than the provider's archive.")),
-    ((_ffmpeg_error_tag(0xF8, "4", "0", "0"), _ffmpeg_error_tag(0xF8, "4", "2", "9"),
-      _ffmpeg_error_tag(0xF8, "4", "X", "X")),
-     N_("The provider rejected the request (HTTP 4xx error).")),
-    ((_ffmpeg_error_tag(0xF8, "5", "X", "X"),),
-     N_("The provider's server had an error (HTTP 5xx). Try again later.")),
-    ((_ffmpeg_error_tag("I", "N", "D", "A"),),
-     N_("The stream sent data that could not be read.")),
-    # ETIMEDOUT / ECONNREFUSED as the Windows CRT, Linux and Winsock number them.
-    ((-138, -110, -10060),
-     N_("The connection to the provider timed out.")),
-    ((-107, -111, -10061),
-     N_("The provider's server refused the connection.")),
-)
-
-
-def _ffmpeg_exit_reason(rc) -> str:
-    """Plain words for an ffmpeg exit code, or "" when it is not a known one."""
-    try:
-        code = int(rc)
-    except (TypeError, ValueError):
-        return ""
-    if code > 0x7FFFFFFF:
-        code -= 1 << 32
-    for codes, reason in _FFMPEG_EXIT_REASONS:
-        if code in codes:
-            return _(reason)
-    return ""
-
-
-def _catchup_failure_is_retryable(rc: int, stderr_lines, *, stopped_by_user: bool = False) -> bool:
-    """True when a finished download failed for a reason retrying can fix."""
-    if stopped_by_user:
-        return False
-    # rc == 0.0 (a float) is the truncation sentinel from
-    # _handle_truncated_catchup_download: the process really exited clean but
-    # the transfer came up short, so the success rule must not short-circuit
-    # here. rc == 0 (int) stays a genuine clean exit.
-    if not rc and not (isinstance(rc, float) and rc == 0.0):
-        return False
-    text = "\n".join(stderr_lines or [])
-    return bool(_CATCHUP_RETRYABLE_RE.search(text))
-
-
-def _schedule_retry(fn, delay_seconds: float):
-    """Run ``fn`` once after ``delay_seconds`` on a daemon thread."""
-    timer = threading.Timer(delay_seconds, fn)
-    timer.daemon = True
-    timer.start()
-    return timer
-
-# EPG-style placeholders some providers embed in catchup-source templates.
-# ${start}/${timestamp} (teleelevidenie), {utc}/{lutc}, and the long variants
-# all appear in the wild; Kodi's IPTV Simple documents the {S} family.
-_CATCHUP_TEMPLATE_TOKENS = (
-    ("${start}", "start"), ("${timestamp}", "lutc"),
-    ("${duration}", "duration"), ("${end}", "end"),
-    ("{utc}", "start"), ("{lutc}", "lutc"),
-    ("{utcstart}", "start"), ("{utcend}", "end"),
-    ("{duration}", "duration"),
-    ("{S}", "start"), ("{E}", "end"), ("{L}", "lutc"), ("{D}", "duration"),
-    ("{Y}", "start_year"), ("{m}", "start_month"), ("{d}", "start_day"),
-    ("{H}", "start_hour"), ("{M}", "start_minute"),
-    ("{y}", "end_year"), ("{e}", "end_day"), ("{h}", "end_hour"), ("{i}", "end_minute"),
-)
-
-
-def _catchup_token_value(kind: str, start_dt, end_dt, now) -> str:
-    """Render one catchup-source placeholder as a string."""
-    if kind == "start":
-        return str(int(start_dt.timestamp()))
-    if kind == "end":
-        return str(int(end_dt.timestamp()))
-    if kind == "lutc":
-        return str(int(now.timestamp()))
-    if kind == "duration":
-        return str(max(1, int((end_dt - start_dt).total_seconds())))
-    if kind == "start_year":
-        return start_dt.strftime("%Y")
-    if kind == "start_month":
-        return start_dt.strftime("%m")
-    if kind == "start_day":
-        return start_dt.strftime("%d")
-    if kind == "start_hour":
-        return start_dt.strftime("%H")
-    if kind == "start_minute":
-        return start_dt.strftime("%M")
-    if kind == "end_year":
-        return end_dt.strftime("%Y")
-    if kind == "end_day":
-        return end_dt.strftime("%d")
-    if kind == "end_hour":
-        return end_dt.strftime("%H")
-    if kind == "end_minute":
-        return end_dt.strftime("%M")
-    return ""
-
-
-def _expand_catchup_template(source: str, start_dt, end_dt, offset_hours: float = 0.0):
-    """Fill an EPG-template ``catchup-source`` in, or return None if it is not one.
-
-    Providers such as teleelevidenie ship ``catchup="append"`` plus a template
-    like ``?utc=${start}&lutc=${timestamp}``. That must be appended to the
-    channel's live URL with real epoch values, not treated as a static base
-    path -- the old code turned it into ``<host>/<start>/<duration>/``, which
-    the server answers with 403.
-    """
-    text = (source or "").strip()
-    if not text:
-        return None
-    expanded = text
-    matched = False
-    for token, kind in _CATCHUP_TEMPLATE_TOKENS:
-        if token in expanded:
-            matched = True
-            break
-    if not matched:
-        return None
-
-    if offset_hours:
-        try:
-            shift = datetime.timedelta(hours=float(offset_hours))
-        except (TypeError, ValueError):
-            shift = datetime.timedelta(0)
-        start_dt = start_dt - shift
-        end_dt = end_dt - shift
-    now = datetime.datetime.now(datetime.timezone.utc)
-    for token, kind in _CATCHUP_TEMPLATE_TOKENS:
-        while token in expanded:
-            expanded = expanded.replace(
-                token,
-                _catchup_token_value(kind, start_dt, end_dt, now),
-                1,
-            )
-    return expanded
-
-
-def _positive_timeshift_days(channel: Dict[str, str]) -> Optional[int]:
-    """Return a positive M3U ``timeshift`` window, expressed in days.
-
-    Some providers use the older ``timeshift=\"N\"`` attribute instead of the
-    newer catchup/catchup-days pair. The attribute says how much archive is
-    available, but not how its URL is built, so URL inference stays
-    provider-specific below.
-    """
-    value = channel.get("timeshift")
-    try:
-        days = int(float(str(value).strip()))
-    except (TypeError, ValueError):
-        return None
-    return days if days > 0 else None
-
-
-def _implicit_catchup_source(channel: Dict[str, str]) -> str:
-    """Infer a catch-up template when a known provider only sends timeshift.
-
-    Teleelevidenie's current dynamic playlists mark archive-capable channels as
-    ``timeshift=\"3\"`` without the ``catchup-source`` template present in its
-    older playlists. Its HLS and TS endpoints both accept the same utc/lutc
-    query parameters, so the live container format does not affect this rule.
-    """
-    if _positive_timeshift_days(channel) is None:
-        return ""
-    raw_url = str(channel.get("url") or "").split("|", 1)[0].strip()
-    try:
-        host = (urllib.parse.urlparse(raw_url).hostname or "").lower().rstrip(".")
-    except (TypeError, ValueError):
-        return ""
-    if host == "teleelevidenie.com" or host.endswith(".teleelevidenie.com"):
-        return "?utc=${start}&lutc=${timestamp}"
-    return ""
 
 
 def _local_hhmm(utc_stamp: str) -> str:
@@ -1375,94 +670,7 @@ def _local_hhmm_cached(utc_stamp: str, _timezone: int, _altzone: int) -> str:
     return utc_to_local(stamp.replace(tzinfo=datetime.timezone.utc)).strftime("%H:%M")
 
 
-def _now_playing_key(channel: Dict[str, str]) -> str:
-    """Cache key for a channel's on-air row label and description.
 
-    The normalized name alone is not enough: providers carry several channels
-    of one name with different guides, and all of them showed the first one's
-    programme. The tvg-id tells them apart.
-    """
-    raw_name = str(channel.get("name") or "")
-    # Names made only of strip tags ("USA", "CAR") canonicalize to nothing.
-    name_key = canonicalize_name(raw_name) or raw_name.strip().lower()
-    tvg_id = str(channel.get("tvg-id") or "").strip().lower()
-    if name_key and tvg_id:
-        return f"{name_key}\x1f{tvg_id}"
-    return name_key
-
-
-# Bump whenever _parse_m3u_return starts producing different channel dicts
-# from the same playlist text; it salts the parsed-playlist cache key.
-_PARSED_PLAYLIST_CACHE_VERSION = "3"
-
-# Xtream Codes live URL: /live/USER/PASS/ID[.ext] or the short /USER/PASS/ID[.ext].
-_XTREAM_LIVE_PATH_RE = re.compile(r"^/(?:live/)?([^/]+)/([^/]+)/(\d+)(?:\.[A-Za-z0-9]+)?$")
-
-
-def _catchup_wall_clock(dt: datetime.datetime, tz_name: str = "") -> datetime.datetime:
-    """``dt`` on the clock the provider's archive reads catch-up starts in.
-
-    ``tz_name`` is the playlist's ``catchup-timezone``: "UTC" (Dispatcharr) or
-    an IANA zone. Without one, or when the zone is unknown here, the user's
-    local time is used, which is what Xtream servers in the user's region
-    expect.
-    """
-    name = (tz_name or "").strip()
-    if name.upper() in {"UTC", "GMT", "Z", "ETC/UTC", "ETC/GMT"}:
-        return dt.astimezone(datetime.timezone.utc)
-    if name:
-        try:
-            from zoneinfo import ZoneInfo
-            return dt.astimezone(ZoneInfo(name))
-        except Exception:
-            LOG.debug("_catchup_wall_clock: unknown catch-up timezone %r", name, exc_info=True)
-    return utc_to_local(dt)
-
-
-def _xtream_timeshift_url(channel: Dict[str, str], start_dt: datetime.datetime,
-                          end_dt: datetime.datetime) -> str:
-    """Xtream Codes archive URL for a ``catchup="xc"`` channel without a source.
-
-    Xtream playlists (and Dispatcharr's XC output) mark archive channels with
-    ``catchup="xc"`` and no ``catchup-source``: the archive URL is implied by
-    the live URL. ``/live/U/P/ID`` becomes ``/timeshift/U/P/MIN/START/ID.ts``.
-    The live URL's ``|Referer=...|Cookie=...`` tail is kept: a provider that
-    needs those headers for live needs them for the archive too.
-    """
-    raw_url, sep, modifiers = str(channel.get("url") or "").partition("|")
-    raw_url = raw_url.strip()
-    modifiers = modifiers.strip()
-    try:
-        parsed = urllib.parse.urlparse(raw_url)
-    except (TypeError, ValueError):
-        return ""
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        return ""
-    m = _XTREAM_LIVE_PATH_RE.match(parsed.path or "")
-    if not m:
-        return ""
-    user, password, stream_id = m.groups()
-    duration = max(1, int((end_dt - start_dt).total_seconds() // 60))
-    start = _catchup_wall_clock(start_dt, channel.get("catchup-timezone", ""))
-    try:
-        offset = channel.get("catchup-offset")
-        if offset:
-            start -= datetime.timedelta(hours=float(offset))
-    except (TypeError, ValueError):
-        LOG.debug("_xtream_timeshift_url: ignored catch-up offset", exc_info=True)
-    token = start.strftime("%Y-%m-%d:%H-%M")
-    url = (f"{parsed.scheme}://{parsed.netloc}/timeshift/{user}/{password}/"
-           f"{duration}/{token}/{stream_id}.ts")
-    if parsed.query:
-        # A provider token in the live URL's query authorises the archive too.
-        url = f"{url}?{parsed.query}"
-    ua = channel.get("http-user-agent")
-    # Read the tail with the same parser playback uses, so aliases such as
-    # "UA=" count as a User-Agent and the provider's own value is not overridden.
-    tail_headers = split_stream_modifiers("x|" + modifiers)[1] if modifiers else {}
-    if ua and not tail_headers.get("user-agent"):
-        modifiers = "|".join(filter(None, [modifiers, f"User-Agent={urllib.parse.quote(ua)}"]))
-    return f"{url}|{modifiers}" if modifiers else url
 
 
 def set_linux_env():
@@ -1632,7 +840,42 @@ class TrayIcon(wx.adv.TaskBarIcon):
         elif eid == self.TBMENU_EXIT:
             self.on_exit()
 
-class IPTVClient(wx.Frame):
+class _ProgramMatchIndex(NamedTuple):
+    """The per-playlist match features and the tables that answer a lookup.
+
+    The strong match rules are equality rules, so they are dictionary
+    lookups: a scan over every channel in the playlist cost half a second on
+    a provider with 257,000 channels, on the GUI thread, for every row the
+    user highlighted.
+    """
+
+    channels: List[Dict[str, str]]
+    rows: List[tuple]
+    by_tvg_id: Dict[str, Dict[str, str]]
+    memo: Dict[tuple, Optional[Dict[str, str]]]
+    by_name: Dict[str, tuple]
+    by_tvg_name: Dict[str, tuple]
+    by_canon: Dict[str, tuple]
+    by_base: Dict[str, tuple]
+    tvg_id_rows: List[tuple]
+
+
+def _channel_numbers(channel: Dict[str, str]) -> frozenset:
+    """The channel numbers a playlist channel names.
+
+    The id counts too, but a purely numeric one is a row number rather than a
+    channel number.
+    """
+    return significant_channel_numbers(
+        id_number_text(str(channel.get("tvg-id") or "")),
+        str(channel.get("name") or ""),
+        str(channel.get("tvg-name") or ""),
+    )
+
+
+
+
+class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
     # the menu translates it at build time via _(label).
@@ -1873,6 +1116,9 @@ class IPTVClient(wx.Frame):
         self.Centre()
 
         self.group_list.Append(_("Loading playlists..."))
+        # The playlist is still loading: a search that rebuilds the categories
+        # must not replace that with "No channels found.".
+        self._playlist_loading = True
         self.Show()
 
         # Defer non-UI startup work until the frame has had a chance to paint.
@@ -2202,63 +1448,6 @@ class IPTVClient(wx.Frame):
             # row the user is sitting on.
             wx.CallAfter(self.on_highlight)
 
-    @staticmethod
-    def _epg_channel_indexes(channels: Dict[str, Dict[str, object]]):
-        """(by_id, by_id_lower, name_index, stripped_index) for EPG matching."""
-        by_id = channels
-        by_id_lower = {str(cid).lower(): cid for cid in channels}
-        name_index: Dict[str, str] = {}
-        stripped_index: Dict[str, str] = {}
-        for channel_id, entry in channels.items():
-            display = entry.get("display_name") or ""
-            for key, index in (
-                (canonicalize_name(display), name_index),
-                (canonicalize_name(strip_noise_words(display)), stripped_index),
-            ):
-                if key and key not in index:
-                    index[key] = channel_id
-        return by_id, by_id_lower, name_index, stripped_index
-
-    @staticmethod
-    def _match_epg_channel(channel, by_id, by_id_lower, name_index, stripped_index,
-                           known_ids=None):
-        """The EPG entry for a playlist channel, or None.
-
-        1) tvg-id, including the common XMLTV id variants, case-insensitive
-        and tolerant of one extra dotted segment ("chan.tv" vs "chan").
-        2) names: exact normalized, then noise-stripped, for the channel
-        name and then the tvg-name.
-
-        ``known_ids`` holds every guide channel id (lower case), including
-        ones with nothing on air right now. A channel whose tvg-id is among
-        them has a guide of its own, so when that guide is empty at the
-        moment it gets no label rather than a namesake's: the noise-stripped
-        name of "48 Hours" is "hours", which matched an unrelated channel.
-        """
-        raw_id = str(channel.get("tvg-id") or "").strip()
-        candidates = _expand_tvg_id_candidates(raw_id)
-        candidates.append(raw_id)
-        if "." in raw_id:
-            candidates.append(raw_id.rsplit(".", 1)[0])
-        for candidate in candidates:
-            channel_id = by_id_lower.get(candidate.strip().lower())
-            if channel_id is not None:
-                return by_id[channel_id]
-        if known_ids and any(c.strip().lower() in known_ids for c in candidates if c.strip()):
-            return None
-        for source in (channel.get("name"), channel.get("tvg-name")):
-            text = str(source or "").strip()
-            if not text:
-                continue
-            for key, index in (
-                (canonicalize_name(text), name_index),
-                (canonicalize_name(strip_noise_words(text)), stripped_index),
-            ):
-                channel_id = index.get(key)
-                if channel_id is not None:
-                    return by_id[channel_id]
-        return None
-
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
                                   known_ids=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
@@ -2271,7 +1460,7 @@ class IPTVClient(wx.Frame):
         same-named channels with different guides (a provider's several
         "CBC News" feeds) each keep their own programme.
         """
-        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
+        indexes = guide_indexes(channels)
 
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
@@ -2279,8 +1468,7 @@ class IPTVClient(wx.Frame):
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
-            entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
+            entry = match_guide_channel(channel, indexes, known_ids)
             if not entry:
                 continue
             suffix = ""
@@ -2307,15 +1495,14 @@ class IPTVClient(wx.Frame):
         the short row suffix. Channels with no match or no on-air
         description are simply absent; the field shows a placeholder.
         """
-        by_id, by_id_lower, name_index, stripped_index = self._epg_channel_indexes(channels)
+        indexes = guide_indexes(channels)
         mapping: Dict[str, str] = {}
         playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
                 continue
-            entry = self._match_epg_channel(
-                channel, by_id, by_id_lower, name_index, stripped_index, known_ids)
+            entry = match_guide_channel(channel, indexes, known_ids)
             if not entry:
                 continue
             now_show = entry.get("now")
@@ -2604,18 +1791,30 @@ class IPTVClient(wx.Frame):
         ``only`` (a list of sources) fetches just those again; every other
         playlist keeps the channels and provider session it already has.
         """
+        # The categories must say that a load is running, not that the app has
+        # no channels.
+        self._playlist_loading = True
         keep = None
         if only is not None:
             keep = (list(self.all_channels), dict(getattr(self, "provider_clients", None) or {}),
                     list(getattr(self, "provider_epg_sources", None) or []),
                     dict(getattr(self, "playlist_epg_by_source", None) or {}))
+        # What every source had before this load, so a source that cannot be
+        # fetched keeps its channels and its provider session instead of
+        # disappearing from the list. A partial refresh carries that in `keep`.
+        previous = None
+        if keep is None:
+            previous = {
+                "channels": list(self.all_channels),
+                "clients": dict(getattr(self, "provider_clients", None) or {}),
+            }
         self._playlist_load_token += 1
         self._pending_epg_autostart = True
         self._pending_epg_autostart_token = self._playlist_load_token
         self._cancel_epg_autostart_timer()
         threading.Thread(
             target=self._do_playlist_refresh,
-            args=(self._playlist_load_token, only, keep),
+            args=(self._playlist_load_token, only, keep, previous),
             daemon=True
         ).start()
 
@@ -2863,7 +2062,7 @@ class IPTVClient(wx.Frame):
         # This full cycle can be triggered by the timer.
         self.start_playlist_load()
 
-    def _do_playlist_refresh(self, refresh_token: int, only=None, keep=None):
+    def _do_playlist_refresh(self, refresh_token: int, only=None, keep=None, previous=None):
         """
         Loads playlists from cache for a fast UI update, then refreshes from the network.
         Crucially, it only starts the EPG import *after* playlists are loaded.
@@ -2883,6 +2082,17 @@ class IPTVClient(wx.Frame):
         all_channels: List[Dict[str, str]] = []
         valid_caches = set()
         seen_channel_keys = set()
+        previous = previous or {}
+        previous_channels = list(keep[0]) if keep else list(previous.get("channels") or [])
+        previous_clients = dict(keep[1]) if keep else dict(previous.get("clients") or {})        # The channels each source had before this load. A source that cannot
+        # be fetched keeps them: a playlist that vanishes because one download
+        # failed is worse than a playlist that is one refresh out of date.
+        previous_by_scope: Dict[str, List[Dict[str, str]]] = {}
+        for ch in previous_channels:
+            scope_id = ch.get("playlist-id")
+            if scope_id:
+                previous_by_scope.setdefault(scope_id, []).append(ch)
+        failed_sources: List[str] = []
 
         # Fast prefill from parsed caches (no network) so UI shows something immediately.
         prefilled_by_group: Dict[str, List[Dict[str, str]]] = {}
@@ -2952,6 +2162,7 @@ class IPTVClient(wx.Frame):
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
                 self._program_match_cache = None  # holds the old channel list
+                IPTVClient._warm_program_match_index(self)
                 self._invalidate_favorites_cache()
                 self._fill_playlist_scope_combo()
                 self._refresh_group_ui()
@@ -3014,7 +2225,8 @@ class IPTVClient(wx.Frame):
                         if channels is None:
                             channels = self._parse_m3u_return(text, provider_info=provider_meta)
                             if parsed_cache and text_hash:
-                                self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta)
+                                self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                                 channels, provider_meta)
                         
                         result["channels"] = channels or []
                         result["clients"][provider_id] = client
@@ -3077,19 +2289,26 @@ class IPTVClient(wx.Frame):
                             
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
-                    
+
                     channels = None
                     if parsed_cache and text_hash:
                         channels = _cached_channels_for(parsed_cache, text_hash, provider_meta=None)
                     if channels is None:
+                        started = time.monotonic()
                         channels = self._parse_m3u_return(text, provider_info=None)
+                        LOG.info("Playlist parsed: %d channels in %.1f s",
+                                 len(channels), time.monotonic() - started)
                         if parsed_cache and text_hash:
-                            self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta=None)
-                    
+                            self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                             channels, provider_meta=None)
+
                     result["channels"] = channels or []
 
                 elif isinstance(src, str) and os.path.exists(src):
-                    with open(src, "r", encoding="utf-8", errors="ignore") as f:
+                    # utf-8-sig: a file that starts with a byte order mark
+                    # would otherwise open with a garbage channel and lose the
+                    # header's attributes.
+                    with open(src, "r", encoding="utf-8-sig", errors="ignore") as f:
                         text = f.read()
                     result["playlist_epg_sources"] = _playlist_header_epg_urls(text)
                     text_hash = self._playlist_text_hash(text)
@@ -3102,15 +2321,29 @@ class IPTVClient(wx.Frame):
                     if channels is None:
                         channels = self._parse_m3u_return(text, provider_info=None)
                         if parsed_cache and text_hash:
-                            self._store_cached_playlist(parsed_cache, text_hash, channels, provider_meta=None)
-                            
+                            self._store_cached_playlist_async(parsed_cache, text_hash,
+                                                             channels, provider_meta=None)
+
                     result["channels"] = channels or []
                 else:
                     pass # Invalid source
             except Exception as e:
                 result["error"] = str(e)
-                # LOG.error(f"Error fetching playlist {src}: {e}")
-            
+                if isinstance(src, dict):
+                    source_label = src.get("name") or src.get("base_url") or src.get("url") or ""
+                else:
+                    source_label = src
+                LOG.warning("Could not fetch playlist %s: %s", source_label, e)
+                # The source keeps the channels and the provider session it
+                # had: a playlist that disappears because one download failed
+                # is worse than one that is a single refresh out of date.
+                scope_id = _source_scope_id(src)
+                result["channels"] = list(previous_by_scope.get(scope_id, []))
+                if isinstance(src, dict):
+                    pid = src.get("id") or src.get("provider_id")
+                    if pid in previous_clients:
+                        result["clients"][pid] = previous_clients[pid]
+
             return result
 
         # Execute in parallel (fetching AND parsing) with a CPU-friendly cap.
@@ -3124,8 +2357,13 @@ class IPTVClient(wx.Frame):
                 src = futures[future]
                 res = future.result()
                 if res["error"]:
-                    continue
-                
+                    failed_sources.append(src)
+                    if not res["channels"]:
+                        continue
+                    # The source kept the channels it had, but its downloaded
+                    # copy is stale: it must not count as a fresh cache.
+                    res["valid_cache"] = None
+
                 if res["valid_cache"]:
                     valid_caches.add(res["valid_cache"])
                 
@@ -3158,8 +2396,12 @@ class IPTVClient(wx.Frame):
             # initial load) must not clobber newer channels/EPG sources.
             if refresh_token != self._playlist_load_token:
                 return
+            started = time.monotonic()
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            # The load is over: the categories can say what there is (or that
+            # there is nothing) now.
+            self._playlist_loading = False
             self._program_match_cache = None  # holds the old channel list
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
@@ -3175,17 +2417,31 @@ class IPTVClient(wx.Frame):
             self.vod_group_order = []
             self._fill_playlist_scope_combo()
             if self.view_mode == "vod":
-                self._load_vod_catalog()
+                # The catalogue being built belongs to the playlist that was
+                # just replaced, so it must not be shown.
+                self._load_vod_catalog(supersede=True)
             else:
                 self._refresh_group_ui()
             self._cleanup_cache_and_channels(valid_caches)
             done = getattr(self, "_announce_playlists_refreshed", None)
-            if done:
-                self._announce_playlists_refreshed = None
+            failed = getattr(self, "_announce_playlists_refresh_failed", None)
+            self._announce_playlists_refreshed = None
+            self._announce_playlists_refresh_failed = None
+            if failed_sources and failed:
+                # The refresh was announced as done, but a source failed: say
+                # so, or the user believes a stale playlist was updated.
+                self._speak(failed)
+            elif done:
                 self._speak(done)
             # Now that playlists are loaded, start the other processes.
             self.start_refresh_timer()
             self._schedule_auto_update_check()
+            LOG.info("Playlist load finished: %d channels applied in %.1f s",
+                     len(all_channels), time.monotonic() - started)
+            # The match index is built here, not before the channel list is
+            # applied: it is seconds of work, and it competes with the GUI
+            # thread for the interpreter lock. The user waits for the list.
+            IPTVClient._warm_program_match_index(self)
 
         wx.CallAfter(finish_playlist_load_and_start_background_tasks)
 
@@ -3203,497 +2459,6 @@ class IPTVClient(wx.Frame):
                 except Exception:
                     LOG.debug("IPTVClient._cleanup_cache_and_channels: ignored exception", exc_info=True)
 
-    def _build_ui(self):
-        p = wx.Panel(self)
-        hs = wx.BoxSizer(wx.HORIZONTAL)
-        vs_l = wx.BoxSizer(wx.VERTICAL)
-        vs_r = wx.BoxSizer(wx.VERTICAL)
-        # Playlist scope picker, one Shift+Tab before the categories list. The
-        # categories and channels show only the chosen playlist's entries (or
-        # everything for "All playlists"). wx.Choice gets an MSAA name through
-        # SetName/SetAccessibleName so screen readers announce a label.
-        vs_l.Add(wx.StaticText(p, label=_("Playlist view")), 0, wx.LEFT | wx.TOP, 5)
-        self.playlist_scope_combo = wx.Choice(p, choices=[])
-        self.playlist_scope_combo.SetName(_("Playlist view"))
-        if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
-            self.playlist_scope_combo.SetAccessibleName(_("Playlist view"))
-        self.playlist_scope_combo.Bind(wx.EVT_CHAR_HOOK, self.on_playlist_scope_key)
-        # Screen-reader names on MSW come from the static label created
-        # immediately before each control: the tree/list/edit accessibles
-        # ignore SetName/SetAccessibleName, but a wx.StaticText whose auto id
-        # is exactly control id - 1 is announced. Verified with real MSAA/UIA
-        # reads in tools/smoke_accessible_names_nvda.py; keep the pair
-        # adjacent with no other window created in between.
-        self.categories_label = wx.StaticText(p, label=_("Categories"))
-        self.group_list = _AccessibleCategoryTree(p)
-        self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
-        self.group_list.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_group_activated)
-        self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
-        self._fill_playlist_scope_combo()
-        vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
-        vs_l.Add(self.categories_label, 0, wx.LEFT, 5)
-        vs_l.Add(self.group_list, 1, wx.EXPAND | wx.ALL, 5)
-        self.search_label = wx.StaticText(p, label=_("Search"))
-        self.filter_box = wx.TextCtrl(p, style=wx.TE_PROCESS_ENTER)
-        # Name the field for screen readers as well: harmless on MSW and it is
-        # what GTK honors for the accessible name.
-        self.filter_box.SetName(_("Search"))
-        if hasattr(self.filter_box, "SetAccessibleName"):
-            self.filter_box.SetAccessibleName(_("Search"))
-        # Virtual list control (native SysListView32) so 50k-300k channels stay responsive
-        # for the UI and NVDA alike — only visible rows are realized. Backed by self.displayed.
-        self.channels_label = wx.StaticText(p, label=_("Channels"))
-        self.channel_list = _VirtualChannelList(p, self)
-        # Key bindings (original + added robust handlers)
-        self.channel_list.Bind(wx.EVT_CHAR_HOOK, self.on_channel_key)  # original
-        self.channel_list.Bind(wx.EVT_KEY_DOWN, self._on_channel_key_down)  # reliable Enter on all platforms
-        # Selection change (keyboard arrows + mouse) -> refresh EPG/URL panel.
-        self.channel_list.Bind(wx.EVT_LIST_ITEM_SELECTED, lambda _evt: self.on_highlight())
-        # Activation: Enter is consumed by the key handlers above, so this fires on double-click.
-        self.channel_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, lambda _evt: self.play_selected())
-        self.channel_list.Bind(wx.EVT_CONTEXT_MENU, self._on_channel_context_menu)
-
-        # Tab order after the channel list is episode description -> stream
-        # URL. The description comes first because it is what a viewer
-        # actually wants after hearing a channel row; the URL is a diagnostic
-        # that most users keep switched off entirely. wx builds tab order from
-        # creation order, so the description control is created first and the
-        # sizer follows the same sequence.
-        self.episode_description_field = wx.TextCtrl(
-            p, size=(-1, 70), style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.episode_description_field.SetName(_("Episode description"))
-        if hasattr(self.episode_description_field, "SetAccessibleName"):
-            self.episode_description_field.SetAccessibleName(_("Episode description"))
-        self.episode_description_field.Bind(
-            wx.EVT_CHAR_HOOK, self._on_episode_description_key)
-        self.url_display = wx.TextCtrl(p, style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.url_display.SetName(_("Stream URL"))
-        if hasattr(self.url_display, "SetAccessibleName"):
-            self.url_display.SetAccessibleName(_("Stream URL"))
-        self.url_display.Bind(wx.EVT_CHAR_HOOK, self._on_url_display_key)
-        # F1 opens the User Guide at the section about the focused control.
-        user_guide.set_help_topic(self, "main-window")
-        user_guide.set_help_topic(self.playlist_scope_combo, "playlist-view")
-        user_guide.set_help_topic(self.group_list, lambda: self._list_help_topic("categories"))
-        user_guide.set_help_topic(self.filter_box, "search")
-        user_guide.set_help_topic(self.channel_list, lambda: self._list_help_topic("channel-list"))
-        user_guide.set_help_topic(self.episode_description_field, "episode-description")
-        user_guide.set_help_topic(self.url_display, "episode-description")
-        vs_r.Add(self.search_label, 0, wx.LEFT | wx.TOP, 5)
-        vs_r.Add(self.filter_box, 0, wx.EXPAND | wx.ALL, 5)
-        vs_r.Add(self.channels_label, 0, wx.LEFT | wx.TOP, 5)
-        vs_r.Add(self.channel_list, 1, wx.EXPAND | wx.ALL, 5)
-        vs_r.Add(self.episode_description_field, 0, wx.EXPAND | wx.ALL, 5)
-        vs_r.Add(self.url_display, 0, wx.EXPAND | wx.ALL, 5)
-        self._apply_channel_url_visibility()
-        hs.Add(vs_l, 1, wx.EXPAND)
-        hs.Add(vs_r, 2, wx.EXPAND)
-
-        if platform.system() == "Linux":
-            self.menu_button = wx.Button(p, label=_("Menu"))
-            self._player_radio_items = {}
-            def on_menu_btn(evt):
-                menu = wx.Menu()
-                menu.Append(1001, self._shortcut_label(_("Playlist Manager"), "playlist_manager"))
-                menu.Append(1002, self._shortcut_label(_("EPG Manager"), "epg_manager"))
-                menu.Append(1003, self._shortcut_label(_("Import EPG to DB"), "import_epg"))
-                menu.Append(1333, self._shortcut_label(_("What Is Playing"), "what_is_playing"))
-                self.Bind(wx.EVT_MENU, self._announce_what_is_playing, id=1333)
-                menu.Append(1007, self._shortcut_label(_("Account Info"), "account"))
-                menu.AppendSeparator()
-                player_ctrl_menu = wx.Menu()
-                player_ctrl_menu.Append(1201, _("Show Built-in Player"))
-                player_ctrl_menu.Append(1202, _("Play/Pause"))
-                player_ctrl_menu.Append(1203, _("Stop"))
-                player_ctrl_menu.Append(1204, _("Cast / Connect..."))
-                menu.AppendSubMenu(player_ctrl_menu, _("Player"))
-                self.Bind(wx.EVT_MENU, self._menu_show_player, id=1201)
-                self.Bind(wx.EVT_MENU, self._menu_toggle_player, id=1202)
-                self.Bind(wx.EVT_MENU, self._menu_stop_player, id=1203)
-                self.Bind(wx.EVT_MENU, self._menu_cast_from_player, id=1204)
-                # View submenu: Live TV / catch-up vs Video on Demand.
-                view_menu = wx.Menu()
-                view_live = view_menu.AppendRadioItem(1301, _("Live TV && Catch-up"))
-                view_vod = view_menu.AppendRadioItem(1302, _("Video on Demand (Movies && Series)"))
-                view_live.Check(self.view_mode == "live")
-                view_vod.Check(self.view_mode == "vod")
-                self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), id=1301)
-                self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), id=1302)
-                view_menu.AppendSeparator()
-                view_menu.Append(1310, self._shortcut_label(self._favorite_action_label(), "favorite"))
-                view_menu.Append(1311, _("Go to Favorites"))
-                view_menu.Append(1320, self._shortcut_label(_("Previous Channel"), "previous_channel"))
-                view_menu.Append(1321, self._shortcut_label(_("Recently Watched..."), "recent_channels"))
-                view_menu.Append(1322, self._shortcut_label(_("Go to Channel Number..."), "channel_number"))
-                self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, id=1310)
-                self.Bind(wx.EVT_MENU, self._go_to_favorites, id=1311)
-                self.Bind(wx.EVT_MENU, self._play_previous_channel, id=1320)
-                self.Bind(wx.EVT_MENU, self._show_recent_channels, id=1321)
-                self.Bind(wx.EVT_MENU, self._go_to_channel_number, id=1322)
-                menu.AppendSubMenu(view_menu, _("View"))
-                menu.AppendSeparator()
-                player_menu = wx.Menu()
-                for idx, (label, attr) in enumerate(self.PLAYER_KEYS):
-                    itemid = 2000 + idx
-                    item = player_menu.AppendRadioItem(itemid, _(label))
-                    self._player_radio_items[label] = item
-                    self.Bind(wx.EVT_MENU, lambda evt, pl=label: self._select_player(pl), id=itemid)
-                    if self.default_player == label:
-                        item.Check(True)
-                customid = 2999
-                customitem = player_menu.AppendRadioItem(customid, _("Custom Player..."))
-                self.Bind(wx.EVT_MENU, self._select_custom_player, id=customid)
-                if self.default_player == "Custom":
-                    customitem.Check(True)
-                menu.AppendSubMenu(player_menu, _("Media Player to Use"))
-                menu.Append(1312, _("Preferred Audio Track..."))
-                self.Bind(wx.EVT_MENU, self._show_audio_preference_dialog, id=1312)
-                # Recordings submenu (Linux)
-                rec_menu = wx.Menu()
-                self._populate_recordings_menu(rec_menu)
-                menu.AppendSubMenu(rec_menu, _("Recordings"))
-                # Language submenu (Linux)
-                lang_menu = wx.Menu()
-                self._lang_menu_items = {}
-                for code, label in i18n.available_languages():
-                    disp = _("Automatic") if code == "auto" else label
-                    li = lang_menu.AppendRadioItem(wx.ID_ANY, disp)
-                    if i18n.get_language() == code:
-                        li.Check(True)
-                    self._lang_menu_items[li.GetId()] = code
-                    self.Bind(wx.EVT_MENU, lambda evt, c=code: self._on_select_language(c), li)
-                menu.AppendSubMenu(lang_menu, _("Language"))
-                min_to_tray_id = 1101
-                min_item = menu.AppendCheckItem(min_to_tray_id, _("Minimize to System Tray"))
-                min_item.Check(self.minimize_to_tray)
-                self.Bind(wx.EVT_MENU, self.on_toggle_min_to_tray, id=min_to_tray_id)
-                menu.AppendSeparator()
-                show_enter_id = 1102
-                show_enter_item = menu.AppendCheckItem(show_enter_id, _("Show Player on Enter"))
-                show_enter_item.Check(self.show_player_on_enter)
-                self.Bind(wx.EVT_MENU, self.on_toggle_show_player_on_enter, id=show_enter_id)
-                show_url_id = 1104
-                show_url_item = menu.AppendCheckItem(show_url_id, _("Show Stream URL"))
-                show_url_item.Check(self.show_channel_url)
-                self.Bind(wx.EVT_MENU, self.on_toggle_show_channel_url, id=show_url_id)
-                menu.AppendSeparator()
-
-                auto_update_id = 1103
-                auto_update_item = menu.AppendCheckItem(auto_update_id, _("Auto-check for Updates"))
-                auto_update_item.Check(self.auto_check_updates)
-                self.Bind(wx.EVT_MENU, self.on_toggle_auto_check_updates, id=auto_update_id)
-                menu.Append(1330, _("Export Settings..."))
-                menu.Append(1331, _("Import Settings..."))
-                self.Bind(wx.EVT_MENU, self._export_settings, id=1330)
-                self.Bind(wx.EVT_MENU, self._import_settings, id=1331)
-                announcement_menu = wx.Menu()
-                for level, label in enumerate((_("None"), _("Errors only"),
-                                               _("Important events"), _("Detailed status"))):
-                    item = announcement_menu.AppendRadioItem(1340 + level, label)
-                    item.Check(level == self.config.get("announcement_level", 2))
-                    self.Bind(wx.EVT_MENU, lambda _evt, value=level: self._set_announcement_level(value), id=1340 + level)
-                menu.AppendSubMenu(announcement_menu, _("Automatic Announcements"))
-                menu.Append(1332, _("Keyboard Shortcuts..."))
-                self.Bind(wx.EVT_MENU, self._customize_shortcuts, id=1332)
-                menu.Append(1006, _("Check for Updates"))
-                self.Bind(wx.EVT_MENU, self.on_check_updates, id=1006)
-                menu.AppendSeparator()
-
-                help_menu = wx.Menu()
-                guide_item = help_menu.Append(wx.ID_ANY, _("User Guide") + "\tF1")
-                help_menu.Bind(wx.EVT_MENU, self._on_user_guide_menu, guide_item)
-                whats_new_item = help_menu.Append(wx.ID_ANY, _("What's New"))
-                logs_item = help_menu.Append(wx.ID_ANY, _("Open Logs Folder"))
-                copy_debug_item = help_menu.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
-                about_item = help_menu.Append(wx.ID_ABOUT, _("About..."))
-                help_menu.Bind(wx.EVT_MENU, self._open_logs_folder, logs_item)
-                help_menu.Bind(wx.EVT_MENU, self._show_changelog_dialog, whats_new_item)
-                help_menu.Bind(wx.EVT_MENU, self._copy_diagnostic_information, copy_debug_item)
-                help_menu.Bind(wx.EVT_MENU, self._show_about_dialog, about_item)
-                menu.AppendSubMenu(help_menu, _("Help"))
-
-                # Casting Menu Item (Linux)
-                menu.Append(1005, _("Cast To..."))
-                self.Bind(wx.EVT_MENU, self.show_cast_dialog, id=1005)
-
-                menu.Append(1004, self._shortcut_label(_("Exit"), "exit"))
-                self.Bind(wx.EVT_MENU, self.show_manager, id=1001)
-                self.Bind(wx.EVT_MENU, self.show_epg_manager, id=1002)
-                self.Bind(wx.EVT_MENU, self.import_epg, id=1003)
-                self.Bind(wx.EVT_MENU, self.show_account_info, id=1007)
-                self.Bind(wx.EVT_MENU, self.request_exit, id=1004)
-                self.menu_button.PopupMenu(menu)
-            self.menu_button.Bind(wx.EVT_BUTTON, on_menu_btn)
-            sizer_with_menu = wx.BoxSizer(wx.VERTICAL)
-            sizer_with_menu.Add(self.menu_button, 0, wx.EXPAND | wx.ALL, 5)
-            sizer_with_menu.Add(hs, 1, wx.EXPAND)
-            p.SetSizerAndFit(sizer_with_menu)
-        else:
-            p.SetSizerAndFit(hs)
-            mb = wx.MenuBar()
-            fm = wx.Menu()
-            m_mgr = fm.Append(wx.ID_ANY, self._shortcut_label(_("Playlist Manager"), "playlist_manager"))
-            m_epg = fm.Append(wx.ID_ANY, self._shortcut_label(_("EPG Manager"), "epg_manager"))
-            m_imp = fm.Append(wx.ID_ANY, self._shortcut_label(_("Import EPG to DB"), "import_epg"))
-            m_now = fm.Append(wx.ID_ANY, self._shortcut_label(_("What's on Now"), "whats_on_now"))
-            m_playing = fm.Append(wx.ID_ANY, self._shortcut_label(_("What Is Playing"), "what_is_playing"))
-            m_acct = fm.Append(wx.ID_ANY, self._shortcut_label(_("Account Info"), "account"))
-            fm.AppendSeparator()
-            # Casting Menu Item (Windows/Mac)
-            m_cast = fm.Append(wx.ID_ANY, _("Cast To..."))
-            fm.AppendSeparator()
-            m_exit = fm.Append(wx.ID_EXIT, self._shortcut_label(_("Exit"), "exit"))
-            mb.Append(fm, _("File"))
-            pm = wx.Menu()
-            pm_show = pm.Append(_MAIN_ACCEL_SHOW_PLAYER_ID,
-                                self._shortcut_label(_("Show Built-in Player"), "show_player"))
-            pm_toggle = pm.Append(wx.ID_ANY, self._shortcut_label(_("Play/Pause"), "play_pause"))
-            pm_stop = pm.Append(wx.ID_ANY, self._shortcut_label(_("Stop"), "stop"))
-            pm_cast = pm.Append(wx.ID_ANY, self._shortcut_label(_("Cast / Connect..."), "cast"))
-            self._player_control_items = (pm_show, pm_toggle, pm_stop, pm_cast)
-            mb.Append(pm, _("Player"))
-            # View menu: switch between Live TV / catch-up and Video on Demand.
-            vm = wx.Menu()
-            self.view_live_item = vm.AppendRadioItem(wx.ID_ANY, _("Live TV && Catch-up"))
-            self.view_vod_item = vm.AppendRadioItem(wx.ID_ANY, _("Video on Demand (Movies && Series)"))
-            self.view_live_item.Check(self.view_mode == "live")
-            self.view_vod_item.Check(self.view_mode == "vod")
-            vm.AppendSeparator()
-            # The label follows the selected channel, so it always says what
-            # activating it will do (see _sync_favorite_menu_item).
-            self.favorite_menu_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Add to Favorites"), "favorite"))
-            self.goto_favorites_item = vm.Append(wx.ID_ANY, _("Go to Favorites"))
-            previous_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Previous Channel"), "previous_channel"))
-            recent_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Recently Watched..."), "recent_channels"))
-            number_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Go to Channel Number..."), "channel_number"))
-            vm.AppendSeparator()
-            # Escape hides a download window without stopping the download,
-            # and a modeless window is easy to lose behind this one: this is
-            # the way back to it.
-            self.show_downloads_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Show Downloads"), "downloads"))
-            mb.Append(vm, _("View"))
-            self.Bind(wx.EVT_MENU, self._show_catchup_downloads, self.show_downloads_item)
-            self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)
-            self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("vod"), self.view_vod_item)
-            self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, self.favorite_menu_item)
-            self.Bind(wx.EVT_MENU, self._go_to_favorites, self.goto_favorites_item)
-            self.Bind(wx.EVT_MENU, self._play_previous_channel, previous_item)
-            self.Bind(wx.EVT_MENU, self._show_recent_channels, recent_item)
-            self.Bind(wx.EVT_MENU, self._go_to_channel_number, number_item)
-            om = wx.Menu()
-            player_menu = wx.Menu()
-            self.player_menu_items = []
-            for label, attr in self.PLAYER_KEYS:
-                item = player_menu.AppendRadioItem(wx.ID_ANY, _(label))
-                setattr(self, attr, item)
-                self.player_menu_items.append((item, label))
-            self.player_Custom = player_menu.AppendRadioItem(wx.ID_ANY, _("Custom Player..."))
-            om.AppendSubMenu(player_menu, _("Media Player to Use"))
-            self.audio_preference_item = om.Append(wx.ID_ANY, _("Preferred Audio Track..."))
-            self.Bind(wx.EVT_MENU, self._show_audio_preference_dialog, self.audio_preference_item)
-            # Language submenu (Windows/macOS)
-            lang_menu = wx.Menu()
-            self._lang_menu_items = {}
-            for code, lbl in i18n.available_languages():
-                disp = _("Automatic") if code == "auto" else lbl
-                li = lang_menu.AppendRadioItem(wx.ID_ANY, disp)
-                if i18n.get_language() == code:
-                    li.Check(True)
-                self._lang_menu_items[li.GetId()] = code
-                self.Bind(wx.EVT_MENU, lambda evt, c=code: self._on_select_language(c), li)
-            om.AppendSubMenu(lang_menu, _("Language"))
-            self.min_to_tray_item = om.AppendCheckItem(wx.ID_ANY, _("Minimize to System Tray"))
-            self.show_player_on_enter_item = om.AppendCheckItem(wx.ID_ANY, _("Show Player on Enter"))
-            self.show_channel_url_item = om.AppendCheckItem(wx.ID_ANY, _("Show Stream URL"))
-            self.auto_check_updates_item = om.AppendCheckItem(wx.ID_ANY, _("Auto-check for Updates"))
-            export_item = om.Append(wx.ID_ANY, _("Export Settings..."))
-            import_item = om.Append(wx.ID_ANY, _("Import Settings..."))
-            self.Bind(wx.EVT_MENU, self._export_settings, export_item)
-            self.Bind(wx.EVT_MENU, self._import_settings, import_item)
-            announcement_menu = wx.Menu()
-            self._announcement_items = []
-            for level, label in enumerate((_("None"), _("Errors only"),
-                                           _("Important events"), _("Detailed status"))):
-                item = announcement_menu.AppendRadioItem(wx.ID_ANY, label)
-                item.Check(level == self.config.get("announcement_level", 2))
-                self._announcement_items.append(item)
-                self.Bind(wx.EVT_MENU, lambda _evt, value=level: self._set_announcement_level(value), item)
-            om.AppendSubMenu(announcement_menu, _("Automatic Announcements"))
-            # Subtitle speech (issue #37): backend choice, app-voice settings,
-            # and the honest per-player capability report.
-            speech_menu = wx.Menu()
-            self._subtitle_backend_items = []
-            backend = self._subtitle_backend()
-            for value, label in (("screen_reader", _("Speak through screen reader")),
-                                 ("app_tts", _("Speak through application voice"))):
-                item = speech_menu.AppendRadioItem(wx.ID_ANY, label)
-                item.Check(value == backend)
-                self.Bind(wx.EVT_MENU, lambda _evt, v=value: self._set_subtitle_backend(v), item)
-                self._subtitle_backend_items.append((item, value))
-            speech_menu.AppendSeparator()
-            # Player-independent subtitle commands (issue #45, item 1):
-            # these work without the built-in player window existing, and
-            # route through the active session controller.
-            toggle_item = speech_menu.AppendCheckItem(wx.ID_ANY, _("Speak subtitles"))
-            toggle_item.Check(bool(self.config.get("speak_subtitles", False)))
-            self.Bind(wx.EVT_MENU,
-                      lambda _evt: self._on_toggle_subtitle_speech(),
-                      toggle_item)
-            self._subtitle_toggle_item = toggle_item
-            read_current_item = speech_menu.Append(wx.ID_ANY, _("Read current subtitle"))
-            self.Bind(wx.EVT_MENU,
-                      lambda _evt: self._on_read_current_subtitle(),
-                      read_current_item)
-            read_prev_item = speech_menu.Append(wx.ID_ANY, _("Read previous subtitle"))
-            self.Bind(wx.EVT_MENU,
-                      lambda _evt: self._on_read_previous_subtitle(),
-                      read_prev_item)
-            review_item = speech_menu.Append(wx.ID_ANY, _("Review recent subtitles..."))
-            self.Bind(wx.EVT_MENU,
-                      lambda _evt: self._on_review_recent_subtitles(),
-                      review_item)
-            speech_menu.AppendSeparator()
-            self._subtitle_app_tts_items = []
-            vol_item = speech_menu.Append(wx.ID_ANY, _("Application voice volume..."))
-            self.Bind(wx.EVT_MENU, lambda _evt: self._set_app_tts_volume(), vol_item)
-            self._subtitle_app_tts_items.append(vol_item)
-            out_item = speech_menu.Append(wx.ID_ANY, _("Application voice output..."))
-            self.Bind(wx.EVT_MENU, lambda _evt: self._choose_app_tts_output(), out_item)
-            self._subtitle_app_tts_items.append(out_item)
-            # Device-loss policy (issue #37): what the application voice does
-            # when its selected output disappears (unplugged USB/Bluetooth).
-            # "pause" is the privacy-preserving default: never silently
-            # reroute previously private captions to another device.
-            self._subtitle_device_policy_items = []
-            policy = self.config.get("subtitle_app_device_policy", "pause")
-            for value, label in (
-                    ("pause", _("On device loss: pause until the device returns")),
-                    ("default", _("On device loss: use the system default"))):
-                item = speech_menu.AppendRadioItem(wx.ID_ANY, label)
-                item.Check(value == policy)
-                self.Bind(wx.EVT_MENU,
-                          lambda _evt, v=value: self._set_app_tts_device_policy(v),
-                          item)
-                self._subtitle_device_policy_items.append((item, value))
-                self._subtitle_app_tts_items.append(item)
-            speech_menu.AppendSeparator()
-            cap_item = speech_menu.Append(wx.ID_ANY, _("Subtitle capabilities..."))
-            self.Bind(wx.EVT_MENU, lambda _evt: self._show_subtitle_capabilities(), cap_item)
-            om.AppendSubMenu(speech_menu, _("Subtitle Speech"))
-            user_guide.set_menu_help(self, speech_menu, "subtitle-speech")
-            self._sync_subtitle_speech_menu()
-            shortcut_item = om.Append(wx.ID_ANY, _("Keyboard Shortcuts..."))
-            self.Bind(wx.EVT_MENU, self._customize_shortcuts, shortcut_item)
-            mb.Append(om, _("Options"))
-            # Recordings menu
-            rm = wx.Menu()
-            self._populate_recordings_menu(rm)
-            mb.Append(rm, _("Recordings"))
-            # Help menu
-            hm = wx.Menu()
-            # F1 is shown as the shortcut, but the app-wide char hook answers
-            # F1 before this accelerator can, with the context topic; choosing
-            # the item itself opens the guide at its beginning.
-            self.user_guide_item = hm.Append(wx.ID_ANY, _("User Guide") + "\tF1")
-            self.whats_new_item = hm.Append(wx.ID_ANY, _("What's New"))
-            hm.AppendSeparator()
-            self.check_updates_item = hm.Append(wx.ID_ANY, _("Check for Updates..."))
-            self.open_logs_item = hm.Append(wx.ID_ANY, _("Open Logs Folder"))
-            self.copy_diagnostic_item = hm.Append(wx.ID_ANY, _("Copy Log and Debug Information"))
-            hm.AppendSeparator()
-            m_about = hm.Append(wx.ID_ABOUT, _("About..."))
-            mb.Append(hm, _("Help"))
-            self.SetMenuBar(mb)
-            # F1 on an open menu item opens the guide section about that item.
-            # Whole menus first, then the items that have a section of their own.
-            user_guide.set_menu_help(self, fm, "main-window")
-            user_guide.set_menu_help(self, pm, "player-from-main-window")
-            user_guide.set_menu_help(self, vm, "video-on-demand")
-            user_guide.set_menu_help(self, om, "options")
-            user_guide.set_menu_help(self, hm, "troubleshooting")
-            user_guide.set_menu_help(self, m_mgr, "playlist-manager")
-            user_guide.set_menu_help(self, m_epg, "epg-manager")
-            user_guide.set_menu_help(self, m_imp, "import-epg")
-            user_guide.set_menu_help(self, m_now, "whats-on-now")
-            user_guide.set_menu_help(self, m_acct, "account-info")
-            user_guide.set_menu_help(self, m_cast, "casting")
-            user_guide.set_menu_help(self, pm_cast, "casting")
-            user_guide.set_menu_help(self, self.favorite_menu_item, "favorites")
-            user_guide.set_menu_help(self, self.goto_favorites_item, "favorites")
-            user_guide.set_menu_help(self, self.show_downloads_item, "catch-up-downloads")
-            user_guide.set_menu_help(self, player_menu, "media-player")
-            user_guide.set_menu_help(self, self.audio_preference_item, "preferred-audio-track")
-            user_guide.set_menu_help(self, lang_menu, "language")
-            user_guide.set_menu_help(self, self.min_to_tray_item, "system-tray")
-            user_guide.set_menu_help(self, self.auto_check_updates_item, "updates")
-            user_guide.set_menu_help(self, self.user_guide_item, "using-help")
-            user_guide.set_menu_help(self, self.check_updates_item, "updates")
-            user_guide.set_menu_help(self, m_about, "support")
-            self.Bind(wx.EVT_MENU, self.show_manager, m_mgr)
-            self.Bind(wx.EVT_MENU, self.show_epg_manager, m_epg)
-            self.Bind(wx.EVT_MENU, self.import_epg, m_imp)
-            self.Bind(wx.EVT_MENU, self.show_whats_on_now, m_now)
-            self.Bind(wx.EVT_MENU, self._announce_what_is_playing, m_playing)
-            self.Bind(wx.EVT_MENU, self.show_account_info, m_acct)
-            self.Bind(wx.EVT_MENU, self.show_cast_dialog, m_cast)
-            self.Bind(wx.EVT_MENU, self.request_exit, m_exit)
-            self.Bind(wx.EVT_MENU, self._menu_toggle_player, pm_toggle)
-            self.Bind(wx.EVT_MENU, self._menu_stop_player, pm_stop)
-            self.Bind(wx.EVT_MENU, self._menu_cast_from_player, pm_cast)
-            for item, key in self.player_menu_items:
-                self.Bind(wx.EVT_MENU, lambda evt, attr=key: self._select_player(attr), item)
-            self.Bind(wx.EVT_MENU, self._select_custom_player, self.player_Custom)
-            self.Bind(wx.EVT_MENU, self.on_toggle_min_to_tray, self.min_to_tray_item)
-            self.Bind(wx.EVT_MENU, self.on_toggle_show_player_on_enter, self.show_player_on_enter_item)
-            self.Bind(wx.EVT_MENU, self.on_toggle_show_channel_url, self.show_channel_url_item)
-            self.Bind(wx.EVT_MENU, self.on_toggle_auto_check_updates, self.auto_check_updates_item)
-            self.Bind(wx.EVT_MENU, self.on_check_updates, self.check_updates_item)
-            self.Bind(wx.EVT_MENU, self._open_logs_folder, self.open_logs_item)
-            self.Bind(wx.EVT_MENU, self._copy_diagnostic_information, self.copy_diagnostic_item)
-            self.Bind(wx.EVT_MENU, self._show_about_dialog, m_about)
-            self.Bind(wx.EVT_MENU, self._on_user_guide_menu, self.user_guide_item)
-            self.Bind(wx.EVT_MENU, self._show_changelog_dialog, self.whats_new_item)
-            self.Bind(wx.EVT_MENU_OPEN, self.on_menu_open)
-            self._sync_player_menu_from_config()
-            self.min_to_tray_item.Check(self.minimize_to_tray)
-            self.show_player_on_enter_item.Check(self.show_player_on_enter)
-            self.show_channel_url_item.Check(self.show_channel_url)
-            self.auto_check_updates_item.Check(self.auto_check_updates)
-
-        self.group_list.Bind(wx.EVT_LEFT_UP, self._on_group_activated)
-        self.filter_box.Bind(wx.EVT_TEXT_ENTER, lambda _: self.apply_filter())
-        # Track re-focuses of the search box: stale async search results must
-        # not yank focus back to the channel list while the user is editing a
-        # new query (see the generation guard in apply_results).
-        self._filter_focus_gen = 0
-        self.filter_box.Bind(wx.EVT_SET_FOCUS, self._on_filter_focus)
-        # Tab in the search box applies the filter, exactly like Enter, so a
-        # screen-reader user can filter and move on without hunting for Enter.
-        self.filter_box.Bind(wx.EVT_CHAR_HOOK, self._on_filter_char_hook)
-
-        entries = _main_window_accelerator_entries(self.config)
-        atable = wx.AcceleratorTable(entries)
-        self.SetAcceleratorTable(atable)
-        self.Bind(wx.EVT_MENU, self.show_manager, id=4001)
-        self.Bind(wx.EVT_MENU, self.show_epg_manager, id=4002)
-        self.Bind(wx.EVT_MENU, self.import_epg, id=4003)
-        self.Bind(wx.EVT_MENU, self.request_exit, id=4004)
-        self.Bind(wx.EVT_MENU, self._menu_toggle_player, id=4010)
-        self.Bind(wx.EVT_MENU, self._menu_stop_player, id=4011)
-        self.Bind(wx.EVT_MENU, self._menu_cast_from_player, id=4012)
-        self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(+2), id=4015)
-        self.Bind(wx.EVT_MENU, lambda _: self._adjust_internal_volume(-2), id=4016)
-        self.Bind(wx.EVT_MENU, self._record_selected, id=4017)
-        self.Bind(wx.EVT_MENU, self.show_account_info, id=4018)
-        self.Bind(wx.EVT_MENU, self._toggle_favorite_selected, id=4019)
-        self.Bind(wx.EVT_MENU, self._play_previous_channel, id=4022)
-        self.Bind(wx.EVT_MENU, self._go_to_channel_number, id=4023)
-        self.Bind(wx.EVT_MENU, self._show_recent_channels, id=4024)
-        self.Bind(wx.EVT_MENU, self.show_whats_on_now, id=4025)
-        self.Bind(wx.EVT_MENU, self._announce_what_is_playing, id=4026)
-        self.Bind(wx.EVT_MENU, self._show_catchup_downloads, id=4020)
-        self.Bind(wx.EVT_MENU, self._menu_show_player,
-                  id=_MAIN_ACCEL_SHOW_PLAYER_ID)
 
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
@@ -4044,30 +2809,76 @@ class IPTVClient(wx.Frame):
         """
         channels = self.all_channels
         cached = getattr(self, "_program_match_cache", None)
-        if cached is not None and cached[0] is channels:
-            return cached[1], cached[2], cached[3]
+        if cached is not None and cached.channels is channels:
+            return cached
         rows = []
         by_tvg_id: Dict[str, Dict[str, str]] = {}
-        for ch in channels:
+        by_name: Dict[str, tuple] = {}
+        by_tvg_name: Dict[str, tuple] = {}
+        by_canon: Dict[str, tuple] = {}
+        by_base: Dict[str, tuple] = {}
+        tvg_id_rows: List[tuple] = []
+        for position, ch in enumerate(channels):
             ch_name = ch.get("name", "")
             ch_tvg_name = ch.get("tvg-name", "")
             ch_tvg_id = (ch.get("tvg-id", "") or "").lower()
             if ch_tvg_id and ch_tvg_id not in by_tvg_id:
                 by_tvg_id[ch_tvg_id] = ch
             ch_name_lower = ch_name.lower()
+            ch_tvg_lower = ch_tvg_name.lower()
             ch_name_norm = canonicalize_name(strip_noise_words(ch_name))
+            ch_base = IPTVClient._program_match_base(ch_name_lower)
             rows.append((
                 ch,
                 ch_tvg_id,
                 ch_name_lower,
-                ch_tvg_name.lower(),
+                ch_tvg_lower,
                 ch_name_norm,
                 canonicalize_name(strip_noise_words(ch_tvg_name)) if ch_tvg_name else "",
-                IPTVClient._program_match_base(ch_name_lower),
+                ch_base,
             ))
+            if ch_tvg_id:
+                tvg_id_rows.append((position, ch, ch_tvg_id))
+            # The first channel of a name wins, like the scan it replaces.
+            by_name.setdefault(ch_name_lower, (position, ch))
+            if ch_tvg_lower:
+                by_tvg_name.setdefault(ch_tvg_lower, (position, ch))
+            if ch_name_norm:
+                by_canon.setdefault(ch_name_norm, (position, ch))
+            if ch_tvg_name:
+                ch_tvg_norm = canonicalize_name(strip_noise_words(ch_tvg_name))
+                by_canon.setdefault(ch_tvg_norm, (position, ch))
+            if ch_base:
+                by_base.setdefault(ch_base, (position, ch))
         memo: Dict[tuple, Optional[Dict[str, str]]] = {}
-        self._program_match_cache = (channels, rows, by_tvg_id, memo)
-        return rows, by_tvg_id, memo
+        index = _ProgramMatchIndex(
+            channels=channels,
+            rows=rows,
+            by_tvg_id=by_tvg_id,
+            memo=memo,
+            by_name=by_name,
+            by_tvg_name=by_tvg_name,
+            by_canon=by_canon,
+            by_base=by_base,
+            tvg_id_rows=tvg_id_rows,
+        )
+        self._program_match_cache = index
+        return index
+
+    def _warm_program_match_index(self) -> None:
+        """Build the match index off the GUI thread.
+
+        It covers every channel in the playlist: on a provider with 257,000
+        channels that is seconds of work, and the user must not pay it while
+        highlighting a row.
+        """
+        def worker():
+            try:
+                IPTVClient._program_match_index(self)
+            except Exception:
+                LOG.debug("IPTVClient._warm_program_match_index: ignored exception", exc_info=True)
+
+        threading.Thread(target=worker, name="program-match-index", daemon=True).start()
 
     def _find_matching_channel_for_program(self, program: Dict[str, str]) -> Optional[Dict[str, str]]:
         """Find the playlist channel that best matches an EPG/search program row."""
@@ -4077,14 +2888,15 @@ class IPTVClient(wx.Frame):
             return None
 
         # Through the class: test doubles stand in for the frame here.
-        rows, by_tvg_id, memo = IPTVClient._program_match_index(self)
+        index = IPTVClient._program_match_index(self)
+        memo = index.memo
         memo_key = (channel_name, channel_id)
         if memo_key in memo:
             return memo[memo_key]
         channel_id_lower = channel_id.lower() if channel_id else ""
         # An exact tvg-id scores 100, which nothing else reaches, and ties keep
         # the first channel: the same answer the full scan below would give.
-        exact = by_tvg_id.get(channel_id_lower) if channel_id_lower else None
+        exact = index.by_tvg_id.get(channel_id_lower) if channel_id_lower else None
         if exact is not None:
             memo[memo_key] = exact
             return exact
@@ -4095,9 +2907,59 @@ class IPTVClient(wx.Frame):
         channel_name_norm = canonicalize_name(strip_noise_words(channel_name)) if channel_name else ""
         channel_base = IPTVClient._program_match_base(channel_name_lower)
         words_epg = set(channel_name_norm.split())
+        # The numbers in a name are the channel: "BBC 1" and "BBC 2" are
+        # different channels. The canonical name drops a standalone digit as a
+        # noise word, so without this the guide's "BBC 1" landed on the
+        # playlist's "BBC 2".
+        programme_numbers = significant_channel_numbers(
+            id_number_text(channel_id), channel_name)
 
-        for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in rows:
+        # The strong rules are equality rules, so they are dictionary lookups.
+        # The weak ones (a substring, a word in common) score 40 and at most 30,
+        # so they cannot beat a strong match - and the scan that used to look
+        # for them cost half a second on a 257,000-channel playlist, on the GUI
+        # thread, for every row the user highlighted.
+        best_index = -1
+        for score, table, key in (
+            (90, index.by_name, channel_name_lower),
+            (90, index.by_tvg_name, channel_name_lower),
+            (70, index.by_canon, channel_name_norm),
+            (60, index.by_base, channel_base),
+        ):
+            if not key:
+                continue
+            hit = table.get(key)
+            if hit is None:
+                continue
+            row_index, channel = hit
+            if numbers_disagree(programme_numbers, _channel_numbers(channel)):
+                continue
+            if score > best_score or (score == best_score and row_index < best_index):
+                best_score = score
+                best_index = row_index
+                matching_channel = channel
+        # The tvg-id rule scores 80 and matches when one id contains the other,
+        # so it needs the channels that carry an id at all.
+        if channel_id_lower and best_score < 90:
+            for row_index, channel, ch_tvg_id in index.tvg_id_rows:
+                if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
+                    if 80 > best_score:
+                        best_score = 80
+                        best_index = row_index
+                        matching_channel = channel
+                    break
+        if matching_channel is not None and best_score >= 60:
+            memo[memo_key] = matching_channel
+            return matching_channel
+
+        # Nothing matched strongly: the weak rules need every channel.
+        for ch, ch_tvg_id, ch_name_lower, ch_tvg_lower, ch_name_norm, ch_tvg_norm, ch_base in index.rows:
             score = 0
+
+            if numbers_disagree(programme_numbers, _channel_numbers(ch)):
+                # A different number is a different channel, whatever else the
+                # two names have in common.
+                continue
 
             if channel_id_lower and ch_tvg_id:
                 if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
@@ -4555,15 +3417,33 @@ class IPTVClient(wx.Frame):
         pending.add(key)
 
         def probe():
-            if share:
-                # libVLC closes the player's connection on its own thread, and
-                # the provider still counts it for a moment after that.
-                _wait_for_player_stop(player_stopped)
-                catchup_direct.settle_media_session()
-            choice = self._recording_audio_choice(url, headers, intent) if intent else None
-            if share and intent:
-                catchup_direct.settle_media_session()  # ...and the track probe's
+            try:
+                if share:
+                    # libVLC closes the player's connection on its own thread, and
+                    # the provider still counts it for a moment after that.
+                    _wait_for_player_stop(player_stopped)
+                    catchup_direct.settle_media_session()
+                choice = self._recording_audio_choice(url, headers, intent) if intent else None
+                if share and intent:
+                    catchup_direct.settle_media_session()  # ...and the track probe's
+            except Exception as err:
+                # Without this the key stayed in `pending` for the rest of the
+                # session: every later press said it was stopping and nothing
+                # recorded, and the shared player was never resumed.
+                LOG.exception("Recording track probe failed")
+                wx.CallAfter(abandon, err)
+                return
             wx.CallAfter(finish, choice)
+
+        def abandon(err):
+            if key not in pending:
+                return
+            pending.discard(key)
+            if share:
+                self._resume_direct_playback(channel, player_shown)
+            message_box(_("Could not start recording:\n{error}").format(error=err),
+                        _("Recording"), wx.OK | wx.ICON_ERROR)
+            self._sync_internal_player_record_state()
 
         def finish(choice):
             if key not in pending:
@@ -5003,98 +3883,12 @@ class IPTVClient(wx.Frame):
             if depth == 0 and getattr(self, "_deferred_notification_queue", None):
                 wx.CallAfter(self._drain_deferred_notifications)
 
-    def _drain_deferred_notifications(self) -> None:
-        """Show notifications queued while a modal box was open (FIFO)."""
-        queue = self._deferred_notifications()
-        while queue and not self._modal_box_is_open():
-            message, caption, style, parent, on_dismiss = queue.pop(0)
-            try:
-                self._show_message_box(message, caption, style, parent=parent, on_dismiss=on_dismiss)
-            except Exception:
-                # One bad entry must not swallow the rest of the queue.
-                LOG.exception("Deferred notification %r could not be shown", caption)
 
-    def _report_recording_saved(self, rec) -> None:
-        """Recording finished cleanly: notify, or queue the box if one is up."""
-        self._show_or_queue_message_box(
-            _("Recording saved:\n{path}").format(path=rec.out_path),
-            _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
 
-    def _report_recording_warning(self, rec, rc: int) -> None:
-        self._show_or_queue_message_box(
-            _("Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}").format(
-                code=rc, detail=self._recording_failure_detail(rec), path=rec.out_path),
-            _("Recording Warning"), wx.OK | wx.ICON_WARNING)
 
-    def _report_recording_error(self, rec, rc: int) -> None:
-        detail = self._recording_failure_detail(rec)
-        if getattr(rec, "fmt", "") == "provider_mka" and not rec.stopped_by_user:
-            # The MKA preset copies the audio verbatim and never transcodes:
-            # when the source cannot be copied into the container, say so
-            # plainly and point at another audio format instead of silently
-            # substituting one.
-            detail = _("The audio could not be copied into an MKA container, "
-                       "so nothing was recorded and nothing was transcoded. "
-                       "Choose another audio format from Recordings > Recording "
-                       "Format and try again.\n\n{detail}").format(detail=detail)
-        self._show_or_queue_message_box(
-            _("Recording of {name} ended unexpectedly (code {code}).\n\n{detail}").format(
-                name=rec.title, code=rc, detail=detail),
-            _("Recording Error"), wx.OK | wx.ICON_ERROR)
 
-    def _on_recording_finished(self, rec, rc):
-        job_id = None
-        try:
-            job_id = rec.metadata.get("dvr_job_id")
-        except Exception:
-            job_id = None
-        if job_id:
-            detail = "\n".join(rec.stderr_tail[-6:])
-            suppressed = getattr(self, "_suppress_recording_notifications", False)
-            self._ensure_dvr_scheduler(start=True).mark_finished(
-                str(job_id),
-                success=(rc == 0 and not suppressed),
-                output_path=rec.out_path,
-                message=("Stopped because the app exited." if suppressed else (detail if rc else "")),
-            )
-        if getattr(self, "_suppress_recording_notifications", False):
-            return
-        shared = (getattr(self, "_shared_recordings", None) or {}).pop(rec.id, None)
-        if shared:
-            # The player was watching this recording's copy of the stream.
-            wx.CallAfter(self._end_shared_playback, shared)
-        # Called from the recorder's watcher thread, so the check has to be
-        # marshalled onto the UI thread like the report below.
-        wx.CallAfter(self._maybe_shutdown_after_recordings)
 
-        wx.CallAfter(self._sync_internal_player_record_state)
 
-        def report():
-            if rc == 0:
-                self._report_recording_saved(rec)
-            elif rec.stopped_by_user:
-                self._report_recording_warning(rec, rc)
-            else:
-                self._report_recording_error(rec, rc)
-            self._drain_deferred_notifications()
-        wx.CallAfter(report)
-
-    def _recording_failure_detail(self, rec) -> str:
-        """What ffmpeg said, plus where the rest of what it said was written."""
-        lines = list(rec.stderr_tail[-6:]) or [_("No ffmpeg details were reported.")]
-        counts = getattr(rec, "problem_counts", None)
-        if counts and any(counts.values()):
-            lines.insert(0, _(
-                "{warnings} warnings, {errors} errors and {fatals} fatal "
-                "errors were logged in total.").format(
-                    warnings=counts.get("warnings", 0),
-                    errors=counts.get("errors", 0),
-                    fatals=counts.get("fatals", 0)))
-        log_path = getattr(rec, "log_path", "")
-        if log_path and os.path.exists(log_path):
-            lines.append("")
-            lines.append(_("Full ffmpeg log:\n{path}").format(path=log_path))
-        return "\n".join(lines)
 
     def _set_recording_format(self, key: str, channel=None):
         # The choice lands on the preference for the kind of channel it was
@@ -6569,7 +5363,10 @@ class IPTVClient(wx.Frame):
                         self._exit_requested = False
                         event.Veto()
                         return
-                elif self._catchup_downloads:
+                # A running download is warned about on its own: a scheduled
+                # recording must not hide it, or the download is truncated
+                # without the user ever being asked.
+                if self._catchup_downloads:
                     answer = message_box(
                         _("A download is still in progress.\n\n"
                           "If you exit now it will stop, and only the part captured "
@@ -6615,6 +5412,15 @@ class IPTVClient(wx.Frame):
                 LOG.debug("IPTVClient.on_close: app TTS close failed", exc_info=True)
             if self.caster:
                 self.caster.stop()
+            try:
+                # The proxy's FFmpeg converters are child processes: nothing
+                # else stopped them, so they outlived the app, kept the
+                # provider's stream slot and kept writing segments into their
+                # temp folder. The firewall rule the proxy added goes with them.
+                from stream_proxy import stop_proxy
+                stop_proxy()
+            except Exception:
+                LOG.debug("IPTVClient.on_close: proxy stop failed", exc_info=True)
             if self.tray_icon:
                 try:
                     self.tray_icon.RemoveIcon()
@@ -6686,8 +5492,11 @@ class IPTVClient(wx.Frame):
             self.playlist_scope_combo.SetFocus()
             return
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB):
-            self._activate_selected_group()
-            (self.filter_box if key == wx.WXK_TAB else self.channel_list).SetFocus()
+            activated = self._activate_selected_group()
+            if key == wx.WXK_TAB:
+                self.filter_box.SetFocus()
+            elif activated:
+                self.channel_list.SetFocus()
             return
         if key == wx.WXK_LEFT:
             self.group_list.CollapseSelectedBranch()
@@ -6697,22 +5506,27 @@ class IPTVClient(wx.Frame):
             return
         event.Skip()
 
-    def _activate_selected_group(self):
-        """Switch the channel list to the selected category and move focus there."""
+    def _activate_selected_group(self) -> bool:
+        """Switch the channel list to the selected category and move focus there.
+
+        False when the selection is only a branch of the hierarchy: Enter
+        expanded it, and the user stays in the tree.
+        """
         if self.group_list.GetSelection() == wx.NOT_FOUND:
             # A hierarchy-only parent is navigation, not a playlist category.
             # Enter/Tab expands it without unexpectedly showing All Channels.
             toggle = getattr(self.group_list, "ToggleSelectedBranch", None)
             if callable(toggle):
                 toggle()
-            return
+            return False
         self.on_group_select()
         # An empty scope combo has no selection: repopulating would fire
         # EVT_LIST_ITEM_SELECTED on a negative selection and crash here.
         if self.playlist_scope_combo.GetSelection() == wx.NOT_FOUND:
-            return
+            return False
         if self.channel_list.GetCount() > 0:
             self.channel_list.SetFocus()
+        return True
 
     def _on_group_activated(self, _event):
         # Mouse activation of a category follows the same path as Enter/Tab.
@@ -6964,7 +5778,12 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
 
             if not scoped_channels:
-                self.group_list.Append(_("No channels found."))
+                # The playlist may still be loading. Saying "No channels
+                # found." then is the opposite of the truth: the app's own log
+                # shows three minutes of it on a 257,000-channel playlist.
+                self.group_list.Append(
+                    _("Loading playlists...") if getattr(self, "_playlist_loading", False)
+                    else _("No channels found."))
                 self._group_keys = []
                 self._maybe_autostart_epg_import()
                 return
@@ -7075,10 +5894,15 @@ class IPTVClient(wx.Frame):
                 except Exception:
                     LOG.debug("IPTVClient._sync_view_menu: ignored exception", exc_info=True)
 
-    def _load_vod_catalog(self):
+    def _load_vod_catalog(self, *, supersede: bool = False):
         """Build the VOD catalogue in the background, then show it."""
         if self.vod_loading:
-            return
+            if not supersede:
+                return
+            # A catalogue is already being built and its result belongs to the
+            # playlist that was loaded before this one: drop it and build the
+            # current one instead.
+            self._vod_load_token += 1
         self.vod_loading = True
         self._vod_load_token += 1
         token = self._vod_load_token
@@ -7150,7 +5974,10 @@ class IPTVClient(wx.Frame):
             self.channel_list.Clear()
             if not self.vod_group_order:
                 self.group_list.Append(_("No Video on Demand content found."))
+                self.group_list.SetSelection(0)
                 self.url_display.SetValue("")
+                # An empty list is silent to a screen-reader user: say it.
+                live_announce.speak(_("No Video on Demand content found."))
                 return
             for label in self.vod_group_order:
                 count = len(self.vod_groups.get(label, []))
@@ -7413,8 +6240,11 @@ class IPTVClient(wx.Frame):
                 db = EPGDatabase(get_db_path(), for_threading=True)
                 # Pass a coarse progress callback (per-source). The DB importer writes as it streams,
                 # so readers can pick up newly inserted rows during import.
-                db.import_epg_xml(sources)
-                success = True
+                imported = db.import_epg_xml(sources)
+                # Every source can fail on its own and the importer logs it and
+                # moves on, so the import itself never fails. A guide that
+                # loaded nothing is not an up-to-date guide.
+                success = bool(imported)
                 try:
                     if hasattr(db, "close"):
                         db.close()
@@ -7512,10 +6342,13 @@ class IPTVClient(wx.Frame):
                     LOG.debug("IPTVClient._refresh_playlist_sources: no cached copy to drop", exc_info=True)
         if label is None:
             self._announce_playlists_refreshed = _("All playlists refreshed.")
+            self._announce_playlists_refresh_failed = _("Playlist refresh failed: {name}").format(
+                name=_("All playlists"))
             self._speak(_("Refreshing all playlists..."))
             self.start_playlist_load()
         else:
             self._announce_playlists_refreshed = _("Playlist refreshed: {name}").format(name=label)
+            self._announce_playlists_refresh_failed = _("Playlist refresh failed: {name}").format(name=label)
             self._speak(_("Refreshing playlist: {name}").format(name=label))
             self.start_playlist_load(only=list(sources))
 
@@ -7526,14 +6359,18 @@ class IPTVClient(wx.Frame):
         # provider was removed or the playlist checkbox was turned off.
         dlg = EPGManagerDialog(self, list(self.config.get("epgs", [])), self.config.get("epg_names"),
                                use_playlist_epg=bool(self.config.get("use_playlist_epg", True)))
-        if dlg.ShowModal() == wx.ID_OK:
-            self.config["epgs"] = dlg.GetResult()
-            self.config["epg_names"] = dlg.GetNames()
-            self.config["use_playlist_epg"] = dlg.GetUsePlaylistEpg()
-            save_config(self.config)
-            self.reload_epg_sources()
-            wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
-        dlg.Destroy()
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.config["epgs"] = dlg.GetResult()
+                self.config["epg_names"] = dlg.GetNames()
+                self.config["use_playlist_epg"] = dlg.GetUsePlaylistEpg()
+                save_config(self.config)
+                self.reload_epg_sources()
+                wx.CallLater(1000, lambda: self.start_epg_import_background(force=True)) # Start import after dialog closes
+        finally:
+            # A save that raised used to leave the dialog allocated and
+            # parent-owned.
+            dlg.Destroy()
 
     def show_account_info(self, _event):
         """Show subscription status for configured and autodetected accounts."""
@@ -7616,6 +6453,12 @@ class IPTVClient(wx.Frame):
                     db.close()
             except Exception as e:
                 error = e
+            # Playing or scheduling a programme resolves its channel on the
+            # GUI thread; build that lookup's index here, off it.
+            try:
+                self._program_match_index()
+            except Exception:
+                LOG.debug("IPTVClient.show_whats_on_now: index warm-up failed", exc_info=True)
             wx.CallAfter(self._present_whats_on_now, programs, error)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -7629,11 +6472,13 @@ class IPTVClient(wx.Frame):
             return
 
         dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording)
-        if dlg.ShowModal() == wx.ID_OK:
-            selection = dlg.get_selection()
-            if selection:
-                self._play_from_whats_on_now(selection)
-        dlg.Destroy()
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                selection = dlg.get_selection()
+                if selection:
+                    self._play_from_whats_on_now(selection)
+        finally:
+            dlg.Destroy()
     
     def _play_from_whats_on_now(self, program: Dict[str, str]):
         """Find and play the channel matching the selected program."""
@@ -7674,378 +6519,6 @@ class IPTVClient(wx.Frame):
                     wx.CallAfter(self.play_selected)
                     return
 
-    def _parse_m3u_return(self, text, provider_info=None):
-        provider_info = provider_info or {}
-        provider_id = provider_info.get("provider-id")
-        provider_type = provider_info.get("provider-type")
-
-        out: List[Dict[str, str]] = []
-        append = out.append
-        stream_id_for = self._extract_stream_id
-        attr_iter = _M3U_ATTR_RE.finditer
-
-        # Per-channel metadata, reset after each URL
-        name = ""
-        group = ""
-        tvg_id = ""
-        tvg_name = ""
-        tvg_logo = ""
-        tvg_rec = ""
-        media_hint = ""
-        timeshift = ""
-        catchup = ""
-        catchup_type = ""
-        catchup_days = ""
-        catchup_source = ""
-        catchup_offset = ""
-        http_user_agent = ""
-        http_referrer = ""
-        http_origin = ""
-        http_cookie = ""
-        http_headers: List[str] = []
-        http_auth = ""
-        http_accept = ""
-        # Playlist-wide catch-up clock from the #EXTM3U header. Dispatcharr
-        # sends catchup-timezone="UTC" and its archive expects UTC start
-        # times; without it the start goes out in the user's local time.
-        catchup_timezone = ""
-
-        for raw_line in text.splitlines():
-            s = raw_line.strip()
-            if not s:
-                continue
-
-            if s[0] == '#':
-                upper_prefix = s[:10].upper()
-                if upper_prefix.startswith("#EXTM3U"):
-                    for match in attr_iter(s[7:]):
-                        if match.group(1).lower() == "catchup-timezone":
-                            catchup_timezone = (match.group(2) or match.group(3)
-                                                or match.group(4) or "").strip()
-                            break
-                    continue
-                if upper_prefix.startswith("#EXTINF"):
-                    name = ""
-                    group = ""
-                    tvg_id = ""
-                    tvg_name = ""
-                    tvg_logo = ""
-                    tvg_rec = ""
-                    media_hint = ""
-                    timeshift = ""
-                    catchup = ""
-                    catchup_type = ""
-                    catchup_days = ""
-                    catchup_source = ""
-                    catchup_offset = ""
-                    http_user_agent = ""
-                    http_referrer = ""
-                    http_origin = ""
-                    http_cookie = ""
-                    http_headers = []
-                    http_auth = ""
-                    http_accept = ""
-
-                    comma_idx = _extinf_name_comma(s)
-                    info_part = s if comma_idx == -1 else s[:comma_idx]
-                    if comma_idx != -1:
-                        name = s[comma_idx + 1:].strip()
-
-                    colon_idx = info_part.find(':')
-                    attr_segment = info_part[colon_idx + 1:] if colon_idx != -1 else ""
-                    if attr_segment:
-                        attrs: Dict[str, str] = {}
-                        for match in attr_iter(attr_segment):
-                            key = match.group(1).lower()
-                            value = match.group(2) or match.group(3) or match.group(4) or ""
-                            if key not in attrs:
-                                attrs[key] = value.strip()
-                        if attrs:
-                            group = attrs.get("group-title", "")
-                            tvg_id = attrs.get("tvg-id", "")
-                            tvg_name = attrs.get("tvg-name", "")
-                            tvg_logo = attrs.get("tvg-logo") or attrs.get("logo") or ""
-                            tvg_rec = attrs.get("tvg-rec", "")
-                            # Authoritative media-type metadata (issue #33):
-                            # radio="true" and recognized equivalents. Parsed
-                            # once here so recording, menus and probes share it.
-                            media_hint = media_type.media_hint_from_attributes(attrs)
-                            timeshift = attrs.get("timeshift", "")
-                            catchup = attrs.get("catchup", "")
-                            catchup_type = attrs.get("catchup-type", "")
-                            catchup_days = attrs.get("catchup-days", "")
-                            catchup_source = attrs.get("catchup-source", "")
-                            catchup_offset = attrs.get("catchup-offset", "")
-                            http_user_agent = attrs.get("http-user-agent", "")
-                            http_referrer = attrs.get("http-referrer") or attrs.get("http-referer", http_referrer)
-                            http_origin = attrs.get("http-origin", http_origin)
-                            http_cookie = attrs.get("http-cookie", http_cookie)
-                            http_auth = attrs.get("http-authorization", http_auth)
-                            http_accept = attrs.get("http-accept", http_accept)
-                    continue
-
-                if upper_prefix.startswith("#EXTVLCOPT"):
-                    colon_idx = s.find(':')
-                    if colon_idx != -1:
-                        data = s[colon_idx + 1:]
-                        eq_idx = data.find('=')
-                        if eq_idx != -1:
-                            key = data[:eq_idx].strip().lower()
-                            value = data[eq_idx + 1:].strip()
-                            if key in {"catchup-source", "catchup_url"}:
-                                catchup_source = value
-                            elif key == "catchup-days":
-                                catchup_days = value
-                            elif key == "catchup-type":
-                                catchup_type = value
-                            elif key == "http-user-agent":
-                                http_user_agent = value
-                            elif key in {"http-referrer", "http-referer", "referer", "referrer"}:
-                                http_referrer = value
-                            elif key in {"http-origin", "origin"}:
-                                http_origin = value
-                            elif key in {"http-cookie", "cookie"}:
-                                http_cookie = value
-                            elif key in {"http-authorization", "authorization", "auth"}:
-                                http_auth = value
-                            elif key in {"http-accept", "accept"}:
-                                http_accept = value
-                            elif key.startswith("http-header"):
-                                if value:
-                                    http_headers.append(value)
-                    continue
-
-                if upper_prefix.startswith("#KODIPROP"):
-                    colon_idx = s.find(':')
-                    if colon_idx != -1:
-                        data = s[colon_idx + 1:]
-                        eq_idx = data.find('=')
-                        if eq_idx != -1:
-                            key = data[:eq_idx].strip().lower()
-                            value = data[eq_idx + 1:].strip()
-                            if key.endswith("catchup_days"):
-                                catchup_days = value
-                            elif key.endswith("catchup_source"):
-                                catchup_source = value
-                            elif key in {"http-referrer", "http-referer", "referer", "referrer"}:
-                                http_referrer = value
-                            elif key in {"http-origin", "origin"}:
-                                http_origin = value
-                            elif key in {"http-cookie", "cookie"}:
-                                http_cookie = value
-                            elif key in {"http-authorization", "authorization", "auth"}:
-                                http_auth = value
-                            elif key in {"http-accept", "accept"}:
-                                http_accept = value
-                    continue
-
-                # Other comment/directive lines are ignored
-                continue
-
-            url = s
-            # Channels with no explicit group-title fall to "Uncategorized"
-            # (see the `ch.get("group") or "Uncategorized"` grouping below) rather
-            # than being bucketed by a country code guessed from the name. That
-            # guessing produced confusing giant "us"/"ca" groups that mixed
-            # unrelated channels and swept in malformed entries.
-            grp_value = group
-            channel = {
-                "name": name,
-                "group": grp_value,
-                "url": url,
-                "tvg-id": tvg_id,
-                "tvg-name": tvg_name,
-            }
-            if provider_id:
-                channel["provider-id"] = provider_id
-            if provider_type:
-                channel["provider-type"] = provider_type
-            if tvg_logo:
-                channel["tvg-logo"] = tvg_logo
-            if tvg_rec:
-                channel["tvg-rec"] = tvg_rec
-            if media_hint:
-                channel["media_hint"] = media_hint
-            if timeshift:
-                channel["timeshift"] = timeshift
-            if catchup:
-                channel["catchup"] = catchup
-            if catchup_type:
-                channel["catchup-type"] = catchup_type
-            if catchup_days:
-                channel["catchup-days"] = catchup_days
-            if catchup_source:
-                channel["catchup-source"] = catchup_source
-            if catchup_offset:
-                channel["catchup-offset"] = catchup_offset
-            # Dispatcharr advertises its own catch-up clock in the header
-            # (catchup-timezone, an attribute it introduced) and no other
-            # server is known to send it, so the whole playlist is marked as
-            # coming from its restreamer: the player adds no buffer on top of
-            # what Dispatcharr already holds.
-            if catchup_timezone:
-                channel["dispatcharr"] = True
-                if catchup or catchup_source:
-                    channel["catchup-timezone"] = catchup_timezone
-            if http_user_agent:
-                channel["http-user-agent"] = http_user_agent
-            if http_referrer:
-                channel["http-referrer"] = http_referrer
-            if http_origin:
-                channel["http-origin"] = http_origin
-            if http_cookie:
-                channel["http-cookie"] = http_cookie
-            if http_auth:
-                channel["http-authorization"] = http_auth
-            if http_accept:
-                channel["http-accept"] = http_accept
-            if http_headers:
-                # Preserve header order but drop duplicates case-insensitively.
-                seen_headers = set()
-                unique_headers: List[str] = []
-                for hdr in http_headers:
-                    key_lower = hdr.split(":", 1)[0].strip().lower() if ":" in hdr else hdr.lower()
-                    if key_lower in seen_headers:
-                        continue
-                    seen_headers.add(key_lower)
-                    unique_headers.append(hdr)
-                channel["http-headers"] = unique_headers
-
-            if provider_type == "xtream" or catchup_source:
-                stream_id = stream_id_for(url)
-                if stream_id:
-                    channel["stream-id"] = stream_id
-
-            append(channel)
-
-            # Clear state after emitting the channel entry
-            name = ""
-            group = ""
-            tvg_id = ""
-            tvg_name = ""
-            tvg_logo = ""
-            tvg_rec = ""
-            media_hint = ""
-            timeshift = ""
-            catchup = ""
-            catchup_type = ""
-            catchup_days = ""
-            catchup_source = ""
-            catchup_offset = ""
-            http_user_agent = ""
-            http_referrer = ""
-            http_origin = ""
-            http_cookie = ""
-            http_headers = []
-            http_auth = ""
-            http_accept = ""
-
-        return out
-
-    def _playlist_text_hash(self, text: str) -> str:
-        if not text:
-            return ""
-        # The parsed-playlist cache is keyed by this hash, so the parser
-        # version is part of it: a parser change must not be hidden behind
-        # channels cached by an older build from the same playlist text.
-        payload = _PARSED_PLAYLIST_CACHE_VERSION + "\n" + text
-        return hashlib.sha1(payload.encode("utf-8", "surrogatepass")).hexdigest()
-
-    def _parsed_cache_path_for_key(self, key: str) -> str:
-        digest = hashlib.sha1(key.encode("utf-8", "surrogatepass")).hexdigest()
-        cache_dir = get_cache_dir()
-        os.makedirs(cache_dir, exist_ok=True)
-        return os.path.join(cache_dir, f"parsed_{digest}.json")
-
-    def _read_cached_playlist_file(
-        self, cache_path: str
-    ) -> Tuple[Optional[str], Optional[List[Dict[str, str]]]]:
-        """Raw (hash, channels) read of a parsed-cache JSON file, no hash check/mutation.
-        Split out of _load_cached_playlist so callers that already have the parsed
-        result (e.g. the playlist-load prefill pass) can share it instead of paying
-        for the disk read + JSON decode a second time."""
-        try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            channels = data.get("channels")
-            if not isinstance(channels, list):
-                return None, None
-            return data.get("hash"), channels
-        except Exception:
-            return None, None
-
-    def _apply_cached_provider_meta(self, channels: List[Dict[str, str]], provider_meta: Optional[Dict[str, str]]) -> None:
-        if not provider_meta:
-            return
-        pid = provider_meta.get("provider-id")
-        ptype = provider_meta.get("provider-type")
-        if not pid and not ptype:
-            return
-        for ch in channels:
-            if pid:
-                ch["provider-id"] = pid
-            if ptype:
-                ch["provider-type"] = ptype
-
-    def _load_cached_playlist(
-        self,
-        cache_path: str,
-        text_hash: Optional[str],
-        provider_meta: Optional[Dict[str, str]] = None,
-        skip_hash: bool = False,
-    ) -> Optional[List[Dict[str, str]]]:
-        try:
-            stored_hash, channels = self._read_cached_playlist_file(cache_path)
-            if channels is None:
-                return None
-            if not skip_hash and text_hash is not None and stored_hash != text_hash:
-                return None
-            self._apply_cached_provider_meta(channels, provider_meta)
-            return channels
-        except Exception:
-            return None
-
-    def _store_cached_playlist(
-        self,
-        cache_path: str,
-        text_hash: str,
-        channels: List[Dict[str, str]],
-        provider_meta: Optional[Dict[str, str]] = None,
-    ) -> None:
-        payload = {"hash": text_hash, "channels": channels}
-        if provider_meta:
-            payload["provider"] = provider_meta
-        tmp_path = cache_path + ".tmp"
-        try:
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, separators=(",", ":"))
-            os.replace(tmp_path, cache_path)
-        except Exception:
-            try:
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
-            except Exception:
-                LOG.debug("IPTVClient._store_cached_playlist: ignored exception", exc_info=True)
-
-    def _extract_stream_id(self, url: str) -> str:
-        try:
-            path = urllib.parse.urlparse(url).path
-        except Exception:
-            path = ""
-        if not path:
-            return ""
-        parts = [p for p in path.split("/") if p]
-        if not parts:
-            return ""
-        last = parts[-1]
-        m = re.match(r"(\d+)", last)
-        if m:
-            return m.group(1)
-        if len(parts) >= 2:
-            m = re.match(r"(\d+)", parts[-2])
-            if m:
-                return m.group(1)
-        return ""
 
     def on_group_select(self):
         if getattr(self, "view_mode", "live") == "vod":
@@ -8090,169 +6563,16 @@ class IPTVClient(wx.Frame):
         self.on_highlight()
         self._maybe_autostart_epg_import()
 
-    def _fmt_time(self, s):
-        # s: "YYYYMMDDHHMMSS" (UTC)
-        try:
-            dt = datetime.datetime.strptime(s, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
-            local = utc_to_local(dt)
-            return local.strftime("%H:%M")
-        except Exception:
-            return "?"
 
-    def _utc_now(self) -> datetime.datetime:
-        try:
-            return datetime.datetime.now(datetime.timezone.utc)
-        except Exception:
-            return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
-    def on_highlight(self):
-        self._update_recording_menu_state()
-        i = self.channel_list.GetSelection()
-        if i < 0 or i >= len(self.displayed):
-            self.url_display.SetValue("")
-            self._set_episode_description("")
-            return
-        item = self.displayed[i]
-        if item["type"] == "vod_series":
-            self.url_display.SetValue("")
-            self._set_episode_description("")
-            return
-        if item["type"] in ("vod_back", "vod_info"):
-            self.url_display.SetValue("")
-            self._set_episode_description("")
-            return
-        if item["type"] == "channel":
-            ch = item["data"]
-            self.url_display.SetValue(ch.get("url", ""))
-            # The description field reads the on-air programme of the
-            # highlighted channel from the bulk now-playing cache.
-            self._set_episode_description(getattr(
-                self, "_now_playing_descriptions", {}).get(
-                _now_playing_key(ch), ""))
-            # Warm the media-type cache (issue #33) once the selection
-            # settles, so the Recording Format menu and recording paths know
-            # audio-only streams before they are used.
-            self._schedule_media_probe(ch)
-        elif item["type"] == "epg":
-            self.url_display.SetValue("")
-            r = item["data"]
-            # The same (memoized) match the recording menu just made, so the
-            # URL shown is the channel that playing or recording this row uses.
-            ch = self._find_channel_for_epg(r)
-            self.url_display.SetValue(ch.get("url", "") if ch else "")
-            self._set_episode_description(r.get("description") or "")
 
-    def _epg_msg_from_tuple(self, now, nxt):
-        def localfmt(dt):
-            local = utc_to_local(dt)
-            return local.strftime('%H:%M')
-        def description(show):
-            return (show.get('description') or "").strip() if show else ""
-        msg = ""
-        if now:
-            msg += _("Now: {title} ({start} – {end})").format(
-                title=now['title'], start=localfmt(now['start']), end=localfmt(now['end']))
-            desc = description(now)
-            if desc:
-                msg += "\n" + desc
-        elif nxt:
-            msg += _("Starts at {start}: {title}").format(
-                start=localfmt(nxt['start']), title=nxt['title'])
-            desc = description(nxt)
-            if desc:
-                msg += "\n" + desc
-        else:
-            msg += _("No program currently airing.")
-        if nxt:
-            msg += "\n" + _("Next: {title} ({start} – {end})").format(
-                title=nxt['title'], start=localfmt(nxt['start']), end=localfmt(nxt['end']))
-            if now:
-                # The description of the current show was already shown above.
-                desc = description(nxt)
-                if desc:
-                    msg += "\n" + desc
-        return msg
 
-    def _find_channel_for_epg(self, show: Dict[str, str]) -> Optional[Dict[str, str]]:
-        return self._find_matching_channel_for_program(show)
 
-    def _channel_has_catchup(self, channel: Dict[str, str]) -> bool:
-        if channel.get("catchup-source") or channel.get("catchup"):
-            return True
-        if _implicit_catchup_source(channel):
-            return True
-        if channel.get("provider-type") == "stalker":
-            pdata = channel.get("provider-data") or {}
-            return bool(pdata.get("allow_timeshift") or pdata.get("archive"))
-        return False
 
-    def _parse_epg_time(self, value: str) -> datetime.datetime:
-        dt = datetime.datetime.strptime(value, "%Y%m%d%H%M%S")
-        return dt.replace(tzinfo=datetime.timezone.utc)
 
-    def _resolve_show_url(self, channel: Dict[str, str], show: Dict[str, str]) -> tuple:
-        start_dt = self._parse_epg_time(show.get("start"))
-        end_dt = self._parse_epg_time(show.get("end"))
-        now = datetime.datetime.now(datetime.timezone.utc)
 
-        if start_dt <= now <= end_dt:
-            return self._resolve_live_url(channel), False
 
-        if end_dt < now:
-            if not self._channel_has_catchup(channel):
-                raise ProviderError("This channel does not provide catch-up streaming.")
-            if not self._within_catchup_window(channel, start_dt):
-                raise ProviderError("This programme is older than the catch-up window allows.")
-            url = self._resolve_catchup_url(channel, start_dt, end_dt)
-            if not url:
-                raise ProviderError("Unable to construct catch-up URL for this programme.")
-            return url, True
 
-        # Future programme: return live stream so playback starts when available.
-        return self._resolve_live_url(channel), False
-
-    def _within_catchup_window(self, channel: Dict[str, str], start_dt: datetime.datetime) -> bool:
-        days = channel.get("catchup-days") or _positive_timeshift_days(channel)
-        if not days:
-            return True
-        try:
-            span = int(float(days))
-        except (TypeError, ValueError):
-            return True
-        now = datetime.datetime.now(datetime.timezone.utc)
-        return start_dt >= now - datetime.timedelta(days=span)
-
-    def _resolve_live_url(self, channel: Dict[str, str]) -> str:
-        url = channel.get("url", "")
-        provider_type = channel.get("provider-type")
-        provider_id = channel.get("provider-id")
-
-        if provider_type == "stalker":
-            if not provider_id:
-                raise ProviderError("Stalker portal entry missing provider identifier.")
-            client = self.provider_clients.get(provider_id)
-            if not client:
-                raise ProviderError("Stalker portal client is not initialized.")
-            pdata = channel.get("provider-data") or {}
-            url = client.resolve_stream(pdata)
-            return url
-
-        return url
-
-    def _resolve_catchup_url(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> str:
-        provider_type = channel.get("provider-type")
-        provider_id = channel.get("provider-id")
-        if provider_type == "stalker" and provider_id:
-            client = self.provider_clients.get(provider_id)
-            if not client:
-                raise ProviderError("Stalker portal client is not initialized.")
-            pdata = channel.get("provider-data") or {}
-            start_local = utc_to_local(start_dt)
-            duration = max(1, int((end_dt - start_dt).total_seconds() // 60))
-            start_str = start_local.strftime("%Y-%m-%d:%H-%M")
-            return client.resolve_catchup(pdata, start_str, duration)
-
-        return self._build_generic_catchup_url(channel, start_dt, end_dt)
 
     def _build_generic_catchup_url(self, channel: Dict[str, str], start_dt: datetime.datetime, end_dt: datetime.datetime) -> str:
         # Explicit metadata wins. If it is absent, known providers may expose
@@ -8274,7 +6594,8 @@ class IPTVClient(wx.Frame):
 
         # Absolute archive templates stand alone; relative templates append
         # to the live URL (e.g. teleelevidenie's "?utc=${start}").
-        expanded = _expand_catchup_template(source, start_dt, end_dt, offset_hours)
+        expanded = _expand_catchup_template(
+            source, start_dt, end_dt, offset_hours, channel.get("catchup-timezone", ""))
         if expanded is not None:
             if expanded.lower().startswith(("http://", "https://")):
                 url = expanded
@@ -8413,6 +6734,9 @@ class IPTVClient(wx.Frame):
         was_catchup = getattr(self, "_internal_player_stream_kind", "live") == "catchup"
         catchup_return = getattr(self, "_catchup_return", None)
         self._catchup_return = None
+        # Nothing is playing any more, so no subtitle session is active.
+        self._subtitle_session.cancel_session()
+        IPTVClient._purge_app_voice(self)
         self._internal_player_frame = None
         self._internal_player_channel = None
         self._internal_player_audio_key = ""
@@ -8697,6 +7021,22 @@ class IPTVClient(wx.Frame):
     # (JAWS/NVDA) keeps ownership of its voice, volume and audio endpoint;
     # the optional application-owned TTS backend owns its own volume and
     # output device instead. Neither ever affects the other.
+
+    def _purge_app_voice(self) -> None:
+        """Stop the application voice mid-sentence.
+
+        The app voice speaks asynchronously, so a caption line kept talking
+        after the user stopped playback, closed the player or switched
+        channel - the previous channel's words were read out after the
+        switch.
+        """
+        backend = getattr(self, "_app_tts", None)
+        if backend is None:
+            return
+        try:
+            backend.stop()
+        except Exception:
+            LOG.debug("IPTVClient._purge_app_voice: ignored exception", exc_info=True)
 
     def _speak_subtitle_cue(self, text: str) -> None:
         """Route one subtitle cue to the configured speech backend.
@@ -9061,6 +7401,12 @@ class IPTVClient(wx.Frame):
                 if callable(index_setter):
                     index_setter(self._remembered_channel_audio_track_index(
                         self._internal_player_audio_key))
+                # A new stream is a new subtitle session: the shared manager
+                # drops the previous channel's cues, so "Read current
+                # subtitle" cannot answer with the last line of the channel
+                # the user just left.
+                self._subtitle_session.activate_session(display_title)
+                IPTVClient._purge_app_voice(self)
                 frame.play(
                     url,
                     display_title,
@@ -9069,6 +7415,12 @@ class IPTVClient(wx.Frame):
                     video_visible=show_internal_player,
                     focus_controls=focus_player,
                     dispatcharr=bool((channel or {}).get("dispatcharr")),
+                    # A radio station may carry cover art. The player has to
+                    # know the media is audio-only, or its still video track
+                    # arms the video watchdog and restarts the stream every
+                    # ten seconds while the audio plays perfectly well.
+                    audio_only=(media_type.channel_media_from_metadata(channel or {})
+                                == media_type.MEDIA_AUDIO),
                 )
                 announce = getattr(frame, "_update_status_label", None)
                 if callable(announce):
@@ -9160,7 +7512,9 @@ class IPTVClient(wx.Frame):
         def cast_failed(err):
             message_box(_("Failed to cast: {error}").format(error=err), _("Casting Error"),
                         wx.OK | wx.ICON_ERROR, owner)
-            if owner is player and player.IsShown():
+            # The player can be closed while this box waits; a destroyed
+            # wx object raises on every call.
+            if owner is player and _window_alive(player) and player.IsShown():
                 player.Raise()
                 player.cast_btn.SetFocus()
 
@@ -9444,6 +7798,11 @@ class IPTVClient(wx.Frame):
             if direct:
                 LOG.info("Catch-up: using fast direct download URL")
                 url = direct
+                # The direct file can live on another host - the provider
+                # redirected there. The channel's credentials must not
+                # follow it: ffmpeg would send the provider's cookie to a
+                # stranger, and so would the audio probe below.
+                headers = catchup_direct.headers_for_host(headers, fetch_url, direct)
         except (TypeError, ValueError):
             LOG.debug("Catch-up direct URL probe skipped: programme window is not valid",
                       exc_info=True)
@@ -9821,296 +8180,9 @@ class IPTVClient(wx.Frame):
             db.close()
 
 
-class CastDiscoveryDialog(wx.Dialog):
-    help_topic = "casting"
-
-    def __init__(self, parent, caster):
-        super().__init__(parent, title=_("Select Device to Cast"), size=(450, 350))
-        self.parent_frame = parent
-        self.caster = caster
-        self.devices: List[object] = []
-
-        panel = wx.Panel(self)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.status_lbl = wx.StaticText(panel, label=_("Searching for devices..."))
-        self.devices_label = wx.StaticText(panel, label=_("Select Device to Cast"))
-        self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
-        self.listbox.SetName(_("Select Device to Cast"))
-
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Connect"))
-        self.ok_btn.Disable()
-        cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Cancel"))
-        
-        btn_sizer.AddStretchSpacer(1)
-        btn_sizer.Add(self.ok_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
-        
-        sizer.Add(self.status_lbl, 0, wx.ALL, 10)
-        sizer.Add(self.devices_label, 0, wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        
-        panel.SetSizer(sizer)
-        
-        self.listbox.Bind(wx.EVT_LISTBOX, self._on_select)
-        self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_dclick)
-        
-        self.CenterOnParent()
-        
-        # Start discovery
-        self._start_discovery()
-
-    def _start_discovery(self):
-        def do_scan():
-            try:
-                # caster.discover_all() is synchronous and thread-safe (uses internal loop)
-                devices = self.caster.discover_all()
-                wx.CallAfter(self._update_list, devices)
-            except Exception as e:
-                wx.CallAfter(self._show_scan_error, e)
-
-        threading.Thread(target=do_scan, daemon=True).start()
-
-    def _show_scan_error(self, error):
-        # The scan outlives the dialog when it is cancelled mid-search.
-        if not self:
-            return
-        self.status_lbl.SetLabel(_("Error: {error}").format(error=error))
-
-    def _update_list(self, devices: List[object]):
-        if not self:
-            return
-        self.devices = devices
-        self.listbox.Clear()
-        if not devices:
-            self.status_lbl.SetLabel(_("No devices found."))
-            return
-
-        self.status_lbl.SetLabel(_("Found {count} devices:").format(count=len(devices)))
-        for dev in devices:
-            self.listbox.Append(dev.display_name)
-
-        # Select the first device so Connect works straight from the keyboard.
-        self.listbox.SetSelection(0)
-        self.ok_btn.Enable()
-
-    def _on_select(self, event):
-        sel = self.listbox.GetSelection()
-        if sel != wx.NOT_FOUND and 0 <= sel < len(self.devices):
-            self.ok_btn.Enable()
-        else:
-            self.ok_btn.Disable()
-
-    def _on_dclick(self, event):
-        if self.listbox.GetSelection() != wx.NOT_FOUND:
-            self.EndModal(wx.ID_OK)
-
-    def get_selected_device(self) -> Optional[object]:
-        sel = self.listbox.GetSelection()
-        if sel != wx.NOT_FOUND and 0 <= sel < len(self.devices):
-            return self.devices[sel]
-        return None
-
-
-class AccountInfoDialog(wx.Dialog):
-    """Subscription status for every provider account the app can find.
-
-    Deliberately two controls: a list of accounts and one read-only multiline
-    field holding the whole report. That is the shape a screen reader handles
-    best - arrow through the accounts, tab once, read the details top to bottom.
-    Each lookup is a blocking HTTP request, so it runs on a worker thread and
-    results are matched against a request token before being displayed.
-    """
-
-    help_topic = "account-info"
-
-    def __init__(self, parent, accounts: List[account_info.Account]):
-        super().__init__(
-            parent,
-            title=_("Account Info"),
-            size=(700, 520),
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-        )
-        self.accounts = accounts
-        self._reports: Dict[int, str] = {}
-        self._request_token = 0
-        self._alive = True
-
-        panel = wx.Panel(self)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        intro = wx.StaticText(panel, label=_("Select an account to check its status:"))
-        list_label = wx.StaticText(panel, label=_("Accounts") + ":")
-        self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
-        self._label_control(self.listbox, _("Accounts"))
-        for account in accounts:
-            self.listbox.Append(account_info.account_label(account))
-
-        details_label = wx.StaticText(panel, label=_("Account details") + ":")
-        self.details = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
-        self._label_control(self.details, _("Account details"))
-
-        self.status_lbl = wx.StaticText(panel, label="")
-
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.refresh_btn = wx.Button(panel, label=_("Refresh"))
-        self.copy_btn = wx.Button(panel, label=_("Copy Details"))
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        btn_sizer.Add(self.refresh_btn, 0, wx.ALL, 5)
-        btn_sizer.Add(self.copy_btn, 0, wx.ALL, 5)
-        btn_sizer.AddStretchSpacer(1)
-        btn_sizer.Add(close_btn, 0, wx.ALL, 5)
-
-        sizer.Add(intro, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
-        sizer.Add(list_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
-        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(details_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
-        sizer.Add(self.details, 2, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(self.status_lbl, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
-        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        panel.SetSizer(sizer)
-
-        self.listbox.Bind(wx.EVT_LISTBOX, self._on_select)
-        self.refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh)
-        self.copy_btn.Bind(wx.EVT_BUTTON, self._on_copy)
-        close_btn.Bind(wx.EVT_BUTTON, self._on_close_button)
-        self.Bind(wx.EVT_CLOSE, self._on_close_window)
-        self.SetEscapeId(wx.ID_CANCEL)
-
-        self.SetMinSize((520, 420))
-        self.Layout()
-        self.CenterOnParent()
-
-        if accounts:
-            self.listbox.SetSelection(0)
-            self.listbox.SetFocus()
-            self._start_lookup(0)
-
-    @staticmethod
-    def _label_control(ctrl, label):
-        ctrl.SetName(label)
-        if hasattr(ctrl, "SetAccessibleName"):
-            ctrl.SetAccessibleName(label)
-
-    # ------------------------------------------------------------------ #
-    # Lookups
-    # ------------------------------------------------------------------ #
-    def _start_lookup(self, index: int, force: bool = False):
-        if not (0 <= index < len(self.accounts)):
-            return
-        self._request_token += 1
-        token = self._request_token
-        if not force and index in self._reports:
-            self._apply_report(token, index, self._reports[index])
-            return
-        account = self.accounts[index]
-        self.details.SetValue(_("Checking account, please wait..."))
-        self.status_lbl.SetLabel(_("Checking {account}...").format(
-            account=account_info.account_label(account)))
-        self.refresh_btn.Disable()
-
-        def worker():
-            try:
-                report = account_info.fetch_account_report(account)
-            except Exception as e:
-                LOG.debug("AccountInfoDialog: account lookup failed", exc_info=True)
-                wx.CallAfter(self._lookup_failed, token, index, str(e))
-                return
-            wx.CallAfter(self._lookup_finished, token, index, report)
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _lookup_finished(self, token: int, index: int, report: str):
-        self._reports[index] = report
-        self._apply_report(token, index, report)
-
-    def _lookup_failed(self, token: int, index: int, error: str):
-        # Errors are not cached: re-selecting the account should retry it.
-        self._apply_report(
-            token,
-            index,
-            _("Could not check this account.\n\n{error}").format(error=error),
-            ok=False,
-        )
-
-    def _apply_report(self, token: int, index: int, report: str, ok: bool = True):
-        if not self._alive or token != self._request_token:
-            return
-        try:
-            self.details.SetValue(report)
-            # Reading starts at the top, not wherever the previous report ended.
-            self.details.SetInsertionPoint(0)
-            self.status_lbl.SetLabel(_("Ready.") if ok else _("Check failed."))
-            self.refresh_btn.Enable()
-        except RuntimeError:
-            LOG.debug("AccountInfoDialog._apply_report: dialog already gone", exc_info=True)
-
-    # ------------------------------------------------------------------ #
-    # Events
-    # ------------------------------------------------------------------ #
-    def _on_select(self, _event):
-        self._start_lookup(self.listbox.GetSelection())
-
-    def _on_refresh(self, _event):
-        self._start_lookup(self.listbox.GetSelection(), force=True)
-
-    def _on_copy(self, _event):
-        text = self.details.GetValue()
-        if not text:
-            return
-        if not wx.TheClipboard.Open():
-            self.status_lbl.SetLabel(_("Could not open the clipboard."))
-            return
-        try:
-            wx.TheClipboard.SetData(wx.TextDataObject(text))
-            wx.TheClipboard.Flush()
-        finally:
-            wx.TheClipboard.Close()
-        self.status_lbl.SetLabel(_("Account details copied to the clipboard."))
-
-    def _on_close_button(self, _event):
-        self._alive = False
-        if self.IsModal():
-            self.EndModal(wx.ID_CANCEL)
-        else:
-            self.Destroy()
-
-    def _on_close_window(self, event):
-        self._alive = False
-        event.Skip()
-
-
-def _show_on_taskbar(window) -> None:
-    """Give an owned window its own taskbar button and Alt+Tab entry (Windows).
-
-    wx dialogs are owned by their parent, and Windows leaves owned windows
-    off the taskbar and out of Alt+Tab. For a long-running modeless window
-    that means a keyboard user who steps back to the main window has no way
-    back to it. WS_EX_APPWINDOW overrides that; it must be set before the
-    window is first shown.
-    """
-    if sys.platform != "win32":
-        return
-    try:
-        import ctypes
-        user32 = ctypes.WinDLL("user32")  # private handle: our argtypes only
-        get_style = getattr(user32, "GetWindowLongPtrW", None) or user32.GetWindowLongW
-        set_style = getattr(user32, "SetWindowLongPtrW", None) or user32.SetWindowLongW
-        get_style.restype = ctypes.c_ssize_t
-        get_style.argtypes = [ctypes.c_void_p, ctypes.c_int]
-        set_style.restype = ctypes.c_ssize_t
-        set_style.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_ssize_t]
-        gwl_exstyle, ws_ex_appwindow = -20, 0x00040000
-        hwnd = ctypes.c_void_p(int(window.GetHandle()))
-        set_style(hwnd, gwl_exstyle, get_style(hwnd, gwl_exstyle) | ws_ex_appwindow)
-    except Exception:
-        LOG.debug("_show_on_taskbar: ignored exception", exc_info=True)
-
-
 class CatchupDownloadDialog(wx.Dialog):
+    # F1 inside this window opens the guide at its own section.
+    help_topic = "catch-up-downloads"
     """Live progress for one catch-up download.
 
     ffmpeg reports the media time it has written through periodic stats lines
@@ -10319,227 +8391,6 @@ class CatchupDownloadDialog(wx.Dialog):
             LOG.debug("CatchupDownloadDialog.notify_recording_finished: ignored exception", exc_info=True)
 
 
-class CatchupDialog(wx.Dialog):
-    """Choose one catch-up programme, then open or download it.
-
-    The two actions live only in the list's context menu (right-click / Apps
-    key) and on Enter (open): no buttons at all sit in the Tab chain. Tab from
-    the list reaches a read-only description of the highlighted programme, and
-    Tab again comes straight back to the list. Escape closes the dialog.
-    """
-
-    help_topic = "catch-up"
-
-    def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
-                 initial_start: str = ""):
-        title = channel_name or _("Catch-up")
-        super().__init__(parent, title=_("Catch-up: {name}").format(name=title), size=(520, 360))
-        self.programmes = programmes
-        panel = wx.Panel(self)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        intro = wx.StaticText(panel, label=_(
-            "Select a programme, then press Enter to open it, or use the "
-            "context menu to download it. Press Escape to close."))
-        self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
-        for prog in programmes:
-            self.listbox.Append(self._format_programme(prog))
-        if programmes:
-            # Back from the player, the list opens on the programme that was
-            # playing rather than at the top.
-            initial = next((i for i, prog in enumerate(programmes)
-                            if initial_start and prog.get("start") == initial_start), 0)
-            self.listbox.SetSelection(initial)
-        # Tab from the list lands here: the description of the highlighted
-        # programme, read-only, updated as the selection moves. Same pattern
-        # as the EPG dialog, and one less reason to open the EPG by hand.
-        self.description_label = wx.StaticText(panel, label=_("Description"))
-        self.description_field = wx.TextCtrl(
-            panel, size=(-1, 90), style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.description_field.SetName(_("Episode description"))
-
-        # There is no Close button. It was the third stop in a three-control
-        # Tab ring and did nothing Escape does not already do, so Tab from the
-        # description landed on a button whose only job was to be tabbed past
-        # on the way back to the list. Escape is handled below, for every
-        # control in the dialog.
-        sizer.Add(intro, 0, wx.ALL, 10)
-        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(self.description_label, 0, wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(self.description_field, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        panel.SetSizer(sizer)
-        self.listbox.SetName(_("Catch-up programmes"))
-        self.listbox.Bind(wx.EVT_LISTBOX, lambda _evt: self._update_description())
-        self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_listbox_activate)
-        # EVT_CHAR_HOOK, not EVT_KEY_DOWN: a dialog consumes Enter before the
-        # focused control ever sees a key-down, which is why pressing Enter on
-        # a catch-up programme used to do nothing at all.
-        self.listbox.Bind(wx.EVT_CHAR_HOOK, self._on_key)
-        self.listbox.Bind(wx.EVT_CONTEXT_MENU, self._on_context_menu)
-        self.description_field.Bind(wx.EVT_CHAR_HOOK, self._on_description_key)
-        # With no wxID_CANCEL button left, wx has nothing to click for Escape,
-        # so close the dialog here. The bind is on the dialog: an unhandled
-        # char hook from any child bubbles up to it.
-        self.Bind(wx.EVT_CHAR_HOOK, self._on_dialog_key)
-        self.SetEscapeId(wx.ID_CANCEL)
-        self.SetMinSize((420, 380))
-        self.Layout()
-        self.CenterOnParent()
-        self._update_description()
-
-    def _on_dialog_key(self, event):
-        if event.GetKeyCode() == wx.WXK_ESCAPE:
-            self.EndModal(wx.ID_CANCEL)
-            return
-        event.Skip()
-
-    def _format_programme(self, prog: Dict[str, str]) -> str:
-        try:
-            start = datetime.datetime.strptime(prog.get("start", ""), "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
-            end = datetime.datetime.strptime(prog.get("end", ""), "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
-            start_local = utc_to_local(start)
-            end_local = utc_to_local(end)
-            window = f"{start_local.strftime('%Y-%m-%d %H:%M')} – {end_local.strftime('%H:%M')}"
-        except Exception:
-            window = prog.get("start", "")
-        title = prog.get("title", "") or _("(No title)")
-        return f"{window}  |  {title}"
-
-    def _on_listbox_activate(self, _):
-        if self.programmes:
-            self.EndModal(wx.ID_OK)
-
-    def _on_description_key(self, event):
-        # Both directions go back to the list: it and the description are the
-        # only two controls, so Tab is a two-stop ring, not a walk past a
-        # button on the way round.
-        if event.GetKeyCode() == wx.WXK_TAB:
-            self.listbox.SetFocus()
-            return
-        event.Skip()
-
-    def _update_description(self):
-        idx = self.listbox.GetSelection()
-        prog = self.programmes[idx] if 0 <= idx < len(self.programmes) else None
-        description = (prog.get("description") or "").strip() if prog else ""
-        text = description or _("No description available for this programme.")
-        if self.description_field.GetValue() != text:
-            self.description_field.SetValue(text)
-
-    def _on_key(self, event):
-        key = event.GetKeyCode()
-        if key == wx.WXK_TAB:
-            # Forwards to the description, backwards to it as well: the ring
-            # holds two controls, so either Tab direction reaches the same
-            # place and the pair stays reversible.
-            self.description_field.SetFocus()
-        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
-            self._on_listbox_activate(None)
-        elif key == wx.WXK_WINDOWS_MENU:
-            # The keyboard's context-menu key must work without a mouse.
-            # WXK_MENU is Alt, not the Applications key; on a char hook that
-            # would pop the menu open every time the user reached for Alt.
-            self._show_context_menu(keyboard=True)
-        else:
-            event.Skip()
-
-    def _on_context_menu(self, _event):
-        self._show_context_menu(keyboard=False)
-
-    def _show_context_menu(self, keyboard: bool):
-        if self.listbox.GetSelection() == wx.NOT_FOUND and self.programmes:
-            self.listbox.SetSelection(0)
-        menu = wx.Menu()
-        open_item = menu.Append(wx.ID_ANY, _("Open"))
-        menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_OK), open_item)
-        download_item = menu.Append(wx.ID_ANY, _("Download"))
-        menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_SAVE), download_item)
-        pos = wx.DefaultPosition
-        if keyboard:
-            selection = self.listbox.GetSelection()
-            if selection != wx.NOT_FOUND:
-                try:
-                    rect = self.listbox.GetItemRect(selection)
-                    if rect.width or rect.height:
-                        pos = self.listbox.ClientToScreen(rect.GetBottomLeft())
-                except Exception:
-                    LOG.debug("CatchupDialog._show_context_menu: ignored exception", exc_info=True)
-        try:
-            self.listbox.PopupMenu(menu, pos)
-        finally:
-            menu.Destroy()
-
-    def get_selection(self) -> Optional[Dict[str, str]]:
-        idx = self.listbox.GetSelection()
-        if idx == wx.NOT_FOUND or idx >= len(self.programmes):
-            return None
-        return self.programmes[idx]
-
-
-class AudioTrackPreferenceDialog(wx.Dialog):
-    """Which audio track the built-in player should choose by itself.
-
-    Channels that carry an audio description track put it beside the ordinary one
-    and start on the ordinary one, so a viewer who needs the description has had to
-    switch by hand on every single channel. This is the setting that stops that.
-    """
-
-    _WRAP_WIDTH = 430
-    help_topic = "preferred-audio-track"
-
-    def __init__(self, parent, keywords=None, prefer_audio_description: bool = False):
-        super().__init__(parent, title=_("Preferred Audio Track"))
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        intro = wx.StaticText(self, label=_(
-            "When a channel offers more than one audio track, the built-in player can "
-            "switch to the track you want on its own."))
-        intro.Wrap(self._WRAP_WIDTH)
-        sizer.Add(intro, 0, wx.ALL, 10)
-
-        self.ad_check = wx.CheckBox(self, label=_(
-            "Prefer an audio description track when the channel has one"))
-        self.ad_check.SetValue(bool(prefer_audio_description))
-        self._label_control(self.ad_check, _("Prefer an audio description track when the channel has one"))
-        sizer.Add(self.ad_check, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-        keywords_label = _("Preferred track names or languages, most wanted first:")
-        sizer.Add(wx.StaticText(self, label=keywords_label), 0, wx.LEFT | wx.RIGHT, 10)
-        self.keywords_txt = wx.TextCtrl(self, value=", ".join(str(k) for k in (keywords or [])))
-        self._label_control(self.keywords_txt, keywords_label)
-        sizer.Add(self.keywords_txt, 0, wx.EXPAND | wx.ALL, 10)
-
-        hint = wx.StaticText(self, label=_(
-            "Separate them with commas, for example: audio description, English. A "
-            "track is used when its name contains one of these words. Leave this empty "
-            "to keep whatever track the channel starts on."))
-        hint.Wrap(self._WRAP_WIDTH)
-        sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-        sizer.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.ALL | wx.ALIGN_RIGHT, 10)
-        # Stock buttons take wxWidgets' own captions; use the app's (issue #29).
-        for button_id, label in ((wx.ID_OK, _("OK")), (wx.ID_CANCEL, _("Cancel"))):
-            button = self.FindWindowById(button_id)
-            if button:
-                button.SetLabel(label)
-        self.SetSizerAndFit(sizer)
-        self.CenterOnParent()
-        wx.CallAfter(self.ad_check.SetFocus)
-
-    @staticmethod
-    def _label_control(ctrl, label):
-        ctrl.SetName(label)
-        if hasattr(ctrl, "SetAccessibleName"):
-            ctrl.SetAccessibleName(label)
-
-    def get_keywords(self) -> List[str]:
-        from options import coerce_string_list
-
-        return coerce_string_list(self.keywords_txt.GetValue())
-
-    def get_prefer_audio_description(self) -> bool:
-        return bool(self.ad_check.GetValue())
-
-
 class RecordingProblemTimesDialog(wx.Dialog):
     """Accessible jump points for warnings and errors in a recording log."""
 
@@ -10602,161 +8453,6 @@ class RecordingProblemTimesDialog(wx.Dialog):
             wx.TheClipboard.Close()
 
 
-class RecordingPaddingDialog(wx.Dialog):
-    """Accessible settings for scheduled-recording lead-in and lead-out."""
-
-    MAX_PADDING_MINUTES = 180
-    help_topic = "schedule-padding"
-
-    def __init__(self, parent, before_minutes=0, after_minutes=2):
-        super().__init__(parent, title=_("Schedule Padding"), style=wx.DEFAULT_DIALOG_STYLE)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        intro = wx.StaticText(self, label=_(
-            "Start scheduled recordings early or keep recording after the programme ends. "
-            "Manual recordings are not changed."))
-        intro.Wrap(430)
-        sizer.Add(intro, 0, wx.ALL, 12)
-
-        grid = wx.FlexGridSizer(2, 2, 8, 10)
-        before_label = _("Minutes before programme:")
-        after_label = _("Minutes after programme:")
-        self.before_ctrl = wx.SpinCtrl(
-            self, min=0, max=self.MAX_PADDING_MINUTES,
-            initial=self._coerce_minutes(before_minutes),
-        )
-        self.after_ctrl = wx.SpinCtrl(
-            self, min=0, max=self.MAX_PADDING_MINUTES,
-            initial=self._coerce_minutes(after_minutes),
-        )
-        for label, control in ((before_label, self.before_ctrl), (after_label, self.after_ctrl)):
-            grid.Add(wx.StaticText(self, label=label), 0, wx.ALIGN_CENTER_VERTICAL)
-            control.SetName(label)
-            if hasattr(control, "SetAccessibleName"):
-                control.SetAccessibleName(label)
-            grid.Add(control, 0, wx.EXPAND)
-        grid.AddGrowableCol(1, 1)
-        sizer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
-
-        buttons = wx.StdDialogButtonSizer()
-        self.ok_btn = wx.Button(self, id=wx.ID_OK, label=_("OK"))
-        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel"))
-        buttons.AddButton(self.ok_btn)
-        buttons.AddButton(self.cancel_btn)
-        buttons.Realize()
-        sizer.Add(buttons, 0, wx.ALIGN_RIGHT | wx.ALL, 12)
-
-        self.SetSizerAndFit(sizer)
-        self.CentreOnParent()
-        self.ok_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_OK))
-        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _event: self._finish(wx.ID_CANCEL))
-        self.Bind(wx.EVT_CLOSE, lambda _event: self._finish(wx.ID_CANCEL))
-        self.SetEscapeId(wx.ID_CANCEL)
-        self.ok_btn.SetDefault()
-        self.before_ctrl.SetFocus()
-
-    @classmethod
-    def _coerce_minutes(cls, value) -> int:
-        try:
-            return max(0, min(int(float(value)), cls.MAX_PADDING_MINUTES))
-        except Exception:
-            return 0
-
-    def get_padding(self) -> Tuple[int, int]:
-        return self.before_ctrl.GetValue(), self.after_ctrl.GetValue()
-
-    def _finish(self, result):
-        if self.IsModal():
-            self.EndModal(result)
-        else:
-            self.Destroy()
-
-
-class ShutdownCountdownDialog(wx.Dialog):
-    """The last chance to stop the computer powering off after a recording.
-
-    Modeless and parentless on purpose: it has to appear even when the main window
-    is minimized to the tray, which is exactly where it will be at 3am.
-    """
-
-    COUNTDOWN_SECONDS = 60
-    help_topic = "shutdown-after-recordings"
-    # Closes itself when the countdown ends, so F1 help opens over the main window.
-    can_host_help = False
-
-    def __init__(self, parent, on_cancel, on_shutdown, seconds: Optional[int] = None):
-        super().__init__(parent, title=_("Shut Down After Recordings"),
-                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
-        self._on_cancel_cb = on_cancel
-        self._on_shutdown_cb = on_shutdown
-        self._remaining = int(self.COUNTDOWN_SECONDS if seconds is None else seconds)
-        self._finished = False
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        self.message = wx.StaticText(self, label=self._message_text())
-        self.message.Wrap(400)
-        sizer.Add(self.message, 0, wx.ALL, 12)
-
-        buttons = wx.BoxSizer(wx.HORIZONTAL)
-        self.cancel_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Cancel Shutdown"))
-        self.shutdown_btn = wx.Button(self, label=_("Shut Down Now"))
-        buttons.Add(self.cancel_btn, 0, wx.RIGHT, 8)
-        buttons.Add(self.shutdown_btn, 0)
-        sizer.Add(buttons, 0, wx.ALL | wx.ALIGN_RIGHT, 12)
-        self.SetSizerAndFit(sizer)
-
-        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._cancel())
-        self.shutdown_btn.Bind(wx.EVT_BUTTON, lambda _evt: self._shutdown())
-        self.Bind(wx.EVT_CLOSE, lambda _evt: self._cancel())
-        # Cancel is both the default and focused: a dialog that appeared on its own
-        # must not power the machine off because Enter or Escape was already on its
-        # way to something else.
-        self.cancel_btn.SetDefault()
-        self.cancel_btn.SetFocus()
-        self.Centre()
-
-        self._timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self._on_tick, self._timer)
-        self._timer.Start(1000)
-
-    def _message_text(self) -> str:
-        # Phrased so the number never needs a plural form: the app ships no plural
-        # catalogues, so "1 seconds" would be unfixable in translation.
-        return _("All recordings have finished.\n\n"
-                 "The computer will shut down by itself. Seconds remaining: {seconds}").format(
-                     seconds=max(0, self._remaining))
-
-    def _on_tick(self, _event):
-        self._remaining -= 1
-        if self._remaining <= 0:
-            self._shutdown()
-            return
-        try:
-            self.message.SetLabel(self._message_text())
-        except Exception:
-            LOG.debug("ShutdownCountdownDialog._on_tick: ignored exception", exc_info=True)
-
-    def _stop_timer(self):
-        try:
-            self._timer.Stop()
-        except Exception:
-            LOG.debug("ShutdownCountdownDialog._stop_timer: ignored exception", exc_info=True)
-
-    def _cancel(self):
-        if self._finished:
-            return
-        self._finished = True
-        self._stop_timer()
-        self._on_cancel_cb()
-
-    def _shutdown(self):
-        if self._finished:
-            return
-        self._finished = True
-        self._stop_timer()
-        self._on_shutdown_cb()
-
-
 class ScheduledRecordingsDialog(wx.Dialog):
     """Dialog showing all DVR schedule entries.
 
@@ -10796,7 +8492,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
         panel.SetSizer(sizer)
 
         refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
-        self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False))
+        self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False, event=_event))
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
@@ -10824,7 +8520,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
         else:
             event.Skip()
 
-    def _show_context_menu(self, keyboard: bool):
+    def _show_context_menu(self, keyboard: bool, event=None):
         menu = wx.Menu()
         refresh_item = menu.Append(wx.ID_ANY, _("Refresh"))
         menu.Bind(wx.EVT_MENU, lambda _event: self.refresh(), refresh_item)
@@ -10844,12 +8540,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
                         pos = self.list_ctrl.ClientToScreen(rect.GetBottomLeft())
                 except Exception:
                     LOG.debug("ScheduledRecordingsDialog._show_context_menu: ignored exception", exc_info=True)
+        else:
+            _context_row_index(self.list_ctrl, event, keep_multi_selection=True)
         try:
             self.list_ctrl.PopupMenu(menu, pos)
         finally:
             menu.Destroy()
-
-        self.CenterOnParent()
 
     def _status_label(self, status: str) -> str:
         labels = {
@@ -10957,428 +8653,6 @@ class ScheduledRecordingsDialog(wx.Dialog):
         self.Destroy()
 
 
-class WhatsOnNowDialog(wx.Dialog):
-    """Dialog showing all currently airing programs across all channels."""
-
-    help_topic = "whats-on-now"
-    
-    def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None):
-        super().__init__(parent, title=_("What's on Now"), size=(700, 500))
-        self.programs = programs
-        self.filtered_programs = programs[:]
-        self.schedule_callback = schedule_callback
-        self._type_ahead_buffer = ""
-        self._type_ahead_timer = None
-        self._filter_timer = None
-        
-        panel = wx.Panel(self)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        # Search box (for filtering, Tab to access)
-        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        search_label = wx.StaticText(panel, label=_("Filter (Tab):"))
-        self.search_box = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER)
-        self.search_box.SetName(_("Filter programs"))
-        search_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        search_sizer.Add(self.search_box, 1, wx.EXPAND)
-        sizer.Add(search_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        
-        # Info label
-        self.count_label = wx.StaticText(panel, label=_("{count} programs").format(count=len(programs)))
-        sizer.Add(self.count_label, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-        # Use virtual ListCtrl for fast loading with many items
-        self.listbox = _VirtualWhatsOnList(panel, self)
-        self.listbox.SetName(_("Currently airing programs"))
-        self.listbox.InsertColumn(0, _("Program - Channel"), width=650)
-        self.listbox.SetItemCount(len(self.filtered_programs))
-
-        # Buttons
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        play_btn = wx.Button(panel, id=wx.ID_OK, label=_("Play"))
-        schedule_btn = wx.Button(panel, label=_("Schedule Recording"))
-        close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
-        btn_sizer.Add(play_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
-        btn_sizer.Add(close_btn, 0)
-        
-        sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-        
-        panel.SetSizer(sizer)
-        
-        self.Layout()
-        self.CenterOnParent()
-        
-        # Bind events - use KEY_DOWN to intercept space before ListCtrl handles it
-        self.listbox.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
-        self.listbox.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_activate)
-        # Right-click / Shift+F10 / Applications key on a programme row.
-        self.listbox.Bind(wx.EVT_CONTEXT_MENU, lambda _evt: self._show_context_menu())
-        play_btn.Bind(wx.EVT_BUTTON, self._on_play)
-        schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
-        self.search_box.Bind(wx.EVT_TEXT, self._on_search)
-        self.search_box.Bind(wx.EVT_TEXT_ENTER, self._on_search_enter)
-        
-        # Focus the list initially
-        if self.filtered_programs:
-            self.listbox.Select(0)
-            self.listbox.Focus(0)
-        self.listbox.SetFocus()
-    
-    def _on_key_down(self, event):
-        """Handle key input for type-ahead search - intercept before ListCtrl."""
-        key = event.GetKeyCode()
-        
-        # Handle Tab to go to search box (plain Tab only: Shift+Tab keeps the
-        # normal dialog traversal, issue #3)
-        if key == wx.WXK_TAB and not event.ShiftDown():
-            self.search_box.SetFocus()
-            return
-        
-        # Handle Enter to play
-        if key == wx.WXK_RETURN or key == wx.WXK_NUMPAD_ENTER:
-            if self.listbox.GetSelectedItemCount() > 0:
-                self.EndModal(wx.ID_OK)
-            return
-        
-        # Handle Escape to close
-        if key == wx.WXK_ESCAPE:
-            self.EndModal(wx.ID_CANCEL)
-            return
-        
-        # Handle Space - add to type-ahead buffer (don't activate)
-        if key == wx.WXK_SPACE or key == ord(' '):
-            if self._type_ahead_timer:
-                self._type_ahead_timer.Stop()
-            self._type_ahead_buffer += " "
-            self._find_match(self._type_ahead_buffer)
-            self._type_ahead_timer = wx.CallLater(1000, self._reset_type_ahead)
-            return
-        
-        # Unicode-aware type-ahead (issue #3): GetUnicodeKey() reports the
-        # character the key press actually produces, so accented letters
-        # (á, é, ü, ...) match programme titles instead of being ignored as
-        # non-ASCII key codes. Space (32) stays handled above; anything that
-        # is not a printable character keeps the default behaviour.
-        uni_key = event.GetUnicodeKey()
-        if uni_key and uni_key > 32 and chr(uni_key).isprintable():
-            char = chr(uni_key).lower()
-            
-            # Reset buffer if too much time passed
-            if self._type_ahead_timer:
-                self._type_ahead_timer.Stop()
-            
-            self._type_ahead_buffer += char
-            self._find_match(self._type_ahead_buffer)
-            
-            # Reset buffer after 1 second of no typing
-            self._type_ahead_timer = wx.CallLater(1000, self._reset_type_ahead)
-            return
-        
-        # Backspace clears type-ahead buffer
-        if key == wx.WXK_BACK:
-            if self._type_ahead_buffer:
-                self._type_ahead_buffer = self._type_ahead_buffer[:-1]
-                if self._type_ahead_buffer:
-                    self._find_match(self._type_ahead_buffer)
-            return
-        
-        event.Skip()
-    
-    def _reset_type_ahead(self):
-        """Reset the type-ahead buffer."""
-        self._type_ahead_buffer = ""
-    
-    def _find_match(self, prefix: str):
-        """Find and select the first item starting with prefix."""
-        prefix_lower = prefix.lower()
-        for idx, prog in enumerate(self.filtered_programs):
-            title = prog.get("title", "").lower()
-            if title.startswith(prefix_lower):
-                self.listbox.Select(idx)
-                self.listbox.Focus(idx)
-                self.listbox.EnsureVisible(idx)
-                return
-    
-    def _on_search(self, event):
-        """Debounce filtering so NVDA isn't hit with a list rebuild per keystroke."""
-        if self._filter_timer:
-            self._filter_timer.Stop()
-        self._filter_timer = wx.CallLater(200, self._apply_search_filter)
-
-    def _apply_search_filter(self):
-        self._filter_timer = None
-        try:
-            if not self:  # dialog already destroyed while the timer was pending
-                return
-            query = self.search_box.GetValue().lower().strip()
-        except RuntimeError:
-            return
-        if not query:
-            self.filtered_programs = self.programs[:]
-        else:
-            self.filtered_programs = [
-                p for p in self.programs
-                if query in p.get("title", "").lower() or query in p.get("channel_name", "").lower()
-            ]
-        new_count = len(self.filtered_programs)
-        # The old selection's index maps to a different program after refiltering,
-        # and a focused item past the new count leaves NVDA holding a stale index.
-        # Drop selection/focus state entirely before changing the count.
-        old_count = self.listbox.GetItemCount()
-        for idx in {self.listbox.GetFirstSelected(), self.listbox.GetFocusedItem()}:
-            if idx is not None and 0 <= idx < old_count:
-                try:
-                    self.listbox.SetItemState(idx, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
-                except Exception:
-                    LOG.debug("WhatsOnNowDialog._apply_search_filter: ignored exception", exc_info=True)
-        self.listbox.SetItemCount(new_count)
-        self.listbox.Refresh()
-        self.count_label.SetLabel(_("{count} programs").format(count=new_count))
-        # Only auto-select while the user is actually in the list; forcing
-        # Select/Focus while they type in the search box fires focus events at NVDA.
-        if self.filtered_programs and self.FindFocus() is self.listbox:
-            self.listbox.Select(0)
-            self.listbox.Focus(0)
-        LOG.debug("whats-on filter %r: %d/%d programs", query, new_count, len(self.programs))
-
-    def _on_search_enter(self, event):
-        """Move focus to list when Enter is pressed in search box."""
-        # Flush a pending debounced filter so the list matches the query.
-        if self._filter_timer:
-            self._filter_timer.Stop()
-            self._apply_search_filter()
-        if self.filtered_programs:
-            self.listbox.SetFocus()
-            self.listbox.Select(0)
-            self.listbox.Focus(0)
-    
-    def _on_activate(self, event):
-        """Handle double-click/Enter to play."""
-        if self.listbox.GetSelectedItemCount() > 0:
-            self.EndModal(wx.ID_OK)
-    
-    def _on_play(self, event):
-        """Handle Play button click."""
-        if self.listbox.GetSelectedItemCount() > 0:
-            self.EndModal(wx.ID_OK)
-        event.Skip()
-
-    def _on_schedule(self, _event):
-        if not self.schedule_callback:
-            return
-        selection = self.get_selection()
-        if selection:
-            self.schedule_callback(selection)
-
-    def _on_schedule_repeat(self, repeat: str) -> None:
-        selection = self.get_selection()
-        if selection and self.schedule_callback:
-            self.schedule_callback(selection, repeat=repeat)
-
-    def _show_context_menu(self):
-        """Row actions for the highlighted programme, keyboard reachable."""
-        if not self.filtered_programs:
-            return
-        if self.listbox.GetFirstSelected() == -1:
-            self.listbox.Select(0)
-            self.listbox.Focus(0)
-        menu = wx.Menu()
-        play_item = menu.Append(wx.ID_ANY, _("Play"))
-        menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_OK), play_item)
-        schedule_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
-        schedule_item.Enable(self.schedule_callback is not None)
-        menu.Bind(wx.EVT_MENU, self._on_schedule, schedule_item)
-        for repeat, label in (("daily", _("Record Daily")),
-                              ("weekly", _("Record Weekly")),
-                              ("series", _("Record Series"))):
-            item = menu.Append(wx.ID_ANY, label)
-            item.Enable(self.schedule_callback is not None)
-            menu.Bind(wx.EVT_MENU, lambda _evt, value=repeat: self._on_schedule_repeat(value), item)
-        pos = wx.DefaultPosition
-        index = self.listbox.GetFirstSelected()
-        if index != -1:
-            try:
-                rect = self.listbox.GetItemRect(index)
-                if rect.width or rect.height:
-                    pos = self.listbox.ClientToScreen(rect.GetBottomLeft())
-            except Exception:
-                LOG.debug("WhatsOnNowDialog._show_context_menu: ignored exception", exc_info=True)
-        try:
-            self.listbox.PopupMenu(menu, pos)
-        finally:
-            menu.Destroy()
-
-    
-    def get_selection(self) -> Optional[Dict[str, str]]:
-        """Get the selected program dict."""
-        idx = self.listbox.GetFirstSelected()
-        if idx == -1 or idx >= len(self.filtered_programs):
-            return None
-        return self.filtered_programs[idx]
-
-
-class _VirtualChannelList(wx.ListCtrl):
-    """Virtual, single-column list for the main channel / search-results list.
-
-    Backed by the frame's ``displayed`` model (a list of {"type","data"[, "label"]}
-    entries); only visible rows are realized, so 50k-300k entries stay responsive for the
-    UI and NVDA. Exposes a small wx.ListBox-compatible API (GetSelection / SetSelection /
-    GetCount / Clear) so the existing selection code did not need to change when the control
-    was switched from wx.ListBox to a virtual wx.ListCtrl. This same virtual-ListCtrl pattern
-    is already used (and screen-reader tested) by _VirtualWhatsOnList below.
-    """
-
-    def __init__(self, parent, frame):
-        super().__init__(
-            parent,
-            style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL,
-            name="Channels",
-        )
-        # The constructor's name= never reaches NVDA on SysListView32; the
-        # explicit accessible name does, so the list is announced as a name
-        # instead of a bare "list". Same rule as _AccessibleCategoryTree.
-        self.SetName(_("Channels"))
-        if hasattr(self, "SetAccessibleName"):
-            self.SetAccessibleName(_("Channels"))
-        self._frame = frame
-        self.InsertColumn(0, "")
-        self.SetItemCount(0)
-        self.Bind(wx.EVT_SIZE, self._on_size)
-
-    def _on_size(self, event):
-        # Keep the single column as wide as the control so long names aren't clipped.
-        width = self.GetClientSize().width
-        if width > 0:
-            self.SetColumnWidth(0, width)
-        event.Skip()
-
-    def OnGetItemText(self, item, column):
-        disp = self._frame.displayed
-        if 0 <= item < len(disp):
-            entry = disp[item]
-            label = entry.get("label")
-            if label is not None:
-                return label
-            data = entry.get("data") or {}
-            name = data.get("name", "")
-            # getattr rather than a direct call: the non-GUI test doubles that stand
-            # in for the frame only supply displayed.
-            decorate = getattr(self._frame, "_decorate_channel_label", None)
-            return decorate(name, data) if callable(decorate) else name
-        return ""
-
-    def announce_item(self, index: int):
-        """Re-fire focus for one row so a screen reader reads its new text.
-
-        Only the focus state is cycled. Cycling the selection too would re-run the
-        EPG lookup for the row and re-enter ``on_highlight`` for no benefit.
-        """
-        if index is None or not (0 <= index < self.GetItemCount()):
-            return
-        try:
-            self.RefreshItem(index)
-            self.SetItemState(index, 0, wx.LIST_STATE_FOCUSED)
-            self.SetItemState(index, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_FOCUSED)
-        except Exception:
-            LOG.debug("_VirtualChannelList.announce_item: ignored exception", exc_info=True)
-
-    def _clear_active_item_state(self, minimum_index: int = 0):
-        """Clear selected/focused state for active rows at or after an index."""
-        old = self.GetItemCount()
-        for idx in {self.GetFirstSelected(), self.GetFocusedItem()}:
-            if idx is not None and minimum_index <= idx < old:
-                try:
-                    self.SetItemState(
-                        idx,
-                        0,
-                        wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED,
-                    )
-                except Exception:
-                    LOG.debug("_VirtualChannelList._clear_active_item_state: ignored exception", exc_info=True)
-
-    def _set_count_safe(self, count: int, *, active_state_cleared: bool = False):
-        """Resync the native item count, dropping stale selection/focus first.
-
-        Shrinking a virtual SysListView32 while its focused/selected item index
-        is >= the new count leaves MSAA/UIA holding a stale index, which can
-        crash NVDA. Clear those item states before the shrink.
-        """
-        old = self.GetItemCount()
-        if count < old:
-            if not active_state_cleared:
-                self._clear_active_item_state(count)
-            LOG.debug("channel list count %d -> %d", old, count)
-        self.SetItemCount(count)
-
-    def replace_contents(self, entries: List[Dict[str, str]]):
-        """Replace the backing rows while keeping native indexes valid.
-
-        ``SetItemCount`` can trigger synchronous MSAA/UIA item queries. On a
-        shrink, reduce the native count while the old model still serves all
-        remaining indexes, then swap to the new model. On a grow, install the
-        new model first so every existing index remains valid. Clear active
-        state for *every* replacement, even when the old index would fit the
-        new count: it represents a different logical row after a search.
-        """
-        if not isinstance(entries, list):
-            entries = list(entries)
-        old_count = self.GetItemCount()
-        new_count = len(entries)
-        self._clear_active_item_state()
-
-        if new_count < old_count:
-            self._set_count_safe(new_count, active_state_cleared=True)
-            self._frame.displayed = entries
-        else:
-            self._frame.displayed = entries
-            self._set_count_safe(new_count, active_state_cleared=True)
-
-        self.Refresh()
-
-    def set_virtual_count(self):
-        """Resync the control to the current length of frame.displayed."""
-        self._set_count_safe(len(self._frame.displayed))
-        width = self.GetClientSize().width
-        if width > 0:
-            self.SetColumnWidth(0, width)
-
-    # --- wx.ListBox-compatible shims so existing call sites keep working ---
-    def GetSelection(self):
-        return self.GetFirstSelected()
-
-    def SetSelection(self, index):
-        if index is None or index < 0:
-            return
-        if index < self.GetItemCount():
-            self.Select(index)
-            self.Focus(index)
-            self.EnsureVisible(index)
-
-    def GetCount(self):
-        return self.GetItemCount()
-
-    def Clear(self):
-        self._set_count_safe(0)
-
-
-class _VirtualWhatsOnList(wx.ListCtrl):
-    """Virtual list control for fast loading of What's on Now."""
-    
-    def __init__(self, parent, dialog):
-        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL)
-        self.dialog = dialog
-    
-    def OnGetItemText(self, item, column):
-        if 0 <= item < len(self.dialog.filtered_programs):
-            prog = self.dialog.filtered_programs[item]
-            title = prog.get("title") or _("(No title)")
-            channel = prog.get("channel_name") or _("Unknown")
-            return f"{title} - {channel}"
-        return ""
-
-
 class ChannelEPGDialog(wx.Dialog):
     help_topic = "channel-epg"
 
@@ -11426,7 +8700,7 @@ class ChannelEPGDialog(wx.Dialog):
         self.list_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, lambda _evt: self._update_description())
         self.list_ctrl.Bind(wx.EVT_CHAR_HOOK, self._on_list_key)
         # Right-click / Shift+F10 / Applications key on a programme row.
-        self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _evt: self._show_context_menu())
+        self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _evt: self._show_context_menu(_evt))
         self.description_field.Bind(wx.EVT_CHAR_HOOK, self._on_description_key)
         self._update_description()
         
@@ -11478,11 +8752,12 @@ class ChannelEPGDialog(wx.Dialog):
             return
         event.Skip()
 
-    def _show_context_menu(self):
+    def _show_context_menu(self, event=None):
         """Row actions for the highlighted programme, keyboard reachable."""
         if not self.programmes:
             return
-        if self.list_ctrl.GetFirstSelected() == -1:
+        index = _context_row_index(self.list_ctrl, event)
+        if index < 0:
             self.list_ctrl.Select(0)
             self.list_ctrl.Focus(0)
         menu = wx.Menu()

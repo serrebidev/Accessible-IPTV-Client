@@ -5,9 +5,11 @@ import pytest
 import json
 import time
 import types
+import urllib.error
 import urllib.parse
 import os
 import sys
+import threading
 from unittest.mock import patch
 
 # Add parent directory to path for imports
@@ -197,6 +199,33 @@ class TestStalkerHandshake:
     """Test Stalker Portal handshake process."""
 
     @patch.object(StalkerPortalClient, '_portal_call')
+    def test_a_null_js_raises_a_provider_error(self, mock_portal_call):
+        """A rejected request answers with a null "js".
+
+        Reading through it raised AttributeError, so the user saw
+        "'NoneType' object has no attribute 'get'" instead of a provider
+        message.
+        """
+        mock_portal_call.return_value = {"js": None}
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            username="user",
+            password="pass",
+            mac="00:1A:79:00:00:01"
+        )
+        client = StalkerPortalClient(cfg)
+
+        with pytest.raises(ProviderError):
+            client.fetch_channels()
+
+        # The stream link path as well: that is the one the user sees as
+        # "Could not resolve stream URL".
+        client._token = "token"
+        client._token_issued = time.time()
+        with pytest.raises(ProviderError):
+            client.resolve_stream({"cmd": "some_cmd"})
+
+    @patch.object(StalkerPortalClient, '_portal_call')
     def test_handshake_returns_token(self, mock_portal_call):
         """Test that handshake returns a token."""
         mock_portal_call.return_value = {
@@ -251,6 +280,46 @@ class TestStalkerHandshake:
             "JsHttpRequest": "1-xml"
         }
         assert client._token == "session_token_456"
+
+    def test_a_rejected_portal_token_does_not_deadlock(self):
+        """A portal that answers 401 must report the failure, not hang.
+
+        _ensure_token holds the token lock across the handshake, and the
+        401/403 path takes that same lock again on the same thread. With a
+        non-reentrant lock that deadlocked, so a wrong MAC or an expired
+        trial hung the thread for good instead of raising.
+        """
+        cfg = StalkerPortalConfig(
+            base_url="http://portal.example.com",
+            username="user",
+            password="pass",
+            mac="00:1A:79:00:00:01"
+        )
+        client = StalkerPortalClient(cfg)
+
+        class UnauthorizedOpener:
+            def open(self, request, timeout=None):
+                raise urllib.error.HTTPError(
+                    "http://portal.example.com/portal.php", 401,
+                    "Unauthorized", None, None)
+
+        client._opener = UnauthorizedOpener()
+
+        errors = []
+        done = threading.Event()
+
+        def _ensure():
+            try:
+                client._ensure_token()
+            except ProviderError as err:
+                errors.append(err)
+            finally:
+                done.set()
+
+        worker = threading.Thread(target=_ensure, daemon=True)
+        worker.start()
+        assert done.wait(5), "the portal client deadlocked on a rejected token"
+        assert errors, "a rejected portal token must raise ProviderError"
 
     @patch.object(StalkerPortalClient, '_portal_call')
     def test_mac_only_handshake_skips_login(self, mock_portal_call):
@@ -313,7 +382,6 @@ class TestStalkerChannelFetch:
                 "group": row.get("tv_genre_title", "Stalker"),
                 "url": "",  # resolved on demand
                 "tvg-id": row.get("epg_id", ""),
-                "tvg-logo": row.get("logo", ""),
                 "provider-type": "stalker",
                 "provider-data": {
                     "cmd": row.get("cmd", ""),

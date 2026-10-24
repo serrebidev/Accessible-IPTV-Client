@@ -2,6 +2,7 @@
 
 import os
 import sys
+import types
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -126,3 +127,165 @@ def test_xtream_series_episodes_ordered():
     assert [e["_se"] for e in eps] == [(1, 1), (1, 2), (2, 1)]
     assert eps[0]["url"] == "http://host/series/u/p/101.mp4"
     assert eps[0]["name"].startswith("S01E01")
+
+
+class _BrokenXtream(_FakeXtream):
+    """A provider that answers with values the app has to survive."""
+
+    def get_vod_categories(self):
+        # A category name that is not a string at all.
+        return [{"category_id": "1", "category_name": 7}]
+
+    def get_series_info(self, series_id):
+        return {"episodes": {
+            # A season number with thousands of digits, and an episode
+            # number that is not a number.
+            "9" * 5000: [{"id": 300, "episode_num": float("inf"),
+                           "title": "Ep", "container_extension": "mp4"}],
+        }}
+
+
+def test_a_broken_provider_value_does_not_kill_the_catalogue():
+    """The provider's JSON is untrusted input.
+
+    int() of "inf" raises OverflowError and int() refuses a season number
+    with thousands of digits; both were uncaught, so one bad value took the
+    whole episode list - or the whole catalogue - with it.
+    """
+    order, groups = vod.build_xtream_catalog(_BrokenXtream(), "prov1")
+    assert groups, "the catalogue was lost to one broken value"
+
+    eps = vod.xtream_series_episodes(_BrokenXtream(), 7, "prov1")
+    assert len(eps) == 1
+    assert eps[0]["url"] == "http://host/series/u/p/300.mp4"
+
+
+class _NullRowXtream:
+    """A provider whose JSON carries a null entry among the good ones."""
+
+    def get_vod_categories(self):
+        return [None, {"category_id": "1", "category_name": "Action"}]
+
+    def get_vod_streams(self, category_id=None):
+        return [None, {"stream_id": 42, "name": "The Matrix", "category_id": "1",
+                       "container_extension": "mkv"}]
+
+    def get_series_categories(self):
+        return [None, {"category_id": "9", "category_name": "Crime"}]
+
+    def get_series(self, category_id=None):
+        return [None, {"series_id": 7, "name": "The Wire", "category_id": "9"}]
+
+    def get_series_info(self, series_id):
+        return {"episodes": {}}
+
+    def vod_stream_url(self, stream_id, ext="mp4"):
+        return f"http://host/movie/u/p/{stream_id}.{ext}"
+
+
+def test_a_null_row_does_not_take_the_catalogue_with_it():
+    """One null entry used to raise, and the whole section was dropped.
+
+    The provider's JSON is untrusted input: a null row is skipped, and the
+    rest of the catalogue is still built.
+    """
+    order, groups = vod.build_xtream_catalog(_NullRowXtream(), "prov1")
+
+    assert groups, "the catalogue was lost to one null row"
+    names = [item.get("name") for items in groups.values() for item in items]
+    assert "The Matrix" in names
+    assert "The Wire" in names
+
+
+# --------------------------------------------------------------------------- #
+# The VOD view
+# --------------------------------------------------------------------------- #
+class _FakeList:
+    def __init__(self):
+        self.items = []
+        self.selection = None
+
+    def Freeze(self):
+        pass
+
+    def Thaw(self):
+        pass
+
+    def Clear(self):
+        self.items = []
+        self.selection = None
+
+    def Append(self, item):
+        self.items.append(item)
+
+    def SetSelection(self, index):
+        self.selection = index
+
+    def GetSelection(self):
+        return -1 if self.selection is None else self.selection
+
+
+class _FakeText:
+    def __init__(self):
+        self.value = ""
+
+    def SetValue(self, value):
+        self.value = value
+
+
+def _vod_client(order=None, groups=None):
+    client = types.SimpleNamespace()
+    client.group_list = _FakeList()
+    client.channel_list = _FakeList()
+    client.url_display = _FakeText()
+    client.vod_group_order = list(order or [])
+    client.vod_groups = dict(groups or {})
+    client.vod_current_group = None
+    client.vod_series_return_group = None
+    client.vod_loaded = False
+    client.vod_loading = False
+    client._vod_load_token = 0
+    client.provider_clients = {}
+    client.playlist_scope = "all"
+    client.scoped_all_channels = lambda: []
+    client.on_group_select = lambda: None
+    client._on_vod_catalog_ready = lambda token, order, groups: None
+    return client
+
+
+def test_an_empty_vod_catalogue_is_announced(monkeypatch):
+    """An empty list is silent to a screen-reader user.
+
+    The message was only an unselected row in the category list, so the view
+    looked empty with nothing said about it.
+    """
+    import main
+
+    spoken = []
+    monkeypatch.setattr(main.live_announce, "speak", lambda text: spoken.append(text))
+    client = _vod_client()
+
+    main.IPTVClient._refresh_vod_group_ui(client)
+
+    assert spoken, "the empty catalogue was not announced"
+    assert "No Video on Demand content found" in spoken[0]
+    assert client.group_list.selection == 0, "the message row was not selected"
+
+
+def test_a_playlist_reload_supersedes_the_catalogue_being_built(monkeypatch):
+    """The catalogue being built belongs to the playlist that was replaced.
+
+    The result was accepted anyway, so the view showed the old playlist's
+    catalogue - including a playlist that was gone - and the new playlist's
+    VOD never arrived.
+    """
+    import main
+
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *a, **k: None)
+    client = _vod_client()
+    client.vod_loading = True
+    client._vod_load_token = 5
+
+    main.IPTVClient._load_vod_catalog(client, supersede=True)
+
+    assert client._vod_load_token > 5, "the catalogue being built was not superseded"

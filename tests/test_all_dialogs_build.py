@@ -73,11 +73,17 @@ def test_cast_discovery_dialog_builds(host):
         dlg.Destroy()
 
 
-def test_account_info_dialog_builds(host):
+def test_account_info_dialog_builds(host, monkeypatch):
     accounts = [
         account_info.Account(kind="xtream", base_url="http://panel.example/", username="u"),
         account_info.Account(kind="stalker", base_url="http://portal.example/c/", mac="00:1A:79:00:00:01"),
     ]
+    # The first account is looked up on a daemon thread and the answer comes
+    # back with wx.CallAfter. A pending CallAfter that fires after the wx.App
+    # is torn down fails on that thread, so block the fetch for good instead
+    # - the same reason the cast discovery test above does.
+    monkeypatch.setattr(account_info, "fetch_account_report",
+                        lambda *a, **k: threading.Event().wait())
     dlg = AccountInfoDialog(host, accounts)
     try:
         assert dlg.listbox.GetCount() == 2
@@ -162,6 +168,24 @@ def test_scheduled_recordings_dialog_populates_on_open(host):
             dlg.Destroy()
     finally:
         parent.Destroy()
+
+
+def test_the_scheduled_recordings_context_menu_does_not_move_the_dialog(host, monkeypatch):
+    """The dialog jumped back to the middle of the main window every time.
+
+    The user opened the context menu with the Applications key or Shift+F10
+    and the window moved under them for no reason.
+    """
+    scheduler = types.SimpleNamespace(list_jobs=lambda **kw: [])
+    dlg = ScheduledRecordingsDialog(host, scheduler)
+    centred = []
+    monkeypatch.setattr(dlg, "CenterOnParent", lambda: centred.append(True))
+    monkeypatch.setattr(dlg.list_ctrl, "PopupMenu", lambda menu, pos: None)
+    try:
+        dlg._show_context_menu(keyboard=True)
+        assert centred == [], "the dialog was moved while the context menu was open"
+    finally:
+        dlg.Destroy()
 
 
 def test_scheduled_recordings_delete_shortcut_is_silent_when_empty(host, monkeypatch):
@@ -325,6 +349,10 @@ def test_audio_device_dialog_builds(host):
     try:
         # + 1 for the always-present System default entry.
         assert dlg.list_ctrl.GetItemCount() == 3 if hasattr(dlg, "list_ctrl") else dlg.GetTitle()
+        panel = dlg.GetChildren()[0]
+        labels = [child for child in panel.GetChildren()
+                  if isinstance(child, wx.StaticText)]
+        assert any(label.GetLabel() == "Audio output devices" for label in labels)
     finally:
         dlg.Destroy()
 

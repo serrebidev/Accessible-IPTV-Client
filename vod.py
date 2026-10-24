@@ -213,11 +213,15 @@ def categorize_m3u_vod(channels: List[Dict]) -> Tuple[List[str], Dict[str, List[
 # --------------------------------------------------------------------------- #
 def _category_map(rows: List[Dict]) -> Dict[str, str]:
     out: Dict[str, str] = {}
-    for row in rows:
+    for row in rows or []:
+        # A provider can answer with a null entry; reading it raised and
+        # took the whole category with it.
+        if not isinstance(row, dict):
+            continue
         cid = row.get("category_id")
         if cid is None:
             continue
-        out[str(cid)] = row.get("category_name") or _("Uncategorized")
+        out[str(cid)] = str(row.get("category_name") or _("Uncategorized"))
     return out
 
 
@@ -235,6 +239,8 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
     try:
         vod_cats = _category_map(client.get_vod_categories())
         for s in client.get_vod_streams():
+            if not isinstance(s, dict):
+                continue
             sid = s.get("stream_id")
             if sid is None:
                 continue
@@ -257,6 +263,8 @@ def build_xtream_catalog(client, provider_id: Optional[str]) -> Tuple[List[str],
     try:
         ser_cats = _category_map(client.get_series_categories())
         for s in client.get_series():
+            if not isinstance(s, dict):
+                continue
             series_id = s.get("series_id")
             if series_id is None:
                 continue
@@ -293,7 +301,10 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
     for season_key, entries in season_items:
         if not isinstance(entries, list):
             continue
-        s_no = int(season_key) if str(season_key).isdigit() else 0
+        try:
+            s_no = int(season_key) if str(season_key).isdigit() else 0
+        except (TypeError, ValueError, OverflowError):
+            s_no = 0
         if list_form:
             s_no += 1
         for idx, ep in enumerate(entries):
@@ -304,7 +315,7 @@ def xtream_series_episodes(client, series_id, provider_id: Optional[str]) -> Lis
                 continue
             try:
                 e_no = int(ep.get("episode_num") or 0)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 e_no = 0
             if not e_no:
                 e_no = idx + 1
