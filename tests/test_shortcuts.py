@@ -42,4 +42,3 @@ def test_a_player_shortcut_may_stay_bare():
     config = {"shortcuts": {"player.audio_track": "A"}}
 
     assert shortcuts.effective(config, "player")["audio_track"] == "A"
-

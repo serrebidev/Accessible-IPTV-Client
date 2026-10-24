@@ -137,7 +137,11 @@ class RecordingRelay:
 
     def _serve(self, wfile, connection=None) -> None:
         with self._cond:
-            self._trim_backlog(monotonic())
+            # A player joining while the recording ends (the pump has not
+            # reached EOF yet) must not lose the tail it is about to be handed.
+            # Once the stream is over, a late join is still trimmed.
+            if not self._closing or self._closed:
+                self._trim_backlog(monotonic())
             client = _Client(self._backlog, connection)
             self._clients.append(client)
         try:
@@ -164,23 +168,47 @@ class RecordingRelay:
                 self._clients = [c for c in self._clients if c is not client]
 
     def close(self, timeout: float = 2.0) -> None:
-        """Stop serving. Players still connected get what is left, then EOF."""
+        """Stop serving. Players still connected get what is left, then EOF.
+
+        Normal path: ffmpeg has exited, the pump reads the pipe to EOF, and
+        every queue is delivered. If the pipe never reaches EOF (a killed
+        process whose stdout handle is still open) the wait is bounded, the
+        stream is ended, the source is closed so the pump stops, and client
+        sockets are shut down so blocked writers do not outlive it. The
+        recorder's watcher calls this, so the wait is not on the GUI thread.
+        """
+        connections = []
         with self._cond:
             self._closing = True
             self._cond.notify_all()
-            if not self._cond.wait_for(lambda: self._drained, timeout):
-                # ffmpeg's pipe never reached EOF (a killed process, or a
-                # handle still open): end the stream, and drop blocked writers
-                # so their threads do not outlive the recording.
+            drained = self._drained or self._closed
+            if not drained:
+                drained = self._cond.wait_for(lambda: self._drained, timeout)
+            if not drained:
                 self._closed = True
                 self._cond.notify_all()
-                for client in self._clients:
-                    try:
-                        client.connection.shutdown(socket.SHUT_RDWR)
-                    except Exception:
-                        LOG.debug("RecordingRelay.close: ignored exception", exc_info=True)
+                connections = [c.connection for c in self._clients if c.connection is not None]
+        if connections:
+            self._abort_source()
+            for connection in connections:
+                try:
+                    connection.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    # Already gone: the handler's own error path cleaned up.
+                    LOG.debug("RecordingRelay.close: player socket already closed",
+                              exc_info=True)
         try:
             self._server.shutdown()
             self._server.server_close()
         except Exception:
             LOG.debug("RecordingRelay.close: ignored exception", exc_info=True)
+
+    def _abort_source(self) -> None:
+        """Unblock the pump when the pipe will not reach EOF by itself."""
+        close = getattr(self._source, "close", None)
+        if not callable(close):
+            return
+        try:
+            close()
+        except Exception:
+            LOG.debug("RecordingRelay._abort_source: ignored exception", exc_info=True)

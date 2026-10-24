@@ -127,6 +127,8 @@ class AudioDeviceDialog(wx.Dialog):
         hint = wx.StaticText(panel, label=_(
             "Select the audio output device for the built-in player."))
         sizer.Add(hint, 0, wx.ALL, 10)
+        devices_label = wx.StaticText(panel, label=_("Audio output devices"))
+        sizer.Add(devices_label, 0, wx.LEFT | wx.RIGHT, 10)
         self.listbox = wx.ListBox(panel, style=wx.LB_SINGLE)
         for _device_id, description in self.devices:
             self.listbox.Append(description)

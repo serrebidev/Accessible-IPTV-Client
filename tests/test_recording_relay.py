@@ -6,6 +6,7 @@ the stream to its stdout and the player reads it from here.
 import os
 import io
 import queue
+import socket
 import sys
 import threading
 import time
@@ -24,6 +25,7 @@ class _Pipe:
 
     def __init__(self):
         self._chunks = queue.Queue()
+        self.closed = False
 
     def feed(self, data):
         self._chunks.put(data)
@@ -31,8 +33,24 @@ class _Pipe:
     def end(self):
         self._chunks.put(b"")
 
+    def close(self):
+        # Closing ffmpeg's stdout while the pump is blocked in read1 is what
+        # unblocks it on a real handle.
+        self.closed = True
+        self._chunks.put(b"")
+
     def read1(self, _size):
         return self._chunks.get()
+
+
+class _Connection:
+    """Records the shutdown calls close() makes on a stalled player."""
+
+    def __init__(self):
+        self.shutdowns = []
+
+    def shutdown(self, how):
+        self.shutdowns.append(how)
 
 
 def _get_all(url, results):
@@ -155,6 +173,57 @@ class _SlowWriter(io.BytesIO):
         return result
 
 
+def test_a_live_slow_player_still_skips_expired_history(monkeypatch):
+    """Age pruning is the live-stream rule: a player that falls behind must
+    not be handed minutes of stale video."""
+    now = [0.0]
+    monkeypatch.setattr(recording_relay, "monotonic", lambda: now[0], raising=False)
+    pipe = _Pipe()
+    relay = recording_relay.RecordingRelay(pipe)
+    output = _SlowWriter()
+    reader = threading.Thread(target=relay._serve, args=(output,))
+    try:
+        pipe.feed(b"first-")
+        pipe.feed(b"stale-")
+        assert _wait_for(lambda: relay._backlog_size == 12)
+        reader.start()
+        assert output.started.wait(5)
+        now[0] = 3.0
+        pipe.feed(b"live")
+        assert _wait_for(lambda: relay._backlog_size == 4)
+        output.resume.set()
+        reader.join(5)
+        assert output.getvalue() == b"first-live"
+    finally:
+        output.resume.set()
+        pipe.end()
+        reader.join(5)
+        relay.close()
+
+
+def test_a_tail_queued_before_close_is_not_pruned_while_it_waits(monkeypatch):
+    """close() begins when ffmpeg exits; from that moment the queued tail is
+    the end of the recording, not stale history."""
+    now = [0.0]
+    monkeypatch.setattr(recording_relay, "monotonic", lambda: now[0], raising=False)
+    pipe = _Pipe()
+    relay = recording_relay.RecordingRelay(pipe)
+    output = io.BytesIO()
+    reader = threading.Thread(target=relay._serve, args=(output,))
+    try:
+        pipe.feed(b"tail-")
+        assert _wait_for(lambda: relay._backlog_size == 5)
+        now[0] = 3.0
+        with relay._cond:
+            relay._closing = True
+        reader.start()
+        assert _wait_for(lambda: output.getvalue() == b"tail-")
+    finally:
+        pipe.end()
+        reader.join(5)
+        relay.close()
+
+
 def test_a_lagging_player_gets_the_tail_after_the_recording_ends(monkeypatch):
     """Chunks are dropped by age only while the stream is live. Once it ends
     there is nothing fresher to wait for, so the rest is delivered: the old
@@ -214,12 +283,14 @@ def test_full_player_queue_keeps_newest_chunks_without_blocking_recording(monkey
 
 def test_close_ends_the_stream_when_the_pipe_never_does(monkeypatch):
     """A killed ffmpeg can leave its stdout handle open. close() must not hang
-    the recording watcher, and the player must still get what is queued."""
+    the recording watcher: it aborts the source, ends the stream, and shuts
+    down a connected player so its handler does not outlive the recording."""
     monkeypatch.setenv("NO_PROXY", "127.0.0.1")
     pipe = _Pipe()
     relay = recording_relay.RecordingRelay(pipe)
     output = io.BytesIO()
-    reader = threading.Thread(target=relay._serve, args=(output,))
+    connection = _Connection()
+    reader = threading.Thread(target=relay._serve, args=(output, connection))
     try:
         pipe.feed(b"queued-")
         assert _wait_for(lambda: relay._backlog_size == 7)
@@ -227,6 +298,8 @@ def test_close_ends_the_stream_when_the_pipe_never_does(monkeypatch):
         assert _wait_for(lambda: relay._clients)
         relay.close(timeout=0.2)
         assert relay.closed
+        assert pipe.closed
+        assert connection.shutdowns == [socket.SHUT_RDWR]
         reader.join(5)
         assert not reader.is_alive()
         assert output.getvalue() == b"queued-"

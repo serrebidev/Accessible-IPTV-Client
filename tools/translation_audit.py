@@ -45,6 +45,7 @@ AUDITED_LANGUAGES = tuple(c for c in i18n.SHIPPED_CATALOGS if c not in EXEMPT_LA
 HELP_DIR = os.path.join(REPO_ROOT, "docs", "help")
 HELP_SYNC_PATH = os.path.join(REPO_ROOT, "docs", "help-sync.json")
 IDENTICAL_OK_PATH = os.path.join(i18n_tools.LOCALE_DIR, "identical_ok.json")
+NOTES_IDENTICAL_OK_PATH = os.path.join(i18n_tools.LOCALE_DIR, "release_notes_identical_ok.json")
 
 _HEADING = re.compile(r"^#{1,6} .*\{#([\w-]+)\}\s*$")
 _PLACEHOLDER = re.compile(r"\{[^{}]*\}")
@@ -61,6 +62,15 @@ def load_identical_ok(path=IDENTICAL_OK_PATH):
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
     return {key: set(value) for key, value in data.items() if not key.startswith("_")}
+
+
+def load_notes_identical_ok(path=None):
+    """Release-note msgids that may intentionally use English fallback."""
+    path = path or NOTES_IDENTICAL_OK_PATH
+    if not os.path.exists(path):
+        return set()
+    with open(path, "r", encoding="utf-8") as fh:
+        return set(json.load(fh).get("msgids", []))
 
 
 def _placeholders(text):
@@ -207,12 +217,14 @@ def upcoming_notes(version=None, notes=None, changelog_path=None):
 
 def audit_notes(lang, messages, locale_dir=None):
     locale_dir = locale_dir or i18n_tools.LOCALE_DIR
+    identical_ok = load_notes_identical_ok()
     po = os.path.join(locale_dir, lang, "LC_MESSAGES", i18n_tools.NOTES_DOMAIN + ".po")
     have = {}
     if os.path.exists(po):
         have = {e["msgid"]: e.get("msgstr", "") for e in i18n_tools.parse_po(po) if e.get("msgid")}
     problems = [f"{lang}: untranslated What's New bullet: {msgid!r}"
-                for msgid in sorted(messages) if not have.get(msgid)]
+                for msgid in sorted(messages)
+                if not have.get(msgid) and msgid not in identical_ok]
     # v1.145.0 shipped two bullets whose msgstr in every language was the
     # Python repr of a {lang: text} dict, which What's New then read out.
     problems += [f"{lang}: What's New bullet translated as a language table, not text: {msgid!r}"

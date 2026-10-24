@@ -16,6 +16,20 @@ Make sure the PyInstaller spec file includes all runtime requirements, dynamic i
 
 When building, always check for warnings, errors, and dependency mismatches in the build output. If any are found, fix them before proceeding. Never ship a build that had unresolved warnings or errors.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub issues on the fork `thebetterfarhan/Accessible-IPTV-Client` (pass `--repo`, since `gh` infers the upstream `origin`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 ## Project Overview
 
 Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EPG import/search/matching, accessible channel browsing, internal/external playback, casting, and Windows self-updates.
@@ -24,12 +38,12 @@ Project = Accessible IPTV Client, a wxPython GUI focused on playlist loading, EP
 
 ## Architecture
 
-- **main.py**: Main wx frame (`IPTVClient`), tray restore behavior, playlist and EPG managers, channel list population, group filtering, search including EPG search, catch-up dialog, internal/external player launch, casting menu actions, and update prompts.
+- **main.py**: Main wx frame (`IPTVClient`), tray restore behavior, playlist and EPG managers, channel list population, group filtering, search including EPG search, catch-up dialog, internal/external player launch, casting menu actions, and update prompts. The frame borrows `UiMixin` (`client_ui.py`, the window and menu construction), `M3uCacheMixin` (`client_m3u.py`, playlist parsing and its cache) and `EpgRoutingMixin` (`client_epg.py`, guide rows and live/catch-up URL choice), plus `RecordingReportsMixin` (`client_recording.py`, what is said when a recording finishes); dialogs without their own module live here. Pure helpers sit outside it: `playlist_headers.py` (M3U header/EPG attributes), `catchup_urls.py` (catch-up and timeshift URLs, ffmpeg failure reasons), `dialog_utils.py`, `app_links.py`, plus `dialogs_misc.py` and `channel_widgets.py` for dialogs and controls that never call `message_box`. A moved name stays re-exported from `main` when tests or tools read it there.
 - **internal_player.py**: Built-in libVLC player with adaptive buffering, stream preflight checks, live/catch-up option handling, automatic reconnect logic, fullscreen (F11), play/pause/stop controls, accessible control names, and volume slider. Volume uses 2% normal steps and 5% Ctrl+Up/Down steps.
 - **sitecustomize.py**: Compatibility shim only. It re-exports the canonical `InternalPlayerFrame` from `internal_player.py` and must not grow separate player logic.
-- **playlist.py**: XMLTV import/search/matching and the guide-to-playlist matcher. The EPG database is SQLite in `tempfile.gettempdir()` via `options.get_db_path()`, uses WAL and busy timeouts, logs debug details to `iptvclient_epg_debug.log` in the temp directory, and handles XML/GZip downloads with resume plus HTTP 416 fallback. Parsing an M3U text lives in `main.py`.
+- **playlist.py**: XMLTV import/search/matching and the guide-to-playlist matcher. The EPG database is SQLite in `tempfile.gettempdir()` via `options.get_db_path()`, uses WAL and busy timeouts, logs debug details to `iptvclient_epg_debug.log` in the temp directory, and handles XML/GZip downloads with resume plus HTTP 416 fallback. Parsing an M3U text lives in `client_m3u.py` (`M3uCacheMixin`); `main._parse_m3u_return` is the same function.
 - **channel_names.py**: Single source of truth for channel-name normalization and country/group detection (`STRIP_TAGS`, `NOISE_WORDS`, `group_synonyms`, `canonicalize_name`, `strip_noise_words`, `extract_group`). Stdlib-only and dependency-free so both `playlist.py` and `options.py` can import it without a cycle (`playlist` already imports `options`). `playlist.py` re-exports these names for existing callers. Never re-implement or copy these helpers into another module: the UI and the EPG database must normalize names identically or matching silently fails.
-- **channel_identity.py**: Which guide channel a playlist channel is. Stdlib-only and wx-free: `expand_tvg_id_candidates` (XMLTV id variants), `guide_indexes` (the guide's channels by id, by name and by noise-stripped name, every channel kept per key in guide order), and `match_guide_channel` (tvg-id first as identity, then names with the number rule). Parsing a playlist's M3U text stays in `main.py`; the guide-to-playlist matcher stays in `playlist.py`.
+- **channel_identity.py**: Which guide channel a playlist channel is. Stdlib-only and wx-free: `expand_tvg_id_candidates` (XMLTV id variants), `guide_indexes` (the guide's channels by id, by name and by noise-stripped name, every channel kept per key in guide order), and `match_guide_channel` (tvg-id first as identity, then names with the number rule). Parsing a playlist's M3U text stays in `client_m3u.py`; the guide-to-playlist matcher stays in `playlist.py`.
 - **providers.py**: Xtream Codes and Stalker Portal clients for building playlist/EPG URLs, handling auth/session state, and surfacing `ProviderError`. `get_account_info()` on each client returns the provider's subscription record (`player_api.php` with no action for Xtream; `type=account_info&action=get_main_info` for Stalker).
 - **account_info.py**: Provider account status (File > Account Info). wx-free: discovers accounts (configured providers plus accounts autodetected from `get.php?username=…` playlist URLs and `/live/USER/PASS/1234.ts` channel URLs), fetches them, and formats a flat `Label: value` report. The dialog itself is `main.AccountInfoDialog`.
 - **options.py**: JSON config persistence. Reads portable/app, cwd, user config, and frozen `_MEIPASS` candidates; writes to the app/cwd path when possible and otherwise the user config path. Also provides cache path hashing, default config values, and config clamping. Name-normalization helpers live in `channel_names.py`, not here.
@@ -89,7 +103,7 @@ The standalone Windows build also explicitly collects dynamic modules and metada
 ## Internationalization (i18n)
 
 - **i18n.py** is a self-contained, standard-library-only (gettext) translation layer. It installs `_()`, `ngettext()` and `N_()` as Python builtins (the documented `gettext.install` idiom) so any module can call `_("text")`. Modules that use it also do `from i18n import gettext as _` at the top, both to keep static analysis happy and because the function consults the *currently active* catalogue on every call (so switching language at startup works without re-importing).
-- User-facing strings throughout `main.py`, `internal_player.py`, `playlist.py`, `options.py`, `providers.py`, `updater.py`, and `external_player.py` are wrapped in `_()`. Dynamic text uses translatable templates with `.format()` (e.g. `_("Casting to {device}...").format(device=name)`) — never f-strings, because gettext/xgettext cannot extract an f-string.
+- User-facing strings throughout `main.py`, `client_ui.py`, `dialogs_misc.py`, `channel_widgets.py`, `catchup_urls.py`, `client_epg.py`, `client_recording.py`, `internal_player.py`, `playlist.py`, `options.py`, `providers.py`, `updater.py`, and `external_player.py` are wrapped in `_()`. Dynamic text uses translatable templates with `.format()` (e.g. `_("Casting to {device}...").format(device=name)`) — never f-strings, because gettext/xgettext cannot extract an f-string.
 - **`_` is also a throwaway/`lambda _:` parameter name all over this codebase.** That is fine in scopes that never call `_()`. Where a handler both takes a `_` parameter (or unpacks `url, _ = ...`) *and* needs to translate, the local was renamed (`_event`, `_unused`). If you add a `_()` call inside a function whose event/throwaway is named `_`, rename that local or you will call a non-callable.
 - Strings that double as internal keys are NOT translated as keys: the `"All Channels"` group sentinel and the `media_player` config values (`"Built-in Player"`, `"Custom"`, brand names in `PLAYER_KEYS`) stay English internally; only their *display* is wrapped (`_(label)` in the menu, `_("All Channels")` in the group list, with `on_group_select` matching both the translated and English forms).
 - **A deferred `_(variable)` still needs the msgid extracted.** `i18n.N_()` is the marker for that: it returns its argument unchanged (so the key stays English) but the extractor records the string, so the later `_(label)` has something to look up. `PLAYER_KEYS[0]` uses `N_("Built-in Player")` for exactly this reason — the other entries are brand names that are the same in every language. If you add another indirectly-translated key, wrap it in `N_()` or it will silently stay English in all catalogues.

@@ -499,7 +499,7 @@ class HLSConverter:
                             break
                         try:
                             req = urllib.request.Request(self.source_url, headers=self.headers)
-                            with urllib.request.urlopen(
+                            with _open_upstream(
                                 req,
                                 timeout=_HLS_UPSTREAM_READ_TIMEOUT_SECONDS
                             ) as resp:
@@ -764,6 +764,42 @@ class StreamBuffer:
 
 
 _ALLOWED_UPSTREAM_SCHEMES = ("http", "https")
+_REDIRECT_SAFE_HEADERS = frozenset(("accept", "range", "if-range", "user-agent"))
+
+
+def _url_origin(url):
+    """Return the scheme, host and effective port used for redirect checks."""
+    try:
+        parts = urllib.parse.urlsplit(str(url or ""))
+        scheme = parts.scheme.lower()
+        host = (parts.hostname or "").lower().rstrip(".")
+        port = parts.port
+    except (TypeError, ValueError):
+        return None
+    if scheme not in _ALLOWED_UPSTREAM_SCHEMES or not host:
+        return None
+    return scheme, host, port if port is not None else (443 if scheme == "https" else 80)
+
+
+class _CrossOriginRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Keep channel headers off a host the channel did not name explicitly."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        current_origin = _url_origin(req.full_url)
+        target_origin = _url_origin(newurl)
+        if redirected is None or (current_origin is not None and current_origin == target_origin):
+            return redirected
+        for collection in (redirected.headers, redirected.unredirected_hdrs):
+            for name in list(collection):
+                if name.lower() not in _REDIRECT_SAFE_HEADERS:
+                    del collection[name]
+        return redirected
+
+
+def _open_upstream(req, timeout):
+    """Open an upstream URL with credential-safe redirect handling."""
+    return urllib.request.build_opener(_CrossOriginRedirectHandler()).open(req, timeout=timeout)
 
 
 def is_allowed_upstream_url(url) -> bool:
@@ -918,7 +954,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         req = urllib.request.Request(upstream, headers=request_headers,
                                      method='HEAD' if head else 'GET')
         try:
-            resp = urllib.request.urlopen(req, timeout=20)
+            resp = _open_upstream(req, timeout=20)
         except urllib.error.HTTPError as err:
             try:
                 self.send_response(err.code)
@@ -934,11 +970,6 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
         with resp:
             ctype = (resp.headers.get('Content-Type') or '').lower()
             final = urllib.parse.urlsplit(resp.geturl())
-            if final.netloc.lower() != netloc.lower() and netloc.lower() in proxy.gateway_hosts(sid):
-                # The provider redirected this session to another host: that
-                # host is part of the session now, so its requests may carry
-                # the channel's headers.
-                proxy.note_gateway_host(sid, final.netloc)
             path_lower = final.path.lower()
             playlist = 'mpegurl' in ctype or path_lower.endswith(('.m3u8', '.m3u'))
             if playlist and not head:
@@ -1058,7 +1089,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                             def _feeder():
                                 try:
                                     req = urllib.request.Request(target_url, headers=req_headers)
-                                    with urllib.request.urlopen(req, timeout=15) as resp:
+                                    with _open_upstream(req, timeout=15) as resp:
                                         while proc and proc.poll() is None and not stream_buffer.is_closed():
                                             # Use smaller chunks (8KB) for smoother flow
                                             chunk = resp.read(8192)
@@ -1093,7 +1124,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
                         else:
                             # Direct download -> buffer
                             req = urllib.request.Request(target_url, headers=req_headers)
-                            with urllib.request.urlopen(req, timeout=15) as resp:
+                            with _open_upstream(req, timeout=15) as resp:
                                 while not stream_buffer.is_closed():
                                     chunk = resp.read(8192)
                                     if not chunk: break

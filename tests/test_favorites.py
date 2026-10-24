@@ -72,8 +72,10 @@ class TestChannelKey:
         assert len(keys) == 2
 
     def test_a_backslash_cannot_escape_the_separator(self):
-        assert (favorites.channel_key({"name": "a\\|b"})
-                != favorites.channel_key({"name": "a", "tvg-id": "b"}))
+        """Without escaping the escape character, "a\" + "b" joins to the
+        same text as the single field "a|b"."""
+        assert (favorites.channel_key({"provider-type": "a\\", "provider-id": "b"})
+                != favorites.channel_key({"provider-type": "a|b"}))
 
 
 class TestNormalize:

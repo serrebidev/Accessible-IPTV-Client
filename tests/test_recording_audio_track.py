@@ -6,6 +6,7 @@ and not the audio description. The stream is now asked which tracks it has,
 and the player's own rules pick one. Video recordings keep every track and
 mark the chosen one as the default.
 """
+import inspect
 import os
 import re
 import subprocess
@@ -183,7 +184,7 @@ def test_real_ffmpeg_finds_and_records_the_described_track(tmp_path):
 
 def _bind(client, *names):
     for name in names:
-        setattr(client, name, main.IPTVClient.__dict__[name].__get__(client, main.IPTVClient))
+        setattr(client, name, inspect.getattr_static(main.IPTVClient, name).__get__(client, main.IPTVClient))
     return client
 
 
