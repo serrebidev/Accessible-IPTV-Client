@@ -592,6 +592,57 @@ def test_proxy_only_fetches_http_upstreams():
     assert not stream_proxy_module.is_allowed_upstream_url("")
 
 
+def test_cross_origin_redirect_drops_channel_headers():
+    handler = stream_proxy_module._CrossOriginRedirectHandler()
+    request = urllib.request.Request(
+        "https://provider.example.test/live.ts",
+        headers={
+            "Cookie": "session=secret",
+            "Authorization": "Bearer secret",
+            "X-Provider-Secret": "secret",
+            "User-Agent": "channel-agent",
+            "Range": "bytes=0-1",
+        },
+    )
+
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {"Location": "https://cdn.example.test/live.ts"},
+        "https://cdn.example.test/live.ts",
+    )
+
+    assert redirected is not None
+    assert "Cookie" not in redirected.headers
+    assert "Authorization" not in redirected.headers
+    assert "X-Provider-Secret" not in redirected.headers
+    assert redirected.headers["User-agent"] == "channel-agent"
+    assert redirected.headers["Range"] == "bytes=0-1"
+
+
+def test_same_origin_redirect_keeps_channel_headers():
+    handler = stream_proxy_module._CrossOriginRedirectHandler()
+    request = urllib.request.Request(
+        "https://provider.example.test/live.ts",
+        headers={"Cookie": "session=secret", "Authorization": "Bearer secret"},
+    )
+
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {"Location": "https://provider.example.test/live-2.ts"},
+        "https://provider.example.test/live-2.ts",
+    )
+
+    assert redirected is not None
+    assert redirected.headers["Cookie"] == "session=secret"
+    assert redirected.headers["Authorization"] == "Bearer secret"
+
+
 def test_proxy_urls_carry_the_access_token():
     proxy = StreamProxy()
     proxy.host = "127.0.0.1"

@@ -154,6 +154,19 @@ def test_upcoming_notes_include_the_new_release(tmp_path):
     assert "Fourth" not in changelog.read_text(encoding="utf-8")
 
 
+def test_notes_audit_allows_explicit_english_fallback(tmp_path, monkeypatch):
+    po = tmp_path / "fr" / "LC_MESSAGES" / "release_notes.po"
+    _po(po, [("Fallback", ""), ("Needs translation", "")])
+    allowed = tmp_path / "release_notes_identical_ok.json"
+    allowed.write_text('{"msgids": ["Fallback"]}\n', encoding="utf-8")
+    monkeypatch.setattr(audit, "NOTES_IDENTICAL_OK_PATH", str(allowed))
+
+    assert audit.audit_notes("fr", _messages("Fallback", "Needs translation"),
+                             locale_dir=str(tmp_path)) == [
+                                 "fr: untranslated What's New bullet: 'Needs translation'"
+                             ]
+
+
 def test_notes_audit_and_prepare_notes(tmp_path):
     po = tmp_path / "fr" / "LC_MESSAGES" / "release_notes.po"
     _po(po, [("Old", "Ancien"), ("Empty", "")])

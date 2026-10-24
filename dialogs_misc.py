@@ -228,23 +228,23 @@ class CastDiscoveryDialog(wx.Dialog):
         self.ok_btn = wx.Button(panel, id=wx.ID_OK, label=_("Connect"))
         self.ok_btn.Disable()
         cancel_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Cancel"))
-        
+
         btn_sizer.AddStretchSpacer(1)
         btn_sizer.Add(self.ok_btn, 0, wx.ALL, 5)
         btn_sizer.Add(cancel_btn, 0, wx.ALL, 5)
-        
+
         sizer.Add(self.status_lbl, 0, wx.ALL, 10)
         sizer.Add(self.devices_label, 0, wx.LEFT | wx.RIGHT, 10)
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        
+
         panel.SetSizer(sizer)
-        
+
         self.listbox.Bind(wx.EVT_LISTBOX, self._on_select)
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self._on_dclick)
-        
+
         self.CenterOnParent()
-        
+
         # Start discovery
         self._start_discovery()
 
@@ -850,7 +850,7 @@ class WhatsOnNowDialog(wx.Dialog):
     """Dialog showing all currently airing programs across all channels."""
 
     help_topic = "whats-on-now"
-    
+
     def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None):
         super().__init__(parent, title=_("What's on Now"), size=(700, 500))
         self.programs = programs
@@ -859,10 +859,10 @@ class WhatsOnNowDialog(wx.Dialog):
         self._type_ahead_buffer = ""
         self._type_ahead_timer = None
         self._filter_timer = None
-        
+
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         # Search box (for filtering, Tab to access)
         search_sizer = wx.BoxSizer(wx.HORIZONTAL)
         search_label = wx.StaticText(panel, label=_("Filter (Tab):"))
@@ -871,7 +871,7 @@ class WhatsOnNowDialog(wx.Dialog):
         search_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         search_sizer.Add(self.search_box, 1, wx.EXPAND)
         sizer.Add(search_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        
+
         # Info label
         self.count_label = wx.StaticText(panel, label=_("{count} programs").format(count=len(programs)))
         sizer.Add(self.count_label, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
@@ -890,15 +890,15 @@ class WhatsOnNowDialog(wx.Dialog):
         btn_sizer.Add(play_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
-        
+
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-        
+
         panel.SetSizer(sizer)
-        
+
         self.Layout()
         self.CenterOnParent()
-        
+
         # Bind events - use KEY_DOWN to intercept space before ListCtrl handles it
         self.listbox.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         # Enter, though, has to come from the char hook: a dialog consumes Enter
@@ -913,13 +913,13 @@ class WhatsOnNowDialog(wx.Dialog):
         schedule_btn.Bind(wx.EVT_BUTTON, self._on_schedule)
         self.search_box.Bind(wx.EVT_TEXT, self._on_search)
         self.search_box.Bind(wx.EVT_TEXT_ENTER, self._on_search_enter)
-        
+
         # Focus the list initially
         if self.filtered_programs:
             self.listbox.Select(0)
             self.listbox.Focus(0)
         self.listbox.SetFocus()
-    
+
     def _on_list_char_hook(self, event):
         """Enter on a programme, before the list ever sees a key-down."""
         if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
@@ -931,24 +931,24 @@ class WhatsOnNowDialog(wx.Dialog):
     def _on_key_down(self, event):
         """Handle key input for type-ahead search - intercept before ListCtrl."""
         key = event.GetKeyCode()
-        
+
         # Handle Tab to go to search box (plain Tab only: Shift+Tab keeps the
         # normal dialog traversal, issue #3)
         if key == wx.WXK_TAB and not event.ShiftDown():
             self.search_box.SetFocus()
             return
-        
+
         # Handle Enter to play
         if key == wx.WXK_RETURN or key == wx.WXK_NUMPAD_ENTER:
             if self.listbox.GetSelectedItemCount() > 0:
                 self.EndModal(wx.ID_OK)
             return
-        
+
         # Handle Escape to close
         if key == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
             return
-        
+
         # Handle Space - add to type-ahead buffer (don't activate)
         if key == wx.WXK_SPACE or key == ord(' '):
             if self._type_ahead_timer:
@@ -957,7 +957,7 @@ class WhatsOnNowDialog(wx.Dialog):
             self._find_match(self._type_ahead_buffer)
             self._type_ahead_timer = wx.CallLater(1000, self._reset_type_ahead)
             return
-        
+
         # Unicode-aware type-ahead (issue #3): GetUnicodeKey() reports the
         # character the key press actually produces, so accented letters
         # (á, é, ü, ...) match programme titles instead of being ignored as
@@ -966,18 +966,18 @@ class WhatsOnNowDialog(wx.Dialog):
         uni_key = event.GetUnicodeKey()
         if uni_key and uni_key > 32 and chr(uni_key).isprintable():
             char = chr(uni_key).lower()
-            
+
             # Reset buffer if too much time passed
             if self._type_ahead_timer:
                 self._type_ahead_timer.Stop()
-            
+
             self._type_ahead_buffer += char
             self._find_match(self._type_ahead_buffer)
-            
+
             # Reset buffer after 1 second of no typing
             self._type_ahead_timer = wx.CallLater(1000, self._reset_type_ahead)
             return
-        
+
         # Backspace clears type-ahead buffer
         if key == wx.WXK_BACK:
             if self._type_ahead_buffer:
@@ -985,13 +985,13 @@ class WhatsOnNowDialog(wx.Dialog):
                 if self._type_ahead_buffer:
                     self._find_match(self._type_ahead_buffer)
             return
-        
+
         event.Skip()
-    
+
     def _reset_type_ahead(self):
         """Reset the type-ahead buffer."""
         self._type_ahead_buffer = ""
-    
+
     def _find_match(self, prefix: str):
         """Find and select the first item starting with prefix."""
         prefix_lower = prefix.lower()
@@ -1002,7 +1002,7 @@ class WhatsOnNowDialog(wx.Dialog):
                 self.listbox.Focus(idx)
                 self.listbox.EnsureVisible(idx)
                 return
-    
+
     def _on_search(self, event):
         """Debounce filtering so NVDA isn't hit with a list rebuild per keystroke."""
         if self._filter_timer:
@@ -1055,12 +1055,12 @@ class WhatsOnNowDialog(wx.Dialog):
             self.listbox.SetFocus()
             self.listbox.Select(0)
             self.listbox.Focus(0)
-    
+
     def _on_activate(self, event):
         """Handle double-click/Enter to play."""
         if self.listbox.GetSelectedItemCount() > 0:
             self.EndModal(wx.ID_OK)
-    
+
     def _on_play(self, event):
         """Handle Play button click."""
         if self.listbox.GetSelectedItemCount() > 0:
@@ -1113,11 +1113,10 @@ class WhatsOnNowDialog(wx.Dialog):
         finally:
             menu.Destroy()
 
-    
+
     def get_selection(self) -> Optional[Dict[str, str]]:
         """Get the selected program dict."""
         idx = self.listbox.GetFirstSelected()
         if idx == -1 or idx >= len(self.filtered_programs):
             return None
         return self.filtered_programs[idx]
-

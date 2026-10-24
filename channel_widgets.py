@@ -371,11 +371,11 @@ class _VirtualChannelList(wx.ListCtrl):
 
 class _VirtualWhatsOnList(wx.ListCtrl):
     """Virtual list control for fast loading of What's on Now."""
-    
+
     def __init__(self, parent, dialog):
         super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL)
         self.dialog = dialog
-    
+
     def OnGetItemText(self, item, column):
         if 0 <= item < len(self.dialog.filtered_programs):
             prog = self.dialog.filtered_programs[item]
@@ -383,4 +383,3 @@ class _VirtualWhatsOnList(wx.ListCtrl):
             channel = prog.get("channel_name") or _("Unknown")
             return f"{title} - {channel}"
         return ""
-
