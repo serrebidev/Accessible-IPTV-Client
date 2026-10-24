@@ -274,3 +274,214 @@ def test_builtin_pause_and_rewind_use_the_common_snapshot_boundary():
     frame._on_cue_timer()
     assert speech[-1] == "One"
     assert [c.text for c in manager.get_recent()] == ["One"]
+
+
+def test_capability_report_translates_display_name_without_translating_lookup_key():
+    instance, _, _, env = app(["_show_subtitle_capabilities"])
+    displayed, lookups = [], []
+    env["_"] = lambda text: {"Built-in Player": "Beépített lejátszó"}.get(text, text)
+    instance._subtitle_manager = SimpleNamespace(
+        describe_capability=lambda key, capability, translate: lookups.append((key, capability)) or "state")
+    env["message_box"] = lambda text, *args: displayed.append(text)
+    instance._show_subtitle_capabilities()
+    assert lookups[0] == ("built-in", "timed_cues")
+    assert displayed[0].splitlines()[0] == "Beépített lejátszó: state"
+    assert "MPV: state" in displayed[0]
+    assert "built-in:" not in displayed[0]
+
+
+def file_reload_player(tmp_path):
+    """Use the real load callback/timer with deferred file worker and UI delivery."""
+    from types import MethodType
+
+    frame, state, manager, speech, labels = player()
+    path = tmp_path / "Azonos felirat – árvíztűrő.srt"
+    path.write_text("1\n00:00:01,000 --> 00:00:02,000\nOne\n\n"
+                    "2\n00:00:03,000 --> 00:00:04,000\nTwo\n", encoding="utf-8")
+    workers, callbacks = [], []
+
+    class Dialog:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def ShowModal(self):
+            return 1
+        def GetPath(self):
+            return str(path)
+
+    wx = SimpleNamespace(FileDialog=Dialog, ID_OK=1, FD_OPEN=2, FD_FILE_MUST_EXIST=4,
+                         CallAfter=lambda fn, *args: callbacks.append(lambda: fn(*args)))
+    cls, _ = extract_class("internal_player.py", "InternalPlayerFrame", ["_load_subtitle_file"], {
+        "Path": Path, "subtitle_cues": subtitle_cues, "wx": wx,
+        "vlc": SimpleNamespace(MediaSlaveType=SimpleNamespace(subtitle=0)),
+        "threading": SimpleNamespace(Thread=lambda target, **kwargs: SimpleNamespace(
+            start=lambda: workers.append(target))),
+    })
+    frame._load_subtitle_file = MethodType(cls._load_subtitle_file, frame)
+    frame.player.add_slave = lambda *args: 0
+    frame._subtitle_source_id = path.resolve().as_uri()
+    return frame, state, manager, speech, path, workers, callbacks
+
+
+def test_reloading_verified_unchanged_file_can_reuse_its_existing_spu_id(tmp_path):
+    frame, _, manager, speech, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track == 2 and speech == ["One"]
+    frame._subtitle_tracks = lambda: [(1, "embedded"), (2, "file")]
+    frame._load_subtitle_file(None)
+    assert manager.get_recent() == [] and frame._subtitle_file_track is None
+    workers.pop()()
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track == 2
+    assert speech == ["One", "One"]
+    assert manager.get_recent()[0].track == frame._subtitle_source_id
+
+
+def test_same_path_with_changed_words_cannot_reuse_cached_track_proof(tmp_path):
+    frame, _, manager, speech, path, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    path.write_text("1\n00:00:01,000 --> 00:00:02,000\nDifferent\n", encoding="utf-8")
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track is None
+    assert speech == ["One"] and manager.get_recent() == []
+
+
+def test_same_words_with_changed_times_cannot_reuse_cached_track_proof(tmp_path):
+    frame, _, manager, speech, path, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    path.write_text("1\n00:00:00,500 --> 00:00:02,500\nOne\n\n"
+                    "2\n00:00:03,000 --> 00:00:04,000\nTwo\n", encoding="utf-8")
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track is None
+    assert speech == ["One"] and manager.get_recent() == []
+
+
+def test_new_track_still_binds_after_reloading_changed_file(tmp_path):
+    frame, state, manager, speech, path, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    path.write_text("1\n00:00:01,000 --> 00:00:02,000\nDifferent\n", encoding="utf-8")
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    frame._subtitle_tracks = lambda: [(1, "embedded"), (2, "old file"), (3, "new file")]
+    state["spu"] = 3
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track == 3
+    assert speech == ["One", "Different"]
+    assert manager.get_recent()[0].text == "Different"
+
+
+def test_reloading_same_path_does_not_invent_proof_for_an_unverified_track(tmp_path):
+    frame, _, manager, speech, _, workers, callbacks = file_reload_player(tmp_path)
+    assert frame._subtitle_file_track is None
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track is None and speech == []
+    assert manager.get_recent() == []
+
+
+def test_track_selection_invalidates_late_reload_result_and_reused_id(tmp_path):
+    frame, _, manager, speech, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    frame._select_subtitle(1)
+    callbacks.pop()()
+    assert frame._subtitle_cues == [] and frame._subtitle_file_track is None
+    assert manager.get_recent() == [] and speech == ["One"]
+
+
+def test_removed_previously_bound_track_cannot_be_restored_by_parser(tmp_path):
+    frame, state, manager, speech, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._on_cue_timer()
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    frame._subtitle_tracks = lambda: [(1, "embedded")]
+    state["spu"] = 1
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_track is None
+    assert manager.get_recent() == [] and speech == ["One"]
+
+
+def test_file_index_is_built_by_worker_before_ui_delivery(tmp_path, monkeypatch):
+    frame, _, _, _, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    monkeypatch.setattr(subtitle_cues, "CueIndex", lambda cues: pytest.fail("index construction reached the UI"))
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_source.cues[0].text == "One"
+
+
+def test_obsolete_file_worker_does_not_read_or_queue_a_replacement(tmp_path, monkeypatch):
+    frame, _, _, _, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._load_subtitle_file(None)
+    frame._set_subtitle_cues([])
+    monkeypatch.setattr(subtitle_cues, "load", lambda path: pytest.fail("obsolete worker read a file"))
+    workers.pop()()
+    assert callbacks == [] and frame._subtitle_cues == []
+
+
+def test_mismatched_prepared_file_source_is_rejected_without_changing_current_cues():
+    from subtitle_pipeline import TimedTextSource
+    frame, _, _, _, _ = player()
+    before = frame._subtitle_file_source
+    wrong = TimedTextSource([Cue(1000, 2000, "Different file")], frame._subtitle_generation + 1)
+    with pytest.raises(ValueError, match="does not match"):
+        frame._set_subtitle_cues(frame._subtitle_cues, wrong)
+    assert frame._subtitle_file_source is before
+
+
+@pytest.mark.parametrize("accepted,backend_ok", [(True, True), (False, True), (True, False)])
+def test_rate_dialog_saves_only_a_successfully_confirmed_application_value(accepted, backend_ok):
+    instance, _, saved, env = app(["_set_app_tts_rate"])
+    destroyed, failures, chosen, names = [], [], [], []
+    class Widget:
+        def __init__(self, *args, **kwargs):
+            if "minValue" in kwargs:
+                assert kwargs["minValue"] == -10 and kwargs["maxValue"] == 10
+                assert kwargs["value"] == 0
+        def SetName(self, name): names.append(name)
+        def Add(self, *args): pass
+        def AddButton(self, *args): pass
+        def SetSizer(self, *args): pass
+        def Fit(self, *args): pass
+        def Realize(self): pass
+        def SetFocus(self): pass
+        def ShowModal(self): return 20 if accepted else 21
+        def GetValue(self): return 4
+        def Destroy(self): destroyed.append(True)
+    def set_rate(value):
+        chosen.append(value)
+        if backend_ok:
+            instance._app_tts.rate = value
+        return backend_ok
+    instance._app_tts = SimpleNamespace(available=True, rate=0, set_rate=set_rate)
+    topics = []
+    env["user_guide"] = SimpleNamespace(set_help_topic=lambda dlg, topic: topics.append(topic))
+    wx = env["wx"]
+    for name in ("Dialog", "Panel", "BoxSizer", "StaticText", "Slider", "StdDialogButtonSizer", "Button"):
+        setattr(wx, name, Widget)
+    for name in ("VERTICAL", "SL_HORIZONTAL", "SL_LABELS", "ALL", "EXPAND", "ALIGN_CENTER", "ID_CANCEL"):
+        setattr(wx, name, 0)
+    env["message_box"] = lambda *args: failures.append(args)
+    instance._set_app_tts_rate()
+    assert destroyed == [True]
+    assert topics == ["subtitle-speech"]
+    assert names == ["Speech speed (-10 to 10; 0 is normal):"]
+    assert chosen == ([4] if accepted else [])
+    assert saved == ([{"subtitle_app_rate": 4}] if accepted and backend_ok else [])
+    assert bool(failures) == (accepted and not backend_ok)

@@ -22,10 +22,13 @@ local function boundary()
 end
 
 for _, name in ipairs({'sub-text', 'sub-start', 'sub-end', 'sid',
-                        'pause', 'track-list', 'sub-visibility', 'sub-delay'}) do
+                        'pause', 'paused-for-cache', 'track-list', 'sub-visibility', 'sub-delay'}) do
     mp.observe_property(name, 'native', changed)
 end
-mp.register_event('start-file', function() active = false; boundary() end)
+mp.register_event('start-file', function()
+    active, seeking = false, true
+    boundary()
+end)
 mp.register_event('file-loaded', function() active = true; boundary() end)
 mp.register_event('end-file', function() active = false; boundary() end)
 mp.register_event('seek', function() seeking = true; boundary() end)
@@ -54,7 +57,10 @@ mp.register_idle(function()
     end
     local snapshot = {
         protocol = 1, epoch = epoch, active = active and not seeking, track = tostring(sid),
-        text = text, paused = mp.get_property_native('pause', false),
+        -- Network buffering can suspend a live programme without pause=yes.
+        -- Use the same output-purge/review policy as an explicit pause.
+        text = text, paused = mp.get_property_native('pause', false)
+            or mp.get_property_native('paused-for-cache', false),
         start = mp.get_property_native('sub-start'),
         finish = mp.get_property_native('sub-end'),
         codec = codec, image = image,

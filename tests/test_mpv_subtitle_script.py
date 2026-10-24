@@ -119,3 +119,74 @@ def test_explicit_snapshot_request_proves_script_is_loaded():
     lua.globals().requests["iptvclient-subtitle-request"]()
     lua.globals().idle()
     assert len(messages) == count + 1
+
+
+def test_live_cache_pause_collects_for_manual_review_and_never_speaks_automatically():
+    lua, update, manager, spoken, _ = harness()
+    update("paused-for-cache", True)
+    update("sub-text", "Buffered caption")
+    lua.globals().idle()
+    assert spoken == []
+    assert manager.read_current()
+    assert spoken == ["Buffered caption"]
+    update("paused-for-cache", False)
+    lua.globals().idle()
+    assert spoken == ["Buffered caption"]  # no unsolicited repeat on recovery
+    update("sub-text", "After recovery")
+    update("sub-start", 5.0)
+    update("sub-end", 6.0)
+    lua.globals().idle()
+    assert spoken == ["Buffered caption", "After recovery"]
+
+
+def test_cache_recovery_does_not_override_the_users_manual_pause():
+    lua, update, manager, spoken, _ = harness()
+    update("pause", True)
+    update("paused-for-cache", True)
+    lua.globals().idle()
+    update("paused-for-cache", False)
+    update("sub-text", "Still paused")
+    lua.globals().idle()
+    assert spoken == [] and manager.read_current()
+
+
+def test_new_live_file_waits_for_playback_restart_before_accepting_captions():
+    lua, update, manager, spoken, _ = harness()
+    update("sub-text", "Old channel")
+    lua.globals().idle()
+    lua.globals().events["start-file"]()
+    lua.globals().events["file-loaded"]()
+    lua.globals().idle()
+    assert spoken == ["Old channel"] and manager.get_recent() == []
+    update("sub-text", "New channel")
+    lua.globals().events["playback-restart"]()
+    lua.globals().idle()
+    assert spoken == ["Old channel", "New channel"]
+    assert [cue.text for cue in manager.get_recent()] == ["New channel"]
+
+
+def test_cache_pause_through_bound_session_purges_owned_voice_and_cancels_queued_caption():
+    from subtitle_session import SubtitleSessionController
+    lua, update, manager, spoken, _ = harness()
+    tasks, purged = [], []
+    manager._ui_thread = tasks.append
+    owner = SubtitleSessionController(manager, stop_speech=lambda: purged.append(True))
+    owner.set_ui_thread(tasks.append)
+    sink = owner.bind(owner.activate_session("live"))
+    purged.clear()
+    # Keep the production adapter but bind it to the actual session owner.
+    original_command = lua.globals().command
+    adapter = MpvSubtitleAdapter(sink)
+    def command(*args):
+        adapter._dispatch(json.dumps({"event": "client-message", "args": list(args[1:])}).encode())
+    lua.globals().command = command
+    lua.execute("package.loaded['mp'].commandv = command")
+    update("sub-text", "Queued before buffering")
+    lua.globals().idle()
+    update("paused-for-cache", True)
+    lua.globals().idle()
+    while tasks:
+        tasks.pop(0)()
+    assert spoken == [] and len(purged) == 2
+    assert [cue.text for cue in manager.get_recent()] == ["Queued before buffering"]
+    lua.globals().command = original_command

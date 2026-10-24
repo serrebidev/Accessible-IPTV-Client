@@ -235,10 +235,9 @@ Uma faixa que você escolhe é lembrada para aquele canal e volta na próxima ve
 
 ### Leitura de legendas {#subtitle-speech}
 
-O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e o seu leitor de tela lerá cada legenda de um arquivo SRT ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. Legendas que vêm no próprio stream e arquivos ASS ou SSA ainda não podem ser lidos em voz alta.
+O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e a voz selecionada lerá cada legenda de um arquivo SRT, ASS, SSA ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. O player integrado ainda não pode ler em voz alta as legendas incluídas no próprio stream.
 
-Reprodução > Ler a legenda atual (C) lê a legenda que está na tela, ou a última mostrada quando não há nenhuma na tela. Reprodução > Legenda anterior (Page Up) e Próxima legenda (Page Down) percorrem as legendas já mostradas, para você ouvir de novo uma linha que perdeu. Elas nunca leem à frente da reprodução e funcionam com Ler legendas em voz alta ativado ou desativado.
-
+Reprodução > Ler a legenda atual (C) lê a legenda que está na tela, ou a última mostrada quando não há nenhuma na tela. Reprodução > Legenda anterior (Page Up) e Próxima legenda (Page Down) percorrem as legendas já mostradas, para você ouvir de novo uma linha que perdeu. Elas nunca leem à frente da reprodução e funcionam com Ler legendas em voz alta ativado ou desativado. No Windows, Opções > Leitura de legendas > Velocidade da voz da aplicação… permite escolher um valor de -10 a 10; 0 é normal. Isso não altera a velocidade de reprodução nem as configurações do leitor de tela.
 ### Dispositivo de saída de áudio {#audio-output-device}
 
 Reprodução > Dispositivo de saída de áudio… (D) escolhe os alto-falantes ou fones que o reprodutor usa, por exemplo para manter o som da TV longe do seu leitor de tela. Predefinido do sistema segue o dispositivo predefinido do Windows. A escolha é lembrada.

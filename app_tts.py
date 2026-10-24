@@ -297,6 +297,7 @@ class AppTtsBackend:
         self._lock = threading.RLock()
         self._owner_thread = threading.get_ident()
         self._volume = 100
+        self._rate = 0
         self._selected_output = ""
         self._route = RoutingState.DEFAULT
         self.last_result = SpeechResult.UNAVAILABLE
@@ -377,6 +378,34 @@ class AppTtsBackend:
             return True
         except _ComError:
             LOG.warning("app_tts: SetVolume failed", exc_info=True)
+            return False
+
+    @property
+    def rate(self):
+        return self._rate
+
+    def set_rate(self, rate):
+        """Set the private SAPI voice's rate; never modify screen-reader settings.
+
+        SAPI accepts -10..10, with zero as normal. Invalid saved config falls
+        back to normal; a failed COM write does not change the reported value.
+        The engine applies a new rate at the next Speak stream boundary.
+        """
+        self._check_thread()
+        try:
+            value = int(rate) if not isinstance(rate, bool) else 0
+        except (TypeError, ValueError, OverflowError):
+            value = 0
+        value = max(-10, min(10, value))
+        if not self._voice:
+            return False
+        try:
+            with self._lock:
+                self._voice.put("Rate", value)
+            self._rate = value
+            return True
+        except _ComError:
+            LOG.warning("app_tts: SetRate failed", exc_info=True)
             return False
 
     def list_output_devices(self):

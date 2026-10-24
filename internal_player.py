@@ -2541,6 +2541,16 @@ class InternalPlayerFrame(wx.Frame):
             path = dlg.GetPath()
         try:
             previous_tracks = {tid for tid, _name in self._subtitle_tracks()}
+            source_id = Path(path).resolve().as_uri()
+            previous_binding = None
+            bound_track = getattr(self, "_subtitle_file_track", None)
+            if (source_id == getattr(self, "_subtitle_source_id", "")
+                    and bound_track is not None and bound_track in previous_tracks
+                    and self._subtitle_cues):
+                # libVLC may reuse the same SPU ID for a file it already has.
+                # Retain proof of that earlier binding, but reuse it only if
+                # the new parser result has identical text AND cue timings.
+                previous_binding = (bound_track, tuple(self._subtitle_cues))
             if self.player.add_slave(vlc.MediaSlaveType.subtitle, Path(path).as_uri(), True) != 0:
                 raise RuntimeError(_("Could not load subtitle file."))
         except Exception as err:
@@ -2548,36 +2558,61 @@ class InternalPlayerFrame(wx.Frame):
             return
         self._update_status_label(_("Subtitle file loaded: {name}").format(name=Path(path).name), priority=2)
         self._set_subtitle_cues([])
-        self._subtitle_source_id = Path(path).resolve().as_uri()
+        self._subtitle_source_id = source_id
         self._subtitle_prior_track_ids = previous_tracks
         if Path(path).suffix.lower() not in subtitle_cues.SPEAKABLE_SUFFIXES:
             if self._speak_subtitles:
-                self._update_status_label(_("Subtitle speech needs an SRT or WebVTT file."), priority=1)
+                self._update_status_label(_("Subtitle speech needs a supported text subtitle file."), priority=1)
             return
         generation = self._subtitle_generation
 
         def _read() -> None:
+            if self._destroyed or generation != self._subtitle_generation:
+                return
+            prepared_source = None
             try:
                 cues = subtitle_cues.load(path)
+                if self._destroyed or generation != self._subtitle_generation:
+                    return
+                # Sorting, validation and the overlap index can be substantial
+                # for a large file. Build them here, never in a GUI timer or
+                # its delivery callback. Only this generation may adopt it.
+                from subtitle_pipeline import TimedTextSource
+                prepared_source = TimedTextSource(cues, generation + 1)
             except (OSError, ValueError):
                 LOG.warning("Could not read subtitle cues from %s", path, exc_info=True)
                 cues = []
-            wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues)
+            if not self._destroyed and generation == self._subtitle_generation:
+                wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues, previous_binding, prepared_source)
 
         threading.Thread(target=_read, name="subtitle-cues", daemon=True).start()
 
-    def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue]) -> None:
+    def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue],
+                                 previous_binding=None, prepared_source=None) -> None:
         if self._destroyed or generation != self._subtitle_generation:
             return
         if not cues:
             self._update_status_label(_("No subtitle text found in this file."), priority=1)
-        self._set_subtitle_cues(cues)
+        self._set_subtitle_cues(cues, prepared_source)
+        if previous_binding is not None and cues:
+            track_id, previous_cues = previous_binding
+            if (tuple(cues) == previous_cues
+                    and track_id in {tid for tid, _name in self._subtitle_tracks()}):
+                self._subtitle_file_track = track_id
 
-    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue]) -> None:
-        self._subtitle_generation += 1
-        self._subtitle_cues = cues
+    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue], prepared_source=None) -> None:
         from subtitle_pipeline import TimedTextSource
-        self._subtitle_file_source = TimedTextSource(cues, self._subtitle_generation)
+        next_generation = self._subtitle_generation + 1
+        if prepared_source is not None:
+            if (not isinstance(prepared_source, TimedTextSource)
+                    or prepared_source.generation != next_generation
+                    or prepared_source.cues != tuple(cues)):
+                raise ValueError("prepared subtitle source does not match this file generation")
+        else:
+            prepared_source = TimedTextSource(cues, next_generation)
+        self._subtitle_generation = next_generation
+        self._subtitle_cues = cues
+        self._subtitle_file_source = prepared_source
         self._cue_index = None
         self._last_cue_index = None
         self._review_cue_index = None
@@ -2671,7 +2706,7 @@ class InternalPlayerFrame(wx.Frame):
         ahead of playback. ``step`` 0 reads the cue on screen, or the last one.
         """
         if not self._subtitle_cues:
-            return _("No subtitle text to read. Load an SRT or WebVTT file.")
+            return _("No subtitle text to read. Load a supported subtitle file.")
         if self._last_cue_index is None:
             return _("No subtitle has been shown yet.")
         if step == 0:
@@ -2719,7 +2754,7 @@ class InternalPlayerFrame(wx.Frame):
         elif self._subtitle_cues:
             message = _("Subtitle speech on")
         else:
-            message = _("Subtitle speech on. Load an SRT or WebVTT file to hear subtitles.")
+            message = _("Subtitle speech on. Load a subtitle file to hear subtitles.")
         self._update_status_label(message, priority=2)
 
     def _on_audio_track_menu_open(self, _event: Optional[wx.MenuEvent] = None) -> None:

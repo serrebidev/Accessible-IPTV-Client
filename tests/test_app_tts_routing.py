@@ -48,6 +48,7 @@ class Voice:
         self.flags = []
         self.fail_speak = False
         self.volume = 100
+        self.rate = 0
 
     def call(self, key, *args):
         if key == "GetAudioOutputs":
@@ -65,6 +66,8 @@ class Voice:
             self.output = "default" if value is None else value.identity
         elif key == "Volume":
             self.volume = value
+        elif key == "Rate":
+            self.rate = value
         else:
             raise AssertionError(key)
 
@@ -158,3 +161,38 @@ def test_com_cannot_be_used_from_a_reader_thread(fake_backend):
     thread.join(1)
     assert errors and "COM thread" in errors[0]
     assert fake_backend._voice.spoken == []
+
+
+@pytest.mark.parametrize("requested,expected", [(-10, -10), (0, 0), (10, 10), (-99, -10), (99, 10),
+                                               ("4", 4), (None, 0), ("broken", 0), (True, 0),
+                                               (float("inf"), 0), (float("nan"), 0)])
+def test_application_rate_is_bounded_and_independent_of_volume(fake_backend, requested, expected):
+    backend = fake_backend
+    assert backend.set_volume(37)
+    assert backend.set_rate(requested)
+    assert backend.rate == backend._voice.rate == expected
+    assert backend.volume == backend._voice.volume == 37
+    assert backend.speak("Next caption")
+    assert backend._voice.spoken == [("default", "Next caption")]
+
+
+def test_failed_rate_change_preserves_last_successful_value(fake_backend):
+    backend = fake_backend
+    assert backend.set_rate(3)
+    prior = backend._voice.put
+    def reject_rate(key, value):
+        if key == "Rate":
+            raise app_tts._ComError("rate not supported")
+        return prior(key, value)
+    backend._voice.put = reject_rate
+    assert not backend.set_rate(8)
+    assert backend.rate == 3
+    assert backend.speak("Still usable")
+
+
+def test_rate_uses_the_same_com_thread_ownership_as_speech(fake_backend):
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with pytest.raises(RuntimeError, match="owning COM thread"):
+            executor.submit(fake_backend.set_rate, 3).result()
+    assert fake_backend.rate == 0

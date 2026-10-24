@@ -244,10 +244,9 @@ A track you choose is remembered for that channel and comes back next time. See 
 
 ### Subtitle speech {#subtitle-speech}
 
-Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and your screen reader reads each subtitle of a loaded SRT or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. Subtitles that come with the stream itself, and ASS or SSA files, cannot be read aloud yet.
+Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and the selected voice reads each subtitle of a loaded SRT, ASS, SSA or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. The built-in player cannot yet read stream-embedded subtitles aloud.
 
-Playback > Read Current Subtitle (C) reads the subtitle on screen, or the last one shown when none is on screen. Playback > Previous Subtitle (Page Up) and Next Subtitle (Page Down) move through the subtitles already shown, so you can hear a line you missed again. They never read ahead of playback, and they work whether Speak Subtitles is on or off.
-
+Playback > Read Current Subtitle (C) reads the subtitle on screen, or the last one shown when none is on screen. Playback > Previous Subtitle (Page Up) and Next Subtitle (Page Down) move through the subtitles already shown, so you can hear a line you missed again. They never read ahead of playback, and they work whether Speak Subtitles is on or off. On Windows, Options > Subtitle Speech > Application voice speed adjusts the application voice from -10 to 10 (0 is normal); it does not change playback speed or screen-reader settings.
 ### Audio output device {#audio-output-device}
 
 Playback > Audio Output Device (D) chooses the speakers or headphones the player uses, for example to keep TV sound away from your screen reader. System default follows the Windows default device. The choice is remembered.

@@ -33,8 +33,8 @@ def _say(frame, step):
 
 def test_nothing_to_review_without_a_loaded_file():
     frame = _frame(cues=[])
-    assert _say(frame, 0) == "No subtitle text to read. Load an SRT or WebVTT file."
-    assert _say(frame, -1) == "No subtitle text to read. Load an SRT or WebVTT file."
+    assert _say(frame, 0) == "No subtitle text to read. Load a supported subtitle file."
+    assert _say(frame, -1) == "No subtitle text to read. Load a supported subtitle file."
 
 
 def test_nothing_to_review_before_the_first_cue_appears():

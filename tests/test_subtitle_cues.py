@@ -73,3 +73,39 @@ def test_load_survives_an_encoding_python_does_not_have(tmp_path, monkeypatch):
     path.write_bytes("1\n00:00:01,000 --> 00:00:02,500\nHello there\n".encode("cp1252"))
 
     assert [c.text for c in subtitle_cues.load(str(path))] == ["Hello there"]
+
+
+def test_loader_bounds_each_read_before_checking_file_size(tmp_path, monkeypatch):
+    import pytest
+    from pathlib import Path
+
+    path = tmp_path / "oversized.srt"
+    path.write_bytes(b"x" * 32)
+    monkeypatch.setattr(subtitle_cues, "MAX_FILE_BYTES", 8)
+    actual_open = Path.open
+    reads = []
+
+    class BoundedRead:
+        def __init__(self, stream):
+            self.stream = stream
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            self.stream.close()
+        def read(self, size=-1):
+            reads.append(size)
+            assert 0 <= size <= 9, "the loader must not allocate the entire untrusted file"
+            return self.stream.read(size)
+
+    monkeypatch.setattr(Path, "open", lambda self, *args, **kwargs: BoundedRead(actual_open(self, *args, **kwargs)))
+    with pytest.raises(ValueError, match="too large"):
+        subtitle_cues.load(path)
+    assert reads == [9]
+
+
+def test_file_exactly_at_byte_limit_keeps_its_final_unicode_character(tmp_path, monkeypatch):
+    content = "1\n00:00:01,000 --> 00:00:02,000\nÁrvíztűrő\n".encode("utf-8")
+    path = tmp_path / "boundary.srt"
+    path.write_bytes(content)
+    monkeypatch.setattr(subtitle_cues, "MAX_FILE_BYTES", len(content))
+    assert subtitle_cues.load(path) == [subtitle_cues.Cue(1000, 2000, "Árvíztűrő")]
