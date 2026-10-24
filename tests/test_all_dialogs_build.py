@@ -349,6 +349,10 @@ def test_audio_device_dialog_builds(host):
     try:
         # + 1 for the always-present System default entry.
         assert dlg.list_ctrl.GetItemCount() == 3 if hasattr(dlg, "list_ctrl") else dlg.GetTitle()
+        panel = dlg.GetChildren()[0]
+        labels = [child for child in panel.GetChildren()
+                  if isinstance(child, wx.StaticText)]
+        assert any(label.GetLabel() == "Audio output devices" for label in labels)
     finally:
         dlg.Destroy()
 
