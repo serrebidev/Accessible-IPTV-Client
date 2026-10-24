@@ -5,6 +5,7 @@ parses the file it loaded itself and looks cues up against the media clock.
 """
 
 import bisect
+import codecs
 import html
 import logging
 import re
@@ -17,10 +18,10 @@ MAX_FILE_BYTES = 20 * 1024 * 1024
 SPEAKABLE_SUFFIXES = (".srt", ".vtt", ".ass", ".ssa")
 
 _TIME = re.compile(
-    r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})\s*-->\s*(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})")
-_TAG = re.compile(r"<[^>]*>|\{\\[^}]*\}")
+    r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})[ \t]*-->[ \t]*"
+    r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})(?:[ \t]+[^\r\n]*)?")
+_MARKUP_START = re.compile(r"<|\{\\")
 _ASS_TIME = re.compile(r"(\d+):(\d{2}):(\d{2})\.(\d{1,3})\Z")
-_ASS_PART = re.compile(r"\{([^}]*)\}|([^{}]+)")
 _DRAWING_MODE = re.compile(r"\\p(\d+)(?=\\|\s|$)")
 
 
@@ -31,7 +32,31 @@ class Cue(NamedTuple):
 
 
 def _ms(h, m, s, frac) -> int:
-    return ((int(h or 0) * 60 + int(m)) * 60 + int(s)) * 1000 + int(frac.ljust(3, "0"))
+    # A malformed event must not abort every subsequent cue. Bound conversion
+    # before int(): Python rejects enormous digit strings, and libVLC uses i64.
+    if len(h or "") > 19 or int(m) >= 60 or int(s) >= 60:
+        raise ValueError("invalid subtitle timestamp")
+    value = ((int(h or 0) * 60 + int(m)) * 60 + int(s)) * 1000 + int(frac.ljust(3, "0"))
+    if value > (1 << 63) - 1:
+        raise ValueError("subtitle timestamp exceeds the media clock")
+    return value
+
+
+def _strip_markup(text: str) -> str:
+    """Strip closed inline tags without quadratic retries on broken markup.
+
+    Preserve an unclosed fragment as literal text (e.g. mathematical '<').
+    No regex scans the remaining line again for every unmatched opener.
+    """
+    parts, offset = [], 0
+    while match := _MARKUP_START.search(text, offset):
+        end = text.find(">" if match[0] == "<" else "}", match.end())
+        if end < 0:
+            break
+        parts.append(text[offset:match.start()])
+        offset = end + 1
+    parts.append(text[offset:])
+    return "".join(parts)
 
 
 def _ass_plain_text(text: str) -> str:
@@ -42,14 +67,20 @@ def _ass_plain_text(text: str) -> str:
     ASS backslash line/space escapes are not HTML entity syntax.
     """
     drawing = False
-    parts = []
-    for match in _ASS_PART.finditer(text):
-        override, body = match.groups()
-        if override is not None:
-            for mode in _DRAWING_MODE.finditer(override):
-                drawing = int(mode.group(1)) != 0
-        elif not drawing:
-            parts.append(body.replace(r"\N", " ").replace(r"\n", " ").replace(r"\h", " "))
+    parts, offset = [], 0
+    while offset < len(text):
+        opening = text.find("{", offset)
+        body = text[offset:opening] if opening >= 0 else text[offset:]
+        if not drawing:
+            parts.append(body.replace("}", "").replace(r"\N", " ").replace(r"\n", " ").replace(r"\h", " "))
+        if opening < 0:
+            break
+        closing = text.find("}", opening + 1)
+        if closing < 0:
+            break  # unfinished ASS overrides are not spoken as instructions
+        for mode in _DRAWING_MODE.finditer(text[opening + 1:closing]):
+            drawing = bool(mode.group(1).lstrip("0"))
+        offset = closing + 1
     return " ".join("".join(parts).split())
 
 
@@ -57,7 +88,10 @@ def _ass_timestamp(text: str) -> Optional[int]:
     match = _ASS_TIME.fullmatch(text.strip())
     if not match or int(match[2]) >= 60 or int(match[3]) >= 60:
         return None
-    return _ms(*match.groups())
+    try:
+        return _ms(*match.groups())
+    except ValueError:
+        return None
 
 
 def parse_ass(text: str) -> List[Cue]:
@@ -100,21 +134,34 @@ def parse_ass(text: str) -> List[Cue]:
 
 
 def parse(text: str, format_hint: str = "") -> List[Cue]:
-    """Cues sorted by start time; blocks without a timing line are skipped."""
+    """Sorted spoken cues; metadata and malformed events are not dialogue.
+
+    A timing line is first, or follows one cue identifier. WebVTT NOTE, STYLE
+    and REGION blocks are metadata, even when they contain a timing example.
+    Keep the permissive legacy comma/dot and short-fraction time spellings.
+    """
     if format_hint.casefold().lstrip(".") in ("ass", "ssa") or (
             not format_hint and re.match(r"(?is)^\ufeff?\s*\[(?:script info|events)\]", text)):
         return parse_ass(text)
     cues = []
-    for block in re.split(r"\n\s*\n", text.replace("\r\n", "\n").replace("\r", "\n")):
+    text = text.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    is_vtt = format_hint.casefold().lstrip(".") == "vtt" or bool(re.match(r"^WEBVTT(?:[ \t\n]|$)", text))
+    for block in re.split(r"\n[ \t]*\n", text):
         lines = block.strip("\n").split("\n")
-        for i, line in enumerate(lines):
-            match = _TIME.search(line)
+        if is_vtt and (re.match(r"^(?:WEBVTT|NOTE)(?:[ \t]|$)", lines[0])
+                       or lines[0].rstrip(" \t") in ("STYLE", "REGION")):
+            continue
+        for i, line in enumerate(lines[:2]):
+            match = _TIME.fullmatch(line.strip())
             if not match:
                 continue
             g = match.groups()
-            body = " ".join(html.unescape(_TAG.sub("", part)).strip() for part in lines[i + 1:])
+            body = " ".join(html.unescape(_strip_markup(part)).strip() for part in lines[i + 1:])
             body = " ".join(body.split())
-            start, end = _ms(*g[:4]), _ms(*g[4:])
+            try:
+                start, end = _ms(*g[:4]), _ms(*g[4:])
+            except ValueError:
+                break
             if body and end > start:
                 cues.append(Cue(start, end, body))
             break
@@ -131,7 +178,13 @@ def load(path: str) -> List[Cue]:
     if len(raw) > MAX_FILE_BYTES:
         raise ValueError("subtitle file too large")
     try:
-        text = raw.decode("utf-8-sig")
+        # UTF-32 LE begins with the UTF-16 LE marker; test longer BOMs first.
+        if raw.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)):
+            text = raw.decode("utf-32", errors="replace")
+        elif raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+            text = raw.decode("utf-16", errors="replace")
+        else:
+            text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
         import chardet
 
@@ -158,7 +211,47 @@ def active(cues: List[Cue], ms: int) -> Optional[int]:
     while i >= 0 and cues[i].start <= ms:
         if ms < cues[i].end:
             return i
-        if ms - cues[i].start > 60 * 60 * 1000:
-            break  # ponytail: linear back-scan for overlaps; bounded to one hour of cues
         i -= 1
     return None
+
+
+class CueIndex:
+    """Immutable start/end index for a sorted file's playback-time queries.
+
+    Find the rightmost started cue whose end is still in the future. A maximum
+    end tree prunes expired ranges, so long gaps and deeply overlapping cues
+    need logarithmic lookup without an arbitrary subtitle-duration cutoff.
+    Rebuild only when the owner replaces the file, never in its timer tick.
+    """
+
+    def __init__(self, cues):
+        cues = tuple(cues)
+        self._starts = tuple(cue.start for cue in cues)
+        if any(a > b for a, b in zip(self._starts, self._starts[1:])):
+            raise ValueError("cue index requires start-sorted cues")
+        self._size = 1 << (max(1, len(self._starts)) - 1).bit_length()
+        self._max_end = [float("-inf")] * (2 * self._size)
+        for i, cue in enumerate(cues):
+            self._max_end[self._size + i] = cue.end
+        for i in range(self._size - 1, 0, -1):
+            self._max_end[i] = max(self._max_end[2 * i], self._max_end[2 * i + 1])
+
+    def started(self, ms):
+        index = bisect.bisect_right(self._starts, ms) - 1
+        return index if index >= 0 else None
+
+    def active(self, ms):
+        limit = self.started(ms)
+        if limit is None:
+            return None
+
+        def find(node, left, right):
+            if left > limit or self._max_end[node] <= ms:
+                return None
+            if left == right:
+                return left
+            middle = (left + right) // 2
+            result = find(2 * node + 1, middle + 1, right)
+            return result if result is not None else find(2 * node, left, middle)
+
+        return find(1, 0, self._size - 1)

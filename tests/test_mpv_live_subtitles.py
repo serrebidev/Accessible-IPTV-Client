@@ -21,8 +21,9 @@ from subtitle_speech import SubtitleSpeechManager
 
 
 @pytest.mark.skipif(not (shutil.which("mpv") and shutil.which("ffmpeg")), reason="real MPV and FFmpeg required")
-@pytest.mark.parametrize("subtitle_format", ["srt", "ass"])
-def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_enabled(tmp_path, subtitle_format):
+@pytest.mark.parametrize("subtitle_format,network_gap", [("srt", False), ("ass", False), ("srt", True)])
+def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_enabled(tmp_path, subtitle_format,
+                                                                                    network_gap):
     sub = tmp_path / ("live." + subtitle_format)
     if subtitle_format == "ass":
         text = ("[Script Info]\nScriptType: v4.00+\n[Events]\n"
@@ -40,6 +41,7 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
     capture.write_text("local mp=require 'mp'; mp.register_script_message('iptvclient-subtitle-snapshot',"
                        "function(payload) print('IPTV_LIVE_SNAPSHOT '..payload) end)", encoding="utf-8")
     requests, producers = [], []
+    gap_injected = threading.Event()
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         def log_message(self, *args): pass
@@ -60,14 +62,18 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
             command = [shutil.which("ffmpeg"), "-nostdin", "-loglevel", "error", "-re",
                        "-f", "lavfi", "-i", "color=s=160x90:r=25:d=5", "-i", str(sub),
                        "-map", "0:v:0", "-map", "1:s:0", "-c:v", "mpeg4", "-c:s", subtitle_format,
-                       "-f", "matroska", "-cluster_time_limit", "200", "-live", "1", "pipe:1"]
+                       "-f", "matroska", "-cluster_time_limit", "200", "-flush_packets", "1", "-live", "1", "pipe:1"]
             producer = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             producers.append(producer)
+            began = time.monotonic()
             try:
                 while True:
                     chunk = os.read(producer.stdout.fileno(), 16384)
                     if not chunk:
                         break
+                    if network_gap and not gap_injected.is_set() and time.monotonic() - began >= 1:
+                        gap_injected.set()
+                        time.sleep(2.0)
                     self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
                     self.wfile.flush()
                 self.wfile.write(b"0\r\n\r\n")
@@ -86,7 +92,7 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     url = f"http://127.0.0.1:{server.server_port}/generated-live"
-    spoken, observations, history = [], [], []
+    spoken, observations, history, pauses = [], [], [], []
     manager = SubtitleSpeechManager(spoken.append)
     controller = SubtitleSessionController(manager)
     sink = controller.bind(controller.activate_session("mpv-live-test"))
@@ -94,8 +100,10 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
     process = None
     try:
         command = [shutil.which("mpv"), "--no-config", "--vo=null", "--ao=null", "--no-audio",
-                   "--sub-auto=no", "--sid=1", "--cache=no", "--terminal=yes",
+                   "--sub-auto=no", "--sid=1", "--terminal=yes",
                    "--script=" + str(helper), "--script=" + str(capture), url]
+        command[1:1] = (["--cache=yes", "--cache-pause=yes", "--cache-pause-initial=no", "--cache-pause-wait=0.1",
+                         "--demuxer-readahead-secs=0.5"] if network_gap else ["--cache=no"])
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         lines = queue.Queue()
         done = threading.Event()
@@ -121,8 +129,12 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
                 continue
             payload = line.split("IPTV_LIVE_SNAPSHOT ", 1)[1]
             snapshot = json.loads(payload)
+            pauses.append(snapshot["paused"])
+            before_speech = list(spoken)
             adapter._dispatch(json.dumps({"event": "client-message", "args": [
                 "iptvclient-subtitle-snapshot", payload]}).encode())
+            if snapshot["paused"]:
+                assert spoken == before_speech
             if snapshot["text"]:
                 observations.append((snapshot["text"], snapshot.get("start"), snapshot.get("finish")))
                 history = [(cue.text, cue.start_ms, cue.end_ms) for cue in manager.get_recent()]
@@ -141,7 +153,11 @@ def test_live_http_embedded_text_uses_one_stream_and_collects_before_speech_is_e
             assert observed[0] == wanted[0]
             # Matroska subtitle duration rounding can move the end by one ms.
             assert observed[1:] == pytest.approx(wanted[1:], abs=0.0011)
-        assert spoken == ["Live words", "Last live cue"]
+        if network_gap:
+            assert gap_injected.is_set() and True in pauses, "the generated network gap must pause the real player"
+            assert "Last live cue" in spoken
+        else:
+            assert spoken == ["Live words", "Last live cue"]
         assert [cue[:2] for cue in history] == [
             ("Live words", 500), ("Live words", 2000), ("Last live cue", 3500)]
         assert [cue[2] for cue in history] == pytest.approx([1200, 2700, 4200], abs=1)

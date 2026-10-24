@@ -2569,33 +2569,52 @@ class InternalPlayerFrame(wx.Frame):
         generation = self._subtitle_generation
 
         def _read() -> None:
+            if self._destroyed or generation != self._subtitle_generation:
+                return
+            prepared_source = None
             try:
                 cues = subtitle_cues.load(path)
+                if self._destroyed or generation != self._subtitle_generation:
+                    return
+                # Sorting, validation and the overlap index can be substantial
+                # for a large file. Build them here, never in a GUI timer or
+                # its delivery callback. Only this generation may adopt it.
+                from subtitle_pipeline import TimedTextSource
+                prepared_source = TimedTextSource(cues, generation + 1)
             except (OSError, ValueError):
                 LOG.warning("Could not read subtitle cues from %s", path, exc_info=True)
                 cues = []
-            wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues, previous_binding)
+            if not self._destroyed and generation == self._subtitle_generation:
+                wx.CallAfter(self._on_subtitle_cues_loaded, generation, cues, previous_binding, prepared_source)
 
         threading.Thread(target=_read, name="subtitle-cues", daemon=True).start()
 
     def _on_subtitle_cues_loaded(self, generation: int, cues: List[subtitle_cues.Cue],
-                                 previous_binding=None) -> None:
+                                 previous_binding=None, prepared_source=None) -> None:
         if self._destroyed or generation != self._subtitle_generation:
             return
         if not cues:
             self._update_status_label(_("No subtitle text found in this file."), priority=1)
-        self._set_subtitle_cues(cues)
+        self._set_subtitle_cues(cues, prepared_source)
         if previous_binding is not None and cues:
             track_id, previous_cues = previous_binding
             if (tuple(cues) == previous_cues
                     and track_id in {tid for tid, _name in self._subtitle_tracks()}):
                 self._subtitle_file_track = track_id
 
-    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue]) -> None:
-        self._subtitle_generation += 1
-        self._subtitle_cues = cues
+    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue], prepared_source=None) -> None:
         from subtitle_pipeline import TimedTextSource
-        self._subtitle_file_source = TimedTextSource(cues, self._subtitle_generation)
+        next_generation = self._subtitle_generation + 1
+        if prepared_source is not None:
+            if (not isinstance(prepared_source, TimedTextSource)
+                    or prepared_source.generation != next_generation
+                    or prepared_source.cues != tuple(cues)):
+                raise ValueError("prepared subtitle source does not match this file generation")
+        else:
+            prepared_source = TimedTextSource(cues, next_generation)
+        self._subtitle_generation = next_generation
+        self._subtitle_cues = cues
+        self._subtitle_file_source = prepared_source
         self._cue_index = None
         self._last_cue_index = None
         self._review_cue_index = None

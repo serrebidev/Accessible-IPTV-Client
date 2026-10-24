@@ -416,6 +416,35 @@ def test_removed_previously_bound_track_cannot_be_restored_by_parser(tmp_path):
     assert manager.get_recent() == [] and speech == ["One"]
 
 
+def test_file_index_is_built_by_worker_before_ui_delivery(tmp_path, monkeypatch):
+    frame, _, _, _, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._load_subtitle_file(None)
+    workers.pop()()
+    monkeypatch.setattr(subtitle_cues, "CueIndex", lambda cues: pytest.fail("index construction reached the UI"))
+    callbacks.pop()()
+    frame._on_cue_timer()
+    assert frame._subtitle_file_source.cues[0].text == "One"
+
+
+def test_obsolete_file_worker_does_not_read_or_queue_a_replacement(tmp_path, monkeypatch):
+    frame, _, _, _, _, workers, callbacks = file_reload_player(tmp_path)
+    frame._load_subtitle_file(None)
+    frame._set_subtitle_cues([])
+    monkeypatch.setattr(subtitle_cues, "load", lambda path: pytest.fail("obsolete worker read a file"))
+    workers.pop()()
+    assert callbacks == [] and frame._subtitle_cues == []
+
+
+def test_mismatched_prepared_file_source_is_rejected_without_changing_current_cues():
+    from subtitle_pipeline import TimedTextSource
+    frame, _, _, _, _ = player()
+    before = frame._subtitle_file_source
+    wrong = TimedTextSource([Cue(1000, 2000, "Different file")], frame._subtitle_generation + 1)
+    with pytest.raises(ValueError, match="does not match"):
+        frame._set_subtitle_cues(frame._subtitle_cues, wrong)
+    assert frame._subtitle_file_source is before
+
+
 @pytest.mark.parametrize("accepted,backend_ok", [(True, True), (False, True), (True, False)])
 def test_rate_dialog_saves_only_a_successfully_confirmed_application_value(accepted, backend_ok):
     instance, _, saved, env = app(["_set_app_tts_rate"])

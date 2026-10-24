@@ -108,6 +108,7 @@ class TimedTextSource:
             _integer(cue.end, "cue.end")
             if cue.end <= cue.start or not isinstance(cue.text, str):
                 raise ValueError("invalid timed text cue")
+        self._index = subtitle_cues.CueIndex(self.cues)
         self.generation = generation
         self._sequence = 0
         self._last_time = None
@@ -135,8 +136,8 @@ class TimedTextSource:
         index = None
         if enabled and ms is not None:
             self._last_time = ms
-            index = subtitle_cues.active(self.cues, ms) if ms >= 0 else None
-            self._latest_index = subtitle_cues.started(self.cues, ms) if ms >= 0 else None
+            index = self._index.active(ms) if ms >= 0 else None
+            self._latest_index = self._index.started(ms) if ms >= 0 else None
         cue = self.cues[index] if index is not None else None
         self._sequence += 1
         snapshot = SubtitleSnapshot(
