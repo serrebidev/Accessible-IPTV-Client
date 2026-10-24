@@ -188,8 +188,8 @@ class RecordingRelay:
                 self._closed = True
                 self._cond.notify_all()
                 connections = [c.connection for c in self._clients if c.connection is not None]
+        self._abort_source()
         if connections:
-            self._abort_source()
             for connection in connections:
                 try:
                     connection.shutdown(socket.SHUT_RDWR)

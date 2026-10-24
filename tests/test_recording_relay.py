@@ -309,6 +309,18 @@ def test_close_ends_the_stream_when_the_pipe_never_does(monkeypatch):
         relay.close(timeout=0.2)
 
 
+def test_close_aborts_a_stalled_source_without_a_player():
+    pipe = _Pipe()
+    relay = recording_relay.RecordingRelay(pipe)
+    try:
+        relay.close(timeout=0.01)
+        assert relay.closed
+        assert pipe.closed
+    finally:
+        pipe.end()
+        relay.close(timeout=0.2)
+
+
 def test_the_relay_refuses_a_request_without_its_token():
     """The relay serves the recording being made.
 
