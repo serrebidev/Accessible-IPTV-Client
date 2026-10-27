@@ -49,7 +49,22 @@ def test_pending_buffer_transition_is_failed_not_a_phantom_recording(monkeypatch
 
 
 def test_ready_buffer_reaches_recorder_and_keeps_dvr_id_and_output(monkeypatch, tmp_path):
-    ffmpeg = shutil.which('ffmpeg')
+    # A found ffmpeg is not necessarily runnable: on Windows, which()
+    # finds the repo-root ffmpeg.exe in the current directory first, and in
+    # CI that file is an unrunnable LFS pointer (WinError 216). Probe each
+    # candidate like tests/test_recorder.py's _available_ffmpeg and skip
+    # when none actually runs, instead of failing on the first path.
+    ffmpeg = None
+    for candidate in (recorder.get_ffmpeg_path(), shutil.which('ffmpeg')):
+        if not candidate:
+            continue
+        try:
+            probe = subprocess.run([candidate, '-version'], capture_output=True, timeout=15)
+        except OSError:
+            continue
+        if probe.returncode == 0:
+            ffmpeg = candidate
+            break
     if not ffmpeg:
         pytest.skip('Real FFmpeg unavailable')
     source = tmp_path / 'source.ts'
