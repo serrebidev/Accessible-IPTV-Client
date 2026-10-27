@@ -3,6 +3,8 @@ from concurrent.futures import Future
 from io import BytesIO
 import queue
 import time
+
+import pytest
 from types import SimpleNamespace
 import client_timeshift
 from client_timeshift import LiveBufferMixin
@@ -33,7 +35,7 @@ def harness(monkeypatch):
     class Session(real):
         def start(self, ffmpeg, source, headers=None, *, cap_mbps=None):
             active[0] += 1
-            events.append(('open', source, active[0]))
+            events.append(('open', source, active[0], cap_mbps))
             assert active[0] == 1
             owner = self
             class Process:
@@ -70,6 +72,8 @@ def harness(monkeypatch):
             if not url.startswith('http://127.0.0.1:'):
                 assert active[0] == 0
                 events.append(('direct', url, active[0]))
+            if self._internal_player_frame is None:
+                self._internal_player_frame = Frame()
             self._internal_player_frame._current_url, self._internal_player_channel = url, channel
     app = App()
     def pump(predicate):
@@ -153,3 +157,36 @@ def test_nonzero_native_clock_is_not_added_to_logical_segment_origin(monkeypatch
     assert app._buffer_position()[2] == 20.5
     frame.clock = 1000
     assert app._buffer_position()[2] == 21.5
+
+
+@pytest.mark.parametrize('saved,expected', [(2.5, 2.5), ('3.5', 3.5), (0, 0.0),
+    ('invalid', 0.0), (-2, 0.0), (0.1, 0.25), (900, 500.0)])
+def test_cold_start_buffer_uses_saved_normalized_cap_without_creating_frame(monkeypatch, saved, expected):
+    app, events, _, pump, _ = harness(monkeypatch)
+    app._internal_player_frame = None
+    app.config['internal_player_variant_max_mbps'] = saved
+    before = dict(app.config)
+    try:
+        app._launch_stream('https://example.invalid/master.m3u8', channel={'url': 'master'})
+        pump(lambda: app._live_buffer_work_done.is_set())
+        opened = next(event for event in events if event[0] == 'open')
+        assert opened[3] == expected
+        assert app.config == before  # normalization must not mutate live config on the worker
+    finally:
+        app._close_live_buffer_player()
+        app._live_buffer_retiring_done.wait(3)
+        app._live_buffers.close()
+
+
+def test_existing_player_cap_remains_authoritative(monkeypatch):
+    app, events, _, pump, _ = harness(monkeypatch)
+    app.config['internal_player_variant_max_mbps'] = 8
+    app._internal_player_frame._variant_max_mbps = 2
+    try:
+        app._launch_stream('https://example.invalid/master.m3u8', channel={'url': 'master'})
+        pump(lambda: app._live_buffer_work_done.is_set())
+        assert next(event for event in events if event[0] == 'open')[3] == 2
+    finally:
+        app._close_live_buffer_player()
+        app._live_buffer_retiring_done.wait(3)
+        app._live_buffers.close()

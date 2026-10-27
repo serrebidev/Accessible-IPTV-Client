@@ -3249,6 +3249,10 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
         url = self._resolve_live_url(channel)
         if not url:
             raise RuntimeError(_("Could not find a stream URL for this channel."))
+        if getattr(self, '_live_buffer_pending', False):
+            # A scheduler callback must return a Recording or raise. Returning
+            # None here would leave the job falsely marked as recording.
+            raise RuntimeError(_("The live buffer is switching sources. The scheduled recording could not start."))
         # Issue #33: preempt any advisory classification probe before the
         # busy check, so its connection cannot refuse this recording on a
         # one-stream provider.
@@ -3261,9 +3265,6 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
         # stream: remap it to the audio preference instead of writing an
         # audio-only MKV/MP4. Other stored choices are left alone, preserving
         # the job's pre-existing behaviour.
-        buffers = getattr(self, '_live_buffers', None)
-        if getattr(self, '_live_buffer_pending', False) or (buffers is not None and buffers.owns_url(channel.get('url', ''))):
-            return
         media, _source = self._classify_channel_media(channel)
         fmt, remapped = media_type.remap_format_for_media(
             normalize_recording_format(job.get("format")), media,
@@ -4100,6 +4101,9 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
     def _probe_channel_media_now(self, channel) -> None:
         """Start a worker-thread probe unless the type is known or in flight."""
         if not channel:
+            return
+        buffers = getattr(self, '_live_buffers', None)
+        if getattr(self, '_live_buffer_pending', False) or (buffers is not None and buffers.owns_url(channel.get('url', ''))):
             return
         media, _source = self._classify_channel_media(channel)
         if media != media_type.MEDIA_UNKNOWN:

@@ -6,7 +6,7 @@ import wx
 from http_headers import channel_http_headers
 from i18n import gettext as _
 from modal_guard import message_box
-from options import save_config
+from options import save_config, resolve_internal_player_settings
 import user_guide
 
 LOG = logging.getLogger(__name__)
@@ -115,6 +115,11 @@ class LiveBufferMixin:
         previous, retiring = self._live_buffer_work_done, self._live_buffer_retiring_done
         done = self._live_buffer_work_done = threading.Event()
         frame = getattr(self, '_internal_player_frame', None)
+        # Resolve from a snapshot on the GUI thread, before any source starts.
+        # Do not construct wx/libVLC here or mutate config on the ingest worker.
+        saved_cap = resolve_internal_player_settings(dict(self.config)).variant_max_mbps
+        variant_cap = (getattr(frame, '_variant_max_mbps', saved_cap)
+                       if frame is not None and not getattr(frame, '_destroyed', False) else saved_cap)
         stopped = None
         if frame is not None and not getattr(frame, '_destroyed', False):
             frame._buffer_transition = True
@@ -158,7 +163,7 @@ class LiveBufferMixin:
                                 raise RuntimeError('recording acquired provider during buffer startup')
                             registry.put(url, headers, session)
                         session.start(get_ffmpeg_path(), url, headers,
-                                      cap_mbps=getattr(frame, '_variant_max_mbps', None))
+                                      cap_mbps=variant_cap)
                     else:
                         lease = session.acquire()
                     session.wait_ready(30, cancel)
