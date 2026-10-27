@@ -3383,3 +3383,66 @@ msgstr "Продолжить воспроизведение с {time}?"
 #: internal_player.py
 msgid "The saved playback position could not be restored."
 msgstr "Не удалось восстановить сохранённую позицию воспроизведения."
+
+msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
+msgstr "Внешние файлы субтитров не синхронизированы с локальным буфером эфира. Используйте встроенные субтитры потока."
+
+msgid "Fade-out duration before stopping (seconds); 0 disables fading."
+msgstr "Длительность плавного уменьшения громкости перед остановкой (секунды); 0 отключает уменьшение."
+
+msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
+msgstr "Хранить от 1 до 30 минут эфира; 0 отключает локальный буфер."
+
+msgid "Live input ended; retained history is still available."
+msgstr "Прямой эфир завершён; сохранённая история остаётся доступной."
+
+msgid "Local Live Buffer"
+msgstr "Локальный буфер эфира"
+
+msgid "Local Live Buffer..."
+msgstr "Локальный буфер эфира…"
+
+msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
+msgstr "Максимальный размер локального буфера на сеанс (МиБ). При достижении любого ограничения самые старые данные удаляются."
+
+msgid "MiB:"
+msgstr "МиБ:"
+
+msgid "No local live history is available."
+msgstr "Локальная история эфира недоступна."
+
+msgid "Playback volume is fading before the sleep timer stops it."
+msgstr "Громкость воспроизведения плавно уменьшается перед остановкой по таймеру сна."
+
+msgid "Return to Live"
+msgstr "Вернуться к прямому эфиру"
+
+msgid "Rewind Live TV"
+msgstr "Перемотать эфир назад"
+
+msgid "Rewind Live TV..."
+msgstr "Перемотать эфир назад…"
+
+msgid "Seconds behind the latest buffered picture; 0 returns to live."
+msgstr "Отставание в секундах от последнего сохранённого кадра; 0 возвращает к прямому эфиру."
+
+msgid "Seconds:"
+msgstr "Секунды:"
+
+msgid "Stop local buffered playback before switching to a cast device."
+msgstr "Остановите воспроизведение из локального буфера перед переключением на устройство трансляции."
+
+msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
+msgstr "Локальный буфер ещё используется для записи. Остановите запись перед отключением буфера."
+
+msgid "The local buffer stopped because its storage or input failed."
+msgstr "Локальный буфер остановлен из-за ошибки хранилища или источника."
+
+msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
+msgstr "Не удалось запустить локальный буфер. Дополнительное соединение с провайдером не открыто. Отключите буфер, чтобы повторить прямое воспроизведение."
+
+msgid "The old buffered position expired; playback moved to the retained window."
+msgstr "Прежняя позиция больше недоступна; воспроизведение перенесено в сохранённый диапазон."
+
+msgid "The paused position expired. Playback resumed at the oldest retained picture."
+msgstr "Позиция паузы больше недоступна. Воспроизведение возобновлено с самого раннего сохранённого кадра."

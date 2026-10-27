@@ -1037,11 +1037,29 @@ class RecordingManager:
         audio_track_count: int = 0,
         share_with_player: bool = False,
         connection_key: str = "",
+        _buffer_lease=None,
+        _buffer_checked=False,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
         if fmt not in RECORDING_FORMATS:
             fmt = DEFAULT_RECORDING_FORMAT
+
+        registry = getattr(self, 'live_buffer_registry', None)
+        if registry is not None and not _buffer_checked:
+            with registry.ingest_gate:
+                local, local_headers, lease = registry.recording_input(url, headers)
+                try:
+                    return self.start(local, display_name, fmt, local_headers, out_dir,
+                        key=key or url, metadata=metadata, on_finish=on_finish, duration=duration,
+                        show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
+                        audio_track=audio_track, audio_track_count=audio_track_count,
+                        share_with_player=share_with_player, connection_key=connection_key,
+                        _buffer_lease=lease, _buffer_checked=True)
+                except Exception:
+                    if lease is not None:
+                        lease.release()
+                    raise
 
         # Check before creating files or opening ffmpeg.  A scheduled and a
         # manual recording use different recording keys, so ``is_recording``
@@ -1062,7 +1080,7 @@ class RecordingManager:
                 key=key, metadata=metadata, on_finish=on_finish, duration=duration,
                 show_stats=show_stats, keep_partial=keep_partial, audio_track=audio_track,
                 audio_track_count=audio_track_count, share_with_player=share_with_player,
-                connection_key=connection_key)
+                connection_key=connection_key, buffer_lease=_buffer_lease)
         finally:
             with self._lock:
                 self._reserved_paths.discard(out_path)
@@ -1070,7 +1088,7 @@ class RecordingManager:
     def _start_reserved(self, url, display_name, fmt, headers, out_dir, out_path, *, key,
                         metadata, on_finish, duration, show_stats, keep_partial,
                         audio_track, audio_track_count, share_with_player,
-                        connection_key) -> Recording:
+                        connection_key, buffer_lease=None) -> Recording:
         # ffmpeg cannot resume a partial file, so for download-style captures the
         # output goes to a ``.part`` sibling and is renamed into place only when
         # the download completes; a canceled or failed run leaves nothing behind.
@@ -1135,6 +1153,7 @@ class RecordingManager:
                             metadata, log_path=log_path, command=cmd, partial_path=partial_path,
                             connection_key=connection_key)
             rec.planned_seconds = _planned_seconds(duration, rec.metadata, rec.started_at)
+            rec.buffer_lease = buffer_lease
             self._recordings[rec_id] = rec
             self._reserved_connection_keys.discard(connection_key)
         if share_with_player:
@@ -1273,6 +1292,10 @@ class RecordingManager:
             _close_stdin(proc)
         if rec.relay is not None:
             rec.relay.close()
+        lease = getattr(rec, 'buffer_lease', None)
+        if lease is not None:
+            lease.release()
+            rec.buffer_lease = None
         rc = proc.returncode if proc else -1
         if rec.log_path:
             # Deliberately not rewritten: the log keeps the stream URL and

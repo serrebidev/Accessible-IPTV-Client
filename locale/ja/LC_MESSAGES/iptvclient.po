@@ -3383,3 +3383,66 @@ msgstr "{time} から再生を再開しますか？"
 #: internal_player.py
 msgid "The saved playback position could not be restored."
 msgstr "保存された再生位置を復元できませんでした。"
+
+msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
+msgstr "外部字幕ファイルはローカルのライブバッファーと同期されません。ストリームに埋め込まれた字幕を使用してください。"
+
+msgid "Fade-out duration before stopping (seconds); 0 disables fading."
+msgstr "停止前に音量を徐々に下げる時間（秒）。0 で無効になります。"
+
+msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
+msgstr "ライブ映像を 1～30 分間保持します。0 でローカルバッファーを無効にします。"
+
+msgid "Live input ended; retained history is still available."
+msgstr "ライブ入力が終了しました。保持された履歴は引き続き利用できます。"
+
+msgid "Local Live Buffer"
+msgstr "ローカルライブバッファー"
+
+msgid "Local Live Buffer..."
+msgstr "ローカルライブバッファー…"
+
+msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
+msgstr "セッションごとのローカルバッファーの上限（MiB）。いずれかの制限に達すると古いデータから削除されます。"
+
+msgid "MiB:"
+msgstr "MiB："
+
+msgid "No local live history is available."
+msgstr "利用可能なローカルライブ履歴がありません。"
+
+msgid "Playback volume is fading before the sleep timer stops it."
+msgstr "スリープタイマーによる停止前に再生音量を徐々に下げています。"
+
+msgid "Return to Live"
+msgstr "ライブに戻る"
+
+msgid "Rewind Live TV"
+msgstr "ライブ映像を巻き戻す"
+
+msgid "Rewind Live TV..."
+msgstr "ライブ映像を巻き戻す…"
+
+msgid "Seconds behind the latest buffered picture; 0 returns to live."
+msgstr "最新の保持映像からの遅延（秒）。0 でライブに戻ります。"
+
+msgid "Seconds:"
+msgstr "秒："
+
+msgid "Stop local buffered playback before switching to a cast device."
+msgstr "キャスト先の機器に切り替える前にローカルバッファーの再生を停止してください。"
+
+msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
+msgstr "ローカルバッファーは録画に使用されています。無効にする前に録画を停止してください。"
+
+msgid "The local buffer stopped because its storage or input failed."
+msgstr "ストレージまたは入力の障害によりローカルバッファーが停止しました。"
+
+msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
+msgstr "ローカルライブバッファーを開始できませんでした。配信元への追加接続は開いていません。バッファーを無効にして直接再生を再試行してください。"
+
+msgid "The old buffered position expired; playback moved to the retained window."
+msgstr "以前の位置は保持期限を過ぎたため、再生を保持範囲内に移動しました。"
+
+msgid "The paused position expired. Playback resumed at the oldest retained picture."
+msgstr "一時停止位置は保持期限を過ぎました。保持されている最も古い映像から再生を再開しました。"

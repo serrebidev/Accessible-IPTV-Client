@@ -3383,3 +3383,66 @@ msgstr "Riprendere la riproduzione da {time}?"
 #: internal_player.py
 msgid "The saved playback position could not be restored."
 msgstr "Impossibile ripristinare la posizione di riproduzione salvata."
+
+msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
+msgstr "I file di sottotitoli esterni non sono sincronizzati con il buffer locale della diretta. Utilizzare i sottotitoli incorporati nel flusso."
+
+msgid "Fade-out duration before stopping (seconds); 0 disables fading."
+msgstr "Durata della riduzione graduale del volume prima dell’arresto (secondi); 0 la disattiva."
+
+msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
+msgstr "Conservare da 1 a 30 minuti della diretta; 0 disattiva il buffer locale."
+
+msgid "Live input ended; retained history is still available."
+msgstr "Il flusso in diretta è terminato; la cronologia conservata rimane disponibile."
+
+msgid "Local Live Buffer"
+msgstr "Buffer locale della diretta"
+
+msgid "Local Live Buffer..."
+msgstr "Buffer locale della diretta…"
+
+msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
+msgstr "Dimensione massima del buffer locale per sessione (MiB). I dati più vecchi vengono eliminati al raggiungimento di uno dei limiti."
+
+msgid "MiB:"
+msgstr "MiB:"
+
+msgid "No local live history is available."
+msgstr "Non è disponibile alcuna cronologia locale della diretta."
+
+msgid "Playback volume is fading before the sleep timer stops it."
+msgstr "Il volume diminuisce gradualmente prima dell’arresto tramite il timer."
+
+msgid "Return to Live"
+msgstr "Torna alla diretta"
+
+msgid "Rewind Live TV"
+msgstr "Riavvolgi la TV in diretta"
+
+msgid "Rewind Live TV..."
+msgstr "Riavvolgi la TV in diretta…"
+
+msgid "Seconds behind the latest buffered picture; 0 returns to live."
+msgstr "Secondi di ritardo rispetto all’ultima immagine conservata; 0 torna alla diretta."
+
+msgid "Seconds:"
+msgstr "Secondi:"
+
+msgid "Stop local buffered playback before switching to a cast device."
+msgstr "Arrestare la riproduzione locale memorizzata prima di passare a un dispositivo di trasmissione."
+
+msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
+msgstr "Il buffer locale alimenta ancora una registrazione. Arrestarla prima di disattivarlo."
+
+msgid "The local buffer stopped because its storage or input failed."
+msgstr "Il buffer locale si è arrestato a causa di un errore di archiviazione o della sorgente."
+
+msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
+msgstr "Impossibile avviare il buffer locale. Non è stata aperta alcuna connessione aggiuntiva al fornitore. Disattivare il buffer per riprovare la riproduzione diretta."
+
+msgid "The old buffered position expired; playback moved to the retained window."
+msgstr "La vecchia posizione è scaduta; la riproduzione è stata spostata nell’intervallo conservato."
+
+msgid "The paused position expired. Playback resumed at the oldest retained picture."
+msgstr "La posizione in pausa è scaduta. La riproduzione riprende dall’immagine più vecchia conservata."

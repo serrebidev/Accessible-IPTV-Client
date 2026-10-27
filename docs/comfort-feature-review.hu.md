@@ -1,5 +1,7 @@
 # A korábbi funkciójavaslatok ellenőrzése és a most elkészített bővítések
 
+Kiegészítés: a helyi tárolás és a fokozatos halkítás helyreállított bővítését a [külön leírás](local-live-buffer.hu.md) ismerteti. Az alábbi, hiányzó pufferről és halkításról szóló megállapítások az eredeti 94-es pull request állapotát rögzítik.
+
 Ellenőrzött alap: v1.150.44, 2026. október 27.
 
 A programban már létezik napi, heti és sorozatfelvétel; állítható az automatikus bemondások részletessége; módosíthatók a gyorsbillentyűk; kereshető a súgó, és másolható diagnosztikai jelentés. A sorozatfelvétel a műsorcím és a csatorna alapján keres, tehát az epizódismétlések biztos felismerését nem szabad neki tulajdonítani.

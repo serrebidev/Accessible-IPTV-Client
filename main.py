@@ -93,6 +93,7 @@ import dvr
 import favorites
 import settings_backup
 import shortcuts
+from client_timeshift import LiveBufferMixin
 import power
 import user_guide
 # Pure helpers live outside this module: the dialogs and the worker code import
@@ -875,7 +876,7 @@ def _channel_numbers(channel: Dict[str, str]) -> frozenset:
 
 
 
-class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
+class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
     # the menu translates it at build time via _(label).
@@ -3217,6 +3218,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         recorder = getattr(self, "recorder", None)
         if recorder is not None and recorder.has_active_connection(key):
             return True
+        buffers = getattr(self, '_live_buffers', None)
+        if buffers is not None and buffers.has_provider(key) and not buffers.owns_url(url):
+            return True
         if include_player:
             frame = getattr(self, "_internal_player_frame", None)
             if frame is not None and not getattr(frame, "_destroyed", False):
@@ -3257,6 +3261,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         # stream: remap it to the audio preference instead of writing an
         # audio-only MKV/MP4. Other stored choices are left alone, preserving
         # the job's pre-existing behaviour.
+        buffers = getattr(self, '_live_buffers', None)
+        if getattr(self, '_live_buffer_pending', False) or (buffers is not None and buffers.owns_url(channel.get('url', ''))):
+            return
         media, _source = self._classify_channel_media(channel)
         fmt, remapped = media_type.remap_format_for_media(
             normalize_recording_format(job.get("format")), media,
@@ -3272,8 +3279,10 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         # here which audio tracks it carries. The player is not consulted from
         # off the UI thread: the channel's remembered track and the audio
         # preferences decide.
+        local = getattr(self, '_buffer_probe_input', None)
+        probe_url, probe_headers = local(url, headers) if callable(local) else (url, headers)
         choice = self._recording_audio_choice(
-            url, headers, self._recording_audio_intent(channel, from_player=False))
+            probe_url, probe_headers, self._recording_audio_intent(channel, from_player=False))
         audio_track, audio_count = choice if choice else (None, 0)
         rec = self.recorder.start(
             url,
@@ -3386,6 +3395,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         # stream, the recording opens it, and the player then watches the
         # recording's own copy of it through a local relay.
         share = self._player_is_showing(channel)
+        lookup = getattr(self, '_buffer_source', None)
+        if callable(lookup) and lookup(url, headers) is not None:
+            share = False
         # Issue #33: a background classification probe is advisory; the real
         # recording preempts it so its open connection cannot refuse this one
         # on a one-stream provider.
@@ -3419,7 +3431,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
                     # the provider still counts it for a moment after that.
                     _wait_for_player_stop(player_stopped)
                     catchup_direct.settle_media_session()
-                choice = self._recording_audio_choice(url, headers, intent) if intent else None
+                local = getattr(self, '_buffer_probe_input', None)
+                probe_url, probe_headers = local(url, headers) if callable(local) else (url, headers)
+                choice = self._recording_audio_choice(probe_url, probe_headers, intent) if intent else None
                 if share and intent:
                     catchup_direct.settle_media_session()  # ...and the track probe's
             except Exception as err:
@@ -4143,6 +4157,8 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
             # bail if a user-initiated session preempted this probe while it
             # queued: the probe must never steal a one-stream provider's slot.
             if (identity in self._media_probe_inflight
+                    and not getattr(self, '_live_buffer_pending', False)
+                    and not (getattr(self, '_live_buffers', None) is not None and self._live_buffers.owns_url(url))
                     and not self._internal_player_has_media()
                     and not IPTVClient._single_stream_provider_busy(self, url)):
                 media = probe_media_type(url, merge_headers(headers, url_headers),
@@ -5135,6 +5151,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
             wx.CallAfter(frame._on_toggle_pause)
 
     def _tray_stop_player(self):
+        close_buffer = getattr(self, '_close_live_buffer_player', None)
+        if callable(close_buffer):
+            close_buffer()
         frame = getattr(self, "_internal_player_frame", None)
         if frame:
             wx.CallAfter(lambda: frame.stop(manual=True))
@@ -5269,6 +5288,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         self.play_selected()
 
     def _menu_stop_player(self, _=None):
+        close_buffer = getattr(self, '_close_live_buffer_player', None)
+        if callable(close_buffer):
+            close_buffer()
         frame = getattr(self, "_internal_player_frame", None)
         if frame:
             frame.stop(manual=True)
@@ -5397,6 +5419,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
                 self._release_recordings_on_exit()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            shutdown_buffers = getattr(self, '_shutdown_live_buffers', None)
+            if callable(shutdown_buffers):
+                shutdown_buffers()
             try:
                 self._subtitle_output_timer.Stop()
                 self._subtitle_session.cancel_session(stop_playback=True)
@@ -6729,6 +6754,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
     def _on_internal_player_closed(self, closed_frame=None) -> None:
         if closed_frame is not None and closed_frame is not getattr(self, "_internal_player_frame", None):
             return
+        close_buffer = getattr(self, '_close_live_buffer_player', None)
+        if callable(close_buffer):
+            close_buffer()
         session = getattr(self, "_subtitle_session", None)
         if session and session.is_current(getattr(self, "_builtin_subtitle_token", None)):
             session.cancel_session()
@@ -6813,6 +6841,9 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         configure_resume = getattr(frame, "configure_vod_resume", None)
         if callable(configure_resume):
             configure_resume(self.config, lambda: save_config(self.config))
+        configure_sleep = getattr(frame, 'configure_sleep_preferences', None)
+        if callable(configure_sleep):
+            configure_sleep(self.config, lambda: save_config(self.config))
         return frame
 
     def _on_player_subtitle_cue(self, text: str, start_ms=None, end_ms=None,
@@ -7320,12 +7351,17 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
         channel: Optional[Dict[str, str]] = None,
         show_internal_player: Optional[bool] = None,
         focus_player: bool = True,
+        _buffer_bypass: bool = False,
     ):
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
             LOG.warning("_launch_stream: No URL provided")
             message_box(_("Could not find stream URL for this selection."), _("Not Found"),
                           wx.OK | wx.ICON_WARNING)
+            return
+        intercept = getattr(self, '_intercept_live_buffer', None)
+        if not _buffer_bypass and callable(intercept) and intercept(
+                url, title, stream_kind, channel, show_internal_player, focus_player):
             return
         if IPTVClient._single_stream_provider_has_recording(self, url):
             message_box(IPTVClient._single_stream_provider_refusal(self),
@@ -7426,6 +7462,8 @@ class IPTVClient(EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin,
                 if stream_kind == "live" and (channel or {}).get("kind") == "movie":
                     stream_kind = "vod"
                     self._internal_player_stream_kind = stream_kind
+                buffered = getattr(self, '_live_buffer_current', None)
+                frame._buffer_owned_url = url if buffered and buffered['url'] == url else None
                 frame.play(
                     url,
                     display_title,

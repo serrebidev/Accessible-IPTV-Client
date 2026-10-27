@@ -3383,3 +3383,66 @@ msgstr "从 {time} 继续播放吗？"
 #: internal_player.py
 msgid "The saved playback position could not be restored."
 msgstr "无法恢复保存的播放位置。"
+
+msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
+msgstr "外部字幕文件未与本地直播缓冲区同步。请使用流中的内嵌字幕。"
+
+msgid "Fade-out duration before stopping (seconds); 0 disables fading."
+msgstr "停止前逐渐降低音量的时长（秒）；设为 0 可禁用。"
+
+msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
+msgstr "保留 1–30 分钟的直播内容；设为 0 可禁用本地缓冲区。"
+
+msgid "Live input ended; retained history is still available."
+msgstr "直播输入已结束；保留的历史内容仍然可用。"
+
+msgid "Local Live Buffer"
+msgstr "本地直播缓冲区"
+
+msgid "Local Live Buffer..."
+msgstr "本地直播缓冲区…"
+
+msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
+msgstr "每个会话的本地缓冲区大小上限（MiB）。达到任一限制时将删除最早的数据。"
+
+msgid "MiB:"
+msgstr "MiB："
+
+msgid "No local live history is available."
+msgstr "没有可用的本地直播历史内容。"
+
+msgid "Playback volume is fading before the sleep timer stops it."
+msgstr "睡眠定时器停止播放前正在逐渐降低音量。"
+
+msgid "Return to Live"
+msgstr "返回直播"
+
+msgid "Rewind Live TV"
+msgstr "回退直播"
+
+msgid "Rewind Live TV..."
+msgstr "回退直播…"
+
+msgid "Seconds behind the latest buffered picture; 0 returns to live."
+msgstr "相对于最新缓冲画面的延迟秒数；设为 0 可返回直播。"
+
+msgid "Seconds:"
+msgstr "秒："
+
+msgid "Stop local buffered playback before switching to a cast device."
+msgstr "切换到投放设备前，请停止本地缓冲播放。"
+
+msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
+msgstr "本地缓冲区仍在供录制使用。请先停止录制，再禁用缓冲区。"
+
+msgid "The local buffer stopped because its storage or input failed."
+msgstr "本地缓冲区因存储或输入故障而停止。"
+
+msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
+msgstr "无法启动本地直播缓冲区。未打开额外的提供商连接。请禁用缓冲区后重试直接播放。"
+
+msgid "The old buffered position expired; playback moved to the retained window."
+msgstr "原缓冲位置已过期；播放已移至保留范围。"
+
+msgid "The paused position expired. Playback resumed at the oldest retained picture."
+msgstr "暂停位置已过期。已从最早保留的画面恢复播放。"

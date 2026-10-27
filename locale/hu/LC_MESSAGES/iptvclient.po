@@ -3383,3 +3383,66 @@ msgstr "Folytatja a lejátszást a következő időponttól: {time}?"
 #: internal_player.py
 msgid "The saved playback position could not be restored."
 msgstr "A lejátszást nem sikerült a mentett időponttól folytatni."
+
+msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
+msgstr "A külső feliratfájlok nincsenek összehangolva a helyben tárolt élő adással. Ebben az üzemmódban az adásba ágyazott feliratokat használja."
+
+msgid "Fade-out duration before stopping (seconds); 0 disables fading."
+msgstr "A leállítás előtti fokozatos halkítás időtartama másodpercben; 0-val kikapcsolható."
+
+msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
+msgstr "Az élő adás megőrzésének időtartama percben (1–30); 0-val kikapcsolható a helyi tárolás."
+
+msgid "Live input ended; retained history is still available."
+msgstr "Az élő adatfolyam véget ért; a megőrzött részletek továbbra is elérhetők."
+
+msgid "Local Live Buffer"
+msgstr "Élő adás helyi tárolása"
+
+msgid "Local Live Buffer..."
+msgstr "Élő adás helyi tárolása…"
+
+msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
+msgstr "A helyi tárolás munkamenetenkénti felső mérethatára MiB-ban. Bármelyik korlát elérésekor a legrégebbi adatok törlődnek."
+
+msgid "MiB:"
+msgstr "MiB:"
+
+msgid "No local live history is available."
+msgstr "Nincs elérhető, helyben tárolt adásrészlet."
+
+msgid "Playback volume is fading before the sleep timer stops it."
+msgstr "Az elalvásidőzítő a leállítás előtt fokozatosan csökkenti a műsor hangerejét."
+
+msgid "Return to Live"
+msgstr "Visszatérés az élő adáshoz"
+
+msgid "Rewind Live TV"
+msgstr "Élő adás visszatekerése"
+
+msgid "Rewind Live TV..."
+msgstr "Élő adás visszatekerése…"
+
+msgid "Seconds behind the latest buffered picture; 0 returns to live."
+msgstr "A legfrissebb tárolt képhez viszonyított késleltetés másodpercben; 0-val visszatérhet az élő adáshoz."
+
+msgid "Seconds:"
+msgstr "Másodperc:"
+
+msgid "Stop local buffered playback before switching to a cast device."
+msgstr "Távoli lejátszóeszközre váltás előtt állítsa le a helyben tárolt adás lejátszását."
+
+msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
+msgstr "A helyi tároló még folyamatban lévő felvételt szolgál ki. Kikapcsolása előtt állítsa le a rögzítést."
+
+msgid "The local buffer stopped because its storage or input failed."
+msgstr "A helyi tárolás háttértár- vagy adatforráshiba miatt leállt."
+
+msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
+msgstr "Az élő adás helyi tárolását nem sikerült elindítani. Nem nyílt további szolgáltatói kapcsolat. A közvetlen lejátszás ismételt megkísérléséhez kapcsolja ki a helyi tárolást."
+
+msgid "The old buffered position expired; playback moved to the retained window."
+msgstr "A korábbi pozíció már nem érhető el; a lejátszás a megőrzött tartományra lépett."
+
+msgid "The paused position expired. Playback resumed at the oldest retained picture."
+msgstr "A szüneteltetés helye már nem érhető el. A lejátszás a legrégebbi megőrzött képtől folytatódik."

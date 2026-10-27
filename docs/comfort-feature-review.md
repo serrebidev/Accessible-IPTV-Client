@@ -1,5 +1,7 @@
 # Review of seven proposed features and a focused comfort/accessibility extension
 
+Follow-up: [local-live-buffer.md](local-live-buffer.md) describes the recovered local buffer and configurable sleep fade. The no-buffer/no-fade statements below describe the original #94 only.
+
 Base: `b93181494a383df63017cb69c3a1fe5ce60b68d6` (v1.150.44), inspected 2026-10-27.
 
 ## What already exists

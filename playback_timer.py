@@ -22,6 +22,11 @@ class PlaybackTimer:
             return 0
         return max(1, math.ceil((self.deadline - self._clock()) / 60))
 
+    def fade_gain(self, seconds):
+        if self.deadline is None or seconds <= 0:
+            return 1.0
+        return max(0.0, min(1.0, (self.deadline - self._clock()) / seconds))
+
     def take_due(self, generation):
         if generation != self.generation or self.deadline is None or self._clock() < self.deadline:
             return False

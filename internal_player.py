@@ -215,6 +215,12 @@ class InternalPlayerFrame(wx.Frame):
         self._on_record_cb = on_record
         self._sleep_countdown = PlaybackTimer()
         self._sleep_call = None
+        self._sleep_gain = 1.0
+        self._sleep_volume_dirty = False
+        self._sleep_fade_seconds = 5
+        self._sleep_config = None
+        self._sleep_save = None
+        self._sleep_fading = False
         self._resume_config = None
         self._resume_save = None
         self._resume_key = ""
@@ -544,6 +550,9 @@ class InternalPlayerFrame(wx.Frame):
         m_play_pause = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Play/Pause"), "play_pause"))
         m_stop = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Stop"), "stop"))
         m_sleep = playback_menu.Append(wx.ID_ANY, _("Sleep Timer..."))
+        m_buffer = playback_menu.Append(wx.ID_ANY, _("Local Live Buffer..."))
+        m_rewind = playback_menu.Append(wx.ID_ANY, _("Rewind Live TV..."))
+        m_live = playback_menu.Append(wx.ID_ANY, _("Return to Live"))
         self.play_pause_menu_item = m_play_pause
         self.stop_menu_item = m_stop
         self.record_menu_item = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Record"), "record"))
@@ -578,6 +587,9 @@ class InternalPlayerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, lambda _evt: self._on_toggle_pause(), m_play_pause)
         self.Bind(wx.EVT_MENU, lambda _evt: self.stop(manual=True), m_stop)
         self.Bind(wx.EVT_MENU, self._configure_sleep_timer, m_sleep)
+        self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._configure_live_buffer(), m_buffer)
+        self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._seek_live_buffer(), m_rewind)
+        self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._return_live_buffer(), m_live)
         self.Bind(wx.EVT_MENU, self._on_record, self.record_menu_item)
         self.Bind(wx.EVT_MENU, self._on_audio_device_menu, m_audio_device)
         self.Bind(wx.EVT_MENU, self._on_subtitle_menu_select)
@@ -603,6 +615,8 @@ class InternalPlayerFrame(wx.Frame):
             user_guide.set_menu_help(self, item, "subtitle-speech")
         user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
         user_guide.set_menu_help(self, m_sleep, "built-in-player")
+        for item in (m_buffer, m_rewind, m_live):
+            user_guide.set_menu_help(self, item, "built-in-player")
         user_guide.set_menu_help(self, self.record_menu_item, "recordings")
         user_guide.set_menu_help(self, m_cast, "casting")
 
@@ -874,6 +888,12 @@ class InternalPlayerFrame(wx.Frame):
         if getattr(self, "_resume_config", None) is not None:
             self._save_resume_checkpoint(force=True)
         manual_stop = manual or (_evt is not None)
+        cancel = getattr(self, '_cancel_sleep_timer', None)
+        if manual_stop and callable(cancel) and not getattr(self, '_buffer_transition', False):
+            cancel()
+        close_buffer = getattr(self, '_on_buffer_stop', None)
+        if manual_stop and callable(close_buffer) and not getattr(self, '_buffer_transition', False):
+            close_buffer()
         if manual_stop and self._gave_up:
             return None
         if manual_stop:
@@ -1211,6 +1231,9 @@ class InternalPlayerFrame(wx.Frame):
         return True
 
     def _resolve_stream_url(self, url: str, headers: Optional[Dict[str, object]] = None) -> Tuple[str, Optional[float]]:
+        if url == getattr(self, '_buffer_owned_url', None):
+            self._last_variant_url = None
+            return url, None
         cap = self._variant_max_mbps
         if not cap:
             self._last_variant_url = None
@@ -1844,6 +1867,9 @@ class InternalPlayerFrame(wx.Frame):
             target.SetFocus()
 
     def _on_toggle_pause(self, _event: Optional[wx.Event] = None) -> None:
+        resume = getattr(self, '_on_buffer_resume', None)
+        if getattr(self, '_is_paused', False) and callable(resume) and resume():
+            return
         if self._gave_up:
             return
         switch = getattr(self, "_vlc_switch", None)
@@ -2094,6 +2120,9 @@ class InternalPlayerFrame(wx.Frame):
         return name.rsplit(".", 1)[-1].strip() or "Unknown"
 
     def _on_timer(self, _event: wx.TimerEvent) -> None:
+        poll = getattr(self, '_on_buffer_poll', None)
+        if callable(poll) and poll():
+            return
         switch = getattr(self, "_vlc_switch", None)
         if switch is not None and not switch.done():
             return  # the old stream's Stopped state is not a dropout
@@ -2264,16 +2293,19 @@ class InternalPlayerFrame(wx.Frame):
         return
 
     def _schedule_volume_apply(self) -> None:
+        generation = getattr(self, "_vlc_generation", 0)
         def _apply() -> None:
-            if self._destroyed:
+            if self._destroyed or generation != getattr(self, "_vlc_generation", 0):
                 return
             try:
                 # Ensure audio is not muted (can happen with --intf=dummy)
                 self.player.audio_set_mute(False)
                 current = self.player.audio_get_volume()
-                if current >= 0:
+                if current >= 0 and not getattr(self, "_sleep_volume_dirty", False):
                     self._volume_value = current
-                self.player.audio_set_volume(self._volume_value)
+                self.player.audio_set_volume(round(self._volume_value * getattr(self, "_sleep_gain", 1.0)))
+                if getattr(self, "_sleep_gain", 1.0) == 1.0:
+                    self._sleep_volume_dirty = False
                 self._sync_volume_slider()
             except Exception:
                 LOG.debug("InternalPlayerFrame._schedule_volume_apply._apply: ignored exception", exc_info=True)
@@ -2315,7 +2347,7 @@ class InternalPlayerFrame(wx.Frame):
         # makes volume changes silently no-ops.
         try:
             self.player.audio_set_mute(False)
-            self.player.audio_set_volume(ival)
+            self.player.audio_set_volume(round(ival * getattr(self, "_sleep_gain", 1.0)))
         except Exception:
             LOG.debug("InternalPlayerFrame._apply_volume: ignored exception", exc_info=True)
 
@@ -2556,6 +2588,10 @@ class InternalPlayerFrame(wx.Frame):
         self._select_subtitle(track_id)
 
     def _load_subtitle_file(self, _event: wx.CommandEvent) -> None:
+        if getattr(self, '_live_buffer_active', False):
+            message_box(_("External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."),
+                        _("Subtitles"), wx.OK | wx.ICON_INFORMATION, parent=self)
+            return
         with wx.FileDialog(self, _("Load Subtitle File"),
                            wildcard=_("Subtitle files (*.srt;*.ass;*.ssa;*.vtt)") + "|*.srt;*.ass;*.ssa;*.vtt",
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dlg:
@@ -3072,7 +3108,34 @@ class InternalPlayerFrame(wx.Frame):
         except Exception:
             LOG.debug("Could not save playback checkpoint", exc_info=True)
 
-    def _configure_sleep_timer(self, _event=None) -> None:
+    def configure_sleep_preferences(self, config, save):
+        self._sleep_config, self._sleep_save = config, save
+        value = config.get('sleep_fade_seconds', 5)
+        self._sleep_fade_seconds = max(0, min(300, value)) if type(value) is int else 5
+
+    def _set_sleep_gain(self, gain):
+        self._sleep_gain = max(0.0, min(1.0, gain))
+        self._sleep_volume_dirty = True
+        native = getattr(self, '_vlc_generation', 0)
+        countdown = self._sleep_countdown.generation
+        def apply():
+            if (self._destroyed or native != getattr(self, '_vlc_generation', 0)
+                    or countdown != self._sleep_countdown.generation):
+                return
+            self.player.audio_set_volume(round(self._volume_value * self._sleep_gain))
+        self._vlc_call(apply)
+
+    def _cancel_sleep_timer(self):
+        self._sleep_countdown.set_minutes(0)
+        pending = getattr(self, '_sleep_call', None)
+        if pending is not None:
+            pending.Stop()
+        self._sleep_call = None
+        self._sleep_fading = False
+        if getattr(self, '_sleep_gain', 1.0) != 1.0 or getattr(self, '_sleep_volume_dirty', False):
+            self._set_sleep_gain(1.0)
+
+    def _configure_sleep_timer(self, _event=None):
         dlg = wx.NumberEntryDialog(
             self, _("Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."),
             _("Minutes:"), _("Sleep Timer"), self._sleep_countdown.remaining_minutes(), 0, 1440)
@@ -3083,21 +3146,57 @@ class InternalPlayerFrame(wx.Frame):
             minutes = dlg.GetValue()
         finally:
             dlg.Destroy()
+        seconds = getattr(self, '_sleep_fade_seconds', 5)
+        if minutes:
+            dlg = wx.NumberEntryDialog(self,
+                _("Fade-out duration before stopping (seconds); 0 disables fading."),
+                _("Seconds:"), _("Sleep Timer"), min(seconds, minutes * 60), 0, min(300, minutes * 60))
+            user_guide.set_help_topic(dlg, "built-in-player")
+            try:
+                if dlg.ShowModal() != wx.ID_OK:
+                    return
+                seconds = dlg.GetValue()
+            finally:
+                dlg.Destroy()
         if self._sleep_call is not None:
             self._sleep_call.Stop()
         generation = self._sleep_countdown.set_minutes(minutes)
-        self._sleep_call = wx.CallLater(minutes * 60_000, self._expire_sleep_timer, generation) if minutes else None
+        self._sleep_fade_seconds = seconds
+        self._sleep_fading = False
+        restore = getattr(self, '_set_sleep_gain', None)
+        if callable(restore):
+            restore(1.0)
+        config = getattr(self, '_sleep_config', None)
+        if minutes and isinstance(config, dict):
+            config['sleep_fade_seconds'] = seconds
+            save = getattr(self, '_sleep_save', None)
+            if callable(save):
+                try:
+                    save()
+                except Exception:
+                    LOG.debug('Could not save fade preference', exc_info=True)
+        delay = max(1, minutes * 60000 - seconds * 1000)
+        self._sleep_call = wx.CallLater(delay, self._expire_sleep_timer, generation) if minutes else None
 
-    def _expire_sleep_timer(self, generation) -> None:
+    def _expire_sleep_timer(self, generation):
         if self._destroyed or generation != self._sleep_countdown.generation:
             return
         if self._sleep_countdown.take_due(generation):
             self._sleep_call = None
             self.stop(manual=True)
         elif self._sleep_countdown.deadline is not None:
-            # Timer delivery can be early: keep the monotonic deadline authoritative.
             remaining = max(1, math.ceil((self._sleep_countdown.deadline - time.monotonic()) * 1000))
-            self._sleep_call = wx.CallLater(remaining, self._expire_sleep_timer, generation)
+            seconds = getattr(self, '_sleep_fade_seconds', 0)
+            gain = self._sleep_countdown.fade_gain(seconds)
+            if gain < 1.0:
+                self._set_sleep_gain(gain)
+                if not getattr(self, '_sleep_fading', False):
+                    self._sleep_fading = True
+                    self._update_status_label(_("Playback volume is fading before the sleep timer stops it."), priority=2)
+                delay = min(250, remaining)
+            else:
+                delay = max(1, remaining - seconds * 1000)
+            self._sleep_call = wx.CallLater(delay, self._expire_sleep_timer, generation)
 
     def _quiesce(self) -> None:
         """Mark the player closed so nothing schedules more work on it."""
