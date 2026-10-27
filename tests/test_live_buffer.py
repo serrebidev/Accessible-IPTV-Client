@@ -127,7 +127,8 @@ def test_hls_master_selects_one_variant_and_preserves_headers(monkeypatch):
 @pytest.mark.parametrize('payload', [
     b'#EXTM3U\n#EXT-X-MEDIA:TYPE=SUBTITLES,URI="subs.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=1\na.m3u8\n',
     b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nfile:///private.m3u8\n',
-    b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nmaster.m3u8\n', b'x' * (256 * 1024 + 1)])
+    b'#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nmaster.m3u8\n', b'x' * (256 * 1024 + 1)],
+    ids=['rendition-loss', 'protocol-escape', 'cycle', 'oversize-256k'])
 def test_hls_metadata_refuses_rendition_loss_protocol_escape_cycles_and_oversize(monkeypatch, payload):
     from io import BytesIO
     from live_buffer import resolve_hls_input
