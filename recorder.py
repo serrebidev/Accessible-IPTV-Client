@@ -18,6 +18,7 @@ import re
 import subprocess
 import threading
 import time
+import recording_storage
 from typing import Any, Callable, Dict, List, Optional
 
 LOG = logging.getLogger(__name__)
@@ -998,6 +999,8 @@ class RecordingManager:
         # Output paths chosen for recordings that are still starting.
         self._reserved_paths = set()
         self._next_id = 1
+        self._storage_gate = threading.RLock()
+        self.storage_min_mib = recording_storage.DEFAULT_RESERVE_MIB
 
     # -- queries -----------------------------------------------------------
     def list_active(self) -> List[Recording]:
@@ -1039,11 +1042,25 @@ class RecordingManager:
         connection_key: str = "",
         _buffer_lease=None,
         _buffer_checked=False,
+        _storage_checked=False,
     ) -> Recording:
         if not url:
             raise ValueError("No stream URL to record.")
         if fmt not in RECORDING_FORMATS:
             fmt = DEFAULT_RECORDING_FORMAT
+
+        if not _storage_checked:
+            # Serialize concurrent starts through validation and registration.
+            # A floor is not a reservation of the recording's unknown full size.
+            with self._storage_gate:
+                checked = recording_storage.check_destination(out_dir, self.storage_min_mib)
+                out_dir = checked['path']
+                return self.start(url, display_name, fmt, headers, out_dir,
+                    key=key, metadata=metadata, on_finish=on_finish, duration=duration,
+                    show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
+                    audio_track=audio_track, audio_track_count=audio_track_count,
+                    share_with_player=share_with_player, connection_key=connection_key,
+                    _buffer_lease=_buffer_lease, _buffer_checked=_buffer_checked, _storage_checked=True)
 
         registry = getattr(self, 'live_buffer_registry', None)
         if registry is not None and not _buffer_checked:
@@ -1055,7 +1072,7 @@ class RecordingManager:
                         show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
                         audio_track=audio_track, audio_track_count=audio_track_count,
                         share_with_player=share_with_player, connection_key=connection_key,
-                        _buffer_lease=lease, _buffer_checked=True)
+                        _buffer_lease=lease, _buffer_checked=True, _storage_checked=True)
                 except Exception:
                     if lease is not None:
                         lease.release()

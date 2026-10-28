@@ -54,6 +54,8 @@ SOURCE_FILES = [
     "providers.py",
     "vod.py",
     "resume_dialogs.py",
+    "planning_ui.py",
+    "recording_storage.py",
     "account_info.py",
     "updater.py",
     "external_player.py",

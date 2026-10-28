@@ -851,11 +851,12 @@ class WhatsOnNowDialog(wx.Dialog):
 
     help_topic = "whats-on-now"
 
-    def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None):
+    def __init__(self, parent, programs: List[Dict[str, str]], schedule_callback=None, reminder_callback=None):
         super().__init__(parent, title=_("What's on Now"), size=(700, 500))
         self.programs = programs
         self.filtered_programs = programs[:]
         self.schedule_callback = schedule_callback
+        self.reminder_callback = reminder_callback
         self._type_ahead_buffer = ""
         self._type_ahead_timer = None
         self._filter_timer = None
@@ -1090,6 +1091,9 @@ class WhatsOnNowDialog(wx.Dialog):
         menu = wx.Menu()
         play_item = menu.Append(wx.ID_ANY, _("Play"))
         menu.Bind(wx.EVT_MENU, lambda _evt: self.EndModal(wx.ID_OK), play_item)
+        if callable(getattr(self, "reminder_callback", None)):
+            reminder_item = menu.Append(wx.ID_ANY, _("Set Reminder..."))
+            menu.Bind(wx.EVT_MENU, lambda event: self.reminder_callback(self.get_selection()), reminder_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
         schedule_item.Enable(self.schedule_callback is not None)
         menu.Bind(wx.EVT_MENU, self._on_schedule, schedule_item)

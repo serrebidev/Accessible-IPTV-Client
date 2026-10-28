@@ -73,6 +73,8 @@ from providers import (
 )
 import vod
 import playback_resume
+import recording_storage
+from planning_ui import PlanningMixin
 from resume_dialogs import ContinueWatchingDialog
 import account_info
 from http_headers import channel_http_headers, merge_headers, split_stream_modifiers
@@ -878,7 +880,7 @@ def _channel_numbers(channel: Dict[str, str]) -> frozenset:
 
 
 
-class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
+class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
     # the menu translates it at build time via _(label).
@@ -1053,6 +1055,7 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
 
         # Recording Manager
         self.recorder = recorder.RecordingManager()
+        self.recorder.storage_min_mib = recording_storage.normalize_reserve(self.config.get("recording_min_free_mib"))
         self._suppress_recording_notifications = False
         # Media-type detection (issue #33): per-session probe cache plus the
         # set of channel identities with a classification probe in flight
@@ -1150,6 +1153,9 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
         ).start()
         self._ensure_db_tuned_background()
         self._start_dvr_scheduler()
+        start_reminders = getattr(self, '_start_reminders', None)
+        if callable(start_reminders):
+            start_reminders()
         self.start_playlist_load()
 
     def _ensure_db_tuned_background(self):
@@ -2571,6 +2577,9 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
         menu.Bind(wx.EVT_MENU, lambda evt, ch=channel: self._record_channel(ch), rec_item)
 
         if item.get("type") == "epg":
+            reminder_item = menu.Append(wx.ID_ANY, _("Set Reminder..."))
+            menu.Bind(wx.EVT_MENU, lambda evt, ch=channel, prog=item.get("data", {}):
+                      self._set_programme_reminder(ch, prog), reminder_item)
             sched_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
             menu.Bind(
                 wx.EVT_MENU,
@@ -4267,6 +4276,12 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
         stop_all_item = menu.Append(wx.ID_ANY, _("Stop All Recordings"))
         menu.Bind(wx.EVT_MENU, self._stop_all_recordings, stop_all_item)
         menu.AppendSeparator()
+        reminders_item = menu.Append(wx.ID_ANY, _("Programme Reminders..."))
+        menu.Bind(wx.EVT_MENU, self._show_reminders, reminders_item)
+        storage_item = menu.Append(wx.ID_ANY, _("Check Recording Storage..."))
+        menu.Bind(wx.EVT_MENU, self._show_recording_storage, storage_item)
+        reserve_item = menu.Append(wx.ID_ANY, _("Minimum Free Space..."))
+        menu.Bind(wx.EVT_MENU, self._set_recording_reserve, reserve_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Scheduled Recordings..."))
         menu.Bind(wx.EVT_MENU, self._show_scheduled_recordings, schedule_item)
         menu.AppendSeparator()
@@ -4357,7 +4372,8 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
             message_box(_("No upcoming schedule found for this channel."), _("EPG"), wx.OK | wx.ICON_INFORMATION)
             return
         try:
-            dlg = ChannelEPGDialog(self, channel_name, programmes, schedule_callback=self._schedule_program_recording, channel=channel)
+            dlg = ChannelEPGDialog(self, channel_name, programmes, schedule_callback=self._schedule_program_recording, channel=channel,
+                                   reminder_callback=getattr(self, "_set_programme_reminder", None))
         except Exception:
             # This runs inside a wx.CallAfter from the fetch thread, so an
             # exception here would otherwise vanish silently: the View EPG
@@ -5355,6 +5371,11 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
             # recordings keep their own detached-finalize behaviour.
             if (event.CanVeto() and not self._update_install_pending
                     and not self._exit_forced):
+                confirm_reminders = getattr(self, '_confirm_reminder_exit', None)
+                if callable(confirm_reminders) and not confirm_reminders():
+                    self._exit_requested = False
+                    event.Veto()
+                    return
                 pending_jobs = self._upcoming_dvr_jobs()
                 if pending_jobs:
                     # Include the local recording window with every title.  A title
@@ -5417,6 +5438,9 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
+            stop_reminders = getattr(self, '_stop_reminders', None)
+            if callable(stop_reminders):
+                stop_reminders()
             try:
                 self._stop_dvr_scheduler(wait=True)
             except Exception:
@@ -6551,7 +6575,8 @@ class IPTVClient(LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixi
             message_box(_("No programs are currently airing, or EPG data has not been imported yet."), _("No Data"), wx.OK | wx.ICON_INFORMATION)
             return
 
-        dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording)
+        dlg = WhatsOnNowDialog(self, programs, schedule_callback=self._schedule_epg_program_recording,
+                                reminder_callback=getattr(self, "_set_epg_reminder", None))
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 selection = dlg.get_selection()
@@ -8788,10 +8813,11 @@ class ChannelEPGDialog(wx.Dialog):
     help_topic = "channel-epg"
 
     def __init__(self, parent, channel_name: str, programmes: List[Dict[str, str]],
-                 schedule_callback=None, channel: Optional[Dict[str, str]] = None):
+                 schedule_callback=None, channel: Optional[Dict[str, str]] = None, reminder_callback=None):
         super().__init__(parent, title=_("EPG: {channel}").format(channel=channel_name), size=(600, 450))
         self.programmes = []
         self.schedule_callback = schedule_callback
+        self.reminder_callback = reminder_callback
         self.channel = channel or {}
 
         panel = wx.Panel(self)
@@ -8892,6 +8918,10 @@ class ChannelEPGDialog(wx.Dialog):
             self.list_ctrl.Select(0)
             self.list_ctrl.Focus(0)
         menu = wx.Menu()
+        if callable(getattr(self, "reminder_callback", None)):
+            reminder_item = menu.Append(wx.ID_ANY, _("Set Reminder..."))
+            menu.Bind(wx.EVT_MENU, lambda event: self.reminder_callback(
+                self.channel, self._selected_programme()), reminder_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
         schedule_item.Enable(self.schedule_callback is not None)
         menu.Bind(wx.EVT_MENU, self._on_schedule, schedule_item)
