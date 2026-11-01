@@ -25,8 +25,10 @@ def test_synthetic_playlist_is_deterministic_and_realistic():
 def test_publication_batches_are_bounded_and_cover_all_channels():
     channels = [{"name": str(index), "group": "Group"} for index in range(17)]
 
-    assert prepare_publication(channels, 8) == 3
-    assert prepare_publication([], DEFAULT_BATCH_SIZE) == 0
+    batches = prepare_publication(channels, 8)
+
+    assert [len(batch) for batch in batches] == [8, 8, 1]
+    assert prepare_publication([], DEFAULT_BATCH_SIZE) == []
 
 
 @pytest.mark.parametrize("bad_batch_size", [0, -1])
@@ -44,6 +46,7 @@ def test_benchmark_reports_separate_measurement_phases():
     assert result.parse_seconds >= 0
     assert result.grouping_seconds >= 0
     assert result.serialization_seconds >= 0
+    assert result.deserialization_seconds >= 0
     assert result.publication_seconds >= 0
     assert json.loads(json.dumps(result.as_dict()))["channels"] == 25
 

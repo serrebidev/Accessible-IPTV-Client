@@ -40,6 +40,7 @@ class BenchmarkResult:
     parse_seconds: float
     grouping_seconds: float
     serialization_seconds: float
+    deserialization_seconds: float
     publication_seconds: float
     publication_batches: int
 
@@ -50,6 +51,7 @@ class BenchmarkResult:
             "parse_seconds": round(self.parse_seconds, 6),
             "grouping_seconds": round(self.grouping_seconds, 6),
             "serialization_seconds": round(self.serialization_seconds, 6),
+            "deserialization_seconds": round(self.deserialization_seconds, 6),
             "publication_seconds": round(self.publication_seconds, 6),
             "publication_batches": self.publication_batches,
         }
@@ -77,11 +79,16 @@ def group_channels(channels: Iterable[Dict[str, str]]) -> Dict[str, List[Dict[st
     return grouped
 
 
-def prepare_publication(channels: List[Dict[str, str]], batch_size: int) -> int:
-    """Count bounded publication batches without creating UI controls."""
+def prepare_publication(
+    channels: List[Dict[str, str]], batch_size: int
+) -> List[List[Dict[str, str]]]:
+    """Build bounded publication batches without creating UI controls."""
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
-    return (len(channels) + batch_size - 1) // batch_size
+    return [
+        channels[offset:offset + batch_size]
+        for offset in range(0, len(channels), batch_size)
+    ]
 
 
 def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> BenchmarkResult:
@@ -98,11 +105,15 @@ def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> Bench
     grouping_seconds = time.perf_counter() - started
 
     started = time.perf_counter()
-    json.dumps({"hash": "benchmark", "channels": channels}, separators=(",", ":"))
+    payload = json.dumps({"hash": "benchmark", "channels": channels}, separators=(",", ":"))
     serialization_seconds = time.perf_counter() - started
 
     started = time.perf_counter()
-    publication_batches = prepare_publication(channels, batch_size)
+    cached = json.loads(payload)
+    deserialization_seconds = time.perf_counter() - started
+
+    started = time.perf_counter()
+    batches = prepare_publication(cached["channels"], batch_size)
     publication_seconds = time.perf_counter() - started
 
     return BenchmarkResult(
@@ -111,8 +122,9 @@ def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> Bench
         parse_seconds=parse_seconds,
         grouping_seconds=grouping_seconds,
         serialization_seconds=serialization_seconds,
+        deserialization_seconds=deserialization_seconds,
         publication_seconds=publication_seconds,
-        publication_batches=publication_batches,
+        publication_batches=len(batches),
     )
 
 
