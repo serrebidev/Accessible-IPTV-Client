@@ -27,7 +27,7 @@ msgstr "(अभी तक कोई EPG डिबग लॉग नहीं ल�
 msgid "(No title)"
 msgstr "(कोई शीर्षक नहीं)"
 
-#: updater.py:874
+#: updater.py:967
 msgid "(thumbprint {thumbprint})."
 msgstr "(थंबप्रिंट {thumbprint})।"
 
@@ -36,11 +36,11 @@ msgstr "(थंबप्रिंट {thumbprint})।"
 msgid "A backup password is required."
 msgstr "बैकअप पासवर्ड ज़रूरी है।"
 
-#: main.py:5542
+#: main.py:5558
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "कोई डाउनलोड या रिकॉर्डिंग अभी चल रही है।\n\nयदि आप अभी बाहर निकलते हैं तो यह रुक जाएगी, और अब तक कैप्चर किया गया भाग ही सुरक्षित रहेगा।\n\nफिर भी बाहर निकलें?"
 
-#: main.py:5519
+#: main.py:5535
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "एक रिकॉर्डिंग चल रही है और {count} रिकॉर्डिंग अभी भी निर्धारित है।\n\n{names}\n\nइसे शुरू करने के लिए ऐप खुला रहना चाहिए। फिर भी बाहर निकलें?"
 
@@ -145,10 +145,10 @@ msgstr "Xtream Codes खाता जोड़ें"
 msgid "Add to Favorites"
 msgstr "पसंदीदा में जोड़ें"
 
-#: main.py:6010
-#: main.py:6046
-#: main.py:6047
-#: main.py:6821
+#: main.py:6026
+#: main.py:6062
+#: main.py:6063
+#: main.py:6837
 msgid "All Channels"
 msgstr "सभी चैनल"
 
@@ -158,11 +158,11 @@ msgid "All files"
 msgstr "सभी फ़ाइलें"
 
 #: main.py:1417
-#: main.py:6621
+#: main.py:6637
 msgid "All playlists"
 msgstr "सभी प्लेलिस्ट"
 
-#: main.py:6619
+#: main.py:6635
 msgid "All playlists refreshed."
 msgstr "सभी प्लेलिस्ट रीफ़्रेश हो गईं।"
 
@@ -186,7 +186,7 @@ msgstr "हर प्लेलिस्ट द्वारा बताए ग�
 msgid "An update is already in progress."
 msgstr "एक अपडेट पहले से ही चल रहा है।"
 
-#: main.py:7536
+#: main.py:7552
 msgid "Application voice output"
 msgstr "एप्लिकेशन वॉइस आउटपुट"
 
@@ -194,11 +194,11 @@ msgstr "एप्लिकेशन वॉइस आउटपुट"
 msgid "Application voice output..."
 msgstr "एप्लिकेशन वॉइस आउटपुट..."
 
-#: main.py:7568
+#: main.py:7584
 msgid "Application voice output: {name}"
 msgstr "एप्लिकेशन वॉइस आउटपुट: {name}"
 
-#: main.py:7492
+#: main.py:7508
 msgid "Application voice speed"
 msgstr "ऐप की आवाज़ की गति"
 
@@ -206,7 +206,7 @@ msgstr "ऐप की आवाज़ की गति"
 msgid "Application voice speed..."
 msgstr "ऐप की आवाज़ की गति…"
 
-#: main.py:7461
+#: main.py:7477
 msgid "Application voice volume"
 msgstr "एप्लिकेशन वॉइस वॉल्यूम"
 
@@ -282,19 +282,19 @@ msgstr "ऑडियो: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "प्रमाणीकरण विफल – सर्वर ने इन क्रेडेंशियल्स को अस्वीकार कर दिया"
 
-#: updater.py:870
+#: updater.py:963
 msgid "Authenticode status was {status}."
 msgstr "Authenticode स्थिति {status} थी।"
 
-#: updater.py:830
+#: updater.py:923
 msgid "Authenticode verification failed: {detail}"
 msgstr "Authenticode सत्यापन विफल: {detail}"
 
-#: updater.py:835
+#: updater.py:928
 msgid "Authenticode verification returned invalid data."
 msgstr "Authenticode सत्यापन ने अमान्य डेटा लौटाया।"
 
-#: updater.py:816
+#: updater.py:909
 msgid "Authenticode verification timed out."
 msgstr "Authenticode सत्यापन का समय समाप्त हो गया।"
 
@@ -372,7 +372,7 @@ msgid "Built-in IPTV Player"
 msgstr "अंतर्निहित IPTV प्लेयर"
 
 #: main.py:889
-#: main.py:7602
+#: main.py:7618
 msgid "Built-in Player"
 msgstr "अंतर्निहित प्लेयर"
 
@@ -380,7 +380,7 @@ msgstr "अंतर्निहित प्लेयर"
 msgid "Built-in player is unavailable."
 msgstr "अंतर्निहित प्लेयर उपलब्ध नहीं है।"
 
-#: main.py:7742
+#: main.py:7758
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "अंतर्निहित प्लेयर उपलब्ध नहीं:\n{detail}"
 
@@ -388,10 +388,10 @@ msgstr "अंतर्निहित प्लेयर उपलब्ध न
 #: dialogs_misc.py:671
 #: dialogs_misc.py:732
 #: internal_player.py:149
-#: main.py:7473
-#: main.py:7506
-#: main.py:8632
-#: main.py:8922
+#: main.py:7489
+#: main.py:7522
+#: main.py:8648
+#: main.py:8938
 #: options.py:942
 #: playlist.py:3146
 #: playlist.py:3246
@@ -400,7 +400,7 @@ msgstr "अंतर्निहित प्लेयर उपलब्ध न
 msgid "Cancel"
 msgstr "रद्द करें"
 
-#: main.py:8729
+#: main.py:8745
 msgid "Cancel Download"
 msgstr "डाउनलोड रद्द करें"
 
@@ -408,7 +408,7 @@ msgstr "डाउनलोड रद्द करें"
 msgid "Cancel Shutdown"
 msgstr "बंद करना रद्द करें"
 
-#: main.py:8951
+#: main.py:8967
 msgid "Canceled"
 msgstr "रद्द किया गया"
 
@@ -444,21 +444,21 @@ msgstr "कास्ट करें..."
 #: internal_player.py:1984
 #: internal_player.py:1988
 #: internal_player.py:2007
-#: main.py:7725
-#: main.py:7893
-#: main.py:7922
-#: main.py:8541
+#: main.py:7741
+#: main.py:7909
+#: main.py:7938
+#: main.py:8557
 msgid "Casting"
 msgstr "कास्ट हो रहा है"
 
 #: internal_player.py:2007
-#: main.py:7721
-#: main.py:7728
-#: main.py:7905
+#: main.py:7737
+#: main.py:7744
+#: main.py:7921
 msgid "Casting Error"
 msgstr "कास्टिंग त्रुटि"
 
-#: main.py:7718
+#: main.py:7734
 msgid "Casting failed: {error}"
 msgstr "कास्टिंग विफल: {error}"
 
@@ -466,31 +466,31 @@ msgstr "कास्टिंग विफल: {error}"
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "कास्टिंग उपलब्ध नहीं है क्योंकि कास्टर प्रारंभ नहीं किया गया है।"
 
-#: main.py:7725
-#: main.py:7922
+#: main.py:7741
+#: main.py:7938
 msgid "Casting to {device}..."
 msgstr "{device} पर कास्ट हो रहा है..."
 
 #: dialogs_misc.py:486
 #: main.py:2719
-#: main.py:8006
-#: main.py:8029
-#: main.py:8053
-#: main.py:8056
+#: main.py:8022
+#: main.py:8045
+#: main.py:8069
+#: main.py:8072
 msgid "Catch-up"
 msgstr "कैच-अप"
 
-#: main.py:8111
-#: main.py:8117
-#: main.py:8129
-#: main.py:8142
-#: main.py:8233
-#: main.py:8241
-#: main.py:8285
-#: main.py:8349
-#: main.py:8367
-#: main.py:8371
-#: main.py:8414
+#: main.py:8127
+#: main.py:8133
+#: main.py:8145
+#: main.py:8158
+#: main.py:8249
+#: main.py:8257
+#: main.py:8301
+#: main.py:8365
+#: main.py:8383
+#: main.py:8387
+#: main.py:8430
 msgid "Catch-up Download"
 msgstr "कैच-अप डाउनलोड"
 
@@ -513,13 +513,13 @@ msgstr "श्रेणियाँ"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "{app} के हर संस्करण में हुए बदलाव, सबसे नए पहले। नवीनतम संस्करणों के नोट्स अनुवाद हो जाने पर आपकी भाषा में दिखते हैं; पुरानी प्रविष्टियाँ अंग्रेज़ी में रहती हैं।"
 
-#: main.py:8875
+#: main.py:8891
 #: planning_ui.py:40
 msgid "Channel"
 msgstr "चैनल"
 
 #: main.py:3236
-#: main.py:6781
+#: main.py:6797
 #: planning_ui.py:220
 #: planning_ui.py:266
 msgid "Channel Not Found"
@@ -560,7 +560,7 @@ msgstr "अपडेट के लिए जाँचें"
 msgid "Check for Updates..."
 msgstr "अपडेट के लिए जाँचें..."
 
-#: main.py:6585
+#: main.py:6601
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "जाँचें कि फ़ाइल > EPG प्रबंधक में दिए गए EPG स्रोत उपलब्ध हैं, फिर पुनः प्रयास करें।"
 
@@ -568,7 +568,7 @@ msgstr "जाँचें कि फ़ाइल > EPG प्रबंधक �
 msgid "Checking account, please wait..."
 msgstr "खाते की जाँच हो रही है, कृपया प्रतीक्षा करें..."
 
-#: main.py:4759
+#: main.py:4774
 msgid "Checking for update details..."
 msgstr "अपडेट विवरण की जाँच हो रही है..."
 
@@ -596,7 +596,7 @@ msgstr "EPG XML फ़ाइल चुनें"
 msgid "Choose M3U file"
 msgstr "M3U फ़ाइल चुनें"
 
-#: main.py:6609
+#: main.py:6625
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "नई प्लेलिस्ट सहेजने के लिए ठीक चुनें, फिर उसे रीफ़्रेश करें।"
 
@@ -621,7 +621,7 @@ msgstr "सभी सहेजी गई स्थितियाँ मिट�
 #: dialogs_misc.py:348
 #: dialogs_misc.py:890
 #: main.py:294
-#: main.py:8824
+#: main.py:8840
 #: planning_ui.py:51
 #: planning_ui.py:211
 #: resume_dialogs.py:50
@@ -632,7 +632,7 @@ msgstr "बंद करें"
 msgid "Community and support"
 msgstr "समुदाय और सहायता"
 
-#: main.py:8948
+#: main.py:8964
 msgid "Completed"
 msgstr "पूर्ण"
 
@@ -652,11 +652,11 @@ msgstr "कॉन्फ़िगर की गई प्लेलिस्ट: {
 msgid "Connect"
 msgstr "कनेक्ट करें"
 
-#: main.py:8554
+#: main.py:8570
 msgid "Connected"
 msgstr "कनेक्ट किया गया"
 
-#: main.py:8554
+#: main.py:8570
 msgid "Connected to {device}"
 msgstr "{device} से कनेक्ट किया गया"
 
@@ -664,9 +664,9 @@ msgstr "{device} से कनेक्ट किया गया"
 msgid "Connections in use"
 msgstr "उपयोग में कनेक्शन"
 
-#: main.py:6128
-#: main.py:6137
-#: main.py:7758
+#: main.py:6144
+#: main.py:6153
+#: main.py:7774
 #: resume_dialogs.py:30
 #: resume_dialogs.py:184
 msgid "Continue Watching"
@@ -678,7 +678,7 @@ msgid "Continue Watching..."
 msgstr "देखना जारी रखें…"
 
 #: dialogs_misc.py:347
-#: main.py:8821
+#: main.py:8837
 msgid "Copy Details"
 msgstr "विवरण कॉपी करें"
 
@@ -691,7 +691,7 @@ msgstr "लॉग और डिबग जानकारी कॉपी कर�
 msgid "Copy URL"
 msgstr "URL कॉपी करें"
 
-#: main.py:7517
+#: main.py:7533
 msgid "Could not change the application voice speed."
 msgstr "ऐप की आवाज़ की गति नहीं बदली जा सकी।"
 
@@ -721,16 +721,16 @@ msgid "Could not find a stream URL for this channel."
 msgstr "इस चैनल के लिए स्ट्रीम URL नहीं मिल सका।"
 
 #: main.py:3234
-#: main.py:6781
+#: main.py:6797
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "आपकी प्लेलिस्ट में चैनल '{channel}' नहीं मिल सका।"
 
-#: main.py:7680
+#: main.py:7696
 msgid "Could not find stream URL for this selection."
 msgstr "इस चयन के लिए स्ट्रीम URL नहीं मिल सका।"
 
 #: main.py:3167
-#: main.py:6776
+#: main.py:6792
 msgid "Could not identify the channel."
 msgstr "चैनल की पहचान नहीं की जा सकी।"
 
@@ -738,11 +738,11 @@ msgstr "चैनल की पहचान नहीं की जा सकी
 msgid "Could not import settings: {error}"
 msgstr "सेटिंग इम्पोर्ट नहीं की जा सकी: {error}"
 
-#: main.py:6311
+#: main.py:6327
 msgid "Could not load episodes for this series."
 msgstr "इस सीरीज़ के एपिसोड लोड नहीं किए जा सके।"
 
-#: main.py:6330
+#: main.py:6346
 msgid "Could not load episodes:\n{error}"
 msgstr "एपिसोड लोड नहीं किए जा सके:\n{error}"
 
@@ -759,11 +759,11 @@ msgstr "{player} ऐप का पता नहीं लगाया जा स
 msgid "Could not locate {player} executable."
 msgstr "{player} निष्पादन योग्य फ़ाइल का पता नहीं लगाया जा सका।"
 
-#: main.py:6683
+#: main.py:6699
 msgid "Could not look for provider accounts: {error}"
 msgstr "प्रदाता खातों की खोज नहीं हो सकी: {error}"
 
-#: main.py:7022
+#: main.py:7038
 msgid "Could not match this programme to a playlist channel."
 msgstr "इस कार्यक्रम को प्लेलिस्ट चैनल से मिलान नहीं किया जा सका।"
 
@@ -777,12 +777,12 @@ msgid "Could not open the EPG window: {error}"
 msgstr "EPG विंडो नहीं खोली जा सकी: {error}"
 
 #: dialogs_misc.py:452
-#: main.py:8837
+#: main.py:8853
 #: playlist.py:3048
 msgid "Could not open the clipboard."
 msgstr "क्लिपबोर्ड नहीं खोला जा सका।"
 
-#: main.py:7757
+#: main.py:7773
 msgid "Could not prepare saved playback:\n{error}"
 msgstr "सहेजी गई स्थिति से प्लेबैक तैयार नहीं हो सका:\n{error}"
 
@@ -797,11 +797,11 @@ msgstr "पोर्टल तक नहीं पहुँचा जा सक�
 
 #: main.py:2861
 #: main.py:3516
-#: main.py:7039
+#: main.py:7055
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "स्ट्रीम URL हल नहीं किया जा सका:\n{error}"
 
-#: updater.py:818
+#: updater.py:911
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Authenticode सत्यापन नहीं चला सका: {detail}"
 
@@ -813,7 +813,7 @@ msgstr "देखने के इतिहास में बदलाव स�
 msgid "Could not schedule recording:\n{error}"
 msgstr "रिकॉर्डिंग शेड्यूल नहीं की जा सकी:\n{error}"
 
-#: main.py:7553
+#: main.py:7569
 msgid "Could not select that output device."
 msgstr "उस आउटपुट डिवाइस का चयन नहीं किया जा सका।"
 
@@ -821,7 +821,7 @@ msgstr "उस आउटपुट डिवाइस का चयन नही�
 msgid "Could not shut down the computer:\n{error}"
 msgstr "कंप्यूटर बंद नहीं किया जा सका:\n{error}"
 
-#: main.py:8284
+#: main.py:8300
 msgid "Could not start catch-up download:\n{error}"
 msgstr "कैच-अप डाउनलोड शुरू नहीं हो सका:\n{error}"
 
@@ -842,7 +842,7 @@ msgstr "बनाया गया"
 msgid "Currently airing programs"
 msgstr "वर्तमान में प्रसारित हो रहे कार्यक्रम"
 
-#: main.py:8539
+#: main.py:8555
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "वर्तमान में इससे कनेक्ट किया गया: {device}\n\nडिस्कनेक्ट करें?"
 
@@ -859,7 +859,7 @@ msgstr "शेष दिन"
 msgid "Days since expiry"
 msgstr "समाप्ति के बाद के दिन"
 
-#: main.py:8924
+#: main.py:8940
 #: planning_ui.py:48
 #: playlist.py:3084
 msgid "Delete"
@@ -874,7 +874,7 @@ msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of pla
 msgstr "प्लेलिस्ट “{name}” हटाएँ?\n\nयह प्लेलिस्ट की सूची से हटा दी जाएगी। इसे पूर्ववत नहीं किया जा सकता।"
 
 #: dialogs_misc.py:506
-#: main.py:9079
+#: main.py:9095
 msgid "Description"
 msgstr "विवरण"
 
@@ -901,7 +901,7 @@ msgstr "नैदानिक जानकारी क्लिपबोर्�
 msgid "Disabled"
 msgstr "निष्क्रिय"
 
-#: main.py:7719
+#: main.py:7735
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "कास्ट डिवाइस से डिस्कनेक्ट किया गया। दूसरा डिवाइस चुनने के लिए कास्ट मेनू खोलें।"
 
@@ -910,7 +910,7 @@ msgstr "कास्ट डिवाइस से डिस्कनेक्ट
 msgid "Display name"
 msgstr "प्रदर्शन नाम"
 
-#: main.py:8727
+#: main.py:8743
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "क्या आप वाकई यह डाउनलोड रद्द करना चाहते हैं? इसे बाद में जारी नहीं किया जा सकता।"
 
@@ -922,79 +922,79 @@ msgstr "दस्तावेज़ीकरण"
 msgid "Download"
 msgstr "डाउनलोड करें"
 
-#: main.py:4672
+#: main.py:4687
 msgid "Download and install now? The app will restart after the update."
 msgstr "अभी डाउनलोड और इंस्टॉल करें? अपडेट के बाद ऐप पुनः प्रारंभ होगा।"
 
-#: main.py:8348
+#: main.py:8364
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "डाउनलोड रद्द कर दिया गया। अधूरी फ़ाइल हटा दी गई।"
 
-#: main.py:8370
+#: main.py:8386
 msgid "Download complete:\n{path}"
 msgstr "डाउनलोड पूरा हुआ:\n{path}"
 
-#: main.py:8640
+#: main.py:8656
 msgid "Download details"
 msgstr "डाउनलोड विवरण"
 
-#: main.py:8360
+#: main.py:8376
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "डाउनलोड जल्दी समाप्त हो गया:\n{path}\n\nप्रदाता द्वारा कनेक्शन बंद किए जाने से पहले {expected} में से केवल {written} प्राप्त हुआ। अपूर्ण फ़ाइल रखी गई है।"
 
-#: main.py:8678
+#: main.py:8694
 msgid "Download failed (code {code})."
 msgstr "डाउनलोड विफल (कोड {code})."
 
-#: main.py:8407
+#: main.py:8423
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "डाउनलोड विफल (कोड {code}):\n{path}\n\n{detail}"
 
-#: main.py:8694
+#: main.py:8710
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "डाउनलोड विफल - पुनः प्रयास (प्रयास {attempt}/{total}) {seconds} सेकंड में..."
 
-#: main.py:8404
+#: main.py:8420
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "डाउनलोड विफल:\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:5545
+#: main.py:5561
 msgid "Download in progress"
 msgstr "डाउनलोड जारी है"
 
-#: main.py:8639
+#: main.py:8655
 msgid "Download progress"
 msgstr "डाउनलोड प्रगति"
 
-#: main.py:8638
+#: main.py:8654
 msgid "Download status"
 msgstr "डाउनलोड स्थिति"
 
-#: main.py:4785
-#: main.py:4826
+#: main.py:4800
+#: main.py:4841
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "डाउनलोड किया गया अपडेट SHA-256 सत्यापन में विफल रहा।"
 
-#: main.py:8718
+#: main.py:8734
 msgid "Downloaded: {size}"
 msgstr "डाउनलोड हुआ: {size}"
 
-#: main.py:4777
-#: main.py:4781
-#: main.py:4818
-#: main.py:4822
+#: main.py:4792
+#: main.py:4796
+#: main.py:4833
+#: main.py:4837
 msgid "Downloading update..."
 msgstr "अपडेट डाउनलोड हो रहा है..."
 
-#: main.py:8598
-#: main.py:8707
-#: main.py:8711
+#: main.py:8614
+#: main.py:8723
+#: main.py:8727
 msgid "Downloading {name}"
 msgstr "{name} डाउनलोड हो रहा है"
 
 #: main.py:4499
-#: main.py:9063
-#: main.py:9065
+#: main.py:9079
+#: main.py:9081
 msgid "EPG"
 msgstr "EPG"
 
@@ -1009,9 +1009,9 @@ msgstr "EPG डेटाबेस अपडेट आवश्यक"
 msgid "EPG Manager"
 msgstr "EPG प्रबंधक"
 
-#: main.py:6708
-#: main.py:6726
-#: main.py:8006
+#: main.py:6724
+#: main.py:6742
+#: main.py:8022
 msgid "EPG Not Available"
 msgstr "EPG उपलब्ध नहीं"
 
@@ -1023,24 +1023,24 @@ msgstr "EPG डिबग लॉग (अंतिम 128 KiB):"
 msgid "EPG enabled: {enabled}"
 msgstr "EPG सक्षम: {enabled}"
 
-#: main.py:6700
+#: main.py:6716
 msgid "EPG import is already in progress."
 msgstr "EPG आयात पहले से चल रहा है।"
 
-#: main.py:6719
+#: main.py:6735
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "EPG आयात पृष्ठभूमि में प्रारंभ होगा। आप ऐप का उपयोग जारी रख सकते हैं; आयात पूरा होने पर एक संदेश आपको सूचित करेगा।"
 
-#: main.py:6708
-#: main.py:6726
+#: main.py:6724
+#: main.py:6742
 msgid "EPG is not enabled."
 msgstr "EPG सक्षम नहीं है।"
 
-#: main.py:9054
+#: main.py:9070
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
-#: main.py:8716
+#: main.py:8732
 msgid "Elapsed: {time}"
 msgstr "बीता समय: {time}"
 
@@ -1088,7 +1088,7 @@ msgstr "पासवर्ड फिर से डालें:"
 #: client_ui.py:89
 #: client_ui.py:91
 #: dialogs_misc.py:509
-#: main.py:9082
+#: main.py:9098
 msgid "Episode description"
 msgstr "एपिसोड विवरण"
 
@@ -1100,10 +1100,10 @@ msgstr "एपिसोड {num}"
 #: main.py:2743
 #: main.py:2797
 #: main.py:4511
-#: main.py:6684
-#: main.py:6754
-#: main.py:6776
-#: main.py:8557
+#: main.py:6700
+#: main.py:6770
+#: main.py:6792
+#: main.py:8573
 msgid "Error"
 msgstr "त्रुटि"
 
@@ -1142,7 +1142,7 @@ msgstr "पूर्ण स्क्रीन से बाहर निकल�
 msgid "Exit Player"
 msgstr "प्लेयर से बाहर निकलें"
 
-#: updater.py:876
+#: updater.py:969
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "अपेक्षित थंबप्रिंट: {thumbprints}।"
 
@@ -1173,7 +1173,7 @@ msgstr "सेटिंग एक्सपोर्ट करें..."
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "बाहरी उपशीर्षक फ़ाइलें स्थानीय लाइव बफ़र के साथ समन्वित नहीं हैं। स्ट्रीम में समाहित उपशीर्षकों का उपयोग करें।"
 
-#: main.py:4828
+#: main.py:4843
 msgid "Extracting update..."
 msgstr "अपडेट निकाला जा रहा है..."
 
@@ -1186,32 +1186,32 @@ msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "रोकने से पहले धीरे-धीरे आवाज़ कम करने की अवधि (सेकंड); 0 से यह बंद हो जाता है।"
 
 #: main.py:3343
-#: main.py:8949
+#: main.py:8965
 msgid "Failed"
 msgstr "विफल"
 
-#: main.py:7728
-#: main.py:7905
+#: main.py:7744
+#: main.py:7921
 msgid "Failed to cast: {error}"
 msgstr "कास्ट करने में विफल: {error}"
 
-#: main.py:8557
+#: main.py:8573
 msgid "Failed to connect: {error}"
 msgstr "कनेक्ट करने में विफल: {error}"
 
-#: updater.py:708
+#: updater.py:777
 msgid "Failed to download manifest ({code})."
 msgstr "मेनिफ़ेस्ट डाउनलोड करने में विफल ({code})।"
 
-#: updater.py:743
+#: updater.py:822
 msgid "Failed to download update ({code})."
 msgstr "अपडेट डाउनलोड करने में विफल ({code})।"
 
-#: main.py:6754
+#: main.py:6770
 msgid "Failed to fetch EPG data: {error}"
 msgstr "EPG डेटा प्राप्त करने में विफल: {error}"
 
-#: updater.py:633
+#: updater.py:704
 msgid "Failed to fetch release info ({code})."
 msgstr "रिलीज़ जानकारी प्राप्त करने में विफल ({code})।"
 
@@ -1223,11 +1223,11 @@ msgstr "libVLC इंस्टेंस प्रारंभ करने म�
 msgid "Failed to initialise media player: {error}"
 msgstr "मीडिया प्लेयर प्रारंभ करने में विफल: {error}"
 
-#: main.py:7834
+#: main.py:7850
 msgid "Failed to launch {player}:\n{error}"
 msgstr "{player} लॉन्च करने में विफल:\n{error}"
 
-#: main.py:7826
+#: main.py:7842
 msgid "Failed to start built-in player:\n{error}"
 msgstr "अंतर्निहित प्लेयर प्रारंभ करने में विफल:\n{error}"
 
@@ -1269,7 +1269,7 @@ msgstr "अगला ढूँढें"
 msgid "Follow Serrebi on GitHub"
 msgstr "GitHub पर Serrebi को फ़ॉलो करें"
 
-#: main.py:8877
+#: main.py:8893
 msgid "Format"
 msgstr "प्रारूप"
 
@@ -1294,7 +1294,7 @@ msgstr "पूर्ण ffmpeg लॉग:\n{path}"
 msgid "GZip XML"
 msgstr "GZip XML"
 
-#: updater.py:632
+#: updater.py:592
 msgid "GitHub API rate limit exceeded. Please try again later."
 msgstr "GitHub API दर सीमा पार हो गई। कृपया बाद में पुनः प्रयास करें।"
 
@@ -1343,9 +1343,9 @@ msgid "Hide older releases"
 msgstr "पुराने रिलीज़ छिपाएँ"
 
 #: main.py:2840
-#: main.py:7063
-#: main.py:7704
-#: main.py:7744
+#: main.py:7079
+#: main.py:7720
+#: main.py:7760
 msgid "IPTV Stream"
 msgstr "IPTV स्ट्रीम"
 
@@ -1355,15 +1355,15 @@ msgstr "IPTV स्ट्रीम"
 msgid "Idle"
 msgstr "निष्क्रिय"
 
-#: main.py:7588
+#: main.py:7604
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "यदि आउटपुट डिवाइस गायब हो जाए, तो डिवाइस वापस आने तक उपशीर्षक वाचन रोका जाएगा।"
 
-#: main.py:7592
+#: main.py:7608
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "यदि आउटपुट डिवाइस गायब हो जाए, तो एप्लिकेशन आवाज़ सिस्टम डिफ़ॉल्ट पर वापस आ जाएगी।"
 
-#: main.py:6581
+#: main.py:6597
 msgid "Import Complete"
 msgstr "आयात पूर्ण"
 
@@ -1374,8 +1374,8 @@ msgid "Import EPG to DB"
 msgstr "EPG को डेटाबेस में आयात करें"
 
 #: main.py:2765
-#: main.py:6588
-#: main.py:6714
+#: main.py:6604
+#: main.py:6730
 msgid "Import Failed"
 msgstr "आयात विफल"
 
@@ -1389,7 +1389,7 @@ msgstr "सेटिंग इम्पोर्ट करें"
 msgid "Import Settings..."
 msgstr "सेटिंग इम्पोर्ट करें..."
 
-#: main.py:6721
+#: main.py:6737
 msgid "Import Started"
 msgstr "आयात प्रारंभ हुआ"
 
@@ -1406,7 +1406,7 @@ msgstr "EPG आयात हो रहा है"
 msgid "Importing EPG data…"
 msgstr "EPG डेटा आयात हो रहा है…"
 
-#: main.py:6700
+#: main.py:6716
 msgid "In Progress"
 msgstr "प्रगति पर"
 
@@ -1414,11 +1414,11 @@ msgstr "प्रगति पर"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "प्रदाता का XMLTV गाइड स्वतः शामिल करें"
 
-#: updater.py:161
+#: updater.py:163
 msgid "Installer message: {message}"
 msgstr "इंस्टॉलर संदेश: {message}"
 
-#: main.py:5010
+#: main.py:5026
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "अपडेट इंस्टॉल हो रहा है। {app} बंद होगा और अपने आप फिर से शुरू हो जाएगा — तब तक कृपया इसे स्वयं न खोलें।"
 
@@ -1443,7 +1443,7 @@ msgstr "पोर्टल से अमान्य प्रतिक्रि
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "SerrebiProjects टेलीग्राम समूह में शामिल हों"
 
-#: main.py:7561
+#: main.py:7577
 msgid "Keep this output device?\n{name}"
 msgstr "क्या यह आउटपुट डिवाइस रखें?\n{name}"
 
@@ -1487,10 +1487,10 @@ msgstr "अंतिम उपशीर्षक: {text}"
 msgid "Latest release tag is missing or invalid."
 msgstr "नवीनतम रिलीज़ टैग गायब या अमान्य है।"
 
-#: main.py:7689
-#: main.py:7742
-#: main.py:7826
-#: main.py:7835
+#: main.py:7705
+#: main.py:7758
+#: main.py:7842
+#: main.py:7851
 msgid "Launch Error"
 msgstr "लॉन्च त्रुटि"
 
@@ -1515,16 +1515,16 @@ msgstr "उपशीर्षक फ़ाइल लोड करें"
 msgid "Load Subtitle File..."
 msgstr "उपशीर्षक फ़ाइल लोड करें..."
 
-#: main.py:6189
+#: main.py:6205
 msgid "Loading Video on Demand…"
 msgstr "वीडियो ऑन डिमांड लोड हो रहा है…"
 
-#: main.py:6319
+#: main.py:6335
 msgid "Loading episodes…"
 msgstr "एपिसोड लोड हो रहे हैं…"
 
 #: main.py:1146
-#: main.py:6004
+#: main.py:6020
 msgid "Loading playlists..."
 msgstr "प्लेलिस्ट लोड हो रही हैं..."
 
@@ -1562,11 +1562,11 @@ msgstr "MAC पते में छह ऑक्टेट होने चाह
 msgid "MAC address presented to the portal"
 msgstr "पोर्टल को प्रस्तुत किया गया MAC पता"
 
-#: main.py:7627
+#: main.py:7643
 msgid "MPV subtitle speech on."
 msgstr "MPV उपशीर्षक वाचन चालू।"
 
-#: main.py:7630
+#: main.py:7646
 msgid "MPV subtitle speech unavailable."
 msgstr "MPV उपशीर्षक वाचन उपलब्ध नहीं।"
 
@@ -1628,7 +1628,7 @@ msgid "Minutes:"
 msgstr "मिनट:"
 
 #: main.py:3343
-#: main.py:8950
+#: main.py:8966
 msgid "Missed"
 msgstr "छूट गया"
 
@@ -1663,33 +1663,33 @@ msgstr "अगला: {title} ({start} – {end})"
 msgid "No"
 msgstr "नहीं"
 
-#: main.py:6692
+#: main.py:6708
 msgid "No Accounts"
 msgstr "कोई खाता नहीं"
 
-#: main.py:6757
+#: main.py:6773
 msgid "No Data"
 msgstr "कोई डेटा नहीं"
 
-#: main.py:6704
+#: main.py:6720
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "कोई EPG स्रोत कॉन्फ़िगर नहीं किया गया। कृपया फ़ाइल > EPG प्रबंधक में एक जोड़ें।"
 
-#: main.py:6704
+#: main.py:6720
 msgid "No Sources"
 msgstr "कोई स्रोत नहीं"
 
-#: main.py:6251
-#: main.py:6255
+#: main.py:6267
+#: main.py:6271
 msgid "No Video on Demand content found."
 msgstr "कोई वीडियो ऑन डिमांड सामग्री नहीं मिली।"
 
 #: internal_player.py:1988
-#: main.py:7893
+#: main.py:7909
 msgid "No active stream to cast."
 msgstr "कास्ट करने के लिए कोई सक्रिय स्ट्रीम नहीं है।"
 
-#: main.py:7326
+#: main.py:7342
 msgid "No active subtitle session."
 msgstr "कोई सक्रिय उपशीर्षक सत्र नहीं।"
 
@@ -1703,7 +1703,7 @@ msgstr "कोई ऑडियो आउटपुट डिवाइस नह�
 msgid "No audio tracks available"
 msgstr "कोई ऑडियो ट्रैक उपलब्ध नहीं है"
 
-#: main.py:8028
+#: main.py:8044
 msgid "No catch-up programmes are available for this channel."
 msgstr "इस चैनल के लिए कोई कैच-अप कार्यक्रम उपलब्ध नहीं है।"
 
@@ -1711,13 +1711,13 @@ msgstr "इस चैनल के लिए कोई कैच-अप का�
 msgid "No channel is selected."
 msgstr "कोई चैनल नहीं चुना गया है।"
 
-#: main.py:6005
+#: main.py:6021
 msgid "No channels found."
 msgstr "कोई चैनल नहीं मिला।"
 
 #: dialogs_misc.py:575
 #: main.py:2652
-#: main.py:9201
+#: main.py:9217
 msgid "No description available for this programme."
 msgstr "इस कार्यक्रम के लिए कोई विवरण उपलब्ध नहीं है।"
 
@@ -1729,13 +1729,13 @@ msgstr "कोई डिवाइस नहीं मिला।"
 msgid "No earlier subtitle."
 msgstr "इससे पहले कोई उपशीर्षक नहीं है।"
 
-#: main.py:6350
+#: main.py:6366
 msgid "No episodes found for this series."
 msgstr "इस सीरीज़ के लिए कोई एपिसोड नहीं मिला।"
 
 #: external_player.py:297
 #: external_player.py:348
-#: main.py:8687
+#: main.py:8703
 msgid "No error details were reported."
 msgstr "कोई त्रुटि विवरण नहीं दिया गया।"
 
@@ -1759,7 +1759,7 @@ msgstr "कोई उल्लेखनीय बदलाव नहीं।"
 msgid "No previous channel is available."
 msgstr "कोई पिछला चैनल उपलब्ध नहीं है।"
 
-#: main.py:7337
+#: main.py:7353
 msgid "No previous subtitle."
 msgstr "कोई पिछला उपशीर्षक नहीं।"
 
@@ -1771,15 +1771,15 @@ msgstr "अभी कोई कार्यक्रम प्रसारित
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "अभी कोई प्रोग्राम गाइड आयात नहीं हुई है, इसलिए निर्धारित करने के लिए कुछ भी नहीं है।\n\nपहले एक गाइड आयात करें (फ़ाइल > EPG प्रबंधक, फिर फ़ाइल > EPG को डेटाबेस में आयात करें), फिर दोबारा प्रयास करें।"
 
-#: main.py:6757
+#: main.py:6773
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "वर्तमान में कोई कार्यक्रम प्रसारित नहीं हो रहा है, या EPG डेटा अभी तक आयात नहीं किया गया है।"
 
-#: main.py:6688
+#: main.py:6704
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "कोई प्रदाता खाता नहीं मिला।\n\nप्लेलिस्ट प्रबंधक में जोड़े गए Xtream Codes और Stalker Portal खाते यहाँ सूचीबद्ध होते हैं, साथ ही प्लेलिस्ट या स्ट्रीम URL से पता चला कोई भी खाता।"
 
-#: main.py:7348
+#: main.py:7364
 msgid "No recent subtitles."
 msgstr "कोई हालिया उपशीर्षक नहीं।"
 
@@ -1813,7 +1813,7 @@ msgstr "कोई स्ट्रीम URL प्रदान नहीं क�
 msgid "No subtitle has been shown yet."
 msgstr "अभी तक कोई उपशीर्षक नहीं दिखाया गया है।"
 
-#: main.py:7328
+#: main.py:7344
 msgid "No subtitle text available yet."
 msgstr "अभी तक कोई उपशीर्षक पाठ उपलब्ध नहीं।"
 
@@ -1825,7 +1825,7 @@ msgstr "इस फ़ाइल में कोई उपशीर्षक प�
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "पढ़ने के लिए उपशीर्षक का पाठ उपलब्ध नहीं है। समर्थित प्रारूप की उपशीर्षक फ़ाइल लोड करें।"
 
-#: main.py:8808
+#: main.py:8824
 msgid "No timed problems were found in the newest recording log."
 msgstr "नवीनतम रिकॉर्डिंग लॉग में समय सहित कोई समस्या नहीं मिली।"
 
@@ -1839,8 +1839,8 @@ msgid "None"
 msgstr "कोई नहीं"
 
 #: main.py:2026
-#: main.py:7023
-#: main.py:7680
+#: main.py:7039
+#: main.py:7696
 msgid "Not Found"
 msgstr "नहीं मिला"
 
@@ -1863,7 +1863,7 @@ msgstr "रिकॉर्डिंग शुरू करने के लि�
 msgid "Not reported by the server"
 msgstr "सर्वर ने नहीं बताया"
 
-#: main.py:7863
+#: main.py:7879
 msgid "Nothing is playing in the built-in player."
 msgstr "अंतर्निर्मित प्लेयर में कुछ भी नहीं चल रहा है।"
 
@@ -1888,8 +1888,8 @@ msgstr "अभी: {title} ({start} – {end})"
 #: dialogs_misc.py:671
 #: dialogs_misc.py:731
 #: internal_player.py:148
-#: main.py:7472
-#: main.py:7505
+#: main.py:7488
+#: main.py:7521
 #: options.py:942
 #: playlist.py:3145
 #: playlist.py:3245
@@ -1914,7 +1914,7 @@ msgstr "डिवाइस खोने पर: डिवाइस वापस 
 msgid "On device loss: use the system default"
 msgstr "डिवाइस खोने पर: सिस्टम डिफ़ॉल्ट का उपयोग करें"
 
-#: main.py:7605
+#: main.py:7621
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "केवल दस्तावेज़ीकृत टाइम्ड-टेक्स्ट API वाले प्लेयर ही उपशीर्षक शब्द प्रदान कर सकते हैं। अंतर्निहित प्लेयर SRT, ASS, SSA और WebVTT फ़ाइलें पढ़ता है; MPV एप्लिकेशन के अपने सत्र के माध्यम से काम करता है।"
 
@@ -1939,7 +1939,7 @@ msgstr "रिकॉर्डिंग फ़ोल्डर खोलें"
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "GitHub पर Accessible IPTV Client प्रोजेक्ट खोलें"
 
-#: main.py:8812
+#: main.py:8828
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "रिकॉर्ड की गई फ़ाइल को VLC में खोलें, Ctrl+T दबाएँ और सूची में दिया गया समय दर्ज करें। FFmpeg द्वारा उपलब्ध होने पर समय फ़ाइल की मीडिया घड़ी से लिया जाता है; अन्यथा यह रिकॉर्डिंग शुरू होने से बीता समय होता है और रुकावट के बाद थोड़ा आगे हो सकता है।"
 
@@ -1976,11 +1976,11 @@ msgstr "अन्य बदलाव"
 msgid "Other details reported by the server"
 msgstr "सर्वर द्वारा बताए गए अन्य विवरण"
 
-#: main.py:6040
+#: main.py:6056
 msgid "Other playlists"
 msgstr "अन्य प्लेलिस्ट"
 
-#: main.py:7535
+#: main.py:7551
 msgid "Output device for the application voice:"
 msgstr "एप्लिकेशन वॉइस के लिए आउटपुट डिवाइस:"
 
@@ -2049,8 +2049,8 @@ msgid "Play/Pause"
 msgstr "चलाएँ/रोकें"
 
 #: main.py:2862
-#: main.py:7036
-#: main.py:7039
+#: main.py:7052
+#: main.py:7055
 msgid "Playback Error"
 msgstr "प्लेबैक त्रुटि"
 
@@ -2086,12 +2086,12 @@ msgstr "प्लेलिस्ट"
 msgid "Playlist Manager"
 msgstr "प्लेलिस्ट प्रबंधक"
 
-#: main.py:6620
-#: main.py:6626
+#: main.py:6636
+#: main.py:6642
 msgid "Playlist refresh failed: {name}"
 msgstr "प्लेलिस्ट रीफ़्श नहीं हो सकी: {name}"
 
-#: main.py:6625
+#: main.py:6641
 msgid "Playlist refreshed: {name}"
 msgstr "प्लेलिस्ट रीफ़्रेश हो गई: {name}"
 
@@ -2161,16 +2161,16 @@ msgstr "पसंदीदा स्ट्रीम कंटेनर प्र
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "पसंदीदा ट्रैक नाम या भाषाएँ, सबसे अधिक वांछित पहले:"
 
-#: main.py:8609
+#: main.py:8625
 msgid "Preparing download..."
 msgstr "डाउनलोड तैयार हो रहा है..."
 
-#: main.py:4803
-#: main.py:4857
+#: main.py:4818
+#: main.py:4872
 msgid "Preparing to restart..."
 msgstr "पुनः प्रारंभ करने की तैयारी हो रही है..."
 
-#: main.py:8623
+#: main.py:8639
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "इस विंडो को छिपाने के लिए Escape दबाएँ; डाउनलोड जारी रहता है। दृश्य > डाउनलोड दिखाएँ (Ctrl+Shift+D) इसे वापस लाता है।"
 
@@ -2219,7 +2219,7 @@ msgstr "कार्यक्रम अनुस्मारक"
 msgid "Programme Reminders..."
 msgstr "कार्यक्रम अनुस्मारक…"
 
-#: main.py:8715
+#: main.py:8731
 msgid "Progress: {percent}%"
 msgstr "प्रगति: {percent}%"
 
@@ -2230,9 +2230,9 @@ msgid "Provider"
 msgstr "प्रदाता"
 
 #: main.py:3512
-#: main.py:7036
-#: main.py:8053
-#: main.py:8111
+#: main.py:7052
+#: main.py:8069
+#: main.py:8127
 msgid "Provider error: {error}"
 msgstr "प्रदाता त्रुटि: {error}"
 
@@ -2278,7 +2278,7 @@ msgstr "पिछला उपशीर्षक पढ़ें"
 msgid "Ready."
 msgstr "तैयार।"
 
-#: main.py:7356
+#: main.py:7372
 msgid "Recent Subtitles"
 msgstr "हालिया उपशीर्षक"
 
@@ -2308,24 +2308,24 @@ msgstr "पुनः कनेक्ट हो रहा है..."
 #: internal_player.py:1971
 #: main.py:2695
 #: main.py:3487
-#: main.py:7864
-#: main.py:7872
+#: main.py:7880
+#: main.py:7888
 #: shortcuts.py:93
 msgid "Record"
 msgstr "रिकॉर्ड करें"
 
 #: dialogs_misc.py:1100
-#: main.py:9165
+#: main.py:9181
 msgid "Record Daily"
 msgstr "रोज़ रिकॉर्ड करें"
 
 #: dialogs_misc.py:1102
-#: main.py:9167
+#: main.py:9183
 msgid "Record Series"
 msgstr "सीरीज़ रिकॉर्ड करें"
 
 #: dialogs_misc.py:1101
-#: main.py:9166
+#: main.py:9182
 msgid "Record Weekly"
 msgstr "हर हफ़्ते रिकॉर्ड करें"
 
@@ -2338,7 +2338,7 @@ msgstr "हर हफ़्ते रिकॉर्ड करें"
 #: main.py:3799
 #: main.py:3807
 #: main.py:3810
-#: main.py:8946
+#: main.py:8962
 msgid "Recording"
 msgstr "रिकॉर्डिंग"
 
@@ -2364,9 +2364,9 @@ msgid "Recording Format"
 msgstr "रिकॉर्डिंग प्रारूप"
 
 #: main.py:4426
-#: main.py:8793
-#: main.py:8799
-#: main.py:8838
+#: main.py:8809
+#: main.py:8815
+#: main.py:8854
 msgid "Recording Problem Times"
 msgstr "रिकॉर्डिंग की समस्याओं का समय"
 
@@ -2420,8 +2420,8 @@ msgid "Recordings"
 msgstr "रिकॉर्डिंग"
 
 #: dialogs_misc.py:346
-#: main.py:8880
-#: main.py:8918
+#: main.py:8896
+#: main.py:8934
 #: planning_ui.py:50
 #: playlist.py:3079
 msgid "Refresh"
@@ -2431,11 +2431,11 @@ msgstr "ताज़ा करें"
 msgid "Refresh All Playlists"
 msgstr "सभी प्लेलिस्ट रीफ़्रेश करें"
 
-#: main.py:6622
+#: main.py:6638
 msgid "Refreshing all playlists..."
 msgstr "सभी प्लेलिस्ट रीफ़्रेश हो रही हैं..."
 
-#: main.py:6627
+#: main.py:6643
 msgid "Refreshing playlist: {name}"
 msgstr "प्लेलिस्ट रीफ़्रेश हो रही है: {name}"
 
@@ -2467,7 +2467,7 @@ msgstr "सभी अनुस्मारक हटाएँ?"
 msgid "Remove all saved playback positions?"
 msgstr "सभी सहेजी गई प्लेबैक स्थितियाँ हटाएँ?"
 
-#: main.py:9028
+#: main.py:9044
 msgid "Remove all scheduled recordings from the list?"
 msgstr "सूची से सभी निर्धारित रिकॉर्डिंग हटाएँ?"
 
@@ -2475,7 +2475,7 @@ msgstr "सूची से सभी निर्धारित रिकॉ�
 msgid "Remove from Favorites"
 msgstr "पसंदीदा से हटाएँ"
 
-#: main.py:9031
+#: main.py:9047
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "निर्धारित रिकॉर्डिंग '{title}' को सूची से हटाएँ?"
 
@@ -2532,7 +2532,7 @@ msgstr "लाइव टीवी पीछे करें…"
 msgid "Saved playback positions"
 msgstr "सहेजी गई प्लेबैक स्थितियाँ"
 
-#: main.py:6135
+#: main.py:6151
 msgid "Saved positions can only be restored in the built-in player. Select it and disconnect casting before continuing."
 msgstr "सहेजी गई स्थितियाँ केवल अंतर्निहित प्लेयर में बहाल की जा सकती हैं। उसे चुनें और दूसरे उपकरण पर कास्टिंग बंद करें।"
 
@@ -2555,8 +2555,8 @@ msgstr "शेड्यूल पैडिंग..."
 #: main.py:3198
 #: main.py:3221
 #: main.py:3228
-#: main.py:9162
-#: main.py:9210
+#: main.py:9178
+#: main.py:9226
 msgid "Schedule Recording"
 msgstr "रिकॉर्डिंग शेड्यूल करें"
 
@@ -2564,7 +2564,7 @@ msgstr "रिकॉर्डिंग शेड्यूल करें"
 msgid "Schedule Recording..."
 msgstr "रिकॉर्डिंग शेड्यूल करें..."
 
-#: main.py:8945
+#: main.py:8961
 #: planning_ui.py:84
 msgid "Scheduled"
 msgstr "शेड्यूल किया गया"
@@ -2574,10 +2574,10 @@ msgstr "शेड्यूल किया गया"
 msgid "Scheduled Recording"
 msgstr "शेड्यूल की गई रिकॉर्डिंग"
 
-#: main.py:8860
-#: main.py:9012
-#: main.py:9021
-#: main.py:9032
+#: main.py:8876
+#: main.py:9028
+#: main.py:9037
+#: main.py:9048
 msgid "Scheduled Recordings"
 msgstr "शेड्यूल की गई रिकॉर्डिंग"
 
@@ -2597,8 +2597,8 @@ msgstr "शेड्यूल की गई रिकॉर्डिंग प�
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "शेड्यूल की गई रिकॉर्डिंग:\n{title}\n{time}"
 
-#: main.py:5532
-#: main.py:8872
+#: main.py:5548
+#: main.py:8888
 msgid "Scheduled recordings"
 msgstr "शेड्यूल की गई रिकॉर्डिंग"
 
@@ -2643,7 +2643,7 @@ msgstr "पहले एक चैनल चुनें।"
 msgid "Select a channel to record first."
 msgstr "पहले रिकॉर्ड करने के लिए एक चैनल चुनें।"
 
-#: main.py:9210
+#: main.py:9226
 msgid "Select a programme first."
 msgstr "पहले एक कार्यक्रम चुनें।"
 
@@ -2651,8 +2651,8 @@ msgstr "पहले एक कार्यक्रम चुनें।"
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "कोई कार्यक्रम चुनें, फिर उसे खोलने के लिए Enter दबाएँ, या उसे डाउनलोड करने के लिए संदर्भ मेनू का उपयोग करें। बंद करने के लिए Escape दबाएँ।"
 
-#: main.py:9012
-#: main.py:9021
+#: main.py:9028
+#: main.py:9037
 msgid "Select a scheduled recording first."
 msgstr "पहले एक शेड्यूल की गई रिकॉर्डिंग चुनें।"
 
@@ -2700,7 +2700,7 @@ msgstr "डाउनलोड फ़ोल्डर सेट करें..."
 
 #: dialogs_misc.py:1095
 #: main.py:2699
-#: main.py:9159
+#: main.py:9175
 #: planning_ui.py:47
 msgid "Set Reminder..."
 msgstr "अनुस्मारक सेट करें…"
@@ -2811,7 +2811,7 @@ msgstr "एप्लिकेशन वॉइस से बोलें"
 msgid "Speak through screen reader"
 msgstr "स्क्रीन रीडर से बोलें"
 
-#: main.py:7497
+#: main.py:7513
 msgid "Speech speed (-10 to 10; 0 is normal):"
 msgstr "बोलने की गति (-10 से 10 तक; 0 सामान्य है):"
 
@@ -2833,7 +2833,7 @@ msgstr "रिकॉर्डिंग प्रारंभ करें"
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "निर्धारित रिकॉर्डिंग जल्दी शुरू करें या कार्यक्रम समाप्त होने के बाद भी रिकॉर्डिंग जारी रखें। मैन्युअल रिकॉर्डिंग नहीं बदली जाती।"
 
-#: main.py:4690
+#: main.py:4705
 msgid "Starting update..."
 msgstr "अपडेट प्रारंभ हो रहा है..."
 
@@ -2845,7 +2845,7 @@ msgstr "{start} पर शुरू: {title}"
 #: account_info.py:552
 #: account_info.py:554
 #: account_info.py:606
-#: main.py:8876
+#: main.py:8892
 #: planning_ui.py:40
 msgid "Status"
 msgstr "स्थिति"
@@ -2891,7 +2891,7 @@ msgstr "कास्ट डिवाइस पर जाने से पहल�
 msgid "Stopped"
 msgstr "रुका हुआ"
 
-#: main.py:8947
+#: main.py:8963
 msgid "Stopping"
 msgstr "रुक रहा है"
 
@@ -2941,16 +2941,16 @@ msgstr "स्ट्रीम आउटपुट"
 msgid "Subscription"
 msgstr "सदस्यता"
 
-#: main.py:7608
+#: main.py:7624
 msgid "Subtitle Capabilities"
 msgstr "उपशीर्षक क्षमताएं"
 
 #: client_ui.py:414
-#: main.py:7447
-#: main.py:7518
-#: main.py:7554
-#: main.py:7558
-#: main.py:7562
+#: main.py:7463
+#: main.py:7534
+#: main.py:7570
+#: main.py:7574
+#: main.py:7578
 msgid "Subtitle Speech"
 msgstr "उपशीर्षक वाचन"
 
@@ -2966,13 +2966,13 @@ msgstr "उपशीर्षक फ़ाइल लोड की गई: {name}
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "उपशीर्षक फ़ाइलें (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:7312
+#: main.py:7328
 msgid "Subtitle speech %s."
 msgstr "उपशीर्षक वाणी %s।"
 
-#: main.py:7408
-#: main.py:7417
-#: main.py:7557
+#: main.py:7424
+#: main.py:7433
+#: main.py:7573
 msgid "Subtitle speech failed."
 msgstr "उपशीर्षक वाचन विफल रहा।"
 
@@ -2992,15 +2992,15 @@ msgstr "उपशीर्षक वाचन चालू"
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "उपशीर्षक पढ़कर सुनाना चालू है। पाठ सुनने के लिए उपशीर्षक फ़ाइल लोड करें।"
 
-#: main.py:7411
+#: main.py:7427
 msgid "Subtitle speech paused: the selected audio output is unavailable."
 msgstr "उपशीर्षक वाणी रोकी गई: चयनित ऑडियो आउटपुट उपलब्ध नहीं है।"
 
-#: main.py:7454
+#: main.py:7470
 msgid "Subtitle speech will use the application voice."
 msgstr "उपशीर्षक वाचन एप्लिकेशन वॉइस का उपयोग करेगा।"
 
-#: main.py:7456
+#: main.py:7472
 msgid "Subtitle speech will use your screen reader."
 msgstr "उपशीर्षक वाचन आपके स्क्रीन रीडर का उपयोग करेगा।"
 
@@ -3019,7 +3019,7 @@ msgid "Subtitles: {name}"
 msgstr "उपशीर्षक: {name}"
 
 #: internal_player.py:120
-#: main.py:7528
+#: main.py:7544
 msgid "System default"
 msgstr "सिस्टम डिफ़ॉल्ट"
 
@@ -3028,19 +3028,19 @@ msgid "The EPG database was created by an older version and is missing newer fie
 msgstr "EPG डेटाबेस पुराने संस्करण द्वारा बनाया गया था और उसमें नए फ़ील्ड गायब हैं। इसे अपडेट करने के लिए गाइड फिर से आयात करें?\n\n(इसके बिना, EPG विवरण कार्यक्रम विवरण नहीं दिखा सकते।)"
 
 #: main.py:2765
-#: main.py:6714
+#: main.py:6730
 msgid "The EPG import could not be started."
 msgstr "EPG आयात प्रारंभ नहीं किया जा सका।"
 
-#: main.py:6584
+#: main.py:6600
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "EPG आयात पूरा नहीं हुआ। कार्यक्रम गाइड अधूरी या अपरिवर्तित हो सकती है।"
 
-#: main.py:6580
+#: main.py:6596
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "EPG आयात पूरा हो गया। कार्यक्रम गाइड अद्यतन है।"
 
-#: main.py:7446
+#: main.py:7462
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "एप्लिकेशन वॉइस केवल SAPI के साथ Windows पर उपलब्ध है।"
 
@@ -3060,15 +3060,15 @@ msgstr "चालू या निर्धारित सभी रिकॉ�
 msgid "The connection to the provider timed out."
 msgstr "प्रदाता से कनेक्शन का समय समाप्त हो गया।"
 
-#: updater.py:152
+#: updater.py:154
 msgid "The installer could not be started."
 msgstr "इंस्टॉलर शुरू नहीं किया जा सका।"
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer stopped with exit code {code}."
 msgstr "इंस्टॉलर निकास कोड {code} के साथ रुक गया।"
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer was still running after 15 minutes."
 msgstr "15 मिनट बाद भी इंस्टॉलर चल रहा था।"
 
@@ -3105,7 +3105,7 @@ msgid "The paused position expired. Playback resumed at the oldest retained pict
 msgstr "विराम की स्थिति अब उपलब्ध नहीं है। सबसे पुरानी सुरक्षित तस्वीर से प्लेबैक फिर शुरू हुआ।"
 
 #: internal_player.py:3077
-#: main.py:6126
+#: main.py:6142
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "जाँच के दौरान प्लेलिस्ट बदल गईं। देखना जारी रखें विंडो फिर से खोलें और दोबारा प्रयास करें।"
 
@@ -3153,7 +3153,7 @@ msgstr "अनुस्मारक संबंधी कार्रवाई 
 msgid "The saved playback position could not be restored."
 msgstr "सहेजी गई प्लेबैक स्थिति बहाल नहीं हो सकी।"
 
-#: main.py:7428
+#: main.py:7444
 msgid "The selected audio output is unavailable. Subtitle speech is paused."
 msgstr "चयनित ऑडियो आउटपुट उपलब्ध नहीं है। उपशीर्षक वाणी रोकी गई है।"
 
@@ -3165,7 +3165,7 @@ msgstr "सर्वर ने खाते का कोई विवरण न
 msgid "The stream sent data that could not be read."
 msgstr "स्ट्रीम ने ऐसा डेटा भेजा जिसे पढ़ा नहीं जा सका।"
 
-#: main.py:5090
+#: main.py:5106
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "v{version} में अपडेट पूरा नहीं हुआ, इसलिए {app} अब भी v{current} है। आप सहायता > अपडेट जाँचें... से फिर से प्रयास कर सकते हैं।"
 
@@ -3173,8 +3173,8 @@ msgstr "v{version} में अपडेट पूरा नहीं हुआ
 msgid "The user guide could not be opened: {error}"
 msgstr "उपयोगकर्ता गाइड नहीं खुल सकी: {error}"
 
-#: main.py:8128
-#: main.py:8232
+#: main.py:8144
+#: main.py:8248
 msgid "This catch-up programme is already downloading."
 msgstr "यह कैच-अप कार्यक्रम पहले से डाउनलोड हो रहा है।"
 
@@ -3186,11 +3186,11 @@ msgstr "यह चैनल वर्तमान में रिकॉर्�
 msgid "This entry cannot be added to Favorites."
 msgstr "इस प्रविष्टि को पसंदीदा में नहीं जोड़ा जा सकता।"
 
-#: main.py:7870
+#: main.py:7886
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "यह एक कैच-अप स्ट्रीम है। इसे सहेजने के लिए कैच-अप सूची में डाउनलोड का उपयोग करें।"
 
-#: main.py:7556
+#: main.py:7572
 msgid "This is the application voice."
 msgstr "यह एप्लिकेशन आवाज़ है।"
 
@@ -3202,7 +3202,7 @@ msgstr "यह कार्यक्रम पहले ही समाप्�
 msgid "This programme is already scheduled to record."
 msgstr "यह कार्यक्रम पहले से ही रिकॉर्ड करने के लिए शेड्यूल किया गया है।"
 
-#: main.py:8106
+#: main.py:8122
 msgid "This programme is not available as catch-up content yet."
 msgstr "यह कार्यक्रम अभी कैच-अप सामग्री के रूप में उपलब्ध नहीं है।"
 
@@ -3214,18 +3214,18 @@ msgstr "इस कार्यक्रम का आरंभ और समा�
 msgid "This recording overlaps {count} other scheduled recording(s). Schedule it anyway?"
 msgstr "यह रिकॉर्डिंग {count} अन्य शेड्यूल की गई रिकॉर्डिंग(रिकॉर्डिंग) को ओवरलैप करती है। वैसे भी इसे शेड्यूल करें?"
 
-#: main.py:8873
-#: main.py:9066
+#: main.py:8889
+#: main.py:9082
 #: planning_ui.py:39
 msgid "Time"
 msgstr "समय"
 
-#: main.py:8717
+#: main.py:8733
 msgid "Time remaining: {time}"
 msgstr "शेष समय: {time}"
 
-#: main.py:8874
-#: main.py:9067
+#: main.py:8890
+#: main.py:9083
 #: planning_ui.py:39
 #: resume_dialogs.py:39
 msgid "Title"
@@ -3265,24 +3265,24 @@ msgstr "प्रकार"
 msgid "URL copied to the clipboard."
 msgstr "URL क्लिपबोर्ड पर कॉपी हो गई।"
 
-#: updater.py:710
+#: updater.py:778
 msgid "Unable to download manifest. Please check your connection."
 msgstr "मेनिफ़ेस्ट डाउनलोड नहीं किया जा सका। कृपया अपना कनेक्शन जाँचें।"
 
-#: updater.py:745
-#: updater.py:747
+#: updater.py:833
+#: updater.py:837
 msgid "Unable to download update. Please check your connection."
 msgstr "अपडेट डाउनलोड नहीं किया जा सका। कृपया अपना कनेक्शन जाँचें।"
 
-#: main.py:8116
+#: main.py:8132
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "कैच-अप डाउनलोड तैयार नहीं किया जा सका:\n{error}"
 
-#: main.py:8056
+#: main.py:8072
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "कैच-अप स्ट्रीम तैयार नहीं की जा सकी:\n{error}"
 
-#: updater.py:635
+#: updater.py:705
 msgid "Unable to reach GitHub. Please check your connection."
 msgstr "GitHub तक नहीं पहुँचा जा सका। कृपया अपना कनेक्शन जाँचें।"
 
@@ -3299,7 +3299,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream सर्वर से अप्रत्याशित खाता प्रतिक्रिया"
 
 #: channel_widgets.py:383
-#: updater.py:870
+#: updater.py:963
 msgid "Unknown"
 msgstr "अज्ञात"
 
@@ -3313,34 +3313,35 @@ msgstr "अज्ञात कमांड।"
 msgid "Unknown time"
 msgstr "अज्ञात समय"
 
-#: main.py:4674
+#: main.py:4689
 msgid "Update Available"
 msgstr "अपडेट उपलब्ध"
 
-#: main.py:5105
+#: main.py:5121
 msgid "Update Complete"
 msgstr "अपडेट पूरा हुआ"
 
-#: main.py:4876
 #: main.py:4892
-#: main.py:4935
-#: main.py:4979
+#: main.py:4908
+#: main.py:4951
+#: main.py:4995
 msgid "Update Error"
 msgstr "अपडेट त्रुटि"
 
-#: main.py:5094
+#: main.py:5110
 msgid "Update Not Completed"
 msgstr "अपडेट पूरा नहीं हुआ"
 
-#: main.py:4669
+#: main.py:4684
 msgid "Update available: v{latest} (current v{current})."
 msgstr "अपडेट उपलब्ध: v{latest} (वर्तमान v{current})।"
 
-#: updater.py:739
+#: updater.py:813
 msgid "Update cancelled."
 msgstr "अपडेट रद्द किया गया।"
 
-#: main.py:4645
+#: main.py:4648
+#: main.py:4660
 msgid "Update check failed: {error}"
 msgstr "अपडेट जाँच विफल: {error}"
 
@@ -3348,58 +3349,59 @@ msgstr "अपडेट जाँच विफल: {error}"
 msgid "Update check is already running."
 msgstr "अपडेट जाँच पहले से चल रही है।"
 
-#: main.py:4934
-#: main.py:4978
+#: main.py:4950
+#: main.py:4994
 msgid "Update failed to start: {error}"
 msgstr "अपडेट प्रारंभ करने में विफल: {error}"
 
-#: main.py:4875
 #: main.py:4891
+#: main.py:4907
 msgid "Update failed: {error}"
 msgstr "अपडेट विफल: {error}"
 
-#: main.py:4796
-#: main.py:4850
+#: main.py:4811
+#: main.py:4865
 msgid "Update helper is missing from this build."
 msgstr "इस बिल्ड में अपडेट हेल्पर गायब है।"
 
-#: main.py:4816
+#: main.py:4831
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "अपडेट मैनिफ़ेस्ट में असुरक्षित एसेट फ़ाइल नाम है।"
 
-#: main.py:4775
+#: main.py:4790
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "अपडेट मैनिफ़ेस्ट में असुरक्षित इंस्टॉलर फ़ाइल नाम है।"
 
-#: updater.py:656
+#: updater.py:728
 msgid "Update manifest download URL is missing."
 msgstr "अपडेट मेनिफ़ेस्ट डाउनलोड URL गायब है।"
 
-#: main.py:4771
-#: updater.py:698
+#: main.py:4786
+#: updater.py:770
 msgid "Update manifest is missing required fields."
 msgstr "अपडेट मेनिफ़ेस्ट में आवश्यक फ़ील्ड गायब हैं।"
 
-#: main.py:4766
+#: main.py:4781
 msgid "Update manifest version is not newer than the current app."
 msgstr "अपडेट मेनिफ़ेस्ट संस्करण वर्तमान ऐप से नया नहीं है।"
 
-#: updater.py:652
+#: updater.py:724
 msgid "Update manifest was not found in the latest release."
 msgstr "नवीनतम रिलीज़ में अपडेट मेनिफ़ेस्ट नहीं मिला।"
 
-#: updater.py:758
+#: updater.py:851
 msgid "Update package contains an unsafe file path."
 msgstr "अपडेट पैकेज में एक असुरक्षित फ़ाइल पथ है।"
 
-#: main.py:4835
+#: main.py:4850
 msgid "Updated executable '{name}' not found in the package."
 msgstr "अपडेट किया गया निष्पादन योग्य '{name}' पैकेज में नहीं मिला।"
 
 #: main.py:4595
 #: main.py:4600
 #: main.py:4634
-#: main.py:4646
+#: main.py:4649
+#: main.py:4661
 msgid "Updates"
 msgstr "अपडेट"
 
@@ -3411,8 +3413,8 @@ msgstr "अपडेट केवल पैकेज्ड बिल्ड म�
 msgid "Updates are only supported on Windows builds."
 msgstr "अपडेट केवल Windows बिल्ड पर समर्थित हैं।"
 
-#: main.py:4689
-#: main.py:5018
+#: main.py:4704
+#: main.py:5034
 msgid "Updating {app}"
 msgstr "{app} अपडेट हो रहा है"
 
@@ -3439,18 +3441,18 @@ msgstr "उपयोगकर्ता नाम, पासवर्ड और U
 msgid "Validation"
 msgstr "सत्यापन"
 
-#: main.py:4783
-#: main.py:4824
+#: main.py:4798
+#: main.py:4839
 msgid "Verifying download..."
 msgstr "डाउनलोड सत्यापित हो रहा है..."
 
-#: main.py:4787
-#: main.py:4837
+#: main.py:4802
+#: main.py:4852
 msgid "Verifying signature..."
 msgstr "हस्ताक्षर सत्यापित हो रहा है..."
 
-#: main.py:6312
-#: main.py:6331
+#: main.py:6328
+#: main.py:6347
 msgid "Video on Demand"
 msgstr "वीडियो ऑन डिमांड"
 
@@ -3490,7 +3492,7 @@ msgstr "आवाज़ कम करें"
 msgid "Volume Up"
 msgstr "आवाज़ बढ़ाएँ"
 
-#: main.py:7465
+#: main.py:7481
 msgid "Volume:"
 msgstr "वॉल्यूम:"
 
@@ -3519,7 +3521,7 @@ msgstr "अभी क्या चल रहा है"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "जब किसी चैनल में एक से अधिक ऑडियो ट्रैक होते हैं, तो अंतर्निहित प्लेयर स्वयं ही आपके पसंदीदा ट्रैक पर स्विच कर सकता है।"
 
-#: updater.py:150
+#: updater.py:152
 msgid "Windows did not get permission to install the update."
 msgstr "Windows को अपडेट इंस्टॉल करने की अनुमति नहीं मिली।"
 
@@ -3566,7 +3568,7 @@ msgstr "उपलब्ध"
 msgid "channel stream URL"
 msgstr "चैनल स्ट्रीम URL"
 
-#: main.py:8679
+#: main.py:8695
 msgid "ffmpeg exit code: {code}"
 msgstr "ffmpeg एग्ज़िट कोड: {code}"
 
@@ -3578,11 +3580,11 @@ msgstr "इस प्लेयर द्वारा समर्थित न�
 msgid "not verified yet"
 msgstr "अभी सत्यापित नहीं"
 
-#: main.py:7311
+#: main.py:7327
 msgid "off"
 msgstr "बंद"
 
-#: main.py:7311
+#: main.py:7327
 msgid "on"
 msgstr "चालू"
 
@@ -3610,7 +3612,7 @@ msgstr "x264 पुनः एन्कोड (MKV)"
 msgid "x264 re-encode (MP4)"
 msgstr "x264 पुनः एन्कोड (MP4)"
 
-#: main.py:9267
+#: main.py:9283
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} पहले से चल रहा है, लेकिन उसने जवाब नहीं दिया। कुछ देर प्रतीक्षा करके फिर से प्रयास करें, या इसे सूचना क्षेत्र से बंद करें।"
 
@@ -3618,7 +3620,7 @@ msgstr "{app} पहले से चल रहा है, लेकिन उ�
 msgid "{app} is up to date (v{version})."
 msgstr "{app} अद्यतित है (v{version})।"
 
-#: main.py:5103
+#: main.py:5119
 msgid "{app} was successfully updated to v{version}."
 msgstr "{app} सफलतापूर्वक v{version} पर अपडेट हो गया।"
 
@@ -3631,7 +3633,7 @@ msgstr "{channel}. अब: {current}. अगला: {next}. रिकॉर्�
 msgid "{count} programs"
 msgstr "{count} कार्यक्रम"
 
-#: main.py:5525
+#: main.py:5541
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} रिकॉर्डिंग निर्धारित है लेकिन अभी शुरू नहीं हुई।\n\n{names}\n\nइसे शुरू करने के लिए ऐप खुला रहना चाहिए। फिर भी बाहर निकलें?"
 
@@ -3679,7 +3681,7 @@ msgstr "{title}\n{channel}\nशुरुआत: {time}"
 msgid "{title} - Built-in Player"
 msgstr "{title} - अंतर्निहित प्लेयर"
 
-#: main.py:8122
+#: main.py:8138
 msgid "{title} - {channel}"
 msgstr "{title} - {channel}"
 
@@ -3699,8 +3701,8 @@ msgstr "कुल {warnings} चेतावनियाँ, {errors} त्र�
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
-#: main.py:6318
-#: main.py:6343
+#: main.py:6334
+#: main.py:6359
 msgid "◄ Back"
 msgstr "◄ वापस"
 
