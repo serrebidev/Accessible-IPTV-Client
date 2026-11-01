@@ -10,6 +10,8 @@ import time
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from responsiveness import ResponsivenessGate
+
 
 def test_large_channel_searches_are_single_flight():
     from main import IPTVClient
@@ -55,6 +57,26 @@ def test_large_channel_searches_are_single_flight():
     first.join(timeout=1)
     second.join(timeout=1)
     assert active == 0
+
+
+def test_new_search_generation_cancels_stale_channel_scan():
+    from main import IPTVClient
+
+    gate = ResponsivenessGate()
+    client = SimpleNamespace(
+        _search_token=1,
+        _channel_search_lock=threading.Lock(),
+        _search_gate=gate,
+    )
+    stale = gate.start_work()
+    current = gate.start_work()
+
+    assert IPTVClient._search_channel_rows(
+        client, [], "old", None, 1, stale
+    ) is None
+    assert IPTVClient._search_channel_rows(
+        client, [], "new", None, 1, current
+    ) == []
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

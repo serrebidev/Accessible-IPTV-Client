@@ -1120,6 +1120,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # EPG/now-playing lanes adopt it in #109.
         self._work_gate = responsiveness.WorkGate()
         self._channel_search_lock = threading.Lock()
+        self._search_gate = ResponsivenessGate()
 
         # Bulk on-air programme labels for the channel rows, keyed by
         # canonicalized EPG channel name; values are " — Title (HH:MM–HH:MM)"
@@ -5816,27 +5817,41 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             return False
 
-    def _search_channel_rows(self, source_snapshot, txt, playlist_index, search_token):
+    def _search_channel_rows(
+            self, source_snapshot, txt, playlist_index, search_token,
+            work_token: Optional[WorkToken] = None):
         """Run one channel search at a time to avoid duplicate large scans."""
         search_lock = getattr(self, "_channel_search_lock", None)
         if search_lock is None:
             search_lock = threading.Lock()
             self._channel_search_lock = search_lock
         with search_lock:
+            search_gate = getattr(self, "_search_gate", None)
+            if (work_token is not None and search_gate is not None
+                    and not search_gate.is_current(work_token)):
+                return None
             if getattr(self, "_search_token", 0) != search_token:
                 return None
             if playlist_index is not None:
                 matching_channels = playlist_index.search(
                     source_snapshot,
                     txt,
-                    is_current=lambda: getattr(self, "_search_token", 0) == search_token,
+                    is_current=lambda: (
+                        getattr(self, "_search_token", 0) == search_token
+                        and (search_gate is None or work_token is None
+                             or search_gate.is_current(work_token))
+                    ),
                 )
                 if getattr(self, "_search_token", 0) != search_token:
                     return None
             else:
                 matching_channels = []
                 for index, ch in enumerate(source_snapshot):
-                    if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
+                    if (index % 256 == 0
+                            and (getattr(self, "_search_token", 0) != search_token
+                                 or (search_gate is not None
+                                     and work_token is not None
+                                     and not search_gate.is_current(work_token)))):
                         return None
                     name = (ch.get("name") or "")
                     if txt and txt not in name.lower():
@@ -5862,6 +5877,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             _gate = self._work_gate = responsiveness.WorkGate()
         self._search_token = _gate.begin("search").generation
         search_token = self._search_token
+        search_gate = getattr(self, "_search_gate", None)
+        if search_gate is None:
+            search_gate = ResponsivenessGate()
+            self._search_gate = search_gate
+        search_work_token = search_gate.start_work()
         source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
         self.url_display.SetValue("")
@@ -5885,7 +5905,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # those stalls while the UI keeps pumping messages.
             matching_channels = IPTVClient._search_channel_rows(
                 self,
-                source_snapshot, txt, playlist_index, search_token
+                source_snapshot, txt, playlist_index, search_token, search_work_token
             )
             if matching_channels is None:
                 LOG.debug("search %r: cancelled stale channel scan", txt)
