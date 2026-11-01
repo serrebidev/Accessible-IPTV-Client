@@ -93,6 +93,35 @@ def test_mouse_choice_commits_once_and_keeps_combo_focus(scope_frame):
     assert wx.Window.FindFocus() is combo
 
 
+def test_mouse_open_without_choice_does_not_arm_later_keyboard_preview(scope_frame):
+    frame, saves, app = scope_frame
+    combo = frame.playlist_scope_combo
+
+    # Opening and closing the native picker on its current item need not
+    # produce EVT_CHOICE. A later keyboard choice may arrive before its hook.
+    combo.GetEventHandler().ProcessEvent(wx.MouseEvent(wx.wxEVT_LEFT_DOWN))
+    combo.GetEventHandler().ProcessEvent(wx.MouseEvent(wx.wxEVT_LEFT_UP))
+    assert saves == []
+    combo.SetSelection(2)
+    combo.GetEventHandler().ProcessEvent(wx.CommandEvent(wx.wxEVT_CHOICE, combo.GetId()))
+    _key(combo, wx.WXK_DOWN)
+    app.Yield()
+
+    assert frame.playlist_scope == "p1"
+    assert saves == []
+
+    # A subsequent mouse selection of the previewed item is one activation.
+    combo.GetEventHandler().ProcessEvent(wx.MouseEvent(wx.wxEVT_LEFT_DOWN))
+    choice = wx.CommandEvent(wx.wxEVT_CHOICE, combo.GetId())
+    combo.GetEventHandler().ProcessEvent(choice)
+    combo.GetEventHandler().ProcessEvent(choice)
+    app.Yield()
+
+    assert frame.playlist_scope == "p2"
+    assert saves == ["p2"]
+    assert wx.Window.FindFocus() is combo
+
+
 def test_tab_traverses_before_refresh_and_focus_stays_on_categories(scope_frame):
     frame, saves, app = scope_frame
     combo = frame.playlist_scope_combo
@@ -111,6 +140,22 @@ def test_tab_traverses_before_refresh_and_focus_stays_on_categories(scope_frame)
     assert wx.Window.FindFocus() is frame.group_list
     assert frame._group_keys == ["All Channels", "Second"]
     assert frame.channel_list.GetCount() == 1
+
+
+def test_tab_commits_choice_captured_before_later_preview(scope_frame):
+    frame, saves, app = scope_frame
+    combo = frame.playlist_scope_combo
+    combo.SetSelection(2)
+
+    _key(combo, wx.WXK_TAB)
+    combo.Navigate(wx.NavigationKeyEvent.IsForward)
+    combo.SetSelection(0)
+    app.Yield()
+
+    assert frame.playlist_scope == frame.config["playlist_scope"] == "p2"
+    assert saves == ["p2"]
+    assert frame._group_keys == ["All Channels", "Second"]
+    assert wx.Window.FindFocus() is frame.group_list
 
 
 def test_shift_tab_leaves_preview_and_traverses_back(scope_frame):
@@ -156,9 +201,12 @@ def test_large_playlist_arrow_previews_do_no_scope_work_until_enter(scope_frame)
     # EVT_CHOICE follows each native arrow selection. Neither that event nor
     # the matching key hook may rebuild the 100k-channel scope or save it.
     with (patch.object(frame, "_refresh_group_ui", wraps=frame._refresh_group_ui) as refresh,
+          patch.object(frame, "_get_playlist_index", wraps=frame._get_playlist_index) as get_index,
           patch.object(frame, "scoped_all_channels", wraps=frame.scoped_all_channels) as scoped_all,
           patch.object(frame, "scoped_channels_by_group", wraps=frame.scoped_channels_by_group) as scoped_groups):
-        for selection in (2, 0, 1, 2) * 3:
+        previews = (2, 0, 1, 2) * 3
+        assert len(previews) == 12
+        for selection in previews:
             _key(combo, wx.WXK_DOWN)
             combo.SetSelection(selection)
             choice = wx.CommandEvent(wx.wxEVT_CHOICE, combo.GetId())
@@ -166,7 +214,7 @@ def test_large_playlist_arrow_previews_do_no_scope_work_until_enter(scope_frame)
         app.Yield()
 
         assert saves == []
-        assert refresh.call_count == scoped_all.call_count == scoped_groups.call_count == 0
+        assert refresh.call_count == get_index.call_count == scoped_all.call_count == scoped_groups.call_count == 0
         assert frame.playlist_scope == frame.config["playlist_scope"] == "p1"
         assert wx.Window.FindFocus() is combo
 
@@ -176,8 +224,9 @@ def test_large_playlist_arrow_previews_do_no_scope_work_until_enter(scope_frame)
 
         assert saves == ["p2"]
         assert refresh.call_count == 1
-        assert scoped_all.call_count >= 1
-        assert scoped_groups.call_count >= 1
+        assert 1 <= scoped_all.call_count <= 3
+        assert scoped_groups.call_count == 1
+        assert get_index.call_count <= 4
         assert frame.playlist_scope == frame.config["playlist_scope"] == "p2"
         assert frame.channel_list.GetCount() == 50_000
         assert wx.Window.FindFocus() is combo
