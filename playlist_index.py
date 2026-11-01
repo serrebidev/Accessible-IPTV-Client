@@ -30,10 +30,14 @@ class PlaylistIndex:
         positions = {id(channel): position for position, channel in enumerate(all_channels)}
         for position, channel in enumerate(all_channels):
             scope = str(channel.get("playlist-id") or "")
+            if not scope:
+                continue
             self._scope_channels.setdefault(scope, array("I")).append(position)
         for group, channels in channels_by_group.items():
             for channel in channels:
                 scope = str(channel.get("playlist-id") or "")
+                if not scope:
+                    continue
                 position = positions.get(id(channel))
                 if position is not None:
                     self._scope_groups.setdefault(scope, {}).setdefault(

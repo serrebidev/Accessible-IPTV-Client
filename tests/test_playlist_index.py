@@ -30,6 +30,14 @@ def test_index_keeps_scope_membership_as_compact_positions():
     assert index._scope_groups["a"]["News"].tolist() == [0, 2]
 
 
+def test_index_does_not_store_unscoped_membership_that_all_playlists_does_not_use():
+    channels = [{"name": "Legacy", "group": "News"}]
+    index = PlaylistIndex(channels, {"News": channels})
+
+    assert index._scope_channels == {}
+    assert index._scope_groups == {}
+
+
 def test_index_search_preserves_playlist_order_and_substring_semantics():
     channels, groups, refs = _models()
     index = PlaylistIndex(channels, groups)
