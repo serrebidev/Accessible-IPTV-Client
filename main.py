@@ -128,6 +128,7 @@ from client_recording import RecordingReportsMixin, _recording_produced_media  #
 from client_ui import (  # noqa: F401 - re-exported: tests read main.*
     _MAIN_ACCEL_SHOW_PLAYER_ID, UiMixin, _main_window_accelerator_entries,
 )
+from playlist_index import PlaylistIndex
 from dialogs_misc import (
     AccessibleAboutDialog, AccountInfoDialog, AudioTrackPreferenceDialog,
     CastDiscoveryDialog, CatchupDialog, ChangelogDialog,
@@ -923,6 +924,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     _SEARCH_LARGE_RESULT_THRESHOLD = 1500
     _SEARCH_PREVIEW_COUNT = 200
     _SEARCH_BATCH_SIZE = 800
+    # Large channel views are installed in bounded UI batches. Parsing and
+    # refresh work remain in their existing workers; these limits protect the
+    # virtual list from one long model/count update.
+    _PLAYLIST_LARGE_DISPLAY_THRESHOLD = 100_000
+    _PLAYLIST_DISPLAY_BATCH_SIZE = 800
     _SEARCH_EPG_MIN_CHARS = 3
     _SEARCH_EPG_BROAD_CHANNEL_LIMIT = 75
     _SEARCH_EPG_RESULT_LIMIT = 100
@@ -944,6 +950,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self.favorite_keys: List[str] = favorites.normalize(self.config.get("favorites"))
         self._favorite_key_set = set(self.favorite_keys)
         self._favorites_cache: Optional[List[Dict[str, str]]] = None
+        self._playlist_index: Optional[PlaylistIndex] = None
+        self._playlist_index_generation = 0
+        self._playlist_index_building = False
         self.recent_channel_keys = favorites.normalize(self.config.get("recent_channels"))[:20]
         # Parallel list of real group keys, indexed like group_list, so group
         # names containing " (" round-trip correctly instead of being truncated.
@@ -1121,6 +1130,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # Caching map: canonical_name -> db_channel_id
         self._epg_match_cache: Dict[str, Optional[str]] = {}
         self._epg_match_lock = threading.Lock()
+        self._program_match_generation = 0
         # Dedicated executor for EPG lookups to avoid thread-spawning overhead
         self._epg_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="EPGFetch")
         self._db_tune_lock = threading.Lock()
@@ -1279,6 +1289,66 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _invalidate_favorites_cache(self):
         self._favorites_cache = None
 
+    def _invalidate_program_match_index(self):
+        """Drop EPG channel-match work that belongs to the old playlist."""
+        self._program_match_generation = getattr(self, "_program_match_generation", 0) + 1
+        self._program_match_cache = None
+
+    def _invalidate_playlist_index(self):
+        self._playlist_index = None
+        self._playlist_index_generation = getattr(self, "_playlist_index_generation", 0) + 1
+        self._playlist_index_building = False
+
+    def _get_playlist_index(self) -> Optional[PlaylistIndex]:
+        """Return a ready navigation index without blocking the UI thread."""
+        index = getattr(self, "_playlist_index", None)
+        if (index is not None
+                and index.channels is self.all_channels
+                and getattr(self, "_playlist_index_generation", 0)
+                == getattr(self, "_playlist_load_token", 0)):
+            return index
+        return None
+
+    def _warm_playlist_index_background(self):
+        """Build the optional navigation index after publication, off the UI thread."""
+        channels = self.all_channels
+        groups = self.channels_by_group
+        generation = getattr(self, "_playlist_load_token", 0)
+        if (getattr(self, "_playlist_index_building", False)
+                or (self._playlist_index is not None
+                    and self._playlist_index.channels is channels
+                    and getattr(self, "_playlist_index_generation", 0) == generation)):
+            return
+        self._playlist_index_building = True
+
+        def worker():
+            _lower_current_thread_priority()
+            try:
+                index = PlaylistIndex(channels, groups)
+                index.set_all_groups(groups)
+            except Exception:
+                LOG.warning("IPTVClient: playlist index unavailable; using scan path", exc_info=True)
+                try:
+                    wx.CallAfter(self._finish_playlist_index_warm, None, channels, generation)
+                except Exception:
+                    LOG.debug("IPTVClient: could not report index failure", exc_info=True)
+                return
+            try:
+                wx.CallAfter(self._finish_playlist_index_warm, index, channels, generation)
+            except Exception:
+                LOG.debug("IPTVClient: could not publish playlist index", exc_info=True)
+
+        threading.Thread(target=worker, name="playlist-index", daemon=True).start()
+
+    def _finish_playlist_index_warm(self, index, channels, generation):
+        if (self.all_channels is not channels
+                or getattr(self, "_playlist_load_token", 0) != generation):
+            return
+        self._playlist_index_building = False
+        if index is not None:
+            self._playlist_index = index
+            self._playlist_index_generation = generation
+
     def _is_favorite(self, channel: Optional[Dict[str, str]]) -> bool:
         key = favorites.channel_key(channel)
         return bool(key) and key in self._favorite_key_set
@@ -1380,10 +1450,18 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
+        get_index = getattr(self, "_get_playlist_index", None)
+        index = get_index() if get_index is not None else None
+        if index is not None:
+            return index.all_for_scope(self.playlist_scope)
         return _scoped_channels(self.all_channels, self.playlist_scope)
 
     def scoped_channels_by_group(self) -> Dict[str, List[Dict[str, str]]]:
         """``self.channels_by_group`` filtered to the playlist scope."""
+        get_index = getattr(self, "_get_playlist_index", None)
+        index = get_index() if get_index is not None else None
+        if index is not None:
+            return index.groups_for_scope(self.playlist_scope)
         scope = self.playlist_scope
         if scope == ALL_PLAYLISTS_SCOPE:
             return self.channels_by_group
@@ -1444,6 +1522,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
         self._now_playing_refreshed_at = now
+        playlist_channels = getattr(self, "all_channels", None)
+        if playlist_channels is None:
+            playlist_channels = []
+        playlist_generation = getattr(self, "_playlist_load_token", 0)
         try:
             db = EPGDatabase(get_db_path(), readonly=True)
             try:
@@ -1454,8 +1536,14 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        mapping = self._build_now_playing_labels(channels, known_ids=known_ids)
-        descriptions = self._build_now_playing_descriptions(channels, known_ids=known_ids)
+        mapping = self._build_now_playing_labels(
+            channels, known_ids=known_ids, playlist_channels=playlist_channels)
+        descriptions = self._build_now_playing_descriptions(
+            channels, known_ids=known_ids, playlist_channels=playlist_channels)
+        if (getattr(self, "all_channels", None) is not playlist_channels
+                or getattr(self, "_playlist_load_token", 0) != playlist_generation):
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped stale result")
+            return
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
             self._now_playing_labels = mapping
@@ -1469,7 +1557,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             wx.CallAfter(self.on_highlight)
 
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
-                                  known_ids=None) -> Dict[str, str]:
+                                  known_ids=None, playlist_channels=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
 
         Exact normalized names miss a lot of channels ("TVP 1 HD" against a
@@ -1483,7 +1571,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         indexes = guide_indexes(channels)
 
         mapping: Dict[str, str] = {}
-        playlist_channels = getattr(self, "all_channels", None) or []
+        if playlist_channels is None:
+            playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
@@ -1507,7 +1596,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         return mapping
 
     def _build_now_playing_descriptions(
-            self, channels: Dict[str, Dict[str, object]], known_ids=None) -> Dict[str, str]:
+            self, channels: Dict[str, Dict[str, object]], known_ids=None,
+            playlist_channels=None) -> Dict[str, str]:
         """On-air episode description per playlist channel (``_now_playing_key``).
 
         Same fuzzy channel match as the row labels, but carries the long
@@ -1517,7 +1607,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         """
         indexes = guide_indexes(channels)
         mapping: Dict[str, str] = {}
-        playlist_channels = getattr(self, "all_channels", None) or []
+        if playlist_channels is None:
+            playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
@@ -2166,11 +2257,21 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
-                self._program_match_cache = None  # holds the old channel list
+                invalidate_index = getattr(self, "_invalidate_playlist_index", None)
+                if invalidate_index is not None:
+                    invalidate_index()
+                invalidate_match_index = getattr(self, "_invalidate_program_match_index", None)
+                if invalidate_match_index is not None:
+                    invalidate_match_index()
+                else:
+                    self._program_match_cache = None  # holds the old channel list
                 IPTVClient._warm_program_match_index(self)
                 self._invalidate_favorites_cache()
                 self._fill_playlist_scope_combo()
                 self._refresh_group_ui()
+                warm_index = getattr(self, "_warm_playlist_index_background", None)
+                if warm_index is not None:
+                    warm_index()
 
             wx.CallAfter(apply_prefill, prefilled_by_group, prefilled_all)
 
@@ -2181,6 +2282,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         fetched_playlist_epg: Dict[str, List[str]] = {}
 
         def fetch_and_process_playlist(src):
+            # Playlist parsing can hold the GIL for large M3U files. Lower the
+            # worker's OS CPU/I/O priority so browsing remains responsive while
+            # a refresh is downloading and parsing providers in parallel.
+            _lower_current_thread_priority()
             result = {
                 "channels": [],
                 "clients": {},
@@ -2404,10 +2509,17 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             started = time.monotonic()
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            invalidate_index = getattr(self, "_invalidate_playlist_index", None)
+            if invalidate_index is not None:
+                invalidate_index()
             # The load is over: the categories can say what there is (or that
             # there is nothing) now.
             self._playlist_loading = False
-            self._program_match_cache = None  # holds the old channel list
+            invalidate_match_index = getattr(self, "_invalidate_program_match_index", None)
+            if invalidate_match_index is not None:
+                invalidate_match_index()
+            else:
+                self._program_match_cache = None  # holds the old channel list
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
@@ -2427,6 +2539,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self._load_vod_catalog(supersede=True)
             else:
                 self._refresh_group_ui()
+            warm_index = getattr(self, "_warm_playlist_index_background", None)
+            if warm_index is not None:
+                warm_index()
             self._cleanup_cache_and_channels(valid_caches)
             done = getattr(self, "_announce_playlists_refreshed", None)
             failed = getattr(self, "_announce_playlists_refresh_failed", None)
@@ -2806,7 +2921,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             name_lower = name_lower.replace("[{pat}]".format(pat=pat), "")
         return name_lower.strip()
 
-    def _program_match_index(self):
+    def _program_match_index(self, channels=None, *, publish=True):
         """Per-channel match features plus a result memo, for the current playlist.
 
         Highlighting an EPG search row resolves its playlist channel on the GUI
@@ -2815,9 +2930,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         change when ``all_channels`` is replaced, so they are built once per
         playlist load and keyed on that list's identity.
         """
-        channels = self.all_channels
+        if channels is None:
+            channels = self.all_channels
         cached = getattr(self, "_program_match_cache", None)
-        if cached is not None and cached.channels is channels:
+        if publish and cached is not None and cached.channels is channels:
             return cached
         rows = []
         by_tvg_id: Dict[str, Dict[str, str]] = {}
@@ -2870,7 +2986,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             by_base=by_base,
             tvg_id_rows=tvg_id_rows,
         )
-        self._program_match_cache = index
+        if publish:
+            self._program_match_cache = index
         return index
 
     def _warm_program_match_index(self) -> None:
@@ -2880,9 +2997,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         channels that is seconds of work, and the user must not pay it while
         highlighting a row.
         """
+        channels = self.all_channels
+        generation = getattr(self, "_program_match_generation", 0)
+
         def worker():
             try:
-                IPTVClient._program_match_index(self)
+                index = IPTVClient._program_match_index(self, channels, publish=False)
+                if (self.all_channels is channels
+                        and getattr(self, "_program_match_generation", 0) == generation):
+                    self._program_match_cache = index
             except Exception:
                 LOG.debug("IPTVClient._warm_program_match_index: ignored exception", exc_info=True)
 
@@ -5685,6 +5808,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # Snapshot on the UI thread so the worker never races a playlist reload
         # mutating the source list in place.
         source_snapshot = list(source)
+        get_index = getattr(self, "_get_playlist_index", None)
+        playlist_index = get_index() if get_index is not None else None
 
         def filter_worker():
             # The match loop and entry building over 50k-300k channels run off
@@ -5692,15 +5817,25 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # and page cache are starved enough that this work on the UI thread
             # freezes the interface (and NVDA with it); a worker thread absorbs
             # those stalls while the UI keeps pumping messages.
-            matching_channels = []
-            for index, ch in enumerate(source_snapshot):
-                if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
-                    LOG.debug("search %r: cancelled stale channel scan", txt)
+            if playlist_index is not None:
+                matching_channels = playlist_index.search(
+                    source_snapshot,
+                    txt,
+                    is_current=lambda: getattr(self, "_search_token", 0) == search_token,
+                )
+                if getattr(self, "_search_token", 0) != search_token:
+                    LOG.debug("search %r: cancelled indexed channel scan", txt)
                     return
-                name = (ch.get("name") or "")
-                if txt and txt not in name.lower():
-                    continue
-                matching_channels.append(ch)
+            else:
+                matching_channels = []
+                for index, ch in enumerate(source_snapshot):
+                    if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
+                        LOG.debug("search %r: cancelled stale channel scan", txt)
+                        return
+                    name = (ch.get("name") or "")
+                    if txt and txt not in name.lower():
+                        continue
+                    matching_channels.append(ch)
             matching_channels.sort(key=lambda ch: search_rank(ch.get("name") or "", txt))
             entries = [
                 {"type": "channel", "data": ch}
@@ -5821,6 +5956,19 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         threading.Thread(target=filter_worker, daemon=True).start()
 
     def _refresh_group_ui(self):
+        selected_channel_key = None
+        channel_list_had_focus = False
+        try:
+            selected_index = self.channel_list.GetSelection()
+            displayed = getattr(self, "displayed", [])
+            if 0 <= selected_index < len(displayed):
+                row = displayed[selected_index]
+                if isinstance(row, dict):
+                    selected_channel_key = favorites.channel_key(row.get("data"))
+            has_focus = getattr(self.channel_list, "HasFocus", None)
+            channel_list_had_focus = bool(has_focus()) if callable(has_focus) else False
+        except Exception:
+            LOG.debug("IPTVClient._refresh_group_ui: could not capture channel position", exc_info=True)
         scoped_channels = self.scoped_all_channels()
         scoped_groups = self.scoped_channels_by_group()
         self.group_list.Freeze()
@@ -5909,7 +6057,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             except Exception:
                 LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
         
-        self.on_group_select()
+        self.on_group_select(
+            selected_channel_key=selected_channel_key,
+            preserve_channel_focus=channel_list_had_focus,
+        )
 
     # ================================================================== #
     # Video on Demand (movies & series) view
@@ -6482,8 +6633,12 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # were never added through the Xtream dialog, so keep it off the UI thread.
         sources = list(self.playlist_sources or [])
         channels = self.all_channels
+        generation = getattr(self, "_playlist_load_token", 0)
 
         def worker():
+            # Account discovery scans every loaded channel URL. Keep that
+            # optional lookup from competing with interactive browsing.
+            _lower_current_thread_priority()
             error = None
             accounts = []
             try:
@@ -6491,7 +6646,14 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             except Exception as e:
                 error = str(e)
                 LOG.debug("show_account_info: discovery failed", exc_info=True)
-            wx.CallAfter(self._present_account_info, accounts, error)
+            def present_if_current():
+                if (self.all_channels is not channels
+                        or getattr(self, "_playlist_load_token", 0) != generation):
+                    LOG.debug("show_account_info: dropped stale discovery result")
+                    return
+                self._present_account_info(accounts, error)
+
+            wx.CallAfter(present_if_current)
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -6625,7 +6787,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return
 
 
-    def on_group_select(self):
+    def on_group_select(
+        self,
+        selected_channel_key: Optional[str] = None,
+        preserve_channel_focus: bool = False,
+    ):
         if getattr(self, "view_mode", "live") == "vod":
             self._vod_on_group_select()
             return
@@ -6646,27 +6812,78 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self.current_group = grp
 
         source = self._source_for_group(grp)
-        self._populate_channel_list_chunked(source)
+        self._populate_channel_list_chunked(
+            source,
+            selected_channel_key=selected_channel_key,
+            preserve_channel_focus=preserve_channel_focus,
+        )
 
-    def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
+    def _populate_channel_list_chunked(
+        self,
+        source: List[Dict[str, str]],
+        selected_channel_key: Optional[str] = None,
+        preserve_channel_focus: bool = False,
+    ):
         self._populate_token += 1
+        populate_token = self._populate_token
 
-        IPTVClient._replace_displayed(self, [
+        entries = [
             {"type": "channel", "data": ch}
             for ch in source
-        ])
+        ]
+        if len(entries) <= self._PLAYLIST_LARGE_DISPLAY_THRESHOLD:
+            IPTVClient._replace_displayed(self, entries)
+            batches = None
+        else:
+            preview_count = self._PLAYLIST_DISPLAY_BATCH_SIZE
+            IPTVClient._replace_displayed(self, entries[:preview_count])
+            batches = entries
 
         if not source:
             self.url_display.SetValue("")
             self._maybe_autostart_epg_import()
             return
 
-        self.channel_list.SetSelection(0)
-        # Only set focus if window is visible (avoid stealing focus from tray).
-        if self.IsShown() and not self.IsIconized():
-            self.channel_list.SetFocus()
+        selected_index = None
+        if selected_channel_key:
+            selected_index = next(
+                (
+                    index
+                    for index, channel in enumerate(source)
+                    if favorites.channel_key(channel) == selected_channel_key
+                ),
+                None,
+            )
+        selected_in_current_model = (
+            selected_index is not None
+            and (batches is None or selected_index < self._PLAYLIST_DISPLAY_BATCH_SIZE)
+        )
+        if selected_in_current_model and preserve_channel_focus:
+            self.channel_list.SetSelection(selected_index)
+        elif not (selected_index is not None and preserve_channel_focus and batches is not None):
+            self.channel_list.SetSelection(0)
+            # Only set focus if window is visible (avoid stealing focus from tray).
+            if not preserve_channel_focus and self.IsShown() and not self.IsIconized():
+                self.channel_list.SetFocus()
+        # A selected identity in a later batch deliberately has no native
+        # selection until that batch exists; the callback below restores it.
         self.on_highlight()
         self._maybe_autostart_epg_import()
+
+        if batches is not None:
+            def append_batch(offset=self._PLAYLIST_DISPLAY_BATCH_SIZE):
+                if populate_token != getattr(self, "_populate_token", 0):
+                    return
+                end = min(offset + self._PLAYLIST_DISPLAY_BATCH_SIZE, len(batches))
+                self.displayed.extend(batches[offset:end])
+                self.channel_list.set_virtual_count()
+                if end < len(batches):
+                    wx.CallLater(1, append_batch, end)
+                elif selected_index is not None and preserve_channel_focus:
+                    self.channel_list.SetSelection(selected_index)
+                    self.on_highlight()
+
+            wx.CallLater(1, append_batch)
 
 
 
