@@ -147,7 +147,7 @@ class TestScopeChange:
         stub.current_group = "News"
         stub.filter_box = SimpleNamespace(ChangeValue=lambda _value: None)
         stub._invalidate_favorites_cache = lambda: None
-        stub._refresh_group_ui = lambda: refreshes.append(stub.playlist_scope)
+        stub._refresh_group_ui = lambda **_kwargs: refreshes.append(stub.playlist_scope)
         stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2)
         stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
@@ -172,7 +172,7 @@ class TestScopeChange:
         )
         stub._combo_index_for_scope = lambda scope: main.IPTVClient._combo_index_for_scope(stub, scope)
         stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
-        stub._refresh_group_ui = lambda: refreshes.append(True)
+        stub._refresh_group_ui = lambda **_kwargs: refreshes.append(True)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
 
         event = SimpleNamespace(GetKeyCode=lambda: main.wx.WXK_ESCAPE, Skip=lambda: None)
@@ -194,7 +194,7 @@ class TestScopeChange:
         stub._invalidate_favorites_cache = lambda: None
         stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2)
         stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
-        stub._refresh_group_ui = lambda: refreshes.append(True)
+        stub._refresh_group_ui = lambda **_kwargs: refreshes.append(True)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
 
         event = SimpleNamespace(
@@ -208,19 +208,21 @@ class TestScopeChange:
         assert saves == refreshes == []
         assert skipped == [True]
 
-    def test_tab_commits_preview_and_allows_native_traversal(self, monkeypatch):
+    def test_tab_defers_commit_and_allows_native_traversal(self, monkeypatch):
         saves = []
         focus = []
         skipped = []
+        pending = []
         stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
         stub.config = {"playlist_scope": "p1"}
         stub.current_group = "News"
         stub.filter_box = SimpleNamespace(ChangeValue=lambda _value: None)
         stub._invalidate_favorites_cache = lambda: None
-        stub._refresh_group_ui = lambda: None
+        stub._refresh_group_ui = lambda **_kwargs: None
         stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2, SetFocus=lambda: focus.append(True))
         stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+        monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *args: pending.append((fn, args)))
 
         event = SimpleNamespace(
             GetKeyCode=lambda: main.wx.WXK_TAB, ShiftDown=lambda: False,
@@ -228,10 +230,14 @@ class TestScopeChange:
         )
         main.IPTVClient.on_playlist_scope_key(stub, event)
 
-        assert stub.playlist_scope == "p2"
-        assert saves == [{"playlist_scope": "p2"}]
+        assert stub.playlist_scope == "p1"
+        assert saves == []
         assert skipped == [True]
         assert focus == []
+        assert len(pending) == 1
+        pending[0][0](*pending[0][1])
+        assert stub.playlist_scope == "p2"
+        assert saves == [{"playlist_scope": "p2"}]
 
     def test_navigation_previews_choices_and_enter_commits_once(self, monkeypatch):
         saves = []
@@ -244,7 +250,7 @@ class TestScopeChange:
         stub.current_group = "News"
         stub.filter_box = SimpleNamespace(ChangeValue=cleared.append)
         stub._invalidate_favorites_cache = lambda: invalidations.append(True)
-        stub._refresh_group_ui = lambda: refreshes.append(stub.playlist_scope)
+        stub._refresh_group_ui = lambda **_kwargs: refreshes.append(stub.playlist_scope)
         stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
 
         class FakeCombo:
@@ -289,7 +295,7 @@ class TestScopeChange:
         stub._group_keys = ["News"]
         stub.group_list = SimpleNamespace(GetSelection=lambda: 0)
         stub._invalidate_favorites_cache = lambda: invalidate.append(1)
-        stub._refresh_group_ui = lambda: None
+        stub._refresh_group_ui = lambda **_kwargs: None
 
         class FakeCombo:
             def GetSelection(self):
@@ -317,7 +323,7 @@ class TestScopeChange:
         stub._group_keys = []
         stub.group_list = SimpleNamespace(GetSelection=lambda: 0)
         stub._invalidate_favorites_cache = lambda: None
-        stub._refresh_group_ui = lambda: None
+        stub._refresh_group_ui = lambda **_kwargs: None
 
         class FakeCombo:
             def GetSelection(self):
