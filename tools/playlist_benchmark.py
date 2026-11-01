@@ -28,6 +28,11 @@ from playlist_index import PlaylistIndex  # noqa: E402
 
 DEFAULT_SIZES = (50_000, 250_000, 500_000)
 DEFAULT_BATCH_SIZE = 800
+PERFORMANCE_BUDGETS = {
+    50_000: {"index_seconds": 1.0, "indexed_search_seconds": 0.5},
+    250_000: {"index_seconds": 2.0, "indexed_search_seconds": 1.5},
+    500_000: {"index_seconds": 3.0, "indexed_search_seconds": 1.5},
+}
 
 
 class _ParserHarness(M3uCacheMixin):
@@ -60,6 +65,18 @@ class BenchmarkResult:
             "index_seconds": round(self.index_seconds, 6),
             "indexed_search_seconds": round(self.indexed_search_seconds, 6),
         }
+
+
+def performance_budget_failures(result: BenchmarkResult) -> List[str]:
+    """Return budget violations for one of the representative playlist sizes."""
+    budgets = PERFORMANCE_BUDGETS.get(result.channels)
+    if budgets is None:
+        return []
+    return [
+        f"{name}={getattr(result, name):.3f}s exceeds {limit:.3f}s"
+        for name, limit in budgets.items()
+        if getattr(result, name) > limit
+    ]
 
 
 def build_playlist_text(channel_count: int) -> str:
@@ -148,10 +165,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sizes", nargs="+", type=int, default=DEFAULT_SIZES)
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="return failure if a representative size exceeds its performance budget",
+    )
     args = parser.parse_args()
+    failed = False
     for size in args.sizes:
-        print(json.dumps(benchmark(size, args.batch_size).as_dict(), sort_keys=True))
-    return 0
+        result = benchmark(size, args.batch_size)
+        print(json.dumps(result.as_dict(), sort_keys=True))
+        failures = performance_budget_failures(result) if args.check else []
+        for failure in failures:
+            print(f"PERFORMANCE BUDGET FAILED ({size}): {failure}")
+        failed = failed or bool(failures)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
