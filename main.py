@@ -2240,6 +2240,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         fetched_playlist_epg: Dict[str, List[str]] = {}
 
         def fetch_and_process_playlist(src):
+            # Playlist parsing can hold the GIL for large M3U files. Lower the
+            # worker's OS CPU/I/O priority so browsing remains responsive while
+            # a refresh is downloading and parsing providers in parallel.
+            _lower_current_thread_priority()
             result = {
                 "channels": [],
                 "clients": {},
