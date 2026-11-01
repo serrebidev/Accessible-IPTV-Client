@@ -2,8 +2,11 @@
 
 import pytest
 import wx
+from unittest.mock import patch
 
 import main
+from client_m3u import M3uCacheMixin
+from tools.playlist_benchmark import build_playlist_text, group_channels
 from tools.smoke_favorites_shutdown import CONFIG
 
 
@@ -137,3 +140,44 @@ def test_escape_restores_active_choice_without_refresh(scope_frame):
     assert frame.playlist_scope == "p1"
     assert saves == []
     assert wx.Window.FindFocus() is combo
+
+
+def test_large_playlist_arrow_previews_do_no_scope_work_until_enter(scope_frame):
+    frame, saves, app = scope_frame
+    channels = M3uCacheMixin()._parse_m3u_return(build_playlist_text(100_000))
+    assert len(channels) == 100_000
+    for index, channel in enumerate(channels):
+        channel["playlist-id"] = "p1" if index % 2 == 0 else "p2"
+    frame.all_channels = channels
+    frame.channels_by_group = group_channels(channels)
+    frame._invalidate_playlist_index()
+    combo = frame.playlist_scope_combo
+
+    # EVT_CHOICE follows each native arrow selection. Neither that event nor
+    # the matching key hook may rebuild the 100k-channel scope or save it.
+    with (patch.object(frame, "_refresh_group_ui", wraps=frame._refresh_group_ui) as refresh,
+          patch.object(frame, "scoped_all_channels", wraps=frame.scoped_all_channels) as scoped_all,
+          patch.object(frame, "scoped_channels_by_group", wraps=frame.scoped_channels_by_group) as scoped_groups):
+        for selection in (2, 0, 1, 2) * 3:
+            _key(combo, wx.WXK_DOWN)
+            combo.SetSelection(selection)
+            choice = wx.CommandEvent(wx.wxEVT_CHOICE, combo.GetId())
+            combo.GetEventHandler().ProcessEvent(choice)
+        app.Yield()
+
+        assert saves == []
+        assert refresh.call_count == scoped_all.call_count == scoped_groups.call_count == 0
+        assert frame.playlist_scope == frame.config["playlist_scope"] == "p1"
+        assert wx.Window.FindFocus() is combo
+
+        _key(combo, wx.WXK_RETURN)
+        _key(combo, wx.WXK_RETURN)
+        app.Yield()
+
+        assert saves == ["p2"]
+        assert refresh.call_count == 1
+        assert scoped_all.call_count >= 1
+        assert scoped_groups.call_count >= 1
+        assert frame.playlist_scope == frame.config["playlist_scope"] == "p2"
+        assert frame.channel_list.GetCount() == 50_000
+        assert wx.Window.FindFocus() is combo

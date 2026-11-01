@@ -43,3 +43,37 @@ The wx-level publication tests separately exercise first preview visibility,
 each scheduled append callback, final row count, and selected-channel
 restoration. Those tests do not claim to replace owner-heard NVDA or physical
 keyboard validation.
+
+## Playlist scope acceptance handoff
+
+The deterministic 100,000-channel test in `tests/test_playlist_scope_gui.py`
+drives repeated choice previews through the real wx combo, checks that preview
+does no scope read, list rebuild, or config save, then checks one Enter
+activation rebuilds the scoped list and saves once. Run it with the real-wx
+scope tests, plus `tools/smoke_playlist_navigation.py`,
+`tools/smoke_virtual_list_nvda.py`, and `tools/smoke_accessible_names_nvda.py`.
+The accessible-name smoke checks the Playlist view combo and its neighboring
+Categories, Search, and Channels controls at the wx and MSAA levels when MSAA
+is available. Record command results as automated evidence only.
+
+For the owner-heard and physical-input gate, load a **real** playlist with at
+least 100,000 channels and use NVDA with the actual keyboard and mouse:
+
+1. Focus Playlist view. Arrow repeatedly among playlists and All playlists.
+   Confirm NVDA announces each preview, focus stays on the combo, and the
+   categories and channels stay on the active playlist until activation.
+2. Press Enter on a different playlist. Confirm the categories and virtual
+   channel rows change once, NVDA reads the new selection, and combo focus
+   remains usable. Press Enter again to check that it does not refresh twice.
+3. Preview another playlist, press Escape, and confirm the committed choice
+   returns without changing the lists. Preview again, then use Tab to commit
+   and reach Categories; use Shift+Tab to return to Playlist view. Check that
+   Shift+Tab out of an uncommitted preview does not commit it.
+4. Select a playlist with the mouse and confirm one activation updates the
+   lists without losing keyboard access. Traverse the neighboring Search and
+   Channels controls in both directions and listen for their names.
+
+Record the playlist size, NVDA version, observed announcements, focus and
+activation behavior, and any pauses separately from the automated results.
+Known MPV live-subtitle environment failures are a separate playback gate;
+they are not evidence of playlist combo responsiveness.
