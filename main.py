@@ -128,6 +128,7 @@ from client_recording import RecordingReportsMixin, _recording_produced_media  #
 from client_ui import (  # noqa: F401 - re-exported: tests read main.*
     _MAIN_ACCEL_SHOW_PLAYER_ID, UiMixin, _main_window_accelerator_entries,
 )
+from playlist_index import PlaylistIndex
 from dialogs_misc import (
     AccessibleAboutDialog, AccountInfoDialog, AudioTrackPreferenceDialog,
     CastDiscoveryDialog, CatchupDialog, ChangelogDialog,
@@ -949,6 +950,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self.favorite_keys: List[str] = favorites.normalize(self.config.get("favorites"))
         self._favorite_key_set = set(self.favorite_keys)
         self._favorites_cache: Optional[List[Dict[str, str]]] = None
+        self._playlist_index: Optional[PlaylistIndex] = None
         self.recent_channel_keys = favorites.normalize(self.config.get("recent_channels"))[:20]
         # Parallel list of real group keys, indexed like group_list, so group
         # names containing " (" round-trip correctly instead of being truncated.
@@ -1284,6 +1286,24 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _invalidate_favorites_cache(self):
         self._favorites_cache = None
 
+    def _invalidate_playlist_index(self):
+        self._playlist_index = None
+
+    def _get_playlist_index(self) -> Optional[PlaylistIndex]:
+        """Build the optional navigation index, falling back on failure."""
+        index = getattr(self, "_playlist_index", None)
+        if index is not None and index.channels is self.all_channels:
+            return index
+        try:
+            index = PlaylistIndex(self.all_channels, self.channels_by_group)
+            index.set_all_groups(self.channels_by_group)
+            self._playlist_index = index
+            return index
+        except Exception:
+            self._playlist_index = None
+            LOG.warning("IPTVClient: playlist index unavailable; using scan path", exc_info=True)
+            return None
+
     def _is_favorite(self, channel: Optional[Dict[str, str]]) -> bool:
         key = favorites.channel_key(channel)
         return bool(key) and key in self._favorite_key_set
@@ -1385,10 +1405,18 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
+        get_index = getattr(self, "_get_playlist_index", None)
+        index = get_index() if get_index is not None else None
+        if index is not None:
+            return index.all_for_scope(self.playlist_scope)
         return _scoped_channels(self.all_channels, self.playlist_scope)
 
     def scoped_channels_by_group(self) -> Dict[str, List[Dict[str, str]]]:
         """``self.channels_by_group`` filtered to the playlist scope."""
+        get_index = getattr(self, "_get_playlist_index", None)
+        index = get_index() if get_index is not None else None
+        if index is not None:
+            return index.groups_for_scope(self.playlist_scope)
         scope = self.playlist_scope
         if scope == ALL_PLAYLISTS_SCOPE:
             return self.channels_by_group
@@ -2171,6 +2199,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return
                 self.channels_by_group = pref_by_group
                 self.all_channels = pref_all
+                invalidate_index = getattr(self, "_invalidate_playlist_index", None)
+                if invalidate_index is not None:
+                    invalidate_index()
                 self._program_match_cache = None  # holds the old channel list
                 IPTVClient._warm_program_match_index(self)
                 self._invalidate_favorites_cache()
@@ -2409,6 +2440,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             started = time.monotonic()
             self.channels_by_group = channels_by_group
             self.all_channels = all_channels
+            invalidate_index = getattr(self, "_invalidate_playlist_index", None)
+            if invalidate_index is not None:
+                invalidate_index()
             # The load is over: the categories can say what there is (or that
             # there is nothing) now.
             self._playlist_loading = False
@@ -5690,6 +5724,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # Snapshot on the UI thread so the worker never races a playlist reload
         # mutating the source list in place.
         source_snapshot = list(source)
+        get_index = getattr(self, "_get_playlist_index", None)
+        playlist_index = get_index() if get_index is not None else None
 
         def filter_worker():
             # The match loop and entry building over 50k-300k channels run off
@@ -5697,15 +5733,25 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # and page cache are starved enough that this work on the UI thread
             # freezes the interface (and NVDA with it); a worker thread absorbs
             # those stalls while the UI keeps pumping messages.
-            matching_channels = []
-            for index, ch in enumerate(source_snapshot):
-                if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
-                    LOG.debug("search %r: cancelled stale channel scan", txt)
+            if playlist_index is not None:
+                matching_channels = playlist_index.search(
+                    source_snapshot,
+                    txt,
+                    is_current=lambda: getattr(self, "_search_token", 0) == search_token,
+                )
+                if getattr(self, "_search_token", 0) != search_token:
+                    LOG.debug("search %r: cancelled indexed channel scan", txt)
                     return
-                name = (ch.get("name") or "")
-                if txt and txt not in name.lower():
-                    continue
-                matching_channels.append(ch)
+            else:
+                matching_channels = []
+                for index, ch in enumerate(source_snapshot):
+                    if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
+                        LOG.debug("search %r: cancelled stale channel scan", txt)
+                        return
+                    name = (ch.get("name") or "")
+                    if txt and txt not in name.lower():
+                        continue
+                    matching_channels.append(ch)
             matching_channels.sort(key=lambda ch: search_rank(ch.get("name") or "", txt))
             entries = [
                 {"type": "channel", "data": ch}

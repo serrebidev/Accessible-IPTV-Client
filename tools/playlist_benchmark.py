@@ -23,6 +23,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from client_m3u import M3uCacheMixin  # noqa: E402
+from playlist_index import PlaylistIndex  # noqa: E402
 
 
 DEFAULT_SIZES = (50_000, 250_000, 500_000)
@@ -43,6 +44,8 @@ class BenchmarkResult:
     deserialization_seconds: float
     publication_seconds: float
     publication_batches: int
+    index_seconds: float
+    indexed_search_seconds: float
 
     def as_dict(self) -> Dict[str, object]:
         return {
@@ -54,6 +57,8 @@ class BenchmarkResult:
             "deserialization_seconds": round(self.deserialization_seconds, 6),
             "publication_seconds": round(self.publication_seconds, 6),
             "publication_batches": self.publication_batches,
+            "index_seconds": round(self.index_seconds, 6),
+            "indexed_search_seconds": round(self.indexed_search_seconds, 6),
         }
 
 
@@ -101,7 +106,7 @@ def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> Bench
     parse_seconds = time.perf_counter() - started
 
     started = time.perf_counter()
-    group_channels(channels)
+    bench_groups = group_channels(channels)
     grouping_seconds = time.perf_counter() - started
 
     started = time.perf_counter()
@@ -116,6 +121,15 @@ def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> Bench
     batches = prepare_publication(cached["channels"], batch_size)
     publication_seconds = time.perf_counter() - started
 
+    started = time.perf_counter()
+    index = PlaylistIndex(channels, bench_groups)
+    index.set_all_groups(bench_groups)
+    index_seconds = time.perf_counter() - started
+
+    started = time.perf_counter()
+    index.search(channels, "channel 42")
+    indexed_search_seconds = time.perf_counter() - started
+
     return BenchmarkResult(
         channels=channel_count,
         text_bytes=len(text.encode("utf-8")),
@@ -125,6 +139,8 @@ def benchmark(channel_count: int, batch_size: int = DEFAULT_BATCH_SIZE) -> Bench
         deserialization_seconds=deserialization_seconds,
         publication_seconds=publication_seconds,
         publication_batches=len(batches),
+        index_seconds=index_seconds,
+        indexed_search_seconds=indexed_search_seconds,
     )
 
 
