@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import types
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -150,3 +151,30 @@ def test_the_index_is_built_off_the_gui_thread():
     while client._program_match_cache is None and time.monotonic() < deadline:
         time.sleep(0.02)
     assert client._program_match_cache is not None, "the index was not built"
+
+
+def test_stale_background_index_is_not_published_after_playlist_replacement(monkeypatch):
+    client = _client(CHANNELS)
+    client._program_match_generation = 0
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    original = main.IPTVClient._program_match_index
+
+    def delayed(self, channels=None, *, publish=True):
+        started.set()
+        release.wait(5)
+        try:
+            return original(self, channels, publish=publish)
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(main.IPTVClient, "_program_match_index", delayed)
+    main.IPTVClient._warm_program_match_index(client)
+    assert started.wait(5)
+
+    client.all_channels = list(CHANNELS) + [{"name": "New", "url": "new"}]
+    client._program_match_generation += 1
+    release.set()
+    assert finished.wait(5)
+    assert client._program_match_cache is None

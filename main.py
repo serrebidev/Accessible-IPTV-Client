@@ -1128,6 +1128,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # Caching map: canonical_name -> db_channel_id
         self._epg_match_cache: Dict[str, Optional[str]] = {}
         self._epg_match_lock = threading.Lock()
+        self._program_match_generation = 0
         # Dedicated executor for EPG lookups to avoid thread-spawning overhead
         self._epg_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="EPGFetch")
         self._db_tune_lock = threading.Lock()
@@ -1285,6 +1286,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def _invalidate_favorites_cache(self):
         self._favorites_cache = None
+
+    def _invalidate_program_match_index(self):
+        """Drop EPG channel-match work that belongs to the old playlist."""
+        self._program_match_generation = getattr(self, "_program_match_generation", 0) + 1
+        self._program_match_cache = None
 
     def _invalidate_playlist_index(self):
         self._playlist_index = None
@@ -2202,7 +2208,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 invalidate_index = getattr(self, "_invalidate_playlist_index", None)
                 if invalidate_index is not None:
                     invalidate_index()
-                self._program_match_cache = None  # holds the old channel list
+                invalidate_match_index = getattr(self, "_invalidate_program_match_index", None)
+                if invalidate_match_index is not None:
+                    invalidate_match_index()
+                else:
+                    self._program_match_cache = None  # holds the old channel list
                 IPTVClient._warm_program_match_index(self)
                 self._invalidate_favorites_cache()
                 self._fill_playlist_scope_combo()
@@ -2446,7 +2456,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # The load is over: the categories can say what there is (or that
             # there is nothing) now.
             self._playlist_loading = False
-            self._program_match_cache = None  # holds the old channel list
+            invalidate_match_index = getattr(self, "_invalidate_program_match_index", None)
+            if invalidate_match_index is not None:
+                invalidate_match_index()
+            else:
+                self._program_match_cache = None  # holds the old channel list
             self._invalidate_favorites_cache()
             self.provider_clients = provider_clients_local
             self.provider_epg_sources = provider_epg_sources
@@ -2845,7 +2859,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             name_lower = name_lower.replace("[{pat}]".format(pat=pat), "")
         return name_lower.strip()
 
-    def _program_match_index(self):
+    def _program_match_index(self, channels=None, *, publish=True):
         """Per-channel match features plus a result memo, for the current playlist.
 
         Highlighting an EPG search row resolves its playlist channel on the GUI
@@ -2854,9 +2868,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         change when ``all_channels`` is replaced, so they are built once per
         playlist load and keyed on that list's identity.
         """
-        channels = self.all_channels
+        if channels is None:
+            channels = self.all_channels
         cached = getattr(self, "_program_match_cache", None)
-        if cached is not None and cached.channels is channels:
+        if publish and cached is not None and cached.channels is channels:
             return cached
         rows = []
         by_tvg_id: Dict[str, Dict[str, str]] = {}
@@ -2909,7 +2924,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             by_base=by_base,
             tvg_id_rows=tvg_id_rows,
         )
-        self._program_match_cache = index
+        if publish:
+            self._program_match_cache = index
         return index
 
     def _warm_program_match_index(self) -> None:
@@ -2919,9 +2935,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         channels that is seconds of work, and the user must not pay it while
         highlighting a row.
         """
+        channels = self.all_channels
+        generation = getattr(self, "_program_match_generation", 0)
+
         def worker():
             try:
-                IPTVClient._program_match_index(self)
+                index = IPTVClient._program_match_index(self, channels, publish=False)
+                if (self.all_channels is channels
+                        and getattr(self, "_program_match_generation", 0) == generation):
+                    self._program_match_cache = index
             except Exception:
                 LOG.debug("IPTVClient._warm_program_match_index: ignored exception", exc_info=True)
 
