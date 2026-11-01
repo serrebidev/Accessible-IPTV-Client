@@ -142,6 +142,7 @@ class TestScopeChange:
     def test_mouse_choice_uses_same_commit_path_once(self, monkeypatch):
         saves = []
         refreshes = []
+        pending = []
         stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
         stub.config = {"playlist_scope": "p1"}
         stub.current_group = "News"
@@ -149,13 +150,17 @@ class TestScopeChange:
         stub._invalidate_favorites_cache = lambda: None
         stub._refresh_group_ui = lambda **_kwargs: refreshes.append(stub.playlist_scope)
         stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2)
-        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        stub.on_playlist_scope_changed = lambda event, scope: main.IPTVClient.on_playlist_scope_changed(stub, event, scope)
+        stub._commit_playlist_scope_mouse_choice = lambda scope: main.IPTVClient._commit_playlist_scope_mouse_choice(stub, scope)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+        monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *args: pending.append((fn, args)))
 
         event = SimpleNamespace(Skip=lambda: None)
         main.IPTVClient.on_playlist_scope_mouse_down(stub, event)
         main.IPTVClient.on_playlist_scope_choice(stub, event)
         main.IPTVClient.on_playlist_scope_choice(stub, event)
+        for callback, args in pending:
+            callback(*args)
 
         assert stub.playlist_scope == "p2"
         assert saves == [{"playlist_scope": "p2"}]
@@ -220,7 +225,7 @@ class TestScopeChange:
         stub._invalidate_favorites_cache = lambda: None
         stub._refresh_group_ui = lambda **_kwargs: None
         stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2, SetFocus=lambda: focus.append(True))
-        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        stub.on_playlist_scope_changed = lambda event, scope: main.IPTVClient.on_playlist_scope_changed(stub, event, scope)
         monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
         monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *args: pending.append((fn, args)))
 

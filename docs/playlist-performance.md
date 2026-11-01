@@ -47,9 +47,14 @@ keyboard validation.
 ## Playlist scope acceptance handoff
 
 The deterministic 100,000-channel test in `tests/test_playlist_scope_gui.py`
-drives repeated choice previews through the real wx combo, checks that preview
-does no scope read, list rebuild, or config save, then checks one Enter
-activation rebuilds the scoped list and saves once. Run it with the real-wx
+drives 12 choice previews through the real wx combo. Its work budget is **zero**
+playlist-index accesses, scoped-channel reads, list refreshes, and config saves
+across those previews. One Enter activation permits at most four index accesses
+and three all-channel reads, performs one grouped-channel read and one list
+refresh, and saves once. These operation counts are deterministic and do not
+depend on host timing. The real-wx tests also cover a mouse click that produces
+no changed choice, a subsequent changed mouse choice, and a Tab commit whose
+captured choice survives a later preview. Run them with the real-wx
 scope tests, plus `tools/smoke_playlist_navigation.py`,
 `tools/smoke_virtual_list_nvda.py`, and `tools/smoke_accessible_names_nvda.py`.
 The accessible-name smoke checks the Playlist view combo and its neighboring

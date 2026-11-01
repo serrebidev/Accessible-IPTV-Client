@@ -207,6 +207,13 @@ def _tagged_sources(sources) -> list:
             if _source_scope_id(src)]
 
 
+def _scope_for_combo_selection(sources, sel: int) -> str:
+    tagged = _tagged_sources(sources)
+    if 0 < sel <= len(tagged):
+        return _source_scope_id(tagged[sel - 1])
+    return ALL_PLAYLISTS_SCOPE
+
+
 _MODAL_BOX_DEPTH = 0
 _MODAL_BOX_CLOSED_HOOK = None
 
@@ -1432,14 +1439,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return i
         return 0
 
-    def on_playlist_scope_changed(self, _event):
+    def on_playlist_scope_changed(self, _event, scope=None):
         """Switch the category and channel lists to the selected playlist."""
-        sel = self.playlist_scope_combo.GetSelection()
-        scope = ALL_PLAYLISTS_SCOPE
-        if sel > 0:
-            sources = _tagged_sources(self.playlist_sources)
-            if 0 < sel <= len(sources):
-                scope = _source_scope_id(sources[sel - 1])
+        if scope is None:
+            scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
         if scope == self.playlist_scope:
             return
         self.playlist_scope = scope
@@ -1464,8 +1467,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def on_playlist_scope_choice(self, event):
         """Arrow choices are previews; a mouse choice is an activation."""
         if getattr(self, "_scope_mouse_armed", False):
+            scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
+            wx.CallAfter(self._commit_playlist_scope_mouse_choice, scope)
+
+    def _commit_playlist_scope_mouse_choice(self, scope):
+        # A keyboard choice can precede its key hook; let that hook cancel the
+        # mouse arm before deciding whether this was an activation.
+        if getattr(self, "_scope_mouse_armed", False):
             self._scope_mouse_armed = False
-            self.on_playlist_scope_changed(event)
+            self.on_playlist_scope_changed(True, scope)
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
@@ -5720,7 +5730,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if event.GetKeyCode() == wx.WXK_TAB:
             if not event.ShiftDown():
                 # Let wx move to Categories before the view is rebuilt.
-                wx.CallAfter(self.on_playlist_scope_changed, True)
+                scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
+                wx.CallAfter(self.on_playlist_scope_changed, True, scope)
             event.Skip()
             return
         # Native arrows announce choices; traversal includes search and details.
