@@ -1454,8 +1454,18 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient.on_playlist_scope_changed: ignored exception", exc_info=True)
         self._refresh_group_ui()
-        if hasattr(self.playlist_scope_combo, "SetFocus"):
+        if _event is None and hasattr(self.playlist_scope_combo, "SetFocus"):
             self.playlist_scope_combo.SetFocus()
+
+    def on_playlist_scope_mouse_down(self, event):
+        self._scope_mouse_armed = True
+        event.Skip()
+
+    def on_playlist_scope_choice(self, event):
+        """Arrow choices are previews; a mouse choice is an activation."""
+        if getattr(self, "_scope_mouse_armed", False):
+            self._scope_mouse_armed = False
+            self.on_playlist_scope_changed(event)
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
@@ -5700,7 +5710,19 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             event.Skip()
 
     def on_playlist_scope_key(self, event):
-        # Native traversal includes search, programme information and URL.
+        self._scope_mouse_armed = False
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.playlist_scope_combo.SetSelection(self._combo_index_for_scope(self.playlist_scope))
+            return
+        if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self.on_playlist_scope_changed(event)
+            return
+        if event.GetKeyCode() == wx.WXK_TAB:
+            if not event.ShiftDown():
+                self.on_playlist_scope_changed(event)
+            event.Skip()
+            return
+        # Native arrows announce choices; traversal includes search and details.
         event.Skip()
 
     def on_group_key(self, event):
