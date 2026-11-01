@@ -1453,7 +1453,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             self.filter_box.ChangeValue("")
         except Exception:
             LOG.debug("IPTVClient.on_playlist_scope_changed: ignored exception", exc_info=True)
-        self._refresh_group_ui()
+        self._refresh_group_ui(preserve_focus=True)
         if _event is None and hasattr(self.playlist_scope_combo, "SetFocus"):
             self.playlist_scope_combo.SetFocus()
 
@@ -5747,7 +5747,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             return
         if event.GetKeyCode() == wx.WXK_TAB:
             if not event.ShiftDown():
-                self.on_playlist_scope_changed(event)
+                # Let wx move to Categories before the view is rebuilt.
+                wx.CallAfter(self.on_playlist_scope_changed, True)
             event.Skip()
             return
         # Native arrows announce choices; traversal includes search and details.
@@ -6102,7 +6103,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             wx.CallAfter(update_ui)
         threading.Thread(target=filter_worker, daemon=True).start()
 
-    def _refresh_group_ui(self):
+    def _refresh_group_ui(self, *, preserve_focus=False):
+        focused_control = wx.Window.FindFocus() if preserve_focus and wx.GetApp() else None
         selected_channel_key = None
         channel_list_had_focus = False
         try:
@@ -6203,11 +6205,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self.group_list.Thaw()
             except Exception:
                 LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
+            if focused_control is not None and wx.Window.FindFocus() is not focused_control:
+                focused_control.SetFocus()
         
         self.on_group_select(
             selected_channel_key=selected_channel_key,
-            preserve_channel_focus=channel_list_had_focus,
+            preserve_channel_focus=channel_list_had_focus or preserve_focus,
         )
+        if focused_control is not None and wx.Window.FindFocus() is not focused_control:
+            focused_control.SetFocus()
 
     # ================================================================== #
     # Video on Demand (movies & series) view
