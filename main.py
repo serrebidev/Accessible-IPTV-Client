@@ -923,6 +923,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     _SEARCH_LARGE_RESULT_THRESHOLD = 1500
     _SEARCH_PREVIEW_COUNT = 200
     _SEARCH_BATCH_SIZE = 800
+    # Large channel views are installed in bounded UI batches. Parsing and
+    # refresh work remain in their existing workers; these limits protect the
+    # virtual list from one long model/count update.
+    _PLAYLIST_LARGE_DISPLAY_THRESHOLD = 100_000
+    _PLAYLIST_DISPLAY_BATCH_SIZE = 800
     _SEARCH_EPG_MIN_CHARS = 3
     _SEARCH_EPG_BROAD_CHANNEL_LIMIT = 75
     _SEARCH_EPG_RESULT_LIMIT = 100
@@ -5821,6 +5826,19 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         threading.Thread(target=filter_worker, daemon=True).start()
 
     def _refresh_group_ui(self):
+        selected_channel_key = None
+        channel_list_had_focus = False
+        try:
+            selected_index = self.channel_list.GetSelection()
+            displayed = getattr(self, "displayed", [])
+            if 0 <= selected_index < len(displayed):
+                row = displayed[selected_index]
+                if isinstance(row, dict):
+                    selected_channel_key = favorites.channel_key(row.get("data"))
+            has_focus = getattr(self.channel_list, "HasFocus", None)
+            channel_list_had_focus = bool(has_focus()) if callable(has_focus) else False
+        except Exception:
+            LOG.debug("IPTVClient._refresh_group_ui: could not capture channel position", exc_info=True)
         scoped_channels = self.scoped_all_channels()
         scoped_groups = self.scoped_channels_by_group()
         self.group_list.Freeze()
@@ -5909,7 +5927,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             except Exception:
                 LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
         
-        self.on_group_select()
+        self.on_group_select(
+            selected_channel_key=selected_channel_key,
+            preserve_channel_focus=channel_list_had_focus,
+        )
 
     # ================================================================== #
     # Video on Demand (movies & series) view
@@ -6625,7 +6646,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return
 
 
-    def on_group_select(self):
+    def on_group_select(
+        self,
+        selected_channel_key: Optional[str] = None,
+        preserve_channel_focus: bool = False,
+    ):
         if getattr(self, "view_mode", "live") == "vod":
             self._vod_on_group_select()
             return
@@ -6646,27 +6671,72 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self.current_group = grp
 
         source = self._source_for_group(grp)
-        self._populate_channel_list_chunked(source)
+        self._populate_channel_list_chunked(
+            source,
+            selected_channel_key=selected_channel_key,
+            preserve_channel_focus=preserve_channel_focus,
+        )
 
-    def _populate_channel_list_chunked(self, source: List[Dict[str, str]]):
+    def _populate_channel_list_chunked(
+        self,
+        source: List[Dict[str, str]],
+        selected_channel_key: Optional[str] = None,
+        preserve_channel_focus: bool = False,
+    ):
         self._populate_token += 1
+        populate_token = self._populate_token
 
-        IPTVClient._replace_displayed(self, [
+        entries = [
             {"type": "channel", "data": ch}
             for ch in source
-        ])
+        ]
+        if len(entries) <= self._PLAYLIST_LARGE_DISPLAY_THRESHOLD:
+            IPTVClient._replace_displayed(self, entries)
+            batches = None
+        else:
+            preview_count = self._PLAYLIST_DISPLAY_BATCH_SIZE
+            IPTVClient._replace_displayed(self, entries[:preview_count])
+            batches = entries
 
         if not source:
             self.url_display.SetValue("")
             self._maybe_autostart_epg_import()
             return
 
-        self.channel_list.SetSelection(0)
-        # Only set focus if window is visible (avoid stealing focus from tray).
-        if self.IsShown() and not self.IsIconized():
-            self.channel_list.SetFocus()
+        selected_index = None
+        if selected_channel_key:
+            selected_index = next(
+                (
+                    index
+                    for index, channel in enumerate(source)
+                    if favorites.channel_key(channel) == selected_channel_key
+                ),
+                None,
+            )
+        if selected_index is not None and preserve_channel_focus:
+            self.channel_list.SetSelection(selected_index)
+        else:
+            self.channel_list.SetSelection(0)
+            # Only set focus if window is visible (avoid stealing focus from tray).
+            if not preserve_channel_focus and self.IsShown() and not self.IsIconized():
+                self.channel_list.SetFocus()
         self.on_highlight()
         self._maybe_autostart_epg_import()
+
+        if batches is not None:
+            def append_batch(offset=self._PLAYLIST_DISPLAY_BATCH_SIZE):
+                if populate_token != getattr(self, "_populate_token", 0):
+                    return
+                end = min(offset + self._PLAYLIST_DISPLAY_BATCH_SIZE, len(batches))
+                self.displayed.extend(batches[offset:end])
+                self.channel_list.set_virtual_count()
+                if end < len(batches):
+                    wx.CallLater(1, append_batch, end)
+                elif selected_index is not None and preserve_channel_focus:
+                    self.channel_list.SetSelection(selected_index)
+                    self.on_highlight()
+
+            wx.CallLater(1, append_batch)
 
 
 
