@@ -16,7 +16,7 @@ msgstr ""
 msgid "&Playback"
 msgstr "再生(&P)"
 
-#: main.py:4019
+#: main.py:4142
 msgid "(No EPG debug log has been written yet.)"
 msgstr "(EPG のデバッグログはまだ作成されていません。)"
 
@@ -31,16 +31,16 @@ msgstr "（タイトルなし）"
 msgid "(thumbprint {thumbprint})."
 msgstr "（拇印 {thumbprint}）。"
 
-#: main.py:1893
+#: main.py:1984
 #: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "バックアップパスワードが必要です。"
 
-#: main.py:5415
+#: main.py:5538
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "ダウンロードまたは録画が進行中です。\n\n今終了すると停止し、これまでに取得した部分だけが残ります。\n\nそれでも終了しますか？"
 
-#: main.py:5392
+#: main.py:5515
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "録画が進行中で、さらに {count} 件の録画が予約されています。\n\n{names}\n\n開始するにはアプリを開いたままにする必要があります。終了しますか？"
 
@@ -61,8 +61,8 @@ msgstr "バージョン情報..."
 msgid "Accessibility"
 msgstr "アクセシビリティ"
 
-#: main.py:1967
-#: main.py:1983
+#: main.py:2058
+#: main.py:2074
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Accessible IPTV バックアップ (*.aiptv)"
 
@@ -104,7 +104,7 @@ msgstr "アカウント"
 msgid "Active"
 msgstr "有効"
 
-#: main.py:4014
+#: main.py:4137
 msgid "Active recordings: {count}"
 msgstr "実行中の録画: {count}"
 
@@ -140,15 +140,15 @@ msgid "Add Xtream Codes Account"
 msgstr "Xtream Codes アカウントを追加"
 
 #: client_ui.py:293
-#: main.py:1759
+#: main.py:1850
 #: shortcuts.py:81
 msgid "Add to Favorites"
 msgstr "お気に入りに追加"
 
-#: main.py:5842
-#: main.py:5878
-#: main.py:5879
-#: main.py:6635
+#: main.py:5990
+#: main.py:6026
+#: main.py:6027
+#: main.py:6801
 msgid "All Channels"
 msgstr "すべてのチャンネル"
 
@@ -157,12 +157,12 @@ msgstr "すべてのチャンネル"
 msgid "All files"
 msgstr "すべてのファイル"
 
-#: main.py:1343
-#: main.py:6450
+#: main.py:1413
+#: main.py:6601
 msgid "All playlists"
 msgstr "すべてのプレイリスト"
 
-#: main.py:6448
+#: main.py:6599
 msgid "All playlists refreshed."
 msgstr "すべてのプレイリストを更新しました。"
 
@@ -182,11 +182,11 @@ msgstr "許可されている形式"
 msgid "Also use the guide each playlist links to"
 msgstr "各プレイリストが指定する EPG も使用する"
 
-#: main.py:4468
+#: main.py:4591
 msgid "An update is already in progress."
 msgstr "更新はすでに実行中です。"
 
-#: main.py:7299
+#: main.py:7516
 msgid "Application voice output"
 msgstr "アプリ音声出力"
 
@@ -194,11 +194,11 @@ msgstr "アプリ音声出力"
 msgid "Application voice output..."
 msgstr "アプリ音声出力..."
 
-#: main.py:7331
+#: main.py:7548
 msgid "Application voice output: {name}"
 msgstr "アプリ音声出力: {name}"
 
-#: main.py:7255
+#: main.py:7472
 msgid "Application voice speed"
 msgstr "アプリの音声速度"
 
@@ -206,7 +206,7 @@ msgstr "アプリの音声速度"
 msgid "Application voice speed..."
 msgstr "アプリの音声速度…"
 
-#: main.py:7224
+#: main.py:7441
 msgid "Application voice volume"
 msgstr "アプリ音声の音量"
 
@@ -238,23 +238,23 @@ msgstr "音声トラック"
 msgid "Audio Track: {name}"
 msgstr "音声トラック: {name}"
 
-#: main.py:3019
+#: main.py:3142
 msgid "Audio only (AAC, M4A)"
 msgstr "音声のみ（AAC、M4A）"
 
-#: main.py:3017
+#: main.py:3140
 msgid "Audio only (FLAC)"
 msgstr "音声のみ（FLAC）"
 
-#: main.py:3016
+#: main.py:3139
 msgid "Audio only (MP3 V0)"
 msgstr "音声のみ（MP3 V0）"
 
-#: main.py:3020
+#: main.py:3143
 msgid "Audio only (Opus)"
 msgstr "音声のみ（Opus）"
 
-#: main.py:3018
+#: main.py:3141
 msgid "Audio only (WAV)"
 msgstr "音声のみ（WAV）"
 
@@ -267,7 +267,7 @@ msgstr "オーディオ出力デバイス"
 msgid "Audio track unavailable"
 msgstr "音声トラックを利用できません"
 
-#: main.py:3522
+#: main.py:3645
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "音声のみのストリームを検出しました。録画を開始しました（{fmt}）：\n{path}"
 
@@ -371,16 +371,16 @@ msgstr "バグ修正"
 msgid "Built-in IPTV Player"
 msgstr "内蔵 IPTV プレーヤー"
 
-#: main.py:888
-#: main.py:7365
+#: main.py:889
+#: main.py:7582
 msgid "Built-in Player"
 msgstr "内蔵プレーヤー"
 
-#: main.py:636
+#: main.py:637
 msgid "Built-in player is unavailable."
 msgstr "内蔵プレーヤーは利用できません。"
 
-#: main.py:7505
+#: main.py:7722
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "内蔵プレーヤーは利用できません：\n{detail}"
 
@@ -388,10 +388,10 @@ msgstr "内蔵プレーヤーは利用できません：\n{detail}"
 #: dialogs_misc.py:671
 #: dialogs_misc.py:732
 #: internal_player.py:149
-#: main.py:7236
-#: main.py:7269
-#: main.py:8395
-#: main.py:8685
+#: main.py:7453
+#: main.py:7486
+#: main.py:8612
+#: main.py:8902
 #: options.py:942
 #: playlist.py:3146
 #: playlist.py:3246
@@ -400,7 +400,7 @@ msgstr "内蔵プレーヤーは利用できません：\n{detail}"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: main.py:8492
+#: main.py:8709
 msgid "Cancel Download"
 msgstr "ダウンロードをキャンセル"
 
@@ -408,11 +408,11 @@ msgstr "ダウンロードをキャンセル"
 msgid "Cancel Shutdown"
 msgstr "シャットダウンを取り消す"
 
-#: main.py:8714
+#: main.py:8931
 msgid "Canceled"
 msgstr "キャンセルされました"
 
-#: main.py:414
+#: main.py:415
 msgid "Cannot find \"{text}\"."
 msgstr "「{text}」が見つかりません。"
 
@@ -422,7 +422,7 @@ msgstr "キャスト"
 
 #: client_ui.py:133
 #: client_ui.py:279
-#: main.py:811
+#: main.py:812
 #: shortcuts.py:76
 msgid "Cast / Connect..."
 msgstr "キャスト / 接続..."
@@ -444,21 +444,21 @@ msgstr "キャスト..."
 #: internal_player.py:1984
 #: internal_player.py:1988
 #: internal_player.py:2007
-#: main.py:7488
-#: main.py:7656
-#: main.py:7685
-#: main.py:8304
+#: main.py:7705
+#: main.py:7873
+#: main.py:7902
+#: main.py:8521
 msgid "Casting"
 msgstr "キャスト中"
 
 #: internal_player.py:2007
-#: main.py:7484
-#: main.py:7491
-#: main.py:7668
+#: main.py:7701
+#: main.py:7708
+#: main.py:7885
 msgid "Casting Error"
 msgstr "キャストエラー"
 
-#: main.py:7481
+#: main.py:7698
 msgid "Casting failed: {error}"
 msgstr "キャストに失敗しました：{error}"
 
@@ -466,31 +466,31 @@ msgstr "キャストに失敗しました：{error}"
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "キャスターが初期化されていないため、キャストは利用できません。"
 
-#: main.py:7488
-#: main.py:7685
+#: main.py:7705
+#: main.py:7902
 msgid "Casting to {device}..."
 msgstr "{device} にキャスト中..."
 
 #: dialogs_misc.py:486
-#: main.py:2600
-#: main.py:7769
-#: main.py:7792
-#: main.py:7816
-#: main.py:7819
+#: main.py:2715
+#: main.py:7986
+#: main.py:8009
+#: main.py:8033
+#: main.py:8036
 msgid "Catch-up"
 msgstr "見逃し配信"
 
-#: main.py:7874
-#: main.py:7880
-#: main.py:7892
-#: main.py:7905
-#: main.py:7996
-#: main.py:8004
-#: main.py:8048
-#: main.py:8112
-#: main.py:8130
-#: main.py:8134
-#: main.py:8177
+#: main.py:8091
+#: main.py:8097
+#: main.py:8109
+#: main.py:8122
+#: main.py:8213
+#: main.py:8221
+#: main.py:8265
+#: main.py:8329
+#: main.py:8347
+#: main.py:8351
+#: main.py:8394
 msgid "Catch-up Download"
 msgstr "見逃し配信のダウンロード"
 
@@ -513,13 +513,13 @@ msgstr "カテゴリ"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "{app} の各バージョンの変更点（新しい順）。最新のバージョンの説明は、翻訳が済むとお使いの言語で表示されます。それより古い項目は英語のままです。"
 
-#: main.py:8638
+#: main.py:8855
 #: planning_ui.py:40
 msgid "Channel"
 msgstr "チャンネル"
 
-#: main.py:3109
-#: main.py:6599
+#: main.py:3232
+#: main.py:6761
 #: planning_ui.py:220
 #: planning_ui.py:266
 msgid "Channel Not Found"
@@ -530,7 +530,7 @@ msgstr "チャンネルが見つかりません"
 msgid "Channel missing command reference"
 msgstr "チャンネルにコマンド参照がありません"
 
-#: main.py:2794
+#: main.py:2909
 msgid "Channel number {number} was not found."
 msgstr "チャネル番号 {number} が見つかりませんでした。"
 
@@ -544,7 +544,7 @@ msgstr "チャンネル"
 msgid "Check Availability"
 msgstr "利用状況を確認"
 
-#: main.py:4281
+#: main.py:4404
 msgid "Check Recording Storage..."
 msgstr "録画用の空き容量を確認…"
 
@@ -560,7 +560,7 @@ msgstr "更新を確認"
 msgid "Check for Updates..."
 msgstr "更新を確認..."
 
-#: main.py:6414
+#: main.py:6565
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "「ファイル > EPG マネージャー」の EPG ソースに接続できるか確認してから、もう一度お試しください。"
 
@@ -568,7 +568,7 @@ msgstr "「ファイル > EPG マネージャー」の EPG ソースに接続で
 msgid "Checking account, please wait..."
 msgstr "アカウントを確認しています。お待ちください..."
 
-#: main.py:4632
+#: main.py:4755
 msgid "Checking for update details..."
 msgstr "更新の詳細を確認中..."
 
@@ -576,7 +576,7 @@ msgstr "更新の詳細を確認中..."
 msgid "Checking saved content…"
 msgstr "保存したコンテンツを確認中…"
 
-#: main.py:4084
+#: main.py:4207
 msgid "Checking stream type…"
 msgstr "ストリームの種類を確認中…"
 
@@ -596,15 +596,15 @@ msgstr "EPG XML ファイルを選択"
 msgid "Choose M3U file"
 msgstr "M3U ファイルを選択"
 
-#: main.py:6438
+#: main.py:6589
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "新しいプレイリストを保存するには [OK] を選び、その後で更新してください。"
 
-#: main.py:2763
+#: main.py:2878
 msgid "Choose a channel to play:"
 msgstr "再生するチャンネルを選択してください:"
 
-#: main.py:1935
+#: main.py:2026
 msgid "Choose a command to change:"
 msgstr "変更するコマンドを選択します。"
 
@@ -620,8 +620,8 @@ msgstr "保存した位置をすべて削除"
 #: dialogs_misc.py:165
 #: dialogs_misc.py:348
 #: dialogs_misc.py:890
-#: main.py:293
-#: main.py:8587
+#: main.py:294
+#: main.py:8804
 #: planning_ui.py:51
 #: planning_ui.py:211
 #: resume_dialogs.py:50
@@ -632,7 +632,7 @@ msgstr "閉じる"
 msgid "Community and support"
 msgstr "コミュニティとサポート"
 
-#: main.py:8711
+#: main.py:8928
 msgid "Completed"
 msgstr "完了"
 
@@ -644,7 +644,7 @@ msgstr "設定済みの EPG ソース"
 msgid "Configured playlists and providers"
 msgstr "設定済みのプレイリストとプロバイダー"
 
-#: main.py:4013
+#: main.py:4136
 msgid "Configured playlists: {count}"
 msgstr "設定済みのプレイリスト: {count}"
 
@@ -652,11 +652,11 @@ msgstr "設定済みのプレイリスト: {count}"
 msgid "Connect"
 msgstr "接続"
 
-#: main.py:8317
+#: main.py:8534
 msgid "Connected"
 msgstr "接続済み"
 
-#: main.py:8317
+#: main.py:8534
 msgid "Connected to {device}"
 msgstr "{device} に接続しました"
 
@@ -664,9 +664,9 @@ msgstr "{device} に接続しました"
 msgid "Connections in use"
 msgstr "使用中の接続数"
 
-#: main.py:5957
-#: main.py:5966
-#: main.py:7521
+#: main.py:6108
+#: main.py:6117
+#: main.py:7738
 #: resume_dialogs.py:30
 #: resume_dialogs.py:184
 msgid "Continue Watching"
@@ -678,7 +678,7 @@ msgid "Continue Watching..."
 msgstr "視聴を再開…"
 
 #: dialogs_misc.py:347
-#: main.py:8584
+#: main.py:8801
 msgid "Copy Details"
 msgstr "詳細をコピー"
 
@@ -691,7 +691,7 @@ msgstr "ログとデバッグ情報をコピー"
 msgid "Copy URL"
 msgstr "URLをコピー"
 
-#: main.py:7280
+#: main.py:7497
 msgid "Could not change the application voice speed."
 msgstr "アプリの音声速度を変更できませんでした。"
 
@@ -703,7 +703,7 @@ msgstr "利用状況を確認できませんでした。"
 msgid "Could not check this account.\n\n{error}"
 msgstr "このアカウントを確認できませんでした。\n\n{error}"
 
-#: main.py:4029
+#: main.py:4152
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "診断情報をコピーできませんでした:\n{error}"
 
@@ -711,38 +711,38 @@ msgstr "診断情報をコピーできませんでした:\n{error}"
 msgid "Could not create libVLC media player object."
 msgstr "libVLC メディアプレーヤーオブジェクトを作成できませんでした。"
 
-#: main.py:1975
+#: main.py:2066
 msgid "Could not export settings: {error}"
 msgstr "設定をエクスポートできませんでした: {error}"
 
-#: main.py:3262
-#: main.py:3393
+#: main.py:3385
+#: main.py:3516
 msgid "Could not find a stream URL for this channel."
 msgstr "このチャンネルのストリーム URL が見つかりませんでした。"
 
-#: main.py:3107
-#: main.py:6599
+#: main.py:3230
+#: main.py:6761
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "プレイリストにチャンネル「{channel}」が見つかりませんでした。"
 
-#: main.py:7443
+#: main.py:7660
 msgid "Could not find stream URL for this selection."
 msgstr "この選択のストリーム URL が見つかりませんでした。"
 
-#: main.py:3040
-#: main.py:6594
+#: main.py:3163
+#: main.py:6756
 msgid "Could not identify the channel."
 msgstr "チャンネルを識別できませんでした。"
 
-#: main.py:1994
+#: main.py:2085
 msgid "Could not import settings: {error}"
 msgstr "設定をインポートできませんでした: {error}"
 
-#: main.py:6140
+#: main.py:6291
 msgid "Could not load episodes for this series."
 msgstr "このシリーズのエピソードを読み込めませんでした。"
 
-#: main.py:6159
+#: main.py:6310
 msgid "Could not load episodes:\n{error}"
 msgstr "エピソードを読み込めませんでした：\n{error}"
 
@@ -759,30 +759,30 @@ msgstr "{player} アプリが見つかりませんでした。"
 msgid "Could not locate {player} executable."
 msgstr "{player} の実行ファイルが見つかりませんでした。"
 
-#: main.py:6501
+#: main.py:6663
 msgid "Could not look for provider accounts: {error}"
 msgstr "プロバイダーのアカウントを検索できませんでした: {error}"
 
-#: main.py:6785
+#: main.py:7002
 msgid "Could not match this programme to a playlist channel."
 msgstr "この番組をプレイリストのチャンネルと一致させることができませんでした。"
 
-#: main.py:3973
-#: main.py:3986
+#: main.py:4096
+#: main.py:4109
 msgid "Could not open folder:\n{error}"
 msgstr "フォルダーを開けませんでした：\n{error}"
 
-#: main.py:4383
+#: main.py:4506
 msgid "Could not open the EPG window: {error}"
 msgstr "EPGウィンドウを開けませんでした: {error}"
 
 #: dialogs_misc.py:452
-#: main.py:8600
+#: main.py:8817
 #: playlist.py:3048
 msgid "Could not open the clipboard."
 msgstr "クリップボードを開けませんでした。"
 
-#: main.py:7520
+#: main.py:7737
 msgid "Could not prepare saved playback:\n{error}"
 msgstr "保存した位置からの再生を準備できませんでした:\n{error}"
 
@@ -795,9 +795,9 @@ msgstr "Xtream サーバーに接続できませんでした: {error}"
 msgid "Could not reach the portal: {error}"
 msgstr "ポータルに接続できませんでした: {error}"
 
-#: main.py:2742
-#: main.py:3389
-#: main.py:6802
+#: main.py:2857
+#: main.py:3512
+#: main.py:7019
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "ストリーム URL を解決できませんでした：\n{error}"
 
@@ -809,19 +809,19 @@ msgstr "Authenticode 検証を実行できませんでした: {detail}"
 msgid "Could not save playback history changes."
 msgstr "視聴履歴の変更を保存できませんでした。"
 
-#: main.py:3055
+#: main.py:3178
 msgid "Could not schedule recording:\n{error}"
 msgstr "録画をスケジュールできませんでした：\n{error}"
 
-#: main.py:7316
+#: main.py:7533
 msgid "Could not select that output device."
 msgstr "その出力デバイスを選択できませんでした。"
 
-#: main.py:3799
+#: main.py:3922
 msgid "Could not shut down the computer:\n{error}"
 msgstr "コンピューターをシャットダウンできませんでした:\n{error}"
 
-#: main.py:8047
+#: main.py:8264
 msgid "Could not start catch-up download:\n{error}"
 msgstr "見逃し配信のダウンロードを開始できませんでした:\n{error}"
 
@@ -829,8 +829,8 @@ msgstr "見逃し配信のダウンロードを開始できませんでした:\n
 msgid "Could not start playback: {error}"
 msgstr "再生を開始できませんでした: {error}"
 
-#: main.py:3466
-#: main.py:3504
+#: main.py:3589
+#: main.py:3627
 msgid "Could not start recording:\n{error}"
 msgstr "録画を開始できませんでした：\n{error}"
 
@@ -842,7 +842,7 @@ msgstr "作成日"
 msgid "Currently airing programs"
 msgstr "現在放送中の番組"
 
-#: main.py:8302
+#: main.py:8519
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "現在 {device} に接続しています\n\n切断しますか？"
 
@@ -859,7 +859,7 @@ msgstr "残り日数"
 msgid "Days since expiry"
 msgstr "期限切れからの日数"
 
-#: main.py:8687
+#: main.py:8904
 #: planning_ui.py:48
 #: playlist.py:3084
 msgid "Delete"
@@ -874,7 +874,7 @@ msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of pla
 msgstr "プレイリスト「{name}」を削除しますか?\n\nプレイリストの一覧から削除されます。元に戻すことはできません。"
 
 #: dialogs_misc.py:506
-#: main.py:8842
+#: main.py:9059
 msgid "Description"
 msgstr "番組説明"
 
@@ -887,12 +887,12 @@ msgstr "詳細ステータス"
 msgid "Detected from"
 msgstr "検出元"
 
-#: main.py:4030
-#: main.py:4033
+#: main.py:4153
+#: main.py:4156
 msgid "Diagnostic Information"
 msgstr "診断情報"
 
-#: main.py:4032
+#: main.py:4155
 msgid "Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."
 msgstr "診断情報をクリップボードにコピーしました。開発者へのメッセージに貼り付けてください。"
 
@@ -901,7 +901,7 @@ msgstr "診断情報をクリップボードにコピーしました。開発者
 msgid "Disabled"
 msgstr "無効"
 
-#: main.py:7482
+#: main.py:7699
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "キャストデバイスから切断されました。キャストメニューを開いて別のデバイスを選択してください。"
 
@@ -910,7 +910,7 @@ msgstr "キャストデバイスから切断されました。キャストメニ
 msgid "Display name"
 msgstr "表示名"
 
-#: main.py:8490
+#: main.py:8707
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "このダウンロードを本当にキャンセルしますか？後で再開はできません。"
 
@@ -922,83 +922,83 @@ msgstr "ドキュメント"
 msgid "Download"
 msgstr "ダウンロード"
 
-#: main.py:4545
+#: main.py:4668
 msgid "Download and install now? The app will restart after the update."
 msgstr "今すぐダウンロードしてインストールしますか？更新後にアプリが再起動します。"
 
-#: main.py:8111
+#: main.py:8328
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "ダウンロードをキャンセルしました。未完成のファイルは破棄されました。"
 
-#: main.py:8133
+#: main.py:8350
 msgid "Download complete:\n{path}"
 msgstr "ダウンロード完了：\n{path}"
 
-#: main.py:8403
+#: main.py:8620
 msgid "Download details"
 msgstr "ダウンロードの詳細"
 
-#: main.py:8123
+#: main.py:8340
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "ダウンロードが早く終了しました：\n{path}\n\nプロバイダーが接続を閉じる前に、予想 {expected} のうち {written} しか受信できませんでした。不完全なファイルは残っています。"
 
-#: main.py:8441
+#: main.py:8658
 msgid "Download failed (code {code})."
 msgstr "ダウンロードに失敗しました（コード {code}）。"
 
-#: main.py:8170
+#: main.py:8387
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "ダウンロードに失敗しました（コード {code}）：\n{path}\n\n{detail}"
 
-#: main.py:8457
+#: main.py:8674
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "ダウンロードに失敗しました - 再試行します（{total} 回中 {attempt} 回目、{seconds} 秒後）..."
 
-#: main.py:8167
+#: main.py:8384
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "ダウンロードに失敗しました：\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:5418
+#: main.py:5541
 msgid "Download in progress"
 msgstr "ダウンロード進行中"
 
-#: main.py:8402
+#: main.py:8619
 msgid "Download progress"
 msgstr "ダウンロードの進行状況"
 
-#: main.py:8401
+#: main.py:8618
 msgid "Download status"
 msgstr "ダウンロードの状態"
 
-#: main.py:4658
-#: main.py:4699
+#: main.py:4781
+#: main.py:4822
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "ダウンロードした更新が SHA-256 検証に失敗しました。"
 
-#: main.py:8481
+#: main.py:8698
 msgid "Downloaded: {size}"
 msgstr "ダウンロード済み: {size}"
 
-#: main.py:4650
-#: main.py:4654
-#: main.py:4691
-#: main.py:4695
+#: main.py:4773
+#: main.py:4777
+#: main.py:4814
+#: main.py:4818
 msgid "Downloading update..."
 msgstr "更新をダウンロード中..."
 
-#: main.py:8361
-#: main.py:8470
-#: main.py:8474
+#: main.py:8578
+#: main.py:8687
+#: main.py:8691
 msgid "Downloading {name}"
 msgstr "{name} をダウンロード中"
 
-#: main.py:4372
-#: main.py:8826
-#: main.py:8828
+#: main.py:4495
+#: main.py:9043
+#: main.py:9045
 msgid "EPG"
 msgstr "EPG"
 
-#: main.py:2639
+#: main.py:2754
 msgid "EPG Database Update Needed"
 msgstr "EPGデータベースの更新が必要です"
 
@@ -1009,42 +1009,42 @@ msgstr "EPGデータベースの更新が必要です"
 msgid "EPG Manager"
 msgstr "EPG マネージャー"
 
-#: main.py:6526
-#: main.py:6544
-#: main.py:7769
+#: main.py:6688
+#: main.py:6706
+#: main.py:7986
 msgid "EPG Not Available"
 msgstr "EPG は利用できません"
 
-#: main.py:4016
+#: main.py:4139
 msgid "EPG debug log (latest 128 KiB):"
 msgstr "EPG デバッグログ (最新の 128 KiB):"
 
-#: main.py:4012
+#: main.py:4135
 msgid "EPG enabled: {enabled}"
 msgstr "EPG 有効: {enabled}"
 
-#: main.py:6518
+#: main.py:6680
 msgid "EPG import is already in progress."
 msgstr "EPG のインポートはすでに進行中です。"
 
-#: main.py:6537
+#: main.py:6699
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "EPG のインポートをバックグラウンドで開始します。アプリはそのままお使いいただけます。インポートが完了するとメッセージでお知らせします。"
 
-#: main.py:6526
-#: main.py:6544
+#: main.py:6688
+#: main.py:6706
 msgid "EPG is not enabled."
 msgstr "EPG が有効になっていません。"
 
-#: main.py:8817
+#: main.py:9034
 msgid "EPG: {channel}"
 msgstr "EPG：{channel}"
 
-#: main.py:8479
+#: main.py:8696
 msgid "Elapsed: {time}"
 msgstr "経過時間: {time}"
 
-#: main.py:1978
+#: main.py:2069
 msgid "Encrypted settings backup saved."
 msgstr "暗号化された設定のバックアップが保存されました。"
 
@@ -1061,19 +1061,19 @@ msgstr "EPG XML URL を入力"
 msgid "Enter M3U URL"
 msgstr "M3U URL を入力"
 
-#: main.py:2776
+#: main.py:2891
 msgid "Enter a channel number:"
 msgstr "チャンネル番号を入力してください:"
 
-#: main.py:1884
+#: main.py:1975
 msgid "Enter a password for the settings backup:"
 msgstr "設定バックアップのパスワードを入力してください:"
 
-#: main.py:2785
+#: main.py:2900
 msgid "Enter a positive channel number."
 msgstr "正のチャネル番号を入力します。"
 
-#: main.py:1945
+#: main.py:2036
 msgid "Enter a shortcut (leave blank to restore the default):"
 msgstr "ショートカットを入力します (デフォルトに戻す場合は空白のままにします):"
 
@@ -1081,14 +1081,14 @@ msgstr "ショートカットを入力します (デフォルトに戻す場合�
 msgid "Enter player executable or path:"
 msgstr "プレーヤーの実行ファイルまたはパスを入力："
 
-#: main.py:1897
+#: main.py:1988
 msgid "Enter the password again:"
 msgstr "パスワードをもう一度入力してください:"
 
 #: client_ui.py:89
 #: client_ui.py:91
 #: dialogs_misc.py:509
-#: main.py:8845
+#: main.py:9062
 msgid "Episode description"
 msgstr "エピソードの説明"
 
@@ -1097,18 +1097,18 @@ msgid "Episode {num}"
 msgstr "第 {num} 話"
 
 #: internal_player.py:2021
-#: main.py:2624
-#: main.py:2678
-#: main.py:4384
-#: main.py:6502
-#: main.py:6572
-#: main.py:6594
-#: main.py:8320
+#: main.py:2739
+#: main.py:2793
+#: main.py:4507
+#: main.py:6664
+#: main.py:6734
+#: main.py:6756
+#: main.py:8537
 msgid "Error"
 msgstr "エラー"
 
-#: main.py:2624
-#: main.py:2677
+#: main.py:2739
+#: main.py:2792
 msgid "Error fetching EPG: {error}"
 msgstr "EPG の取得中にエラー：{error}"
 
@@ -1128,7 +1128,7 @@ msgstr "実行ファイルが見つかりません：{path}"
 
 #: client_ui.py:246
 #: client_ui.py:272
-#: main.py:822
+#: main.py:823
 #: shortcuts.py:73
 msgid "Exit"
 msgstr "終了"
@@ -1160,7 +1160,7 @@ msgstr "期限切れ"
 msgid "Expires"
 msgstr "有効期限"
 
-#: main.py:1966
+#: main.py:2057
 msgid "Export Settings"
 msgstr "設定のエクスポート"
 
@@ -1173,7 +1173,7 @@ msgstr "設定をエクスポート..."
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "外部字幕ファイルはローカルのライブバッファーと同期されません。ストリームに埋め込まれた字幕を使用してください。"
 
-#: main.py:4701
+#: main.py:4824
 msgid "Extracting update..."
 msgstr "更新を展開中..."
 
@@ -1185,17 +1185,17 @@ msgstr "F1 はヘルプ用に予約されています。"
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "停止前に音量を徐々に下げる時間（秒）。0 で無効になります。"
 
-#: main.py:3216
-#: main.py:8712
+#: main.py:3339
+#: main.py:8929
 msgid "Failed"
 msgstr "失敗"
 
-#: main.py:7491
-#: main.py:7668
+#: main.py:7708
+#: main.py:7885
 msgid "Failed to cast: {error}"
 msgstr "キャストに失敗しました：{error}"
 
-#: main.py:8320
+#: main.py:8537
 msgid "Failed to connect: {error}"
 msgstr "接続に失敗しました：{error}"
 
@@ -1207,7 +1207,7 @@ msgstr "マニフェストのダウンロードに失敗しました（{code}）
 msgid "Failed to download update ({code})."
 msgstr "更新のダウンロードに失敗しました（{code}）。"
 
-#: main.py:6572
+#: main.py:6734
 msgid "Failed to fetch EPG data: {error}"
 msgstr "EPG データの取得に失敗しました：{error}"
 
@@ -1223,19 +1223,19 @@ msgstr "libVLC インスタンスの初期化に失敗しました。"
 msgid "Failed to initialise media player: {error}"
 msgstr "メディアプレーヤーの初期化に失敗しました：{error}"
 
-#: main.py:7597
+#: main.py:7814
 msgid "Failed to launch {player}:\n{error}"
 msgstr "{player} の起動に失敗しました：\n{error}"
 
-#: main.py:7589
+#: main.py:7806
 msgid "Failed to start built-in player:\n{error}"
 msgstr "内蔵プレーヤーの起動に失敗しました：\n{error}"
 
-#: main.py:1265
-#: main.py:1594
-#: main.py:1602
-#: main.py:1710
-#: main.py:1769
+#: main.py:1275
+#: main.py:1685
+#: main.py:1693
+#: main.py:1801
+#: main.py:1860
 msgid "Favorites"
 msgstr "お気に入り"
 
@@ -1255,13 +1255,13 @@ msgstr "フィルター（Tab）："
 msgid "Filter programs"
 msgstr "番組をフィルター"
 
-#: main.py:289
-#: main.py:291
-#: main.py:1921
+#: main.py:290
+#: main.py:292
+#: main.py:2012
 msgid "Find"
 msgstr "検索"
 
-#: main.py:292
+#: main.py:293
 msgid "Find Next"
 msgstr "次を検索"
 
@@ -1269,7 +1269,7 @@ msgstr "次を検索"
 msgid "Follow Serrebi on GitHub"
 msgstr "GitHub で Serrebi をフォロー"
 
-#: main.py:8640
+#: main.py:8857
 msgid "Format"
 msgstr "形式"
 
@@ -1298,9 +1298,9 @@ msgstr "GZip XML"
 msgid "GitHub API rate limit exceeded. Please try again later."
 msgstr "GitHub API のレート制限を超えました。後でもう一度お試しください。"
 
-#: main.py:2777
-#: main.py:2786
-#: main.py:2795
+#: main.py:2892
+#: main.py:2901
+#: main.py:2910
 msgid "Go to Channel Number"
 msgstr "チャンネル番号に移動"
 
@@ -1315,12 +1315,12 @@ msgstr "チャンネル番号に移動..."
 msgid "Go to Favorites"
 msgstr "お気に入りへ移動"
 
-#: main.py:1670
+#: main.py:1761
 msgid "Guide information unavailable"
 msgstr "ガイド情報がありません"
 
-#: main.py:284
-#: main.py:288
+#: main.py:285
+#: main.py:289
 msgid "Guide text"
 msgstr "ガイド本文"
 
@@ -1342,10 +1342,10 @@ msgstr "ウィンドウを非表示"
 msgid "Hide older releases"
 msgstr "古いリリースを非表示にする"
 
-#: main.py:2721
-#: main.py:6826
-#: main.py:7467
-#: main.py:7507
+#: main.py:2836
+#: main.py:7043
+#: main.py:7684
+#: main.py:7724
 msgid "IPTV Stream"
 msgstr "IPTV ストリーム"
 
@@ -1355,15 +1355,15 @@ msgstr "IPTV ストリーム"
 msgid "Idle"
 msgstr "アイドル"
 
-#: main.py:7351
+#: main.py:7568
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "出力デバイスがなくなった場合、デバイスが戻るまで字幕の読み上げを一時停止します。"
 
-#: main.py:7355
+#: main.py:7572
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "出力デバイスがなくなった場合、アプリケーションの音声はシステムの既定値に戻ります。"
 
-#: main.py:6410
+#: main.py:6561
 msgid "Import Complete"
 msgstr "インポート完了"
 
@@ -1373,14 +1373,14 @@ msgstr "インポート完了"
 msgid "Import EPG to DB"
 msgstr "EPG をデータベースにインポート"
 
-#: main.py:2646
-#: main.py:6417
-#: main.py:6532
+#: main.py:2761
+#: main.py:6568
+#: main.py:6694
 msgid "Import Failed"
 msgstr "インポート失敗"
 
-#: main.py:1982
-#: main.py:1998
+#: main.py:2073
+#: main.py:2089
 msgid "Import Settings"
 msgstr "インポート設定"
 
@@ -1389,7 +1389,7 @@ msgstr "インポート設定"
 msgid "Import Settings..."
 msgstr "設定をインポート..."
 
-#: main.py:6539
+#: main.py:6701
 msgid "Import Started"
 msgstr "インポートを開始しました"
 
@@ -1406,7 +1406,7 @@ msgstr "EPG をインポート中"
 msgid "Importing EPG data…"
 msgstr "EPG データをインポート中…"
 
-#: main.py:6518
+#: main.py:6680
 msgid "In Progress"
 msgstr "進行中"
 
@@ -1418,7 +1418,7 @@ msgstr "プロバイダーの XMLTV ガイドを自動的に含める"
 msgid "Installer message: {message}"
 msgstr "インストーラーのメッセージ: {message}"
 
-#: main.py:4883
+#: main.py:5006
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "更新をインストールしています。{app} は終了し、自動的に再起動します。それまでは手動で起動しないでください。"
 
@@ -1443,7 +1443,7 @@ msgstr "ポータルからの応答が無効です"
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "SerrebiProjects の Telegram グループに参加"
 
-#: main.py:7324
+#: main.py:7541
 msgid "Keep this output device?\n{name}"
 msgstr "この出力デバイスを保持しますか？\n{name}"
 
@@ -1451,12 +1451,12 @@ msgstr "この出力デバイスを保持しますか？\n{name}"
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "ライブ映像を 1～30 分間保持します。0 でローカルバッファーを無効にします。"
 
-#: main.py:1921
-#: main.py:1931
-#: main.py:1936
-#: main.py:1946
-#: main.py:1956
-#: main.py:1960
+#: main.py:2012
+#: main.py:2022
+#: main.py:2027
+#: main.py:2037
+#: main.py:2047
+#: main.py:2051
 msgid "Keyboard Shortcuts"
 msgstr "キーボードショートカット"
 
@@ -1467,7 +1467,7 @@ msgstr "キーボード ショートカット..."
 
 #: client_ui.py:192
 #: client_ui.py:333
-#: main.py:4446
+#: main.py:4569
 msgid "Language"
 msgstr "言語"
 
@@ -1483,14 +1483,14 @@ msgstr "最後のエラー：{reason}"
 msgid "Last subtitle: {text}"
 msgstr "最後の字幕: {text}"
 
-#: main.py:4498
+#: main.py:4621
 msgid "Latest release tag is missing or invalid."
 msgstr "最新リリースのタグが見つからないか無効です。"
 
-#: main.py:7452
-#: main.py:7505
-#: main.py:7589
-#: main.py:7598
+#: main.py:7669
+#: main.py:7722
+#: main.py:7806
+#: main.py:7815
 msgid "Launch Error"
 msgstr "起動エラー"
 
@@ -1515,16 +1515,16 @@ msgstr "字幕ファイルをロードする"
 msgid "Load Subtitle File..."
 msgstr "字幕ファイルをロード..."
 
-#: main.py:6018
+#: main.py:6169
 msgid "Loading Video on Demand…"
 msgstr "ビデオオンデマンドを読み込み中…"
 
-#: main.py:6148
+#: main.py:6299
 msgid "Loading episodes…"
 msgstr "エピソードを読み込み中…"
 
-#: main.py:1135
-#: main.py:5836
+#: main.py:1145
+#: main.py:5984
 msgid "Loading playlists..."
 msgstr "プレイリストを読み込み中..."
 
@@ -1541,7 +1541,7 @@ msgstr "ローカルライブバッファー"
 msgid "Local Live Buffer..."
 msgstr "ローカルライブバッファー…"
 
-#: main.py:3987
+#: main.py:4110
 msgid "Logs"
 msgstr "ログ"
 
@@ -1562,11 +1562,11 @@ msgstr "MAC アドレスは 6 つのオクテットを含む必要がありま�
 msgid "MAC address presented to the portal"
 msgstr "ポータルに提示される MAC アドレス"
 
-#: main.py:7390
+#: main.py:7607
 msgid "MPV subtitle speech on."
 msgstr "MPV字幕読み上げオン。"
 
-#: main.py:7393
+#: main.py:7610
 msgid "MPV subtitle speech unavailable."
 msgstr "MPV字幕読み上げは利用できません。"
 
@@ -1605,7 +1605,7 @@ msgstr "MiB："
 msgid "Minimize to System Tray"
 msgstr "システムトレイに最小化"
 
-#: main.py:4283
+#: main.py:4406
 msgid "Minimum Free Space..."
 msgstr "必要な最小空き容量…"
 
@@ -1627,8 +1627,8 @@ msgstr "番組開始前の分数:"
 msgid "Minutes:"
 msgstr "分："
 
-#: main.py:3216
-#: main.py:8713
+#: main.py:3339
+#: main.py:8930
 msgid "Missed"
 msgstr "見逃し"
 
@@ -1650,7 +1650,7 @@ msgstr "なし (有効期限が設定されていません)"
 msgid "Next Subtitle"
 msgstr "次の字幕"
 
-#: main.py:1504
+#: main.py:1593
 msgid "Next: {programme}"
 msgstr "次: {programme}"
 
@@ -1659,37 +1659,37 @@ msgid "Next: {title} ({start} – {end})"
 msgstr "次: {title} ({start} – {end})"
 
 #: account_info.py:359
-#: main.py:1680
+#: main.py:1771
 msgid "No"
 msgstr "いいえ"
 
-#: main.py:6510
+#: main.py:6672
 msgid "No Accounts"
 msgstr "アカウントなし"
 
-#: main.py:6575
+#: main.py:6737
 msgid "No Data"
 msgstr "データなし"
 
-#: main.py:6522
+#: main.py:6684
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "EPG ソースが設定されていません。「ファイル > EPG マネージャー」で追加してください。"
 
-#: main.py:6522
+#: main.py:6684
 msgid "No Sources"
 msgstr "ソースなし"
 
-#: main.py:6080
-#: main.py:6084
+#: main.py:6231
+#: main.py:6235
 msgid "No Video on Demand content found."
 msgstr "ビデオオンデマンドのコンテンツが見つかりませんでした。"
 
 #: internal_player.py:1988
-#: main.py:7656
+#: main.py:7873
 msgid "No active stream to cast."
 msgstr "キャストするアクティブなストリームがありません。"
 
-#: main.py:7089
+#: main.py:7306
 msgid "No active subtitle session."
 msgstr "アクティブな字幕セッションがありません。"
 
@@ -1703,21 +1703,21 @@ msgstr "オーディオ出力デバイスが見つかりません。"
 msgid "No audio tracks available"
 msgstr "利用できる音声トラックがありません"
 
-#: main.py:7791
+#: main.py:8008
 msgid "No catch-up programmes are available for this channel."
 msgstr "このチャンネルには利用可能な見逃し配信番組がありません。"
 
-#: main.py:1643
+#: main.py:1734
 msgid "No channel is selected."
 msgstr "チャンネルが選択されていません。"
 
-#: main.py:5837
+#: main.py:5985
 msgid "No channels found."
 msgstr "チャンネルが見つかりませんでした。"
 
 #: dialogs_misc.py:575
-#: main.py:2533
-#: main.py:8964
+#: main.py:2648
+#: main.py:9181
 msgid "No description available for this programme."
 msgstr "この番組の説明はありません。"
 
@@ -1729,13 +1729,13 @@ msgstr "デバイスが見つかりませんでした。"
 msgid "No earlier subtitle."
 msgstr "これより前の字幕はありません。"
 
-#: main.py:6179
+#: main.py:6330
 msgid "No episodes found for this series."
 msgstr "このシリーズのエピソードが見つかりませんでした。"
 
 #: external_player.py:297
 #: external_player.py:348
-#: main.py:8450
+#: main.py:8667
 msgid "No error details were reported."
 msgstr "エラーの詳細は報告されていません。"
 
@@ -1755,11 +1755,11 @@ msgstr "利用可能なローカルライブ履歴がありません。"
 msgid "No notable changes."
 msgstr "目立った変更はありません。"
 
-#: main.py:2752
+#: main.py:2867
 msgid "No previous channel is available."
 msgstr "以前のチャンネルは利用できません。"
 
-#: main.py:7100
+#: main.py:7317
 msgid "No previous subtitle."
 msgstr "前の字幕がありません。"
 
@@ -1767,28 +1767,28 @@ msgstr "前の字幕がありません。"
 msgid "No program currently airing."
 msgstr "現在放送中の番組はありません。"
 
-#: main.py:2658
+#: main.py:2773
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "番組ガイドがまだインポートされていないため、予約できるものがありません。\n\nまずガイドをインポートしてください（ファイル > EPG マネージャー、次に ファイル > EPG をデータベースにインポート）。その後、もう一度お試しください。"
 
-#: main.py:6575
+#: main.py:6737
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "現在放送中の番組がないか、EPG データがまだインポートされていません。"
 
-#: main.py:6506
+#: main.py:6668
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "プロバイダーのアカウントが見つかりませんでした。\n\nプレイリストマネージャーで追加した Xtream Codes と Stalker Portal のアカウント、およびプレイリストやストリームの URL から検出したアカウントがここに表示されます。"
 
-#: main.py:7111
+#: main.py:7328
 msgid "No recent subtitles."
 msgstr "最近の字幕がありません。"
 
-#: main.py:2760
+#: main.py:2875
 msgid "No recently watched channels are available."
 msgstr "最近視聴したチャンネルはありません。"
 
-#: main.py:3671
-#: main.py:3682
+#: main.py:3794
+#: main.py:3805
 msgid "No recordings are currently active."
 msgstr "現在アクティブな録画はありません。"
 
@@ -1813,7 +1813,7 @@ msgstr "ストリーム URL が指定されていません。"
 msgid "No subtitle has been shown yet."
 msgstr "まだ字幕は表示されていません。"
 
-#: main.py:7091
+#: main.py:7308
 msgid "No subtitle text available yet."
 msgstr "字幕テキストはまだ利用できません。"
 
@@ -1825,11 +1825,11 @@ msgstr "このファイルに字幕テキストが見つかりません。"
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "読み上げる字幕テキストがありません。対応形式の字幕ファイルを読み込んでください。"
 
-#: main.py:8571
+#: main.py:8788
 msgid "No timed problems were found in the newest recording log."
 msgstr "最新の録画ログには、時刻付きの問題は見つかりませんでした。"
 
-#: main.py:4372
+#: main.py:4495
 msgid "No upcoming schedule found for this channel."
 msgstr "このチャンネルの今後のスケジュールが見つかりませんでした。"
 
@@ -1838,9 +1838,9 @@ msgstr "このチャンネルの今後のスケジュールが見つかりませ
 msgid "None"
 msgstr "なし"
 
-#: main.py:1931
-#: main.py:6786
-#: main.py:7443
+#: main.py:2022
+#: main.py:7003
+#: main.py:7660
 msgid "Not Found"
 msgstr "見つかりません"
 
@@ -1863,7 +1863,7 @@ msgstr "録画を開始するための空き容量が不足しています。空
 msgid "Not reported by the server"
 msgstr "サーバーから報告されていません"
 
-#: main.py:7626
+#: main.py:7843
 msgid "Nothing is playing in the built-in player."
 msgstr "内蔵プレーヤーでは何も再生されていません。"
 
@@ -1888,8 +1888,8 @@ msgstr "現在: {title} ({start} – {end})"
 #: dialogs_misc.py:671
 #: dialogs_misc.py:731
 #: internal_player.py:148
-#: main.py:7235
-#: main.py:7268
+#: main.py:7452
+#: main.py:7485
 #: options.py:942
 #: playlist.py:3145
 #: playlist.py:3245
@@ -1914,7 +1914,7 @@ msgstr "デバイス喪失時：デバイスが戻るまで一時停止"
 msgid "On device loss: use the system default"
 msgstr "デバイス喪失時：システムの既定値を使用"
 
-#: main.py:7368
+#: main.py:7585
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "文書化された timed-text API を持つプレーヤーのみが字幕テキストを提供できます。内蔵プレーヤーは SRT、ASS、SSA および WebVTT ファイルを読み取ります。MPV はアプリケーション独自のセッション経由で動作します。"
 
@@ -1931,7 +1931,7 @@ msgstr "チャンネルを開く"
 msgid "Open Logs Folder"
 msgstr "ログフォルダーを開く"
 
-#: main.py:4301
+#: main.py:4424
 msgid "Open Recordings Folder"
 msgstr "録画フォルダーを開く"
 
@@ -1939,7 +1939,7 @@ msgstr "録画フォルダーを開く"
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "GitHub で Accessible IPTV Client プロジェクトを開く"
 
-#: main.py:8575
+#: main.py:8792
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "録画ファイルを VLC で開き、Ctrl+T を押して、一覧の時刻を入力します。FFmpeg がファイルのメディア時刻を報告した場合はその時刻を使用します。それ以外は録画開始からの経過時間であり、中断後は実際の再生位置より少し後になることがあります。"
 
@@ -1976,11 +1976,11 @@ msgstr "その他の変更"
 msgid "Other details reported by the server"
 msgstr "サーバーから報告されたその他の詳細"
 
-#: main.py:5872
+#: main.py:6020
 msgid "Other playlists"
 msgstr "その他のプレイリスト"
 
-#: main.py:7298
+#: main.py:7515
 msgid "Output device for the application voice:"
 msgstr "アプリ音声の出力デバイス:"
 
@@ -2019,7 +2019,7 @@ msgstr "未通知の番組リマインダー: {count}。\n\n通知を表示す�
 msgid "Phone"
 msgstr "電話番号"
 
-#: main.py:4009
+#: main.py:4132
 msgid "Platform: {platform}"
 msgstr "プラットフォーム: {platform}"
 
@@ -2027,7 +2027,7 @@ msgstr "プラットフォーム: {platform}"
 #: dialogs_misc.py:1092
 #: internal_player.py:918
 #: internal_player.py:2034
-#: main.py:2567
+#: main.py:2682
 msgid "Play"
 msgstr "再生"
 
@@ -2042,15 +2042,15 @@ msgstr "再生または一時停止"
 #: client_ui.py:131
 #: client_ui.py:277
 #: internal_player.py:551
-#: main.py:807
+#: main.py:808
 #: shortcuts.py:74
 #: shortcuts.py:91
 msgid "Play/Pause"
 msgstr "再生/一時停止"
 
-#: main.py:2743
-#: main.py:6799
-#: main.py:6802
+#: main.py:2858
+#: main.py:7016
+#: main.py:7019
 msgid "Playback Error"
 msgstr "再生エラー"
 
@@ -2063,7 +2063,7 @@ msgstr "スリープタイマーによる停止前に再生音量を徐々に下
 msgid "Player"
 msgstr "プレーヤー"
 
-#: main.py:818
+#: main.py:819
 msgid "Player Controls"
 msgstr "プレーヤーコントロール"
 
@@ -2075,7 +2075,7 @@ msgstr "プレーヤーウィンドウは破棄されました。"
 msgid "Playing"
 msgstr "再生中"
 
-#: main.py:1323
+#: main.py:1393
 msgid "Playlist"
 msgstr "プレイリスト"
 
@@ -2086,12 +2086,12 @@ msgstr "プレイリスト"
 msgid "Playlist Manager"
 msgstr "プレイリストマネージャー"
 
-#: main.py:6449
-#: main.py:6455
+#: main.py:6600
+#: main.py:6606
 msgid "Playlist refresh failed: {name}"
 msgstr "プレイリストの更新に失敗しました: {name}"
 
-#: main.py:6454
+#: main.py:6605
 msgid "Playlist refreshed: {name}"
 msgstr "プレイリストを更新しました: {name}"
 
@@ -2161,22 +2161,22 @@ msgstr "優先ストリームコンテナ形式"
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "優先する音声トラック名または言語（優先度の高い順）:"
 
-#: main.py:8372
+#: main.py:8589
 msgid "Preparing download..."
 msgstr "ダウンロードを準備中..."
 
-#: main.py:4676
-#: main.py:4730
+#: main.py:4799
+#: main.py:4853
 msgid "Preparing to restart..."
 msgstr "再起動の準備中..."
 
-#: main.py:8386
+#: main.py:8603
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Esc キーでこのウィンドウを隠せます。ダウンロードは続行されます。表示 > ダウンロードを表示 (Ctrl+Shift+D) で再表示します。"
 
 #: client_ui.py:152
 #: client_ui.py:295
-#: main.py:2752
+#: main.py:2867
 #: shortcuts.py:84
 msgid "Previous Channel"
 msgstr "前のチャンネル"
@@ -2215,45 +2215,45 @@ msgstr "番組リマインダー"
 msgid "Programme Reminders"
 msgstr "番組リマインダー"
 
-#: main.py:4279
+#: main.py:4402
 msgid "Programme Reminders..."
 msgstr "番組リマインダー…"
 
-#: main.py:8478
+#: main.py:8695
 msgid "Progress: {percent}%"
 msgstr "進行状況: {percent}%"
 
 #: account_info.py:111
-#: main.py:1326
+#: main.py:1396
 #: playlist.py:3366
 msgid "Provider"
 msgstr "プロバイダー"
 
-#: main.py:3385
-#: main.py:6799
-#: main.py:7816
-#: main.py:7874
+#: main.py:3508
+#: main.py:7016
+#: main.py:8033
+#: main.py:8091
 msgid "Provider error: {error}"
 msgstr "プロバイダーエラー：{error}"
 
-#: main.py:3011
+#: main.py:3134
 msgid "Provider quality (copy, MKV)"
 msgstr "プロバイダー品質（コピー、MKV）"
 
-#: main.py:3012
+#: main.py:3135
 msgid "Provider quality (copy, MP4)"
 msgstr "プロバイダー品質（コピー、MP4）"
 
-#: main.py:3015
+#: main.py:3138
 msgid "Provider quality (stream copy, MKA)"
 msgstr "プロバイダー品質（ストリームコピー、MKA）"
 
-#: main.py:1331
+#: main.py:1401
 #: playlist.py:3371
 msgid "Provider – {name}"
 msgstr "プロバイダー – {name}"
 
-#: main.py:4010
+#: main.py:4133
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
@@ -2278,12 +2278,12 @@ msgstr "前の字幕を読む"
 msgid "Ready."
 msgstr "準備完了。"
 
-#: main.py:7119
+#: main.py:7336
 msgid "Recent Subtitles"
 msgstr "最近の字幕"
 
-#: main.py:2761
-#: main.py:2764
+#: main.py:2876
+#: main.py:2879
 msgid "Recently Watched"
 msgstr "最近見たもの"
 
@@ -2306,39 +2306,39 @@ msgstr "再接続中..."
 #: internal_player.py:559
 #: internal_player.py:1955
 #: internal_player.py:1971
-#: main.py:2576
-#: main.py:3360
-#: main.py:7627
-#: main.py:7635
+#: main.py:2691
+#: main.py:3483
+#: main.py:7844
+#: main.py:7852
 #: shortcuts.py:93
 msgid "Record"
 msgstr "録画"
 
 #: dialogs_misc.py:1100
-#: main.py:8928
+#: main.py:9145
 msgid "Record Daily"
 msgstr "毎日録画"
 
 #: dialogs_misc.py:1102
-#: main.py:8930
+#: main.py:9147
 msgid "Record Series"
 msgstr "シリーズ録画"
 
 #: dialogs_misc.py:1101
-#: main.py:8929
+#: main.py:9146
 msgid "Record Weekly"
 msgstr "毎週録画"
 
-#: main.py:3376
-#: main.py:3467
-#: main.py:3528
-#: main.py:3655
-#: main.py:3658
-#: main.py:3669
-#: main.py:3672
-#: main.py:3680
-#: main.py:3683
-#: main.py:8709
+#: main.py:3499
+#: main.py:3590
+#: main.py:3651
+#: main.py:3778
+#: main.py:3781
+#: main.py:3792
+#: main.py:3795
+#: main.py:3803
+#: main.py:3806
+#: main.py:8926
 msgid "Recording"
 msgstr "録画中"
 
@@ -2346,27 +2346,27 @@ msgstr "録画中"
 msgid "Recording Complete"
 msgstr "録画完了"
 
-#: main.py:3079
+#: main.py:3202
 msgid "Recording Conflict"
 msgstr "録音の競合"
 
 #: client_recording.py:75
-#: main.py:3386
-#: main.py:3390
-#: main.py:3394
-#: main.py:3419
-#: main.py:3505
+#: main.py:3509
+#: main.py:3513
+#: main.py:3517
+#: main.py:3542
+#: main.py:3628
 msgid "Recording Error"
 msgstr "録画エラー"
 
-#: main.py:4289
+#: main.py:4412
 msgid "Recording Format"
 msgstr "録画形式"
 
-#: main.py:4299
-#: main.py:8556
-#: main.py:8562
-#: main.py:8601
+#: main.py:4422
+#: main.py:8773
+#: main.py:8779
+#: main.py:8818
 msgid "Recording Problem Times"
 msgstr "録画問題の発生時刻"
 
@@ -2396,11 +2396,11 @@ msgstr "{name} の録画が予期せず終了しました（コード {code}）�
 msgid "Recording saved:\n{path}"
 msgstr "録画を保存しました：\n{path}"
 
-#: main.py:3089
+#: main.py:3212
 msgid "Recording scheduled.\n\nThe programme guide has not been imported yet, so the Scheduled Recordings window may not list anything, and this may be the only episode you can schedule. Import the guide from File > Import EPG to DB to see and schedule upcoming programmes."
 msgstr "録画を予約しました。\n\n番組ガイドがまだインポートされていないため、「予約済み録画」ウィンドウには何も表示されない可能性があり、これが予約できる唯一のエピソードかもしれません。今後の番組を表示・予約するには、ファイル > EPG をデータベースにインポート からガイドをインポートしてください。"
 
-#: main.py:3524
+#: main.py:3647
 msgid "Recording started ({fmt}):\n{path}"
 msgstr "録画を開始しました（{fmt}）：\n{path}"
 
@@ -2408,20 +2408,20 @@ msgstr "録画を開始しました（{fmt}）：\n{path}"
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "録画は停止しましたが、ffmpeg がコード {code} を報告しました。\n\n{detail}\n\nファイル：\n{path}"
 
-#: main.py:3067
+#: main.py:3190
 msgid "Recording updated to repeat."
 msgstr "録音を更新して繰り返すようになりました。"
 
 #: client_ui.py:181
 #: client_ui.py:423
-#: main.py:3974
-#: main.py:4262
+#: main.py:4097
+#: main.py:4385
 msgid "Recordings"
 msgstr "録画"
 
 #: dialogs_misc.py:346
-#: main.py:8643
-#: main.py:8681
+#: main.py:8860
+#: main.py:8898
 #: planning_ui.py:50
 #: playlist.py:3079
 msgid "Refresh"
@@ -2431,11 +2431,11 @@ msgstr "更新"
 msgid "Refresh All Playlists"
 msgstr "すべてのプレイリストを更新"
 
-#: main.py:6451
+#: main.py:6602
 msgid "Refreshing all playlists..."
 msgstr "すべてのプレイリストを更新しています..."
 
-#: main.py:6456
+#: main.py:6607
 msgid "Refreshing playlist: {name}"
 msgstr "プレイリストを更新しています: {name}"
 
@@ -2467,15 +2467,15 @@ msgstr "すべてのリマインダーを削除しますか？"
 msgid "Remove all saved playback positions?"
 msgstr "保存した再生位置をすべて削除しますか？"
 
-#: main.py:8791
+#: main.py:9008
 msgid "Remove all scheduled recordings from the list?"
 msgstr "スケジュールされたすべての録画をリストから削除しますか？"
 
-#: main.py:1759
+#: main.py:1850
 msgid "Remove from Favorites"
 msgstr "お気に入りから削除"
 
-#: main.py:8794
+#: main.py:9011
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "スケジュールされた録画 '{title}' をリストから削除しますか？"
 
@@ -2492,11 +2492,11 @@ msgstr "この保存した再生位置を削除しますか？"
 msgid "Rename"
 msgstr "名前の変更"
 
-#: main.py:1997
+#: main.py:2088
 msgid "Replace current settings with this backup? Restart the app after importing."
 msgstr "現在の設定をこのバックアップで置き換えますか?インポート後にアプリを再起動します。"
 
-#: main.py:803
+#: main.py:804
 msgid "Restore"
 msgstr "元に戻す"
 
@@ -2532,7 +2532,7 @@ msgstr "ライブ映像を巻き戻す…"
 msgid "Saved playback positions"
 msgstr "保存した再生位置"
 
-#: main.py:5964
+#: main.py:6115
 msgid "Saved positions can only be restored in the built-in player. Select it and disconnect casting before continuing."
 msgstr "保存した位置を復元できるのは内蔵プレーヤーのみです。内蔵プレーヤーを選択し、他のデバイスへのキャストを切断してください。"
 
@@ -2540,65 +2540,65 @@ msgstr "保存した位置を復元できるのは内蔵プレーヤーのみで
 msgid "Schedule Padding"
 msgstr "録画の前後マージン"
 
-#: main.py:4295
+#: main.py:4418
 msgid "Schedule Padding..."
 msgstr "録画の前後マージン..."
 
 #: dialogs_misc.py:889
 #: dialogs_misc.py:1097
-#: main.py:2583
-#: main.py:2662
-#: main.py:3040
-#: main.py:3056
-#: main.py:3060
-#: main.py:3067
-#: main.py:3071
-#: main.py:3094
-#: main.py:3101
-#: main.py:8925
-#: main.py:8973
+#: main.py:2698
+#: main.py:2777
+#: main.py:3163
+#: main.py:3179
+#: main.py:3183
+#: main.py:3190
+#: main.py:3194
+#: main.py:3217
+#: main.py:3224
+#: main.py:9142
+#: main.py:9190
 msgid "Schedule Recording"
 msgstr "録画をスケジュール"
 
-#: main.py:2592
+#: main.py:2707
 msgid "Schedule Recording..."
 msgstr "録画をスケジュール..."
 
-#: main.py:8708
+#: main.py:8925
 #: planning_ui.py:84
 msgid "Scheduled"
 msgstr "スケジュール済み"
 
-#: main.py:3221
-#: main.py:3321
+#: main.py:3344
+#: main.py:3444
 msgid "Scheduled Recording"
 msgstr "スケジュールされた録画"
 
-#: main.py:8623
-#: main.py:8775
-#: main.py:8784
-#: main.py:8795
+#: main.py:8840
+#: main.py:8992
+#: main.py:9001
+#: main.py:9012
 msgid "Scheduled Recordings"
 msgstr "スケジュールされた録画"
 
-#: main.py:4285
+#: main.py:4408
 msgid "Scheduled Recordings..."
 msgstr "スケジュールされた録画..."
 
-#: main.py:3259
+#: main.py:3382
 msgid "Scheduled recording is missing channel data."
 msgstr "スケジュールされた録画にチャンネルデータがありません。"
 
-#: main.py:3319
+#: main.py:3442
 msgid "Scheduled recording started:\n{title}"
 msgstr "スケジュールされた録画を開始しました：\n{title}"
 
-#: main.py:3097
+#: main.py:3220
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "スケジュールされた録画：\n{title}\n{time}"
 
-#: main.py:5405
-#: main.py:8635
+#: main.py:5528
+#: main.py:8852
 msgid "Scheduled recordings"
 msgstr "スケジュールされた録画"
 
@@ -2635,15 +2635,15 @@ msgstr "キャストするデバイスを選択"
 msgid "Select Player Executable"
 msgstr "プレーヤーの実行ファイルを選択"
 
-#: main.py:1594
+#: main.py:1685
 msgid "Select a channel first."
 msgstr "先にチャンネルを選択してください。"
 
-#: main.py:3360
+#: main.py:3483
 msgid "Select a channel to record first."
 msgstr "先に録画するチャンネルを選択してください。"
 
-#: main.py:8973
+#: main.py:9190
 msgid "Select a programme first."
 msgstr "先に番組を選択してください。"
 
@@ -2651,8 +2651,8 @@ msgstr "先に番組を選択してください。"
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "番組を選んで Enter キーで開くか、コンテキストメニューからダウンロードしてください。 閉じるには Escape キーを押します。"
 
-#: main.py:8775
-#: main.py:8784
+#: main.py:8992
+#: main.py:9001
 msgid "Select a scheduled recording first."
 msgstr "先にスケジュールされた録画を選択してください。"
 
@@ -2694,29 +2694,29 @@ msgstr "サーバー時刻"
 msgid "Server time zone"
 msgstr "サーバーのタイムゾーン"
 
-#: main.py:4303
+#: main.py:4426
 msgid "Set Download Folder..."
 msgstr "ダウンロードフォルダを設定..."
 
 #: dialogs_misc.py:1095
-#: main.py:2580
-#: main.py:8922
+#: main.py:2695
+#: main.py:9139
 #: planning_ui.py:47
 msgid "Set Reminder..."
 msgstr "リマインダーを設定…"
 
-#: main.py:4037
+#: main.py:4160
 msgid "Set download folder"
 msgstr "ダウンロードフォルダを設定"
 
-#: main.py:1885
-#: main.py:1893
-#: main.py:1898
-#: main.py:1903
 #: main.py:1976
-#: main.py:1978
-#: main.py:1995
-#: main.py:2002
+#: main.py:1984
+#: main.py:1989
+#: main.py:1994
+#: main.py:2067
+#: main.py:2069
+#: main.py:2086
+#: main.py:2093
 msgid "Settings Backup"
 msgstr "設定のバックアップ"
 
@@ -2724,7 +2724,7 @@ msgstr "設定のバックアップ"
 msgid "Settings are too large to back up."
 msgstr "設定が大きすぎてバックアップできません。"
 
-#: main.py:2001
+#: main.py:2092
 msgid "Settings imported. Restart the app to use them."
 msgstr "設定がインポートされました。使用するにはアプリを再起動してください。"
 
@@ -2732,7 +2732,7 @@ msgstr "設定がインポートされました。使用するにはアプリを
 msgid "Shortcut conflicts with {command}."
 msgstr "ショートカットが「{command}」と競合しています。"
 
-#: main.py:1959
+#: main.py:2050
 msgid "Shortcut saved. Restart the app to use it."
 msgstr "ショートカットが保存されました。アプリを再起動して使用してください。"
 
@@ -2747,7 +2747,7 @@ msgstr "内蔵プレーヤーを表示"
 msgid "Show Downloads"
 msgstr "ダウンロードを表示"
 
-#: main.py:806
+#: main.py:807
 msgid "Show Player"
 msgstr "プレーヤーを表示"
 
@@ -2767,9 +2767,9 @@ msgid "Show older releases (English)"
 msgstr "古いリリースを表示（英語）"
 
 #: dialogs_misc.py:777
-#: main.py:3729
-#: main.py:3790
-#: main.py:3800
+#: main.py:3852
+#: main.py:3913
+#: main.py:3923
 msgid "Shut Down After Recordings"
 msgstr "録画終了後にシャットダウン"
 
@@ -2777,11 +2777,11 @@ msgstr "録画終了後にシャットダウン"
 msgid "Shut Down Now"
 msgstr "今すぐシャットダウン"
 
-#: main.py:4307
+#: main.py:4430
 msgid "Shut Down the Computer When Recordings Finish"
 msgstr "録画がすべて終了したらコンピューターをシャットダウンする"
 
-#: main.py:3789
+#: main.py:3912
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "シャットダウンを取り消しました。録画終了後の自動シャットダウンはオフになりました。"
 
@@ -2811,7 +2811,7 @@ msgstr "アプリ音声で読み上げ"
 msgid "Speak through screen reader"
 msgstr "スクリーンリーダーで読み上げ"
 
-#: main.py:7260
+#: main.py:7477
 msgid "Speech speed (-10 to 10; 0 is normal):"
 msgstr "読み上げ速度（-10～10、0 は標準）："
 
@@ -2819,12 +2819,12 @@ msgstr "読み上げ速度（-10～10、0 は標準）："
 msgid "Stalker Portal"
 msgstr "Stalker Portal"
 
-#: main.py:1330
+#: main.py:1400
 #: playlist.py:3370
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: main.py:4272
+#: main.py:4395
 #: shortcuts.py:79
 msgid "Start Recording"
 msgstr "録画を開始"
@@ -2833,7 +2833,7 @@ msgstr "録画を開始"
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "予約録画を早めに開始したり、番組終了後も録画を続けたりします。手動の録画には影響しません。"
 
-#: main.py:4563
+#: main.py:4686
 msgid "Starting update..."
 msgstr "更新を開始しています..."
 
@@ -2845,7 +2845,7 @@ msgstr "{start} に開始: {title}"
 #: account_info.py:552
 #: account_info.py:554
 #: account_info.py:606
-#: main.py:8639
+#: main.py:8856
 #: planning_ui.py:40
 msgid "Status"
 msgstr "ステータス"
@@ -2854,13 +2854,13 @@ msgstr "ステータス"
 #: client_ui.py:278
 #: internal_player.py:449
 #: internal_player.py:552
-#: main.py:808
+#: main.py:809
 #: shortcuts.py:75
 #: shortcuts.py:92
 msgid "Stop"
 msgstr "停止"
 
-#: main.py:4276
+#: main.py:4399
 msgid "Stop All Recordings"
 msgstr "すべての録画を停止"
 
@@ -2869,12 +2869,12 @@ msgid "Stop Playback"
 msgstr "再生を停止"
 
 #: internal_player.py:1971
-#: main.py:2574
-#: main.py:4274
+#: main.py:2689
+#: main.py:4397
 msgid "Stop Recording"
 msgstr "録画を停止"
 
-#: main.py:820
+#: main.py:821
 msgid "Stop Recording(s)"
 msgstr "録画を停止"
 
@@ -2891,20 +2891,20 @@ msgstr "キャスト先の機器に切り替える前にローカルバッファ
 msgid "Stopped"
 msgstr "停止しました"
 
-#: main.py:8710
+#: main.py:8927
 msgid "Stopping"
 msgstr "停止中"
 
-#: main.py:3374
-#: main.py:3653
+#: main.py:3497
+#: main.py:3776
 msgid "Stopping recording for {name}..."
 msgstr "{name} の録画を停止中..."
 
-#: main.py:3669
+#: main.py:3792
 msgid "Stopping recording..."
 msgstr "録画を停止中..."
 
-#: main.py:3679
+#: main.py:3802
 msgid "Stopping {count} recording(s)..."
 msgstr "{count} 件の録画を停止中..."
 
@@ -2941,16 +2941,16 @@ msgstr "ストリーム出力"
 msgid "Subscription"
 msgstr "サブスクリプション"
 
-#: main.py:7371
+#: main.py:7588
 msgid "Subtitle Capabilities"
 msgstr "字幕機能"
 
 #: client_ui.py:414
-#: main.py:7210
-#: main.py:7281
-#: main.py:7317
-#: main.py:7321
-#: main.py:7325
+#: main.py:7427
+#: main.py:7498
+#: main.py:7534
+#: main.py:7538
+#: main.py:7542
 msgid "Subtitle Speech"
 msgstr "字幕読み上げ"
 
@@ -2966,13 +2966,13 @@ msgstr "ロードされた字幕ファイル: {name}"
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "字幕ファイル (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:7075
+#: main.py:7292
 msgid "Subtitle speech %s."
 msgstr "字幕音声 %s。"
 
-#: main.py:7171
-#: main.py:7180
-#: main.py:7320
+#: main.py:7388
+#: main.py:7397
+#: main.py:7537
 msgid "Subtitle speech failed."
 msgstr "字幕の読み上げに失敗しました。"
 
@@ -2992,15 +2992,15 @@ msgstr "字幕の読み上げ: オン"
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "字幕読み上げを有効にしました。字幕ファイルを読み込むとテキストを聞くことができます。"
 
-#: main.py:7174
+#: main.py:7391
 msgid "Subtitle speech paused: the selected audio output is unavailable."
 msgstr "字幕音声が一時停止: 選択したオーディオ出力が利用できません。"
 
-#: main.py:7217
+#: main.py:7434
 msgid "Subtitle speech will use the application voice."
 msgstr "字幕読み上げはアプリ音声を使用します。"
 
-#: main.py:7219
+#: main.py:7436
 msgid "Subtitle speech will use your screen reader."
 msgstr "字幕読み上げはスクリーンリーダーを使用します。"
 
@@ -3019,28 +3019,28 @@ msgid "Subtitles: {name}"
 msgstr "字幕: {name}"
 
 #: internal_player.py:120
-#: main.py:7291
+#: main.py:7508
 msgid "System default"
 msgstr "システムの既定"
 
-#: main.py:2636
+#: main.py:2751
 msgid "The EPG database was created by an older version and is missing newer fields. Import the guide again to update it?\n\n(Without this, the EPG views cannot show programme descriptions.)"
 msgstr "EPGデータベースは古いバージョンで作成されており、新しいフィールドがありません。更新するためにガイドを再インポートしますか？\n\n(これがないと、EPGビューは番組の説明を表示できません。)"
 
-#: main.py:2646
-#: main.py:6532
+#: main.py:2761
+#: main.py:6694
 msgid "The EPG import could not be started."
 msgstr "EPG のインポートを開始できませんでした。"
 
-#: main.py:6413
+#: main.py:6564
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "EPG のインポートが完了しませんでした。番組表が不完全なままか、更新されていない可能性があります。"
 
-#: main.py:6409
+#: main.py:6560
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "EPG のインポートが完了しました。番組表は最新です。"
 
-#: main.py:7209
+#: main.py:7426
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "アプリ音声は SAPI 搭載の Windows でのみ利用できます。"
 
@@ -3048,11 +3048,11 @@ msgstr "アプリ音声は SAPI 搭載の Windows でのみ利用できます。
 msgid "The audio could not be copied into an MKA container, so nothing was recorded and nothing was transcoded. Choose another audio format from Recordings > Recording Format and try again.\n\n{detail}"
 msgstr "音声をMKAコンテナにコピーできなかったため、何も録画されず、トランスコードも行われませんでした。「録画」>「録画形式」から別の音声形式を選んで、もう一度お試しください。\n\n{detail}"
 
-#: main.py:4023
+#: main.py:4146
 msgid "The clipboard is unavailable."
 msgstr "クリップボードを利用できません。"
 
-#: main.py:3724
+#: main.py:3847
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
 msgstr "実行中および予約済みのすべての録画が終了すると、コンピューターがシャットダウンされます。\n\n先に取り消せるカウントダウンが表示され、この設定は一度使われると自動的にオフになります。\n\n録画がすべて終了したらコンピューターをシャットダウンしますか？"
 
@@ -3072,11 +3072,11 @@ msgstr "インストーラーが終了コード {code} で停止しました。"
 msgid "The installer was still running after 15 minutes."
 msgstr "15 分経ってもインストーラーが実行中でした。"
 
-#: main.py:4444
+#: main.py:4567
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "言語が変更されました。変更を完全に反映するには、Accessible IPTV Client を再起動してください。"
 
-#: main.py:3266
+#: main.py:3389
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "ライブバッファーのソースを切り替えています。予約録画を開始できませんでした。"
 
@@ -3096,7 +3096,7 @@ msgstr "ローカルライブバッファーを開始できませんでした。
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "以前の位置は保持期限を過ぎたため、再生を保持範囲内に移動しました。"
 
-#: main.py:1903
+#: main.py:1994
 msgid "The passwords do not match."
 msgstr "パスワードが一致しません。"
 
@@ -3105,7 +3105,7 @@ msgid "The paused position expired. Playback resumed at the oldest retained pict
 msgstr "一時停止位置は保持期限を過ぎました。保持されている最も古い映像から再生を再開しました。"
 
 #: internal_player.py:3077
-#: main.py:5955
+#: main.py:6106
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "確認中にプレイリストが変更されました。「視聴を再開」を開き直して、もう一度お試しください。"
 
@@ -3153,7 +3153,7 @@ msgstr "リマインダーの操作に失敗しました:\n{error}"
 msgid "The saved playback position could not be restored."
 msgstr "保存された再生位置を復元できませんでした。"
 
-#: main.py:7191
+#: main.py:7408
 msgid "The selected audio output is unavailable. Subtitle speech is paused."
 msgstr "選択したオーディオ出力が利用できません。字幕音声が一時停止しています。"
 
@@ -3165,44 +3165,44 @@ msgstr "サーバーはアカウントの詳細を報告しませんでした。
 msgid "The stream sent data that could not be read."
 msgstr "ストリームから読み取れないデータが送られてきました。"
 
-#: main.py:4963
+#: main.py:5086
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "v{version} への更新が完了しなかったため、{app} は v{current} のままです。ヘルプ > 更新を確認... からもう一度お試しください。"
 
-#: main.py:469
+#: main.py:470
 msgid "The user guide could not be opened: {error}"
 msgstr "ユーザーガイドを開けませんでした: {error}"
 
-#: main.py:7891
-#: main.py:7995
+#: main.py:8108
+#: main.py:8212
 msgid "This catch-up programme is already downloading."
 msgstr "この番組はすでにダウンロード中です。"
 
-#: main.py:3657
+#: main.py:3780
 msgid "This channel is not currently recording."
 msgstr "このチャンネルは現在録画していません。"
 
-#: main.py:1602
+#: main.py:1693
 msgid "This entry cannot be added to Favorites."
 msgstr "この項目はお気に入りに追加できません。"
 
-#: main.py:7633
+#: main.py:7850
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "これはキャッチアップ配信です。保存するにはキャッチアップ一覧の「ダウンロード」を使用してください。"
 
-#: main.py:7319
+#: main.py:7536
 msgid "This is the application voice."
 msgstr "これはアプリケーションの音声です。"
 
-#: main.py:3060
+#: main.py:3183
 msgid "This programme has already ended."
 msgstr "この番組はすでに終了しています。"
 
-#: main.py:3070
+#: main.py:3193
 msgid "This programme is already scheduled to record."
 msgstr "この番組はすでに録画するようにスケジュールされています。"
 
-#: main.py:7869
+#: main.py:8086
 msgid "This programme is not available as catch-up content yet."
 msgstr "この番組はまだ見逃し配信で利用できません。"
 
@@ -3210,22 +3210,22 @@ msgstr "この番組はまだ見逃し配信で利用できません。"
 msgid "This programme's start and end times are invalid."
 msgstr "この番組の開始時刻と終了時刻は無効です。"
 
-#: main.py:3078
+#: main.py:3201
 msgid "This recording overlaps {count} other scheduled recording(s). Schedule it anyway?"
 msgstr "この録画は、他のスケジュールされた録画 {count} と重複します。とにかくスケジュールを立てますか？"
 
-#: main.py:8636
-#: main.py:8829
+#: main.py:8853
+#: main.py:9046
 #: planning_ui.py:39
 msgid "Time"
 msgstr "時刻"
 
-#: main.py:8480
+#: main.py:8697
 msgid "Time remaining: {time}"
 msgstr "残り時間: {time}"
 
-#: main.py:8637
-#: main.py:8830
+#: main.py:8854
+#: main.py:9047
 #: planning_ui.py:39
 #: resume_dialogs.py:39
 msgid "Title"
@@ -3237,8 +3237,8 @@ msgstr "タイトル"
 msgid "Toggle Full Screen"
 msgstr "全画面表示を切り替え"
 
-#: main.py:280
-#: main.py:283
+#: main.py:281
+#: main.py:284
 msgid "Topics"
 msgstr "トピック"
 
@@ -3274,11 +3274,11 @@ msgstr "マニフェストをダウンロードできません。接続を確認
 msgid "Unable to download update. Please check your connection."
 msgstr "更新をダウンロードできません。接続を確認してください。"
 
-#: main.py:7879
+#: main.py:8096
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "見逃し配信のダウンロードを準備できませんでした:\n{error}"
 
-#: main.py:7819
+#: main.py:8036
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "見逃し配信ストリームを準備できませんでした：\n{error}"
 
@@ -3307,32 +3307,32 @@ msgstr "不明"
 msgid "Unknown command."
 msgstr "不明なコマンドです。"
 
-#: main.py:3035
+#: main.py:3158
 #: planning_ui.py:90
 #: resume_dialogs.py:83
 msgid "Unknown time"
 msgstr "不明な時刻"
 
-#: main.py:4547
+#: main.py:4670
 msgid "Update Available"
 msgstr "更新が利用可能"
 
-#: main.py:4978
+#: main.py:5101
 msgid "Update Complete"
 msgstr "更新が完了しました"
 
-#: main.py:4749
-#: main.py:4765
-#: main.py:4808
-#: main.py:4852
+#: main.py:4872
+#: main.py:4888
+#: main.py:4931
+#: main.py:4975
 msgid "Update Error"
 msgstr "更新エラー"
 
-#: main.py:4967
+#: main.py:5090
 msgid "Update Not Completed"
 msgstr "更新が完了していません"
 
-#: main.py:4542
+#: main.py:4665
 msgid "Update available: v{latest} (current v{current})."
 msgstr "更新が利用可能：v{latest}（現在 v{current}）。"
 
@@ -3340,34 +3340,34 @@ msgstr "更新が利用可能：v{latest}（現在 v{current}）。"
 msgid "Update cancelled."
 msgstr "更新がキャンセルされました。"
 
-#: main.py:4518
+#: main.py:4641
 msgid "Update check failed: {error}"
 msgstr "更新の確認に失敗しました：{error}"
 
-#: main.py:4473
+#: main.py:4596
 msgid "Update check is already running."
 msgstr "更新の確認はすでに実行中です。"
 
-#: main.py:4807
-#: main.py:4851
+#: main.py:4930
+#: main.py:4974
 msgid "Update failed to start: {error}"
 msgstr "更新を開始できませんでした：{error}"
 
-#: main.py:4748
-#: main.py:4764
+#: main.py:4871
+#: main.py:4887
 msgid "Update failed: {error}"
 msgstr "更新に失敗しました：{error}"
 
-#: main.py:4669
-#: main.py:4723
+#: main.py:4792
+#: main.py:4846
 msgid "Update helper is missing from this build."
 msgstr "このビルドには更新ヘルパーがありません。"
 
-#: main.py:4689
+#: main.py:4812
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "更新マニフェストに安全でないアセット ファイル名が含まれています。"
 
-#: main.py:4648
+#: main.py:4771
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "更新マニフェストに安全でないインストーラー ファイル名が含まれています。"
 
@@ -3375,12 +3375,12 @@ msgstr "更新マニフェストに安全でないインストーラー ファ�
 msgid "Update manifest download URL is missing."
 msgstr "更新マニフェストのダウンロード URL がありません。"
 
-#: main.py:4644
+#: main.py:4767
 #: updater.py:698
 msgid "Update manifest is missing required fields."
 msgstr "更新マニフェストに必須フィールドがありません。"
 
-#: main.py:4639
+#: main.py:4762
 msgid "Update manifest version is not newer than the current app."
 msgstr "更新マニフェストのバージョンが現在のアプリより新しくありません。"
 
@@ -3392,35 +3392,35 @@ msgstr "最新リリースに更新マニフェストが見つかりませんで
 msgid "Update package contains an unsafe file path."
 msgstr "更新パッケージに安全でないファイルパスが含まれています。"
 
-#: main.py:4708
+#: main.py:4831
 msgid "Updated executable '{name}' not found in the package."
 msgstr "更新された実行ファイル「{name}」がパッケージ内に見つかりませんでした。"
 
-#: main.py:4468
-#: main.py:4473
-#: main.py:4507
-#: main.py:4519
+#: main.py:4591
+#: main.py:4596
+#: main.py:4630
+#: main.py:4642
 msgid "Updates"
 msgstr "更新"
 
-#: main.py:4483
+#: main.py:4606
 msgid "Updates are only available in the packaged build."
 msgstr "更新はパッケージ化されたビルドでのみ利用できます。"
 
-#: main.py:4481
+#: main.py:4604
 msgid "Updates are only supported on Windows builds."
 msgstr "更新は Windows ビルドでのみサポートされています。"
 
-#: main.py:4562
-#: main.py:4891
+#: main.py:4685
+#: main.py:5014
 msgid "Updating {app}"
 msgstr "{app} を更新中"
 
 #: client_ui.py:230
 #: client_ui.py:429
-#: main.py:269
-#: main.py:414
-#: main.py:470
+#: main.py:270
+#: main.py:415
+#: main.py:471
 msgid "User Guide"
 msgstr "ユーザーガイド"
 
@@ -3439,18 +3439,18 @@ msgstr "ユーザー名、パスワード、URL が必要です。"
 msgid "Validation"
 msgstr "検証"
 
-#: main.py:4656
-#: main.py:4697
+#: main.py:4779
+#: main.py:4820
 msgid "Verifying download..."
 msgstr "ダウンロードを検証中..."
 
-#: main.py:4660
-#: main.py:4710
+#: main.py:4783
+#: main.py:4833
 msgid "Verifying signature..."
 msgstr "署名を検証中..."
 
-#: main.py:6141
-#: main.py:6160
+#: main.py:6292
+#: main.py:6311
 msgid "Video on Demand"
 msgstr "ビデオオンデマンド"
 
@@ -3464,7 +3464,7 @@ msgstr "ビデオオンデマンド（映画とシリーズ）"
 msgid "View"
 msgstr "表示"
 
-#: main.py:2596
+#: main.py:2711
 msgid "View EPG..."
 msgstr "EPG を表示..."
 
@@ -3490,7 +3490,7 @@ msgstr "音量を下げる"
 msgid "Volume Up"
 msgstr "ボリュームアップ"
 
-#: main.py:7228
+#: main.py:7445
 msgid "Volume:"
 msgstr "音量:"
 
@@ -3544,17 +3544,17 @@ msgstr "Xtream Codes のパスワード"
 msgid "Xtream Codes username"
 msgstr "Xtream Codes のユーザー名"
 
-#: main.py:1328
+#: main.py:1398
 #: playlist.py:3368
 msgid "Xtream Codes – {name}"
 msgstr "Xtream Codes – {name}"
 
 #: account_info.py:359
-#: main.py:1680
+#: main.py:1771
 msgid "Yes"
 msgstr "はい"
 
-#: main.py:1767
+#: main.py:1858
 msgid "You have not added any favorites yet. Select a channel and press Ctrl+D to add it."
 msgstr "まだお気に入りが追加されていません。チャンネルを選択して Ctrl+D を押すと追加できます。"
 
@@ -3566,7 +3566,7 @@ msgstr "利用可能"
 msgid "channel stream URL"
 msgstr "チャンネルのストリーム URL"
 
-#: main.py:8442
+#: main.py:8659
 msgid "ffmpeg exit code: {code}"
 msgstr "ffmpeg 終了コード: {code}"
 
@@ -3578,11 +3578,11 @@ msgstr "このプレーヤーではサポートされていません"
 msgid "not verified yet"
 msgstr "未検証"
 
-#: main.py:7074
+#: main.py:7291
 msgid "off"
 msgstr "オフ"
 
-#: main.py:7074
+#: main.py:7291
 msgid "on"
 msgstr "オン"
 
@@ -3598,31 +3598,31 @@ msgstr "python-vlc (libVLC) は利用できません。"
 msgid "unknown source"
 msgstr "不明なソース"
 
-#: main.py:4011
+#: main.py:4134
 msgid "wxPython: {version}"
 msgstr "wxPython: {version}"
 
-#: main.py:3013
+#: main.py:3136
 msgid "x264 re-encode (MKV)"
 msgstr "x264 再エンコード（MKV）"
 
-#: main.py:3014
+#: main.py:3137
 msgid "x264 re-encode (MP4)"
 msgstr "x264 再エンコード（MP4）"
 
-#: main.py:9030
+#: main.py:9247
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} はすでに実行中ですが、応答がありません。しばらく待ってからもう一度お試しいただくか、通知領域から終了してください。"
 
-#: main.py:4505
+#: main.py:4628
 msgid "{app} is up to date (v{version})."
 msgstr "{app} は最新です（v{version}）。"
 
-#: main.py:4976
+#: main.py:5099
 msgid "{app} was successfully updated to v{version}."
 msgstr "{app} は v{version} に正常に更新されました。"
 
-#: main.py:1678
+#: main.py:1769
 msgid "{channel}. Now: {current}. Next: {next}. Recording: {recording}."
 msgstr "{channel}。現在：{current}。次：{next}。録音：{recording}。"
 
@@ -3631,7 +3631,7 @@ msgstr "{channel}。現在：{current}。次：{next}。録音：{recording}。"
 msgid "{count} programs"
 msgstr "{count} 件の番組"
 
-#: main.py:5398
+#: main.py:5521
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} 件の録画が予約されていますが、まだ開始していません。\n\n{names}\n\n開始するにはアプリを開いたままにする必要があります。終了しますか？"
 
@@ -3655,11 +3655,11 @@ msgstr "{label} フィールド"
 msgid "{label} label"
 msgstr "{label} ラベル"
 
-#: main.py:1421
+#: main.py:1499
 msgid "{name} (Favorite)"
 msgstr "{name}（お気に入り）"
 
-#: main.py:1709
+#: main.py:1800
 msgid "{name} was removed. Favorites is now empty."
 msgstr "{name} を削除しました。お気に入りは空になりました。"
 
@@ -3679,11 +3679,11 @@ msgstr "{title}\n{channel}\n開始: {time}"
 msgid "{title} - Built-in Player"
 msgstr "{title} - 内蔵プレーヤー"
 
-#: main.py:7885
+#: main.py:8102
 msgid "{title} - {channel}"
 msgstr "{title} - {channel}"
 
-#: main.py:1673
+#: main.py:1764
 msgid "{title}, {start} to {end}"
 msgstr "{title}、{start} ～ {end}"
 
@@ -3699,8 +3699,8 @@ msgstr "合計で警告 {warnings} 件、エラー {errors} 件、致命的エ�
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
-#: main.py:6147
-#: main.py:6172
+#: main.py:6298
+#: main.py:6323
 msgid "◄ Back"
 msgstr "◄ 戻る"
 
