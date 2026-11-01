@@ -869,6 +869,98 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
 
+def test_search_scan_stops_at_ticket_checkpoint_when_superseded():
+    from main import IPTVClient
+    import responsiveness
+
+    gate = responsiveness.WorkGate()
+    ticket = gate.begin("search")
+    client = SimpleNamespace(
+        _search_token=ticket.generation,
+        _channel_search_lock=threading.Lock(),
+    )
+    channels = [{"name": f"News {i}"} for i in range(600)]
+
+    # A newer query supersedes the ticket before the scan starts.
+    gate.begin("search")
+    client._search_token = gate.generation("search")
+
+    assert IPTVClient._search_channel_rows(
+        client, channels, "news", None, ticket.generation, ticket=ticket) is None
+
+
+def test_search_scan_with_current_ticket_matches_unchanged():
+    from main import IPTVClient
+    import responsiveness
+
+    gate = responsiveness.WorkGate()
+    ticket = gate.begin("search")
+    client = SimpleNamespace(
+        _search_token=ticket.generation,
+        _channel_search_lock=threading.Lock(),
+    )
+    channels = [{"name": "News One"}, {"name": "Sports"}, {"name": "news two"}]
+
+    rows = IPTVClient._search_channel_rows(
+        client, channels, "news", None, ticket.generation, ticket=ticket)
+
+    assert [row["name"] for row in rows] == ["News One", "news two"]
+
+
+def test_search_result_batches_pause_while_user_interacts():
+    from main import IPTVClient
+    import responsiveness
+
+    scheduled = []
+    counts = []
+
+    class FakeList:
+        def set_virtual_count(self):
+            counts.append(len(client.displayed))
+
+    class FakeClock:
+        def __init__(self):
+            self.now = 1000.0
+
+        def __call__(self):
+            return self.now
+
+    clock = FakeClock()
+    gate = responsiveness.WorkGate(clock=clock, interaction_window=0.35)
+    ticket = gate.begin("search")
+    client = SimpleNamespace(
+        displayed=[],
+        channel_list=FakeList(),
+        _search_token=ticket.generation,
+        _populate_token=11,
+        _work_gate=gate,
+        _SEARCH_LARGE_RESULT_THRESHOLD=3,
+        _SEARCH_PREVIEW_COUNT=2,
+        _SEARCH_BATCH_SIZE=3,
+    )
+    entries = [{"type": "channel", "data": {"name": str(i)}} for i in range(10)]
+
+    def fake_call_later(_delay, callback, *args):
+        scheduled.append((callback, args))
+
+    with patch("main.wx.CallLater", fake_call_later):
+        IPTVClient._replace_search_results_chunked(
+            client, entries, ticket.generation, 11)
+        assert counts == [2]
+
+        gate.note_interaction()
+        callback, args = scheduled.pop(0)
+        callback(*args)
+        assert counts == [2]  # paused, nothing appended
+        assert len(scheduled) == 1  # rescheduled, not dropped
+
+        clock.now += 0.5
+        while scheduled:
+            callback, args = scheduled.pop(0)
+            callback(*args)
+        assert counts == [2, 5, 8, 10]
+
+
 def test_search_rank_puts_networks_before_event_slots():
     from main import search_rank
 
