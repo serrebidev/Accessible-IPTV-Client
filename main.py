@@ -6590,6 +6590,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         channels = self.all_channels
 
         def worker():
+            # Account discovery scans every loaded channel URL. Keep that
+            # optional lookup from competing with interactive browsing.
+            _lower_current_thread_priority()
             error = None
             accounts = []
             try:

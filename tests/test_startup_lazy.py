@@ -255,3 +255,18 @@ def test_playlist_refresh_workers_lower_background_priority():
         """
     )
     assert data["calls_helper"] is True
+
+
+def test_account_discovery_worker_lowers_background_priority():
+    data = _run_child(
+        """
+        import inspect
+        import json
+
+        import main
+
+        src = inspect.getsource(main.IPTVClient.show_account_info)
+        print(json.dumps({"calls_helper": "_lower_current_thread_priority()" in src}))
+        """
+    )
+    assert data["calls_helper"] is True
