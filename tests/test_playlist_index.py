@@ -22,6 +22,14 @@ def test_index_reuses_channel_references_and_scope_order():
     assert index.all_for_scope("a")[0] is refs[0]
 
 
+def test_index_keeps_scope_membership_as_compact_positions():
+    channels, groups, _ = _models()
+    index = PlaylistIndex(channels, groups)
+
+    assert index._scope_channels["a"].tolist() == [0, 2]
+    assert index._scope_groups["a"]["News"].tolist() == [0, 2]
+
+
 def test_index_search_preserves_playlist_order_and_substring_semantics():
     channels, groups, refs = _models()
     index = PlaylistIndex(channels, groups)
