@@ -1530,6 +1530,18 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         now = time.time()
         if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
+        # The refresh works in the gate's now_playing lane (#109): it
+        # defers while the user is interacting, and a newer refresh
+        # supersedes this one at the checkpoints below so stale labels
+        # never publish. Deferral happens before the throttle timestamp
+        # moves, so the retry is not swallowed by the 30 s guard.
+        gate = getattr(self, "_work_gate", None)
+        if gate is None:
+            gate = self._work_gate = responsiveness.WorkGate()
+        if gate.interaction_active():
+            self._retry_now_playing_later(force)
+            return
+        ticket = gate.begin("now_playing")
         self._now_playing_refreshed_at = now
         playlist_channels = getattr(self, "all_channels", None)
         if playlist_channels is None:
@@ -1545,10 +1557,24 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        mapping = self._build_now_playing_labels(
-            channels, known_ids=known_ids, playlist_channels=playlist_channels)
-        descriptions = self._build_now_playing_descriptions(
-            channels, known_ids=known_ids, playlist_channels=playlist_channels)
+        if not ticket.checkpoint():
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded refresh")
+            return
+        # Labels and descriptions walk the same guide indexes; build
+        # them once here instead of once per builder (Farhan Khan, #113).
+        # The indexes kwarg is only passed for mapping-shaped results,
+        # which keeps test doubles with the old builder signature working.
+        indexes = guide_indexes(channels) if hasattr(channels, "items") else None
+        label_kwargs = {"known_ids": known_ids, "playlist_channels": playlist_channels}
+        description_kwargs = dict(label_kwargs)
+        if indexes is not None:
+            label_kwargs["indexes"] = indexes
+            description_kwargs["indexes"] = indexes
+        mapping = self._build_now_playing_labels(channels, **label_kwargs)
+        descriptions = self._build_now_playing_descriptions(channels, **description_kwargs)
+        if not ticket.checkpoint():
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded result")
+            return
         if (getattr(self, "all_channels", None) is not playlist_channels
                 or getattr(self, "_playlist_load_token", 0) != playlist_generation):
             LOG.debug("IPTVClient._refresh_now_playing_labels: dropped stale result")
@@ -1565,8 +1591,20 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # row the user is sitting on.
             wx.CallAfter(self.on_highlight)
 
+    def _retry_now_playing_later(self, force: bool) -> None:
+        """Re-run a deferred now-playing refresh once interaction settles."""
+        def _again():
+            threading.Thread(
+                target=self._refresh_now_playing_labels,
+                kwargs={"force": force},
+                daemon=True,
+            ).start()
+
+        wx.CallLater(1000, _again)
+
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
-                                  known_ids=None, playlist_channels=None) -> Dict[str, str]:
+                                  known_ids=None, playlist_channels=None,
+                                  indexes=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
 
         Exact normalized names miss a lot of channels ("TVP 1 HD" against a
@@ -1577,7 +1615,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         same-named channels with different guides (a provider's several
         "CBC News" feeds) each keep their own programme.
         """
-        indexes = guide_indexes(channels)
+        if indexes is None:
+            indexes = guide_indexes(channels)
 
         mapping: Dict[str, str] = {}
         if playlist_channels is None:
@@ -1606,7 +1645,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def _build_now_playing_descriptions(
             self, channels: Dict[str, Dict[str, object]], known_ids=None,
-            playlist_channels=None) -> Dict[str, str]:
+            playlist_channels=None, indexes=None) -> Dict[str, str]:
         """On-air episode description per playlist channel (``_now_playing_key``).
 
         Same fuzzy channel match as the row labels, but carries the long
@@ -1614,7 +1653,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         the short row suffix. Channels with no match or no on-air
         description are simply absent; the field shows a placeholder.
         """
-        indexes = guide_indexes(channels)
+        if indexes is None:
+            indexes = guide_indexes(channels)
         mapping: Dict[str, str] = {}
         if playlist_channels is None:
             playlist_channels = getattr(self, "all_channels", None) or []
