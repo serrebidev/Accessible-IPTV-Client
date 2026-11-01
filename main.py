@@ -1120,7 +1120,6 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # EPG/now-playing lanes adopt it in #109.
         self._work_gate = responsiveness.WorkGate()
         self._channel_search_lock = threading.Lock()
-        self._search_gate = ResponsivenessGate()
 
         # Bulk on-air programme labels for the channel rows, keyed by
         # canonicalized EPG channel name; values are " — Title (HH:MM–HH:MM)"
@@ -1130,7 +1129,6 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self._now_playing_lock = threading.Lock()
         self._now_playing_timer: Optional[wx.Timer] = None
         self._now_playing_refreshed_at = 0.0
-        self._now_playing_gate = ResponsivenessGate()
         # On-air episode description per canonical channel name, refreshed
         # with the row labels; the episode description field reads from it.
         self._now_playing_descriptions: Dict[str, str] = {}
@@ -1533,11 +1531,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
         self._now_playing_refreshed_at = now
-        now_playing_gate = getattr(self, "_now_playing_gate", None)
-        if now_playing_gate is None:
-            now_playing_gate = ResponsivenessGate()
-            self._now_playing_gate = now_playing_gate
-        work_token = now_playing_gate.start_work()
+        work_gate = getattr(self, "_work_gate", None)
+        if work_gate is None:
+            work_gate = self._work_gate = responsiveness.WorkGate()
+        work_token = work_gate.begin("now_playing")
         playlist_channels = getattr(self, "all_channels", None)
         if playlist_channels is None:
             playlist_channels = []
@@ -1552,7 +1549,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        if not now_playing_gate.is_current(work_token):
+        if not work_token.is_current():
             LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded query")
             return
         indexes = guide_indexes(channels) if hasattr(channels, "items") else None
@@ -1567,7 +1564,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 or getattr(self, "_playlist_load_token", 0) != playlist_generation):
             LOG.debug("IPTVClient._refresh_now_playing_labels: dropped stale result")
             return
-        if not now_playing_gate.is_current(work_token):
+        if not work_token.is_current():
             LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded result")
             return
         with self._now_playing_lock:
@@ -5838,16 +5835,14 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def _search_channel_rows(
             self, source_snapshot, txt, playlist_index, search_token,
-            work_token: Optional[WorkToken] = None):
+            work_token: Optional[responsiveness.Ticket] = None):
         """Run one channel search at a time to avoid duplicate large scans."""
         search_lock = getattr(self, "_channel_search_lock", None)
         if search_lock is None:
             search_lock = threading.Lock()
             self._channel_search_lock = search_lock
         with search_lock:
-            search_gate = getattr(self, "_search_gate", None)
-            if (work_token is not None and search_gate is not None
-                    and not search_gate.is_current(work_token)):
+            if work_token is not None and not work_token.is_current():
                 return None
             if getattr(self, "_search_token", 0) != search_token:
                 return None
@@ -5857,8 +5852,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     txt,
                     is_current=lambda: (
                         getattr(self, "_search_token", 0) == search_token
-                        and (search_gate is None or work_token is None
-                             or search_gate.is_current(work_token))
+                        and (work_token is None or work_token.is_current())
                     ),
                 )
                 if getattr(self, "_search_token", 0) != search_token:
@@ -5868,9 +5862,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 for index, ch in enumerate(source_snapshot):
                     if (index % 256 == 0
                             and (getattr(self, "_search_token", 0) != search_token
-                                 or (search_gate is not None
-                                     and work_token is not None
-                                     and not search_gate.is_current(work_token)))):
+                                 or (work_token is not None
+                                     and not work_token.is_current()))):
                         return None
                     name = (ch.get("name") or "")
                     if txt and txt not in name.lower():
@@ -5894,13 +5887,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         _gate = getattr(self, "_work_gate", None)
         if _gate is None:
             _gate = self._work_gate = responsiveness.WorkGate()
-        self._search_token = _gate.begin("search").generation
+        search_work_token = _gate.begin("search")
+        self._search_token = search_work_token.generation
         search_token = self._search_token
-        search_gate = getattr(self, "_search_gate", None)
-        if search_gate is None:
-            search_gate = ResponsivenessGate()
-            self._search_gate = search_gate
-        search_work_token = search_gate.start_work()
         source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
         self.url_display.SetValue("")

@@ -10,7 +10,7 @@ import time
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from responsiveness import ResponsivenessGate
+from responsiveness import WorkGate
 
 
 def test_large_channel_searches_are_single_flight():
@@ -62,14 +62,13 @@ def test_large_channel_searches_are_single_flight():
 def test_new_search_generation_cancels_stale_channel_scan():
     from main import IPTVClient
 
-    gate = ResponsivenessGate()
+    gate = WorkGate()
     client = SimpleNamespace(
         _search_token=1,
         _channel_search_lock=threading.Lock(),
-        _search_gate=gate,
     )
-    stale = gate.start_work()
-    current = gate.start_work()
+    stale = gate.begin("search")
+    current = gate.begin("search")
 
     assert IPTVClient._search_channel_rows(
         client, [], "old", None, 1, stale

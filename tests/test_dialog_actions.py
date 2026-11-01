@@ -1146,7 +1146,7 @@ def test_now_playing_refresh_reuses_guide_indexes_for_labels_and_descriptions(mo
 
 def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypatch):
     import main as appmod
-    from responsiveness import ResponsivenessGate
+    from responsiveness import WorkGate
 
     started = threading.Event()
     release = threading.Event()
@@ -1172,7 +1172,7 @@ def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypa
     client.config = {"epg_enabled": True}
     client._now_playing_refreshed_at = 0
     client._now_playing_lock = threading.RLock()
-    client._now_playing_gate = ResponsivenessGate()
+    client._work_gate = WorkGate()
     client._now_playing_labels = {"old": "keep"}
     client._now_playing_descriptions = {}
 
@@ -1187,7 +1187,7 @@ def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypa
     worker.start()
     assert started.wait(5)
 
-    client._now_playing_gate.start_work()
+    client._work_gate.begin("now_playing")
     client.all_channels = [{"name": "New"}]
     client._playlist_load_token = 2
     release.set()
