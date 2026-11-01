@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from array import array
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence
 
 
@@ -23,16 +24,21 @@ class PlaylistIndex:
             id(channel): (channel.get("name") or "").lower()
             for channel in all_channels
         }
-        self._scope_channels: Dict[str, List[Dict[str, str]]] = {}
-        self._scope_groups: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
+        self._scope_channels: Dict[str, array] = {}
+        self._scope_groups: Dict[str, Dict[str, array]] = {}
         self._all_groups: Dict[str, List[Dict[str, str]]] = {}
-        for channel in all_channels:
+        positions = {id(channel): position for position, channel in enumerate(all_channels)}
+        for position, channel in enumerate(all_channels):
             scope = str(channel.get("playlist-id") or "")
-            self._scope_channels.setdefault(scope, []).append(channel)
+            self._scope_channels.setdefault(scope, array("I")).append(position)
         for group, channels in channels_by_group.items():
             for channel in channels:
                 scope = str(channel.get("playlist-id") or "")
-                self._scope_groups.setdefault(scope, {}).setdefault(group, []).append(channel)
+                position = positions.get(id(channel))
+                if position is not None:
+                    self._scope_groups.setdefault(scope, {}).setdefault(
+                        group, array("I")
+                    ).append(position)
 
     def normalized_name(self, channel: Dict[str, str]) -> str:
         """Return the cached search name, tolerating an uncached row."""
@@ -41,14 +47,21 @@ class PlaylistIndex:
     def all_for_scope(self, scope: str) -> List[Dict[str, str]]:
         if not scope:
             return self.channels
-        return self._scope_channels.get(scope, [])
+        positions = self._scope_channels.get(scope)
+        return [] if positions is None else [self.channels[position] for position in positions]
 
     def groups_for_scope(self, scope: str) -> Dict[str, List[Dict[str, str]]]:
         if not scope:
             # The caller owns the original all-playlists mapping and can use
             # it without copying.
             return self._all_groups
-        return self._scope_groups.get(scope, {})
+        groups = self._scope_groups.get(scope)
+        if groups is None:
+            return {}
+        return {
+            group: [self.channels[position] for position in positions]
+            for group, positions in groups.items()
+        }
 
     def set_all_groups(self, groups: Dict[str, List[Dict[str, str]]]) -> None:
         """Attach the original all-playlists mapping without copying it."""

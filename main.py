@@ -1114,6 +1114,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # batch-population state to avoid UI hangs
         self._populate_token = 0
         self._search_token = 0
+        self._channel_search_lock = threading.Lock()
 
         # Bulk on-air programme labels for the channel rows, keyed by
         # canonicalized EPG channel name; values are " — Title (HH:MM–HH:MM)"
@@ -1297,7 +1298,6 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _invalidate_playlist_index(self):
         self._playlist_index = None
         self._playlist_index_generation = getattr(self, "_playlist_index_generation", 0) + 1
-        self._playlist_index_building = False
 
     def _get_playlist_index(self) -> Optional[PlaylistIndex]:
         """Return a ready navigation index without blocking the UI thread."""
@@ -1320,6 +1320,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     and getattr(self, "_playlist_index_generation", 0) == generation)):
             return
         self._playlist_index_building = True
+        self._playlist_index_building_generation = generation
 
         def worker():
             _lower_current_thread_priority()
@@ -1343,6 +1344,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _finish_playlist_index_warm(self, index, channels, generation):
         if (self.all_channels is not channels
                 or getattr(self, "_playlist_load_token", 0) != generation):
+            if (getattr(self, "_playlist_index_building_generation", None)
+                    == generation):
+                self._playlist_index_building = False
             return
         self._playlist_index_building = False
         if index is not None:
@@ -5783,6 +5787,34 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             return False
 
+    def _search_channel_rows(self, source_snapshot, txt, playlist_index, search_token):
+        """Run one channel search at a time to avoid duplicate large scans."""
+        search_lock = getattr(self, "_channel_search_lock", None)
+        if search_lock is None:
+            search_lock = threading.Lock()
+            self._channel_search_lock = search_lock
+        with search_lock:
+            if getattr(self, "_search_token", 0) != search_token:
+                return None
+            if playlist_index is not None:
+                matching_channels = playlist_index.search(
+                    source_snapshot,
+                    txt,
+                    is_current=lambda: getattr(self, "_search_token", 0) == search_token,
+                )
+                if getattr(self, "_search_token", 0) != search_token:
+                    return None
+            else:
+                matching_channels = []
+                for index, ch in enumerate(source_snapshot):
+                    if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
+                        return None
+                    name = (ch.get("name") or "")
+                    if txt and txt not in name.lower():
+                        continue
+                    matching_channels.append(ch)
+            return matching_channels
+
     def apply_filter(self):
         txt = self.filter_box.GetValue().strip().lower()
         # Remember which focus generation started this search: results that
@@ -5817,25 +5849,13 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # and page cache are starved enough that this work on the UI thread
             # freezes the interface (and NVDA with it); a worker thread absorbs
             # those stalls while the UI keeps pumping messages.
-            if playlist_index is not None:
-                matching_channels = playlist_index.search(
-                    source_snapshot,
-                    txt,
-                    is_current=lambda: getattr(self, "_search_token", 0) == search_token,
-                )
-                if getattr(self, "_search_token", 0) != search_token:
-                    LOG.debug("search %r: cancelled indexed channel scan", txt)
-                    return
-            else:
-                matching_channels = []
-                for index, ch in enumerate(source_snapshot):
-                    if index % 256 == 0 and getattr(self, "_search_token", 0) != search_token:
-                        LOG.debug("search %r: cancelled stale channel scan", txt)
-                        return
-                    name = (ch.get("name") or "")
-                    if txt and txt not in name.lower():
-                        continue
-                    matching_channels.append(ch)
+            matching_channels = IPTVClient._search_channel_rows(
+                self,
+                source_snapshot, txt, playlist_index, search_token
+            )
+            if matching_channels is None:
+                LOG.debug("search %r: cancelled stale channel scan", txt)
+                return
             matching_channels.sort(key=lambda ch: search_rank(ch.get("name") or "", txt))
             entries = [
                 {"type": "channel", "data": ch}
