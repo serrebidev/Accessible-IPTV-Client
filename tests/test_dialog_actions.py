@@ -1106,8 +1106,47 @@ def test_a_forced_now_playing_refresh_ignores_the_throttle(monkeypatch):
     assert calls == [[]], "a forced refresh did not run"
 
 
+def test_now_playing_refresh_reuses_guide_indexes_for_labels_and_descriptions(monkeypatch):
+    import main as appmod
+
+    class FakeDatabase:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def get_all_now_next(self):
+            return {}
+
+        def get_channel_ids_lower(self):
+            return set()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(appmod, "EPGDatabase", FakeDatabase)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.config = {"epg_enabled": True}
+    client.all_channels = []
+    client._playlist_load_token = 0
+    client._now_playing_refreshed_at = 0
+    client._now_playing_lock = __import__("threading").RLock()
+    client._now_playing_labels = {}
+    client._now_playing_descriptions = {}
+    seen = []
+    client._build_now_playing_labels = (
+        lambda *args, **kwargs: seen.append(kwargs["indexes"]) or {})
+    client._build_now_playing_descriptions = (
+        lambda *args, **kwargs: seen.append(kwargs["indexes"]) or {})
+    monkeypatch.setattr(appmod.wx, "CallAfter", lambda callback, *args: callback(*args))
+
+    client._refresh_now_playing_labels(force=True)
+
+    assert len(seen) == 2
+    assert seen[0] is seen[1]
+
+
 def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypatch):
     import main as appmod
+    from responsiveness import ResponsivenessGate
 
     started = threading.Event()
     release = threading.Event()
@@ -1133,6 +1172,7 @@ def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypa
     client.config = {"epg_enabled": True}
     client._now_playing_refreshed_at = 0
     client._now_playing_lock = threading.RLock()
+    client._now_playing_gate = ResponsivenessGate()
     client._now_playing_labels = {"old": "keep"}
     client._now_playing_descriptions = {}
 
@@ -1147,6 +1187,7 @@ def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypa
     worker.start()
     assert started.wait(5)
 
+    client._now_playing_gate.start_work()
     client.all_channels = [{"name": "New"}]
     client._playlist_load_token = 2
     release.set()
