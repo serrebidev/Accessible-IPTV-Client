@@ -118,6 +118,12 @@ def is_changelog_exempt(commit):
     """
     if _SKIP_FOOTER.search(commit.get("body") or ""):
         return True
+    # A release commit is never itself a What's New bullet. Normally the
+    # version tag points at it, so it falls outside the next release's
+    # range; when a tag is deleted and the release re-issued (v1.150.50),
+    # it lands inside the range and would surface as a "V1.150.50" bullet.
+    if (commit.get("subject") or "").lower().startswith("chore(release):"):
+        return True
     files = [name.replace("\\", "/") for name in commit.get("files") or ()]
     return bool(files) and all(_NOTES_CATALOGUE.match(name) for name in files)
 
