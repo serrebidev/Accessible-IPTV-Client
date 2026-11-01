@@ -21,6 +21,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import translation_audit  # noqa: E402
 
 DEFAULT_SIGNTOOL = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
+# The one certificate a release may be signed with. Every installed copy
+# pins the certificate it was itself signed with, so a build signed by any
+# other certificate is rejected by the updater on every machine. Never let
+# signtool auto-select (/a): a host with several certificates in its store
+# can pick the wrong one (the v1.150.50 host build did exactly that).
+PINNED_SIGNING_THUMBPRINT = "FB99DDCECA07B170E0A950F0C780AD899D28D770"
 FFMPEG_NAME = "ffmpeg.exe"
 BUNDLED_CONFIG_NAME = "iptvclient.conf"
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
@@ -553,7 +559,8 @@ def sign_executable(exe_path):
             "http://timestamp.digicert.com",
             "/td",
             "SHA256",
-            "/a",
+            "/sha1",
+            PINNED_SIGNING_THUMBPRINT,
             exe_path,
         ]
     )
@@ -566,9 +573,13 @@ def get_signing_thumbprint(exe_path):
     certificate is what :func:`read_signature` returns.
     """
     override = os.environ.get("SIGN_CERT_THUMBPRINT", "").strip()
-    if override:
-        return override
-    return read_signature(exe_path)[0]
+    thumbprint = override or read_signature(exe_path)[0]
+    if thumbprint.replace(" ", "").upper() != PINNED_SIGNING_THUMBPRINT:
+        raise RuntimeError(
+            f"Signing certificate {thumbprint} is not the pinned release "
+            f"certificate {PINNED_SIGNING_THUMBPRINT}; installed copies "
+            "would reject this build. Refusing to release.")
+    return thumbprint
 
 
 def read_signature(path):
