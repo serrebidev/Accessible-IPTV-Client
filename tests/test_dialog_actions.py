@@ -14,6 +14,7 @@ Regression cover for a batch of reports:
 import os
 import pathlib
 import sys
+import threading
 import time
 import types
 from typing import Any
@@ -1090,8 +1091,10 @@ def test_a_forced_now_playing_refresh_ignores_the_throttle(monkeypatch):
     client = appmod.IPTVClient.__new__(appmod.IPTVClient)
     client.config = {"epg_enabled": True}
     client._now_playing_refreshed_at = time.time()
-    client._build_now_playing_labels = lambda channels, known_ids=None: calls.append(channels) or {}
-    client._build_now_playing_descriptions = lambda channels, known_ids=None: {}
+    client._build_now_playing_labels = (
+        lambda channels, known_ids=None, playlist_channels=None: calls.append(channels) or {})
+    client._build_now_playing_descriptions = (
+        lambda channels, known_ids=None, playlist_channels=None: {})
     client._now_playing_lock = __import__("threading").RLock()
     client._now_playing_labels = {}
     client._now_playing_descriptions = {}
@@ -1101,6 +1104,55 @@ def test_a_forced_now_playing_refresh_ignores_the_throttle(monkeypatch):
 
     client._refresh_now_playing_labels(force=True)
     assert calls == [[]], "a forced refresh did not run"
+
+
+def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypatch):
+    import main as appmod
+
+    started = threading.Event()
+    release = threading.Event()
+
+    class FakeDatabase:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def get_all_now_next(self):
+            return []
+
+        def get_channel_ids_lower(self):
+            return set()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(appmod, "EPGDatabase", FakeDatabase)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    old_channels = [{"name": "Old"}]
+    client.all_channels = old_channels
+    client._playlist_load_token = 1
+    client.config = {"epg_enabled": True}
+    client._now_playing_refreshed_at = 0
+    client._now_playing_lock = threading.RLock()
+    client._now_playing_labels = {"old": "keep"}
+    client._now_playing_descriptions = {}
+
+    def delayed_labels(*_args, **_kwargs):
+        started.set()
+        release.wait(5)
+        return {"old": "stale"}
+
+    client._build_now_playing_labels = delayed_labels
+    client._build_now_playing_descriptions = lambda *args, **kwargs: {}
+    worker = threading.Thread(target=client._refresh_now_playing_labels)
+    worker.start()
+    assert started.wait(5)
+
+    client.all_channels = [{"name": "New"}]
+    client._playlist_load_token = 2
+    release.set()
+    worker.join(5)
+    assert not worker.is_alive()
+    assert client._now_playing_labels == {"old": "keep"}
 
 
 def test_channel_epg_dialog_selects_the_programme_airing_now(host):

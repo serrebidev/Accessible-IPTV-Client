@@ -1483,6 +1483,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
         self._now_playing_refreshed_at = now
+        playlist_channels = getattr(self, "all_channels", None)
+        if playlist_channels is None:
+            playlist_channels = []
+        playlist_generation = getattr(self, "_playlist_load_token", 0)
         try:
             db = EPGDatabase(get_db_path(), readonly=True)
             try:
@@ -1493,8 +1497,14 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        mapping = self._build_now_playing_labels(channels, known_ids=known_ids)
-        descriptions = self._build_now_playing_descriptions(channels, known_ids=known_ids)
+        mapping = self._build_now_playing_labels(
+            channels, known_ids=known_ids, playlist_channels=playlist_channels)
+        descriptions = self._build_now_playing_descriptions(
+            channels, known_ids=known_ids, playlist_channels=playlist_channels)
+        if (getattr(self, "all_channels", None) is not playlist_channels
+                or getattr(self, "_playlist_load_token", 0) != playlist_generation):
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped stale result")
+            return
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
             self._now_playing_labels = mapping
@@ -1508,7 +1518,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             wx.CallAfter(self.on_highlight)
 
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
-                                  known_ids=None) -> Dict[str, str]:
+                                  known_ids=None, playlist_channels=None) -> Dict[str, str]:
         """Match every playlist channel to its EPG channel, fuzzily.
 
         Exact normalized names miss a lot of channels ("TVP 1 HD" against a
@@ -1522,7 +1532,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         indexes = guide_indexes(channels)
 
         mapping: Dict[str, str] = {}
-        playlist_channels = getattr(self, "all_channels", None) or []
+        if playlist_channels is None:
+            playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
@@ -1546,7 +1557,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         return mapping
 
     def _build_now_playing_descriptions(
-            self, channels: Dict[str, Dict[str, object]], known_ids=None) -> Dict[str, str]:
+            self, channels: Dict[str, Dict[str, object]], known_ids=None,
+            playlist_channels=None) -> Dict[str, str]:
         """On-air episode description per playlist channel (``_now_playing_key``).
 
         Same fuzzy channel match as the row labels, but carries the long
@@ -1556,7 +1568,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         """
         indexes = guide_indexes(channels)
         mapping: Dict[str, str] = {}
-        playlist_channels = getattr(self, "all_channels", None) or []
+        if playlist_channels is None:
+            playlist_channels = getattr(self, "all_channels", None) or []
         for channel in playlist_channels:
             name_key = _now_playing_key(channel)
             if not name_key or name_key in mapping:
