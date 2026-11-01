@@ -11,6 +11,13 @@ Run the representative threshold measurements with:
 python tools/playlist_benchmark.py --sizes 50000 250000 500000
 ```
 
+To fail when a representative size exceeds the current index or search
+latency budget, add `--check`:
+
+```text
+python tools/playlist_benchmark.py --check --sizes 50000 250000 500000
+```
+
 The generated playlist is deterministic: channel names, groups, IDs, and URLs
 are stable between runs. Record the output when selecting the threshold for
 progressive publication. These timings are machine-dependent evidence, not a
