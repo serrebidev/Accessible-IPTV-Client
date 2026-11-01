@@ -1297,7 +1297,6 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _invalidate_playlist_index(self):
         self._playlist_index = None
         self._playlist_index_generation = getattr(self, "_playlist_index_generation", 0) + 1
-        self._playlist_index_building = False
 
     def _get_playlist_index(self) -> Optional[PlaylistIndex]:
         """Return a ready navigation index without blocking the UI thread."""
@@ -1320,6 +1319,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     and getattr(self, "_playlist_index_generation", 0) == generation)):
             return
         self._playlist_index_building = True
+        self._playlist_index_building_generation = generation
 
         def worker():
             _lower_current_thread_priority()
@@ -1343,6 +1343,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def _finish_playlist_index_warm(self, index, channels, generation):
         if (self.all_channels is not channels
                 or getattr(self, "_playlist_load_token", 0) != generation):
+            if (getattr(self, "_playlist_index_building_generation", None)
+                    == generation):
+                self._playlist_index_building = False
             return
         self._playlist_index_building = False
         if index is not None:
