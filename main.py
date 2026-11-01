@@ -5462,6 +5462,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if event.GetKeyCode() == wx.WXK_TAB and event.ShiftDown():
             self.group_list.SetFocus()
             return
+        # Ordinary typing in the filter box is interaction: result
+        # publication and refreshes yield to it (#108).
+        _gate = getattr(self, "_work_gate", None)
+        if _gate is not None:
+            _gate.note_interaction()
         event.Skip()
 
     def _focus_after_filter(self):
@@ -5817,6 +5822,14 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 return
             if getattr(self, "_populate_token", 0) != populate_token:
                 return
+            # Pause while the user is interacting (#108, same rule as
+            # playlist publication in #107): reschedule and resume from
+            # the same offset once interaction settles. Token checks
+            # above still drop the batch entirely when superseded.
+            _gate = getattr(self, "_work_gate", None)
+            if _gate is not None and _gate.interaction_active():
+                wx.CallLater(50, append_batch, offset)
+                return
             end = min(offset + self._SEARCH_BATCH_SIZE, len(entries))
             self.displayed.extend(entries[offset:end])
             self.channel_list.set_virtual_count()
@@ -5869,35 +5882,41 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
 
     def _search_channel_rows(
             self, source_snapshot, txt, playlist_index, search_token,
-            work_token: Optional[responsiveness.Ticket] = None):
-        """Run one channel search at a time to avoid duplicate large scans."""
+            ticket: Optional[responsiveness.Ticket] = None):
+        """Run one channel search at a time to avoid duplicate large scans.
+
+        One scan holds ``_channel_search_lock`` at a time (#108); a scan
+        queued behind it checks its ticket first and exits at once when a
+        newer query has superseded it. While scanning, bounded checkpoints
+        (every 256 rows, and inside the playlist index) ask the gate
+        ticket when one was supplied, so a newer query stops the scan
+        cooperatively instead of letting it run to completion.
+        """
         search_lock = getattr(self, "_channel_search_lock", None)
         if search_lock is None:
             search_lock = threading.Lock()
             self._channel_search_lock = search_lock
+
+        def is_current():
+            if ticket is not None:
+                return ticket.checkpoint()
+            return getattr(self, "_search_token", 0) == search_token
+
         with search_lock:
-            if work_token is not None and not work_token.is_current():
-                return None
-            if getattr(self, "_search_token", 0) != search_token:
+            if not is_current():
                 return None
             if playlist_index is not None:
                 matching_channels = playlist_index.search(
                     source_snapshot,
                     txt,
-                    is_current=lambda: (
-                        getattr(self, "_search_token", 0) == search_token
-                        and (work_token is None or work_token.is_current())
-                    ),
+                    is_current=is_current,
                 )
-                if getattr(self, "_search_token", 0) != search_token:
+                if not is_current():
                     return None
             else:
                 matching_channels = []
                 for index, ch in enumerate(source_snapshot):
-                    if (index % 256 == 0
-                            and (getattr(self, "_search_token", 0) != search_token
-                                 or (work_token is not None
-                                     and not work_token.is_current()))):
+                    if index % 256 == 0 and not is_current():
                         return None
                     name = (ch.get("name") or "")
                     if txt and txt not in name.lower():
@@ -5918,11 +5937,13 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         populate_token = self._populate_token
         # Search generations come from the responsiveness gate (#106);
         # created lazily because partial frames drive this method too.
+        # The ticket itself travels into the scan (#108) so its bounded
+        # checkpoints ask the gate, not a bare integer comparison.
         _gate = getattr(self, "_work_gate", None)
         if _gate is None:
             _gate = self._work_gate = responsiveness.WorkGate()
-        search_work_token = _gate.begin("search")
-        self._search_token = search_work_token.generation
+        search_ticket = _gate.begin("search")
+        self._search_token = search_ticket.generation
         search_token = self._search_token
         source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
@@ -5947,7 +5968,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # those stalls while the UI keeps pumping messages.
             matching_channels = IPTVClient._search_channel_rows(
                 self,
-                source_snapshot, txt, playlist_index, search_token, search_work_token
+                source_snapshot, txt, playlist_index, search_token,
+                ticket=search_ticket,
             )
             if matching_channels is None:
                 LOG.debug("search %r: cancelled stale channel scan", txt)
