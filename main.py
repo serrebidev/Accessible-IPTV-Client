@@ -207,6 +207,13 @@ def _tagged_sources(sources) -> list:
             if _source_scope_id(src)]
 
 
+def _scope_for_combo_selection(sources, sel: int) -> str:
+    tagged = _tagged_sources(sources)
+    if 0 < sel <= len(tagged):
+        return _source_scope_id(tagged[sel - 1])
+    return ALL_PLAYLISTS_SCOPE
+
+
 _MODAL_BOX_DEPTH = 0
 _MODAL_BOX_CLOSED_HOOK = None
 
@@ -1432,14 +1439,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     return i
         return 0
 
-    def on_playlist_scope_changed(self, _event):
+    def on_playlist_scope_changed(self, _event, scope=None):
         """Switch the category and channel lists to the selected playlist."""
-        sel = self.playlist_scope_combo.GetSelection()
-        scope = ALL_PLAYLISTS_SCOPE
-        if sel > 0:
-            sources = _tagged_sources(self.playlist_sources)
-            if 0 < sel <= len(sources):
-                scope = _source_scope_id(sources[sel - 1])
+        if scope is None:
+            scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
         if scope == self.playlist_scope:
             return
         self.playlist_scope = scope
@@ -1453,9 +1456,26 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             self.filter_box.ChangeValue("")
         except Exception:
             LOG.debug("IPTVClient.on_playlist_scope_changed: ignored exception", exc_info=True)
-        self._refresh_group_ui()
-        if hasattr(self.playlist_scope_combo, "SetFocus"):
+        self._refresh_group_ui(preserve_focus=True)
+        if _event is None and hasattr(self.playlist_scope_combo, "SetFocus"):
             self.playlist_scope_combo.SetFocus()
+
+    def on_playlist_scope_mouse_down(self, event):
+        self._scope_mouse_armed = True
+        event.Skip()
+
+    def on_playlist_scope_choice(self, event):
+        """Arrow choices are previews; a mouse choice is an activation."""
+        if getattr(self, "_scope_mouse_armed", False):
+            scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
+            wx.CallAfter(self._commit_playlist_scope_mouse_choice, scope)
+
+    def _commit_playlist_scope_mouse_choice(self, scope):
+        # A keyboard choice can precede its key hook; let that hook cancel the
+        # mouse arm before deciding whether this was an activation.
+        if getattr(self, "_scope_mouse_armed", False):
+            self._scope_mouse_armed = False
+            self.on_playlist_scope_changed(True, scope)
 
     def scoped_all_channels(self) -> List[Dict[str, str]]:
         """``self.all_channels`` filtered to the playlist scope."""
@@ -5728,7 +5748,21 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             event.Skip()
 
     def on_playlist_scope_key(self, event):
-        # Native traversal includes search, programme information and URL.
+        self._scope_mouse_armed = False
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.playlist_scope_combo.SetSelection(self._combo_index_for_scope(self.playlist_scope))
+            return
+        if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self.on_playlist_scope_changed(event)
+            return
+        if event.GetKeyCode() == wx.WXK_TAB:
+            if not event.ShiftDown():
+                # Let wx move to Categories before the view is rebuilt.
+                scope = _scope_for_combo_selection(self.playlist_sources, self.playlist_scope_combo.GetSelection())
+                wx.CallAfter(self.on_playlist_scope_changed, True, scope)
+            event.Skip()
+            return
+        # Native arrows announce choices; traversal includes search and details.
         event.Skip()
 
     def on_group_key(self, event):
@@ -6080,7 +6114,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             wx.CallAfter(update_ui)
         threading.Thread(target=filter_worker, daemon=True).start()
 
-    def _refresh_group_ui(self):
+    def _refresh_group_ui(self, *, preserve_focus=False):
+        focused_control = wx.Window.FindFocus() if preserve_focus and wx.GetApp() else None
         selected_channel_key = None
         channel_list_had_focus = False
         try:
@@ -6181,11 +6216,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self.group_list.Thaw()
             except Exception:
                 LOG.debug("IPTVClient._refresh_group_ui: ignored exception", exc_info=True)
+            if focused_control is not None and wx.Window.FindFocus() is not focused_control:
+                focused_control.SetFocus()
         
         self.on_group_select(
             selected_channel_key=selected_channel_key,
-            preserve_channel_focus=channel_list_had_focus,
+            preserve_channel_focus=channel_list_had_focus or preserve_focus,
         )
+        if focused_control is not None and wx.Window.FindFocus() is not focused_control:
+            focused_control.SetFocus()
 
     # ================================================================== #
     # Video on Demand (movies & series) view
