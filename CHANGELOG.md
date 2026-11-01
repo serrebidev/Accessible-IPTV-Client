@@ -1,12 +1,6 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
-## v1.150.50 - 2026-10-31
-
-### Other changes
-
-- Audit the low-latency playback rules against a real 60 ms-away source
-
 ## v1.150.49 - 2026-10-28
 
 ### Other changes
