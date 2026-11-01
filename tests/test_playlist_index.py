@@ -36,6 +36,8 @@ def test_index_does_not_store_unscoped_membership_that_all_playlists_does_not_us
 
     assert index._scope_channels == {}
     assert index._scope_groups == {}
+    # The empty-scope accessors still serve the full lists directly.
+    assert index.all_for_scope("") == channels
 
 
 def test_index_search_preserves_playlist_order_and_substring_semantics():

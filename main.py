@@ -1550,11 +1550,19 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         now = time.time()
         if not force and now - getattr(self, "_now_playing_refreshed_at", 0.0) < 30:
             return
+        # The refresh works in the gate's now_playing lane (#109): it
+        # defers while the user is interacting, and a newer refresh
+        # supersedes this one at the checkpoints below so stale labels
+        # never publish. Deferral happens before the throttle timestamp
+        # moves, so the retry is not swallowed by the 30 s guard.
+        gate = getattr(self, "_work_gate", None)
+        if gate is None:
+            gate = self._work_gate = responsiveness.WorkGate()
+        if gate.interaction_active():
+            self._retry_now_playing_later(force)
+            return
+        ticket = gate.begin("now_playing")
         self._now_playing_refreshed_at = now
-        work_gate = getattr(self, "_work_gate", None)
-        if work_gate is None:
-            work_gate = self._work_gate = responsiveness.WorkGate()
-        work_token = work_gate.begin("now_playing")
         playlist_channels = getattr(self, "all_channels", None)
         if playlist_channels is None:
             playlist_channels = []
@@ -1569,9 +1577,13 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         except Exception:
             LOG.debug("IPTVClient._refresh_now_playing_labels: ignored exception", exc_info=True)
             return
-        if not work_token.is_current():
-            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded query")
+        if not ticket.checkpoint():
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded refresh")
             return
+        # Labels and descriptions walk the same guide indexes; build
+        # them once here instead of once per builder (Farhan Khan, #113).
+        # The indexes kwarg is only passed for mapping-shaped results,
+        # which keeps test doubles with the old builder signature working.
         indexes = guide_indexes(channels) if hasattr(channels, "items") else None
         label_kwargs = {"known_ids": known_ids, "playlist_channels": playlist_channels}
         description_kwargs = dict(label_kwargs)
@@ -1580,12 +1592,12 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             description_kwargs["indexes"] = indexes
         mapping = self._build_now_playing_labels(channels, **label_kwargs)
         descriptions = self._build_now_playing_descriptions(channels, **description_kwargs)
+        if not ticket.checkpoint():
+            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded result")
+            return
         if (getattr(self, "all_channels", None) is not playlist_channels
                 or getattr(self, "_playlist_load_token", 0) != playlist_generation):
             LOG.debug("IPTVClient._refresh_now_playing_labels: dropped stale result")
-            return
-        if not work_token.is_current():
-            LOG.debug("IPTVClient._refresh_now_playing_labels: dropped superseded result")
             return
         with self._now_playing_lock:
             changed = mapping != self._now_playing_labels
@@ -1598,6 +1610,17 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # Only the description cache moved; refresh the field for the
             # row the user is sitting on.
             wx.CallAfter(self.on_highlight)
+
+    def _retry_now_playing_later(self, force: bool) -> None:
+        """Re-run a deferred now-playing refresh once interaction settles."""
+        def _again():
+            threading.Thread(
+                target=self._refresh_now_playing_labels,
+                kwargs={"force": force},
+                daemon=True,
+            ).start()
+
+        wx.CallLater(1000, _again)
 
     def _build_now_playing_labels(self, channels: Dict[str, Dict[str, object]],
                                   known_ids=None, playlist_channels=None,

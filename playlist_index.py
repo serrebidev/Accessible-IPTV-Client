@@ -31,6 +31,10 @@ class PlaylistIndex:
         for position, channel in enumerate(all_channels):
             scope = str(channel.get("playlist-id") or "")
             if not scope:
+                # Unscoped (legacy/all-playlists) membership is never read
+                # back: the empty-scope accessors return the full lists
+                # directly. Storing it doubles the index build at 500k
+                # channels for nothing (Farhan Khan, #113).
                 continue
             self._scope_channels.setdefault(scope, array("I")).append(position)
         for group, channels in channels_by_group.items():

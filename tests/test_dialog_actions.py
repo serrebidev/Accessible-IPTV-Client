@@ -1144,6 +1144,54 @@ def test_now_playing_refresh_reuses_guide_indexes_for_labels_and_descriptions(mo
     assert seen[0] is seen[1]
 
 
+def test_now_playing_refresh_defers_while_user_interacts(monkeypatch):
+    import main as appmod
+    from responsiveness import WorkGate
+
+    class FakeClock:
+        def __init__(self):
+            self.now = 1000.0
+
+        def __call__(self):
+            return self.now
+
+    queried = []
+
+    class FakeDatabase:
+        def __init__(self, *_args, **_kwargs):
+            queried.append(True)
+
+        def get_all_now_next(self):
+            return {}
+
+        def get_channel_ids_lower(self):
+            return set()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(appmod, "EPGDatabase", FakeDatabase)
+    client = appmod.IPTVClient.__new__(appmod.IPTVClient)
+    client.config = {"epg_enabled": True}
+    client.all_channels = []
+    client._playlist_load_token = 0
+    client._now_playing_refreshed_at = 0
+    client._now_playing_lock = __import__("threading").RLock()
+    client._now_playing_labels = {}
+    client._now_playing_descriptions = {}
+    gate = WorkGate(clock=FakeClock())
+    client._work_gate = gate
+    retries = []
+    client._retry_now_playing_later = lambda force: retries.append(force)
+
+    gate.note_interaction()
+    client._refresh_now_playing_labels(force=True)
+
+    assert queried == [], "the refresh queried the guide while the user was interacting"
+    assert retries == [True], "the deferred refresh was not rescheduled"
+    assert client._now_playing_refreshed_at == 0, "deferral must not consume the throttle slot"
+
+
 def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypatch):
     import main as appmod
     from responsiveness import WorkGate
@@ -1187,6 +1235,8 @@ def test_stale_now_playing_refresh_does_not_replace_new_playlist_labels(monkeypa
     worker.start()
     assert started.wait(5)
 
+    # A newer refresh supersedes the in-flight one at the gate (#109),
+    # and the playlist is replaced too: either guard drops the result.
     client._work_gate.begin("now_playing")
     client.all_channels = [{"name": "New"}]
     client._playlist_load_token = 2
