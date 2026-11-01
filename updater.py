@@ -1,10 +1,12 @@
 import datetime
 import hashlib
+import http.client
 import json
 import logging
 import os
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -535,6 +537,80 @@ def _open(req: urllib.request.Request, timeout: float):
     return opener.open(req, timeout=timeout)
 
 
+# --- transient network retries ------------------------------------------------
+#
+# Every update request used to get exactly one attempt, and every network
+# error - a timeout, a reset connection, a DNS hiccup, an SSL failure - was
+# reported as "Please check your connection", even on a healthy connection.
+# A single dropped packet could therefore fail a manual update check, and
+# because the real reason was discarded (and nothing was logged), the failure
+# looked random and could not be diagnosed afterwards. Idempotent GETs and
+# the (hash-verified, restarted from scratch) update download now retry a
+# few times, and the final error keeps the underlying reason attached.
+
+_RETRY_ATTEMPTS = 3
+_RETRY_DELAYS = (0.5, 1.5)
+_RETRYABLE_HTTP_CODES = frozenset({408, 429, 500, 502, 503, 504})
+
+
+def _retry_sleep(attempt: int) -> None:
+    time.sleep(_RETRY_DELAYS[min(attempt, len(_RETRY_DELAYS) - 1)])
+
+
+def _network_reason(exc: BaseException) -> str:
+    reason = getattr(exc, "reason", exc)
+    return str(reason) or exc.__class__.__name__
+
+
+def _is_transient_network_error(exc: BaseException) -> bool:
+    return isinstance(
+        exc,
+        (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionError,
+            http.client.HTTPException,
+            ssl.SSLError,
+        ),
+    )
+
+
+def _request_json(url: str, *, timeout: float, http_error_format: str,
+                  connection_message: str, rate_limit_message: bool = False) -> dict:
+    """GET ``url`` as JSON, retrying transient network failures."""
+    for attempt in range(_RETRY_ATTEMPTS):
+        last = attempt == _RETRY_ATTEMPTS - 1
+        req = _build_request(url)
+        try:
+            with _open(req, timeout) as resp:
+                payload = resp.read().decode("utf-8-sig")
+            return json.loads(payload)
+        except urllib.error.HTTPError as exc:
+            if (rate_limit_message and exc.code == 403
+                    and exc.headers.get("X-RateLimit-Remaining") == "0"):
+                raise UpdateError(
+                    _("GitHub API rate limit exceeded. Please try again later.")) from exc
+            if exc.code in _RETRYABLE_HTTP_CODES and not last:
+                LOG.warning("Update request to %s failed with HTTP %s (attempt %d/%d); retrying",
+                            url, exc.code, attempt + 1, _RETRY_ATTEMPTS)
+                _retry_sleep(attempt)
+                continue
+            raise UpdateError(http_error_format.format(code=exc.code)) from exc
+        except Exception as exc:
+            if not _is_transient_network_error(exc):
+                raise
+            if not last:
+                LOG.warning("Update request to %s failed: %s (attempt %d/%d); retrying",
+                            url, _network_reason(exc), attempt + 1, _RETRY_ATTEMPTS)
+                _retry_sleep(attempt)
+                continue
+            LOG.warning("Update request to %s failed after %d attempts: %s",
+                        url, _RETRY_ATTEMPTS, _network_reason(exc))
+            raise UpdateError(
+                connection_message + f" ({_network_reason(exc)})") from exc
+    raise AssertionError("unreachable")
+
+
 def _normalize_thumbprint(value: Optional[str]) -> str:
     if not value:
         return ""
@@ -622,17 +698,13 @@ def _extract_installer_fields(payload: dict) -> Tuple[Optional[str], Optional[st
 
 def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dict:
     url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
-    req = _build_request(url)
-    try:
-        with _open(req, timeout) as resp:
-            payload = resp.read().decode("utf-8-sig")
-            return json.loads(payload)
-    except urllib.error.HTTPError as exc:
-        if exc.code == 403 and exc.headers.get("X-RateLimit-Remaining") == "0":
-            raise UpdateError(_("GitHub API rate limit exceeded. Please try again later.")) from exc
-        raise UpdateError(_("Failed to fetch release info ({code}).").format(code=exc.code)) from exc
-    except urllib.error.URLError as exc:
-        raise UpdateError(_("Unable to reach GitHub. Please check your connection.")) from exc
+    return _request_json(
+        url,
+        timeout=timeout,
+        http_error_format=_("Failed to fetch release info ({code})."),
+        connection_message=_("Unable to reach GitHub. Please check your connection."),
+        rate_limit_message=True,
+    )
 
 
 def fetch_update_manifest(
@@ -699,15 +771,12 @@ def fetch_update_manifest(
 
 
 def download_json(url: str, *, timeout: float = 20.0) -> dict:
-    req = _build_request(url)
-    try:
-        with _open(req, timeout) as resp:
-            payload = resp.read().decode("utf-8-sig")
-            return json.loads(payload)
-    except urllib.error.HTTPError as exc:
-        raise UpdateError(_("Failed to download manifest ({code}).").format(code=exc.code)) from exc
-    except urllib.error.URLError as exc:
-        raise UpdateError(_("Unable to download manifest. Please check your connection.")) from exc
+    return _request_json(
+        url,
+        timeout=timeout,
+        http_error_format=_("Failed to download manifest ({code})."),
+        connection_message=_("Unable to download manifest. Please check your connection."),
+    )
 
 
 def download_file_with_sha256(url: str, dest_path: str, *, progress_cb=None) -> str:
@@ -717,35 +786,59 @@ def download_file_with_sha256(url: str, dest_path: str, *, progress_cb=None) -> 
     fraction is 0.0-1.0 (or None when the server sends no Content-Length). If it
     returns False the download is aborted with :class:`UpdateCancelled`.
     """
-    req = _build_request(url)
-    digest = hashlib.sha256()
-    try:
-        with _open(req, 60) as resp, open(dest_path, "wb") as handle:
-            try:
-                total = int(resp.headers.get("Content-Length") or 0)
-            except (TypeError, ValueError):
-                total = 0
-            downloaded = 0
-            while True:
-                chunk = resp.read(1024 * 1024)
-                if not chunk:
-                    break
-                handle.write(chunk)
-                digest.update(chunk)
-                downloaded += len(chunk)
-                if progress_cb is not None:
-                    fraction = (downloaded / total) if total > 0 else None
-                    if progress_cb(fraction) is False:
-                        raise UpdateCancelled(_("Update cancelled."))
-    except UpdateCancelled:
-        raise
-    except urllib.error.HTTPError as exc:
-        raise UpdateError(_("Failed to download update ({code}).").format(code=exc.code)) from exc
-    except urllib.error.URLError as exc:
-        raise UpdateError(_("Unable to download update. Please check your connection.")) from exc
-    except OSError as exc:
-        raise UpdateError(_("Unable to download update. Please check your connection.")) from exc
-    return digest.hexdigest()
+    # A transient drop mid-download used to lose the whole file and report a
+    # connection problem; the download is hash-verified by the caller, so
+    # restarting it from scratch on a transient failure is safe.
+    for attempt in range(_RETRY_ATTEMPTS):
+        last = attempt == _RETRY_ATTEMPTS - 1
+        req = _build_request(url)
+        digest = hashlib.sha256()
+        try:
+            with _open(req, 60) as resp, open(dest_path, "wb") as handle:
+                try:
+                    total = int(resp.headers.get("Content-Length") or 0)
+                except (TypeError, ValueError):
+                    total = 0
+                downloaded = 0
+                while True:
+                    chunk = resp.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+                    digest.update(chunk)
+                    downloaded += len(chunk)
+                    if progress_cb is not None:
+                        fraction = (downloaded / total) if total > 0 else None
+                        if progress_cb(fraction) is False:
+                            raise UpdateCancelled(_("Update cancelled."))
+        except UpdateCancelled:
+            raise
+        except urllib.error.HTTPError as exc:
+            if exc.code in _RETRYABLE_HTTP_CODES and not last:
+                LOG.warning("Update download from %s failed with HTTP %s (attempt %d/%d); retrying",
+                            url, exc.code, attempt + 1, _RETRY_ATTEMPTS)
+                _retry_sleep(attempt)
+                continue
+            raise UpdateError(_("Failed to download update ({code}).").format(code=exc.code)) from exc
+        except Exception as exc:
+            if _is_transient_network_error(exc):
+                if not last:
+                    LOG.warning("Update download from %s failed: %s (attempt %d/%d); retrying",
+                                url, _network_reason(exc), attempt + 1, _RETRY_ATTEMPTS)
+                    _retry_sleep(attempt)
+                    continue
+                LOG.warning("Update download from %s failed after %d attempts: %s",
+                            url, _RETRY_ATTEMPTS, _network_reason(exc))
+                raise UpdateError(
+                    _("Unable to download update. Please check your connection.")
+                    + f" ({_network_reason(exc)})") from exc
+            if isinstance(exc, OSError):
+                raise UpdateError(
+                    _("Unable to download update. Please check your connection.")
+                    + f" ({exc})") from exc
+            raise
+        return digest.hexdigest()
+    raise AssertionError("unreachable")
 
 
 def safe_extract_zip(zip_path: str, dest_dir: str) -> None:

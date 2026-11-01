@@ -4639,6 +4639,21 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             notes = release.get("body") or ""
             wx.CallAfter(self._prompt_update, latest_version, current_version, notes, release)
         except updater.UpdateError as exc:
+            # Log it too: the dialog is gone in seconds, and an unlogged
+            # "check your connection" failure cannot be diagnosed afterwards.
+            LOG.warning("Update check failed: %s", exc)
+            if interactive:
+                wx.CallAfter(
+                    message_box,
+                    _("Update check failed: {error}").format(error=exc),
+                    _("Updates"),
+                    wx.OK | wx.ICON_ERROR,
+                )
+        except Exception as exc:
+            # A non-UpdateError here (a malformed response, a read error the
+            # updater did not convert) used to kill this thread silently, so
+            # a manual check appeared to do nothing at all.
+            LOG.exception("Update check failed unexpectedly: %s", exc)
             if interactive:
                 wx.CallAfter(
                     message_box,
@@ -4869,6 +4884,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             if temp_root:
                 shutil.rmtree(temp_root, ignore_errors=True)
         except updater.UpdateError as exc:
+            LOG.warning("Update download failed: %s", exc)
             wx.CallAfter(self._destroy_update_progress)
             wx.CallAfter(
                 message_box,

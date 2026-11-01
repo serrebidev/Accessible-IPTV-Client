@@ -169,6 +169,102 @@ def test_download_cancel_raises_update_cancelled(monkeypatch, tmp_path):
         )
 
 
+def test_fetch_latest_release_retries_transient_failure(monkeypatch):
+    import urllib.error
+
+    calls = []
+
+    def flaky(req, timeout):
+        calls.append(req.full_url)
+        if len(calls) < 3:
+            raise urllib.error.URLError("timed out")
+        return _Response({"tag_name": "v1.2.3"})
+
+    monkeypatch.setattr(updater, "_open", flaky)
+    monkeypatch.setattr(updater, "_retry_sleep", lambda attempt: None)
+
+    release = updater.fetch_latest_release("owner", "repo", timeout=4.5)
+
+    assert release["tag_name"] == "v1.2.3"
+    assert len(calls) == 3
+
+
+def test_fetch_latest_release_reports_real_reason_after_retries(monkeypatch):
+    import urllib.error
+
+    def dead(req, timeout):
+        raise urllib.error.URLError("Name or service not known")
+
+    monkeypatch.setattr(updater, "_open", dead)
+    monkeypatch.setattr(updater, "_retry_sleep", lambda attempt: None)
+
+    with pytest.raises(updater.UpdateError) as excinfo:
+        updater.fetch_latest_release("owner", "repo")
+
+    assert "check your connection" in str(excinfo.value)
+    assert "Name or service not known" in str(excinfo.value)
+
+
+def test_fetch_latest_release_does_not_retry_404(monkeypatch):
+    import urllib.error
+
+    calls = []
+
+    def missing(req, timeout):
+        calls.append(req.full_url)
+        raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(updater, "_open", missing)
+    monkeypatch.setattr(updater, "_retry_sleep", lambda attempt: None)
+
+    with pytest.raises(updater.UpdateError) as excinfo:
+        updater.fetch_latest_release("owner", "repo")
+
+    assert "(404)" in str(excinfo.value)
+    assert len(calls) == 1
+
+
+def test_fetch_latest_release_retries_503(monkeypatch):
+    import urllib.error
+
+    calls = []
+
+    def busy(req, timeout):
+        calls.append(req.full_url)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(req.full_url, 503, "Busy", {}, None)
+        return _Response({"tag_name": "v9.9.9"})
+
+    monkeypatch.setattr(updater, "_open", busy)
+    monkeypatch.setattr(updater, "_retry_sleep", lambda attempt: None)
+
+    assert updater.fetch_latest_release("owner", "repo")["tag_name"] == "v9.9.9"
+    assert len(calls) == 2
+
+
+def test_download_file_retries_transient_failure(monkeypatch, tmp_path):
+    import urllib.error
+
+    payload = b"payload that arrives on the second attempt"
+    calls = []
+
+    def flaky(req, timeout):
+        calls.append(req.full_url)
+        if len(calls) == 1:
+            raise urllib.error.URLError(ConnectionResetError(104, "Connection reset"))
+        return _DownloadResponse(payload)
+
+    monkeypatch.setattr(updater, "_open", flaky)
+    monkeypatch.setattr(updater, "_retry_sleep", lambda attempt: None)
+
+    dest = tmp_path / "update.zip"
+    digest = updater.download_file_with_sha256("https://example.test/update.zip", str(dest))
+
+    assert digest == hashlib.sha256(payload).hexdigest()
+    assert dest.read_bytes() == payload
+    assert len(calls) == 2
+
+
 def test_run_hidden_hides_console_on_windows(monkeypatch):
     captured = {}
 
