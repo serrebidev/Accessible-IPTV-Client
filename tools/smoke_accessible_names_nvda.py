@@ -50,6 +50,8 @@ pairs = (
 )
 
 print("wx-level label association:")
+assert frame.playlist_scope_combo.GetName() == "Playlist view"
+print("  Playlist view: combo name OK")
 for expected, label, ctrl in pairs:
     assert label.GetLabel() == expected, label.GetLabel()
     assert label.GetId() == ctrl.GetId() - 1, (label.GetId(), ctrl.GetId())
@@ -112,6 +114,8 @@ except Exception as exc:
 
 if msaa is not None:
     print("MSAA accName (what NVDA reads):")
+    assert msaa(frame.playlist_scope_combo) == "Playlist view"
+    print("  Playlist view: combo name OK")
     for expected, _label, ctrl in pairs:
         name = msaa(ctrl)
         assert name == expected, f"expected {expected!r}, got {name!r}"
