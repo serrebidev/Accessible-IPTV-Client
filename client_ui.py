@@ -43,6 +43,7 @@ class UiMixin:
         if hasattr(self.playlist_scope_combo, "SetAccessibleName"):
             self.playlist_scope_combo.SetAccessibleName(_("Playlist view"))
         self.playlist_scope_combo.Bind(wx.EVT_CHAR_HOOK, self.on_playlist_scope_key)
+        self.playlist_scope_combo.Bind(wx.EVT_LEFT_DOWN, self.on_playlist_scope_mouse_down)
         # Screen-reader names on MSW come from the static label created
         # immediately before each control: the tree/list/edit accessibles
         # ignore SetName/SetAccessibleName, but a wx.StaticText whose auto id
@@ -53,7 +54,7 @@ class UiMixin:
         self.group_list = _AccessibleCategoryTree(p)
         self.group_list.Bind(wx.EVT_CHAR_HOOK, self.on_group_key)
         self.group_list.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_group_activated)
-        self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_changed)
+        self.playlist_scope_combo.Bind(wx.EVT_CHOICE, self.on_playlist_scope_choice)
         self._fill_playlist_scope_combo()
         vs_l.Add(self.playlist_scope_combo, 0, wx.EXPAND | wx.ALL, 5)
         vs_l.Add(self.categories_label, 0, wx.LEFT, 5)

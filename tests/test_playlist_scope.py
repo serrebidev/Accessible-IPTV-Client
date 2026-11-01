@@ -139,6 +139,144 @@ class TestComboIndex:
 
 
 class TestScopeChange:
+    def test_mouse_choice_uses_same_commit_path_once(self, monkeypatch):
+        saves = []
+        refreshes = []
+        stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
+        stub.config = {"playlist_scope": "p1"}
+        stub.current_group = "News"
+        stub.filter_box = SimpleNamespace(ChangeValue=lambda _value: None)
+        stub._invalidate_favorites_cache = lambda: None
+        stub._refresh_group_ui = lambda: refreshes.append(stub.playlist_scope)
+        stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2)
+        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+
+        event = SimpleNamespace(Skip=lambda: None)
+        main.IPTVClient.on_playlist_scope_mouse_down(stub, event)
+        main.IPTVClient.on_playlist_scope_choice(stub, event)
+        main.IPTVClient.on_playlist_scope_choice(stub, event)
+
+        assert stub.playlist_scope == "p2"
+        assert saves == [{"playlist_scope": "p2"}]
+        assert refreshes == ["p2"]
+
+    def test_escape_restores_committed_choice_without_refresh(self, monkeypatch):
+        saves = []
+        refreshes = []
+        stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
+        stub.config = {"playlist_scope": "p1"}
+        selection = [2]
+        stub.playlist_scope_combo = SimpleNamespace(
+            GetSelection=lambda: selection[0], SetSelection=lambda value: selection.__setitem__(0, value),
+        )
+        stub._combo_index_for_scope = lambda scope: main.IPTVClient._combo_index_for_scope(stub, scope)
+        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        stub._refresh_group_ui = lambda: refreshes.append(True)
+        monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+
+        event = SimpleNamespace(GetKeyCode=lambda: main.wx.WXK_ESCAPE, Skip=lambda: None)
+        main.IPTVClient.on_playlist_scope_key(stub, event)
+
+        assert selection == [1]
+        assert stub.playlist_scope == "p1"
+        assert stub.config["playlist_scope"] == "p1"
+        assert saves == refreshes == []
+
+    def test_shift_tab_leaves_preview_uncommitted(self, monkeypatch):
+        saves = []
+        refreshes = []
+        skipped = []
+        stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
+        stub.config = {"playlist_scope": "p1"}
+        stub.current_group = "News"
+        stub.filter_box = SimpleNamespace(ChangeValue=lambda _value: None)
+        stub._invalidate_favorites_cache = lambda: None
+        stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2)
+        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        stub._refresh_group_ui = lambda: refreshes.append(True)
+        monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+
+        event = SimpleNamespace(
+            GetKeyCode=lambda: main.wx.WXK_TAB, ShiftDown=lambda: True,
+            Skip=lambda: skipped.append(True),
+        )
+        main.IPTVClient.on_playlist_scope_key(stub, event)
+
+        assert stub.playlist_scope == "p1"
+        assert stub.config["playlist_scope"] == "p1"
+        assert saves == refreshes == []
+        assert skipped == [True]
+
+    def test_tab_commits_preview_and_allows_native_traversal(self, monkeypatch):
+        saves = []
+        focus = []
+        skipped = []
+        stub = _stub("p1", [], [{"id": "p1"}, {"id": "p2"}])
+        stub.config = {"playlist_scope": "p1"}
+        stub.current_group = "News"
+        stub.filter_box = SimpleNamespace(ChangeValue=lambda _value: None)
+        stub._invalidate_favorites_cache = lambda: None
+        stub._refresh_group_ui = lambda: None
+        stub.playlist_scope_combo = SimpleNamespace(GetSelection=lambda: 2, SetFocus=lambda: focus.append(True))
+        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+        monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+
+        event = SimpleNamespace(
+            GetKeyCode=lambda: main.wx.WXK_TAB, ShiftDown=lambda: False,
+            Skip=lambda: skipped.append(True),
+        )
+        main.IPTVClient.on_playlist_scope_key(stub, event)
+
+        assert stub.playlist_scope == "p2"
+        assert saves == [{"playlist_scope": "p2"}]
+        assert skipped == [True]
+        assert focus == []
+
+    def test_navigation_previews_choices_and_enter_commits_once(self, monkeypatch):
+        saves = []
+        refreshes = []
+        invalidations = []
+        cleared = []
+        channels = [_ch("One", "p1"), _ch("Two", "p2")]
+        stub = _stub("p1", channels, [{"id": "p1"}, {"id": "p2"}])
+        stub.config = {"playlist_scope": "p1"}
+        stub.current_group = "News"
+        stub.filter_box = SimpleNamespace(ChangeValue=cleared.append)
+        stub._invalidate_favorites_cache = lambda: invalidations.append(True)
+        stub._refresh_group_ui = lambda: refreshes.append(stub.playlist_scope)
+        stub.on_playlist_scope_changed = lambda event: main.IPTVClient.on_playlist_scope_changed(stub, event)
+
+        class FakeCombo:
+            selection = 1
+
+            def GetSelection(self):
+                return self.selection
+
+        stub.playlist_scope_combo = FakeCombo()
+        monkeypatch.setattr(main, "save_config", lambda config: saves.append(config.copy()))
+
+        for selection in (2, 0, 2):
+            stub.playlist_scope_combo.selection = selection
+            main.IPTVClient.on_playlist_scope_choice(stub, None)
+            assert stub.playlist_scope == "p1"
+            assert stub.config["playlist_scope"] == "p1"
+            assert [ch["name"] for ch in main.IPTVClient.scoped_all_channels(stub)] == ["One"]
+            assert stub.current_group == "News"
+        assert saves == refreshes == invalidations == cleared == []
+
+        event = SimpleNamespace(GetKeyCode=lambda: main.wx.WXK_RETURN, Skip=lambda: None)
+        main.IPTVClient.on_playlist_scope_key(stub, event)
+        main.IPTVClient.on_playlist_scope_key(stub, event)
+
+        assert stub.playlist_scope == "p2"
+        assert saves == [{"playlist_scope": "p2"}]
+        assert refreshes == ["p2"]
+        assert invalidations == [True]
+        assert cleared == [""]
+        assert stub.current_group == "All Channels"
+        assert [ch["name"] for ch in main.IPTVClient.scoped_all_channels(stub)] == ["Two"]
+
     def test_change_persists_and_resets_group(self, monkeypatch):
         saved = {}
         invalidate = []
