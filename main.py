@@ -19,6 +19,7 @@ import subprocess
 import hashlib
 import concurrent.futures
 import live_announce
+import responsiveness
 # The modal-box guard lives in its own module: the player and the playlist
 # dialogs open boxes too, and they cannot import main (main imports them).
 from modal_guard import message_box, modal_box_is_open, set_modal_box_closed_hook, show_modal
@@ -1114,6 +1115,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # batch-population state to avoid UI hangs
         self._populate_token = 0
         self._search_token = 0
+        # App-level responsiveness gate (#106): source of the search
+        # lane's generations; playlist/EPG lanes adopt it per #107/#109.
+        self._work_gate = responsiveness.WorkGate()
         self._channel_search_lock = threading.Lock()
 
         # Bulk on-air programme labels for the channel rows, keyed by
@@ -5563,7 +5567,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                         self._exit_requested = False
                         event.Veto()
                         return
-            self._search_token += 1
+            _gate = getattr(self, "_work_gate", None)
+            if _gate is None:
+                _gate = self._work_gate = responsiveness.WorkGate()
+            self._search_token = _gate.begin("search").generation
             self._populate_token += 1
             set_modal_box_closed_hook(None)
             # Ensure poll timer stopped on exit
@@ -5842,7 +5849,12 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             return
         self._populate_token += 1
         populate_token = self._populate_token
-        self._search_token += 1
+        # Search generations come from the responsiveness gate (#106);
+        # created lazily because partial frames drive this method too.
+        _gate = getattr(self, "_work_gate", None)
+        if _gate is None:
+            _gate = self._work_gate = responsiveness.WorkGate()
+        self._search_token = _gate.begin("search").generation
         search_token = self._search_token
         source = self._source_for_group(self.current_group)
         LOG.debug("search start: %r group=%s source=%d", txt, self.current_group, len(source))
