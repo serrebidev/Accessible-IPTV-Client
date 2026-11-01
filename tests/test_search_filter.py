@@ -5,8 +5,56 @@ import pytest
 import os
 import sys
 import sqlite3
+import threading
+import time
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
+
+
+def test_large_channel_searches_are_single_flight():
+    from main import IPTVClient
+
+    started = threading.Event()
+    release = threading.Event()
+    active = 0
+    maximum_active = 0
+    state_lock = threading.Lock()
+
+    class FakeIndex:
+        def search(self, _channels, _query, is_current=None):
+            nonlocal active, maximum_active
+            with state_lock:
+                active += 1
+                maximum_active = max(maximum_active, active)
+            started.set()
+            release.wait(timeout=2)
+            with state_lock:
+                active -= 1
+            return []
+
+    client = SimpleNamespace(
+        _search_token=1,
+        _channel_search_lock=threading.Lock(),
+    )
+    index = FakeIndex()
+
+    first = threading.Thread(
+        target=IPTVClient._search_channel_rows,
+        args=(client, [], "one", index, 1),
+    )
+    second = threading.Thread(
+        target=IPTVClient._search_channel_rows,
+        args=(client, [], "two", index, 1),
+    )
+    first.start()
+    assert started.wait(timeout=1)
+    second.start()
+    time.sleep(0.05)
+    assert maximum_active == 1
+    release.set()
+    first.join(timeout=1)
+    second.join(timeout=1)
+    assert active == 0
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
