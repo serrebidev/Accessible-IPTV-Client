@@ -63,6 +63,56 @@ def test_large_channel_publication_batches_stop_after_a_new_population(monkeypat
     assert [row["data"]["name"] for row in client.displayed] == ["second-0", "second-1"]
 
 
+class _FakeClock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+def test_publication_pauses_while_user_interacts_and_resumes(monkeypatch):
+    queued = []
+    monkeypatch.setattr(main.wx, "CallLater", lambda _delay, callback, *args: queued.append((callback, args)))
+    channels = [{"name": f"Channel {i}"} for i in range(6)]
+    client = _client(channels)
+    clock = _FakeClock()
+    client._work_gate = main.responsiveness.WorkGate(clock=clock, interaction_window=0.35)
+
+    main.IPTVClient._populate_channel_list_chunked(client, channels)
+    assert [row["data"]["name"] for row in client.displayed] == ["Channel 0", "Channel 1"]
+
+    # The user starts navigating: the next batch must not publish yet.
+    client._work_gate.note_interaction()
+    callback, args = queued.pop(0)
+    callback(*args)
+    assert [row["data"]["name"] for row in client.displayed] == ["Channel 0", "Channel 1"]
+    assert len(queued) == 1  # rescheduled, not dropped
+
+    # Once interaction settles, publication resumes and completes.
+    clock.advance(0.5)
+    while queued:
+        callback, args = queued.pop(0)
+        callback(*args)
+    assert [row["data"]["name"] for row in client.displayed] == [f"Channel {i}" for i in range(6)]
+
+
+def test_publication_takes_a_playlist_lane_ticket(monkeypatch):
+    monkeypatch.setattr(main.wx, "CallLater", lambda _delay, callback, *args: None)
+    channels = [{"name": f"Channel {i}"} for i in range(6)]
+    client = _client(channels)
+
+    main.IPTVClient._populate_channel_list_chunked(client, channels)
+    first_generation = client._work_gate.generation("playlist")
+    main.IPTVClient._populate_channel_list_chunked(client, channels)
+
+    assert first_generation == 1
+    assert client._work_gate.generation("playlist") == 2
+
+
 def test_refresh_population_restores_selected_channel_without_stealing_focus(monkeypatch):
     monkeypatch.setattr(main.wx, "CallLater", lambda _delay, callback, *args: None)
     channels = [{"name": "One"}, {"name": "Two"}]

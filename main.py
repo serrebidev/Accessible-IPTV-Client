@@ -1116,7 +1116,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self._populate_token = 0
         self._search_token = 0
         # App-level responsiveness gate (#106): source of the search
-        # lane's generations; playlist/EPG lanes adopt it per #107/#109.
+        # lane's generations; the playlist lane adopted it in #107, the
+        # EPG/now-playing lanes adopt it in #109.
         self._work_gate = responsiveness.WorkGate()
         self._channel_search_lock = threading.Lock()
 
@@ -2591,6 +2592,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         # Intentionally do not event.Skip() to avoid duplicate handling.
 
     def _on_channel_key_down(self, event):
+        # A keypress in the channel list is interaction: gate-held
+        # background work (publication batches, refreshes) yields to it.
+        _gate = getattr(self, "_work_gate", None)
+        if _gate is not None:
+            _gate.note_interaction()
         key = event.GetKeyCode()
         if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             self.play_selected(show_internal_player=self.show_player_on_enter)
@@ -6874,6 +6880,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     ):
         self._populate_token += 1
         populate_token = self._populate_token
+        # Playlist publication works in the gate's playlist lane (#107):
+        # a newer populate supersedes this ticket, and its batches pause
+        # while the user is interacting instead of competing with input.
+        # Reached by getattr like the search flow (#106): tests call this
+        # method unbound on partial namespaces where __init__ never ran.
+        gate = getattr(self, "_work_gate", None)
+        if gate is None:
+            gate = self._work_gate = responsiveness.WorkGate()
+        ticket = gate.begin("playlist")
 
         entries = [
             {"type": "channel", "data": ch}
@@ -6921,6 +6936,17 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if batches is not None:
             def append_batch(offset=self._PLAYLIST_DISPLAY_BATCH_SIZE):
                 if populate_token != getattr(self, "_populate_token", 0):
+                    return
+                if not ticket.checkpoint():
+                    # Superseded by a newer publication: stop without
+                    # touching the visible list, selection or focus.
+                    return
+                if gate.should_yield(ticket):
+                    # The user is typing or navigating right now; pause
+                    # publication and check again shortly. The ticket
+                    # stays current, so this resumes where it stopped
+                    # once interaction settles.
+                    wx.CallLater(50, append_batch, offset)
                     return
                 end = min(offset + self._PLAYLIST_DISPLAY_BATCH_SIZE, len(batches))
                 self.displayed.extend(batches[offset:end])
