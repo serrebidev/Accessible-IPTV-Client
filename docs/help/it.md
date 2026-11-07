@@ -300,7 +300,7 @@ Per registrare una trasmissione futura, scegliere Programma registrazione su una
 Registrazioni > Registrazioni programmate… elenca ogni registrazione programmata, in corso e conclusa con orario, titolo, canale, stato e formato.
 
 - Il tasto applicazioni o Shift+F10 su una registrazione apre il suo menu: Aggiorna, Annulla ed Elimina.
-- Registra ogni giorno, Registra ogni settimana e Registra serie si trovano nel menu di un programma in Visualizza EPG e In onda ora, accanto a Programma registrazione. La registrazione della serie trova i futuri programmi della guida con lo stesso titolo su quel canale mentre l'app è in esecuzione.
+- Registra ogni giorno, Registra ogni settimana e Registra serie si trovano nel menu di un programma in Visualizza EPG e In onda ora, accanto a Programma registrazione. La registrazione della serie trova i futuri programmi della guida con lo stesso titolo su quel canale mentre l'app è in esecuzione. Ogni episodio viene registrato una sola volta: quando la guida ripete un episodio che la regola ha già (identificato dal numero di episodio, dal titolo dell'episodio o dalla descrizione), la ripetizione viene saltata.
 - Si può selezionare più di una registrazione; Ctrl+A seleziona tutte le righe.
 - Canc o Canc del tastierino numerico chiede conferma, poi rimuove le registrazioni selezionate. Se alcune sono ancora in corso, il programma le ferma prima.
 - Escape chiude la finestra.
@@ -348,7 +348,7 @@ Il menu Opzioni contiene le impostazioni del programma. Ognuna è salvata appena
 - Mostra il lettore con Invio: attiva, riprodurre un canale mostra la finestra del lettore integrato. Spenta, la riproduzione parte e il focus resta nell'elenco dei canali.
 - Mostra l'URL del flusso: aggiunge il campo URL del flusso dopo la descrizione dell'episodio nella finestra principale.
 - Controlla automaticamente gli aggiornamenti: vedere Aggiornamenti.
-- Annunci automatici: scegli Nessuno, Solo errori, Eventi importanti o Stato dettagliato per il feedback automatico del giocatore e del canale.
+- Annunci automatici: scegli Nessuno, Solo errori, Eventi importanti o Stato dettagliato per il feedback automatico del giocatore e del canale. Lo stesso menu attiva o disattiva separatamente tre tipi di annunci: Riproduzione, Sottotitoli e Guida.
 - Scorciatoie da tastiera: modifica la combinazione di tasti di un comando. Le scorciatoie in conflitto vengono rifiutate; riavviare il programma dopo aver salvato.
 - Impostazioni di esportazione e impostazioni di importazione: salva o ripristina un backup crittografato di playlist, fonti guida, preferiti e preferenze. Conserva la password di backup; ti serve per ripristinare le credenziali del provider.
 

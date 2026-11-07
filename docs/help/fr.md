@@ -300,7 +300,7 @@ Pour enregistrer une émission à venir, choisissez Programmer l'enregistrement 
 Enregistrements > Enregistrements programmés… liste chaque enregistrement programmé, en cours et terminé avec son heure, son titre, sa chaîne, son état et son format.
 
 - La touche Applications ou Shift+F10 sur un enregistrement ouvre son menu : Actualiser, Annuler et Supprimer.
-- Enregistrer chaque jour, Enregistrer chaque semaine et Enregistrer la série se trouvent dans le menu d'un programme dans Afficher l'EPG et À l'affiche maintenant, à côté de Programmer l'enregistrement. L'enregistrement de la série recherche les futurs programmes du guide portant le même titre sur cette chaîne tant que l'application est ouverte.
+- Enregistrer chaque jour, Enregistrer chaque semaine et Enregistrer la série se trouvent dans le menu d'un programme dans Afficher l'EPG et À l'affiche maintenant, à côté de Programmer l'enregistrement. L'enregistrement de la série recherche les futurs programmes du guide portant le même titre sur cette chaîne tant que l'application est ouverte. Chaque épisode n'est enregistré qu'une fois : lorsque le guide répète un épisode que la règle possède déjà (identifié par son numéro d'épisode, son titre ou sa description), la répétition est ignorée.
 - Vous pouvez sélectionner plusieurs enregistrements ; Ctrl+A sélectionne toutes les lignes.
 - Suppr ou Suppr du pavé numérique demande une confirmation, puis retire les enregistrements sélectionnés. Si certains sont encore en cours, le programme les arrête d'abord.
 - Échap ferme la fenêtre.
@@ -348,7 +348,7 @@ Le menu Options contient les réglages du programme. Chacun est sauvegardé dès
 - Afficher le lecteur avec Entrée : activé, lire une chaîne montre la fenêtre du lecteur intégré. Désactivé, la lecture démarre et le focus reste dans la liste des chaînes.
 - Afficher l'URL du flux : ajoute le champ URL du flux après la description de l'épisode dans la fenêtre principale.
 - Vérifier automatiquement les mises à jour : voir Mises à jour.
-- Annonces automatiques : choisissez Aucune, Erreurs uniquement, Événements importants ou État détaillé pour les commentaires automatiques des joueurs et des chaînes.
+- Annonces automatiques : choisissez Aucune, Erreurs uniquement, Événements importants ou État détaillé pour les commentaires automatiques des joueurs et des chaînes. Le même menu active ou désactive séparément trois types d'annonces : Lecture, Sous-titres et Guide.
 - Raccourcis clavier : modifiez la combinaison de touches d'une commande. Les raccourcis conflictuels sont rejetés ; redémarrez le programme après avoir enregistré.
 - Paramètres d'exportation et paramètres d'importation : enregistrez ou restaurez une sauvegarde cryptée des listes de lecture, des sources de guide, des favoris et des préférences. Conservez le mot de passe de sauvegarde ; vous en avez besoin pour restaurer les informations d'identification du fournisseur.
 

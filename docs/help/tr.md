@@ -299,7 +299,7 @@ Gelecek bir programı kaydetmek için EPG'yi görüntüle..., Şimdi yayında ya
 Kayıtlar > Zamanlanmış kayıtlar... her zamanlanmış, süren ve bitmiş kaydı zamanı, başlığı, kanalı, durumu ve biçimiyle listeler.
 
 - Bir kayıtta Uygulamalar tuşu ya da Shift+F10 menüsünü açar: Yenile, İptal ve Sil.
-- Her gün kaydet, Her hafta kaydet ve Diziyi kaydet, EPG'yi görüntüle ve Şimdi yayında pencerelerinde bir programın menüsünde, Kayıt zamanla seçeneğinin yanında bulunur. Dizi kaydı, uygulama çalışırken o kanalda aynı başlığa sahip gelecekteki rehber programlarını bulur.
+- Her gün kaydet, Her hafta kaydet ve Diziyi kaydet, EPG'yi görüntüle ve Şimdi yayında pencerelerinde bir programın menüsünde, Kayıt zamanla seçeneğinin yanında bulunur. Dizi kaydı, uygulama çalışırken o kanalda aynı başlığa sahip gelecekteki rehber programlarını bulur. Her bölüm yalnızca bir kez kaydedilir: rehber, kuralın zaten sahip olduğu bir bölümü (bölüm numarası, bölüm başlığı veya açıklamasıyla tanımlanır) tekrarladığında tekrar atlanır.
 - Birden fazla kayıt seçilebilir; Ctrl+A tüm satırları seçer.
 - Delete ya da sayısal tuş takımındaki Delete onay ister, ardından seçili kayıtları kaldırır. Seçili kayıtlardan süren varsa program önce onları durdurur.
 - Escape pencereyi kapatır.
@@ -347,7 +347,7 @@ Seçenekler menüsü programın ayarlarını tutar. Her biri değiştirdiğiniz 
 - Enter'a basıldığında oynatıcıyı göster: açıkken, kanal oynatmak yerleşik oynatıcı penceresini gösterir. Kapalıyken, oynatma başlar ve odak kanal listesinde kalır.
 - Yayın URL'sini göster: ana pencerede bölüm açıklamasından sonra Yayın URL'si alanını ekler.
 - Güncellemeleri otomatik denetle: bkz. Güncellemeler.
-- Otomatik Duyurular: Otomatik oynatıcı ve kanal geri bildirimi için Hiçbiri, Yalnızca hatalar, Önemli olaylar veya Ayrıntılı durum seçeneğini seçin.
+- Otomatik Duyurular: Otomatik oynatıcı ve kanal geri bildirimi için Hiçbiri, Yalnızca hatalar, Önemli olaylar veya Ayrıntılı durum seçeneğini seçin. Aynı menü üç tür duyuruyu ayrı ayrı açar veya kapatır: Oynatma, Altyazılar ve Rehber.
 - Klavye Kısayolları: komutun tuş kombinasyonunu değiştirin. Çakışan kısayollar reddedilir; kaydettikten sonra programı yeniden başlatın.
 - Ayarları Dışa Aktarma ve Ayarları İçe Aktarma: çalma listelerinin, rehber kaynaklarının, favorilerin ve tercihlerin şifrelenmiş bir yedeğini kaydedin veya geri yükleyin. Yedekleme şifresini saklayın; sağlayıcı kimlik bilgilerini geri yüklemek için buna ihtiyacınız var.
 

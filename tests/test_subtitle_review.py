@@ -17,7 +17,7 @@ def _frame(cues=CUES, time_ms=0):
         player=types.SimpleNamespace(video_get_spu=lambda: 1, video_get_spu_delay=lambda: 0,
                                      get_time=lambda: frame.time_ms),
         time_ms=time_ms)
-    frame._speak = lambda ctrl: frame.spoken.append(ctrl.value)
+    frame._speak = lambda ctrl, category="playback": frame.spoken.append(ctrl.value)
     frame._review_subtitle = lambda step: InternalPlayerFrame._review_subtitle(frame, step)
     return frame
 
@@ -310,6 +310,7 @@ def test_the_subtitle_speech_toggle_saves_the_setting(monkeypatch):
         _subtitle_manager=types.SimpleNamespace(set_auto_speech=spoken.append),
         _bool_pref=main.IPTVClient._bool_pref,
         _on_player_speak_subtitles=lambda enabled: main.IPTVClient._on_player_speak_subtitles(client, enabled),
+        _speak_subtitles=lambda text: main.live_announce.speak(text),
     )
 
     main.IPTVClient._on_toggle_subtitle_speech(client)

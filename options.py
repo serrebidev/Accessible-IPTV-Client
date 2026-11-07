@@ -450,6 +450,34 @@ class InternalPlayerSettings:
         }
 
 
+ANNOUNCE_EVENT_CATEGORIES = ("playback", "subtitles", "guide")
+
+
+def normalize_announce_events(cfg: Dict) -> None:
+    """Coerce cfg["announce_events"] to one bool per known category.
+
+    Per-event switches beside the global announcement level: a category
+    the user turned off stays silent while the others still speak.
+    Missing or malformed values fall back to every category on, so an
+    old or hand-edited config never silences the app by accident.
+    """
+    raw = cfg.get("announce_events")
+    if not isinstance(raw, dict):
+        raw = {}
+    cfg["announce_events"] = {
+        category: bool(raw.get(category, True))
+        for category in ANNOUNCE_EVENT_CATEGORIES
+    }
+
+
+def announce_event_enabled(cfg: Dict, category: str) -> bool:
+    """True unless cfg's per-event switches explicitly turn category off."""
+    events = cfg.get("announce_events")
+    if not isinstance(events, dict):
+        return True
+    return bool(events.get(category, True))
+
+
 def resolve_internal_player_settings(cfg: Dict) -> InternalPlayerSettings:
     """
     Normalize internal player buffer/variant settings and sync them back to cfg.
@@ -511,6 +539,7 @@ def load_config() -> Dict:
         "live_buffer_mib": 512,
         "sleep_fade_seconds": 5,
         "announcement_level": 2,
+        "announce_events": {"playback": True, "subtitles": True, "guide": True},
         "shortcuts": {},
         "preferred_audio_tracks": [],
         "prefer_audio_description": False,
@@ -544,6 +573,7 @@ def load_config() -> Dict:
                     data["announcement_level"] = max(0, min(3, int(data["announcement_level"])))
                 except (TypeError, ValueError):
                     data["announcement_level"] = 2
+                normalize_announce_events(data)
                 resolve_internal_player_settings(data)
                 _CONFIG_PATH = p
                 return data
@@ -583,6 +613,7 @@ def _save_config_locked(cfg: Dict):
         cfg["announcement_level"] = max(0, min(3, int(cfg.get("announcement_level", 2))))
     except (TypeError, ValueError):
         cfg["announcement_level"] = 2
+    normalize_announce_events(cfg)
     resolve_internal_player_settings(cfg)
     path = get_config_write_target()
     try:
