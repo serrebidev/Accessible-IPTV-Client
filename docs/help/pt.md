@@ -300,7 +300,7 @@ Para gravar um programa futuro, escolha Agendar gravação sobre um programa em 
 Gravações > Gravações agendadas… lista cada gravação agendada, em andamento e concluída com hora, título, canal, status e formato.
 
 - A tecla de menu de aplicativo ou Shift+F10 sobre uma gravação abre o menu dela: Atualizar, Cancelar e Eliminar.
-- Gravar diariamente, Gravar semanalmente e Gravar série ficam no menu de um programa em Exibir EPG e No ar agora, ao lado de Agendar gravação. A gravação de série encontra futuros programas do guia com o mesmo título naquele canal enquanto o aplicativo está aberto.
+- Gravar diariamente, Gravar semanalmente e Gravar série ficam no menu de um programa em Exibir EPG e No ar agora, ao lado de Agendar gravação. A gravação de série encontra futuros programas do guia com o mesmo título naquele canal enquanto o aplicativo está aberto. Cada episódio é gravado apenas uma vez: quando o guia repete um episódio que a regra já tem (identificado pelo número do episódio, título do episódio ou descrição), a repetição é ignorada.
 - É possível selecionar mais de uma gravação; Ctrl+A seleciona todas as linhas.
 - Delete ou Delete do teclado numérico pede confirmação e depois remove as gravações selecionadas. Se alguma delas ainda estiver em andamento, o programa a para primeiro.
 - Escape fecha a janela.
@@ -348,7 +348,7 @@ O menu Opções contém as configurações do programa. Cada uma é salva assim 
 - Mostrar o reprodutor ao pressionar Enter: ligado, reproduzir um canal mostra a janela do reprodutor integrado. Desligado, a reprodução começa e o foco fica na lista de canais.
 - Mostrar o URL da transmissão: adiciona o campo URL da transmissão depois da descrição do episódio na janela principal.
 - Verificar atualizações automaticamente: veja Atualizações.
-- Anúncios automáticos: escolha Nenhum, Somente erros, Eventos importantes ou Status detalhado para feedback automático do player e do canal.
+- Anúncios automáticos: escolha Nenhum, Somente erros, Eventos importantes ou Status detalhado para feedback automático do player e do canal. O mesmo menu ativa ou desativa separadamente três tipos de anúncios: Reprodução, Legendas e Guia.
 - Atalhos de teclado: altere a combinação de teclas de um comando. Atalhos conflitantes são rejeitados; reinicie o programa após salvar.
 - Configurações de exportação e configurações de importação: salve ou restaure um backup criptografado de listas de reprodução, fontes de guia, favoritos e preferências. Mantenha a senha de backup; você precisa dele para restaurar as credenciais do provedor.
 

@@ -369,7 +369,7 @@ Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancso
 A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt.
 
 - A kijelölt felvételnél az Alkalmazásgomb vagy a Shift+F10 megnyitja a helyi menüt, amelyből a Frissítés, a Mégse és a Törlés érhető el.
-- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut.
+- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut. Minden epizód csak egyszer kerül felvételre: ha a műsorújság olyan epizódot ismétel, amely már szerepel a szabályban — epizódszám, epizódcím vagy leírás alapján azonosítva — az ismétlés kimarad.
 - A listában egyszerre több felvétel is kijelölhető; a Ctrl+A az összes sort kiválasztja.
 - A Delete vagy a numerikus billentyűzet Delete billentyűje megerősítés után eltávolítja a kijelölt felvételeket. Ha a kijelöltek között folyamatban lévő rögzítés is van, a program előbb leállítja az érintett felvételeket.
 - Az Escape bezárja az ablakot.
@@ -417,7 +417,7 @@ A Beállítások menü a program működését szabályozó lehetőségeket tart
 - Lejátszó megjelenítése az Enter lenyomására: ha engedélyezve van, csatorna indításakor megjelenik a beépített lejátszó ablaka. Kikapcsolt állapotban a lejátszás elindul, miközben a fókusz a csatornalistán marad.
 - Adás-URL megjelenítése: engedélyezésekor a főablakban az Epizódleírás után megjelenik az Adás-URL mező.
 - Frissítések automatikus keresése: lásd a Frissítések című részt.
-- Automatikus bemondások: meghatározhatja a lejátszással és a csatornákkal kapcsolatos tájékoztatás részletességét. A választható szintek: Nincs, Csak hibák, Fontos események és Részletes állapotjelentés.
+- Automatikus bemondások: meghatározhatja a lejátszással és a csatornákkal kapcsolatos tájékoztatás részletességét. A választható szintek: Nincs, Csak hibák, Fontos események és Részletes állapotjelentés. Ugyanez a menü háromféle bejelentést kapcsol be vagy ki külön-külön: Lejátszás, Feliratok és Műsorújság.
 - Billentyűparancsok: megnyitáskor a magyar parancsnevek és a hozzájuk rendelt billentyűkombinációk között kereshet; üres keresőkifejezéssel valamennyi módosítható művelet megjelenik. A beépített lejátszó parancsait külön jelölés azonosítja. Módosíthatja az egyes műveletekhez rendelt billentyűkombinációt. A program nem fogad el ütköző hozzárendeléseket. Mentés után indítsa újra az alkalmazást.
 - A Beállítások exportálása paranccsal titkosított biztonsági mentést készíthet a lejátszási listákról, a műsorújság-forrásokról, a kedvencekről és az egyéni beállításokról. Visszaállításukra a Beállítások importálása szolgál. Őrizze meg a mentés jelszavát: a szolgáltatói bejelentkezési adatok helyreállításához is szükség lesz rá.
 

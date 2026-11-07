@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from app_tts import SpeechResult
+from options import announce_event_enabled
 from external_player import ExternalPlayerLauncher
 from subtitle_cues import Cue
 import subtitle_cues
@@ -35,12 +36,16 @@ def extract_class(filename, name, methods, namespace):
 
 
 def app(methods):
+    # Every extraction gets the announcement helpers: subtitle methods now
+    # speak through _speak_subtitles, which gates on the per-event switches.
+    methods = list(dict.fromkeys([*methods, "_speak", "_speak_subtitles"]))
     spoken, saved = [], []
     wx = SimpleNamespace(CallAfter=lambda fn, *args: fn(*args), OK=1, ICON_INFORMATION=2,
                          ICON_ERROR=4, ICON_WARNING=8, YES=10, NO=11, YES_NO=12,
                          ICON_QUESTION=16, ID_OK=20)
     cls, env = extract_class("main.py", "IPTVClient", methods, {
         "wx": wx, "live_announce": SimpleNamespace(speak=spoken.append),
+        "announce_event_enabled": announce_event_enabled,
         "save_config": lambda config: saved.append(dict(config)),
         "ExternalPlayerLauncher": ExternalPlayerLauncher, "SpeechResult": SpeechResult,
         "channel_http_headers": lambda channel: {},

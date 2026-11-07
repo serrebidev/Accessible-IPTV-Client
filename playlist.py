@@ -1397,6 +1397,8 @@ class EPGDatabase:
                 start TEXT,
                 end TEXT,
                 description TEXT,
+                episode TEXT,
+                subtitle TEXT,
                 FOREIGN KEY(channel_id) REFERENCES channels(id),
                 UNIQUE(channel_id, start, end)
             )
@@ -1405,6 +1407,12 @@ class EPGDatabase:
         existing_cols = {row[1] for row in c.execute("PRAGMA table_info(programmes)").fetchall()}
         if "description" not in existing_cols:
             c.execute("ALTER TABLE programmes ADD COLUMN description TEXT")
+        # Same migration for the episode identity columns (rerun suppression
+        # for series recordings reads them; older databases have neither).
+        if "episode" not in existing_cols:
+            c.execute("ALTER TABLE programmes ADD COLUMN episode TEXT")
+        if "subtitle" not in existing_cols:
+            c.execute("ALTER TABLE programmes ADD COLUMN subtitle TEXT")
         # Every EPG source that lists each channel (several can share an id),
         # so an import only ever forgets a channel no source still lists.
         c.execute("""
@@ -1556,7 +1564,7 @@ class EPGDatabase:
             _logger.debug("Norm-name repair failed: %s", e)
 
     def insert_programme(self, channel_id: str, title: str, start_utc: str, end_utc: str,
-                         description: str = ""):
+                         description: str = "", episode: str = "", subtitle: str = ""):
         c = self.conn.cursor()
         # A refreshed guide can change both the show and its time span. Remove
         # old overlapping slots so stale entries cannot win the now/next query.
@@ -1572,10 +1580,16 @@ class EPGDatabase:
         # longer text wins. The WHERE keeps repeated imports write-free when
         # nothing longer arrived.
         c.execute("""
-            INSERT INTO programmes (channel_id, title, start, end, description)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO programmes (channel_id, title, start, end, description, episode, subtitle)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(channel_id, start, end) DO UPDATE SET
               title = excluded.title,
+              episode = CASE
+                WHEN coalesce(programmes.episode, '') = '' THEN excluded.episode
+                ELSE programmes.episode END,
+              subtitle = CASE
+                WHEN coalesce(programmes.subtitle, '') = '' THEN excluded.subtitle
+                ELSE programmes.subtitle END,
               description = CASE
                 WHEN programmes.title != excluded.title THEN excluded.description
                 WHEN length(excluded.description) > length(coalesce(programmes.description, ''))
@@ -1583,7 +1597,9 @@ class EPGDatabase:
                 ELSE programmes.description END
             WHERE programmes.title != excluded.title
                OR length(excluded.description) > length(coalesce(programmes.description, ''))
-        """, (channel_id, title, start_utc, end_utc, description))
+               OR (coalesce(programmes.episode, '') = '' AND excluded.episode != '')
+               OR (coalesce(programmes.subtitle, '') = '' AND excluded.subtitle != '')
+        """, (channel_id, title, start_utc, end_utc, description, episode, subtitle))
 
     def _retire_unseen_channels(self, days: int = 14) -> int:
         """Delete guide channels (and programmes) no import has listed for ``days``.
@@ -2409,18 +2425,20 @@ class EPGDatabase:
         
         c = self.conn.cursor()
         rows = c.execute("""
-            SELECT title, start, end, description
+            SELECT title, start, end, description, episode, subtitle
             FROM programmes
             WHERE channel_id = ? AND end >= ? AND start <= ?
             ORDER BY start ASC
         """, (ch_id, start_str, end_str)).fetchall()
 
         results = []
-        for title, s, e, description in rows:
+        for title, s, e, description, episode, subtitle in rows:
             results.append({
                 "title": title,
                 "start": s,
                 "end": e,
+                "episode": episode or "",
+                "subtitle": subtitle or "",
                 "description": description or "",
             })
         return results
@@ -2718,6 +2736,23 @@ class EPGDatabase:
                                     if desc_elem.text and desc_elem.text.strip():
                                         desc_txt = desc_elem.text.strip()
                                         break
+                                sub_txt = ""
+                                for sub_elem in elem.findall("./{*}sub-title"):
+                                    if sub_elem.text and sub_elem.text.strip():
+                                        sub_txt = sub_elem.text.strip()
+                                        break
+                                ep_txt = ""
+                                ep_fallback = ""
+                                for ep_elem in elem.findall("./{*}episode-num"):
+                                    if not (ep_elem.text and ep_elem.text.strip()):
+                                        continue
+                                    if ep_elem.get("system") == "xmltv_ns":
+                                        ep_txt = ep_elem.text.strip()
+                                        break
+                                    if not ep_fallback:
+                                        ep_fallback = ep_elem.text.strip()
+                                if not ep_txt:
+                                    ep_txt = ep_fallback
                                 st_raw = elem.get("start", "")
                                 en_raw = elem.get("stop") or elem.get("end", "")
 
@@ -2729,7 +2764,8 @@ class EPGDatabase:
                                 if st_utc and en_utc and ch_id:
                                     if DEBUG and sample_ok < 8:
                                         _logger.debug("EPG SAMPLE OK src=%s ...", src); sample_ok += 1
-                                    self.insert_programme(ch_id, title_txt, st_utc, en_utc, desc_txt)
+                                    self.insert_programme(ch_id, title_txt, st_utc, en_utc, desc_txt,
+                                                          episode=ep_txt, subtitle=sub_txt)
                                     prog_count += 1
                                     inserted_since_commit += 1
                                     if inserted_since_commit >= EPG_IMPORT_BATCH:

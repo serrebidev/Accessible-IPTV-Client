@@ -309,7 +309,7 @@ To record a programme in the future, choose Schedule Recording on a programme in
 Recordings > Scheduled Recordings lists every scheduled, running and finished recording with its time, title, channel, status and format.
 
 - The Applications key or Shift+F10 on a recording opens its menu: Refresh, Cancel and Delete.
-- Record Daily, Record Weekly and Record Series are on a programme's menu in View EPG and What's on Now, next to Schedule Recording. Series recording finds future guide programmes with the same title on that channel while the app is running.
+- Record Daily, Record Weekly and Record Series are on a programme's menu in View EPG and What's on Now, next to Schedule Recording. Series recording finds future guide programmes with the same title on that channel while the app is running. Each episode is recorded once: when the guide repeats an episode the rule already has — identified by its episode number, episode title or description — the repeat is skipped.
 - More than one recording can be selected; Ctrl+A selects every row.
 - Delete or Numpad Delete asks for confirmation, then removes the selected recordings. If any selected recordings are still in progress, the program stops them first.
 - Escape closes the window.
@@ -357,7 +357,7 @@ The Options menu holds the program's settings. Each one is saved as soon as you 
 - Show Player on Enter: when on, playing a channel shows the built-in player window. When off, playback starts and focus stays in the channel list.
 - Show Stream URL: adds the Stream URL field after the episode description in the main window.
 - Auto-check for Updates: see Updates.
-- Automatic Announcements: choose None, Errors only, Important events or Detailed status for automatic player and channel feedback.
+- Automatic Announcements: choose None, Errors only, Important events or Detailed status for automatic player and channel feedback. The same menu switches three kinds of announcements on or off separately: Playback, Subtitles and Guide.
 - Keyboard Shortcuts: change a command's key combination. Conflicting shortcuts are rejected; restart the program after saving.
 - Export Settings and Import Settings: save or restore an encrypted backup of playlists, guide sources, favorites and preferences. Keep the backup password; you need it to restore provider credentials.
 

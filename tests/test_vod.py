@@ -250,6 +250,12 @@ def _vod_client(order=None, groups=None):
     client.scoped_all_channels = lambda: []
     client.on_group_select = lambda: None
     client._on_vod_catalog_ready = lambda token, order, groups: None
+
+    def _speak(text, category="guide"):
+        import main
+        main.live_announce.speak(text)
+
+    client._speak = _speak
     return client
 
 

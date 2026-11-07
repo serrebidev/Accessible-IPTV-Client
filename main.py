@@ -49,7 +49,7 @@ from options import (
     get_db_path, utc_to_local,
     CustomPlayerDialog, resolve_internal_player_settings, get_app_dir,
     get_recordings_dir, get_dvr_schedule_path, get_logs_dir, get_epg_log_path,
-    normalize_recording_format, coerce_channel_audio_tracks,
+    normalize_recording_format, announce_event_enabled, coerce_channel_audio_tracks,
     coerce_channel_audio_track_indices, MAX_AUDIO_TRACKS,
     is_windows_installed_build, get_user_config_dir
 )
@@ -1853,8 +1853,16 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             status_bar.SetStatusText(text)
         self._speak(text)
 
-    def _speak(self, text: str) -> None:
+    def _speak(self, text: str, category: str = "guide") -> None:
+        # Per-event switches: a category turned off in the Automatic
+        # Announcements menu stays silent; the level still applies to
+        # the player window's own status speech.
+        if not announce_event_enabled(self.config, category):
+            return
         live_announce.speak(text)
+
+    def _speak_subtitles(self, text: str) -> None:
+        self._speak(text, "subtitles")
 
     def _rebuild_favorites_view(self, removed_name: str = ""):
         """Refresh the Favorites category after a channel was removed from it."""
@@ -2074,6 +2082,18 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if frame is not None:
             frame.announcement_level = level
 
+    def _on_toggle_announce_event(self, event, category: str) -> None:
+        self._set_announce_event(category, event.IsChecked())
+
+    def _set_announce_event(self, category: str, enabled: bool) -> None:
+        events = dict(self.config.get("announce_events") or {})
+        events[category] = bool(enabled)
+        self.config["announce_events"] = events
+        save_config(self.config)
+        frame = getattr(self, "_internal_player_frame", None)
+        if frame is not None:
+            frame.announce_events = dict(events)
+
     def _shortcut_label(self, label: str, action: str) -> str:
         return label + "\t" + shortcuts.effective(self.config, "main")[action]
 
@@ -2167,6 +2187,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         self._sync_player_menu_from_config()
         for level, item in enumerate(getattr(self, "_announcement_items", ())):
             item.Check(level == self.config.get("announcement_level", 2))
+        for item, category in getattr(self, "_announce_event_items", ()):
+            item.Check(announce_event_enabled(self.config, category))
         # The config was just replaced, so anything cached out of it is re-read.
         self._sync_favorites_from_config()
         self._update_recording_menu_state()
@@ -3330,6 +3352,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if not rules or not epg_database_has_programmes(get_db_path()):
             return
         now = datetime.datetime.now(datetime.timezone.utc)
+        all_jobs = scheduler.list_jobs()
         db = EPGDatabase(get_db_path(), readonly=True)
         try:
             for rule in rules:
@@ -3337,8 +3360,17 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 title = str(rule.get("title") or "").strip().casefold()
                 if not channel or not title:
                     continue
+                # Rerun suppression: an episode this rule already has —
+                # the picked airing, a job an earlier scan added, or one
+                # already recorded — is not scheduled again when the
+                # guide repeats it inside the horizon. Programmes whose
+                # episode cannot be identified are never suppressed.
+                taken_episodes = dvr.taken_episode_keys(all_jobs, rule.get("id"))
                 for program in db.get_schedule(channel, now, now + datetime.timedelta(days=14)):
                     if dvr.program_title(program).strip().casefold() != title:
+                        continue
+                    episode_key = dvr.program_episode_key(program)
+                    if episode_key is not None and episode_key in taken_episodes:
                         continue
                     try:
                         job = dvr.build_job(
@@ -3358,6 +3390,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                         continue
                     job["series_source"] = rule["id"]
                     scheduler.add_job(job)
+                    if episode_key is not None:
+                        taken_episodes.add(episode_key)
         finally:
             db.close()
 
@@ -6396,7 +6430,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self.group_list.SetSelection(0)
                 self.url_display.SetValue("")
                 # An empty list is silent to a screen-reader user: say it.
-                live_announce.speak(_("No Video on Demand content found."))
+                self._speak(_("No Video on Demand content found."))
                 return
             for label in self.vod_group_order:
                 count = len(self.vod_groups.get(label, []))
@@ -7317,6 +7351,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             audio_output_device=str(self.config.get("audio_output_device") or ""),
             on_audio_device=self._on_player_audio_device,
             announcement_level=self.config.get("announcement_level", 2),
+            announce_events=self.config.get("announce_events"),
             shortcut_config=self.config,
             speak_subtitles=self._bool_pref(self.config.get("speak_subtitles", False)),
             on_speak_subtitles=self._on_player_speak_subtitles,
@@ -7473,7 +7508,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         enabled = not self._bool_pref(self.config.get("speak_subtitles", False))
         self._on_player_speak_subtitles(enabled)
         state = _("on") if enabled else _("off")
-        live_announce.speak(_("Subtitle speech %s.") % state)
+        self._speak_subtitles(_("Subtitle speech %s.") % state)
         if hasattr(self, "_subtitle_toggle_item"):
             self._subtitle_toggle_item.Check(enabled)
 
@@ -7487,9 +7522,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # No cue yet: announce the state honestly.
             token = self._subtitle_session.session_token
             if token is None:
-                live_announce.speak(_("No active subtitle session."))
+                self._speak_subtitles(_("No active subtitle session."))
             else:
-                live_announce.speak(_("No subtitle text available yet."))
+                self._speak_subtitles(_("No subtitle text available yet."))
 
     def _on_read_previous_subtitle(self) -> None:
         """Read the previous subtitle cue (player-independent)."""
@@ -7498,7 +7533,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             frame._review_subtitle(-1)
             return
         if not self._subtitle_manager.read_previous():
-            live_announce.speak(_("No previous subtitle."))
+            self._speak_subtitles(_("No previous subtitle."))
 
     def _active_builtin_subtitle_player(self):
         if self._subtitle_session.is_current(self._builtin_subtitle_token):
@@ -7509,7 +7544,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         """Show recent subtitle cues for review (player-independent)."""
         recent = self._subtitle_manager.get_recent(20)
         if not recent:
-            live_announce.speak(_("No recent subtitles."))
+            self._speak_subtitles(_("No recent subtitles."))
             return
         # Build an accessible list dialog.
         lines = []
@@ -7560,7 +7595,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if getattr(self, "_subtitle_output_preview", False):
             return  # the audible device preview must not be interrupted by cues
         if self._subtitle_backend() != "app_tts":
-            live_announce.speak(text)
+            self._speak_subtitles(text)
             return
         policy = self.config.get("subtitle_app_device_policy", "pause")
         if self._app_tts.speak(text, device_policy=policy):
@@ -7569,16 +7604,16 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if not self._app_tts_failure_announced:
             self._app_tts_failure_announced = True
             if self._app_tts.last_result == SpeechResult.FAILED:
-                live_announce.speak(_("Subtitle speech failed."))
+                self._speak_subtitles(_("Subtitle speech failed."))
             else:
-                live_announce.speak(
+                self._speak_subtitles(
                     _("Subtitle speech paused: the selected audio output "
                       "is unavailable."))
 
     def _on_subtitle_speak_error(self, text: str, _exc: Exception) -> None:
         """Accessible failure path (issue #37): a debug log alone is not
         enough; the user hears the failure as text through the live region."""
-        live_announce.speak(_("Subtitle speech failed."))
+        self._speak_subtitles(_("Subtitle speech failed."))
 
     def _apply_app_tts_device_policy(self) -> None:
         """Keep the requested endpoint even while using an approved fallback."""
@@ -7588,7 +7623,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             return
         if self._subtitle_backend() == "app_tts" and not self._app_tts_failure_announced:
             self._app_tts_failure_announced = True
-            live_announce.speak(
+            self._speak_subtitles(
                 _("The selected audio output is unavailable. "
                   "Subtitle speech is paused."))
 
@@ -7615,9 +7650,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         save_config(self.config)
         self._sync_subtitle_speech_menu()
         if backend == "app_tts":
-            live_announce.speak(_("Subtitle speech will use the application voice."))
+            self._speak_subtitles(_("Subtitle speech will use the application voice."))
         else:
-            live_announce.speak(_("Subtitle speech will use your screen reader."))
+            self._speak_subtitles(_("Subtitle speech will use your screen reader."))
 
     def _set_app_tts_volume(self) -> None:
         if not self._app_tts.available:
@@ -7728,7 +7763,7 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self.config["subtitle_app_output"] = self._app_tts.selected_output
                 save_config(self.config)
                 self._app_tts_failure_announced = False
-                live_announce.speak(
+                self._speak_subtitles(
                     _("Application voice output: {name}").format(name=name))
         finally:
             self._app_tts.stop()
@@ -7748,11 +7783,11 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         save_config(self.config)
         self._sync_subtitle_speech_menu()
         if policy == "pause":
-            live_announce.speak(
+            self._speak_subtitles(
                 _("If the output device disappears, subtitle speech pauses "
                   "until it returns."))
         else:
-            live_announce.speak(
+            self._speak_subtitles(
                 _("If the output device disappears, the application voice "
                   "falls back to the system default."))
 
@@ -7788,10 +7823,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             return
         if state == "first_cue":
             if self._subtitle_manager.auto_speech:
-                live_announce.speak(_("MPV subtitle speech on."))
+                self._speak_subtitles(_("MPV subtitle speech on."))
             return
         if state in ("unavailable", "bitmap"):
-            live_announce.speak(_("MPV subtitle speech unavailable."))
+            self._speak_subtitles(_("MPV subtitle speech unavailable."))
 
     def _on_player_audio_device(self, device_id: str) -> None:
         """Persist the audio output device chosen in the built-in player."""

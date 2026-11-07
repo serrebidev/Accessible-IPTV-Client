@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import datetime
 import copy
+import hashlib
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -75,6 +77,64 @@ def program_title(program: Dict[str, str]) -> str:
         or program.get("program")
         or "Untitled Program"
     )
+
+
+def program_episode_key(program: Dict[str, str]) -> Optional[str]:
+    """Stable identity of one episode of a series, or None when unknown.
+
+    Series recordings use it for rerun suppression: two airings with the
+    same key are the same episode, however the guide spells the rest.
+    Preference order, strongest first: the XMLTV episode number
+    (xmltv_ns "season.episode." is zero-based and becomes S<season+1>
+    E<episode+1>; any other system's text is compared case-folded with
+    punctuation stripped), then the sub-title, then a fingerprint of the
+    description. A programme with none of the three has no identity and
+    is never suppressed — a shared title alone proves nothing, as daily
+    shows and news bulletins demonstrate.
+    """
+    episode = str(program.get("episode") or "").strip()
+    if episode:
+        # xmltv_ns is zero-based and written with a trailing dot
+        # ("0.4." = season 1, episode 5); the S01E05 and 1x5 spellings
+        # are already one-based. All three land on the same key.
+        m = re.fullmatch(r"(\d+)\.(\d+)\.(?:\d+(?:/\d+)?)?", episode)
+        if m:
+            return "ep:{0}x{1}".format(int(m.group(1)) + 1, int(m.group(2)) + 1)
+        m = re.fullmatch(r"s(\d+)\s*e(\d+)", episode, re.IGNORECASE) or \
+            re.fullmatch(r"(\d+)x(\d+)", episode, re.IGNORECASE)
+        if m:
+            return "ep:{0}x{1}".format(int(m.group(1)), int(m.group(2)))
+        compact = "".join(ch for ch in episode.casefold() if ch.isalnum())
+        if compact:
+            return "ep:" + compact
+    subtitle = " ".join(str(program.get("subtitle") or "").split()).casefold()
+    if subtitle:
+        return "sub:" + subtitle
+    description = " ".join(str(program.get("description") or "").split()).casefold()
+    if description:
+        return "desc:" + hashlib.sha1(description.encode("utf-8")).hexdigest()[:16]
+    return None
+
+
+def taken_episode_keys(jobs: List[Dict[str, object]], rule_id: str) -> set:
+    """Episode keys a series rule already has, from its stored jobs.
+
+    Counts the rule job itself and every job an earlier scan added for
+    it (series_source), whatever their status — a completed recording
+    is exactly what a rerun must not duplicate. Canceled jobs do not
+    count: canceling an episode is how the user says they want it
+    recorded again if it airs.
+    """
+    taken = set()
+    for job in jobs:
+        if job.get("status") == STATUS_CANCELED:
+            continue
+        if job.get("id") != rule_id and job.get("series_source") != rule_id:
+            continue
+        key = program_episode_key(job.get("program") or {})
+        if key:
+            taken.add(key)
+    return taken
 
 
 def channel_name(channel: Dict[str, str]) -> str:

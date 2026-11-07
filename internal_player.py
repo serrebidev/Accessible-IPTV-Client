@@ -202,6 +202,7 @@ class InternalPlayerFrame(wx.Frame):
         audio_output_device: str = "",
         on_audio_device: Optional[Callable[[str], None]] = None,
         announcement_level: int = 2,
+        announce_events: Optional[dict] = None,
         shortcut_config: Optional[dict] = None,
         speak_subtitles: bool = False,
         on_speak_subtitles: Optional[Callable[[bool], None]] = None,
@@ -229,6 +230,9 @@ class InternalPlayerFrame(wx.Frame):
         self._resume_last_save = 0.0
         self._is_recording = False
         self.announcement_level = max(0, min(3, int(announcement_level)))
+        # Per-event switches (options.announce_events): a category set
+        # False stays silent in this window too. Missing = on.
+        self.announce_events = dict(announce_events) if isinstance(announce_events, dict) else {}
         self._shortcuts = shortcuts.effective(shortcut_config or {}, "player")
         self._speak_subtitles = bool(speak_subtitles)
         self._on_speak_subtitles_cb = on_speak_subtitles
@@ -2092,8 +2096,10 @@ class InternalPlayerFrame(wx.Frame):
                 if on_dismiss is not None:
                     on_dismiss()
 
-    def _speak(self, ctrl: wx.Window) -> None:
+    def _speak(self, ctrl: wx.Window, category: str = "playback") -> None:
         """Read ``ctrl`` aloud; through the main window when this one is not in front."""
+        if not self.announce_events.get(category, True):
+            return
         try:
             active = self.IsActive()
             owner = self.GetParent()
@@ -2104,7 +2110,7 @@ class InternalPlayerFrame(wx.Frame):
             return
         speak = getattr(owner, "_speak", None)
         if speak is not None:
-            speak(ctrl.GetLabel())
+            speak(ctrl.GetLabel(), category)
 
     @staticmethod
     def _state_name(state) -> str:
@@ -2762,7 +2768,7 @@ class InternalPlayerFrame(wx.Frame):
                     generation=self._subtitle_generation,
                 )
             elif sink is None and self._speak_subtitles and not self._is_paused:
-                self._speak(self.subtitle_label)
+                self._speak(self.subtitle_label, "subtitles")
 
     def _subtitle_review_text(self, step: int) -> str:
         """Move the review position by ``step`` cues and return what to say.

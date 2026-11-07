@@ -300,7 +300,7 @@ Aby nagrać przyszłą audycję, wybierz Zaplanuj nagrywanie na audycji w Pokaż
 Nagrania > Zaplanowane nagrania... wypisuje każde zaplanowane, trwające i zakończone nagranie z czasem, tytułem, kanałem, statusem i formatem.
 
 - Klawisz aplikacji albo Shift+F10 na nagraniu otwiera jego menu: Odśwież, Anuluj i Usuń.
-- Polecenia Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serię znajdują się w menu programu w oknach Pokaż EPG i Teraz w programie, obok Zaplanuj nagrywanie. Nagrywanie serii wyszukuje przyszłe programy z przewodnika o tym samym tytule na tym kanale, gdy aplikacja działa.
+- Polecenia Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serię znajdują się w menu programu w oknach Pokaż EPG i Teraz w programie, obok Zaplanuj nagrywanie. Nagrywanie serii wyszukuje przyszłe programy z przewodnika o tym samym tytule na tym kanale, gdy aplikacja działa. Każdy odcinek jest nagrywany tylko raz: gdy przewodnik powtarza odcinek, który reguła już ma — rozpoznany po numerze odcinka, tytule odcinka lub opisie — powtórka jest pomijana.
 - Można zaznaczyć więcej niż jedno nagranie; Ctrl+A zaznacza wszystkie wiersze.
 - Delete lub Delete na klawiaturze numerycznej prosi o potwierdzenie, a potem usuwa zaznaczone nagrania. Jeśli któreś z nich jeszcze trwa, program najpierw je zatrzymuje.
 - Escape zamyka okno.
@@ -348,7 +348,7 @@ Menu Opcje zawiera ustawienia programu. Każde jest zapisywane od razu po zmiani
 - Pokaż odtwarzacz po naciśnięciu Enter: włączone, odtwarzanie kanału pokazuje okno wbudowanego odtwarzacza. Wyłączone, odtwarzanie zaczyna się, a focus zostaje na liście kanałów.
 - Pokaż adres URL strumienia: dodaje pole Adres URL strumienia za opisem odcinka w oknie głównym.
 - Automatycznie sprawdzaj aktualizacje: zobacz Aktualizacje.
-- Automatyczne powiadomienia: wybierz Brak, Tylko błędy, Ważne zdarzenia lub Szczegółowy status, aby uzyskać automatyczną informację zwrotną o odtwarzaczu i kanale.
+- Automatyczne powiadomienia: wybierz Brak, Tylko błędy, Ważne zdarzenia lub Szczegółowy status, aby uzyskać automatyczną informację zwrotną o odtwarzaczu i kanale. To samo menu włącza lub wyłącza osobno trzy rodzaje ogłoszeń: Odtwarzanie, Napisy i Przewodnik.
 - Skróty klawiaturowe: zmień kombinację klawiszy polecenia. Skróty powodujące konflikt są odrzucane; uruchom ponownie program po zapisaniu.
 - Eksportuj ustawienia i importuj ustawienia: zapisz lub przywróć zaszyfrowaną kopię zapasową list odtwarzania, źródeł przewodników, ulubionych i preferencji. Zachowaj hasło zapasowe; potrzebujesz go, aby przywrócić dane uwierzytelniające dostawcy.
 

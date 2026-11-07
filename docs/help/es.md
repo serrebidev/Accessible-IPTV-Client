@@ -300,7 +300,7 @@ Para grabar un programa futuro, elija Programar grabación sobre un programa en 
 Grabaciones > Grabaciones programadas… enumera cada grabación programada, en curso y terminada con su hora, título, canal, estado y formato.
 
 - La tecla de aplicaciones o Shift+F10 sobre una grabación abre su menú: Actualizar, Cancelar y Eliminar.
-- Grabar a diario, Grabar semanalmente y Grabar serie están en el menú de un programa en Ver EPG y Qué hay ahora, junto a Programar grabación. La grabación de series busca futuros programas de la guía con el mismo título en ese canal mientras la aplicación está abierta.
+- Grabar a diario, Grabar semanalmente y Grabar serie están en el menú de un programa en Ver EPG y Qué hay ahora, junto a Programar grabación. La grabación de series busca futuros programas de la guía con el mismo título en ese canal mientras la aplicación está abierta. Cada episodio se graba una sola vez: cuando la guía repite un episodio que la regla ya tiene (identificado por su número de episodio, título del episodio o descripción), la repetición se omite.
 - Se puede seleccionar más de una grabación; Ctrl+A selecciona todas las filas.
 - Supr o Supr del teclado numérico pide confirmación y luego elimina las grabaciones seleccionadas. Si alguna de ellas sigue en curso, el programa la detiene primero.
 - Escape cierra la ventana.
@@ -348,7 +348,7 @@ El menú Opciones contiene los ajustes del programa. Cada uno se guarda en cuant
 - Mostrar el reproductor al presionar Entrar: activado, reproducir un canal muestra la ventana del reproductor integrado. Desactivado, la reproducción empieza y el foco se queda en la lista de canales.
 - Mostrar la URL del flujo: añade el campo URL del flujo tras la descripción del episodio en la ventana principal.
 - Buscar actualizaciones automáticamente: vea Actualizaciones.
-- Anuncios automáticos: elija Ninguno, Sólo errores, Eventos importantes o Estado detallado para obtener comentarios automáticos del reproductor y del canal.
+- Anuncios automáticos: elija Ninguno, Sólo errores, Eventos importantes o Estado detallado para obtener comentarios automáticos del reproductor y del canal. El mismo menú activa o desactiva por separado tres tipos de anuncios: Reproducción, Subtítulos y Guía.
 - Atajos de teclado: cambia la combinación de teclas de un comando. Se rechazan los atajos conflictivos; reinicie el programa después de guardar.
 - Configuración de exportación y configuración de importación: guarde o restaure una copia de seguridad cifrada de listas de reproducción, fuentes de guías, favoritos y preferencias. Guarde la contraseña de respaldo; lo necesita para restaurar las credenciales del proveedor.
 

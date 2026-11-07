@@ -300,7 +300,7 @@ Um eine künftige Sendung aufzunehmen, wählen Sie Aufnahme planen auf einer Sen
 Aufnahmen > Geplante Aufnahmen… listet jede geplante, laufende und fertige Aufnahme mit Zeit, Titel, Sender, Status und Format.
 
 - Die Anwendungstaste oder Shift+F10 auf einer Aufnahme öffnet ihr Menü: Aktualisieren, Abbrechen und Löschen.
-- „Täglich aufnehmen“, „Wöchentlich aufnehmen“ und „Serie aufnehmen“ stehen im Menü einer Sendung in „EPG anzeigen“ und „Jetzt im Programm“, neben „Aufnahme planen“. Die Serienaufnahme findet künftige Sendungen mit demselben Titel auf diesem Sender, solange die App läuft.
+- „Täglich aufnehmen“, „Wöchentlich aufnehmen“ und „Serie aufnehmen“ stehen im Menü einer Sendung in „EPG anzeigen“ und „Jetzt im Programm“, neben „Aufnahme planen“. Die Serienaufnahme findet künftige Sendungen mit demselben Titel auf diesem Sender, solange die App läuft. Jede Episode wird nur einmal aufgenommen: Wiederholt der Programmführer eine Episode, die die Regel bereits hat — erkannt an Episodennummer, Episodentitel oder Beschreibung — wird die Wiederholung übersprungen.
 - Es lassen sich mehrere Aufnahmen markieren; Ctrl+A markiert alle Zeilen.
 - Entf oder Entf auf dem Ziffernblock fragt nach und entfernt dann die markierten Aufnahmen. Laufen davon noch welche, stoppt das Programm sie zuerst.
 - Escape schließt das Fenster.
@@ -348,7 +348,7 @@ Das Optionen-Menü enthält die Einstellungen des Programms. Jede wird gespeiche
 - Player bei Eingabetaste anzeigen: eingeschaltet zeigt das Abspielen eines Senders das Playerfenster. Ausgeschaltet startet die Wiedergabe und der Fokus bleibt in der Senderliste.
 - Stream-URL anzeigen: fügt das Stream-URL-Feld hinter der Folgenbeschreibung im Hauptfenster ein.
 - Automatisch nach Updates suchen: siehe Updates.
-- Automatische Ankündigungen: Wählen Sie „Keine“, „Nur Fehler“, „Wichtige Ereignisse“ oder „Detaillierter Status“ für automatisches Spieler- und Kanal-Feedback.
+- Automatische Ankündigungen: Wählen Sie „Keine“, „Nur Fehler“, „Wichtige Ereignisse“ oder „Detaillierter Status“ für automatisches Spieler- und Kanal-Feedback. Dasselbe Menü schaltet drei Arten von Ankündigungen getrennt ein oder aus: Wiedergabe, Untertitel und Programmführer.
 - Tastaturkürzel: Ändern Sie die Tastenkombination eines Befehls. Widersprüchliche Verknüpfungen werden abgelehnt; Starten Sie das Programm nach dem Speichern neu.
 - Exporteinstellungen und Importeinstellungen: Speichern oder wiederherstellen Sie eine verschlüsselte Sicherung von Wiedergabelisten, Guide-Quellen, Favoriten und Präferenzen. Behalten Sie das Backup-Passwort; Sie benötigen es, um die Anmeldeinformationen des Anbieters wiederherzustellen.
 

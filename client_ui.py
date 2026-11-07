@@ -220,6 +220,14 @@ class UiMixin:
                     item = announcement_menu.AppendRadioItem(1340 + level, label)
                     item.Check(level == self.config.get("announcement_level", 2))
                     self.Bind(wx.EVT_MENU, lambda _evt, value=level: self._set_announcement_level(value), id=1340 + level)
+                announcement_menu.AppendSeparator()
+                _events = self.config.get("announce_events") or {}
+                for _i, (_category, _label) in enumerate((("playback", _("Playback")),
+                                                           ("subtitles", _("Subtitles")),
+                                                           ("guide", _("Guide")))):
+                    _item = announcement_menu.AppendCheckItem(1350 + _i, _label)
+                    _item.Check(bool(_events.get(_category, True)))
+                    self.Bind(wx.EVT_MENU, lambda _evt, cat=_category: self._on_toggle_announce_event(_evt, cat), id=1350 + _i)
                 menu.AppendSubMenu(announcement_menu, _("Automatic Announcements"))
                 menu.Append(1332, _("Keyboard Shortcuts..."))
                 self.Bind(wx.EVT_MENU, self._customize_shortcuts, id=1332)
@@ -348,6 +356,16 @@ class UiMixin:
                 item.Check(level == self.config.get("announcement_level", 2))
                 self._announcement_items.append(item)
                 self.Bind(wx.EVT_MENU, lambda _evt, value=level: self._set_announcement_level(value), item)
+            announcement_menu.AppendSeparator()
+            self._announce_event_items = []
+            _events = self.config.get("announce_events") or {}
+            for _category, _label in (("playback", _("Playback")),
+                                      ("subtitles", _("Subtitles")),
+                                      ("guide", _("Guide"))):
+                _item = announcement_menu.AppendCheckItem(wx.ID_ANY, _label)
+                _item.Check(bool(_events.get(_category, True)))
+                self._announce_event_items.append((_item, _category))
+                self.Bind(wx.EVT_MENU, lambda _evt, cat=_category: self._on_toggle_announce_event(_evt, cat), _item)
             om.AppendSubMenu(announcement_menu, _("Automatic Announcements"))
             # Subtitle speech (issue #37): backend choice, app-voice settings,
             # and the honest per-player capability report.
