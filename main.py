@@ -3337,8 +3337,17 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 title = str(rule.get("title") or "").strip().casefold()
                 if not channel or not title:
                     continue
+                # Rerun suppression: an episode this rule already has —
+                # the picked airing, a job an earlier scan added, or one
+                # already recorded — is not scheduled again when the
+                # guide repeats it inside the horizon. Programmes whose
+                # episode cannot be identified are never suppressed.
+                taken_episodes = dvr.taken_episode_keys(all_jobs, rule.get("id"))
                 for program in db.get_schedule(channel, now, now + datetime.timedelta(days=14)):
                     if dvr.program_title(program).strip().casefold() != title:
+                        continue
+                    episode_key = dvr.program_episode_key(program)
+                    if episode_key is not None and episode_key in taken_episodes:
                         continue
                     try:
                         job = dvr.build_job(
@@ -3358,6 +3367,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                         continue
                     job["series_source"] = rule["id"]
                     scheduler.add_job(job)
+                    if episode_key is not None:
+                        taken_episodes.add(episode_key)
         finally:
             db.close()
 
