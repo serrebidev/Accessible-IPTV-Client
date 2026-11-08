@@ -77,7 +77,7 @@ def test_manual_persistence_duplicate_and_edit_compare_and_swap(tmp_path):
     assert dvr.parse_epg_utc(updated["program"]["end"]).timestamp() == NOW+4000
     with pytest.raises(ValueError, match="changed"):
         sched.edit_timing(row["id"], NOW+800, NOW+5000, expected=expected)
-    assert json.loads((tmp_path / "schedule.json").read_text())["jobs"][0]["stop_ts"] == NOW+4000
+    assert json.loads((tmp_path / "schedule.json").read_text(encoding="utf-8"))["jobs"][0]["stop_ts"] == NOW+4000
 
 
 def test_manual_same_channel_on_other_provider_is_independent(tmp_path):
@@ -283,7 +283,7 @@ def test_restore_interruption_is_completed_before_next_startup(tmp_path, monkeyp
     assert os.path.exists(full_backup.pending_path(targets))
     assert full_backup.apply_pending(targets)
     assert not full_backup.apply_pending(targets)
-    assert json.loads(open(targets["jobs"]).read())["jobs"][0]["id"] == data["jobs"][0]["id"]
+    assert json.loads(open(targets["jobs"], encoding="utf-8").read())["jobs"][0]["id"] == data["jobs"][0]["id"]
     assert json.loads(open(targets["reminders"]).read())["version"] == 1
 
 
