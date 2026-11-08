@@ -442,3 +442,13 @@ Domande, segnalazioni di errori e notizie delle versioni:
 - Segnalazioni di errori e suggerimenti su GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Aiuto > Informazioni… mostra la versione in uso e collega entrambi. Quando si segnala un problema, Aiuto > Copia registro e informazioni di debug dà i dettagli necessari per trovarlo.
+
+## Strumenti personali {#personal-tools}
+
+Lascia l'applicazione aperta per registrazioni programmate, promemoria e avvisi di ricerca. Questi strumenti non riattivano il computer sospeso.
+
+- Registrazioni > Programma per orario funziona senza guida. Inserisci l'ora locale come AAAA-MM-GG HH:MM e scegli l'occorrenza durante il cambio dell'ora. Modifica orari cambia una registrazione in attesa o la fine di una in corso. Conferma le sovrapposizioni; durata massima di sette giorni.
+- Nella riproduzione su richiesta, Ctrl+Left/Right sposta di 10 secondi, Ctrl+Shift+Left/Right di 60 secondi, Ctrl+T apre il salto temporale e T annuncia tempo trascorso, totale e rimanente. I tasti sono configurabili. Il flusso deve consentire gli spostamenti e avere durata nota; la diretta non cambia.
+- Visualizza > Elenchi di preferiti gestisce fino a 50 elenchi con nome e 2000 canali ciascuno, separati dai preferiti originali. Seleziona un canale prima di aprire la finestra per aggiungerlo. Sposta su/giù o Ctrl+Up/Down cambia l'ordine. I canali mancanti restano elencati ma non vengono riprodotti finché non tornano disponibili.
+- Visualizza > Ricerche programmi salvate conserva fino a 30 ricerche nei titoli o nelle descrizioni, su tutti i canali, quello selezionato o una copia dei canali di un elenco di preferiti. Dopo gli import della guida e ogni 15 minuti esamina i prossimi 14 giorni. Mostra fino a 500 risultati per ricerca; restringi quelle troncate. Le impostazioni degli annunci regolano i nuovi risultati, dai quali puoi creare promemoria o registrazioni.
+- L'esportazione cifrata include anche programmazioni, promemoria e cronologia di ricerca, ma non i file multimediali. L'importazione mostra il numero di elementi sostituiti e chiude l'app: riaprila per completare. Prima termina registrazioni e download. Le registrazioni passate o già avviate non ripartono. I vecchi backup sostituiscono solo le impostazioni, mantenendo programmazioni e promemoria locali.

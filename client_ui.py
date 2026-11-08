@@ -158,6 +158,7 @@ class UiMixin:
                 self.Bind(wx.EVT_MENU, self._play_previous_channel, id=1320)
                 self.Bind(wx.EVT_MENU, self._show_recent_channels, id=1321)
                 self.Bind(wx.EVT_MENU, self._go_to_channel_number, id=1322)
+                self._add_personal_tools_menu(view_menu)
                 menu.AppendSubMenu(view_menu, _("View"))
                 menu.AppendSeparator()
                 player_menu = wx.Menu()
@@ -309,6 +310,7 @@ class UiMixin:
             # and a modeless window is easy to lose behind this one: this is
             # the way back to it.
             self.show_downloads_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Show Downloads"), "downloads"))
+            self._add_personal_tools_menu(vm)
             mb.Append(vm, _("View"))
             self.Bind(wx.EVT_MENU, self._show_catchup_downloads, self.show_downloads_item)
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)

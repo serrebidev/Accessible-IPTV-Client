@@ -1,3 +1,4 @@
+import copy
 import os
 import sys
 import shutil
@@ -76,6 +77,8 @@ import vod
 import playback_resume
 import recording_storage
 from planning_ui import PlanningMixin
+from personal_tools_ui import PersonalToolsMixin
+import full_backup
 from resume_dialogs import ContinueWatchingDialog
 import account_info
 from http_headers import channel_http_headers, merge_headers, split_stream_modifiers
@@ -96,7 +99,7 @@ from recorder import audio_stream_label, probe_audio_streams
 import catchup_direct
 import dvr
 import favorites
-import settings_backup
+import settings_backup  # noqa: F401
 import shortcuts
 from client_timeshift import LiveBufferMixin
 import power
@@ -889,7 +892,7 @@ def _channel_numbers(channel: Dict[str, str]) -> frozenset:
 
 
 
-class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
+class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
     # the menu translates it at build time via _(label).
@@ -944,6 +947,15 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
     def __init__(self):
         super().__init__(None, title="Accessible IPTV Client", size=(800, 600))
         self.config = load_config()
+        i18n.init_from_config(self.config)
+        # Restore before any scheduler, reminders or playlist workers can run.
+        try:
+            if full_backup.apply_pending():
+                self.config = load_config()
+        except Exception as error:
+            message_box(_("Could not finish restoring the backup. No background services were started.\n{error}").format(error=error),
+                        _("Settings Backup"), wx.OK | wx.ICON_ERROR, parent=self)
+            raise
         # Activate the user's language preference before any UI strings are built.
         i18n.init_from_config(self.config)
         self.playlist_sources = self.config.get("playlists", [])
@@ -1180,6 +1192,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         if callable(start_reminders):
             start_reminders()
         self.start_playlist_load()
+        start_searches = getattr(self, '_start_saved_searches', None)
+        if callable(start_searches):
+            start_searches()
 
     def _ensure_db_tuned_background(self):
         with self._db_tune_lock:
@@ -2140,46 +2155,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                     _("Keyboard Shortcuts"), wx.OK | wx.ICON_INFORMATION)
 
     def _export_settings(self, _event=None) -> None:
-        password = self._backup_password(confirm=True)
-        if password is None:
-            return
-        with wx.FileDialog(self, _("Export Settings"),
-                           wildcard=_("Accessible IPTV backup (*.aiptv)") + "|*.aiptv",
-                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as dlg:
-            if dlg.ShowModal() != wx.ID_OK:
-                return
-            path = dlg.GetPath()
-        try:
-            settings_backup.export_settings(path, load_config(), password)
-        except Exception as err:
-            message_box(_("Could not export settings: {error}").format(error=err),
-                        _("Settings Backup"), wx.OK | wx.ICON_ERROR)
-            return
-        message_box(_("Encrypted settings backup saved."), _("Settings Backup"),
-                    wx.OK | wx.ICON_INFORMATION)
+        self._export_full_settings(_event)
 
     def _import_settings(self, _event=None) -> None:
-        with wx.FileDialog(self, _("Import Settings"),
-                           wildcard=_("Accessible IPTV backup (*.aiptv)") + "|*.aiptv",
-                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dlg:
-            if dlg.ShowModal() != wx.ID_OK:
-                return
-            path = dlg.GetPath()
-        password = self._backup_password()
-        if password is None:
-            return
-        try:
-            config = settings_backup.import_settings(path, password)
-        except Exception as err:
-            message_box(_("Could not import settings: {error}").format(error=err),
-                        _("Settings Backup"), wx.OK | wx.ICON_ERROR)
-            return
-        if message_box(_("Replace current settings with this backup? Restart the app after importing."),
-                       _("Import Settings"), wx.YES_NO | wx.ICON_QUESTION) != wx.YES:
-            return
-        save_config(config)
-        message_box(_("Settings imported. Restart the app to use them."),
-                    _("Settings Backup"), wx.OK | wx.ICON_INFORMATION)
+        self._import_full_settings(_event)
 
     def on_menu_open(self, event):
         from options import load_config
@@ -2653,6 +2632,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
             # applied: it is seconds of work, and it competes with the GUI
             # thread for the interpreter lock. The user waits for the list.
             IPTVClient._warm_program_match_index(self)
+            scan_searches = getattr(self, '_scan_saved_searches', None)
+            if callable(scan_searches):
+                self._invalidate_saved_searches()
+                wx.CallAfter(scan_searches)
 
         wx.CallAfter(finish_playlist_load_and_start_background_tasks)
 
@@ -4513,6 +4496,8 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
         menu.Bind(wx.EVT_MENU, self._show_recording_storage, storage_item)
         reserve_item = menu.Append(wx.ID_ANY, _("Minimum Free Space..."))
         menu.Bind(wx.EVT_MENU, self._set_recording_reserve, reserve_item)
+        manual_item = menu.Append(wx.ID_ANY, _("Schedule by Time..."))
+        menu.Bind(wx.EVT_MENU, self._schedule_by_time, manual_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Scheduled Recordings..."))
         menu.Bind(wx.EVT_MENU, self._show_scheduled_recordings, schedule_item)
         menu.AppendSeparator()
@@ -5693,6 +5678,9 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
             if hasattr(self, "_epg_executor"):
                 self._epg_executor.shutdown(wait=False)
+            stop_searches = getattr(self, '_stop_saved_searches', None)
+            if callable(stop_searches):
+                stop_searches()
             stop_reminders = getattr(self, '_stop_reminders', None)
             if callable(stop_reminders):
                 stop_reminders()
@@ -6729,6 +6717,10 @@ class IPTVClient(PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingRepor
                 self.config["epg_last_sources_hash"] = self._hash_epg_sources(imported)
                 save_config(self.config)
                 self._ensure_dvr_scheduler(start=True).request_series_scan()
+                scan_searches = getattr(self, '_scan_saved_searches', None)
+                if callable(scan_searches):
+                    self._invalidate_saved_searches()
+                    wx.CallAfter(scan_searches)
             except Exception:
                 LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
         if self._hash_epg_sources(self.epg_sources) != self._hash_epg_sources(imported):
@@ -9083,6 +9075,9 @@ class ScheduledRecordingsDialog(wx.Dialog):
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         panel.SetSizer(sizer)
 
+        edit_btn = wx.Button(panel, label=_("Edit Times..."))
+        btn_sizer.Insert(0, edit_btn, 0, wx.RIGHT, 5)
+        edit_btn.Bind(wx.EVT_BUTTON, self._edit_times)
         refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
         self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False, event=_event))
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
@@ -9092,6 +9087,15 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # but an empty window on a dialog that was never populated reads like
         # "you have no recordings scheduled" even when you do.
         self.refresh()
+
+    def _edit_times(self, event=None):
+        jobs = self._selected_jobs()
+        if len(jobs) == 1 and jobs[0]["status"] in {dvr.STATUS_SCHEDULED, dvr.STATUS_RECORDING}:
+            self.parent_frame._schedule_by_time(job=copy.deepcopy(jobs[0]))
+            self.refresh()
+        else:
+            message_box(_("Select one pending or running recording to edit its times."),
+                        _("Scheduled Recordings"), wx.OK | wx.ICON_INFORMATION, parent=self)
 
     def _on_char_hook(self, event):
         key = event.GetKeyCode()

@@ -442,3 +442,13 @@ Pytania, zgłoszenia błędów i nowości o wydaniach:
 - Zgłoszenia błędów i sugestie na GitHubie: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszaniu problemu Pomoc > Kopiuj dziennik i informacje diagnostyczne daje szczegóły potrzebne do namierzenia go.
+
+## Narzędzia osobiste {#personal-tools}
+
+Pozostaw aplikację otwartą, aby działały zaplanowane nagrania, przypomnienia i alerty wyszukiwania. Narzędzia nie wybudzają komputera.
+
+- Nagrania > Zaplanuj według godziny działa bez przewodnika. Podaj czas lokalny jako RRRR-MM-DD GG:MM; przy zmianie czasu wybierz właściwe wystąpienie. Edytuj godziny zmienia oczekujące nagranie lub koniec trwającego. Potwierdź nakładanie się terminów; maksymalna długość to siedem dni.
+- Podczas odtwarzania na żądanie Ctrl+Left/Right przesuwa o 10 sekund, Ctrl+Shift+Left/Right o 60 sekund, Ctrl+T otwiera wybór czasu, a T odczytuje czas miniony, całkowity i pozostały. Skróty można zmieniać. Strumień musi obsługiwać przewijanie i mieć znaną długość; odtwarzanie na żywo pozostaje bez zmian.
+- Widok > Listy ulubionych zarządza maksymalnie 50 nazwanymi listami po 2000 kanałów, niezależnymi od dotychczasowych ulubionych. Wybierz kanał przed otwarciem okna, aby go dodać. Przenieś w górę/dół lub Ctrl+Up/Down zmienia kolejność. Brakujące kanały pozostają na liście, ale można je odtworzyć dopiero po odzyskaniu dostępności.
+- Widok > Zapisane wyszukiwania audycji przechowuje do 30 wyszukiwań tytułów lub opisów dla wszystkich kanałów, wybranego kanału lub kopii kanałów listy ulubionych. Po imporcie przewodnika i co 15 minut przeszukuje następne 14 dni. Do 500 wyników na wyszukiwanie; zawęź zbyt szerokie zapytania. Ustawienia ogłoszeń sterują nowymi wynikami. Z wyników można tworzyć przypomnienia lub nagrania.
+- Zaszyfrowany eksport zawiera też harmonogramy, przypomnienia i historię wyszukiwań, bez plików multimedialnych. Import pokazuje liczbę zastępowanych wpisów i zamyka aplikację; otwórz ją ponownie. Najpierw zakończ nagrania i pobieranie. Minione lub wcześniej rozpoczęte nagrania nie uruchomią się ponownie. Starsze kopie zastępują tylko ustawienia i zachowują lokalne harmonogramy i przypomnienia.

@@ -853,6 +853,10 @@ def normalize_channel_and_audio_settings(cfg: Dict) -> None:
     """Clamp the favorites, preferred-audio-track and auto-shutdown settings."""
     if cfg is None:
         return
+    import favorite_collections
+    import saved_searches
+    cfg["favorite_collections"] = favorite_collections.normalize(cfg.get("favorite_collections"))
+    cfg["saved_programme_searches"] = saved_searches.normalize(cfg.get("saved_programme_searches"))
     cfg["favorites"] = coerce_string_list(cfg.get("favorites"))
     cfg["preferred_audio_tracks"] = coerce_string_list(cfg.get("preferred_audio_tracks"))
     cfg["channel_audio_tracks"] = coerce_channel_audio_tracks(cfg.get("channel_audio_tracks"))

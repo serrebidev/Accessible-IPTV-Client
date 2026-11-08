@@ -19,7 +19,7 @@ import user_guide  # noqa: E402
 
 HELP_DIR = os.path.join(ROOT, "docs", "help")
 APP_SOURCES = ("main.py", "client_ui.py", "dialogs_misc.py", "channel_widgets.py",
-               "internal_player.py", "playlist.py", "options.py")
+               "internal_player.py", "playlist.py", "options.py", "personal_tools_ui.py", "media_navigation_ui.py")
 _TOPIC_PATTERNS = (
     re.compile(r'help_topic\s*=\s*"([a-z0-9-]+)"'),
     re.compile(r'set_help_topic\(\s*[^,()]+,\s*"([a-z0-9-]+)"'),

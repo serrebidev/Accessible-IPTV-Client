@@ -442,3 +442,13 @@ Questions, rapports de bogues et nouvelles des versions :
 - Rapports de bogues et suggestions sur GitHub : https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Aide > À propos… montre la version en cours d'exécution et lie les deux. Quand vous signalez un problème, Aide > Copier le journal et les informations de débogage donne les détails nécessaires pour le retrouver.
+
+## Outils personnels {#personal-tools}
+
+Gardez l'application ouverte pour les enregistrements programmés, rappels et alertes de recherche. Ces outils ne réveillent pas l'ordinateur.
+
+- Enregistrements > Programmer selon l'heure fonctionne sans guide. Saisissez l'heure locale au format AAAA-MM-JJ HH:MM et choisissez l'occurrence en cas de changement d'heure. Modifier les horaires change une programmation ou la fin d'un enregistrement en cours. Confirmez les chevauchements ; durée maximale : sept jours.
+- En lecture à la demande, Ctrl+Left/Right déplace de 10 secondes, Ctrl+Shift+Left/Right de 60 secondes, Ctrl+T ouvre le choix du temps et T annonce les durées écoulée, totale et restante. Les raccourcis sont configurables. Le flux doit permettre le déplacement et fournir sa durée ; le direct reste inchangé.
+- Affichage > Listes de favoris gère jusqu'à 50 listes nommées de 2000 chaînes, séparées des favoris existants. Sélectionnez une chaîne avant d'ouvrir la fenêtre pour l'ajouter. Monter/Descendre ou Ctrl+Up/Down change l'ordre. Les chaînes absentes restent dans la liste mais ne peuvent être lues avant leur retour.
+- Affichage > Recherches de programmes enregistrées conserve jusqu'à 30 recherches dans les titres ou descriptions, sur toutes les chaînes, la chaîne choisie ou un instantané d'une liste de favoris. Après les imports du guide et toutes les 15 minutes, les 14 prochains jours sont examinés. Limite : 500 résultats par recherche ; affinez si nécessaire. Les réglages d'annonce contrôlent les nouveaux résultats. Ceux-ci permettent de créer des rappels ou des enregistrements.
+- L'export chiffré inclut désormais les programmations, rappels et historiques de recherche, sans fichiers multimédias. L'import affiche les nombres remplacés et ferme l'application ; rouvrez-la pour terminer. Terminez d'abord les enregistrements et téléchargements. Les enregistrements passés ou déjà démarrés ne reprennent pas. Les anciennes sauvegardes remplacent uniquement les paramètres et conservent les programmations et rappels locaux.

@@ -23,6 +23,7 @@ import user_guide
 import shortcuts
 from playback_timer import PlaybackTimer
 import playback_resume
+from media_navigation_ui import MediaNavigationMixin, SEEK_ACTIONS
 from resume_dialogs import choose_resume
 import subtitle_cues
 import live_announce
@@ -172,7 +173,7 @@ class AudioDeviceDialog(wx.Dialog):
 QUICK_START_SECONDS = 0.5
 
 
-class InternalPlayerFrame(wx.Frame):
+class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
     """Embedded IPTV player with buffering resilience and keyboard controls."""
 
     help_topic = "built-in-player"
@@ -555,6 +556,7 @@ class InternalPlayerFrame(wx.Frame):
         m_play_pause = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Play/Pause"), "play_pause"))
         m_stop = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Stop"), "stop"))
         m_sleep = playback_menu.Append(wx.ID_ANY, _("Sleep Timer..."))
+        self._add_navigation_menu(playback_menu)
         m_buffer = playback_menu.Append(wx.ID_ANY, _("Local Live Buffer..."))
         m_rewind = playback_menu.Append(wx.ID_ANY, _("Rewind Live TV..."))
         m_live = playback_menu.Append(wx.ID_ANY, _("Return to Live"))
@@ -2132,6 +2134,9 @@ class InternalPlayerFrame(wx.Frame):
         return name.rsplit(".", 1)[-1].strip() or "Unknown"
 
     def _on_timer(self, _event: wx.TimerEvent) -> None:
+        poll_seek = getattr(self, '_poll_media_seek', None)
+        if callable(poll_seek) and poll_seek():
+            return
         poll = getattr(self, '_on_buffer_poll', None)
         if callable(poll) and poll():
             return
@@ -2265,7 +2270,13 @@ class InternalPlayerFrame(wx.Frame):
             name = "volume_up" if key == wx.WXK_UP else "volume_down"
             if self._shortcuts[name] in {"Up", "Down"}:
                 action = name
-        if action == "volume_up":
+        if action in SEEK_ACTIONS:
+            self._seek_media(delta=SEEK_ACTIONS[action][0])
+        elif action == "go_to_time":
+            self._go_to_media_time()
+        elif action == "media_time":
+            self._announce_media_time()
+        elif action == "volume_up":
             self._adjust_volume(5 if event.ControlDown() else 2)
         elif action == "volume_down":
             self._adjust_volume(-5 if event.ControlDown() else -2)
@@ -2703,6 +2714,9 @@ class InternalPlayerFrame(wx.Frame):
             self._cue_timer.Stop()
 
     def _on_cue_timer(self, _event: Optional[wx.TimerEvent] = None) -> None:
+        pending = getattr(self, "_pending_media_seek", None)
+        if pending is not None and pending.generation == getattr(self, "_vlc_generation", 0):
+            return
         if getattr(self, "_destroyed", False):
             return
         sink = getattr(self, "_subtitle_sink", None)
@@ -3103,6 +3117,9 @@ class InternalPlayerFrame(wx.Frame):
         return True
 
     def _save_resume_checkpoint(self, force=False) -> None:
+        pending = getattr(self, "_pending_media_seek", None)
+        if pending is not None and pending.generation == getattr(self, "_vlc_generation", 0):
+            return
         # prepare saved the outgoing stream already. A session stop during the
         # accepted handoff must not revive a cleared/migrated bookmark.
         if getattr(self, "_resume_prepared", None) is not None:

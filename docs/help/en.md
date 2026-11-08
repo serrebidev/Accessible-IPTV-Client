@@ -451,3 +451,13 @@ Questions, bug reports and release news:
 - Bug reports and suggestions on GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Help > About shows the version you are running and links to both. When you report a problem, Help > Copy Log and Debug Information gives the details needed to track it down.
+
+## Personal tools {#personal-tools}
+
+Keep the application open for recording schedules, reminders and saved-search alerts. These tools do not wake a sleeping computer.
+
+- Recordings > Schedule by Time schedules the selected channel without a guide. Enter local dates as YYYY-MM-DD HH:MM. Clock-change ambiguities require a choice. Scheduled Recordings > Edit Times changes one pending recording or the end of a running one. Overlaps require confirmation; duration is limited to seven days.
+- During on-demand playback, Ctrl+Left/Right seeks 10 seconds, Ctrl+Shift+Left/Right 60 seconds, Ctrl+T opens Go to Time, and T announces elapsed, total and remaining time. Shortcuts are configurable. Seeking requires a seekable stream with known duration; live playback is unchanged.
+- View > Favourite Lists manages up to 50 named lists of 2000 channels each, separate from the original favourites. Select a channel before opening the dialog to add it. Move Up/Down or Ctrl+Up/Down changes order. Missing channels remain listed and cannot play until available again.
+- View > Saved Programme Searches stores up to 30 title or description searches. Choose all channels, the selected channel or a snapshot of a named favourite list. Searches run after guide imports and every 15 minutes over the next 14 days. Each search shows up to 500 matches; narrow truncated searches. New matches are announced according to announcement settings. Results can create reminders or recordings.
+- Export Settings now encrypts recording schedules, reminders and search history as well as settings. Media files are not included. Import previews replacement counts and closes the app; reopen it to finish. Finish recordings and downloads first. Past or previously running recordings do not restart. Older backups replace only settings, keeping local schedules and reminders.

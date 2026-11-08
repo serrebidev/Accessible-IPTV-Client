@@ -442,3 +442,13 @@ Perguntas, relatórios de erro e notícias de versões:
 - Relatórios de erro e sugestões no GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Ajuda > Sobre… mostra a versão em uso e linka ambos. Ao relatar um problema, Ajuda > Copiar registo e informações de depuração dá os detalhes necessários para rastreá-lo.
+
+## Ferramentas pessoais {#personal-tools}
+
+Mantenha a aplicação aberta para gravações agendadas, lembretes e alertas de pesquisa. Estas ferramentas não despertam o computador suspenso.
+
+- Gravações > Agendar por horário funciona sem guia. Introduza a hora local como AAAA-MM-DD HH:MM e escolha a ocorrência na mudança de hora. Editar horários altera uma gravação pendente ou o fim de uma em curso. Confirme sobreposições; duração máxima de sete dias.
+- Na reprodução a pedido, Ctrl+Left/Right salta 10 segundos, Ctrl+Shift+Left/Right 60 segundos, Ctrl+T abre a escolha do instante e T anuncia o tempo decorrido, total e restante. Os atalhos são configuráveis. O fluxo deve permitir saltos e ter duração conhecida; a reprodução em direto não muda.
+- Ver > Listas de favoritos gere até 50 listas com nome e 2000 canais por lista, separadas dos favoritos existentes. Selecione um canal antes de abrir a janela para o adicionar. Mover para cima/baixo ou Ctrl+Up/Down altera a ordem. Canais ausentes ficam na lista, mas só podem ser reproduzidos quando regressarem.
+- Ver > Pesquisas de programas guardadas guarda até 30 pesquisas em títulos ou descrições, em todos os canais, no selecionado ou numa cópia dos canais de uma lista de favoritos. Após importar o guia e a cada 15 minutos pesquisa os próximos 14 dias. Cada pesquisa mostra até 500 resultados; restrinja pesquisas truncadas. As definições de anúncios controlam os novos resultados, que permitem criar lembretes ou gravações.
+- A exportação encriptada inclui agendamentos, lembretes e histórico de pesquisa, sem ficheiros multimédia. A importação mostra quantos elementos substituirá e fecha a aplicação; volte a abri-la para terminar. Termine antes gravações e transferências. Gravações passadas ou já iniciadas não reiniciam. Cópias antigas só substituem definições e mantêm agendamentos e lembretes locais.
