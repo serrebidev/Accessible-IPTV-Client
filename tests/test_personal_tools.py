@@ -243,7 +243,7 @@ def test_full_backup_encrypted_roundtrip_and_wrong_password(tmp_path, monkeypatc
     path = str(tmp_path / "test.aiptv")
     data = bundle()
     full_backup.export_bundle(path, data, "árvíztűrő password")
-    assert "Esti" not in open(path).read()
+    assert "Esti" not in open(path, encoding="utf-8").read()
     assert full_backup.import_bundle(path, "árvíztűrő password") == data
     with pytest.raises(ValueError, match="password"):
         full_backup.import_bundle(path, "wrong")
@@ -284,7 +284,7 @@ def test_restore_interruption_is_completed_before_next_startup(tmp_path, monkeyp
     assert full_backup.apply_pending(targets)
     assert not full_backup.apply_pending(targets)
     assert json.loads(open(targets["jobs"], encoding="utf-8").read())["jobs"][0]["id"] == data["jobs"][0]["id"]
-    assert json.loads(open(targets["reminders"]).read())["version"] == 1
+    assert json.loads(open(targets["reminders"], encoding="utf-8").read())["version"] == 1
 
 
 @pytest.mark.parametrize("change", [lambda d: d.update(unexpected="/etc/file"),
