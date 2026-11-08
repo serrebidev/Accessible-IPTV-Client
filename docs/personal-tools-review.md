@@ -1,0 +1,25 @@
+# Personal tools: scope and verification
+
+Based on v1.150.59 (`c042c576af51ef46e1deff93bb47a1e16d36f0e4`). Existing default favourites, EPG recording, series rules, reminders, resume bookmarks, live buffering and encrypted settings backups were inspected before extending them.
+
+## Behaviour
+
+1. **Manual recording times:** Recordings > Schedule by Time; local start/end fields and title, without EPG. Edit Times in Scheduled Recordings edits one pending occurrence or the end of a running recording. Existing media classification, provider connection limits, recorder and disk-space preflight remain the recording path. Invalid/gap/fold dates, passed starts, duplicate jobs, overlaps, disk errors and stale edits are handled. Up to seven days per recording; no computer wake service.
+2. **VOD navigation:** configurable Ctrl+Left/Right (10 seconds), Ctrl+Shift+Left/Right (60 seconds), Ctrl+T (seconds/MM:SS/HH:MM:SS), and T (elapsed/total/remaining). Requires a known duration and seekable on-demand media. Requests are generation-bound, confirmed by the native media clock, and cannot prematurely overwrite bookmarks. Subtitle history is invalidated without reloading cue files. Playback rate and live buffer code are unchanged.
+3. **Named favourite lists:** View > Favourite Lists; create, rename, delete, add selected channel, remove membership, reorder with buttons or Ctrl+Up/Down, and play. Source-aware stable keys, up to 50 lists of 2000 entries. Missing entries remain recoverable. Ambiguous identities do not choose arbitrary URLs. Original favourites remain independent. Resolution runs off the GUI thread and rejects a replaced playlist.
+4. **Saved guide searches:** up to 30 enabled/disabled title/description searches. Scope is all channels, the current channel, or the current membership of a named list (a snapshot, not a live link). Runs after playlist/guide replacement and every 15 minutes. Read-only SQLite snapshot, 20-second budget, 14-day horizon, 500 results per rule, cancellation and stale-result guards. Failures/truncation are visible. New-match summaries respect announcement preferences; persistent history prevents repeat alerts. Selected results reuse the existing reminder/recording actions and resolve the channel afresh.
+5. **Complete encrypted backup:** v2 adds DVR entries, reminder state and search history to all configuration, including named lists/search rules. No recording media files are copied. Password encryption reuses the existing PBKDF2/Fernet implementation. Import previews replacement counts, refuses active recordings/downloads, and closes; reopening applies an idempotent redo journal before services start. Partial I/O failure prevents startup and keeps the journal for retry. Past starts and previously running jobs become missed; old v1 settings backups preserve local sidecars. Restore replaces rather than merges the selected bundle.
+
+## Local evidence
+
+- Python 3.13.5, wxPython 4.2.3/wxGTK 3.2.7, Xvfb and libVLC 3.0.24 on Linux. The repository's Windows CI uses its declared newer wx version and Python 3.12.
+- Final targeted run: 208 passed, 2 skipped. Models, native wx controls, actual handlers, stale worker completion, invalid dates/inputs, failed writes, source identity, search cancellation/deduplication, interrupted restore, subtitles, existing DVR/resume/buffer/shortcut code, localisation and help.
+- Real libVLC smoke: generated local 120-second WAV; seeks to 30, 10 and 90 seconds confirmed by native clock and resume callback. Playback rate remains 1.0. This does not establish compatibility with every provider's VOD transport.
+- Twelve deliberate regression probes covering all five features were detected by the new tests. Each temporarily changed implementation was restored after the check.
+- Full suite with the same exclusions as the existing Windows workflow: 2796 passed, 40 skipped, 1 deselected, 10 failed before the final additional provider-identity test. Identical ten failures reproduced at the unmodified base (2696 passed). They concern GTK/native accessibility expectations, platform-specific provider/config behaviour and unavailable proxy binding in this environment. No CI exclusions or test gates were changed. The final focused run covers subsequent edits.
+- `tools/smoke_virtual_list_nvda.py` passes under wxGTK. `tools/smoke_favorites_shutdown.py` stops on its existing assumption that a Windows menubar attribute exists on Linux; its menu test itself states that Linux uses the button menu.
+- Ruff, translation audit, PO/MO consistency, placeholders, and help-topic checks pass. All 13 shipped catalogues receive the new strings. Hungarian received a separate terminology and punctuation review. Existing translated strings were retained.
+
+## Windows acceptance still required
+
+Run the Windows CI and manually exercise NVDA/JAWS focus, list selection, modal cancellation, DST ambiguity, provider VOD seek support and recording end-time extension. Also verify a cold-start v2 restore and a v1 import in installed and portable Windows builds. No Windows executable, signed release or claim of native screen-reader certification is supplied by this PR.

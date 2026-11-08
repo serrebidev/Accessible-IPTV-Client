@@ -17,6 +17,7 @@ import re
 import threading
 import time
 import uuid
+from i18n import gettext as _
 from typing import Callable, Dict, List, Optional
 
 LOG = logging.getLogger(__name__)
@@ -362,6 +363,72 @@ class DVRScheduler:
         self.wake()
         return True
 
+    def _write_proposal(self, proposal) -> None:
+        """Caller holds save lock then job lock; publish memory only after replace."""
+        if not self.path:
+            return
+        import tempfile
+        directory = os.path.dirname(os.path.abspath(self.path))
+        os.makedirs(directory, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(prefix="schedule-", suffix=".tmp", dir=directory)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump({"version": 1, "jobs": sorted(proposal.values(), key=lambda j: _number(j.get("start_ts")))},
+                          handle, ensure_ascii=False)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            if os.path.exists(temporary):
+                os.remove(temporary)
+
+    def add_manual_job(self, job):
+        """Durable, duplicate-safe insertion for the manual scheduling dialog."""
+        import manual_schedule
+        import programme_reminders
+        manual_schedule.validate_window(job["start_ts"], job["stop_ts"], now=self.clock())
+        with self._save_lock, self._lock:
+            manual_schedule.validate_window(job["start_ts"], job["stop_ts"], now=self.clock())
+            key = programme_reminders.channel_key(job.get("channel"))
+            if job["id"] in self._jobs or any(
+                    old.get("status") in ACTIVE_STATUSES
+                    and programme_reminders.channel_key(old.get("channel")) == key
+                    and old.get("start_ts") == job["start_ts"] and old.get("stop_ts") == job["stop_ts"]
+                    for old in self._jobs.values()):
+                raise ValueError(_("This recording is already scheduled."))
+            proposal = dict(self._jobs)
+            proposal[job["id"]] = copy.deepcopy(job)
+            self._write_proposal(proposal)
+            self._jobs = proposal
+        self._notify_update()
+        self.wake()
+
+    def edit_timing(self, job_id, start, end, *, expected):
+        """Edit one pending/running occurrence, refusing stale or finishing jobs."""
+        import manual_schedule
+        with self._save_lock, self._lock:
+            old = self._jobs.get(str(job_id))
+            if (old is None or old.get("status") not in {STATUS_SCHEDULED, STATUS_RECORDING}
+                    or tuple(old.get(k) for k in ("start_ts", "stop_ts", "status")) != tuple(expected)):
+                raise ValueError(_("The recording changed. Reopen its timing dialog."))
+            running = old["status"] == STATUS_RECORDING
+            if running and start != old["start_ts"]:
+                raise ValueError(_("A running recording's start time cannot be changed."))
+            manual_schedule.validate_window(start, end, now=self.clock(), allow_started=running)
+            updated = copy.deepcopy(old)
+            updated.update(start_ts=start, stop_ts=end, start_at=iso_from_ts(start), end_at=iso_from_ts(end),
+                           pre_padding_minutes=0, post_padding_minutes=0)
+            updated["program"] = dict(updated.get("program") or {},
+                start=datetime.datetime.fromtimestamp(start, datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
+                end=datetime.datetime.fromtimestamp(end, datetime.timezone.utc).strftime("%Y%m%d%H%M%S"))
+            proposal = dict(self._jobs)
+            proposal[str(job_id)] = updated
+            self._write_proposal(proposal)
+            self._jobs = proposal
+        self._notify_update()
+        self.wake()
+        return copy.deepcopy(updated)
+
     def cancel_job(self, job_id: str) -> bool:
         with self._lock:
             job = self._jobs.get(str(job_id))
@@ -429,11 +496,12 @@ class DVRScheduler:
             stop_ts = _number(job.get("stop_ts"))
             if status == STATUS_SCHEDULED:
                 if stop_ts and now >= stop_ts:
-                    self._set_status(job_id, STATUS_MISSED, "Scheduled recording was missed.")
+                    self._set_status(job_id, STATUS_MISSED, "Scheduled recording was missed.",
+                                     expected_window=(start_ts, stop_ts, status))
                 elif now >= start_ts:
-                    self._start_job(job_id)
+                    self._start_job(job_id, due=True)
             elif status == STATUS_RECORDING and stop_ts and now >= stop_ts:
-                self._stop_job(job_id)
+                self._stop_job(job_id, due=True)
             elif status == STATUS_STOPPING:
                 since = self._stopping_since.get(job_id)
                 if since and now - since > STOP_TIMEOUT_SECONDS:
@@ -474,10 +542,12 @@ class DVRScheduler:
         self._series_scan_thread = threading.Thread(target=scan, name="dvr-series-scan", daemon=True)
         self._series_scan_thread.start()
 
-    def _start_job(self, job_id: str) -> None:
+    def _start_job(self, job_id: str, *, due=False) -> None:
         with self._lock:
             job = self._jobs.get(job_id)
             if not job or job.get("status") != STATUS_SCHEDULED:
+                return
+            if due and not _number(job.get("start_ts")) <= self.clock() < _number(job.get("stop_ts")):
                 return
             job["status"] = STATUS_RECORDING
             job["message"] = ""
@@ -535,11 +605,13 @@ class DVRScheduler:
             except Exception:
                 LOG.exception("Could not stop a recording canceled while starting")
 
-    def _stop_job(self, job_id: str) -> None:
+    def _stop_job(self, job_id: str, *, due=False) -> None:
         with self._lock:
             job = self._jobs.get(job_id)
             if not job or job.get("status") != STATUS_RECORDING:
                 return
+            if due and self.clock() < _number(job.get("stop_ts")):
+                return  # the user extended it after tick took its snapshot
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
             self._stopping_since[job_id] = float(self.clock())
@@ -551,10 +623,13 @@ class DVRScheduler:
             LOG.exception("Scheduled recording failed to stop")
             self.mark_finished(job_id, success=False, message=str(err))
 
-    def _set_status(self, job_id: str, status: str, message: str = "") -> None:
+    def _set_status(self, job_id: str, status: str, message: str = "", *, expected_window=None) -> None:
         with self._lock:
             job = self._jobs.get(job_id)
             if not job:
+                return
+            if expected_window is not None and tuple(job.get(k) for k in
+                    ("start_ts", "stop_ts", "status")) != expected_window:
                 return
             job["status"] = status
             job["message"] = message

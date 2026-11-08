@@ -442,3 +442,13 @@ Preguntas, informes de errores y noticias de versiones:
 - Informes de errores y sugerencias en GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Ayuda > Acerca de… muestra la versión en uso y enlaza ambos. Al reportar un problema, Ayuda > Copiar registro e información de depuración da los detalles necesarios para rastrearlo.
+
+## Herramientas personales {#personal-tools}
+
+Mantenga la aplicación abierta para las grabaciones programadas, los recordatorios y las alertas de búsqueda. Estas herramientas no despiertan el equipo.
+
+- Grabaciones > Programar por horario funciona sin guía. Introduzca la hora local como AAAA-MM-DD HH:MM y elija la ocurrencia si hay un cambio de hora. Editar horarios modifica una grabación pendiente o el final de una activa. Confirme los solapamientos; duración máxima de siete días.
+- En reproducción a la carta, Ctrl+Left/Right salta 10 segundos, Ctrl+Shift+Left/Right 60 segundos, Ctrl+T abre el salto temporal y T anuncia el tiempo transcurrido, total y restante. Los atajos son configurables. Se requiere una transmisión que permita saltos y tenga duración conocida; el directo no cambia.
+- Ver > Listas de favoritos permite hasta 50 listas con nombre y 2000 canales cada una, independientes de los favoritos originales. Seleccione un canal antes de abrir la ventana para añadirlo. Mover arriba/abajo o Ctrl+Up/Down cambia el orden. Los canales ausentes se conservan, pero no se reproducen hasta estar disponibles.
+- Ver > Búsquedas de programas guardadas almacena hasta 30 búsquedas en títulos o descripciones para todos los canales, el seleccionado o una instantánea de una lista de favoritos. Tras importar la guía y cada 15 minutos se revisan los próximos 14 días. Máximo de 500 resultados por búsqueda; limítela si se trunca. Los ajustes de anuncios controlan los nuevos resultados. Puede crear recordatorios o grabaciones desde ellos.
+- La exportación cifrada incluye horarios, recordatorios e historial de búsqueda, sin archivos multimedia. La importación muestra cuántos registros reemplazará y cierra la aplicación; vuelva a abrirla para terminar. Finalice antes las grabaciones y descargas. Las grabaciones pasadas o ya iniciadas no se reinician. Las copias antiguas solo reemplazan los ajustes y conservan horarios y recordatorios locales.

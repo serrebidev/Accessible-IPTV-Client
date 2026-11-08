@@ -441,3 +441,13 @@ Sorular, hata raporları ve sürüm haberleri:
 - GitHub'da hata raporları ve öneriler: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağlantı verir. Sorun bildirirken Yardım > Günlüğü ve hata ayıklama bilgilerini kopyala, izlenmesi için gereken ayrıntıları verir.
+
+## Kişisel araçlar {#personal-tools}
+
+Kayıt planları, hatırlatıcılar ve arama bildirimleri için uygulamayı açık tutun. Bu araçlar uyuyan bilgisayarı uyandırmaz.
+
+- Kayıtlar > Saate Göre Planla rehber olmadan çalışır. Yerel saati YYYY-AA-GG SS:DD olarak girin; saat değişikliğinde doğru zamanı seçin. Saatleri Düzenle bekleyen kaydı veya süren kaydın bitişini değiştirir. Çakışmaları onaylayın; süre en fazla yedi gündür.
+- İsteğe bağlı oynatmada Ctrl+Left/Right 10 saniye, Ctrl+Shift+Left/Right 60 saniye atlar. Ctrl+T zaman seçimini açar, T geçen, toplam ve kalan süreyi okur. Kısayollar değiştirilebilir. Akış konum değiştirmeyi desteklemeli ve süresi bilinmelidir; canlı yayın değişmez.
+- Görünüm > Favori Listeleri, mevcut favorilerden ayrı olarak her biri 2000 kanallı en fazla 50 adlı listeyi yönetir. Eklemek için pencereyi açmadan önce kanalı seçin. Yukarı/Aşağı Taşı veya Ctrl+Up/Down sıralamayı değiştirir. Eksik kanallar listede kalır ancak yeniden kullanılabilir olana kadar oynatılamaz.
+- Görünüm > Kayıtlı Program Aramaları tüm kanallarda, seçili kanalda veya bir favori listesinin o anki kanallarında başlık ya da açıklama arayan en fazla 30 arama saklar. Rehber içe aktarıldıktan sonra ve her 15 dakikada bir gelecek 14 gün aranır. Arama başına en fazla 500 sonuç gösterilir; kesilen aramaları daraltın. Yeni sonuçlar duyuru ayarlarına göre bildirilir. Sonuçlardan hatırlatıcı veya kayıt oluşturabilirsiniz.
+- Şifreli dışa aktarma, medya dosyaları hariç kayıt planlarını, hatırlatıcıları ve arama geçmişini de içerir. İçe aktarma değişecek öğe sayılarını gösterir ve uygulamayı kapatır; bitirmek için yeniden açın. Önce kayıtları ve indirmeleri bitirin. Geçmiş veya önceden başlamış kayıtlar yeniden başlamaz. Eski yedekler yalnızca ayarları değiştirir, yerel planları ve hatırlatıcıları korur.

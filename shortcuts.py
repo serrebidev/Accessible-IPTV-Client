@@ -46,6 +46,12 @@ MAIN = {
 }
 
 PLAYER = {
+    "seek_back_10": "Ctrl+Left",
+    "seek_forward_10": "Ctrl+Right",
+    "seek_back_60": "Ctrl+Shift+Left",
+    "seek_forward_60": "Ctrl+Shift+Right",
+    "go_to_time": "Ctrl+T",
+    "media_time": "T",
     "play_pause": "Ctrl+P",
     "stop": "Ctrl+S",
     "record": "Ctrl+R",
@@ -88,6 +94,12 @@ LABELS = {
         "what_is_playing": N_("What Is Playing"),
     },
     "player": {
+        "seek_back_10": N_("Back 10 Seconds"),
+        "seek_forward_10": N_("Forward 10 Seconds"),
+        "seek_back_60": N_("Back 60 Seconds"),
+        "seek_forward_60": N_("Forward 60 Seconds"),
+        "go_to_time": N_("Go to Time..."),
+        "media_time": N_("Playback Time"),
         "play_pause": N_("Play/Pause"),
         "stop": N_("Stop"),
         "record": N_("Record"),

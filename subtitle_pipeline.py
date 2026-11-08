@@ -119,6 +119,11 @@ class TimedTextSource:
     def from_file(cls, path, generation=0):
         return cls(subtitle_cues.load(path), generation)
 
+    def seeked(self):
+        """Invalidate speech history on explicit seeks without rebuilding the index."""
+        self.generation += 1
+        self._last_time = self._latest_index = None
+
     def sample(self, position, *, track="", source="file", enabled=True):
         if not isinstance(position, PlaybackPosition):
             raise TypeError("position must be a PlaybackPosition")

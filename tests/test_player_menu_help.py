@@ -56,7 +56,11 @@ def test_player_menu_registers_specific_help_topics(monkeypatch):
         _on_audio_device_menu=lambda *args: None,
         _on_subtitle_menu_select=lambda *args: None,
         _load_subtitle_file=lambda *args: None,
+        _seek_media=lambda **kwargs: None,
+        _go_to_media_time=lambda *args: None,
+        _announce_media_time=lambda *args: None,
     )
+    frame._add_navigation_menu = types.MethodType(internal_player.MediaNavigationMixin._add_navigation_menu, frame)
     internal_player.InternalPlayerFrame._build_menu_bar(frame)
     assert "audio-output-device" in frame.help_menu_topics.values()
     assert frame.help_menu_topics[frame.record_menu_item.GetId()] == "recordings"

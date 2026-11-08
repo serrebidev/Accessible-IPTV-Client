@@ -442,3 +442,13 @@ Fragen, Fehlerberichte und Release-Neuigkeiten:
 - Fehlerberichte und Vorschläge auf GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Hilfe > Über… zeigt die laufende Version und verlinkt beides. Bei einem Problem liefert Hilfe > Protokoll und Debug-Informationen kopieren die nötigen Einzelheiten.
+
+## Persönliche Werkzeuge {#personal-tools}
+
+Lassen Sie die Anwendung für Aufnahmepläne, Erinnerungen und Suchmeldungen geöffnet. Sie wecken keinen schlafenden Computer.
+
+- Aufnahmen > Aufnahme nach Uhrzeit planen funktioniert ohne Programmführer. Geben Sie Ortszeiten als JJJJ-MM-TT HH:MM ein; bei der Zeitumstellung müssen Sie mehrdeutige Zeiten auswählen. Über Zeiten bearbeiten ändern Sie geplante Aufnahmen oder das Ende laufender Aufnahmen. Überschneidungen benötigen Bestätigung; maximal sieben Tage Dauer.
+- Bei Abrufvideos springen Ctrl+Left/Right 10 Sekunden und Ctrl+Shift+Left/Right 60 Sekunden. Ctrl+T öffnet den Zeitsprung, T liest vergangene, gesamte und verbleibende Zeit vor. Die Tasten sind konfigurierbar. Der Stream muss Zeitsprünge und eine bekannte Dauer unterstützen; Live-Wiedergabe bleibt unverändert.
+- Ansicht > Favoritenlisten verwaltet bis zu 50 benannte Listen mit je 2000 Sendern neben den bisherigen Favoriten. Wählen Sie vor dem Öffnen den hinzuzufügenden Sender. Nach oben/unten oder Ctrl+Up/Down ändert die Reihenfolge. Fehlende Sender bleiben erhalten, sind aber erst nach ihrer Rückkehr abspielbar.
+- Ansicht > Gespeicherte Programmsuchen speichert bis zu 30 Titel- oder Beschreibungssuchen für alle Sender, den gewählten Sender oder eine Momentaufnahme einer Favoritenliste. Nach Guide-Importen und alle 15 Minuten werden die nächsten 14 Tage durchsucht. Pro Suche erscheinen höchstens 500 Treffer; schränken Sie längere Listen ein. Ansageeinstellungen steuern neue Treffer. Ergebnisse können Erinnerungen oder Aufnahmen anlegen.
+- Der verschlüsselte Einstellungsexport enthält auch Aufnahmepläne, Erinnerungen und Suchverlauf, jedoch keine Mediendateien. Der Import zeigt Ersetzungszahlen und schließt die App; öffnen Sie sie erneut. Beenden Sie zuvor Aufnahmen und Downloads. Vergangene oder zuvor laufende Aufnahmen starten nicht neu. Ältere Sicherungen ersetzen nur Einstellungen und behalten lokale Pläne und Erinnerungen.
