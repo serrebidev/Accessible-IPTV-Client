@@ -70,7 +70,7 @@ Linuxon az útmutatóban említett menük az ablak tetején található Menü go
 
 ### Lejátszási lista nézete {#playlist-view}
 
-Ha több listát is beállított, a Lejátszási lista nézete mezővel szabályozhatja, melyekből származzanak a megjelenő kategóriák és csatornák. Választhatja az Összes lejátszási lista lehetőséget, vagy kijelölhet egyetlen listát. A program megjegyzi a választását.
+Ha több listát is beállított, a Lejátszási lista nézete mezővel szabályozhatja, melyekből származzanak a megjelenő kategóriák és csatornák. Választhatja az Összes lejátszási lista lehetőséget, vagy kijelölhet egyetlen listát. A nyílbillentyűkkel végighallgathatja a lehetőségeket anélkül, hogy a megjelenő csatornák megváltoznának. A választást az Enter megnyomásával vagy a Tab billentyűvel történő továbblépéssel érvényesítheti; az Escape visszaállítja a korábbi választást. Egérrel történő kiválasztáskor a nézet azonnal megváltozik. A program megjegyzi az érvényesített választást.
 
 ### Kategóriák {#categories}
 
@@ -112,7 +112,7 @@ Egy kedvenc eltávolításához jelölje ki a csatornát, majd nyomja meg ismét
 
 A program a kedvenceket a szolgáltató és a csatorna alapján azonosítja, nem pedig az adás internetes címe szerint. Ennek köszönhetően egy lejátszási lista frissítése után is megmaradnak. A program a kedvencekhez nem ment fiókadatokat.
 
-A Nézet > Legutóbb lejátszott csatornák menüpont a korábban hallgatott vagy nézett adók listáját nyitja meg. A Nézet > Előző csatorna (Ctrl+0) paranccsal visszatérhet ahhoz, amelyet közvetlenül a jelenlegi előtt választott.
+A Nézet > Kedvenclisták… paranccsal több, külön elnevezett csatornalistát is létrehozhat. Ezek kezelését a Lejátszás, ütemezés és biztonsági mentés című szakasz ismerteti. A Nézet > Legutóbb lejátszott csatornák menüpont a korábban hallgatott vagy nézett adók listáját nyitja meg. A Nézet > Előző csatorna (Ctrl+0) paranccsal visszatérhet ahhoz, amelyet közvetlenül a jelenlegi előtt választott.
 
 ## Igény szerinti videó {#video-on-demand}
 
@@ -122,7 +122,7 @@ A Nézet > Élő TV és műsorarchívum paranccsal visszatérhet az élő csator
 
 Az igény szerinti videók Xtream Codes-fiókkal érhetők el a legmegbízhatóbban, mivel ez a fióktípus pontos adatokat szolgáltat a szolgáltató kínálatáról. Egyszerű M3U-lejátszási listák esetén a program a csoportnevek és az epizódszámozás alapján ismeri fel a filmeket és a sorozatokat.
 
-A beépített lejátszó megjegyzi a videótárból elindított filmek és sorozatepizódok lejátszási pozícióját. A következő megnyitáskor három lehetőség közül választhat: a Folytatás a mentett időponttól indítja el a műsort; a Lejátszás az elejétől törli a korábbi pozíciót, és újrakezdi a tartalmat; a Mégse megőrzi a mentést, és nem váltja le a jelenlegi adást. Az Escape és az ablak bezárása szintén megszakítja a műveletet. Az első 30 másodpercben, illetve a befejezés közelében nem készül folytatási pont. A program legfeljebb 200 tételt őriz meg; a használathoz a forrásnak és a beépített lejátszónak egyaránt támogatnia kell az időpontra ugrást. Külső lejátszókra és archív műsorokra ez a lehetőség nem terjed ki.
+A beépített lejátszó megjegyzi a videótárból elindított filmek és sorozatepizódok lejátszási pozícióját. A következő megnyitáskor három lehetőség közül választhat: a Folytatás a mentett időponttól indítja el a műsort; a Lejátszás az elejétől törli a korábbi pozíciót, és elölről indítja a lejátszást; a Mégse megőrzi a mentést, és nem váltja le a jelenlegi adást. Az Escape és az ablak bezárása szintén megszakítja a műveletet. Az első 30 másodpercben, illetve a befejezés közelében nem készül folytatási pont. A program legfeljebb 200 tételt őriz meg; a használathoz a forrásnak és a beépített lejátszónak egyaránt támogatnia kell az időpontra ugrást. Külső lejátszókra és archív műsorokra ez a lehetőség nem terjed ki.
 
 A Nézet > Folytatásra váró tartalmak… ablakban a mentett bejegyzéseket a legutóbbi megtekintéssel kezdve tekintheti át, a főablakban választott lejátszási listától függetlenül. Minden sor feltünteti a címet, a lejátszási pozíciót, az utolsó megtekintés helyi idő szerinti időpontját és az elérhetőség ellenőrzésének eredményét. Korábbi mentésnél előfordulhat, hogy a cím még nem áll rendelkezésre. A Folytatás gomb vagy az Enter ellenőrzi a kijelölt tartalmat, majd megnyitja a folytatási kérdést. Az Elérhetőség ellenőrzése ugyanazt a vizsgálatot lejátszás nélkül végzi el. A hálózati műveletek a háttérben futnak; az ablak közben bezárható. Az ellenőrzés önmagában nem nyit műsorfolyamot.
 
@@ -200,15 +200,15 @@ A Műsorújság megtekintése… parancs a csatorna helyi menüjében érhető e
 - A műsor kijelölése után az Alkalmazásgomb vagy a Shift+F10 megnyomásával érhető el a Felvétel ütemezése parancs.
 - Az Escape bezárja az ablakot.
 
-A műsor helyi menüjében az Értesítés kérése műsorkezdés előtt… paranccsal állíthatja be, hogy a program a kezdés előtt figyelmeztesse. Ez a lehetőség a csatorna műsorújságában, a Most adásban ablakban és a műsorújság keresési találatainál érhető el, ha a kiválasztott adás még nem kezdődött el. Az előzetes értesítés időtartama 0–120 perc között állítható; alapértéke 5 perc. A 0 azt jelenti, hogy a program a kezdéskor értesít. A Mégse nem hoz létre új beállítást. Ugyanahhoz a csatornához és kezdési időponthoz ismételten megadott érték a meglévő bejegyzést frissíti.
+A műsor helyi menüjében az Értesítés kérése műsorkezdés előtt… paranccsal állíthatja be, hogy a program a kezdés előtt figyelmeztesse. Ez a lehetőség a csatorna műsorújságában, a Most adásban ablakban és a műsorújság keresési találatainál érhető el, ha a kiválasztott adás még nem kezdődött el. Az értesítést a műsorkezdés előtt 0–120 perccel kérheti; az alapértelmezett érték 5 perc. A 0 azt jelenti, hogy a program a kezdéskor értesít. A Mégse nem hoz létre új beállítást. Ugyanahhoz a csatornához és kezdési időponthoz ismételten megadott érték a meglévő bejegyzést frissíti.
 
-A Felvételek > Értesítések műsorkezdés előtt… ablakban áttekintheti a rögzített időpontokat, az előzetes értesítés hosszát és az egyes bejegyzések állapotát. A kijelölt, még el nem kezdődött műsornál az Értesítés kérése műsorkezdés előtt… gombbal vagy az Enter billentyűvel módosíthatja a figyelmeztetés időzítését. A Törlés gomb és a Delete billentyű egyetlen bejegyzést távolít el; az Összes értesítés törlése valamennyi tételt törli. Mindkét művelet megerősítést kér. A Frissítés gomb újra megjeleníti az aktuális adatokat. Legfeljebb 500 bejegyzés tárolható; a korábbi figyelmeztetések előzményei nem szorítják ki a még várakozó műsorokat. A törlés sem a felvételeket, sem azok ütemezését nem módosítja.
+A Felvételek > Értesítések műsorkezdés előtt… ablakban áttekintheti a műsorok kezdési időpontját, azt, hogy hány perccel korábban kért értesítést, valamint az egyes bejegyzések állapotát. A kijelölt, még el nem kezdődött műsornál az Értesítés kérése műsorkezdés előtt… gombbal vagy az Enter billentyűvel módosíthatja a figyelmeztetés időzítését. A Törlés gomb és a Delete billentyű egyetlen bejegyzést távolít el; az Összes értesítés törlése valamennyi tételt törli. Mindkét művelet megerősítést kér. A Frissítés gomb újra megjeleníti az aktuális adatokat. Legfeljebb 500 bejegyzés tárolható; a korábbi figyelmeztetések előzményei nem szorítják ki a még várakozó műsorokat. A törlés sem a felvételeket, sem azok ütemezését nem módosítja.
 
 Amikor elérkezik az értesítés időpontja, egy párbeszédablak közli a műsor címét, a csatornát és a kezdés helyi idő szerinti dátumát, valamint időpontját. A Csatorna megnyitása választás csak kifejezett kérésre indítja el az adást; a Bezárás és az Escape érintetlenül hagyja a lejátszást. A program mindig az aktuális lejátszási listából próbálja egyértelműen azonosítani a csatornát, nem tárolt műsor-URL-címet nyit meg. Más párbeszédablak fölött nem jelenít meg új figyelmeztetést: arra az ablak bezárása után kerülhet sor, amennyiben a műsor még nem ért véget.
 
 A beállított értesítések a program újraindítása után is megmaradnak, megjelenítésükhöz azonban az alkalmazásnak futnia kell. A rendszertálcán működő példány is értesít; a bezárt program nem indul el önállóan, és a funkció nem ébreszti fel az alvó számítógépet. Visszatéréskor a már elkezdődött, de még folyamatban lévő műsorról megjelenhet a figyelmeztetés; a befejeződött adásokhoz tartozó bejegyzések lejárnak. Az alkalmazás a teljes kilépés előtt figyelmeztet, ha még vannak értesítésre váró műsorok. A frissítés vagy a rendszer által kikényszerített bezárás esetén ez a kérdés elmaradhat.
 
-Az értesítés a kiválasztott műsorújság-bejegyzés időpontjára vonatkozik; az adásrend későbbi változását nem követi automatikusan. Ilyenkor törölje a korábbi beállítást, majd adja meg ismét a friss műsorújság alapján. Ez a funkció nem ütemez felvételt, ezért rögzítéshez továbbra is a Felvétel ütemezése parancs szükséges. Az alkalmazás az értesítési adatokat külön fájlban őrzi, műsor-URL-címek és jelszavak nélkül; ez az állomány nem része a beállítások titkosított exportjának. Ha a figyelmeztetés megjelenítése után a program a lezárás állapotának mentése előtt megszakad, az újraindításkor ismét megjelenhet az üzenet.
+Az értesítés a kiválasztott műsorújság-bejegyzés időpontjára vonatkozik; az adásrend későbbi változását nem követi automatikusan. Ilyenkor törölje a korábbi beállítást, majd adja meg ismét a friss műsorújság alapján. Ez a funkció nem ütemez felvételt, ezért rögzítéshez továbbra is a Felvétel ütemezése parancs szükséges. Az alkalmazás az értesítési adatokat külön fájlban őrzi, műsor-URL-címek és jelszavak nélkül. Ezek az adatok a Beállítások exportálása paranccsal készített teljes, titkosított biztonsági mentésbe is bekerülnek. Ha a figyelmeztetés megjelenítése után a program még az értesítés megtörténtének mentése előtt leáll, az újraindításkor ismét megjelenhet az üzenet.
 
 ## Műsorarchívum {#catch-up}
 
@@ -258,6 +258,7 @@ A lejátszó fontosabb billentyűparancsai:
 - F11: a teljes képernyős nézet be- vagy kikapcsolása. A teljes képernyős nézetből az Escape billentyűvel léphet ki.
 - Ctrl+W: elrejti a lejátszóablakot; a lejátszás folytatódik.
 - Ctrl+Q: bezárja a lejátszóablakot, és leállítja az adást.
+- Igény szerinti videólejátszás közben a Ctrl+Bal és a Ctrl+Jobb 10 másodperccel, a Ctrl+Shift+Bal és a Ctrl+Shift+Jobb 60 másodperccel ugrik vissza, illetve előre. A Ctrl+T pontos időpont megadására szolgál, a T pedig bemondja az eltelt időt, a teljes időtartamot és a hátralévő időt.
 
 Ugyanezek a parancsok a lejátszó Lejátszás menüjéből is elérhetők. Ha egy élő adás megszakad, a lejátszó automatikusan megkísérli az újracsatlakozást, és megtartja a korábban kiválasztott hangsávot.
 
@@ -364,12 +365,12 @@ Kizárólag hangot tartalmazó adás felismerésekor a program hangrögzítési 
 
 ### Ütemezett felvételek {#scheduled-recordings}
 
-Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancsot a Műsorújság megtekintése vagy a Most adásban ablakban, illetve a megfelelő keresési találat helyi menüjében. Ha ugyanezt közvetlenül egy csatorna helyi menüjéből választja, először annak műsorújsága nyílik meg, hogy kijelölhesse a kívánt műsort.
+Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancsot a Műsorújság megtekintése vagy a Most adásban ablakban, illetve a megfelelő keresési találat helyi menüjében. Ha ugyanezt közvetlenül egy csatorna helyi menüjéből választja, először annak műsorújsága nyílik meg, hogy kijelölhesse a kívánt műsort. Műsorújság nélkül a Felvételek > Felvétel ütemezése időpont alapján… paranccsal adhatja meg a kezdést és a befejezést.
 
-A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt.
+A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt. Az Időpontok módosítása… gombbal egy kijelölt, még el nem indult felvétel kezdését és befejezését, illetve egy folyamatban lévő felvétel befejezési időpontját módosíthatja.
 
 - A kijelölt felvételnél az Alkalmazásgomb vagy a Shift+F10 megnyitja a helyi menüt, amelyből a Frissítés, a Mégse és a Törlés érhető el.
-- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut. Minden epizód csak egyszer kerül felvételre: ha a műsorújság olyan epizódot ismétel, amely már szerepel a szabályban — epizódszám, epizódcím vagy leírás alapján azonosítva — az ismétlés kimarad.
+- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut. A program az epizódszám, ennek hiányában az epizódcím, majd a leírás alapján próbálja felismerni az ugyanahhoz a rögzítési szabályhoz már hozzáadott epizódok ismétléseit. A felismert ismétléseket kihagyja. Ha egyik azonosító adat sem áll rendelkezésre, pusztán az azonos műsorcím miatt nem hagy ki adást. A megszakított ütemezéshez tartozó epizód későbbi ismétlése újból ütemezhető.
 - A listában egyszerre több felvétel is kijelölhető; a Ctrl+A az összes sort kiválasztja.
 - A Delete vagy a numerikus billentyűzet Delete billentyűje megerősítés után eltávolítja a kijelölt felvételeket. Ha a kijelöltek között folyamatban lévő rögzítés is van, a program előbb leállítja az érintett felvételeket.
 - Az Escape bezárja az ablakot.
@@ -382,7 +383,7 @@ A program kilépés előtt megerősítést kér, ha van még indításra váró 
 
 ### Ütemezési ráhagyás {#schedule-padding}
 
-A műsorok a gyakorlatban nem mindig pontosan a meghirdetett időben kezdődnek vagy fejeződnek be. A Felvételek > Ütemezési ráhagyás… beállítással megadhatja, hány perccel a műsor kezdete előtt induljon el az ütemezett felvétel, illetve a tervezett befejezés után mennyi ideig folytatódjon. A kézzel indított rögzítéseket ez a beállítás nem érinti. Az archív műsorok letöltésekor ugyanez a ráhagyás érvényesül: ha a szolgáltató ezt lehetővé teszi, a program a megadott percekkel kibővíti a lekért időszakot, és ismét megkísérli a letöltést, ha az elkészült fájl rövidebb a műsor várható időtartamánál.
+A műsorok a gyakorlatban nem mindig pontosan a meghirdetett időben kezdődnek vagy fejeződnek be. A Felvételek > Ütemezési ráhagyás… beállítással megadhatja, hány perccel a műsor kezdete előtt induljon el a műsorújság alapján ütemezett felvétel, illetve a tervezett befejezés után mennyi ideig folytatódjon. A kézzel indított vagy kézzel megadott időpontokra ütemezett rögzítéseket ez a beállítás nem érinti. Az archív műsorok letöltésekor ugyanez a ráhagyás érvényesül: ha a szolgáltató ezt lehetővé teszi, a program a megadott percekkel kibővíti a lekért időszakot, és ismét megkísérli a letöltést, ha az elkészült fájl rövidebb a műsor várható időtartamánál.
 
 ### A számítógép leállítása a felvételek után {#shutdown-after-recordings}
 
@@ -394,9 +395,9 @@ A számítógép nem áll le addig, amíg bármely felvétel folyamatban van vag
 
 Az átküldéssel a helyi hálózaton található televízión, hangszórón vagy más lejátszóeszközön folytathatja egy csatorna lejátszását. A támogatott eszközök közé tartoznak a Chromecast- és más Google Cast-eszközök, az AirPlay-hangszórók, a DLNA- és UPnP-megjelenítők, a Sonos-hangszórók, a Roku-lejátszók, valamint a Kodi.
 
-A Fájl > Átküldés ide… parancs megkeresi a hálózaton elérhető eszközöket, majd típusukkal együtt felsorolja őket. Jelölje ki a kívánt eszközt, és válassza a Kapcsolódás parancsot. Sikeres kapcsolódás után a csatorna lejátszása a kiválasztott készüléken folytatódik. A hangszórók – például az AirPlay- és Sonos-eszközök – csak a csatorna hangját játsszák le. A kapcsolat megszakításához válassza ismét a Fájl > Átküldés ide… parancsot.
+A Fájl > Átküldés ide… parancs megkeresi a hálózaton elérhető eszközöket, majd típusukkal együtt felsorolja őket. Jelölje ki a kívánt eszközt, és válassza a Kapcsolódás parancsot. Sikeres kapcsolódás után indítsa el a kívánt csatornát; annak lejátszása a kiválasztott készüléken kezdődik meg. A hangszórók – például az AirPlay- és Sonos-eszközök – csak a csatorna hangját játsszák le. A kapcsolat megszakításához válassza ismét a Fájl > Átküldés ide… parancsot.
 
-A beépített lejátszó Átküldés gombja és Ctrl+C billentyűparancsa, valamint a Lejátszó > Átküldés / kapcsolódás… (Ctrl+Shift+C) parancs egyaránt ezt a műveletet indítja.
+A beépített lejátszó Átküldés gombja és Ctrl+C billentyűparancsa, valamint a főablak Lejátszó > Átküldés / kapcsolódás… (Ctrl+Shift+C) parancsa az éppen játszott tartalmat küldi át. Ha még nincs kapcsolat, előbb ki kell választania a fogadó eszközt. Sikeres átküldés után a beépített lejátszás leáll, és a lejátszóablak elrejtőzik.
 
 Az átküldéshez a számítógépnek és a fogadó eszköznek ugyanahhoz a helyi hálózathoz kell kapcsolódnia.
 
@@ -417,9 +418,9 @@ A Beállítások menü a program működését szabályozó lehetőségeket tart
 - Lejátszó megjelenítése az Enter lenyomására: ha engedélyezve van, csatorna indításakor megjelenik a beépített lejátszó ablaka. Kikapcsolt állapotban a lejátszás elindul, miközben a fókusz a csatornalistán marad.
 - Adás-URL megjelenítése: engedélyezésekor a főablakban az Epizódleírás után megjelenik az Adás-URL mező.
 - Frissítések automatikus keresése: lásd a Frissítések című részt.
-- Automatikus bemondások: meghatározhatja a lejátszással és a csatornákkal kapcsolatos tájékoztatás részletességét. A választható szintek: Nincs, Csak hibák, Fontos események és Részletes állapotjelentés. Ugyanez a menü háromféle bejelentést kapcsol be vagy ki külön-külön: Lejátszás, Feliratok és Műsorújság.
+- Automatikus bemondások: meghatározhatja a lejátszással és a csatornákkal kapcsolatos tájékoztatás részletességét. A választható szintek: Nincs, Csak hibák, Fontos események és Részletes állapotjelentés. Ugyanebben az almenüben külön-külön is engedélyezheti vagy letilthatja a Lejátszás, a Feliratok és a Műsorújság eseményeihez tartozó bemondásokat.
 - Billentyűparancsok: megnyitáskor a magyar parancsnevek és a hozzájuk rendelt billentyűkombinációk között kereshet; üres keresőkifejezéssel valamennyi módosítható művelet megjelenik. A beépített lejátszó parancsait külön jelölés azonosítja. Módosíthatja az egyes műveletekhez rendelt billentyűkombinációt. A program nem fogad el ütköző hozzárendeléseket. Mentés után indítsa újra az alkalmazást.
-- A Beállítások exportálása paranccsal titkosított biztonsági mentést készíthet a lejátszási listákról, a műsorújság-forrásokról, a kedvencekről és az egyéni beállításokról. Visszaállításukra a Beállítások importálása szolgál. Őrizze meg a mentés jelszavát: a szolgáltatói bejelentkezési adatok helyreállításához is szükség lesz rá.
+- A Beállítások exportálása paranccsal titkosított biztonsági mentést készíthet a lejátszási listákról, a műsorújság-forrásokról, a kedvencekről, az elnevezett kedvenclistákról és az egyéni beállításokról. A mentés tartalmazza a felvételek ütemezési adatait, a műsorkezdési értesítéseket, a mentett műsorkereséseket és azok korábbi találatainak adatait is. Visszaállításukra a Beállítások importálása szolgál. Őrizze meg a mentés jelszavát: a visszaállításhoz szükség lesz rá. A mentés a médiafájlokat nem tartalmazza.
 
 ### Nyelv {#language}
 
@@ -429,7 +430,7 @@ A program angol, spanyol, arab, brazíliai portugál, francia, német, orosz, t�
 
 ### Rendszertálca {#system-tray}
 
-Ha a Beállítások > Minimalizálás a rendszertálcára lehetőség engedélyezve van, a főablak bezárásakor vagy minimalizálásakor az alkalmazás nem lép ki, hanem az értesítési területen fut tovább. Így az ütemezett felvételek a háttérben is elindulhatnak és folytatódhatnak. A rendszertálca ikonjának aktiválásával újból megjelenítheti a főablakot. Az ikon helyi menüjében többek között az Ablak visszaállítása, a Lejátszó vezérlőelemei, folyamatban lévő felvétel esetén a Rögzítések leállítása, valamint a Kilépés található. A Kilépés parancs ugyanazt a megerősítő kérdést jeleníti meg, mint az ablak bezárásakor: név szerint felsorolja az indításra váró felvételeket, egyúttal mindegyiknél feltünteti a helyi idő szerinti ütemezett kezdést. A műveletet ekkor még megszakíthatja, így elkerülheti valamelyik rögzítés elmaradását.
+Ha a Beállítások > Minimalizálás a rendszertálcára lehetőség engedélyezve van, a főablak bezárásakor vagy minimalizálásakor az alkalmazás nem lép ki, hanem az értesítési területen fut tovább. Így az ütemezett felvételek a háttérben is elindulhatnak és folytatódhatnak. A rendszertálca ikonjának aktiválásával újból megjelenítheti a főablakot. Az ikon helyi menüjében többek között az Ablak visszaállítása, a Lejátszásvezérlők, folyamatban lévő felvétel esetén a Rögzítések leállítása, valamint a Kilépés található. A Kilépés parancs ugyanazt a megerősítő kérdést jeleníti meg, mint az ablak bezárásakor: név szerint felsorolja az indításra váró felvételeket, egyúttal mindegyiknél feltünteti a helyi idő szerinti ütemezett kezdést. A műveletet ekkor még megszakíthatja, így elkerülheti valamelyik rögzítés elmaradását.
 
 A program teljes bezárásához használja a Fájl > Kilépés (Ctrl+Q) parancsot.
 
@@ -497,6 +498,10 @@ A beépített lejátszóban:
 - F11: teljes képernyő be- vagy kikapcsolása; az Escape visszatér az ablakos nézethez.
 - Ctrl+W: a lejátszóablak elrejtése.
 - Ctrl+Q: a lejátszó bezárása.
+- Ctrl+Bal és Ctrl+Jobb: igény szerinti videóban ugrás 10 másodperccel vissza, illetve előre.
+- Ctrl+Shift+Bal és Ctrl+Shift+Jobb: igény szerinti videóban ugrás 60 másodperccel vissza, illetve előre.
+- Ctrl+T: igény szerinti videóban ugrás a megadott időpontra.
+- T: igény szerinti videóban az eltelt idő, a teljes időtartam és a hátralévő idő bemondása.
 
 A Lejátszási lista kezelése és a Műsorújság kezelése forráslistáiban:
 
@@ -508,16 +513,16 @@ A Lejátszási lista kezelése és a Műsorújság kezelése forráslistáiban:
 Kérdésekhez, hibajelentésekhez és a kiadásokkal kapcsolatos hírekhez az alábbi csatornákat használhatja:
 
 - SerrebiProjects Telegram-csoport: https://t.me/SerrebiProjects
-- Hibajelentések és javaslatok a GitHubon: https://github.com/serrebidev/Accessible-IPTV-Client/issues
+- Hibajelentések és javaslatok a Forgejo felületén: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/issues
 
-A Súgó > Névjegy… megjeleníti az éppen használt verziót, és hivatkozásokat tartalmaz mind a Telegram-csoporthoz, mind a GitHub-oldalhoz. Hibajelentés készítésekor a Súgó > Napló- és hibakeresési adatok másolása paranccsal a kivizsgáláshoz szükséges technikai adatokat is a vágólapra helyezheti.
+A Súgó > Névjegy… megjeleníti az éppen használt verziót, és hivatkozásokat tartalmaz mind a Telegram-csoporthoz, mind a projekt Forgejo-oldalához. Hibajelentés készítésekor a Súgó > Napló- és hibakeresési adatok másolása paranccsal a kivizsgáláshoz szükséges technikai adatokat is a vágólapra helyezheti.
 
-## Személyes eszközök {#personal-tools}
+## Lejátszás, ütemezés és biztonsági mentés {#personal-tools}
 
-A felvételi időzítések, az emlékeztetők és a mentett keresések értesítései csak futó alkalmazás mellett működnek. Ezek az eszközök nem ébresztik fel az alvó számítógépet.
+Az ütemezett felvételek elindításához, a műsorkezdési értesítések megjelenítéséhez és a mentett műsorkeresések új találatainak jelzéséhez az alkalmazásnak futnia kell. Ezek a funkciók nem ébresztik fel az alvó számítógépet.
 
-- A Felvételek menü Felvétel időzítése időpont alapján parancsával műsorújság nélkül időzítheti a kijelölt csatorna felvételét. A helyi dátum és idő formátuma ÉÉÉÉ-HH-NN ÓÓ:PP. Óraátállításkor a kétszer előforduló időpontok közül választania kell. Az Ütemezett felvételek ablak Időpontok módosítása gombjával egy várakozó felvétel időpontjait vagy egy folyamatban lévő felvétel végét módosíthatja. Az átfedéseket meg kell erősíteni; a felvétel hossza legfeljebb hét nap lehet.
-- Igény szerinti videólejátszás közben a Ctrl+Balra és Ctrl+Jobbra 10, a Ctrl+Shift+Balra és Ctrl+Shift+Jobbra 60 másodperccel ugrik. A Ctrl+T megnyitja az Ugrás időpontra ablakot, a T pedig felolvassa az eltelt időt, a teljes hosszt és a hátralévő időt. A billentyűparancsok módosíthatók. Az ugráshoz ismert hosszúságú, pozicionálható adatfolyam szükséges; az élő lejátszást ez nem változtatja meg.
-- A Nézet menü Kedvenclisták parancsával legfeljebb 50 elnevezett listát kezelhet, listánként legfeljebb 2000 csatornával, a meglévő kedvencektől függetlenül. Hozzáadáshoz előbb jelöljön ki egy csatornát, majd nyissa meg az ablakot. A Feljebb helyezés és Lejjebb helyezés gomb, illetve a Ctrl+Fel és Ctrl+Le módosítja a sorrendet. A hiányzó csatornák megmaradnak a listában, de csak akkor játszhatók le, ha újra elérhetők.
-- A Nézet menü Mentett műsorkeresések parancsával legfeljebb 30, címben vagy leírásban kereső szabályt tárolhat. Kereshet minden csatornán, a kijelölt csatornán vagy egy kedvenclista akkor kiválasztott csatornáin. A keresés műsorújság-importálás után és 15 percenként fut a következő 14 napra. Keresésenként legfeljebb 500 találat jelenik meg; a csonkolt találati listához szűkítse a keresést. Az új találatok bemondását a bejelentési beállítások szabályozzák. A találatokhoz emlékeztetőt vagy felvételt állíthat be.
-- A Beállítások exportálása a beállítások mellett a felvételi időzítéseket, az emlékeztetőket és a keresési előzményeket is titkosítva menti. A médiafájlokat nem tartalmazza. Importáláskor megjelenik a lecserélendő bejegyzések száma, majd az alkalmazás bezárul; a befejezéshez indítsa el újra. Előbb fejezze be a felvételeket és letöltéseket. Az elmúlt kezdésű és a korábban folyamatban lévő felvételek nem indulnak újra. A régebbi mentések csak a beállításokat cserélik le; a helyi időzítések és emlékeztetők megmaradnak.
+- A Felvételek > Felvétel ütemezése időpont alapján… paranccsal műsorújság nélkül ütemezheti a kijelölt csatorna rögzítését. A helyi dátumot és időt ÉÉÉÉ-HH-NN ÓÓ:PP formátumban adja meg. A kézzel megadott időpontokhoz a program nem ad hozzá ütemezési ráhagyást. Őszi óraátállításkor a kétszer előforduló időpontok közül ki kell választania a megfelelőt; a tavaszi óraátállítás miatt kimaradó időpontot a program nem fogadja el. Az Ütemezett felvételek ablak Időpontok módosítása… gombjával egy még el nem indult felvétel kezdését és befejezését, illetve egy folyamatban lévő felvétel befejezési időpontját módosíthatja. Ha a megadott időszak részben vagy egészben egybeesik más felvétel időtartamával, a program megerősítést kér. A felvétel időtartama legfeljebb hét nap lehet.
+- Igény szerinti videólejátszás közben a Ctrl+Bal és a Ctrl+Jobb 10 másodperccel, a Ctrl+Shift+Bal és a Ctrl+Shift+Jobb 60 másodperccel ugrik vissza, illetve előre. A Ctrl+T megnyitja az Ugrás időpontra… ablakot. Az időpontot másodpercben, PP:MM vagy ÓÓ:PP:MM formátumban adhatja meg. A T bemondja az eltelt időt, a teljes időtartamot és a hátralévő időt. Ezek a műveletek a lejátszó Lejátszás menüjéből is elérhetők, billentyűparancsaik pedig módosíthatók. Az ugráshoz ismert időtartamú, az időpontra ugrást támogató adatfolyam szükséges. Az élő adás visszatekerését a Beépített lejátszó című szakasz ismerteti.
+- A Nézet > Kedvenclisták… paranccsal legfeljebb 50 elnevezett listát kezelhet, listánként legfeljebb 2000 csatornával. Ezek a listák a Kedvencek kategóriától függetlenek. Csatorna hozzáadásához előbb jelölje ki azt a főablakban, majd nyissa meg a Kedvenclisták ablakot, válassza ki a kívánt listát, és használja a Kijelölt csatorna hozzáadása gombot. A csatornák sorrendjét a Feljebb helyezés és a Lejjebb helyezés gombbal, illetve a Ctrl+Fel és a Ctrl+Le billentyűkombinációval módosíthatja. Az átmenetileg nem elérhető csatornák megmaradnak a listában, és újbóli elérhetőségük esetén ismét lejátszhatók.
+- A Nézet > Mentett műsorkeresések… paranccsal legfeljebb 30 keresést tárolhat. A keresés a műsorcímekre, igény szerint a leírásokra is kiterjed. Kereshet az összes csatorna, a főablakban kijelölt csatorna vagy egy elnevezett kedvenclista csatornáinak műsorai között. Kedvenclista választásakor a keresés a listában akkor szereplő csatornákat jegyzi meg; a lista későbbi módosításait nem követi automatikusan. A program a műsorújság importálása után és 15 percenként keres egyezéseket a következő 14 nap műsoraiban. Keresésenként legfeljebb 500 találatot jelenít meg; ha ennél több egyezés lenne, pontosítsa a keresőkifejezést. Az új találatok bemondását az Automatikus bemondások beállításai szabályozzák. A találatokhoz műsorkezdési értesítést kérhet, illetve felvételt ütemezhet.
+- A Beállítások exportálása… parancs a beállítások mellett a felvételek ütemezési adatait, a műsorkezdési értesítéseket, a mentett műsorkereséseket és azok korábbi találatainak adatait is titkosítva menti. A médiafájlok nem kerülnek bele a mentésbe. A Beállítások importálása… parancs visszaállítás előtt megjeleníti a lecserélendő felvételi bejegyzések és műsorkezdési értesítések számát. Jóváhagyás után az alkalmazás bezárul; a visszaállítás befejezéséhez indítsa el újra. A visszaállítás előtt fejezze be a folyamatban lévő rögzítéseket és letöltéseket. Azok a felvételek, amelyek kezdési időpontja már elmúlt, illetve amelyek a mentés készítésekor folyamatban voltak, nem indulnak újra. A régebbi formátumú mentések csak a beállításokat cserélik le; a helyben tárolt felvételi ütemezések és műsorkezdési értesítések megmaradnak.
