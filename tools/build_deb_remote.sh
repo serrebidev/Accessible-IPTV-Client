@@ -9,7 +9,7 @@
 set -euo pipefail
 
 tag="$1"
-repo="${IPTV_REPO_URL:-https://github.com/serrebidev/Accessible-IPTV-Client.git}"
+repo="${IPTV_REPO_URL:-https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client.git}"
 work="$(mktemp -d /tmp/iptv-deb-XXXXXX)"
 
 # ffmpeg.exe is an LFS object the .deb does not ship.

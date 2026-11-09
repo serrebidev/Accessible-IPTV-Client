@@ -1,4 +1,5 @@
 """Tests for the release/changelog workflow."""
+import os
 import sys
 from pathlib import Path
 
@@ -218,3 +219,59 @@ def test_the_release_does_not_publish_what_it_has_not_verified(monkeypatch):
 
     assert published == [], "the release was published without a verified signature"
     assert calls == [], "the release was committed or pushed before it was verified"
+
+
+DEB_NAME = "accessible-iptv-client_1.2.3-1_all.deb"
+
+
+def _mock_deb_leg(monkeypatch, tmp_path, asset_names):
+    """Fake the SSH build, the file transfer and the Forgejo API."""
+    monkeypatch.setenv("IPTV_SKIP_MACOS", "1")
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "build_deb_remote.sh").write_text("#!/bin/sh\n")
+    monkeypatch.setattr(release, "REPO_ROOT", str(tmp_path))
+
+    class _SshResult:
+        stdout = (
+            "/tmp/iptv-deb-xxxx/src/dist/release/" + DEB_NAME + "\n"
+        ).encode()
+
+    commands = []
+    uploads = []
+    monkeypatch.setattr(release.subprocess, "run", lambda *a, **k: _SshResult())
+
+    def _fake_run(cmd, **kwargs):
+        commands.append(cmd)
+
+        class _Result:
+            stdout = ""
+
+        return _Result()
+
+    monkeypatch.setattr(release, "run", _fake_run)
+    monkeypatch.setattr(release, "forgejo_release_upload",
+                        lambda tag, paths: uploads.append((tag, list(paths))))
+    monkeypatch.setattr(release, "forgejo_release_asset_names",
+                        lambda tag: list(asset_names))
+    return commands, uploads
+
+
+def test_skipped_macos_still_builds_and_uploads_the_deb(monkeypatch, tmp_path):
+    """The Linux .deb is a mandatory leg: skipping macOS must not skip it."""
+    commands, uploads = _mock_deb_leg(monkeypatch, tmp_path, [DEB_NAME])
+
+    release.release_other_platforms("1.2.3")
+
+    assert [cmd for cmd in commands if cmd[0] == "gh"] == []
+    assert uploads == [("v1.2.3", [os.path.join(
+        str(tmp_path), "dist", "release", DEB_NAME)])]
+
+
+def test_release_without_the_deb_asset_is_refused(monkeypatch, tmp_path):
+    """The final check fails a release whose .deb never landed on Forgejo."""
+    _mock_deb_leg(monkeypatch, tmp_path,
+                  ["AccessibleIPTVClient-Setup-v1.2.3.exe"])
+
+    with pytest.raises(RuntimeError, match=r"no \*_all\.deb asset"):
+        release.release_other_platforms("1.2.3")

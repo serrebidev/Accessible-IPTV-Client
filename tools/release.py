@@ -8,6 +8,8 @@ import stat
 import subprocess
 import sys
 import time
+import urllib.parse
+import urllib.request
 import zipfile
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -869,19 +871,78 @@ def gh_release_create(version, assets):
 
 
 LINUX_BUILD_HOST = os.environ.get("LINUX_BUILD_HOST", "root@serrebiradio.com")
+FORGEJO_API = (
+    f"https://{app_meta.FORGEJO_HOST}/api/v1/repos/"
+    f"{app_meta.FORGEJO_OWNER}/{app_meta.FORGEJO_REPO}"
+)
+
+
+def forgejo_release_request(method, path, body=None, headers=None):
+    """One authenticated Forgejo release-API call, returning the parsed JSON."""
+    token = os.environ.get("FORGEJO_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError(
+            "FORGEJO_TOKEN is not set; the release cannot reach the Forgejo API. "
+            "The token lives in /root/forgejo-muse-token.txt on the Linux build host."
+        )
+    request = urllib.request.Request(
+        FORGEJO_API + path,
+        data=body,
+        headers={"Authorization": f"token {token}", **dict(headers or {})},
+        method=method,
+    )
+    with urllib.request.urlopen(request, timeout=180) as response:
+        raw = response.read().decode()
+    return json.loads(raw) if raw.strip() else None
+
+
+def forgejo_release_upload(tag, local_paths):
+    """Attach files to the Forgejo release, replacing same-name assets."""
+    release = forgejo_release_request("GET", f"/releases/tags/{tag}")
+    release_id = release["id"]
+    existing = {asset["name"]: asset["id"] for asset in release.get("assets", [])}
+    for local_path in local_paths:
+        name = os.path.basename(local_path)
+        if name in existing:
+            print(f"Replacing existing {name} on {tag}...")
+            forgejo_release_request(
+                "DELETE", f"/releases/{release_id}/assets/{existing[name]}")
+        with open(local_path, "rb") as handle:
+            payload = handle.read()
+        # Forgejo only accepts the file in a multipart field named "attachment".
+        boundary = "----iptvReleaseUpload9x7"
+        framed = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="attachment"; filename="{name}"\r\n'
+            "Content-Type: application/octet-stream\r\n\r\n"
+        ).encode() + payload + f"\r\n--{boundary}--\r\n".encode()
+        forgejo_release_request(
+            "POST",
+            f"/releases/{release_id}/assets?name={urllib.parse.quote(name)}",
+            body=framed,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        )
+        print(f"Uploaded {name} to {tag}.")
+
+
+def forgejo_release_asset_names(tag):
+    release = forgejo_release_request("GET", f"/releases/tags/{tag}")
+    return [asset["name"] for asset in release.get("assets", [])]
 
 
 def release_other_platforms(version):
     """The host's Linux and macOS half: .deb over SSH, macOS on a GitHub runner.
+
+    The Linux .deb is a mandatory leg of every release. It is built and
+    uploaded to the Forgejo release first, so a macOS failure can never
+    leave a release without it. Set IPTV_SKIP_MACOS=1 while no macOS
+    builder exists; the skip is loud and the .deb check still runs.
 
     cloud-release.yml has its own jobs for both, so this is skipped there.
     """
     if os.environ.get("GITHUB_ACTIONS"):
         return
     tag = f"v{version}"
-    started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    run(["gh", "workflow", "run", "macos-release.yml", "-f", f"release_tag={tag}"])
-
     print(f"Building the .deb for {tag} on {LINUX_BUILD_HOST}...")
     with open(os.path.join(REPO_ROOT, "tools", "build_deb_remote.sh"), "rb") as script:
         result = subprocess.run(
@@ -892,28 +953,36 @@ def release_other_platforms(version):
     local_deb = os.path.join(REPO_ROOT, "dist", "release", os.path.basename(remote_deb))
     run(["scp", "-o", "BatchMode=yes", f"{LINUX_BUILD_HOST}:{remote_deb}", local_deb])
     run(["ssh", "-o", "BatchMode=yes", LINUX_BUILD_HOST, "rm -rf -- " + remote_deb.split("/src/")[0]])
-    run(["gh", "release", "upload", tag, local_deb, "--clobber"])
+    forgejo_release_upload(tag, [local_deb])
 
-    run_id = ""
-    for _ in range(12):
-        runs = json.loads(run(
-            ["gh", "run", "list", "--workflow", "macos-release.yml", "--event", "workflow_dispatch",
-             "--limit", "5", "--json", "databaseId,createdAt"],
-            capture_output=True,
-        ).stdout or "[]")
-        run_id = next((str(r["databaseId"]) for r in runs if r["createdAt"] >= started), "")
-        if run_id:
-            break
-        time.sleep(10)
-    if not run_id:
-        raise RuntimeError(f"macos-release.yml run for {tag} never appeared; dispatch it again by hand.")
-    print(f"Waiting for the macOS build (run {run_id})...")
-    run(["gh", "run", "watch", run_id, "--exit-status", "--interval", "30"])
+    skip_macos = os.environ.get("IPTV_SKIP_MACOS", "").strip().lower() in ("1", "true", "yes")
+    if skip_macos:
+        print(f"WARNING: skipping the macOS build for {tag} (IPTV_SKIP_MACOS is set); "
+              "this release ships Windows and Linux only.")
+    else:
+        started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        run(["gh", "workflow", "run", "macos-release.yml", "-f", f"release_tag={tag}"])
 
-    names = run(["gh", "release", "view", tag, "--json", "assets", "--jq", ".assets[].name"],
-                capture_output=True).stdout
-    for suffix in ("_all.deb", "-macos-arm64.zip"):
-        if not any(n.endswith(suffix) for n in names.split()):
+        run_id = ""
+        for _ in range(12):
+            runs = json.loads(run(
+                ["gh", "run", "list", "--workflow", "macos-release.yml", "--event", "workflow_dispatch",
+                 "--limit", "5", "--json", "databaseId,createdAt"],
+                capture_output=True,
+            ).stdout or "[]")
+            run_id = next((str(r["databaseId"]) for r in runs if r["createdAt"] >= started), "")
+            if run_id:
+                break
+            time.sleep(10)
+        if not run_id:
+            raise RuntimeError(f"macos-release.yml run for {tag} never appeared; dispatch it again by hand.")
+        print(f"Waiting for the macOS build (run {run_id})...")
+        run(["gh", "run", "watch", run_id, "--exit-status", "--interval", "30"])
+
+    names = forgejo_release_asset_names(tag)
+    required = ["_all.deb"] if skip_macos else ["_all.deb", "-macos-arm64.zip"]
+    for suffix in required:
+        if not any(name.endswith(suffix) for name in names):
             raise RuntimeError(f"{tag} has no *{suffix} asset.")
 
 
