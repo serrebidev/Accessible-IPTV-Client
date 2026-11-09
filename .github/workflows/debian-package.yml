@@ -99,5 +99,25 @@ jobs:
       - name: Upload release asset
         if: ${{ steps.target.outputs.tag != '' }}
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.target.outputs.tag }}" "${{ steps.build.outputs.deb }}" --clobber
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_REPO: serrebi/Accessible-IPTV-Client
+          TAG: ${{ steps.target.outputs.tag }}
+          DEB: ${{ steps.build.outputs.deb }}
+        run: |
+          set -euo pipefail
+          api="https://git.serrebiradio.com/api/v1/repos/$FORGEJO_REPO"
+          [ -n "${FORGEJO_TOKEN:-}" ] || { echo "::error::FORGEJO_TOKEN secret is not set."; exit 1; }
+          release="$(curl -sS -H "Authorization: token $FORGEJO_TOKEN" "$api/releases/tags/$TAG")"
+          id="$(echo "$release" | jq -r '.id // empty')"
+          [ -n "$id" ] || { echo "::error::No Forgejo release for $TAG."; exit 1; }
+          name="$(basename "$DEB")"
+          asset_id="$(echo "$release" | jq -r --arg name "$name" '[.assets[]? | select(.name == $name) | .id][0] // empty')"
+          if [ -n "$asset_id" ]; then
+            echo "Replacing $name on $TAG..."
+            curl -sS -X DELETE -H "Authorization: token $FORGEJO_TOKEN" \
+              "$api/releases/$id/assets/$asset_id" >/dev/null
+          else
+            echo "Uploading $name to $TAG..."
+          fi
+          curl -sS -H "Authorization: token $FORGEJO_TOKEN" \
+            -F "attachment=@$DEB" "$api/releases/$id/assets?name=$name" >/dev/null

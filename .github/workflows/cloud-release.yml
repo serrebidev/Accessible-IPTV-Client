@@ -3,9 +3,10 @@ name: Cloud Release
 # Muse agent and cloud agents ONLY. On the Windows release host run `build.bat release`.
 # Windows runs the same build.bat release on a GitHub runner (version, notes,
 # translation audit, CHANGELOG, signed exe and installer, manifest, commit,
-# tag, Latest release), signed from the WINDOWS_CODESIGN_PFX/PASSWORD secrets
-# (the certificate the updater pins). A release published with GITHUB_TOKEN
-# starts no workflow, so this then dispatches debian-package.yml for the .deb.
+# tag, Forgejo release), signed from the WINDOWS_CODESIGN_PFX/PASSWORD secrets
+# (the certificate the updater pins). It needs a FORGEJO_TOKEN secret with
+# release scope. A release published on Forgejo starts no GitHub workflow,
+# so this then dispatches debian-package.yml for the .deb.
 # macOS (Apple Silicon) builds the same commit with tools/build_macos.sh and
 # attaches AccessibleIPTVClient-vX.Y.Z-macos-arm64.zip.
 #
@@ -117,10 +118,30 @@ jobs:
           call build.bat dry-run || exit /b 1
           call build.bat build
 
+      - name: Add the Forgejo remote
+        if: ${{ !inputs.dry_run }}
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          if (-not $env:FORGEJO_TOKEN) { throw "FORGEJO_TOKEN secret is missing" }
+          git remote add forgejo "https://x-access-token:$env:FORGEJO_TOKEN@git.serrebiradio.com/serrebi/Accessible-IPTV-Client.git"
+
       - name: Release
         if: ${{ !inputs.dry_run }}
         shell: cmd
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
         run: call build.bat release
+
+      - name: Push the release commit and tag to GitHub
+        if: ${{ !inputs.dry_run }}
+        run: |
+          $tag = git describe --tags --exact-match HEAD
+          if ($LASTEXITCODE -ne 0) { throw "No release tag on HEAD" }
+          git push origin main
+          if ($LASTEXITCODE -ne 0) { throw "git push origin main failed" }
+          git push origin $tag
+          if ($LASTEXITCODE -ne 0) { throw "git push origin $tag failed" }
 
       # The updater pins this certificate; never ship anything else.
       - name: Verify Authenticode signatures
@@ -159,6 +180,7 @@ jobs:
       - name: Build the .deb (debian-package.yml) and verify the release
         env:
           TAG: ${{ needs.windows.outputs.tag }}
+          FORGEJO_REPO: serrebi/Accessible-IPTV-Client
         run: |
           set -euo pipefail
           # Watch the run this step dispatched, never "the latest" one: v1.145.1's
@@ -181,10 +203,11 @@ jobs:
           [ -n "$id" ] || { echo "::error::Could not find the debian-package.yml run for $TAG"; exit 1; }
           echo "debian-package.yml for $TAG -> https://github.com/$GITHUB_REPOSITORY/actions/runs/$id"
           gh run watch "$id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 30
-          have="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          api="https://git.serrebiradio.com/api/v1/repos/$FORGEJO_REPO"
+          have="$(curl -sS "$api/releases/tags/$TAG" | jq -r '.assets[].name')"
           echo "$have"
           grep -q '\.deb$' <<<"$have" || { echo "::error::No .deb on $TAG"; exit 1; }
-          latest="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)"
+          latest="$(curl -sS "$api/releases/latest" | jq -r .tag_name)"
           [ "$latest" = "$TAG" ] || { echo "::error::/releases/latest is $latest"; exit 1; }
 
   macos:
@@ -218,4 +241,30 @@ jobs:
 
       - name: Attach to release
         if: ${{ !inputs.dry_run }}
-        run: gh release upload "${{ needs.windows.outputs.tag }}" dist/AccessibleIPTVClient-v*-macos-*.zip --clobber --repo "$GITHUB_REPOSITORY"
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_REPO: serrebi/Accessible-IPTV-Client
+          TAG: ${{ needs.windows.outputs.tag }}
+        run: |
+          set -euo pipefail
+          api="https://git.serrebiradio.com/api/v1/repos/$FORGEJO_REPO"
+          [ -n "${FORGEJO_TOKEN:-}" ] || { echo "::error::FORGEJO_TOKEN secret is not set."; exit 1; }
+          release="$(curl -sS -H "Authorization: token $FORGEJO_TOKEN" "$api/releases/tags/$TAG")"
+          id="$(echo "$release" | jq -r '.id // empty')"
+          [ -n "$id" ] || { echo "::error::No Forgejo release for $TAG."; exit 1; }
+          shopt -s nullglob
+          files=(dist/AccessibleIPTVClient-v*-macos-*.zip)
+          [ "${#files[@]}" -gt 0 ] || { echo "::error::No macOS zip to upload."; exit 1; }
+          for file in "${files[@]}"; do
+            name="$(basename "$file")"
+            asset_id="$(echo "$release" | jq -r --arg name "$name" '[.assets[]? | select(.name == $name) | .id][0] // empty')"
+            if [ -n "$asset_id" ]; then
+              echo "Replacing $name on $TAG..."
+              curl -sS -X DELETE -H "Authorization: token $FORGEJO_TOKEN" \
+                "$api/releases/$id/assets/$asset_id" >/dev/null
+            else
+              echo "Uploading $name to $TAG..."
+            fi
+            curl -sS -H "Authorization: token $FORGEJO_TOKEN" \
+              -F "attachment=@$file" "$api/releases/$id/assets?name=$name" >/dev/null
+          done
