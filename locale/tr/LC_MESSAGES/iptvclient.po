@@ -28,7 +28,7 @@ msgstr "(Henüz EPG hata ayıklama günlüğü yazılmadı.)"
 msgid "(No title)"
 msgstr "(Başlık yok)"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "(parmak izi {thumbprint})."
 
@@ -302,19 +302,19 @@ msgstr "Ses: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "Kimlik doğrulama başarısız – sunucu bu kimlik bilgilerini reddetti"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "Authenticode durumu {status} idi."
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "Authenticode doğrulaması başarısız oldu: {detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "Authenticode doğrulaması geçersiz veri döndürdü."
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "Authenticode doğrulaması zaman aşımına uğradı."
 
@@ -851,7 +851,7 @@ msgstr "Portala ulaşılamadı: {error}"
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Yayın URL'si çözümlenemedi:\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Authenticode doğrulaması çalıştırılamadı: {detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "Tam ekrandan çık"
 msgid "Exit Player"
 msgstr "Oynatıcıdan çık"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "Beklenen parmak izleri: {thumbprints}."
 
@@ -1306,11 +1306,11 @@ msgstr "Yayınlama başarısız oldu: {error}"
 msgid "Failed to connect: {error}"
 msgstr "Bağlanılamadı: {error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "Bildirim indirilemedi ({code})."
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "Güncelleme indirilemedi ({code})."
 
@@ -1318,7 +1318,7 @@ msgstr "Güncelleme indirilemedi ({code})."
 msgid "Failed to fetch EPG data: {error}"
 msgstr "EPG verileri alınamadı: {error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "Sürüm bilgileri alınamadı ({code})."
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Yedeği geri yüklemeden önce kayıtları ve indirmeleri bitirin."
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "Serrebi'yi GitHub'da takip et"
+msgid "Follow Serrebi on Forgejo"
+msgstr "Serrebi'yi Forgejo'da takip et"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "Forgejo API istek sınırı aşıldı. Lütfen daha sonra tekrar deneyin."
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "Tam ffmpeg günlüğü:\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "GitHub API istek sınırı aşıldı. Lütfen daha sonra tekrar deneyin."
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "Devam ediyor"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "Sağlayıcının XMLTV kılavuzunu otomatik olarak dahil et"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "Yükleyici iletisi: {message}"
 
@@ -1601,7 +1601,7 @@ msgstr "Seçilen kanalları koru"
 msgid "Keep this output device?\n{name}"
 msgstr "Bu çıkış aygıtı korunsun mu?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Canlı yayının 1–30 dakikasını saklayın; 0 yerel arabelleği kapatır."
 
@@ -1657,7 +1657,7 @@ msgstr "Önceden bildirim (dakika)"
 msgid "Live TV && Catch-up"
 msgstr "Canlı TV && Geri izleme"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "Canlı giriş sona erdi; saklanan geçmiş kullanılabilir durumda."
 
@@ -1682,12 +1682,12 @@ msgstr "Bölümler yükleniyor…"
 msgid "Loading playlists..."
 msgstr "Oynatma listeleri yükleniyor..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Yerel Canlı Yayın Arabelleği"
 
@@ -1732,7 +1732,7 @@ msgstr "Ana pencere kısayolları Ctrl veya Alt gerektirir."
 msgid "Maximum connections"
 msgstr "En fazla bağlantı"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Oturum başına en fazla yerel arabellek boyutu (MiB). Sınırlardan birine ulaşılınca en eski veriler silinir."
 
@@ -1749,7 +1749,7 @@ msgstr "Menü"
 msgid "Message from provider"
 msgstr "Sağlayıcıdan mesaj"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1779,7 +1779,7 @@ msgstr "İki noktadan sonraki dakika ve saniye değerleri 60'tan küçük olmal�
 msgid "Minutes before programme:"
 msgstr "Programdan önceki dakika:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "Hiçbir ffmpeg ayrıntısı bildirilmedi."
 msgid "No later subtitle."
 msgstr "Daha sonraki altyazı yok."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "Yerel canlı yayın geçmişi bulunmuyor."
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "Kayıt klasörünü aç"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "Accessible IPTV Client projesini GitHub'da aç"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "Accessible IPTV Client projesini Forgejo'da aç"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "Canlı Yayına Dön"
 msgid "Review recent subtitles..."
 msgstr "Son altyazıları gözden geçir..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Canlı Yayını Geri Sar"
 
@@ -2866,11 +2866,11 @@ msgstr "Cihazlar aranıyor..."
 msgid "Searching programmes..."
 msgstr "Programlar aranıyor..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "En son saklanan görüntüye göre gecikme (saniye); 0 canlı yayına döner."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "Saniye:"
@@ -3145,7 +3145,7 @@ msgstr "Kaydı/kayıtları durdur"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Yerleşik oynatmayı 1–1440 dakika sonra durdur; zamanlayıcıyı iptal etmek için 0 girin."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Bir yayın cihazına geçmeden önce yerel arabellekten oynatmayı durdurun."
 
@@ -3338,15 +3338,15 @@ msgstr "Sağlayıcıya bağlantı zaman aşımına uğradı."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "Bitiş gelecekte, başlangıçtan sonra ve en fazla yedi gün içinde olmalıdır."
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "Yükleyici başlatılamadı."
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "Yükleyici {code} çıkış koduyla durdu."
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "Yükleyici 15 dakika sonra hâlâ çalışıyordu."
 
@@ -3358,15 +3358,15 @@ msgstr "Dil değiştirildi. Değişikliğin tam olarak etkili olması için lüt
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Canlı yayın arabelleği kaynak değiştiriyor. Zamanlanmış kayıt başlatılamadı."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "Yerel arabellek hâlâ bir kayda veri sağlıyor. Kapatmadan önce kaydı durdurun."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "Depolama veya giriş hatası nedeniyle yerel arabellek durdu."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "Yerel canlı yayın arabelleği başlatılamadı. Sağlayıcıya ek bağlantı açılmadı. Doğrudan oynatmayı yeniden denemek için arabelleği kapatın."
 
@@ -3378,7 +3378,7 @@ msgstr "En fazla 50 favori listesi oluşturulabilir."
 msgid "The media duration is not available yet."
 msgstr "Medya süresi henüz kullanılamıyor."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "Eski konumun süresi doldu; oynatma saklanan aralığa taşındı."
 
@@ -3396,7 +3396,7 @@ msgstr "İşlem başarısız oldu:\n{error}"
 msgid "The passwords do not match."
 msgstr "Şifreler eşleşmiyor."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "Duraklatılan konumun süresi doldu. Oynatma saklanan en eski görüntüden sürdürüldü."
 
@@ -3624,12 +3624,12 @@ msgstr "Tür"
 msgid "URL copied to the clipboard."
 msgstr "URL panoya kopyalandı."
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "Bildirim indirilemedi. Lütfen bağlantınızı kontrol edin."
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "Güncelleme indirilemedi. Lütfen bağlantınızı kontrol edin."
 
@@ -3641,9 +3641,9 @@ msgstr "Geri izleme indirmesi hazırlanamadı:\n{error}"
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Geri izleme yayını hazırlanamadı:\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "GitHub'a ulaşılamadı. Lütfen bağlantınızı kontrol edin."
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "Forgejo'ya ulaşılamadı. Lütfen bağlantınızı kontrol edin."
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream sunucusundan beklenmeyen hesap yanıtı"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "Bilinmiyor"
 
@@ -3695,7 +3695,7 @@ msgstr "Güncelleme tamamlanmadı"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Güncelleme mevcut: v{latest} (geçerli v{current})."
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "Güncelleme iptal edildi."
 
@@ -3731,12 +3731,12 @@ msgstr "Güncelleme bildirimi güvenli olmayan bir varlık dosya adı içeriyor.
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "Güncelleme bildirimi güvenli olmayan bir yükleyici dosya adı içeriyor."
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "Güncelleme bildirimi indirme URL'si eksik."
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "Güncelleme bildiriminde gerekli alanlar eksik."
 
@@ -3744,11 +3744,11 @@ msgstr "Güncelleme bildiriminde gerekli alanlar eksik."
 msgid "Update manifest version is not newer than the current app."
 msgstr "Güncelleme bildirimi sürümü geçerli uygulamadan daha yeni değil."
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "Güncelleme bildirimi en son sürümde bulunamadı."
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "Güncelleme paketi güvenli olmayan bir dosya yolu içeriyor."
 
@@ -3880,7 +3880,7 @@ msgstr "Şimdi yayında"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "Bir kanal birden fazla ses parçası sunduğunda, yerleşik oynatıcı istediğiniz parçaya kendiliğinden geçebilir."
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "Windows güncellemeyi yüklemek için izin alamadı."
 

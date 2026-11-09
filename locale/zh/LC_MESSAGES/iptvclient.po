@@ -28,7 +28,7 @@ msgstr "（尚未写入 EPG 调试日志。）"
 msgid "(No title)"
 msgstr "（无标题）"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "（指纹 {thumbprint}）。"
 
@@ -302,19 +302,19 @@ msgstr "音频：{name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "身份验证失败 – 服务器拒绝了这些凭据"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "Authenticode 状态为 {status}。"
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "Authenticode 验证失败：{detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "Authenticode 验证返回了无效数据。"
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "Authenticode 验证超时。"
 
@@ -851,7 +851,7 @@ msgstr "无法连接到门户：{error}"
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "无法解析流 URL：\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "无法运行 Authenticode 验证：{detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "退出全屏"
 msgid "Exit Player"
 msgstr "退出播放器"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "预期指纹：{thumbprints}。"
 
@@ -1306,11 +1306,11 @@ msgstr "投屏失败：{error}"
 msgid "Failed to connect: {error}"
 msgstr "连接失败：{error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "下载清单失败（{code}）。"
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "下载更新失败（{code}）。"
 
@@ -1318,7 +1318,7 @@ msgstr "下载更新失败（{code}）。"
 msgid "Failed to fetch EPG data: {error}"
 msgstr "获取 EPG 数据失败：{error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "获取发布信息失败（{code}）。"
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "请先结束录制和下载，再还原备份。"
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "在 GitHub 上关注 Serrebi"
+msgid "Follow Serrebi on Forgejo"
+msgstr "在 Forgejo 上关注 Serrebi"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "已超出 Forgejo API 速率限制。请稍后重试。"
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "完整的 ffmpeg 日志：\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "已超出 GitHub API 速率限制。请稍后重试。"
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "进行中"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "自动包含提供商的 XMLTV 指南"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "安装程序消息：{message}"
 
@@ -1601,7 +1601,7 @@ msgstr "保留已选频道"
 msgid "Keep this output device?\n{name}"
 msgstr "保留此输出设备吗？\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "保留 1–30 分钟的直播内容；设为 0 可禁用本地缓冲区。"
 
@@ -1657,7 +1657,7 @@ msgstr "提前通知（分钟）"
 msgid "Live TV && Catch-up"
 msgstr "直播电视和回看"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "直播输入已结束；保留的历史内容仍然可用。"
 
@@ -1682,12 +1682,12 @@ msgstr "正在加载分集…"
 msgid "Loading playlists..."
 msgstr "正在加载播放列表..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "本地直播缓冲区"
 
@@ -1732,7 +1732,7 @@ msgstr "主窗口快捷键需要 Ctrl 或 Alt。"
 msgid "Maximum connections"
 msgstr "最大连接数"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "每个会话的本地缓冲区大小上限（MiB）。达到任一限制时将删除最早的数据。"
 
@@ -1749,7 +1749,7 @@ msgstr "菜单"
 msgid "Message from provider"
 msgstr "提供商消息"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB："
@@ -1779,7 +1779,7 @@ msgstr "冒号后的分钟和秒数必须小于60。"
 msgid "Minutes before programme:"
 msgstr "节目开始前的分钟数："
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "未报告任何 ffmpeg 详情。"
 msgid "No later subtitle."
 msgstr "没有更晚的字幕。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "没有可用的本地直播历史内容。"
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "打开录制文件夹"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "在 GitHub 上打开 Accessible IPTV Client 项目"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "在 Forgejo 上打开 Accessible IPTV Client 项目"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "返回直播"
 msgid "Review recent subtitles..."
 msgstr "查看最近的字幕..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "回退直播"
 
@@ -2866,11 +2866,11 @@ msgstr "正在搜索设备..."
 msgid "Searching programmes..."
 msgstr "正在搜索节目..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "相对于最新缓冲画面的延迟秒数；设为 0 可返回直播。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "秒："
@@ -3145,7 +3145,7 @@ msgstr "停止录制"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "在 1–1440 分钟后停止内置播放器的播放；输入 0 可取消定时器。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "切换到投放设备前，请停止本地缓冲播放。"
 
@@ -3338,15 +3338,15 @@ msgstr "连接提供商超时。"
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "结束时间必须在未来、晚于开始时间，且距开始不超过七天。"
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "无法启动安装程序。"
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "安装程序已停止，退出代码为 {code}。"
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "15 分钟后安装程序仍在运行。"
 
@@ -3358,15 +3358,15 @@ msgstr "语言已更改。请重新启动 Accessible IPTV Client 以使更改完
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "直播缓冲区正在切换源。无法启动计划录制。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "本地缓冲区仍在供录制使用。请先停止录制，再禁用缓冲区。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "本地缓冲区因存储或输入故障而停止。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "无法启动本地直播缓冲区。未打开额外的提供商连接。请禁用缓冲区后重试直接播放。"
 
@@ -3378,7 +3378,7 @@ msgstr "最多可创建50个收藏列表。"
 msgid "The media duration is not available yet."
 msgstr "媒体时长暂不可用。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "原缓冲位置已过期；播放已移至保留范围。"
 
@@ -3396,7 +3396,7 @@ msgstr "操作失败：\n{error}"
 msgid "The passwords do not match."
 msgstr "密码不匹配。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "暂停位置已过期。已从最早保留的画面恢复播放。"
 
@@ -3624,12 +3624,12 @@ msgstr "类型"
 msgid "URL copied to the clipboard."
 msgstr "已将 URL 复制到剪贴板。"
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "无法下载清单。请检查您的连接。"
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "无法下载更新。请检查您的连接。"
 
@@ -3641,9 +3641,9 @@ msgstr "无法准备回看下载：\n{error}"
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "无法准备回看流：\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "无法访问 GitHub。请检查您的连接。"
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "无法访问 Forgejo。请检查您的连接。"
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "来自 Xtream 服务器的意外账户响应"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "未知"
 
@@ -3695,7 +3695,7 @@ msgstr "更新未完成"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "有可用更新：v{latest}（当前 v{current}）。"
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "更新已取消。"
 
@@ -3731,12 +3731,12 @@ msgstr "更新清单包含不安全的资源文件名。"
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "更新清单包含不安全的安装程序文件名。"
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "缺少更新清单下载 URL。"
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "更新清单缺少必需字段。"
 
@@ -3744,11 +3744,11 @@ msgstr "更新清单缺少必需字段。"
 msgid "Update manifest version is not newer than the current app."
 msgstr "更新清单版本不比当前应用新。"
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "在最新发布中未找到更新清单。"
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "更新包包含不安全的文件路径。"
 
@@ -3880,7 +3880,7 @@ msgstr "正在播出"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "当频道提供多个音轨时，内置播放器可以自动切换到您想要的音轨。"
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "Windows 未获得安装更新的权限。"
 

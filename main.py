@@ -121,7 +121,7 @@ from playlist_headers import (
     _playlist_header_epg_urls,
 )
 from app_links import (  # noqa: F401 - re-exported: tests and tools read main.*
-    PROJECT_GITHUB_URL, SERREBI_GITHUB_URL, TELEGRAM_SUPPORT_URL,
+    PROJECT_FORGEJO_URL, SERREBI_FORGEJO_URL, TELEGRAM_SUPPORT_URL,
 )
 from channel_widgets import (  # noqa: F401 - tools/smoke_virtual_list_nvda.py reads main.*
     _AccessibleCategoryTree, _VirtualChannelList, _VirtualWhatsOnList,
@@ -4704,8 +4704,8 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
                 else _AUTO_UPDATE_HTTP_TIMEOUT_SECONDS
             )
             release = updater.fetch_latest_release(
-                app_meta.GITHUB_OWNER,
-                app_meta.GITHUB_REPO,
+                app_meta.FORGEJO_OWNER,
+                app_meta.FORGEJO_REPO,
                 timeout=timeout,
             )
             tag = release.get("tag_name") or ""

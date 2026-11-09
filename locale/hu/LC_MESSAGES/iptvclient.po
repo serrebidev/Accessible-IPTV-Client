@@ -28,7 +28,7 @@ msgstr "(Még nem készült EPG-hibakeresési napló.)"
 msgid "(No title)"
 msgstr "(Nincs cím)"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "(ujjlenyomat: {thumbprint})."
 
@@ -302,19 +302,19 @@ msgstr "Hang: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "A hitelesítés nem sikerült – a kiszolgáló elutasította a bejelentkezési adatokat"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "Az Authenticode-ellenőrzés állapota: {status}."
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "Az Authenticode-ellenőrzés nem sikerült: {detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "Az Authenticode-ellenőrzés során kapott adatok érvénytelenek."
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "Az Authenticode-ellenőrzés időtúllépés miatt megszakadt."
 
@@ -851,7 +851,7 @@ msgstr "Nem sikerült elérni a portált: {error}"
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Nem sikerült meghatározni az adás URL-címét:\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Nem sikerült futtatni az Authenticode-ellenőrzést: {detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "Kilépés a teljes képernyős nézetből"
 msgid "Exit Player"
 msgstr "Kilépés a lejátszóból"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "Elvárt tanúsítvány-ujjlenyomatok: {thumbprints}."
 
@@ -1306,11 +1306,11 @@ msgstr "Nem sikerült az átküldés: {error}"
 msgid "Failed to connect: {error}"
 msgstr "Nem sikerült kapcsolódni: {error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "Nem sikerült letölteni a frissítési jegyzéket ({code})."
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "Nem sikerült letölteni a frissítést ({code})."
 
@@ -1318,7 +1318,7 @@ msgstr "Nem sikerült letölteni a frissítést ({code})."
 msgid "Failed to fetch EPG data: {error}"
 msgstr "Nem sikerült lekérni a műsorújság adatait: {error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "Nem sikerült lekérni a kiadás adatait ({code})."
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "A biztonsági mentés visszaállítása előtt fejezze be a felvételeket és a letöltéseket."
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "Serrebi követése a GitHubon"
+msgid "Follow Serrebi on Forgejo"
+msgstr "Serrebi követése a Forgejón"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "A program elérte a Forgejo API lekérdezési korlátját. Próbálja újra később."
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "Teljes FFmpeg-napló:\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip-tömörített XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "A program elérte a GitHub API lekérdezési korlátját. Próbálja újra később."
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "Folyamatban"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "A szolgáltató XMLTV-forrásának automatikus beállítása"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "A telepítő üzenete: {message}"
 
@@ -1601,7 +1601,7 @@ msgstr "Kiválasztott csatornák megtartása"
 msgid "Keep this output device?\n{name}"
 msgstr "Megtartja ezt a hangkimeneti eszközt?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Az élő adás megőrzésének időtartama percben (1–30); 0-val kikapcsolható a helyi tárolás."
 
@@ -1657,7 +1657,7 @@ msgstr "Előzetes értesítés (perc)"
 msgid "Live TV && Catch-up"
 msgstr "Élő TV és műsorarchívum"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "Az élő adatfolyam véget ért; a megőrzött részletek továbbra is elérhetők."
 
@@ -1682,12 +1682,12 @@ msgstr "Epizódok betöltése…"
 msgid "Loading playlists..."
 msgstr "Lejátszási listák betöltése…"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Élő adás helyi tárolása"
 
@@ -1732,7 +1732,7 @@ msgstr "A főablak billentyűparancsainak tartalmazniuk kell a Ctrl vagy az Alt 
 msgid "Maximum connections"
 msgstr "Kapcsolatok maximális száma"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "A helyi tárolás munkamenetenkénti felső mérethatára MiB-ban. Bármelyik korlát elérésekor a legrégebbi adatok törlődnek."
 
@@ -1749,7 +1749,7 @@ msgstr "Menü"
 msgid "Message from provider"
 msgstr "Üzenet a szolgáltatótól"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1779,7 +1779,7 @@ msgstr "A kettőspont utáni perc- és másodpercértéknek 60-nál kisebbnek ke
 msgid "Minutes before programme:"
 msgstr "Ráhagyás a műsor előtt (perc):"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "Az FFmpeg nem közölt további részleteket."
 msgid "No later subtitle."
 msgstr "Nincs későbbi felirat."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "Nincs elérhető, helyben tárolt adásrészlet."
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "Felvételek mappájának megnyitása"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "Az Accessible IPTV Client projekt megnyitása a GitHubon"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "Az Accessible IPTV Client projekt megnyitása a Forgejón"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "Visszatérés az élő adáshoz"
 msgid "Review recent subtitles..."
 msgstr "Friss feliratok áttekintése…"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Élő adás visszatekerése"
 
@@ -2866,11 +2866,11 @@ msgstr "Eszközök keresése…"
 msgid "Searching programmes..."
 msgstr "Műsorok keresése…"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "A legfrissebb tárolt képhez viszonyított késleltetés másodpercben; 0-val visszatérhet az élő adáshoz."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "Másodperc:"
@@ -3145,7 +3145,7 @@ msgstr "Rögzítések leállítása"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "A beépített lejátszás leállítása 1–1440 perc múlva; az időzítő kikapcsolásához adjon meg 0-t."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Távoli lejátszóeszközre váltás előtt állítsa le a helyben tárolt adás lejátszását."
 
@@ -3338,15 +3338,15 @@ msgstr "Időtúllépés történt a szolgáltatóhoz való kapcsolódás közben
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "A befejezésnek a jövőben, a kezdés után, attól számítva legfeljebb hét napon belül kell lennie."
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "A telepítőt nem sikerült elindítani."
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "A telepítő {code} kilépési kóddal leállt."
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "A telepítő 15 perc után is még futott."
 
@@ -3358,15 +3358,15 @@ msgstr "A program nyelve megváltozott. A módosítás teljes érvénybe lépés
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Az élő adás forrásváltása még folyamatban van. Az ütemezett felvételt nem sikerült elindítani."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "A helyi tároló még folyamatban lévő felvételt szolgál ki. Kikapcsolása előtt állítsa le a rögzítést."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "A helyi tárolás háttértár- vagy adatforráshiba miatt leállt."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "Az élő adás helyi tárolását nem sikerült elindítani. Nem nyílt további szolgáltatói kapcsolat. A közvetlen lejátszás ismételt megkísérléséhez kapcsolja ki a helyi tárolást."
 
@@ -3378,7 +3378,7 @@ msgstr "Legfeljebb 50 kedvenclista hozható létre."
 msgid "The media duration is not available yet."
 msgstr "A műsor teljes hossza még nem érhető el."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "A korábbi lejátszási pozíció már nem érhető el; a műsor a még megőrzött résztől folytatódik."
 
@@ -3396,7 +3396,7 @@ msgstr "A művelet nem sikerült:\n{error}"
 msgid "The passwords do not match."
 msgstr "A megadott jelszavak nem egyeznek."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "A szüneteltetéskori pozíció már nem érhető el. A lejátszás a legrégebbi megőrzött képtől folytatódik."
 
@@ -3624,12 +3624,12 @@ msgstr "Típus"
 msgid "URL copied to the clipboard."
 msgstr "Az URL-cím a vágólapra került."
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "Nem sikerült letölteni a frissítési jegyzéket. Ellenőrizze az internetkapcsolatot."
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "Nem sikerült letölteni a frissítést. Ellenőrizze az internetkapcsolatot."
 
@@ -3641,9 +3641,9 @@ msgstr "Nem sikerült előkészíteni az archív műsor letöltését:\n{error}"
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Nem sikerült előkészíteni az archív adást:\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "Nem sikerült elérni a GitHubot. Ellenőrizze az internetkapcsolatot."
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "Nem sikerült elérni a Forgejót. Ellenőrizze az internetkapcsolatot."
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Váratlan fiókválasz érkezett az Xtream-kiszolgálótól"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "Ismeretlen"
 
@@ -3695,7 +3695,7 @@ msgstr "A frissítés nem fejeződött be"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Frissítés érhető el: v{latest} (jelenlegi verzió: v{current})."
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "A frissítés megszakadt."
 
@@ -3731,12 +3731,12 @@ msgstr "A frissítési jegyzék nem biztonságos csomagfájlnevet tartalmaz."
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "A frissítési jegyzék nem biztonságos telepítőfájlnevet tartalmaz."
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "Hiányzik a frissítési jegyzék letöltési URL-címe."
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "Hiányoznak a frissítési jegyzék kötelező mezői."
 
@@ -3744,11 +3744,11 @@ msgstr "Hiányoznak a frissítési jegyzék kötelező mezői."
 msgid "Update manifest version is not newer than the current app."
 msgstr "A frissítési jegyzékben szereplő verzió nem újabb a jelenleg telepítettnél."
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "A legújabb kiadás nem tartalmaz frissítési jegyzéket."
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "A frissítési csomag nem biztonságos fájlútvonalat tartalmaz."
 
@@ -3880,7 +3880,7 @@ msgstr "Most adásban"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "Ha egy csatorna több hangsávot kínál, a beépített lejátszó automatikusan átválthat a kívánt hangsávra."
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "A Windows nem kapott engedélyt a frissítés telepítéséhez."
 

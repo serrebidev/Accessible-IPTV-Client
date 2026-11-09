@@ -28,7 +28,7 @@ msgstr "(अभी तक कोई EPG डिबग लॉग नहीं ल�
 msgid "(No title)"
 msgstr "(कोई शीर्षक नहीं)"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "(थंबप्रिंट {thumbprint})।"
 
@@ -302,19 +302,19 @@ msgstr "ऑडियो: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "प्रमाणीकरण विफल – सर्वर ने इन क्रेडेंशियल्स को अस्वीकार कर दिया"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "Authenticode स्थिति {status} थी।"
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "Authenticode सत्यापन विफल: {detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "Authenticode सत्यापन ने अमान्य डेटा लौटाया।"
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "Authenticode सत्यापन का समय समाप्त हो गया।"
 
@@ -851,7 +851,7 @@ msgstr "पोर्टल तक नहीं पहुँचा जा सक�
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "स्ट्रीम URL हल नहीं किया जा सका:\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Authenticode सत्यापन नहीं चला सका: {detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "पूर्ण स्क्रीन से बाहर निकल�
 msgid "Exit Player"
 msgstr "प्लेयर से बाहर निकलें"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "अपेक्षित थंबप्रिंट: {thumbprints}।"
 
@@ -1306,11 +1306,11 @@ msgstr "कास्ट करने में विफल: {error}"
 msgid "Failed to connect: {error}"
 msgstr "कनेक्ट करने में विफल: {error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "मेनिफ़ेस्ट डाउनलोड करने में विफल ({code})।"
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "अपडेट डाउनलोड करने में विफल ({code})।"
 
@@ -1318,7 +1318,7 @@ msgstr "अपडेट डाउनलोड करने में विफ�
 msgid "Failed to fetch EPG data: {error}"
 msgstr "EPG डेटा प्राप्त करने में विफल: {error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "रिलीज़ जानकारी प्राप्त करने में विफल ({code})।"
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "बैकअप बहाल करने से पहले रिकॉर्डिंग और डाउनलोड पूरे करें।"
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "GitHub पर Serrebi को फ़ॉलो करें"
+msgid "Follow Serrebi on Forgejo"
+msgstr "Forgejo पर Serrebi को फ़ॉलो करें"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "Forgejo API दर सीमा पार हो गई। कृपया बाद में पुनः प्रयास करें।"
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "पूर्ण ffmpeg लॉग:\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "GitHub API दर सीमा पार हो गई। कृपया बाद में पुनः प्रयास करें।"
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "प्रगति पर"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "प्रदाता का XMLTV गाइड स्वतः शामिल करें"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "इंस्टॉलर संदेश: {message}"
 
@@ -1601,7 +1601,7 @@ msgstr "चुने गए चैनल रखें"
 msgid "Keep this output device?\n{name}"
 msgstr "क्या यह आउटपुट डिवाइस रखें?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "लाइव टीवी के 1–30 मिनट सुरक्षित रखें; 0 से स्थानीय बफ़र बंद होता है।"
 
@@ -1657,7 +1657,7 @@ msgstr "पहले सूचना (मिनट)"
 msgid "Live TV && Catch-up"
 msgstr "लाइव टीवी && कैच-अप"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "लाइव इनपुट समाप्त हो गया; सुरक्षित इतिहास अब भी उपलब्ध है।"
 
@@ -1682,12 +1682,12 @@ msgstr "एपिसोड लोड हो रहे हैं…"
 msgid "Loading playlists..."
 msgstr "प्लेलिस्ट लोड हो रही हैं..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "स्थानीय लाइव बफ़र"
 
@@ -1732,7 +1732,7 @@ msgstr "मुख्य विंडो के शॉर्टकट में C
 msgid "Maximum connections"
 msgstr "अधिकतम कनेक्शन"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "प्रति सत्र स्थानीय बफ़र का अधिकतम आकार (MiB)। किसी भी सीमा तक पहुँचने पर सबसे पुराना डेटा हटाया जाता है।"
 
@@ -1749,7 +1749,7 @@ msgstr "मेनू"
 msgid "Message from provider"
 msgstr "प्रदाता का संदेश"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1779,7 +1779,7 @@ msgstr "कोलन के बाद मिनट और सेकंड का
 msgid "Minutes before programme:"
 msgstr "कार्यक्रम से पहले के मिनट:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "कोई ffmpeg विवरण रिपोर्ट नहीं क�
 msgid "No later subtitle."
 msgstr "इसके बाद कोई उपशीर्षक नहीं है।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "स्थानीय लाइव इतिहास उपलब्ध नहीं है।"
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "रिकॉर्डिंग फ़ोल्डर खोलें"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "GitHub पर Accessible IPTV Client प्रोजेक्ट खोलें"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "Forgejo पर Accessible IPTV Client प्रोजेक्ट खोलें"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "लाइव पर लौटें"
 msgid "Review recent subtitles..."
 msgstr "हालिया उपशीर्षक समीक्षा..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "लाइव टीवी पीछे करें"
 
@@ -2866,11 +2866,11 @@ msgstr "डिवाइस खोजे जा रहे हैं..."
 msgid "Searching programmes..."
 msgstr "कार्यक्रम खोजे जा रहे हैं..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "सबसे नई सुरक्षित तस्वीर से देरी (सेकंड); 0 से लाइव पर लौटते हैं।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "सेकंड:"
@@ -3145,7 +3145,7 @@ msgstr "रिकॉर्डिंग रोकें"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "अंतर्निहित प्लेयर का प्लेबैक 1–1440 मिनट बाद रोकें; टाइमर रद्द करने के लिए 0 दर्ज करें।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "कास्ट डिवाइस पर जाने से पहले स्थानीय बफ़र से प्लेबैक रोकें।"
 
@@ -3338,15 +3338,15 @@ msgstr "प्रदाता से कनेक्शन का समय स�
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "समाप्ति भविष्य में और आरंभ के बाद, उससे सात दिनों के भीतर होनी चाहिए।"
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "इंस्टॉलर शुरू नहीं किया जा सका।"
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "इंस्टॉलर निकास कोड {code} के साथ रुक गया।"
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "15 मिनट बाद भी इंस्टॉलर चल रहा था।"
 
@@ -3358,15 +3358,15 @@ msgstr "भाषा बदल दी गई है। परिवर्तन 
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "लाइव बफ़र का स्रोत बदला जा रहा है। निर्धारित रिकॉर्डिंग शुरू नहीं हो सकी।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "स्थानीय बफ़र अभी रिकॉर्डिंग को डेटा दे रहा है। इसे बंद करने से पहले रिकॉर्डिंग रोकें।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "स्टोरेज या इनपुट की समस्या के कारण स्थानीय बफ़र रुक गया।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "स्थानीय लाइव बफ़र शुरू नहीं हो सका। प्रदाता से कोई अतिरिक्त कनेक्शन नहीं खोला गया। सीधे प्लेबैक का फिर प्रयास करने के लिए बफ़र बंद करें।"
 
@@ -3378,7 +3378,7 @@ msgstr "अधिकतम 50 पसंदीदा सूचियाँ बन
 msgid "The media duration is not available yet."
 msgstr "मीडिया की अवधि अभी उपलब्ध नहीं है।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "पुरानी स्थिति अब उपलब्ध नहीं है; प्लेबैक सुरक्षित दायरे में चला गया है।"
 
@@ -3396,7 +3396,7 @@ msgstr "कार्रवाई विफल हुई:\n{error}"
 msgid "The passwords do not match."
 msgstr "पासवर्ड मेल नहीं खाते।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "विराम की स्थिति अब उपलब्ध नहीं है। सबसे पुरानी सुरक्षित तस्वीर से प्लेबैक फिर शुरू हुआ।"
 
@@ -3624,12 +3624,12 @@ msgstr "प्रकार"
 msgid "URL copied to the clipboard."
 msgstr "URL क्लिपबोर्ड पर कॉपी हो गई।"
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "मेनिफ़ेस्ट डाउनलोड नहीं किया जा सका। कृपया अपना कनेक्शन जाँचें।"
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "अपडेट डाउनलोड नहीं किया जा सका। कृपया अपना कनेक्शन जाँचें।"
 
@@ -3641,9 +3641,9 @@ msgstr "कैच-अप डाउनलोड तैयार नहीं क�
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "कैच-अप स्ट्रीम तैयार नहीं की जा सकी:\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "GitHub तक नहीं पहुँचा जा सका। कृपया अपना कनेक्शन जाँचें।"
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "Forgejo तक नहीं पहुँचा जा सका। कृपया अपना कनेक्शन जाँचें।"
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream सर्वर से अप्रत्याशित खाता प्रतिक्रिया"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "अज्ञात"
 
@@ -3695,7 +3695,7 @@ msgstr "अपडेट पूरा नहीं हुआ"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "अपडेट उपलब्ध: v{latest} (वर्तमान v{current})।"
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "अपडेट रद्द किया गया।"
 
@@ -3731,12 +3731,12 @@ msgstr "अपडेट मैनिफ़ेस्ट में असुरक
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "अपडेट मैनिफ़ेस्ट में असुरक्षित इंस्टॉलर फ़ाइल नाम है।"
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "अपडेट मेनिफ़ेस्ट डाउनलोड URL गायब है।"
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "अपडेट मेनिफ़ेस्ट में आवश्यक फ़ील्ड गायब हैं।"
 
@@ -3744,11 +3744,11 @@ msgstr "अपडेट मेनिफ़ेस्ट में आवश्य
 msgid "Update manifest version is not newer than the current app."
 msgstr "अपडेट मेनिफ़ेस्ट संस्करण वर्तमान ऐप से नया नहीं है।"
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "नवीनतम रिलीज़ में अपडेट मेनिफ़ेस्ट नहीं मिला।"
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "अपडेट पैकेज में एक असुरक्षित फ़ाइल पथ है।"
 
@@ -3880,7 +3880,7 @@ msgstr "अभी क्या चल रहा है"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "जब किसी चैनल में एक से अधिक ऑडियो ट्रैक होते हैं, तो अंतर्निहित प्लेयर स्वयं ही आपके पसंदीदा ट्रैक पर स्विच कर सकता है।"
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "Windows को अपडेट इंस्टॉल करने की अनुमति नहीं मिली।"
 

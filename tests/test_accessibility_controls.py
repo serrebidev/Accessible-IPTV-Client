@@ -91,8 +91,8 @@ def test_shift_tab_from_the_url_field_returns_to_the_episode_description():
 
 def test_about_urls_are_listed_and_diagnostics_keep_urls():
     assert main.TELEGRAM_SUPPORT_URL == "https://t.me/SerrebiProjects"
-    assert main.PROJECT_GITHUB_URL == "https://github.com/serrebidev/Accessible-IPTV-Client"
-    assert main.SERREBI_GITHUB_URL == "https://github.com/serrebidev"
+    assert main.PROJECT_FORGEJO_URL == "https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client"
+    assert main.SERREBI_FORGEJO_URL == "https://git.serrebiradio.com/serrebi"
 
     # The diagnostic report is deliberately verbatim: whoever receives it needs
     # the stream URL and credentials to reproduce a playback or download bug.

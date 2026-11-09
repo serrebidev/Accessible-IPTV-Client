@@ -7,6 +7,8 @@ whole application module.
 import app_meta
 
 TELEGRAM_SUPPORT_URL = "https://t.me/SerrebiProjects"
-PROJECT_GITHUB_URL = "https://github.com/{owner}/Accessible-IPTV-Client".format(
-    owner=app_meta.GITHUB_OWNER)
-SERREBI_GITHUB_URL = "https://github.com/serrebidev"
+PROJECT_FORGEJO_URL = "https://{host}/{owner}/{repo}".format(
+    host=app_meta.FORGEJO_HOST, owner=app_meta.FORGEJO_OWNER,
+    repo=app_meta.FORGEJO_REPO)
+SERREBI_FORGEJO_URL = "https://{host}/{owner}".format(
+    host=app_meta.FORGEJO_HOST, owner=app_meta.FORGEJO_OWNER)

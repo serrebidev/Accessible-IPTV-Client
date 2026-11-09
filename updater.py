@@ -18,6 +18,8 @@ import zipfile
 from dataclasses import dataclass
 from typing import Iterable, Optional, Tuple
 
+import app_meta
+
 from i18n import gettext as _
 
 LOG = logging.getLogger(__name__)
@@ -117,7 +119,7 @@ def update_log_path() -> str:
 # instead of only pointing at a log (issue #26).
 UPDATE_RESULT_NAME = "AccessibleIPTVClient_update_result.json"
 INSTALLER_LOG_NAME = "AccessibleIPTVClient_installer.log"
-# A GitHub comment holds 65,536 characters; leave room for the user's words.
+# A bug-tracker comment holds limited text; leave room for the user's words.
 _UPDATE_LOGS_MAX_CHARS = 60000
 
 
@@ -494,45 +496,47 @@ def is_newer_version(current: str, latest: str) -> bool:
     return new > cur
 
 
-def _is_github_host(url: str) -> bool:
-    """True for the hosts a GitHub release is served from.
+def _is_forgejo_host(url: str) -> bool:
+    """True for the host a Forgejo release is served from.
 
-    The token in the environment is the user's own GitHub credential. The
+    The token in the environment is the user's own Forgejo credential. The
     release manifest names the download URLs and travels unsigned, so the
     token must never go to a host the manifest points at.
     """
     host = (urllib.parse.urlparse(url).hostname or "").lower()
-    return host == "github.com" or host.endswith((".github.com", ".githubusercontent.com"))
+    return host == app_meta.FORGEJO_HOST.lower()
 
 
 def _build_request(url: str) -> urllib.request.Request:
     headers = {
         "User-Agent": "AccessibleIPTVClient-Updater",
-        "Accept": "application/vnd.github+json",
+        "Accept": "application/json",
     }
-    token = os.environ.get("GITHUB_TOKEN", "").strip()
-    if token and _is_github_host(url):
+    # GITHUB_TOKEN is the pre-migration name; still honored.
+    token = (os.environ.get("FORGEJO_TOKEN", "").strip()
+             or os.environ.get("GITHUB_TOKEN", "").strip())
+    if token and _is_forgejo_host(url):
         headers["Authorization"] = f"token {token}"
     return urllib.request.Request(url, headers=headers)
 
 
 class _HostBoundRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """A redirect must not carry the GitHub token to another host.
+    """A redirect must not carry the Forgejo token to another host.
 
     urllib copies the original request's headers into the redirected one, so a
-    manifest URL on github.com that answers with a redirect would take the
+    manifest URL on Forgejo that answers with a redirect would take the
     user's own credential with it - and the manifest travels unsigned.
     """
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
-        if new is not None and not _is_github_host(newurl):
+        if new is not None and not _is_forgejo_host(newurl):
             new.remove_header("Authorization")
         return new
 
 
 def _open(req: urllib.request.Request, timeout: float):
-    """Open a request whose credentials must not follow it off GitHub."""
+    """Open a request whose credentials must not follow it off Forgejo."""
     opener = urllib.request.build_opener(_HostBoundRedirectHandler)
     return opener.open(req, timeout=timeout)
 
@@ -589,7 +593,7 @@ def _request_json(url: str, *, timeout: float, http_error_format: str,
             if (rate_limit_message and exc.code == 403
                     and exc.headers.get("X-RateLimit-Remaining") == "0"):
                 raise UpdateError(
-                    _("GitHub API rate limit exceeded. Please try again later.")) from exc
+                    _("Forgejo API rate limit exceeded. Please try again later.")) from exc
             if exc.code in _RETRYABLE_HTTP_CODES and not last:
                 LOG.warning("Update request to %s failed with HTTP %s (attempt %d/%d); retrying",
                             url, exc.code, attempt + 1, _RETRY_ATTEMPTS)
@@ -697,12 +701,12 @@ def _extract_installer_fields(payload: dict) -> Tuple[Optional[str], Optional[st
 
 
 def fetch_latest_release(owner: str, repo: str, *, timeout: float = 20.0) -> dict:
-    url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+    url = f"https://{app_meta.FORGEJO_HOST}/api/v1/repos/{owner}/{repo}/releases/latest"
     return _request_json(
         url,
         timeout=timeout,
         http_error_format=_("Failed to fetch release info ({code})."),
-        connection_message=_("Unable to reach GitHub. Please check your connection."),
+        connection_message=_("Unable to reach Forgejo. Please check your connection."),
         rate_limit_message=True,
     )
 

@@ -16,7 +16,7 @@ import wx.adv
 import account_info
 import app_meta
 import release_notes
-from app_links import PROJECT_GITHUB_URL, SERREBI_GITHUB_URL, TELEGRAM_SUPPORT_URL
+from app_links import PROJECT_FORGEJO_URL, SERREBI_FORGEJO_URL, TELEGRAM_SUPPORT_URL
 from channel_widgets import _VirtualWhatsOnList
 from dialog_utils import _context_row_index
 from i18n import gettext as _
@@ -62,8 +62,8 @@ class AccessibleAboutDialog(wx.Dialog):
         layout.Add(support, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
         for label, url in (
             (_("Join the SerrebiProjects Telegram group"), TELEGRAM_SUPPORT_URL),
-            (_("Open the Accessible IPTV Client project on GitHub"), PROJECT_GITHUB_URL),
-            (_("Follow Serrebi on GitHub"), SERREBI_GITHUB_URL),
+            (_("Open the Accessible IPTV Client project on Forgejo"), PROJECT_FORGEJO_URL),
+            (_("Follow Serrebi on Forgejo"), SERREBI_FORGEJO_URL),
         ):
             link = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
             link.SetName(label)

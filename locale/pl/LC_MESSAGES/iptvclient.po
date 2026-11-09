@@ -28,7 +28,7 @@ msgstr "(Nie zapisano jeszcze żadnego dziennika debugowania EPG.)"
 msgid "(No title)"
 msgstr "(Bez tytułu)"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "(odcisk {thumbprint})."
 
@@ -302,19 +302,19 @@ msgstr "Audio: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "Uwierzytelnianie nie powiodło się – serwer odrzucił te dane logowania"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "Status Authenticode: {status}."
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "Weryfikacja Authenticode nie powiodła się: {detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "Weryfikacja Authenticode zwróciła nieprawidłowe dane."
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "Weryfikacja Authenticode przekroczyła limit czasu."
 
@@ -851,7 +851,7 @@ msgstr "Nie można połączyć się z portalem: {error}"
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Nie można rozpoznać adresu URL strumienia:\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Nie można uruchomić weryfikacji Authenticode: {detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "Wyjdź z trybu pełnoekranowego"
 msgid "Exit Player"
 msgstr "Zamknij odtwarzacz"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "Oczekiwane odciski: {thumbprints}."
 
@@ -1306,11 +1306,11 @@ msgstr "Przesyłanie nie powiodło się: {error}"
 msgid "Failed to connect: {error}"
 msgstr "Połączenie nie powiodło się: {error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "Nie udało się pobrać manifestu ({code})."
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "Nie udało się pobrać aktualizacji ({code})."
 
@@ -1318,7 +1318,7 @@ msgstr "Nie udało się pobrać aktualizacji ({code})."
 msgid "Failed to fetch EPG data: {error}"
 msgstr "Nie udało się pobrać danych EPG: {error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "Nie udało się pobrać informacji o wersji ({code})."
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Zakończ nagrywanie i pobieranie przed przywróceniem kopii."
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "Obserwuj Serrebi na GitHubie"
+msgid "Follow Serrebi on Forgejo"
+msgstr "Obserwuj Serrebi na Forgejo"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "Przekroczono limit żądań API Forgejo. Spróbuj ponownie później."
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "Pełny dziennik ffmpeg:\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "Przekroczono limit żądań API GitHub. Spróbuj ponownie później."
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "W toku"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "Automatycznie dołączaj przewodnik XMLTV dostawcy"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "Komunikat instalatora: {message}"
 
@@ -1601,7 +1601,7 @@ msgstr "Zachowaj wybrane kanały"
 msgid "Keep this output device?\n{name}"
 msgstr "Zachować to urządzenie wyjściowe?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Przechowuj od 1 do 30 minut transmisji na żywo; 0 wyłącza lokalny bufor."
 
@@ -1657,7 +1657,7 @@ msgstr "Wyprzedzenie (minuty)"
 msgid "Live TV && Catch-up"
 msgstr "Telewizja na żywo && Powtórki"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "Transmisja na żywo zakończyła się; zachowana historia jest nadal dostępna."
 
@@ -1682,12 +1682,12 @@ msgstr "Wczytywanie odcinków…"
 msgid "Loading playlists..."
 msgstr "Wczytywanie playlist..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Lokalny bufor transmisji"
 
@@ -1732,7 +1732,7 @@ msgstr "Skróty okna głównego wymagają Ctrl lub Alt."
 msgid "Maximum connections"
 msgstr "Maksymalna liczba połączeń"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Maksymalny rozmiar lokalnego bufora na sesję (MiB). Najstarsze dane są usuwane po osiągnięciu dowolnego limitu."
 
@@ -1749,7 +1749,7 @@ msgstr "Menu"
 msgid "Message from provider"
 msgstr "Wiadomość od dostawcy"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1779,7 +1779,7 @@ msgstr "Minuty i sekundy po dwukropku muszą być mniejsze niż 60."
 msgid "Minutes before programme:"
 msgstr "Minut przed programem:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "Nie zgłoszono żadnych szczegółów ffmpeg."
 msgid "No later subtitle."
 msgstr "Brak późniejszego napisu."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "Brak lokalnej historii transmisji na żywo."
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "Otwórz folder nagrań"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "Otwórz projekt Accessible IPTV Client na GitHubie"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "Otwórz projekt Accessible IPTV Client na Forgejo"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "Wróć do transmisji na żywo"
 msgid "Review recent subtitles..."
 msgstr "Przejrzyj ostatnie napisy..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Przewiń transmisję wstecz"
 
@@ -2866,11 +2866,11 @@ msgstr "Wyszukiwanie urządzeń..."
 msgid "Searching programmes..."
 msgstr "Wyszukiwanie audycji..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "Opóźnienie w sekundach względem najnowszego zapisanego obrazu; 0 powraca do transmisji na żywo."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "Sekundy:"
@@ -3145,7 +3145,7 @@ msgstr "Zatrzymaj nagranie(a)"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Zatrzymaj odtwarzanie we wbudowanym odtwarzaczu po 1–1440 minutach; wpisz 0, aby anulować minutnik."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Zatrzymaj lokalne odtwarzanie z bufora przed przełączeniem na urządzenie do przesyłania."
 
@@ -3338,15 +3338,15 @@ msgstr "Upłynął limit czasu połączenia z dostawcą."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "Koniec musi przypadać w przyszłości, po rozpoczęciu, w ciągu siedmiu dni."
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "Nie można uruchomić instalatora."
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "Instalator zakończył działanie z kodem wyjścia {code}."
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "Instalator nadal działał po 15 minutach."
 
@@ -3358,15 +3358,15 @@ msgstr "Język został zmieniony. Uruchom ponownie Accessible IPTV Client, aby z
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Bufor transmisji zmienia źródło. Nie udało się rozpocząć zaplanowanego nagrywania."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "Lokalny bufor nadal zasila nagrywanie. Zatrzymaj je przed wyłączeniem bufora."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "Lokalny bufor zatrzymał się z powodu błędu pamięci lub źródła."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "Nie udało się uruchomić lokalnego bufora. Nie otwarto dodatkowego połączenia z dostawcą. Wyłącz bufor, aby ponowić bezpośrednie odtwarzanie."
 
@@ -3378,7 +3378,7 @@ msgstr "Maksymalna liczba list ulubionych wynosi 50."
 msgid "The media duration is not available yet."
 msgstr "Czas trwania materiału nie jest jeszcze dostępny."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "Poprzednia pozycja wygasła; odtwarzanie przeniesiono do zachowanego zakresu."
 
@@ -3396,7 +3396,7 @@ msgstr "Operacja nie powiodła się:\n{error}"
 msgid "The passwords do not match."
 msgstr "Hasła się nie zgadzają."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "Wstrzymana pozycja wygasła. Odtwarzanie wznowiono od najstarszego zachowanego obrazu."
 
@@ -3624,12 +3624,12 @@ msgstr "Typ"
 msgid "URL copied to the clipboard."
 msgstr "Adres URL skopiowano do schowka."
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "Nie można pobrać manifestu. Sprawdź swoje połączenie."
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "Nie można pobrać aktualizacji. Sprawdź swoje połączenie."
 
@@ -3641,9 +3641,9 @@ msgstr "Nie udało się przygotować pobierania powtórki:\n{error}"
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Nie można przygotować strumienia powtórki:\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "Nie można połączyć się z GitHub. Sprawdź swoje połączenie."
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "Nie można połączyć się z Forgejo. Sprawdź swoje połączenie."
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Nieoczekiwana odpowiedź o koncie z serwera Xtream"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "Nieznany"
 
@@ -3695,7 +3695,7 @@ msgstr "Aktualizacja nieukończona"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Dostępna aktualizacja: v{latest} (bieżąca v{current})."
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "Aktualizacja anulowana."
 
@@ -3731,12 +3731,12 @@ msgstr "Manifest aktualizacji zawiera niebezpieczną nazwę pliku zasobu."
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "Manifest aktualizacji zawiera niebezpieczną nazwę pliku instalatora."
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "Brakuje adresu URL pobierania manifestu aktualizacji."
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "W manifeście aktualizacji brakuje wymaganych pól."
 
@@ -3744,11 +3744,11 @@ msgstr "W manifeście aktualizacji brakuje wymaganych pól."
 msgid "Update manifest version is not newer than the current app."
 msgstr "Wersja manifestu aktualizacji nie jest nowsza niż bieżąca aplikacja."
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "Nie znaleziono manifestu aktualizacji w najnowszej wersji."
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "Pakiet aktualizacji zawiera niebezpieczną ścieżkę pliku."
 
@@ -3880,7 +3880,7 @@ msgstr "Teraz w programie"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "Gdy kanał udostępnia więcej niż jedną ścieżkę audio, wbudowany odtwarzacz może samodzielnie przełączyć się na wybraną ścieżkę."
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "System Windows nie uzyskał zgody na zainstalowanie aktualizacji."
 

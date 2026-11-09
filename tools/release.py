@@ -181,7 +181,7 @@ def summarize_commits(commits):
 def build_release_notes(commits):
     """Release notes grouped under the English section labels, bullets cleaned.
 
-    The same text becomes the GitHub release body, the update manifest summary
+    The same text becomes the Forgejo release body, the update manifest summary
     and the CHANGELOG.md entry, so the update prompt and What's New can
     translate it through the same catalogues.
     """
@@ -789,8 +789,8 @@ def build_assets(version, release_notes, signing_thumbprint=None, installer_path
 
     asset_sha = sha256_file(asset_path)
     download_url = (
-        f"https://github.com/{app_meta.GITHUB_OWNER}/{app_meta.GITHUB_REPO}/releases/download/"
-        f"v{version}/{asset_filename}"
+        f"https://{app_meta.FORGEJO_HOST}/{app_meta.FORGEJO_OWNER}/{app_meta.FORGEJO_REPO}"
+        f"/releases/download/v{version}/{asset_filename}"
     )
     installer_filename = None
     installer_download_url = None
@@ -799,8 +799,8 @@ def build_assets(version, release_notes, signing_thumbprint=None, installer_path
         installer_filename = os.path.basename(installer_path)
         installer_sha = sha256_file(installer_path)
         installer_download_url = (
-            f"https://github.com/{app_meta.GITHUB_OWNER}/{app_meta.GITHUB_REPO}/releases/download/"
-            f"v{version}/{installer_filename}"
+            f"https://{app_meta.FORGEJO_HOST}/{app_meta.FORGEJO_OWNER}/{app_meta.FORGEJO_REPO}"
+            f"/releases/download/v{version}/{installer_filename}"
         )
     summary = updater.summarize_release_notes(release_notes)
     manifest_data = updater.build_manifest(

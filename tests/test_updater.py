@@ -34,7 +34,7 @@ def test_fetch_latest_release_uses_supplied_timeout(monkeypatch):
 
     assert release["tag_name"] == "v1.2.3"
     assert calls == [
-        ("https://api.github.com/repos/owner/repo/releases/latest", 4.5)
+        ("https://git.serrebiradio.com/api/v1/repos/owner/repo/releases/latest", 4.5)
     ]
 
 
@@ -514,10 +514,10 @@ def test_sweep_stale_update_dirs_tolerates_missing_temp_dir(tmp_path):
     assert updater.sweep_stale_update_dirs(str(tmp_path / "missing")) == 0
 
 
-def test_the_github_token_is_not_carried_to_another_host(monkeypatch):
+def test_the_forgejo_token_is_not_carried_to_another_host(monkeypatch):
     """urllib copies a request's headers into the redirected request.
 
-    The token in the environment is the user's own GitHub credential, and
+    The token in the environment is the user's own Forgejo credential, and
     the release manifest travels unsigned: a manifest URL that redirects
     elsewhere must not take the credential with it.
     """
@@ -558,11 +558,11 @@ def test_the_github_token_is_not_carried_to_another_host(monkeypatch):
     threading.Thread(target=redirector.serve_forever, daemon=True).start()
 
     try:
-        monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
-        # The first host is treated as GitHub (that is where the token may
+        monkeypatch.setenv("FORGEJO_TOKEN", "secret-token")
+        # The first host is treated as Forgejo (that is where the token may
         # go); the redirect target is not.
         monkeypatch.setattr(
-            updater, "_is_github_host",
+            updater, "_is_forgejo_host",
             lambda url: url.startswith("http://127.0.0.1:%d" % redirector.server_address[1]),
         )
         url = "http://127.0.0.1:%d/manifest.json" % redirector.server_address[1]
@@ -700,28 +700,37 @@ def test_collect_update_logs_joins_every_log_and_trims_the_installer_log(tmp_pat
     assert "early line" not in logs
 
 
-def test_the_github_token_never_leaves_github(monkeypatch):
-    """The token in the environment is the user's own GitHub credential.
+def test_the_forgejo_token_never_leaves_forgejo(monkeypatch):
+    """The token in the environment is the user's own Forgejo credential.
 
     The release manifest names the download URLs and travels unsigned, so a
     token sent to whatever host it names hands that host the credential.
     """
-    monkeypatch.setenv("GITHUB_TOKEN", "secret-token")
+    monkeypatch.setenv("FORGEJO_TOKEN", "secret-token")
 
-    api = updater._build_request("https://api.github.com/repos/o/r/releases/latest")
+    api = updater._build_request("https://git.serrebiradio.com/api/v1/repos/o/r/releases/latest")
     assert api.get_header("Authorization") == "token secret-token"
 
-    # The release assets are served from github.com and its CDN.
-    for url in ("https://github.com/o/r/releases/download/v1/app.zip",
-                "https://objects.githubusercontent.com/o/r/blob/x"):
+    # The release assets are served from the same Forgejo host.
+    for url in ("https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/releases/download/v1/app.zip",
+                "https://git.serrebiradio.com/api/v1/repos/o/r/releases/latest"):
         assert updater._build_request(url).get_header("Authorization"), url
 
     stranger = updater._build_request("https://cdn.example.test/update.zip")
     assert not stranger.get_header("Authorization")
-    # A host that only looks like GitHub is not GitHub.
-    for url in ("https://github.com.example.test/update.zip",
-                "https://evil-github.com/update.zip"):
+    # A host that only looks like Forgejo is not Forgejo.
+    for url in ("https://git.serrebiradio.com.example.test/update.zip",
+                "https://evil-git.serrebiradio.com/update.zip"):
         assert not updater._build_request(url).get_header("Authorization"), url
+
+
+def test_the_legacy_github_token_name_is_still_honored(monkeypatch):
+    """GITHUB_TOKEN is the pre-migration name; it still authenticates Forgejo."""
+    monkeypatch.delenv("FORGEJO_TOKEN", raising=False)
+    monkeypatch.setenv("GITHUB_TOKEN", "legacy-token")
+    req = updater._build_request(
+        "https://git.serrebiradio.com/api/v1/repos/o/r/releases/latest")
+    assert req.get_header("Authorization") == "token legacy-token"
 
 
 def test_the_helper_never_runs_a_bare_powershell(monkeypatch):

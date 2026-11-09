@@ -28,7 +28,7 @@ msgstr "(لم يُكتب أي سجل تصحيح لدليل البرامج بعد
 msgid "(No title)"
 msgstr "(بلا عنوان)"
 
-#: updater.py:967
+#: updater.py:971
 msgid "(thumbprint {thumbprint})."
 msgstr "(بصمة {thumbprint})."
 
@@ -302,19 +302,19 @@ msgstr "الصوت: {name}"
 msgid "Authentication failed – the server rejected these credentials"
 msgstr "فشل المصادقة – رفض الخادم بيانات الاعتماد هذه"
 
-#: updater.py:963
+#: updater.py:967
 msgid "Authenticode status was {status}."
 msgstr "كانت حالة Authenticode هي {status}."
 
-#: updater.py:923
+#: updater.py:927
 msgid "Authenticode verification failed: {detail}"
 msgstr "فشل التحقق من Authenticode: {detail}"
 
-#: updater.py:928
+#: updater.py:932
 msgid "Authenticode verification returned invalid data."
 msgstr "أرجع التحقق من Authenticode بيانات غير صالحة."
 
-#: updater.py:909
+#: updater.py:913
 msgid "Authenticode verification timed out."
 msgstr "انتهت مهلة التحقق من Authenticode."
 
@@ -851,7 +851,7 @@ msgstr "تعذر الوصول إلى البوابة: {error}"
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "تعذّر تحليل عنوان URL للبث:\n{error}"
 
-#: updater.py:911
+#: updater.py:915
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "تعذر تشغيل التحقق من Authenticode: {detail}"
 
@@ -1249,7 +1249,7 @@ msgstr "الخروج من ملء الشاشة"
 msgid "Exit Player"
 msgstr "الخروج من المشغّل"
 
-#: updater.py:969
+#: updater.py:973
 msgid "Expected thumbprints: {thumbprints}."
 msgstr "البصمات المتوقعة: {thumbprints}."
 
@@ -1306,11 +1306,11 @@ msgstr "فشل البث: {error}"
 msgid "Failed to connect: {error}"
 msgstr "فشل الاتصال: {error}"
 
-#: updater.py:777
+#: updater.py:781
 msgid "Failed to download manifest ({code})."
 msgstr "فشل تنزيل البيان ({code})."
 
-#: updater.py:822
+#: updater.py:826
 msgid "Failed to download update ({code})."
 msgstr "فشل تنزيل التحديث ({code})."
 
@@ -1318,7 +1318,7 @@ msgstr "فشل تنزيل التحديث ({code})."
 msgid "Failed to fetch EPG data: {error}"
 msgstr "فشل جلب بيانات EPG: {error}"
 
-#: updater.py:704
+#: updater.py:708
 msgid "Failed to fetch release info ({code})."
 msgstr "فشل جلب معلومات الإصدار ({code})."
 
@@ -1391,8 +1391,12 @@ msgid "Finish recordings and downloads before restoring a backup."
 msgstr "أنهِ التسجيلات والتنزيلات قبل استعادة نسخة احتياطية."
 
 #: dialogs_misc.py:66
-msgid "Follow Serrebi on GitHub"
-msgstr "تابع Serrebi على GitHub"
+msgid "Follow Serrebi on Forgejo"
+msgstr "تابع Serrebi على Forgejo"
+
+#: updater.py:596
+msgid "Forgejo API rate limit exceeded. Please try again later."
+msgstr "تم تجاوز حد طلبات واجهة برمجة تطبيقات Forgejo. يرجى المحاولة مرة أخرى لاحقًا."
 
 #: main.py:9068
 msgid "Format"
@@ -1428,10 +1432,6 @@ msgstr "سجل ffmpeg الكامل:\n{path}"
 #: playlist.py:3201
 msgid "GZip XML"
 msgstr "GZip XML"
-
-#: updater.py:592
-msgid "GitHub API rate limit exceeded. Please try again later."
-msgstr "تم تجاوز حد طلبات واجهة برمجة تطبيقات GitHub. يرجى المحاولة مرة أخرى لاحقًا."
 
 #: main.py:2971
 #: main.py:2980
@@ -1560,7 +1560,7 @@ msgstr "قيد التقدم"
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "تضمين دليل XMLTV الخاص بالمزوّد تلقائيًا"
 
-#: updater.py:163
+#: updater.py:165
 msgid "Installer message: {message}"
 msgstr "رسالة المثبت: {message}"
 
@@ -1601,7 +1601,7 @@ msgstr "الاحتفاظ بالقنوات المختارة"
 msgid "Keep this output device?\n{name}"
 msgstr "الاحتفاظ بجهاز الإخراج هذا؟\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "الاحتفاظ بما بين دقيقة و30 دقيقة من البث المباشر؛ 0 لتعطيل التخزين المؤقت المحلي."
 
@@ -1657,7 +1657,7 @@ msgstr "وقت الإشعار المسبق (بالدقائق)"
 msgid "Live TV && Catch-up"
 msgstr "البث المباشر && المشاهدة اللاحقة"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "انتهى البث المباشر؛ لا يزال المحتوى المحفوظ متاحًا."
 
@@ -1682,12 +1682,12 @@ msgstr "جارٍ تحميل الحلقات…"
 msgid "Loading playlists..."
 msgstr "جارٍ تحميل قوائم التشغيل..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "التخزين المؤقت المحلي للبث المباشر"
 
@@ -1732,7 +1732,7 @@ msgstr "اختصارات النافذة الرئيسية تحتاج إلى Ctrl 
 msgid "Maximum connections"
 msgstr "الحد الأقصى للاتصالات"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "الحد الأقصى لحجم التخزين المؤقت لكل جلسة بالميبيبايت. تُحذف أقدم البيانات عند بلوغ أي من الحدين."
 
@@ -1749,7 +1749,7 @@ msgstr "القائمة"
 msgid "Message from provider"
 msgstr "رسالة من المزوّد"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "ميبيبايت:"
@@ -1779,7 +1779,7 @@ msgstr "يجب أن تقل الدقائق والثواني بعد النقطتي
 msgid "Minutes before programme:"
 msgstr "دقائق قبل البرنامج:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3190
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -1931,7 +1931,7 @@ msgstr "لم يتم الإبلاغ عن أي تفاصيل لـ ffmpeg."
 msgid "No later subtitle."
 msgstr "لا توجد ترجمة لاحقة."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "لا يتوفر محتوى سابق محفوظ محليًا للبث المباشر."
 
@@ -2126,8 +2126,8 @@ msgid "Open Recordings Folder"
 msgstr "فتح مجلد التسجيلات"
 
 #: dialogs_misc.py:65
-msgid "Open the Accessible IPTV Client project on GitHub"
-msgstr "افتح مشروع Accessible IPTV Client على GitHub"
+msgid "Open the Accessible IPTV Client project on Forgejo"
+msgstr "افتح مشروع Accessible IPTV Client على Forgejo"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2738,7 +2738,7 @@ msgstr "العودة إلى البث المباشر"
 msgid "Review recent subtitles..."
 msgstr "مراجعة الترجمات الحديثة..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "الرجوع في البث المباشر"
 
@@ -2866,11 +2866,11 @@ msgstr "جارٍ البحث عن الأجهزة..."
 msgid "Searching programmes..."
 msgstr "جارٍ البحث عن البرامج..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "التأخر بالثواني عن أحدث صورة محفوظة؛ 0 للعودة إلى البث المباشر."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3202
 msgid "Seconds:"
 msgstr "الثواني:"
@@ -3145,7 +3145,7 @@ msgstr "إيقاف التسجيل/التسجيلات"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "إيقاف التشغيل المدمج بعد 1–1440 دقيقة؛ أدخل 0 لإلغاء المؤقت."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "أوقف التشغيل من التخزين المؤقت المحلي قبل الانتقال إلى جهاز البث."
 
@@ -3338,15 +3338,15 @@ msgstr "انتهت مهلة الاتصال بالمزوّد."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "يجب أن تكون النهاية في المستقبل وبعد البداية، خلال سبعة أيام منها."
 
-#: updater.py:154
+#: updater.py:156
 msgid "The installer could not be started."
 msgstr "تعذر تشغيل المثبت."
 
-#: updater.py:158
+#: updater.py:160
 msgid "The installer stopped with exit code {code}."
 msgstr "توقف المثبت برمز الخروج {code}."
 
-#: updater.py:156
+#: updater.py:158
 msgid "The installer was still running after 15 minutes."
 msgstr "كان المثبت لا يزال يعمل بعد 15 دقيقة."
 
@@ -3358,15 +3358,15 @@ msgstr "تم تغيير اللغة. يرجى إعادة تشغيل Accessible IP
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "يجري تغيير مصدر التخزين المؤقت للبث المباشر. تعذر بدء التسجيل المجدول."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "لا يزال التخزين المؤقت المحلي يغذي تسجيلًا. أوقف التسجيل قبل تعطيله."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "توقف التخزين المؤقت المحلي بسبب عطل في التخزين أو المصدر."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "تعذر بدء التخزين المؤقت المحلي. لم يُفتح اتصال إضافي بمزود الخدمة. عطّل التخزين المؤقت لإعادة محاولة التشغيل المباشر."
 
@@ -3378,7 +3378,7 @@ msgstr "الحد الأقصى لقوائم المفضلة هو 50."
 msgid "The media duration is not available yet."
 msgstr "مدة الوسائط غير متاحة بعد."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "لم يعد الموضع السابق متاحًا؛ انتقل التشغيل إلى النطاق المحفوظ."
 
@@ -3396,7 +3396,7 @@ msgstr "فشلت العملية:\n{error}"
 msgid "The passwords do not match."
 msgstr "كلمات المرور غير متطابقة."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "لم يعد موضع الإيقاف المؤقت متاحًا. استؤنف التشغيل من أقدم صورة محفوظة."
 
@@ -3624,12 +3624,12 @@ msgstr "النوع"
 msgid "URL copied to the clipboard."
 msgstr "تم نسخ عنوان URL إلى الحافظة."
 
-#: updater.py:778
+#: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
 msgstr "تعذّر تنزيل البيان. يرجى التحقق من اتصالك."
 
-#: updater.py:833
 #: updater.py:837
+#: updater.py:841
 msgid "Unable to download update. Please check your connection."
 msgstr "تعذّر تنزيل التحديث. يرجى التحقق من اتصالك."
 
@@ -3641,9 +3641,9 @@ msgstr "تعذّر تجهيز تنزيل المشاهدة اللاحقة:\n{erro
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "تعذّر تحضير بث المشاهدة اللاحقة:\n{error}"
 
-#: updater.py:705
-msgid "Unable to reach GitHub. Please check your connection."
-msgstr "تعذّر الوصول إلى GitHub. يرجى التحقق من اتصالك."
+#: updater.py:709
+msgid "Unable to reach Forgejo. Please check your connection."
+msgstr "تعذّر الوصول إلى Forgejo. يرجى التحقق من اتصالك."
 
 #: resume_dialogs.py:145
 msgid "Unavailable or ambiguous"
@@ -3658,7 +3658,7 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "استجابة حساب غير متوقعة من خادم Xtream"
 
 #: channel_widgets.py:383
-#: updater.py:963
+#: updater.py:967
 msgid "Unknown"
 msgstr "غير معروف"
 
@@ -3695,7 +3695,7 @@ msgstr "لم يكتمل التحديث"
 msgid "Update available: v{latest} (current v{current})."
 msgstr "يتوفر تحديث: v{latest} (الحالي v{current})."
 
-#: updater.py:813
+#: updater.py:817
 msgid "Update cancelled."
 msgstr "تم إلغاء التحديث."
 
@@ -3731,12 +3731,12 @@ msgstr "يحتوي بيان التحديث على اسم ملف أصل غير آ
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "يحتوي بيان التحديث على اسم ملف مثبّت غير آمن."
 
-#: updater.py:728
+#: updater.py:732
 msgid "Update manifest download URL is missing."
 msgstr "عنوان URL لتنزيل بيان التحديث مفقود."
 
 #: main.py:4875
-#: updater.py:770
+#: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "بيان التحديث يفتقد حقولاً مطلوبة."
 
@@ -3744,11 +3744,11 @@ msgstr "بيان التحديث يفتقد حقولاً مطلوبة."
 msgid "Update manifest version is not newer than the current app."
 msgstr "إصدار بيان التحديث ليس أحدث من التطبيق الحالي."
 
-#: updater.py:724
+#: updater.py:728
 msgid "Update manifest was not found in the latest release."
 msgstr "لم يتم العثور على بيان التحديث في أحدث إصدار."
 
-#: updater.py:851
+#: updater.py:855
 msgid "Update package contains an unsafe file path."
 msgstr "حزمة التحديث تحتوي على مسار ملف غير آمن."
 
@@ -3880,7 +3880,7 @@ msgstr "ما يُعرض الآن"
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "عندما توفر القناة أكثر من مسار صوتي، يمكن للمشغل المدمج التبديل تلقائيًا إلى المسار الذي تريده."
 
-#: updater.py:152
+#: updater.py:154
 msgid "Windows did not get permission to install the update."
 msgstr "لم يحصل Windows على إذن لتثبيت التحديث."
 
