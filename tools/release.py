@@ -844,28 +844,27 @@ def git_commit_and_tag(version):
 
 def git_push(version):
     branch = git("rev-parse", "--abbrev-ref", "HEAD")
-    run(["git", "push", "origin", branch])
-    run(["git", "push", "origin", f"v{version}"])
+    run(["git", "push", "forgejo", branch])
+    run(["git", "push", "forgejo", f"v{version}"])
 
 
-def gh_release_create(version, assets):
+def forgejo_release_create(version, assets):
+    tag = f"v{version}"
+    with open(assets["notes_path"], encoding="utf-8") as handle:
+        body = handle.read()
+    # Draft first: a failed asset upload must never leave a published release.
+    forgejo_release_request(
+        "POST", "/releases",
+        body=json.dumps({
+            "tag_name": tag, "name": tag, "body": body, "draft": True,
+        }).encode(),
+        headers={"Content-Type": "application/json"},
+    )
     release_assets = [assets["asset_path"], assets["latest_path"]]
     if assets.get("installer_path"):
         release_assets.append(assets["installer_path"])
     release_assets.append(assets["manifest_path"])
-    cmd = [
-        "gh",
-        "release",
-        "create",
-        f"v{version}",
-        *release_assets,
-        "--title",
-        f"v{version}",
-        "--notes-file",
-        assets["notes_path"],
-        "--latest",
-    ]
-    run(cmd)
+    forgejo_release_upload(tag, release_assets)
     ensure_release_published_latest(version)
     delete_draft_releases()
 
@@ -987,28 +986,42 @@ def release_other_platforms(version):
 
 
 def ensure_release_published_latest(version):
+    """Publish the release; Forgejo serves the newest published one as latest."""
     tag = f"v{version}"
-    run(["gh", "release", "edit", tag, "--draft=false", "--latest"])
+    item = forgejo_release_request("GET", f"/releases/tags/{tag}")
+    if item.get("draft"):
+        forgejo_release_request(
+            "PATCH", f"/releases/{item['id']}",
+            body=json.dumps({"draft": False}).encode(),
+            headers={"Content-Type": "application/json"},
+        )
 
 
 def delete_draft_releases():
-    result = run(
-        ["gh", "release", "list", "--limit", "100", "--json", "tagName,isDraft"],
-        capture_output=True,
-    )
-    try:
-        releases = json.loads(result.stdout or "[]")
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Failed to parse GitHub release list JSON.") from exc
+    """Delete every draft release record. Git tags are left untouched."""
+    page = 1
+    while True:
+        batch = forgejo_release_request(
+            "GET", f"/releases?limit=50&page={page}")
+        if not batch:
+            break
+        for item in batch:
+            if item.get("draft") and item.get("tag_name"):
+                print(f"Deleting draft release {item['tag_name']}...")
+                forgejo_release_request("DELETE", f"/releases/{item['id']}")
+        if len(batch) < 50:
+            break
+        page += 1
 
-    draft_tags = [
-        release.get("tagName")
-        for release in releases
-        if release.get("isDraft") and release.get("tagName")
-    ]
-    for tag in draft_tags:
-        print(f"Deleting draft release {tag}...")
-        run(["gh", "release", "delete", tag, "--yes"])
+
+def ensure_release_state(tag):
+    """Re-assert published, draft-free state for one release tag.
+
+    build_exe.bat runs this after release.py as a safety net.
+    """
+    version = tag[1:] if tag.startswith("v") else tag
+    ensure_release_published_latest(version)
+    delete_draft_releases()
 
 
 def print_dry_run(version, tag, bump, assets):
@@ -1021,7 +1034,7 @@ def print_dry_run(version, tag, bump, assets):
     print(f"- zip: {assets['asset_path']}")
     print(f"- installer: {assets['installer_path']}")
     print(f"- manifest: {assets['manifest_path']}")
-    print(f"- release: gh release create v{version} ...")
+    print(f"- release: forgejo release create v{version} (draft, upload, publish) ...")
 
 
 def compute_next_version():
@@ -1073,7 +1086,7 @@ def main():
         assets = build_assets(next_version, release_notes, signing_thumbprint, installer_path=installer_path)
         git_commit_and_tag(next_version)
         git_push(next_version)
-        gh_release_create(next_version, assets)
+        forgejo_release_create(next_version, assets)
         release_other_platforms(next_version)
         return
 

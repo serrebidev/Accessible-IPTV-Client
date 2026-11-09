@@ -20,21 +20,25 @@ if not exist "%SCRIPT%" (
 )
 
 rem Prefer Python 3.14 via the Windows py launcher; allow PYTHON env override.
+rem Resolved once: the release state check below reuses the same interpreter.
 if defined PYTHON (
-    "%PYTHON%" "%SCRIPT%" %MODE%
+    set "PYCMD="%PYTHON%""
 ) else (
+    rem `call` below is load-bearing: `py` on this host is a py.cmd batch
+    rem shim, and a bare `py` line ends this script silently with exit 0.
     where py >nul 2>nul
     if not errorlevel 1 (
-        py -3.14 -c "import sys" >nul 2>nul
+        call py -3.14 -c "import sys" >nul 2>nul
         if not errorlevel 1 (
-            py -3.14 "%SCRIPT%" %MODE%
+            set "PYCMD=py -3.14"
         ) else (
-            python "%SCRIPT%" %MODE%
+            set "PYCMD=python"
         )
     ) else (
-        python "%SCRIPT%" %MODE%
+        set "PYCMD=python"
     )
 )
+call %PYCMD% "%SCRIPT%" %MODE%
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 if /I "%MODE%"=="release" (
@@ -51,14 +55,12 @@ if /I "%MODE%"=="build" (
 exit /b 0
 
 :ensure_release_state
-echo Ensuring the GitHub release is published, latest, and draft-free...
+echo Ensuring the Forgejo release is published and draft-free...
 for /f "delims=" %%T in ('git describe --tags --abbrev^=0') do set "RELEASE_TAG=%%T"
 if "%RELEASE_TAG%"=="" (
-    echo Failed to determine release tag from app_meta.py.
+    echo Failed to determine release tag from git.
     exit /b 1
 )
-gh release edit "%RELEASE_TAG%" --draft=false --latest
-if errorlevel 1 exit /b 1
-powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $items = gh release list --limit 100 --json tagName,isDraft | ConvertFrom-Json; $drafts = $items | Where-Object { $_.isDraft -eq $true }; foreach ($draft in $drafts) { Write-Host ('Deleting draft release ' + $draft.tagName + '...'); gh release delete $draft.tagName --yes }"
+call %PYCMD% -c "import sys;sys.path.insert(0,r'%~dp0tools');import release;release.ensure_release_state('%RELEASE_TAG%')"
 if errorlevel 1 exit /b 1
 exit /b 0

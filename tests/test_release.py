@@ -1,4 +1,5 @@
 """Tests for the release/changelog workflow."""
+import json
 import os
 import sys
 from pathlib import Path
@@ -205,7 +206,7 @@ def test_the_release_does_not_publish_what_it_has_not_verified(monkeypatch):
     monkeypatch.setattr(release, "build_assets", lambda *a, **k: {})
     monkeypatch.setattr(release, "git_commit_and_tag", lambda version: calls.append("commit"))
     monkeypatch.setattr(release, "git_push", lambda version: calls.append("push"))
-    monkeypatch.setattr(release, "gh_release_create",
+    monkeypatch.setattr(release, "forgejo_release_create",
                         lambda version, assets: published.append(version))
     monkeypatch.setattr(release, "release_other_platforms", lambda version: None)
     # The installer was signed with another certificate than the app.
@@ -275,3 +276,69 @@ def test_release_without_the_deb_asset_is_refused(monkeypatch, tmp_path):
 
     with pytest.raises(RuntimeError, match=r"no \*_all\.deb asset"):
         release.release_other_platforms("1.2.3")
+
+
+def test_git_push_targets_the_forgejo_remote(monkeypatch):
+    pushes = []
+    monkeypatch.setattr(release, "git", lambda *args, **kwargs: "main")
+    monkeypatch.setattr(release, "run", lambda cmd, **kwargs: pushes.append(cmd))
+
+    release.git_push("1.2.3")
+
+    assert pushes == [["git", "push", "forgejo", "main"],
+                      ["git", "push", "forgejo", "v1.2.3"]]
+
+
+def test_forgejo_release_create_publishes_with_all_assets(monkeypatch, tmp_path):
+    """Draft first, then assets, then publish; only drafts are cleaned."""
+    notes = tmp_path / "notes.md"
+    notes.write_text("## Bug fixes\n- x\n")
+    payloads = {}
+    for name in ("app.zip", "app-latest.zip", "setup.exe", "update.json"):
+        path = tmp_path / name
+        path.write_bytes(b"data")
+        payloads[name] = str(path)
+
+    sequence = []
+
+    def _fake_request(method, path, body=None, headers=None):
+        payload = json.loads(body) if body else None
+        sequence.append((method, path, payload))
+        if method == "GET" and path.startswith("/releases/tags/"):
+            return {"id": 4140, "draft": True, "assets": []}
+        if method == "POST":
+            return {"id": 4140, "draft": True}
+        return [{"id": 1, "tag_name": "v0.0.0-old", "draft": True},
+                {"id": 2, "tag_name": "v1.2.2", "draft": False}]
+
+    def _fake_upload(tag, paths):
+        sequence.append(("UPLOAD", tag, list(paths)))
+
+    monkeypatch.setattr(release, "forgejo_release_request", _fake_request)
+    monkeypatch.setattr(release, "forgejo_release_upload", _fake_upload)
+
+    release.forgejo_release_create("1.2.3", {
+        "asset_path": payloads["app.zip"],
+        "latest_path": payloads["app-latest.zip"],
+        "installer_path": payloads["setup.exe"],
+        "manifest_path": payloads["update.json"],
+        "notes_path": str(notes),
+    })
+
+    assert sequence == [
+        ("POST", "/releases", {"tag_name": "v1.2.3", "name": "v1.2.3",
+                               "body": "## Bug fixes\n- x\n", "draft": True}),
+        ("UPLOAD", "v1.2.3", [payloads["app.zip"], payloads["app-latest.zip"],
+                              payloads["setup.exe"], payloads["update.json"]]),
+        ("GET", "/releases/tags/v1.2.3", None),
+        ("PATCH", "/releases/4140", {"draft": False}),
+        ("GET", "/releases?limit=50&page=1", None),
+        ("DELETE", "/releases/1", None),
+    ]
+
+
+def test_forgejo_api_without_a_token_is_refused(monkeypatch):
+    monkeypatch.delenv("FORGEJO_TOKEN", raising=False)
+
+    with pytest.raises(RuntimeError, match="FORGEJO_TOKEN"):
+        release.forgejo_release_request("GET", "/releases/tags/v1.2.3")

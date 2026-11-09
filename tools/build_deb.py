@@ -45,7 +45,7 @@ PACKAGE = "accessible-iptv-client"
 BUILD_MTIME = int(os.environ.get("SOURCE_DATE_EPOCH") or time.time())
 DEFAULT_MAINTAINER = "serrebidev <serrebidev@users.noreply.github.com>"
 INSTALL_LIB_DIR = f"/usr/lib/{PACKAGE}"
-HOMEPAGE = f"https://github.com/{app_meta.GITHUB_OWNER}/{app_meta.GITHUB_REPO}"
+HOMEPAGE = f"https://{app_meta.FORGEJO_HOST}/{app_meta.FORGEJO_OWNER}/{app_meta.FORGEJO_REPO}"
 
 # Runtime dependencies. python3-vlc already pulls libvlc5; the two vlc-plugin-*
 # packages supply the demuxers/outputs libVLC needs for HLS playback without
