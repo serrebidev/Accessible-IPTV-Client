@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Accessible IPTV Client\n"
-"Report-Msgid-Bugs-To: https://github.com/serrebidev/Accessible-IPTV-Client/issues\n"
-"PO-Revision-Date: 2026-09-17 04:00+0000\n"
+"Report-Msgid-Bugs-To: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/issues\n"
+"PO-Revision-Date: 2026-11-09 18:28+0000\n"
 "Last-Translator: Tibor Hermann (@htibcsike)\n"
-"Language-Team: Hungarian <https://github.com/serrebidev/Accessible-IPTV-Client/issues>\n"
+"Language-Team: Hungarian <https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/issues>\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -18,7 +18,7 @@ msgstr "&Lejátszás"
 
 #: main.py:4233
 msgid "(No EPG debug log has been written yet.)"
-msgstr "(Még nem készült EPG-hibakeresési napló.)"
+msgstr "(Még nem készült hibakeresési napló a műsorújságról.)"
 
 #: channel_widgets.py:382
 #: dialogs_misc.py:555
@@ -39,7 +39,7 @@ msgstr "Adja meg a biztonsági mentés jelszavát."
 
 #: main.py:5652
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
-msgstr "Egy letöltés vagy rögzítés még folyamatban van.\n\nHa most kilép, a folyamat leáll, és csak az eddig elkészült rész marad meg.\n\nBiztosan kilép?"
+msgstr "Egy letöltés még folyamatban van.\n\nHa most kilép, a letöltés leáll, és csak az eddig elkészült rész marad meg.\n\nBiztosan kilép?"
 
 #: favorite_collections.py:78
 msgid "A favourite list can contain at most 2000 channels."
@@ -192,7 +192,7 @@ msgstr "Minden lejátszási lista kijelölve. Nyomja meg az F5 billentyűt az ö
 
 #: dialogs_misc.py:814
 msgid "All recordings have finished.\n\nThe computer will shut down by itself. Seconds remaining: {seconds}"
-msgstr "Minden felvétel befejeződött.\n\nA számítógép magától leáll. Hátralévő idő: {seconds} másodperc"
+msgstr "Minden felvétel befejeződött.\n\nA számítógép automatikusan leáll. Hátralévő idő: {seconds} másodperc"
 
 #: account_info.py:578
 msgid "Allowed formats"
@@ -926,11 +926,11 @@ msgstr "Lejátszási lista törlése"
 
 #: personal_tools_ui.py:215
 msgid "Delete favourite list '{name}'?"
-msgstr "Törli a(z) „{name}” kedvenclistát?"
+msgstr "Törli a következő kedvenclistát: „{name}”?"
 
 #: personal_tools_ui.py:393
 msgid "Delete saved search '{name}'?"
-msgstr "Törli a(z) „{name}” mentett keresést?"
+msgstr "Törli a következő mentett keresést: „{name}”?"
 
 #: playlist.py:3388
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
@@ -1082,7 +1082,7 @@ msgstr "A műsorújság nem érhető el"
 
 #: main.py:4230
 msgid "EPG debug log (latest 128 KiB):"
-msgstr "EPG-hibakeresési napló (legutóbbi 128 KiB):"
+msgstr "A műsorújság hibakeresési naplója (legutóbbi 128 KiB):"
 
 #: main.py:4226
 msgid "EPG enabled: {enabled}"
@@ -1115,7 +1115,7 @@ msgstr "Szerkesztés…"
 
 #: media_navigation_ui.py:118
 msgid "Elapsed: {elapsed}. Total: {total}. Remaining: {remaining}."
-msgstr "Eltelt idő: {elapsed}. Teljes hossz: {total}. Hátralévő idő: {remaining}."
+msgstr "Eltelt idő: {elapsed}. Teljes időtartam: {total}. Hátralévő idő: {remaining}."
 
 #: main.py:8907
 msgid "Elapsed: {time}"
@@ -1127,7 +1127,7 @@ msgstr "Engedélyezve"
 
 #: personal_tools_ui.py:604
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
-msgstr "A titkosított biztonsági mentés elkészült. Tartalmazza a felvételi időzítéseket, az emlékeztetőket és a mentett kereséseket is."
+msgstr "A titkosított biztonsági mentés elkészült. Tartalmazza a felvételek ütemezési adatait, a műsorkezdési értesítéseket és a mentett műsorkereséseket is."
 
 #: personal_tools_ui.py:105
 msgid "End (local time, YYYY-MM-DD HH:MM)"
@@ -1392,7 +1392,7 @@ msgstr "A biztonsági mentés visszaállítása előtt fejezze be a felvételeke
 
 #: dialogs_misc.py:66
 msgid "Follow Serrebi on Forgejo"
-msgstr "Serrebi követése a Forgejón"
+msgstr "Serrebi követése a Forgejo felületén"
 
 #: updater.py:596
 msgid "Forgejo API rate limit exceeded. Please try again later."
@@ -1566,7 +1566,7 @@ msgstr "A telepítő üzenete: {message}"
 
 #: main.py:5115
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
-msgstr "A frissítés telepítése folyamatban van. {app} bezárul, majd magától újraindul – addig ne indítsa el kézzel."
+msgstr "A frissítés telepítése folyamatban van. {app} bezárul, majd automatikusan újraindul – addig ne indítsa el kézzel."
 
 #: settings_backup.py:63
 msgid "Invalid backup salt."
@@ -1650,7 +1650,7 @@ msgstr "Indítási hiba"
 
 #: planning_ui.py:41
 msgid "Lead time (minutes)"
-msgstr "Előzetes értesítés (perc)"
+msgstr "Értesítés a kezdés előtt (perc)"
 
 #: client_ui.py:142
 #: client_ui.py:294
@@ -1953,7 +1953,7 @@ msgstr "Jelenleg nincs műsor adásban."
 
 #: main.py:2852
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
-msgstr "Még nincs importált műsorújság, ezért nincs olyan műsor, amelynek rögzítése ütemezhető lenne.\n\nElőször nyissa meg a Fájl > Műsorújság kezelése menüpontot, és szükség esetén adjon hozzá műsorújság-forrást. Ezután válassza a Fájl > Műsorújság importálása az adatbázisba parancsot, majd próbálja újra az ütemezést."
+msgstr "Még nincs importált műsorújság, ezért abból jelenleg nem ütemezhető felvétel.\n\nElőször nyissa meg a Fájl > Műsorújság kezelése menüpontot, és szükség esetén adjon hozzá műsorújság-forrást. Ezután válassza a Fájl > Műsorújság importálása az adatbázisba parancsot, majd próbálja újra az ütemezést."
 
 #: main.py:6927
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2050,7 +2050,7 @@ msgstr "A kiszolgáló nem közölt adatot"
 
 #: main.py:8054
 msgid "Nothing is playing in the built-in player."
-msgstr "A beépített lejátszóban jelenleg nincs aktív csatorna."
+msgstr "A beépített lejátszóban jelenleg nincs folyamatban lejátszás."
 
 #: client_recording.py:52
 #: client_recording.py:92
@@ -2127,11 +2127,11 @@ msgstr "Felvételek mappájának megnyitása"
 
 #: dialogs_misc.py:65
 msgid "Open the Accessible IPTV Client project on Forgejo"
-msgstr "Az Accessible IPTV Client projekt megnyitása a Forgejón"
+msgstr "Az Accessible IPTV Client projekt megnyitása a Forgejo felületén"
 
 #: main.py:9003
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
-msgstr "Nyissa meg a felvételt VLC-ben, nyomja meg a Ctrl+T billentyűkombinációt, majd írja be a felsorolt időpontok egyikét. Ha az FFmpeg jelentette a fájl médiaidejét, azt használjuk; egyébként a felvétel kezdete óta eltelt időt, amely egy megszakítás után kissé későbbi lehet a tényleges lejátszási pozíciónál."
+msgstr "Nyissa meg a felvételt VLC-ben, nyomja meg a Ctrl+T billentyűkombinációt, majd írja be a felsorolt időpontok egyikét. Az időpontok a fájl lejátszási idejét követik, ha azt az FFmpeg közölte; ennek hiányában a rögzítés kezdete óta eltelt időt jelzik. Ez utóbbi egy megszakítás után kissé későbbi lehet a fájl megfelelő lejátszási pozíciójánál."
 
 #: internal_player.py:2021
 msgid "Opening"
@@ -2599,7 +2599,7 @@ msgstr "A felvétel mentése befejeződött:\n{path}"
 
 #: personal_tools_ui.py:487
 msgid "Recording schedule saved."
-msgstr "A felvételi időzítés mentve."
+msgstr "A felvétel ütemezése megtörtént."
 
 #: main.py:3291
 msgid "Recording scheduled.\n\nThe programme guide has not been imported yet, so the Scheduled Recordings window may not list anything, and this may be the only episode you can schedule. Import the guide from File > Import EPG to DB to see and schedule upcoming programmes."
@@ -2663,7 +2663,7 @@ msgstr "Az értesítés beállítása sikerült."
 
 #: personal_tools_ui.py:226
 msgid "Remove '{name}' from this list?"
-msgstr "Eltávolítja a(z) „{name}” csatornát ebből a listából?"
+msgstr "Eltávolítja ebből a listából a következő csatornát: „{name}”?"
 
 #: personal_tools_ui.py:152
 msgid "Remove Channel"
@@ -2712,7 +2712,7 @@ msgstr "Átnevezés…"
 
 #: personal_tools_ui.py:618
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
-msgstr "Lecseréli a beállításokat, a(z) {jobs} felvételi bejegyzést és a(z) {reminders} emlékeztetőt? A korábban megkezdett felvételek nem indulnak újra."
+msgstr "Lecseréli a beállításokat és a következő bejegyzéseket?\nFelvételi bejegyzések: {jobs}\nMűsorkezdési értesítések: {reminders}\n\nA korábban megkezdett felvételek nem indulnak újra."
 
 #: main.py:815
 msgid "Restore"
@@ -2798,11 +2798,11 @@ msgstr "Felvétel ütemezése…"
 
 #: personal_tools_ui.py:97
 msgid "Schedule by Time"
-msgstr "Felvétel időzítése időpont alapján"
+msgstr "Felvétel ütemezése időpont alapján"
 
 #: main.py:4499
 msgid "Schedule by Time..."
-msgstr "Felvétel időzítése időpont alapján…"
+msgstr "Felvétel ütemezése időpont alapján…"
 
 #: main.py:9148
 #: planning_ui.py:84
@@ -3094,7 +3094,7 @@ msgstr "Rögzítés indítása"
 
 #: dialogs_misc.py:704
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
-msgstr "Az ütemezett felvételek korábban indulhatnak, illetve a műsor vége után tovább folytatódhatnak. A kézzel indított rögzítéseket ez nem érinti."
+msgstr "A műsorújság alapján ütemezett felvételek korábban indulhatnak, illetve a műsor vége után is folytatódhatnak. A kézzel indított vagy kézzel megadott időpontokra ütemezett rögzítéseket ez nem érinti."
 
 #: main.py:4794
 msgid "Starting update..."
@@ -3328,7 +3328,7 @@ msgstr "A vágólap nem érhető el."
 
 #: main.py:3938
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
-msgstr "A számítógép akkor áll le, amikor minden folyamatban lévő vagy még ütemezett rögzítés befejeződött.\n\nElőtte megjelenik egy megszakítható visszaszámlálás, és a beállítás használat után magától kikapcsol.\n\nLeállítsa a számítógépet a felvételek befejezése után?"
+msgstr "A számítógép akkor áll le, amikor minden folyamatban lévő vagy még ütemezett rögzítés befejeződött.\n\nElőtte megjelenik egy megszakítható visszaszámlálás, és a beállítás használat után automatikusan kikapcsol.\n\nLeállítsa a számítógépet a felvételek befejezése után?"
 
 #: catchup_urls.py:89
 msgid "The connection to the provider timed out."
@@ -3336,7 +3336,7 @@ msgstr "Időtúllépés történt a szolgáltatóhoz való kapcsolódás közben
 
 #: manual_schedule.py:49
 msgid "The end must be in the future and after the start, within seven days."
-msgstr "A befejezésnek a jövőben, a kezdés után, attól számítva legfeljebb hét napon belül kell lennie."
+msgstr "A befejezésnek a kezdésnél és a jelenlegi időpontnál is későbbinek kell lennie. A felvétel időtartama legfeljebb hét nap lehet."
 
 #: updater.py:156
 msgid "The installer could not be started."
@@ -3376,7 +3376,7 @@ msgstr "Legfeljebb 50 kedvenclista hozható létre."
 
 #: media_navigation.py:38
 msgid "The media duration is not available yet."
-msgstr "A műsor teljes hossza még nem érhető el."
+msgstr "A műsor teljes időtartama még nem érhető el."
 
 #: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
@@ -3538,11 +3538,11 @@ msgstr "Ez a helyi időpont az óraátállításkor kétszer fordul elő."
 
 #: personal_tools_ui.py:619
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
-msgstr "Ez a régebbi biztonsági mentés csak a beállításokat cseréli le. A felvételi időzítések és az emlékeztetők megmaradnak."
+msgstr "Ez a régebbi biztonsági mentés csak a beállításokat cseréli le. A felvételek ütemezési adatai és a műsorkezdési értesítések megmaradnak."
 
 #: personal_tools_ui.py:479
 msgid "This overlaps {count} recording(s). Continue?"
-msgstr "Ez {count} felvétellel átfedésben van. Folytatja?"
+msgstr "A megadott időszak {count} felvétel időtartamával részben vagy egészben egybeesik. Folytatja?"
 
 #: main.py:3262
 msgid "This programme has already ended."
@@ -3562,7 +3562,7 @@ msgstr "A műsor kezdési és befejezési ideje érvénytelen."
 
 #: dvr.py:398
 msgid "This recording is already scheduled."
-msgstr "Ez a felvétel már be van időzítve."
+msgstr "Ez a felvétel már szerepel az ütemezésben."
 
 #: main.py:3280
 msgid "This recording overlaps {count} other scheduled recording(s). Schedule it anyway?"
@@ -3946,11 +3946,11 @@ msgstr "még nincs ellenőrizve"
 
 #: main.py:7502
 msgid "off"
-msgstr "ki"
+msgstr "kikapcsolva"
 
 #: main.py:7502
 msgid "on"
-msgstr "be"
+msgstr "bekapcsolva"
 
 #: account_info.py:116
 msgid "playlist URL"
