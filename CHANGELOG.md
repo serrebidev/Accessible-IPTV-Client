@@ -1,6 +1,16 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.150.63 - 2026-11-10
+
+### Bug fixes
+
+- Drain a rejected upload before answering 404
+
+### Other changes
+
+- Build the .deb in local WSL
+
 ## v1.150.62 - 2026-11-08
 
 ### Bug fixes
