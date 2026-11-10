@@ -139,6 +139,8 @@ Ein Stalker-Portal-Konto braucht die Portaladresse und die MAC-Adresse, die Ihr 
 
 Die Programmzeitschrift, das EPG, sagt Ihnen, was auf jedem Sender jetzt und später läuft. Sie stammt aus XMLTV-Dateien, die Ihr Anbieter oder eine andere Quelle veröffentlicht. Das Programm importiert sie in eine lokale Datenbank und benutzt sie für die Folgenbeschreibung, Jetzt im Programm, EPG anzeigen…, Nachholen-Listen und Suchen.
 
+Über Ansicht > Programmführer zuordnen wählen Sie den Eintrag im Programmführer für den markierten Live-Sender. Suchen Sie nach Namen oder Kennung, wählen Sie einen Eintrag und bestätigen Sie mit OK. Automatische Zuordnung verwenden entfernt die manuelle Zuordnung. Die Auswahl wird für jede Wiedergabeliste beziehungsweise jeden Anbieter getrennt gespeichert und für Programmtitel, Programmführer, Suche und geplante Aufnahmen verwendet. Fehlt die gewählte Kennung nach einem Import, bleiben die Programmdaten aus, bis Sie die Zuordnung korrigieren oder die automatische Zuordnung wiederherstellen.
+
 ### EPG-Manager {#epg-manager}
 
 Datei > EPG-Manager (Ctrl+E) listet Ihre Zeitschriftenquellen auf.
@@ -227,6 +229,8 @@ Tasten im Player:
 
 Dieselben Befehle liegen im Wiedergabe-Menü des Players. Der Player verbindet sich von selbst neu, wenn ein Live-Stream abreißt, und behält die gewählte Tonspur.
 
+Stummschaltung ein/aus schaltet nur den integrierten Player stumm; Wiedergabe und Aufnahme laufen weiter. Die Standardtasten sind Strg+Umschalt+M im Hauptfenster und M im Player. Beide lassen sich in den Tastenkürzeleinstellungen ändern. Die Stummschaltung bleibt bei Senderwechseln und erneuten Verbindungen erhalten. Player > Lautstärke für jeden Sender speichern ist zunächst ausgeschaltet und merkt sich bei Aktivierung Ihre Lautstärkeauswahl getrennt nach Wiedergabeliste oder Anbieter. Sender ohne gespeicherten Wert verwenden die allgemeine Playerlautstärke. Die Lautstärke des Screenreaders bleibt unverändert.
+
 ### Tonspuren {#audio-tracks}
 
 Sender können mehrere Tonspuren mitführen, etwa andere Sprachen oder Audiodeskription. Drücken Sie A für die nächste Spur, benutzen Sie Wiedergabe > Audiospur, oder Tab zu Tonspur wählen, die immer die laufende Spur nennt.
@@ -284,6 +288,10 @@ Das Aufnehmen des laufenden Programms im integrierten Player benutzt dieselbe Ve
 
 Das Stoppen einer Aufnahme kann einen Moment dauern, bis ihre Datei fertiggestellt ist. Beim Beenden des Programms werden noch laufende Aufnahmen ebenfalls gestoppt; das Programm gibt ihnen vorher eine kurze Frist, um ihre Dateien fertigzustellen.
 
+Aufnahmen > Speicherplatzüberwachung für Aufnahmen prüft den freien Speicherplatz während der Aufnahme alle fünf Sekunden. Die Warnung ist standardmäßig unter 1024 MiB aktiviert. Das automatische Beenden ist zunächst ausgeschaltet. Aktivieren Sie es und legen Sie einen Schwellenwert fest, zunächst 256 MiB, damit Dateien vor dem vollständigen Füllen des Laufwerks kontrolliert abgeschlossen werden. Der Warnschwellenwert darf nicht niedriger liegen. Aufnahmen auf demselben Laufwerk erhalten eine gemeinsame Warnung; bei aktiviertem Beenden werden alle betroffenen Aufnahmen gestoppt. Die Prüfung reserviert keinen Speicherplatz und garantiert keinen erfolgreichen Dateiabschluss auf einem vollen oder getrennten Laufwerk.
+
+Aufnahmen > Aufnahmebibliothek zeigt fertige Dateien im aktuellen Aufnahmeordner, auch ältere Aufnahmen. Suchen Sie nach Titel, Sender oder Datum. Wiedergabe / Fortsetzen öffnet die Datei im integrierten Player und bietet gegebenenfalls die gespeicherte Wiedergabeposition an. Dauer und Abschlussstatus erscheinen, sofern bekannt; bei älteren Dateien kann Unbekannt stehen. Laufende Aufnahmen werden ausgeblendet. Aktualisieren liest die Liste neu ein. Aufnahmedatei löschen entfernt nach Bestätigung die Mediendatei endgültig; schließen Sie vorher ihr Wiedergabefenster. Das Entfernen aus der Liste geplanter Aufnahmen löscht diese Datei nicht.
+
 ### Aufnahmeformat {#recording-formats}
 
 Aufnahmen > Aufnahmeformat wählt, wie Aufnahmen gespeichert werden:
@@ -300,7 +308,7 @@ Um eine künftige Sendung aufzunehmen, wählen Sie Aufnahme planen auf einer Sen
 Aufnahmen > Geplante Aufnahmen… listet jede geplante, laufende und fertige Aufnahme mit Zeit, Titel, Sender, Status und Format.
 
 - Die Anwendungstaste oder Shift+F10 auf einer Aufnahme öffnet ihr Menü: Aktualisieren, Abbrechen und Löschen.
-- „Täglich aufnehmen“, „Wöchentlich aufnehmen“ und „Serie aufnehmen“ stehen im Menü einer Sendung in „EPG anzeigen“ und „Jetzt im Programm“, neben „Aufnahme planen“. Die Serienaufnahme findet künftige Sendungen mit demselben Titel auf diesem Sender, solange die App läuft. Jede Episode wird nur einmal aufgenommen: Wiederholt der Programmführer eine Episode, die die Regel bereits hat — erkannt an Episodennummer, Episodentitel oder Beschreibung — wird die Wiederholung übersprungen.
+- Die Programmmenüs in View EPG und Jetzt im Programm bieten neben Aufnahme planen auch Täglich aufnehmen, Wöchentlich aufnehmen und Serie aufnehmen. Solange die Anwendung läuft, sucht eine Serienregel nach künftigen Sendungen desselben Titels auf diesem Sender. Bereits geplante, laufende oder erfolgreich aufgenommene Folgen werden nicht erneut geplant; Folgenummer, Folgentitel oder Beschreibung dienen zum Erkennen von Wiederholungen.
 - Es lassen sich mehrere Aufnahmen markieren; Ctrl+A markiert alle Zeilen.
 - Entf oder Entf auf dem Ziffernblock fragt nach und entfernt dann die markierten Aufnahmen. Laufen davon noch welche, stoppt das Programm sie zuerst.
 - Escape schließt das Fenster.
@@ -310,6 +318,8 @@ Geplante Aufnahmen starten von selbst, während das Programm läuft, auch wenn e
 Wenn eine neue Aufnahme eine andere geplante Aufnahme überschneidet, warnt Sie das Programm vor dem Hinzufügen. Ihr Provider begrenzt möglicherweise die Anzahl der Streams, die gleichzeitig ausgeführt werden können.
 
 Das Programm fragt vor dem Schließen nach, solange geplante Aufnahmen noch auf ihren Start warten, denn sie können nur starten, während das Programm läuft. Schließen Sie es trotzdem, starten die wartenden Aufnahmen nicht.
+
+Eine nicht leere Datei allein beweist keine erfolgreiche Aufnahme. Unterbrochene Aufnahmen werden als Unvollständig gekennzeichnet; die vorhandenen Dateien bleiben erhalten. Absichtlich beendete Aufnahmen erhalten den Status Vom Benutzer beendet. Fehlgeschlagene, verpasste oder unvollständige Folgen können bei einer späteren Ausstrahlung erneut eingeplant werden, ohne dieselbe Ausstrahlung immer wieder zu versuchen. Beim Aktualisieren bleibt die Mehrfachauswahl erhalten. Auch wenn nur ein Teil der Einträge ausgewählt ist, nennt die Löschbestätigung die Anzahl.
 
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 

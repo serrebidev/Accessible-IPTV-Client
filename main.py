@@ -76,6 +76,9 @@ from providers import (
 import vod
 import playback_resume
 import recording_storage
+import channel_preferences
+import storage_monitor
+from accessible_tools_ui import AccessibleToolsMixin
 from planning_ui import PlanningMixin
 from personal_tools_ui import PersonalToolsMixin
 import full_backup
@@ -875,6 +878,7 @@ class _ProgramMatchIndex(NamedTuple):
     by_canon: Dict[str, tuple]
     by_base: Dict[str, tuple]
     tvg_id_rows: List[tuple]
+    mapping_version: int = 0
 
 
 def _channel_numbers(channel: Dict[str, str]) -> frozenset:
@@ -892,7 +896,7 @@ def _channel_numbers(channel: Dict[str, str]) -> frozenset:
 
 
 
-class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
+class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingMixin, RecordingReportsMixin, UiMixin, M3uCacheMixin, wx.Frame):
     # Labels double as the stored ``media_player`` config value, so they stay
     # English here; N_() only marks the one non-brand entry for extraction and
     # the menu translates it at build time via _(label).
@@ -958,6 +962,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
             raise
         # Activate the user's language preference before any UI strings are built.
         i18n.init_from_config(self.config)
+        channel_preferences.configure(self.config)
         self.playlist_sources = self.config.get("playlists", [])
         self.epg_sources = self.config.get("epgs", [])
         self.channels_by_group: Dict[str, List[Dict[str, str]]] = {}
@@ -1085,6 +1090,8 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         # Recording Manager
         self.recorder = recorder.RecordingManager()
         self.recorder.storage_min_mib = recording_storage.normalize_reserve(self.config.get("recording_min_free_mib"))
+        self.recorder.storage_preferences = storage_monitor.settings(self.config)
+        self.recorder.on_storage_warning = self._recording_space_warning
         self._suppress_recording_notifications = False
         # Media-type detection (issue #33): per-session probe cache plus the
         # set of channel identities with a classification probe in flight
@@ -2162,7 +2169,10 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
 
     def on_menu_open(self, event):
         from options import load_config
-        self.config = load_config()
+        loaded = load_config()
+        self.config.clear()
+        self.config.update(loaded)
+        channel_preferences.configure(self.config)
         self._sync_player_menu_from_config()
         for level, item in enumerate(getattr(self, "_announcement_items", ())):
             item.Check(level == self.config.get("announcement_level", 2))
@@ -3012,7 +3022,9 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         if channels is None:
             channels = self.all_channels
         cached = getattr(self, "_program_match_cache", None)
-        if publish and cached is not None and cached.channels is channels:
+        mapping_version = channel_preferences.version
+        if (publish and cached is not None and cached.channels is channels
+                and cached.mapping_version == mapping_version):
             return cached
         rows = []
         by_tvg_id: Dict[str, Dict[str, str]] = {}
@@ -3021,7 +3033,12 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         by_canon: Dict[str, tuple] = {}
         by_base: Dict[str, tuple] = {}
         tvg_id_rows: List[tuple] = []
+        manual_ids = {}
         for position, ch in enumerate(channels):
+            mapped = channel_preferences.epg_id(ch)
+            if mapped:
+                manual_ids.setdefault(mapped.lower(), ch)
+                continue
             ch_name = ch.get("name", "")
             ch_tvg_name = ch.get("tvg-name", "")
             ch_tvg_id = (ch.get("tvg-id", "") or "").lower()
@@ -3054,6 +3071,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
             if ch_base:
                 by_base.setdefault(ch_base, (position, ch))
         memo: Dict[tuple, Optional[Dict[str, str]]] = {}
+        by_tvg_id.update(manual_ids)
         index = _ProgramMatchIndex(
             channels=channels,
             rows=rows,
@@ -3064,6 +3082,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
             by_canon=by_canon,
             by_base=by_base,
             tvg_id_rows=tvg_id_rows,
+            mapping_version=mapping_version,
         )
         if publish:
             self._program_match_cache = index
@@ -3152,6 +3171,8 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         # so it needs the channels that carry an id at all.
         if channel_id_lower and best_score < 90:
             for row_index, channel, ch_tvg_id in index.tvg_id_rows:
+                if numbers_disagree(programme_numbers, _channel_numbers(channel)):
+                    continue
                 if channel_id_lower in ch_tvg_id or ch_tvg_id in channel_id_lower:
                     if 80 > best_score:
                         best_score = 80
@@ -3281,7 +3302,12 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
                 _("Recording Conflict"), wx.YES_NO | wx.ICON_WARNING) != wx.YES:
             return
 
-        self._ensure_dvr_scheduler(start=True).add_job(job)
+        try:
+            self._ensure_dvr_scheduler(start=True).add_job(job)
+        except (OSError, ValueError) as err:
+            message_box(_("Could not schedule recording:\n{error}").format(error=err),
+                        _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
+            return
         if not self._epg_guide_is_usable():
             # The guide is not imported (or not current), so this is the only
             # programme the user could see and the schedule can offer no
@@ -3517,7 +3543,8 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
             headers,
             out_dir,
             key="dvr:{id}".format(id=job.get("id")),
-            metadata={"dvr_job_id": job.get("id"), "planned_stop_ts": job.get("stop_ts")},
+            metadata={"dvr_job_id": job.get("id"), "planned_stop_ts": job.get("stop_ts"),
+                      "channel_name": dvr.channel_name(channel)},
             on_finish=self._on_recording_finished,
             audio_track=audio_track,
             audio_track_count=audio_count,
@@ -3541,13 +3568,13 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         rec_id = job.get("recording_id")
         if rec_id:
             try:
-                if self.recorder.stop(int(rec_id)):
+                if self.recorder.stop(int(rec_id), reason="scheduled"):
                     return
             except Exception:
                 LOG.debug("IPTVClient._stop_scheduled_recording: ignored exception", exc_info=True)
         # The recording id did not resolve (the capture is already gone): stop
         # by key, or the job keeps recording past its scheduled end.
-        self.recorder.stop_key("dvr:{id}".format(id=job.get("id")))
+        self.recorder.stop_key("dvr:{id}".format(id=job.get("id")), reason="scheduled")
 
     def _upcoming_dvr_jobs(self) -> List[Dict[str, object]]:
         """Scheduled DVR jobs that would be lost if the app closed now."""
@@ -3710,6 +3737,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
             rec = self.recorder.start(
                 url, name, fmt, headers, out_dir,
                 key=key, on_finish=self._on_recording_finished,
+                metadata={"channel_name": name},
                 audio_track=audio_track, audio_track_count=audio_count,
                 share_with_player=share_with is not None,
                 connection_key=single_stream_provider_key(url),
@@ -4494,6 +4522,10 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         menu.Bind(wx.EVT_MENU, self._show_reminders, reminders_item)
         storage_item = menu.Append(wx.ID_ANY, _("Check Recording Storage..."))
         menu.Bind(wx.EVT_MENU, self._show_recording_storage, storage_item)
+        monitor_item = menu.Append(wx.ID_ANY, _("Recording Space Monitor..."))
+        menu.Bind(wx.EVT_MENU, self._configure_space_monitor, monitor_item)
+        library_item = menu.Append(wx.ID_ANY, _("Recording Library..."))
+        menu.Bind(wx.EVT_MENU, self._show_recording_library, library_item)
         reserve_item = menu.Append(wx.ID_ANY, _("Minimum Free Space..."))
         menu.Bind(wx.EVT_MENU, self._set_recording_reserve, reserve_item)
         manual_item = menu.Append(wx.ID_ANY, _("Schedule by Time..."))
@@ -7352,10 +7384,10 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         self._internal_player_frame = frame
         configure_resume = getattr(frame, "configure_vod_resume", None)
         if callable(configure_resume):
-            configure_resume(self.config, lambda: save_config(self.config))
+            configure_resume(self.config, self._save_player_preferences)
         configure_sleep = getattr(frame, 'configure_sleep_preferences', None)
         if callable(configure_sleep):
-            configure_sleep(self.config, lambda: save_config(self.config))
+            configure_sleep(self.config, self._save_player_preferences)
         return frame
 
     def _on_player_subtitle_cue(self, text: str, start_ms=None, end_ms=None,
@@ -7864,6 +7896,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
         show_internal_player: Optional[bool] = None,
         focus_player: bool = True,
         _buffer_bypass: bool = False,
+        force_internal: bool = False,
     ):
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
@@ -7884,7 +7917,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
 
         # Check if casting
         caster = getattr(self, "caster", None)
-        if caster and caster.is_connected():
+        if not force_internal and caster and caster.is_connected():
             try:
                 device_name = caster.active_device.display_name
                 self._subtitle_session.cancel_session(stop_playback=True)
@@ -7920,7 +7953,7 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
                 # Fallback to local player? No, user expects cast.
                 return
 
-        player = self.default_player
+        player = "Built-in Player" if force_internal else self.default_player
         stream_headers = channel_http_headers(channel)
         custom_path = self.config.get("custom_player_path", "")
 
@@ -7971,6 +8004,9 @@ class IPTVClient(PersonalToolsMixin, PlanningMixin, LiveBufferMixin, EpgRoutingM
                 # when it is empty, or the previous channel's track would leak
                 # into this one.
                 self._internal_player_audio_key = self._channel_audio_key(channel)
+                prepare_volume = getattr(self, "_prepare_channel_volume", None)
+                if callable(prepare_volume):
+                    prepare_volume(frame, channel if stream_kind == "live" else None)
                 setter = getattr(frame, "set_channel_audio_track", None)
                 if callable(setter):
                     setter(self._remembered_channel_audio_track(
@@ -9149,6 +9185,8 @@ class ScheduledRecordingsDialog(wx.Dialog):
             dvr.STATUS_RECORDING: _("Recording"),
             dvr.STATUS_STOPPING: _("Stopping"),
             dvr.STATUS_COMPLETED: _("Completed"),
+            dvr.STATUS_PARTIAL: _("Partial"),
+            dvr.STATUS_STOPPED: _("Stopped by user"),
             dvr.STATUS_FAILED: _("Failed"),
             dvr.STATUS_MISSED: _("Missed"),
             dvr.STATUS_CANCELED: _("Canceled"),
@@ -9159,8 +9197,11 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # Keep the row the user was on, and never take the focus: the dialog is
         # refreshed on every scheduler change, and jumping back to the first
         # row lost the place of a screen-reader user browsing the schedule.
-        selected = self._selected_job()
-        selected_id = str(selected.get("id") or "") if selected else ""
+        selected_ids = {str(job.get("id") or "") for job in self._selected_jobs()}
+        focused = self.list_ctrl.GetFocusedItem()
+        focused_id = str(self.jobs[focused].get("id") or "") if 0 <= focused < len(self.jobs) else ""
+        top = self.list_ctrl.GetTopItem()
+        top_id = str(self.jobs[top].get("id") or "") if 0 <= top < len(self.jobs) else ""
         self.jobs = self.scheduler.list_jobs(include_done=True)
         self.list_ctrl.DeleteAllItems()
         for job in self.jobs:
@@ -9175,15 +9216,19 @@ class ScheduledRecordingsDialog(wx.Dialog):
                 self.list_ctrl.SetItemFont(idx, font)
         if not self.jobs:
             return
-        target = -1
-        if selected_id:
-            for idx, job in enumerate(self.jobs):
-                if str(job.get("id") or "") == selected_id:
-                    target = idx
-                    break
-        if target == -1:
-            target = 0
-        self.list_ctrl.Select(target)
+        target = 0
+        found = False
+        for idx, job in enumerate(self.jobs):
+            key = str(job.get("id") or "")
+            if key in selected_ids:
+                self.list_ctrl.Select(idx)
+                found = True
+            if key == focused_id:
+                target = idx
+            if key == top_id:
+                self.list_ctrl.EnsureVisible(idx)
+        if not found:
+            self.list_ctrl.Select(target)
         if wx.Window.FindFocus() is self.list_ctrl:
             self.list_ctrl.Focus(target)
 
@@ -9229,6 +9274,8 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # wording is reserved for an actual multi-recording bulk selection.
         if len(jobs) > 1 and len(jobs) == self.list_ctrl.GetItemCount():
             prompt = _("Remove all scheduled recordings from the list?")
+        elif len(jobs) > 1:
+            prompt = _("Remove the {count} selected scheduled recordings from the list? Recording files will be kept.").format(count=len(jobs))
         else:
             title = str(jobs[0].get("display_title") or jobs[0].get("title") or "")
             prompt = _("Remove scheduled recording '{title}' from the list?").format(title=title)

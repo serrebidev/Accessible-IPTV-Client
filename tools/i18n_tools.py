@@ -45,6 +45,8 @@ SOURCE_FILES = [
     "client_ui.py",
     "client_epg.py",
     "client_recording.py",
+    "accessible_tools_ui.py",
+    "recording_library.py",
     "dialogs_misc.py",
     "channel_widgets.py",
     "catchup_urls.py",  # _ffmpeg_exit_reason() translates provider errors

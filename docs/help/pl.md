@@ -139,6 +139,8 @@ Konto Stalker Portal potrzebuje adresu portalu i adresu MAC, który dostawca zar
 
 Przewodnik po programach, czyli EPG, mówi, co leci na każdym kanale teraz i później. Pochodzi z plików XMLTV publikowanych przez dostawcę albo inne źródło. Program importuje je do lokalnej bazy danych i używa jej do opisu odcinka, Teraz w programie, Pokaż EPG..., list powtórek i wyszukiwań.
 
+Widok > Przypisz przewodnik po programach pozwala wybrać kanał przewodnika dla zaznaczonego kanału na żywo. Wyszukaj nazwę lub identyfikator, zaznacz pozycję i naciśnij OK. Użyj dopasowania automatycznego usuwa ręczne przypisanie. Wybór jest zapisywany osobno dla każdej listy lub dostawcy i obowiązuje w tytułach programów, przewodniku, wyszukiwaniu oraz planowaniu nagrań. Jeśli wybrany identyfikator zniknie po imporcie, dane programu pozostaną niedostępne do czasu poprawienia przypisania lub przywrócenia automatycznego dopasowania.
+
 ### Menedżer EPG {#epg-manager}
 
 Plik > Menedżer EPG (Ctrl+E) wypisuje twoje źródła przewodnika.
@@ -227,6 +229,8 @@ Klawisze w odtwarzaczu:
 
 Te same polecenia są w menu Odtwarzanie odtwarzacza. Odtwarzacz sam łączy się ponownie, gdy strumień na żywo się urwie, i trzyma wybraną ścieżkę audio.
 
+Wycisz / Włącz dźwięk wycisza wbudowany odtwarzacz bez wstrzymywania odtwarzania lub nagrywania. Domyślne skróty to Ctrl+Shift+M w oknie głównym oraz M w odtwarzaczu; oba można zmienić w ustawieniach skrótów. Wyciszenie pozostaje aktywne po zmianie kanału i ponownym połączeniu. Odtwarzacz > Zapamiętuj głośność każdego kanału jest domyślnie wyłączone. Po włączeniu zapamiętuje wybraną głośność osobno dla każdej listy lub dostawcy. Kanały bez zapisanej wartości używają ogólnej głośności odtwarzacza. Funkcje te nie zmieniają głośności czytnika ekranu.
+
 ### Ścieżki audio {#audio-tracks}
 
 Kanały mogą nieść wiele ścieżek audio, na przykład inne języki albo audiodeskrypcję. Naciśnij A, aby przejść do następnej ścieżki, użyj Odtwarzanie > Ścieżka audio, albo Tab do Wybierz ścieżkę dźwiękową, które zawsze nazywa grającą ścieżkę.
@@ -284,6 +288,10 @@ Nagrywanie oglądanego programu we wbudowanym odtwarzaczu używa tego samego po�
 
 Zatrzymanie nagrania może chwilę potrwać, zanim jego plik zostanie domknięty. Przy zamykaniu aplikacji trwające jeszcze nagrania również są zatrzymywane; program najpierw daje im krótką chwilę na domknięcie plików.
 
+Nagrania > Monitorowanie miejsca na nagrania sprawdza wolne miejsce co pięć sekund podczas nagrywania. Ostrzeżenie jest domyślnie włączone poniżej 1024 MiB. Automatyczne zatrzymywanie jest początkowo wyłączone; włącz je i wybierz próg, domyślnie 256 MiB, aby program rozpoczął prawidłowe zamykanie plików, zanim dysk się zapełni. Próg ostrzegania nie może być niższy od progu zatrzymania. Nagrania na tym samym dysku otrzymują wspólne ostrzeżenie; przy włączonym zatrzymywaniu wszystkie zostaną zatrzymane. Kontrola nie rezerwuje miejsca ani nie gwarantuje zamknięcia plików na pełnym lub odłączonym dysku.
+
+Nagrania > Biblioteka nagrań pokazuje ukończone pliki z bieżącego folderu nagrań, także starsze. Szukaj według tytułu, kanału lub daty. Odtwórz / Wznów otwiera plik we wbudowanym odtwarzaczu i proponuje zapisaną pozycję, jeśli jest dostępna. Czas trwania i stan ukończenia są wyświetlane, gdy są znane; starsze pliki mogą mieć wartość Nieznany. Nagrania w toku są pomijane. Odśwież ponownie wczytuje listę. Usuń plik nagrania trwale usuwa plik multimedialny po potwierdzeniu; najpierw zamknij jego okno odtwarzania. Usunięcie pozycji z zaplanowanych nagrań nie usuwa pliku.
+
 ### Format nagrywania {#recording-formats}
 
 Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
@@ -300,7 +308,7 @@ Aby nagrać przyszłą audycję, wybierz Zaplanuj nagrywanie na audycji w Pokaż
 Nagrania > Zaplanowane nagrania... wypisuje każde zaplanowane, trwające i zakończone nagranie z czasem, tytułem, kanałem, statusem i formatem.
 
 - Klawisz aplikacji albo Shift+F10 na nagraniu otwiera jego menu: Odśwież, Anuluj i Usuń.
-- Polecenia Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serię znajdują się w menu programu w oknach Pokaż EPG i Teraz w programie, obok Zaplanuj nagrywanie. Nagrywanie serii wyszukuje przyszłe programy z przewodnika o tym samym tytule na tym kanale, gdy aplikacja działa. Każdy odcinek jest nagrywany tylko raz: gdy przewodnik powtarza odcinek, który reguła już ma — rozpoznany po numerze odcinka, tytule odcinka lub opisie — powtórka jest pomijana.
+- Menu programów w View EPG i Teraz w programie udostępniają Nagrywaj codziennie, Nagrywaj co tydzień i Nagrywaj serię obok Zaplanuj nagrywanie. Podczas działania aplikacji reguła serialu wyszukuje przyszłe programy o tym samym tytule na danym kanale. Odcinek już zaplanowany, właśnie nagrywany lub pomyślnie nagrany nie jest planowany ponownie; numer, tytuł lub opis odcinka pozwala rozpoznać powtórki.
 - Można zaznaczyć więcej niż jedno nagranie; Ctrl+A zaznacza wszystkie wiersze.
 - Delete lub Delete na klawiaturze numerycznej prosi o potwierdzenie, a potem usuwa zaznaczone nagrania. Jeśli któreś z nich jeszcze trwa, program najpierw je zatrzymuje.
 - Escape zamyka okno.
@@ -310,6 +318,8 @@ Zaplanowane nagrania startują same, gdy program działa, także zminimalizowany
 Gdy nowe nagranie nakłada się na inne zaplanowane nagranie, program ostrzega przed jego dodaniem. Twój dostawca może ograniczyć liczbę strumieni jednocześnie.
 
 Program pyta przed zamknięciem, jeśli zaplanowane nagrania wciąż czekają na start, bo mogą się zacząć tylko wtedy, gdy program działa. Jeśli mimo to go zamkniesz, oczekujące nagrania się nie zaczną.
+
+Sam niepusty plik nie potwierdza powodzenia nagrania. Przerwane nagrania mają stan Częściowe, a dostępne pliki są zachowywane; celowe zatrzymanie ma stan Zatrzymane przez użytkownika. Nieudane, pominięte lub częściowe odcinki mogą zostać zaplanowane z późniejszej emisji, bez ponawiania tej samej emisji w kółko. Odświeżenie zachowuje zaznaczenie wielu pozycji, a potwierdzenie usuwania podaje ich liczbę także wtedy, gdy zaznaczono tylko część listy.
 
 ### Margines nagrywania {#schedule-padding}
 

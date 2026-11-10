@@ -43,9 +43,11 @@ MAIN = {
     "recent_channels": ("Ctrl+H", 4024),
     "whats_on_now": ("Ctrl+W", 4025),
     "what_is_playing": ("Ctrl+Shift+I", 4026),
+    "mute": ("Ctrl+Shift+M", 4027),
 }
 
 PLAYER = {
+    "mute": "M",
     "seek_back_10": "Ctrl+Left",
     "seek_forward_10": "Ctrl+Right",
     "seek_back_60": "Ctrl+Shift+Left",
@@ -73,6 +75,7 @@ PLAYER = {
 # Menu labels, so a conflict names the command the user knows, not the internal key.
 LABELS = {
     "main": {
+        "mute": N_("Mute / Unmute"),
         "playlist_manager": N_("Playlist Manager"),
         "epg_manager": N_("EPG Manager"),
         "import_epg": N_("Import EPG to DB"),
@@ -94,6 +97,7 @@ LABELS = {
         "what_is_playing": N_("What Is Playing"),
     },
     "player": {
+        "mute": N_("Mute / Unmute"),
         "seek_back_10": N_("Back 10 Seconds"),
         "seek_forward_10": N_("Forward 10 Seconds"),
         "seek_back_60": N_("Back 60 Seconds"),
@@ -164,6 +168,16 @@ def effective(config: dict, context: str) -> dict:
                 if _allowed(context, flags, key):
                     value = label
         result[action] = value
+    # Adding a new default must not steal an existing personal shortcut. Keep
+    # an explicit mute binding as chosen; otherwise pick a free modified key.
+    if context + ".mute" not in saved:
+        used = {parse(value)[:2] for action, value in result.items() if action != "mute"}
+        if parse(result["mute"])[:2] in used:
+            for letter in "MABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                alternative = "Ctrl+Alt+Shift+" + letter
+                if parse(alternative)[:2] not in used:
+                    result["mute"] = alternative
+                    break
     return result
 
 

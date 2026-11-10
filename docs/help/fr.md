@@ -139,6 +139,8 @@ Un compte Stalker Portal a besoin de l'adresse du portail et de l'adresse MAC qu
 
 Le guide de programmes, l'EPG, vous dit ce qui passe sur chaque chaîne maintenant et plus tard. Il provient de fichiers XMLTV publiés par votre fournisseur ou une autre source. Le programme les importe dans une base de données locale, puis l'utilise pour la description de l'épisode, À l'affiche maintenant, Afficher l'EPG…, les listes de rattrapage et les recherches.
 
+Affichage > Associer le guide des programmes permet de choisir la chaîne du guide correspondant à la chaîne en direct sélectionnée. Recherchez un nom ou un identifiant, sélectionnez une entrée et validez avec OK. Utiliser l’association automatique supprime le choix manuel. Ce choix est mémorisé séparément pour chaque liste ou fournisseur et s’applique aux titres des programmes, au guide, aux recherches et aux enregistrements programmés. Si l’identifiant disparaît après un import, les programmes restent indisponibles jusqu’à la correction du choix ou au rétablissement de l’association automatique.
+
 ### Gestionnaire EPG {#epg-manager}
 
 Fichier > Gestionnaire EPG (Ctrl+E) liste vos sources de guide.
@@ -227,6 +229,8 @@ Touches du lecteur :
 
 Les mêmes commandes se trouvent dans le menu Lecture du lecteur. Le lecteur se reconnecte tout seul quand un flux en direct se coupe, et garde la piste audio que vous avez choisie.
 
+Activer / Désactiver le son coupe le son du lecteur intégré sans interrompre la lecture ni l’enregistrement. Les raccourcis par défaut sont Ctrl+Maj+M dans la fenêtre principale et M dans le lecteur ; ils peuvent être modifiés dans les réglages des raccourcis. Le son reste coupé après un changement de chaîne ou une reconnexion. Lecteur > Mémoriser le volume de chaque chaîne est désactivé par défaut et conserve, une fois activé, votre réglage séparément pour chaque liste ou fournisseur. Les chaînes sans valeur mémorisée utilisent le volume général du lecteur. Le volume du lecteur d’écran n’est pas modifié.
+
 ### Pistes audio {#audio-tracks}
 
 Les chaînes peuvent porter plusieurs pistes audio, comme d'autres langues ou l'audiodescription. Appuyez sur A pour passer à la piste suivante, utilisez Lecture > Piste audio, ou Tab jusqu'à Choisir la piste audio, qui nomme toujours la piste en lecture.
@@ -284,6 +288,10 @@ Enregistrer ce que vous regardez dans le lecteur intégré utilise la même conn
 
 L'arrêt d'un enregistrement peut prendre un moment, le temps de finaliser son fichier. Quand l'application se ferme, les enregistrements encore en cours sont eux aussi arrêtés ; le programme leur laisse d'abord un court délai pour finaliser leurs fichiers.
 
+Enregistrements > Surveillance de l’espace d’enregistrement vérifie l’espace libre toutes les cinq secondes pendant l’enregistrement. L’avertissement est activé par défaut en dessous de 1024 MiB. L’arrêt automatique est désactivé par défaut ; activez-le et choisissez un seuil, initialement de 256 MiB, pour demander la fermeture propre des fichiers avant que le lecteur soit plein. Le seuil d’avertissement ne doit pas être inférieur au seuil d’arrêt. Un avertissement commun concerne tous les enregistrements sur un même lecteur ; si l’arrêt est activé, ils sont tous arrêtés. Cette vérification ne réserve pas d’espace et ne garantit pas la fermeture des fichiers sur un lecteur plein ou déconnecté.
+
+Enregistrements > Bibliothèque des enregistrements affiche les fichiers terminés du dossier d’enregistrement actuel, y compris les anciens fichiers. Recherchez par titre, chaîne ou date. Lire / Reprendre ouvre le fichier dans le lecteur intégré et propose la position mémorisée lorsqu’elle existe. La durée et l’état de l’enregistrement sont indiqués s’ils sont connus ; les anciens fichiers peuvent afficher Inconnu. Les enregistrements en cours sont exclus. Actualiser recharge la liste. Supprimer le fichier d’enregistrement efface définitivement le fichier multimédia après confirmation ; fermez d’abord sa fenêtre de lecture. Retirer une entrée de la liste des enregistrements programmés ne supprime pas ce fichier.
+
 ### Format d'enregistrement {#recording-formats}
 
 Enregistrements > Format d'enregistrement choisit comment les enregistrements sont sauvegardés :
@@ -300,7 +308,7 @@ Pour enregistrer une émission à venir, choisissez Programmer l'enregistrement 
 Enregistrements > Enregistrements programmés… liste chaque enregistrement programmé, en cours et terminé avec son heure, son titre, sa chaîne, son état et son format.
 
 - La touche Applications ou Shift+F10 sur un enregistrement ouvre son menu : Actualiser, Annuler et Supprimer.
-- Enregistrer chaque jour, Enregistrer chaque semaine et Enregistrer la série se trouvent dans le menu d'un programme dans Afficher l'EPG et À l'affiche maintenant, à côté de Programmer l'enregistrement. L'enregistrement de la série recherche les futurs programmes du guide portant le même titre sur cette chaîne tant que l'application est ouverte. Chaque épisode n'est enregistré qu'une fois : lorsque le guide répète un épisode que la règle possède déjà (identifié par son numéro d'épisode, son titre ou sa description), la répétition est ignorée.
+- Les menus des programmes dans View EPG et À l'affiche maintenant proposent Enregistrer chaque jour, Enregistrer chaque semaine et Enregistrer la série à côté de Programmer l'enregistrement. Tant que l’application est ouverte, une règle de série recherche les prochaines émissions du même titre sur cette chaîne. Un épisode déjà programmé, en cours d’enregistrement ou enregistré avec succès n’est pas programmé à nouveau ; son numéro, son titre ou sa description permet de repérer les rediffusions.
 - Vous pouvez sélectionner plusieurs enregistrements ; Ctrl+A sélectionne toutes les lignes.
 - Suppr ou Suppr du pavé numérique demande une confirmation, puis retire les enregistrements sélectionnés. Si certains sont encore en cours, le programme les arrête d'abord.
 - Échap ferme la fenêtre.
@@ -310,6 +318,8 @@ Les enregistrements programmés démarrent tout seuls pendant que le programme t
 Lorsqu'un nouvel enregistrement chevauche un autre enregistrement programmé, le programme vous avertit avant de l'ajouter. Votre fournisseur peut limiter le nombre de flux pouvant être exécutés simultanément.
 
 Le programme demande confirmation avant de se fermer si des enregistrements programmés attendent encore de démarrer, car ils ne peuvent démarrer que pendant que le programme tourne. Si vous le fermez quand même, ces enregistrements ne démarreront pas.
+
+Un fichier non vide ne suffit pas à prouver la réussite d’un enregistrement. Les captures interrompues portent l’état Partiel et leurs fichiers sont conservés ; un arrêt volontaire porte l’état Arrêté par l’utilisateur. Les épisodes échoués, manqués ou partiels peuvent être programmés lors d’une diffusion ultérieure, sans réessayer continuellement la même diffusion. L’actualisation conserve la sélection multiple et la confirmation de suppression indique le nombre d’entrées concernées, même lorsque seule une partie de la liste est sélectionnée.
 
 ### Marge de programmation {#schedule-padding}
 

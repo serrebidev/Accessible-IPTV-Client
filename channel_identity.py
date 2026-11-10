@@ -122,6 +122,10 @@ def match_guide_channel(channel, indexes: GuideIndexes,
     what keeps them apart; a number in an id is a database key and would
     only mask the name's disagreement.
     """
+    import channel_preferences
+    override = channel_preferences.epg_id(channel)
+    if override:
+        return indexes.by_id.get(override)
     raw_id = str(channel.get("tvg-id") or "").strip()
     candidates = expand_tvg_id_candidates(raw_id)
     candidates.append(raw_id)

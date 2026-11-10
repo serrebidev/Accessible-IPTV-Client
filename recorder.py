@@ -19,6 +19,8 @@ import subprocess
 import threading
 import time
 import recording_storage
+import storage_monitor
+import recording_library
 from typing import Any, Callable, Dict, List, Optional
 
 LOG = logging.getLogger(__name__)
@@ -944,6 +946,7 @@ class Recording:
         self.started_at = time.time()
         self.stderr_tail: List[str] = []
         self.stopped_by_user = False
+        self.stop_reason = ""
         self.stopping = False
         self.metadata = metadata or {}
         self.log_path = log_path
@@ -1001,6 +1004,10 @@ class RecordingManager:
         self._next_id = 1
         self._storage_gate = threading.RLock()
         self.storage_min_mib = recording_storage.DEFAULT_RESERVE_MIB
+        self.storage_preferences = storage_monitor.settings({})
+        self.on_storage_warning = None
+        self._space_thread = None
+        self._space_monitor = storage_monitor.SpaceMonitor()
 
     # -- queries -----------------------------------------------------------
     def list_active(self) -> List[Recording]:
@@ -1053,7 +1060,9 @@ class RecordingManager:
             # Serialize concurrent starts through validation and registration.
             # A floor is not a reservation of the recording's unknown full size.
             with self._storage_gate:
-                checked = recording_storage.check_destination(out_dir, self.storage_min_mib)
+                enabled, _warning, critical, auto_stop = self.storage_preferences
+                reserve = max(self.storage_min_mib, critical) if enabled and auto_stop else self.storage_min_mib
+                checked = recording_storage.check_destination(out_dir, reserve)
                 out_dir = checked['path']
                 return self.start(url, display_name, fmt, headers, out_dir,
                     key=key, metadata=metadata, on_finish=on_finish, duration=duration,
@@ -1187,9 +1196,42 @@ class RecordingManager:
         if not log_path:
             threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()
         threading.Thread(target=self._watch, args=(rec, on_finish), daemon=True).start()
+        self._ensure_space_monitor()
         return rec
 
-    def stop(self, rec_id: int, *, wait: bool = False, detach: bool = False) -> bool:
+    def _ensure_space_monitor(self):
+        with self._lock:
+            if self._space_thread is not None:
+                return
+            self._space_thread = threading.Thread(target=self._monitor_space, name="recording-space", daemon=True)
+            try:
+                self._space_thread.start()
+            except RuntimeError:
+                self._space_thread = None
+                LOG.exception("Could not start recording-space monitor")
+
+    def _monitor_space(self):
+        while True:
+            with self._lock:
+                rows = [r for r in self._recordings.values() if r.process and r.process.poll() is None]
+                if not rows:
+                    self._space_thread = None
+                    self._space_monitor.notified.clear()
+                    return
+            try:
+                self._space_monitor.check(rows, self.storage_preferences,
+                                          self._notify_storage, lambda rec_id: self.stop(rec_id, reason="storage"))
+            except Exception:
+                LOG.exception("Recording-space monitor failed")
+            threading.Event().wait(5)
+
+    def _notify_storage(self, state, directory, free, count):
+        LOG.warning("Recording space %s: %s (%s MiB)", state, directory, free)
+        callback = self.on_storage_warning
+        if callable(callback):
+            callback(state, directory, free, count)
+
+    def stop(self, rec_id: int, *, wait: bool = False, detach: bool = False, reason: str = "user") -> bool:
         """Stop one recording. False when the id is not (or no longer) active.
 
         The caller has to be able to tell "stopped" from "there was nothing
@@ -1200,13 +1242,17 @@ class RecordingManager:
             rec = self._recordings.get(rec_id)
         if not rec:
             return False
+        if not rec.stopping:
+            rec.stop_reason = reason
         self._graceful_stop(rec, wait=wait, detach=detach)
         return True
 
-    def stop_key(self, key: str, *, wait: bool = False, detach: bool = False) -> int:
+    def stop_key(self, key: str, *, wait: bool = False, detach: bool = False, reason: str = "user") -> int:
         stopped = 0
         for rec in self.list_active():
             if rec.key == key:
+                if not rec.stopping:
+                    rec.stop_reason = reason
                 self._graceful_stop(rec, wait=wait, detach=detach)
                 stopped += 1
         return stopped
@@ -1314,6 +1360,7 @@ class RecordingManager:
             lease.release()
             rec.buffer_lease = None
         rc = proc.returncode if proc else -1
+        rec.ended_at = time.time()
         if rec.log_path:
             # Deliberately not rewritten: the log keeps the stream URL and
             # credentials so a failed capture can be diagnosed from it.
@@ -1340,6 +1387,10 @@ class RecordingManager:
                 on_finish(rec, rc if rc is not None else -1)
             except Exception:
                 LOG.exception("Recording on_finish callback failed")
+        try:
+            recording_library.remember(rec, rc)
+        except (OSError, ValueError):
+            LOG.exception("Could not save recording library metadata")
 
     @staticmethod
     def _append_log_summary(rec: Recording, rc: Optional[int]) -> None:

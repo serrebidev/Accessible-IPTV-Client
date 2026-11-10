@@ -278,6 +278,11 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._vlc_switch = None
         self._fullscreen = False
         self._volume_value = 80
+        self._muted = False
+        self._volume_context = ""
+        self._volume_remember = None
+        self._volume_write = None
+        self._volume_pending = None
         self._volume_last_ts = 0.0
         self._volume_ramp = 0
         self._volume_last_dir = 0
@@ -556,6 +561,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         m_play_pause = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Play/Pause"), "play_pause"))
         m_stop = playback_menu.Append(wx.ID_ANY, self._shortcut_label(_("Stop"), "stop"))
         m_sleep = playback_menu.Append(wx.ID_ANY, _("Sleep Timer..."))
+        self.mute_item = playback_menu.AppendCheckItem(wx.ID_ANY, self._shortcut_label(_("Mute / Unmute"), "mute"))
+        self.Bind(wx.EVT_MENU, lambda event: self.toggle_mute(event), self.mute_item)
         self._add_navigation_menu(playback_menu)
         m_buffer = playback_menu.Append(wx.ID_ANY, _("Local Live Buffer..."))
         m_rewind = playback_menu.Append(wx.ID_ANY, _("Rewind Live TV..."))
@@ -739,6 +746,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             raise InternalPlayerUnavailableError(_("No stream URL provided."))
         if not _retry and getattr(self, "_resume_prepared", None) is not None:
             self._resume_key, self._resume_start_ms, self._resume_metadata = self._resume_prepared
+            self._resume_store = getattr(self, "_resume_prepared_store", "playback_bookmarks")
             self._resume_prepared = None
             self._has_seen_playing = False
             self._resume_last_save = time.monotonic()
@@ -2054,6 +2062,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
 
         vol = int(self._volume_value) if volume_override is None else volume_override
         vol_txt = " | " + _("Vol {value}%").format(value=vol)
+        if getattr(self, "_muted", False):
+            vol_txt += " | " + _("Muted")
         
         real_prefix = prefix if prefix else self._last_status_prefix
         if prefix:
@@ -2280,6 +2290,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self._adjust_volume(5 if event.ControlDown() else 2)
         elif action == "volume_down":
             self._adjust_volume(-5 if event.ControlDown() else -2)
+        elif action == "mute":
+            self.toggle_mute()
         elif action == "audio_track":
             self._cycle_audio_track()
         elif action == "subtitles":
@@ -2321,12 +2333,10 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             if self._destroyed or generation != getattr(self, "_vlc_generation", 0):
                 return
             try:
-                # Ensure audio is not muted (can happen with --intf=dummy)
-                self.player.audio_set_mute(False)
-                current = self.player.audio_get_volume()
-                if current >= 0 and not getattr(self, "_sleep_volume_dirty", False):
-                    self._volume_value = current
+                # The requested volume/mute belongs to the user, not the new
+                # VLC input, which may report a default or faded value here.
                 self.player.audio_set_volume(round(self._volume_value * getattr(self, "_sleep_gain", 1.0)))
+                self.player.audio_set_mute(getattr(self, "_muted", False))
                 if getattr(self, "_sleep_gain", 1.0) == 1.0:
                     self._sleep_volume_dirty = False
                 self._sync_volume_slider()
@@ -2355,7 +2365,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         if new_val != self._volume_value:
             self._apply_volume(new_val)
 
-    def _apply_volume(self, value: float) -> None:
+    def _apply_volume(self, value: float, *, remember=True) -> None:
+        value = max(0, min(100, int(value)))
         self._volume_value = value
         ival = int(value)
         
@@ -2365,14 +2376,51 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self.volume_slider.SetValue(ival)
             
         # 2. Apply to VLC immediately
-        # Simple, direct, synchronous call. Also clear any mute state, since
-        # libVLC can start muted with the dummy interface and a muted stream
-        # makes volume changes silently no-ops.
+        # A volume adjustment does not accidentally undo an explicit mute.
         try:
-            self.player.audio_set_mute(False)
             self.player.audio_set_volume(round(ival * getattr(self, "_sleep_gain", 1.0)))
+            self.player.audio_set_mute(getattr(self, "_muted", False))
         except Exception:
             LOG.debug("InternalPlayerFrame._apply_volume: ignored exception", exc_info=True)
+        if remember and getattr(self, "_volume_context", "") and callable(getattr(self, "_volume_remember", None)):
+            pending = getattr(self, "_volume_write", None)
+            if pending is not None:
+                pending.Stop()
+            self._volume_pending = (self._volume_context, value, self._volume_remember)
+            self._volume_write = wx.CallLater(400, self._flush_channel_volume)
+
+    def _flush_channel_volume(self):
+        pending = getattr(self, "_volume_write", None)
+        if pending is not None:
+            pending.Stop()
+        self._volume_write = None
+        proposal = getattr(self, "_volume_pending", None)
+        self._volume_pending = None
+        if proposal:
+            key, value, save = proposal
+            try:
+                save(key, value)
+            except Exception as error:
+                if not getattr(self, "_destroyed", False):
+                    self._notify_box(_("The channel volume could not be saved:\n{error}").format(error=error),
+                                     _("Volume"), wx.OK | wx.ICON_ERROR)
+
+    def set_volume_context(self, key, value, remember):
+        self._flush_channel_volume()
+        self._volume_context = key
+        self._volume_remember = remember
+        self._apply_volume(value, remember=False)
+
+    def toggle_mute(self, _event=None):
+        muted = not getattr(self, "_muted", False)
+        try:
+            self.player.audio_set_mute(muted)
+        except Exception:
+            self._update_status_label(_("The player could not change its mute state."), priority=1)
+            return
+        self._muted = muted
+        self.mute_item.Check(muted)
+        self._update_status_label(_("Muted") if muted else _("Sound restored"), priority=1)
 
     # -------------------------------------------------------------- audio track
     @staticmethod
@@ -3080,8 +3128,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self._save_resume_checkpoint(force=True)
         self._resume_prepared = None
         config = self._resume_config
+        store_key = "recording_playback_bookmarks" if isinstance(channel, dict) and channel.get("local-recording") else "playback_bookmarks"
         entries, key = playback_resume.lookup(
-            config.get("playback_bookmarks") if isinstance(config, dict) else {}, channel)
+            config.get(store_key) if isinstance(config, dict) else {}, channel)
         entry = entries.get(key)
         start = 0
         if entry is not None:
@@ -3099,21 +3148,22 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         # A modal question runs the event loop: checkpoint timers may have
         # updated other items meanwhile. Merge from the current config again.
         if isinstance(config, dict):
-            entries, key = playback_resume.lookup(config.get("playback_bookmarks"), channel)
+            entries, key = playback_resume.lookup(config.get(store_key), channel)
             if entry is not None and choice == "beginning":
                 entries.pop(key, None)
-        if isinstance(config, dict) and entries != config.get("playback_bookmarks", {}):
-            previous = config.get("playback_bookmarks", {})
-            config["playback_bookmarks"] = entries
+        if isinstance(config, dict) and entries != config.get(store_key, {}):
+            previous = config.get(store_key, {})
+            config[store_key] = entries
             try:
                 if callable(self._resume_save):
                     self._resume_save()
             except Exception:
-                config["playback_bookmarks"] = previous
+                config[store_key] = previous
                 raise
         # Don't assign the new item's identity to a still-playing old stream.
         # play() consumes this proposal only after the caller accepted it.
         self._resume_prepared = (key, start, playback_resume.metadata(channel))
+        self._resume_prepared_store = store_key
         return True
 
     def _save_resume_checkpoint(self, force=False) -> None:
@@ -3125,6 +3175,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         if getattr(self, "_resume_prepared", None) is not None:
             return
         config = getattr(self, "_resume_config", None)
+        store_key = getattr(self, "_resume_store", "playback_bookmarks")
         key = getattr(self, "_resume_key", "")
         if not isinstance(config, dict) or not key or getattr(self, "_current_stream_kind", "") != "vod":
             return
@@ -3147,13 +3198,25 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             if self._resume_start_ms and position >= self._resume_start_ms - 2000:
                 self._resume_start_ms = 0
             updated = playback_resume.checkpoint(
-                config.get("playback_bookmarks"), key, position, length,
+                config.get(store_key), key, position, length,
                 info=getattr(self, "_resume_metadata", None))
             self._resume_last_save = now
-            if updated != config.get("playback_bookmarks", {}):
-                config["playback_bookmarks"] = updated
-                if callable(self._resume_save):
-                    self._resume_save()
+            if updated != config.get(store_key, {}):
+                previous = config.get(store_key, {})
+                config[store_key] = updated
+                try:
+                    if callable(self._resume_save):
+                        self._resume_save()
+                    self._resume_save_failed = False
+                except Exception as error:
+                    config[store_key] = previous
+                    notify = getattr(self, "_notify_box", None)
+                    if not getattr(self, "_resume_save_failed", False) and callable(notify):
+                        self._resume_save_failed = True
+                        notify(_("The operation failed:\n{error}").format(error=error),
+                               _("Recording Library") if store_key == "recording_playback_bookmarks" else _("Continue Watching"),
+                               wx.OK | wx.ICON_ERROR)
+                    raise
         except Exception:
             LOG.debug("Could not save playback checkpoint", exc_info=True)
 
@@ -3172,6 +3235,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                     or countdown != self._sleep_countdown.generation):
                 return
             self.player.audio_set_volume(round(self._volume_value * self._sleep_gain))
+            self.player.audio_set_mute(getattr(self, "_muted", False))
         self._vlc_call(apply)
 
     def _cancel_sleep_timer(self):
@@ -3249,6 +3313,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
 
     def _quiesce(self) -> None:
         """Mark the player closed so nothing schedules more work on it."""
+        InternalPlayerFrame._flush_channel_volume(self)
         if getattr(self, "_resume_config", None) is not None:
             self._save_resume_checkpoint(force=True)
         self._destroyed = True

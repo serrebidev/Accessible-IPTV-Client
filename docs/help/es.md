@@ -139,6 +139,8 @@ Una cuenta de Stalker Portal necesita la dirección del portal y la dirección M
 
 La guía de programación, o EPG, le dice qué se emite en cada canal ahora y después. Proviene de archivos XMLTV que publica su proveedor u otra fuente. El programa los importa a una base de datos local y los usa para la descripción del episodio, Qué hay ahora, Ver EPG…, listas de repetición y búsquedas.
 
+Ver > Asignar guía de programas permite elegir el canal de la guía correspondiente al canal en directo seleccionado. Busque por nombre o identificador, seleccione una entrada y pulse Aceptar. Usar asignación automática elimina la elección manual. La elección se guarda por separado para cada lista o proveedor y se aplica a los títulos de programas, la guía, las búsquedas y las grabaciones programadas. Si el identificador desaparece tras una importación, los datos del programa no estarán disponibles hasta corregir la asignación o restablecer la selección automática.
+
 ### Administrador de EPG {#epg-manager}
 
 Archivo > Administrador de EPG (Ctrl+E) enumera sus fuentes de guía.
@@ -227,6 +229,8 @@ Teclas en el reproductor:
 
 Los mismos comandos están en el menú Reproducción del reproductor. El reproductor se reconecta solo cuando un flujo en vivo se corta, y mantiene la pista de audio que eligió.
 
+Silenciar / Activar sonido silencia el reproductor integrado sin pausar la reproducción ni la grabación. Los atajos predeterminados son Ctrl+Mayús+M en la ventana principal y M en el reproductor; ambos se pueden cambiar en los ajustes de atajos. El silencio se mantiene al cambiar de canal o reconectar. Reproductor > Recordar el volumen de cada canal está desactivado inicialmente y, al activarlo, recuerda el volumen elegido por separado para cada lista o proveedor. Los canales sin valor guardado utilizan el volumen general del reproductor. Estas funciones no cambian el volumen del lector de pantalla.
+
 ### Pistas de audio {#audio-tracks}
 
 Los canales pueden llevar varias pistas de audio, como otros idiomas o audiodescripción. Pulse A para pasar a la siguiente pista, use Reproducción > Pista de audio, o Tab hasta Elegir pista de audio, que siempre nombra la pista en reproducción.
@@ -284,6 +288,10 @@ Grabar lo que ve en el reproductor integrado usa la misma conexión al proveedor
 
 Detener una grabación puede tardar un momento mientras se finaliza su archivo. Al salir de la aplicación también se detienen las grabaciones que sigan en curso; antes, el programa les concede un breve margen para finalizar sus archivos.
 
+Grabaciones > Supervisión del espacio de grabación comprueba el espacio libre cada cinco segundos mientras se graba. El aviso está activado por defecto por debajo de 1024 MiB. La detención automática está desactivada inicialmente; actívela y elija un umbral, inicialmente de 256 MiB, para solicitar el cierre correcto de los archivos antes de llenar la unidad. El umbral de aviso no puede ser inferior al de detención. Las grabaciones de una misma unidad comparten un aviso y, si se activa la detención, se detienen todas las afectadas. La comprobación no reserva espacio ni garantiza el cierre de archivos en una unidad llena o desconectada.
+
+Grabaciones > Biblioteca de grabaciones muestra los archivos terminados de la carpeta de grabaciones actual, incluidos los antiguos. Busque por título, canal o fecha. Reproducir / Continuar abre el archivo en el reproductor integrado y ofrece la posición guardada cuando está disponible. La duración y el estado se muestran si se conocen; los archivos antiguos pueden indicar Desconocido. Las grabaciones en curso quedan excluidas. Actualizar recarga la lista. Eliminar archivo de grabación borra permanentemente el archivo multimedia tras la confirmación; cierre antes su ventana de reproducción. Quitar una entrada de Grabaciones programadas no elimina ese archivo.
+
 ### Formato de grabación {#recording-formats}
 
 Grabaciones > Formato de grabación elige cómo se guardan las grabaciones:
@@ -300,7 +308,7 @@ Para grabar un programa futuro, elija Programar grabación sobre un programa en 
 Grabaciones > Grabaciones programadas… enumera cada grabación programada, en curso y terminada con su hora, título, canal, estado y formato.
 
 - La tecla de aplicaciones o Shift+F10 sobre una grabación abre su menú: Actualizar, Cancelar y Eliminar.
-- Grabar a diario, Grabar semanalmente y Grabar serie están en el menú de un programa en Ver EPG y Qué hay ahora, junto a Programar grabación. La grabación de series busca futuros programas de la guía con el mismo título en ese canal mientras la aplicación está abierta. Cada episodio se graba una sola vez: cuando la guía repite un episodio que la regla ya tiene (identificado por su número de episodio, título del episodio o descripción), la repetición se omite.
+- Los menús de programas de View EPG y Qué hay ahora ofrecen Grabar a diario, Grabar semanalmente y Grabar serie junto a Programar grabación. Mientras la aplicación está abierta, una regla de serie busca emisiones futuras con el mismo título en ese canal. Un episodio ya programado, en curso de grabación o grabado correctamente no se vuelve a programar; su número, título o descripción permite identificar las repeticiones.
 - Se puede seleccionar más de una grabación; Ctrl+A selecciona todas las filas.
 - Supr o Supr del teclado numérico pide confirmación y luego elimina las grabaciones seleccionadas. Si alguna de ellas sigue en curso, el programa la detiene primero.
 - Escape cierra la ventana.
@@ -310,6 +318,8 @@ Las grabaciones programadas comienzan solas mientras el programa está en ejecuc
 Cuando una nueva grabación se superpone a otra grabación programada, el programa te avisa antes de agregarla. Su proveedor puede limitar la cantidad de transmisiones que se pueden ejecutar a la vez.
 
 El programa pregunta antes de cerrarse si quedan grabaciones programadas esperando a empezar, porque solo pueden empezar mientras el programa está abierto. Si lo cierra de todos modos, esas grabaciones no se iniciarán.
+
+Un archivo no vacío no demuestra por sí solo que una grabación haya finalizado correctamente. Las grabaciones interrumpidas se marcan como Parcial y se conservan sus archivos; una detención voluntaria se indica como Detenida por el usuario. Los episodios fallidos, perdidos o parciales pueden programarse en una emisión posterior, sin reintentar repetidamente la misma emisión. Al actualizar la lista se conserva la selección múltiple y la confirmación de eliminación indica cuántas entradas se quitarán, aunque solo se haya seleccionado parte de la lista.
 
 ### Margen de programación {#schedule-padding}
 

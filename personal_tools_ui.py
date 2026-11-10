@@ -441,7 +441,8 @@ class PersonalToolsMixin:
         with options._SAVE_LOCK:
             config = options.load_config()
             config[key] = operation(config.get(key))
-            options._save_config_locked(config)
+            if options._save_config_locked(config) is False:
+                raise OSError(_("The settings could not be saved. Check the free space and write permissions, then try again."))
         self.config[key] = config[key]
 
     def _show_favourite_lists(self, event=None):

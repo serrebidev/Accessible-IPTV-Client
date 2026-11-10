@@ -139,6 +139,8 @@ Uma conta Stalker Portal precisa do endereço do portal e do endereço MAC que s
 
 O guia de programação, ou EPG, diz o que passa em cada canal agora e depois. Ele vem de arquivos XMLTV publicados pelo seu provedor ou por outra fonte. O programa os importa para um banco de dados local, e o usa para a descrição do episódio, No ar agora, Exibir EPG…, listas de replay e pesquisas.
 
+Exibir > Associar guia de programação permite escolher o canal do guia correspondente ao canal ao vivo selecionado. Pesquise pelo nome ou identificador, selecione uma entrada e pressione OK. Usar associação automática remove a escolha manual. A escolha é salva separadamente por lista ou provedor e vale para títulos de programas, guia, pesquisas e gravações agendadas. Se o identificador desaparecer após uma importação, os dados do programa ficarão indisponíveis até que a escolha seja corrigida ou a associação automática seja restaurada.
+
 ### Gerenciador de EPG {#epg-manager}
 
 Arquivo > Gerenciador de EPG (Ctrl+E) lista suas fontes de guia.
@@ -227,6 +229,8 @@ Teclas no reprodutor:
 
 Os mesmos comandos estão no menu Reprodução do reprodutor. O reprodutor se reconecta sozinho quando um fluxo ao vivo cai, e mantém a faixa de áudio que você escolheu.
 
+Silenciar / Ativar som silencia o player integrado sem pausar a reprodução nem a gravação. Os atalhos padrão são Ctrl+Shift+M na janela principal e M no player; ambos podem ser alterados nas configurações de atalhos. O som continua desativado ao mudar de canal ou reconectar. Reprodutor > Lembrar o volume de cada canal começa desativado e, quando ativado, memoriza o volume escolhido separadamente por lista ou provedor. Canais sem valor salvo usam o volume geral do player. Nenhuma dessas funções altera o volume do leitor de tela.
+
 ### Faixas de áudio {#audio-tracks}
 
 Canais podem carregar várias faixas de áudio, como outros idiomas ou audiodescrição. Pressione A para ir à próxima faixa, use Reprodução > Faixa de áudio, ou Tab até Escolher faixa de áudio, que sempre nomeia a faixa em reprodução.
@@ -284,6 +288,10 @@ Gravar o que você está assistindo no reprodutor integrado usa a mesma conexão
 
 Parar uma gravação pode levar um momento enquanto o arquivo é finalizado. Ao sair do aplicativo, as gravações ainda em andamento também são paradas; antes, o programa lhes dá um curto intervalo para finalizar os arquivos.
 
+Gravações > Monitoramento do espaço de gravação verifica o espaço livre a cada cinco segundos durante a gravação. O aviso está ativado por padrão abaixo de 1024 MiB. A parada automática começa desativada; ative-a e escolha um limite, inicialmente de 256 MiB, para solicitar o fechamento correto dos arquivos antes que a unidade fique cheia. O limite de aviso não pode ser menor que o de parada. Gravações na mesma unidade compartilham um aviso; com a parada ativada, todas as afetadas são encerradas. A verificação não reserva espaço nem garante o fechamento dos arquivos em uma unidade cheia ou desconectada.
+
+Gravações > Biblioteca de gravações lista os arquivos concluídos da pasta de gravações atual, inclusive os antigos. Pesquise por título, canal ou data. Reproduzir / Retomar abre o arquivo no player integrado e oferece a posição salva quando disponível. A duração e o estado são exibidos quando conhecidos; arquivos antigos podem mostrar Desconhecido. Gravações em andamento são excluídas da lista. Atualizar recarrega a lista. Excluir arquivo de gravação apaga permanentemente o arquivo de mídia após a confirmação; feche primeiro sua janela de reprodução. Remover uma entrada de Gravações agendadas não exclui esse arquivo.
+
 ### Formato de gravação {#recording-formats}
 
 Gravações > Formato de gravação escolhe como as gravações são salvas:
@@ -300,7 +308,7 @@ Para gravar um programa futuro, escolha Agendar gravação sobre um programa em 
 Gravações > Gravações agendadas… lista cada gravação agendada, em andamento e concluída com hora, título, canal, status e formato.
 
 - A tecla de menu de aplicativo ou Shift+F10 sobre uma gravação abre o menu dela: Atualizar, Cancelar e Eliminar.
-- Gravar diariamente, Gravar semanalmente e Gravar série ficam no menu de um programa em Exibir EPG e No ar agora, ao lado de Agendar gravação. A gravação de série encontra futuros programas do guia com o mesmo título naquele canal enquanto o aplicativo está aberto. Cada episódio é gravado apenas uma vez: quando o guia repete um episódio que a regra já tem (identificado pelo número do episódio, título do episódio ou descrição), a repetição é ignorada.
+- Os menus de programas em View EPG e No ar agora oferecem Gravar diariamente, Gravar semanalmente e Gravar série ao lado de Agendar gravação. Enquanto o aplicativo está aberto, uma regra de série procura programas futuros com o mesmo título nesse canal. Um episódio já agendado, sendo gravado ou gravado com sucesso não é agendado novamente; o número, o título ou a descrição do episódio identifica as reprises.
 - É possível selecionar mais de uma gravação; Ctrl+A seleciona todas as linhas.
 - Delete ou Delete do teclado numérico pede confirmação e depois remove as gravações selecionadas. Se alguma delas ainda estiver em andamento, o programa a para primeiro.
 - Escape fecha a janela.
@@ -310,6 +318,8 @@ As gravações agendadas começam sozinhas enquanto o programa está em execuç�
 Quando uma nova gravação se sobrepõe a outra gravação agendada, o programa avisa antes de adicioná-la. Seu provedor pode limitar quantos streams podem ser executados de uma vez.
 
 O programa pergunta antes de fechar se ainda houver gravações agendadas esperando para começar, porque elas só começam com o programa aberto. Se você fechá-lo mesmo assim, essas gravações não vão começar.
+
+Um arquivo não vazio, por si só, não comprova o sucesso da gravação. Capturas interrompidas recebem o estado Parcial e seus arquivos são preservados; uma parada intencional recebe o estado Interrompida pelo usuário. Episódios com falha, perdidos ou parciais podem ser agendados em uma transmissão posterior, sem repetir tentativas para a mesma transmissão. A atualização preserva a seleção múltipla e a confirmação de remoção informa quantas entradas serão removidas, mesmo quando apenas parte da lista estiver selecionada.
 
 ### Margem de agendamento {#schedule-padding}
 

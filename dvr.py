@@ -26,12 +26,14 @@ STATUS_SCHEDULED = "scheduled"
 STATUS_RECORDING = "recording"
 STATUS_STOPPING = "stopping"
 STATUS_COMPLETED = "completed"
+STATUS_PARTIAL = "partial"
+STATUS_STOPPED = "stopped"
 STATUS_FAILED = "failed"
 STATUS_MISSED = "missed"
 STATUS_CANCELED = "canceled"
 
 ACTIVE_STATUSES = {STATUS_SCHEDULED, STATUS_RECORDING, STATUS_STOPPING}
-DONE_STATUSES = {STATUS_COMPLETED, STATUS_FAILED, STATUS_MISSED, STATUS_CANCELED}
+DONE_STATUSES = {STATUS_COMPLETED, STATUS_PARTIAL, STATUS_STOPPED, STATUS_FAILED, STATUS_MISSED, STATUS_CANCELED}
 
 DEFAULT_PRE_PADDING_MINUTES = 0
 DEFAULT_POST_PADDING_MINUTES = 2
@@ -120,15 +122,13 @@ def program_episode_key(program: Dict[str, str]) -> Optional[str]:
 def taken_episode_keys(jobs: List[Dict[str, object]], rule_id: str) -> set:
     """Episode keys a series rule already has, from its stored jobs.
 
-    Counts the rule job itself and every job an earlier scan added for
-    it (series_source), whatever their status — a completed recording
-    is exactly what a rerun must not duplicate. Canceled jobs do not
-    count: canceling an episode is how the user says they want it
-    recorded again if it airs.
+    Active and successfully completed episodes suppress reruns. Failed,
+    missed, partial and stopped captures remain eligible for a later airing.
+    Canceling an episode retains the existing opt-in-to-reruns behavior.
     """
     taken = set()
     for job in jobs:
-        if job.get("status") == STATUS_CANCELED:
+        if job.get("status") not in ACTIVE_STATUSES | {STATUS_COMPLETED}:
             continue
         if job.get("id") != rule_id and job.get("series_source") != rule_id:
             continue
@@ -337,13 +337,18 @@ class DVRScheduler:
             return dict(job) if job else None
 
     def add_job(self, job: Dict[str, object]) -> Dict[str, object]:
+        job = copy.deepcopy(job)
         if not job.get("id"):
             job["id"] = uuid.uuid4().hex
-        with self._lock:
-            self._jobs[str(job["id"])] = dict(job)
+        with self._save_lock, self._lock:
+            if str(job["id"]) in self._jobs:
+                raise ValueError(_("This recording is already scheduled."))
+            proposal = dict(self._jobs)
+            proposal[str(job["id"])] = job
+            self._write_proposal(proposal)
+            self._jobs = proposal
             if job.get("repeat") == "series":
                 self._last_series_scan = 0.0
-        self.save()
         self._notify_update()
         self.wake()
         return dict(job)
@@ -467,6 +472,7 @@ class DVRScheduler:
         success: bool,
         output_path: str = "",
         message: str = "",
+        outcome: Optional[str] = None,
     ) -> None:
         with self._lock:
             self._stopping_since.pop(str(job_id), None)
@@ -481,7 +487,8 @@ class DVRScheduler:
             # A canceled job's recording ending afterwards keeps it canceled,
             # with the user's reason, instead of turning it "completed".
             if job.get("status") != STATUS_CANCELED:
-                job["status"] = STATUS_COMPLETED if success else STATUS_FAILED
+                job["status"] = (outcome if outcome in {STATUS_PARTIAL, STATUS_STOPPED}
+                                 else STATUS_COMPLETED if success else STATUS_FAILED)
                 job["message"] = message
                 self._schedule_next_occurrence(job)
         self._save_schedule()

@@ -163,6 +163,8 @@ Stalker Portal-fiók beállításához meg kell adni a portál címét, valamint
 
 A műsorújság, más néven EPG, megmutatja, hogy az egyes csatornákon éppen melyik műsor van adásban, és mi következik utána. Az adatok a szolgáltató vagy más forrás által közzétett XMLTV-fájlokból származnak. A program ezeket egy helyi adatbázisba importálja, majd többek között az Epizódleírás mezőben, a Most adásban és a Műsorújság megtekintése… ablakban, továbbá a műsorarchívum listáiban és a keresések során használja fel.
 
+A Nézet > Műsorújság hozzárendelése paranccsal kiválaszthatja, melyik műsorújság-csatorna tartozzon a kijelölt élő csatornához. Keressen név vagy műsorújság-azonosító alapján, jelölje ki a megfelelő elemet, majd nyomja meg az OK gombot. Az Automatikus párosítás használata gomb törli a kézi hozzárendelést. A program lejátszási listánként, illetve szolgáltatónként külön őrzi meg a választást, és a műsorcímek megjelenítésekor, a műsorújságban, kereséskor és időzítéskor is alkalmazza. Ha egy importálás után a kiválasztott azonosító már nem szerepel a műsorújságban, a műsoradatok nem jelennek meg, amíg nem módosítja a hozzárendelést, vagy nem állítja vissza az automatikus párosítást.
+
 ### Műsorújság kezelése {#epg-manager}
 
 A Fájl > Műsorújság kezelése (Ctrl+E) ablakban a beállított műsorújság-források jelennek meg.
@@ -274,6 +276,8 @@ A helyi tárolás a beépített lejátszó élő adásaihoz használható; küls
 
 Ebben az üzemmódban külső feliratfájl nem tölthető be, mert időzítése nem rendelhető megbízhatóan az élő adáshoz. A támogatott, adásba ágyazott feliratok a műsorral együtt haladnak. Visszatekeréskor a korábbi feliratfelolvasási munkamenet megszűnik, így az előző pozícióhoz tartozó szöveg nem kerül át az új időponthoz. A helyi tárolás önmagában nem teszi lehetővé az egyébként nem támogatott élő feliratok felismerését vagy felolvasását.
 
+A Némítás be- és kikapcsolása parancs a lejátszás és a felvétel megszakítása nélkül némítja el a beépített lejátszót. Alapértelmezett gyorsbillentyűje a főablakban Ctrl+Shift+M, a lejátszóban M; mindkettő módosítható a Billentyűparancsok beállításainál. A némítás csatornaváltáskor és újracsatlakozáskor is megmarad. A Lejátszó > Hangerő megjegyzése csatornánként lehetőség kezdetben ki van kapcsolva. Bekapcsolásakor a program lejátszási listánként, illetve szolgáltatónként külön megjegyzi az egyes csatornákhoz választott hangerőt. Amelyik csatornához még nem tartozik mentett érték, az a lejátszó általános hangerejével szólal meg. Egyik funkció sem változtatja meg a képernyőolvasó hangerejét.
+
 ### Hangsávok {#audio-tracks}
 
 Egy csatorna több hangsávot is tartalmazhat, például különböző nyelvű hangot vagy audionarrációt. Az A billentyű a következő hangsávra vált; ugyanezt a Lejátszás > Hangsáv menüből is megteheti. A Tab billentyűvel elérhető Hangsáv kiválasztása mező mindig az aktuálisan hallható sáv nevét jelzi.
@@ -352,6 +356,10 @@ A Felvételek > Minimális szabad hely… menüpontban 0–65536 MiB közötti �
 
 Az ellenőrzés a kézzel indított és az ütemezett felvételek, valamint a rögzítőmotort használó archív műsorletöltések indításakor is megtörténik. Nem az ütemezés felvételekor mért, esetleg már elavult adatokra támaszkodik. Hiba esetén az ütemezett felvétel sikertelen állapotba kerül; a hely felszabadítása után szükség lehet az ismételt ütemezésre. Más programok és a folyamatban lévő felvételek később is fogyaszthatják a tárhelyet. A vizsgálat ezért nem garantálja a teljes műsor rögzíthetőségét, nem foglal le előre lemezterületet, és a felvétel közben nem tart fenn állandó szabadhely-tartalékot. Elegendő kapacitásról továbbra is a felhasználónak kell gondoskodnia.
 
+A Felvételek > Szabad tárhely figyelése szolgáltatás felvétel közben öt másodpercenként ellenőrzi a szabad helyet. A figyelmeztetés alapértelmezés szerint be van kapcsolva, és 1024 MiB alatt jelenik meg. Az automatikus leállítás kezdetben ki van kapcsolva; bekapcsolásakor megadhatja azt a határértéket – alapértelmezés szerint 256 MiB-ot –, amely alatt a program megkezdi a felvételfájlok szabályos lezárását. A figyelmeztetési határérték nem lehet kisebb a leállításinál. Az ugyanarra a meghajtóra készülő felvételekről közös figyelmeztetés érkezik; az automatikus leállítás az összes érintett felvételre vonatkozik. Az ellenőrzés nem foglal le tárhelyet, és teljesen betelt vagy leválasztott meghajtón nem garantálja a fájlok sikeres lezárását.
+
+A Felvételek > Felvételtár a jelenlegi felvételi mappában található, már lezárt fájlokat sorolja fel, a korábbi felvételekkel együtt. Cím, csatorna vagy dátum alapján kereshet közöttük. A Lejátszás / Folytatás gomb megnyitja a kijelölt fájlt a beépített lejátszóban, és felajánlja a folytatást, ha van mentett lejátszási pozíció. A lista az ismert időtartamot és az elkészülés állapotát is mutatja; a régebbi fájloknál ezek helyén Ismeretlen szerepelhet. A folyamatban lévő felvételek nem jelennek meg. A Frissítés gomb újraolvassa a mappát. A Felvételfájl törlése parancs megerősítés után végleg törli a kijelölt médiafájlt; előtte zárja be annak lejátszóablakát. Az Ütemezett felvételek listájából való eltávolítás magát a médiafájlt nem törli.
+
 ### Rögzítési formátumok {#recording-formats}
 
 A Felvételek > Rögzítési formátum menüponttal választhatja ki, milyen formátumban mentse a program a felvételeket:
@@ -370,7 +378,7 @@ Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancso
 A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt. Az Időpontok módosítása… gombbal egy kijelölt, még el nem indult felvétel kezdését és befejezését, illetve egy folyamatban lévő felvétel befejezési időpontját módosíthatja.
 
 - A kijelölt felvételnél az Alkalmazásgomb vagy a Shift+F10 megnyitja a helyi menüt, amelyből a Frissítés, a Mégse és a Törlés érhető el.
-- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut. A program az epizódszám, ennek hiányában az epizódcím, majd a leírás alapján próbálja felismerni az ugyanahhoz a rögzítési szabályhoz már hozzáadott epizódok ismétléseit. A felismert ismétléseket kihagyja. Ha egyik azonosító adat sem áll rendelkezésre, pusztán az azonos műsorcím miatt nem hagy ki adást. A megszakított ütemezéshez tartozó epizód későbbi ismétlése újból ütemezhető.
+- A műsorújságban kijelölt adás helyi menüjében a Rögzítés naponta parancs napi ismétlődést állít be. A Rögzítés hetente lehetőség hétnaponkénti ütemezést hoz létre. Az Azonos című műsorok rögzítése funkció az adott csatorna műsorújságában keresi meg a további alkalmakat, amíg a program fut. A program az epizódszám, ennek hiányában az epizódcím, majd a leírás alapján próbálja felismerni az ugyanahhoz a rögzítési szabályhoz tartozó, már időzített, éppen rögzített vagy sikeresen felvett epizódok ismétléseit. A felismert ismétléseket kihagyja. Ha egyik azonosító adat sem áll rendelkezésre, pusztán az azonos műsorcím miatt nem hagy ki adást. A megszakított ütemezéshez tartozó epizód későbbi ismétlése újból ütemezhető.
 - A listában egyszerre több felvétel is kijelölhető; a Ctrl+A az összes sort kiválasztja.
 - A Delete vagy a numerikus billentyűzet Delete billentyűje megerősítés után eltávolítja a kijelölt felvételeket. Ha a kijelöltek között folyamatban lévő rögzítés is van, a program előbb leállítja az érintett felvételeket.
 - Az Escape bezárja az ablakot.
@@ -380,6 +388,8 @@ Az ütemezett felvételek külön beavatkozás nélkül elindulnak, amennyiben a
 Ha egy új felvétel időtartama részben vagy egészben egybeesik valamely korábban ütemezett rögzítésével, a program a hozzáadása előtt figyelmezteti Önt. A szolgáltató korlátozhatja az egyidejűleg használható adatfolyamok számát.
 
 A program kilépés előtt megerősítést kér, ha van még indításra váró ütemezett felvétel, mert ezek csak az alkalmazás futása közben indulhatnak el. Ha ennek ellenére kilép, a várakozó felvételek nem indulnak el.
+
+Attól, hogy létrejött egy nem üres fájl, a felvétel még nem feltétlenül sikerült. A megszakadt felvételek Részleges állapotot kapnak, és a már elkészült fájlok megmaradnak; a szándékosan leállított felvétel állapota Felhasználó által leállítva. A sikertelen, elmulasztott vagy részleges sorozatrészt a program egy későbbi adásból ismét időzítheti, ugyanazzal az adással azonban nem próbálkozik újra és újra. A lista frissítése megőrzi a többszörös kijelölést, a törlés megerősítése pedig akkor is közli az érintett elemek számát, ha több, de nem minden bejegyzést jelölt ki.
 
 ### Ütemezési ráhagyás {#schedule-padding}
 

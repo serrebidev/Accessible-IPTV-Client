@@ -138,6 +138,8 @@ Bir Stalker Portal hesabı portal adresini ve sağlayıcınızın sizin için ka
 
 Program rehberi, yani EPG, her kanalda şimdi ve sonra ne yayınlandığını söyler. Sağlayıcınızın ya da başka bir kaynağın yayımladığı XMLTV rehber dosyalarından gelir. Program onları yerel bir veritabanına aktarır; bölüm açıklaması, Şimdi yayında, EPG'yi görüntüle..., geri izleme listeleri ve aramalar için bunu kullanır.
 
+Görünüm > Program rehberi ata, seçili canlı kanal için rehber kanalını seçmenizi sağlar. Ad veya rehber kimliğiyle arayın, bir öğe seçin ve Tamam'a basın. Otomatik eşleştirme kullan, elle yapılan atamayı kaldırır. Seçim her oynatma listesi veya sağlayıcı için ayrı kaydedilir; program başlıklarında, rehberde, aramalarda ve zamanlanmış kayıtlarda kullanılır. Seçilen kimlik bir içe aktarmadan sonra kaybolursa atamayı düzeltene veya otomatik eşleştirmeye dönene kadar program bilgileri gösterilmez.
+
 ### EPG Yöneticisi {#epg-manager}
 
 Dosya > EPG Yöneticisi (Ctrl+E) rehber kaynaklarınızı listeler.
@@ -226,6 +228,8 @@ Oynatıcıdaki tuşlar:
 
 Aynı komutlar oynatıcının Oynatma menüsündedir. Oynatıcı, canlı akış kesildiğinde kendiliğinden yeniden bağlanır ve seçtiğiniz ses parçasını tutar.
 
+Sesi kapat / aç, oynatmayı veya kaydı duraklatmadan yerleşik oynatıcının sesini kapatır. Varsayılan kısayollar ana pencerede Ctrl+Shift+M, oynatıcıda M'dir; ikisi de klavye kısayolu ayarlarından değiştirilebilir. Kanal değişimlerinde ve yeniden bağlantılarda ses kapalı kalır. Oynatıcı > Her kanalın ses düzeyini hatırla başlangıçta kapalıdır; açıldığında seçtiğiniz ses düzeyini her liste veya sağlayıcı için ayrı hatırlar. Kayıtlı değeri olmayan kanallar oynatıcının genel ses düzeyini kullanır. Bu özellikler ekran okuyucunun ses düzeyini değiştirmez.
+
 ### Ses parçaları {#audio-tracks}
 
 Kanallar birkaç ses parçası taşıyabilir: başka diller ya da sesli betimleme gibi. Sonraki parçaya geçmek için A'ya basın, Oynatma > Ses parçası'nı kullanın ya da Tab ile Ses parçası seç'e gidin; o, oynayan parçayı her zaman adlandırır.
@@ -283,6 +287,10 @@ Yerleşik oynatıcıda izlediğinizi kaydetmek sağlayıcıyla aynı bağlantıy
 
 Bir kaydı durdurmak, dosyası tamamlanırken biraz sürebilir. Uygulamadan çıkıldığında hâlâ süren kayıtlar da durdurulur; program önce dosyalarını tamamlamaları için onlara kısa bir süre tanır.
 
+Kayıtlar > Kayıt alanı izleme, kayıt sırasında boş alanı beş saniyede bir denetler. Uyarı varsayılan olarak 1024 MiB altında etkindir. Otomatik durdurma başlangıçta kapalıdır; açıp başlangıçta 256 MiB olan eşiği seçerek sürücü dolmadan dosyaların düzgün kapatılmasını isteyebilirsiniz. Uyarı eşiği durdurma eşiğinden düşük olamaz. Aynı sürücüye yapılan kayıtlar için ortak bir uyarı verilir; durdurma etkinse etkilenen tüm kayıtlar durdurulur. Denetim alan ayırmaz ve dolu veya bağlantısı kesilmiş bir sürücüde dosyaların kapanacağını garanti etmez.
+
+Kayıtlar > Kayıt kitaplığı, geçerli kayıt klasöründeki tamamlanmış dosyaları eski kayıtlarla birlikte listeler. Başlık, kanal veya tarihe göre arayın. Oynat / Devam et dosyayı yerleşik oynatıcıda açar ve varsa kayıtlı konumu önerir. Süre ve tamamlanma durumu biliniyorsa gösterilir; eski dosyalarda Bilinmiyor yazabilir. Devam eden kayıtlar listelenmez. Yenile listeyi yeniden okur. Kayıt dosyasını sil, onaydan sonra medya dosyasını kalıcı olarak siler; önce oynatma penceresini kapatın. Bir öğeyi zamanlanmış kayıtlardan kaldırmak medya dosyasını silmez.
+
 ### Kayıt biçimi {#recording-formats}
 
 Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
@@ -299,7 +307,7 @@ Gelecek bir programı kaydetmek için EPG'yi görüntüle..., Şimdi yayında ya
 Kayıtlar > Zamanlanmış kayıtlar... her zamanlanmış, süren ve bitmiş kaydı zamanı, başlığı, kanalı, durumu ve biçimiyle listeler.
 
 - Bir kayıtta Uygulamalar tuşu ya da Shift+F10 menüsünü açar: Yenile, İptal ve Sil.
-- Her gün kaydet, Her hafta kaydet ve Diziyi kaydet, EPG'yi görüntüle ve Şimdi yayında pencerelerinde bir programın menüsünde, Kayıt zamanla seçeneğinin yanında bulunur. Dizi kaydı, uygulama çalışırken o kanalda aynı başlığa sahip gelecekteki rehber programlarını bulur. Her bölüm yalnızca bir kez kaydedilir: rehber, kuralın zaten sahip olduğu bir bölümü (bölüm numarası, bölüm başlığı veya açıklamasıyla tanımlanır) tekrarladığında tekrar atlanır.
+- View EPG ve Şimdi yayında içindeki program menülerinde Kayıt zamanla yanında Her gün kaydet, Her hafta kaydet ve Diziyi kaydet bulunur. Uygulama çalışırken dizi kuralı, o kanalda aynı başlıkla yayımlanacak programları arar. Zaten zamanlanmış, kaydedilmekte olan veya başarıyla kaydedilmiş bölüm yeniden zamanlanmaz; tekrarlar bölüm numarası, başlığı veya açıklamasıyla tanınır.
 - Birden fazla kayıt seçilebilir; Ctrl+A tüm satırları seçer.
 - Delete ya da sayısal tuş takımındaki Delete onay ister, ardından seçili kayıtları kaldırır. Seçili kayıtlardan süren varsa program önce onları durdurur.
 - Escape pencereyi kapatır.
@@ -309,6 +317,8 @@ Zamanlanmış kayıtlar, program çalışırken kendi kendine başlar; sistem te
 Yeni bir kayıt, planlanmış başka bir kayıtla çakıştığında program, onu eklemeden önce sizi uyarır. Sağlayıcınız aynı anda kaç akışın çalıştırılabileceğini sınırlayabilir.
 
 Başlamayı bekleyen zamanlanmış kayıtlar varken program kapanmadan önce sorar, çünkü bu kayıtlar yalnızca program çalışırken başlayabilir. Yine de kapatırsanız bekleyen kayıtlar başlamaz.
+
+Boş olmayan bir dosya tek başına kaydın başarılı olduğunu göstermez. Kesintiye uğrayan kayıtlar Kısmi olarak işaretlenir ve oluşturulan dosyalar korunur; kasıtlı durdurma Kullanıcı tarafından durduruldu olarak gösterilir. Başarısız, kaçırılmış veya kısmi bölümler, aynı yayın tekrar tekrar denenmeden sonraki bir yayından zamanlanabilir. Liste yenilendiğinde çoklu seçim korunur ve listenin yalnızca bir bölümü seçilmiş olsa bile kaldırma onayı etkilenen öğe sayısını belirtir.
 
 ### Zamanlama payı {#schedule-padding}
 

@@ -132,6 +132,7 @@ class UiMixin:
                 player_ctrl_menu.Append(1202, _("Play/Pause"))
                 player_ctrl_menu.Append(1203, _("Stop"))
                 player_ctrl_menu.Append(1204, _("Cast / Connect..."))
+                self._add_sound_tools_menu(player_ctrl_menu)
                 menu.AppendSubMenu(player_ctrl_menu, _("Player"))
                 self.Bind(wx.EVT_MENU, self._menu_show_player, id=1201)
                 self.Bind(wx.EVT_MENU, self._menu_toggle_player, id=1202)
@@ -159,6 +160,7 @@ class UiMixin:
                 self.Bind(wx.EVT_MENU, self._show_recent_channels, id=1321)
                 self.Bind(wx.EVT_MENU, self._go_to_channel_number, id=1322)
                 self._add_personal_tools_menu(view_menu)
+                self._add_channel_tools_menu(view_menu)
                 menu.AppendSubMenu(view_menu, _("View"))
                 menu.AppendSeparator()
                 player_menu = wx.Menu()
@@ -287,6 +289,7 @@ class UiMixin:
             pm_toggle = pm.Append(wx.ID_ANY, self._shortcut_label(_("Play/Pause"), "play_pause"))
             pm_stop = pm.Append(wx.ID_ANY, self._shortcut_label(_("Stop"), "stop"))
             pm_cast = pm.Append(wx.ID_ANY, self._shortcut_label(_("Cast / Connect..."), "cast"))
+            self._add_sound_tools_menu(pm)
             self._player_control_items = (pm_show, pm_toggle, pm_stop, pm_cast)
             mb.Append(pm, _("Player"))
             # View menu: switch between Live TV / catch-up and Video on Demand.
@@ -311,6 +314,7 @@ class UiMixin:
             # the way back to it.
             self.show_downloads_item = vm.Append(wx.ID_ANY, self._shortcut_label(_("Show Downloads"), "downloads"))
             self._add_personal_tools_menu(vm)
+            self._add_channel_tools_menu(vm)
             mb.Append(vm, _("View"))
             self.Bind(wx.EVT_MENU, self._show_catchup_downloads, self.show_downloads_item)
             self.Bind(wx.EVT_MENU, lambda _evt: self._set_view_mode("live"), self.view_live_item)
@@ -544,6 +548,7 @@ class UiMixin:
         self.Bind(wx.EVT_MENU, self._show_recent_channels, id=4024)
         self.Bind(wx.EVT_MENU, self.show_whats_on_now, id=4025)
         self.Bind(wx.EVT_MENU, self._announce_what_is_playing, id=4026)
+        self.Bind(wx.EVT_MENU, self._toggle_player_mute, id=4027)
         self.Bind(wx.EVT_MENU, self._show_catchup_downloads, id=4020)
         self.Bind(wx.EVT_MENU, self._menu_show_player,
                   id=_MAIN_ACCEL_SHOW_PLAYER_ID)

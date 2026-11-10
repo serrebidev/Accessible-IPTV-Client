@@ -2080,6 +2080,13 @@ class EPGDatabase:
 
     def resolve_best_channel_id(self, channel: Dict[str, str]) -> Optional[str]:
         """Find the best matching DB channel ID for a playlist channel."""
+        import channel_preferences
+        override = channel_preferences.epg_id(channel)
+        if override:
+            # A missing configured ID must not silently fall back to another
+            # station after an EPG import; the user can choose Automatic again.
+            row = self.conn.execute("SELECT id FROM channels WHERE id = ?", (override,)).fetchone()
+            return row[0] if row else None
         matches, playlist_region = self.get_matching_channel_ids(channel)
         if not matches:
             return None

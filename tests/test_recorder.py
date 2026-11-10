@@ -1149,7 +1149,7 @@ def test_stopping_a_known_recording_reports_that_it_was_stopped(monkeypatch):
     stopped = []
     monkeypatch.setattr(manager, "_graceful_stop",
                         lambda rec, wait=False, detach=False: stopped.append(rec))
-    rec = object()
+    rec = type("RecordingStub", (), {"stopping": False})()
     manager._recordings[7] = rec
 
     assert manager.stop(7) is True

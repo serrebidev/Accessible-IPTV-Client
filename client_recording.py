@@ -9,6 +9,7 @@ import logging
 import os
 
 import wx
+import recording_outcome
 
 from i18n import gettext as _
 
@@ -75,14 +76,21 @@ class RecordingReportsMixin:
             _("Recording Error"), wx.OK | wx.ICON_ERROR)
 
     def _on_recording_finished(self, rec, rc):
+        suppressed = getattr(self, "_suppress_recording_notifications", False)
+        outcome = recording_outcome.classify(rec, rc, exiting=suppressed)
         job_id = None
         try:
             job_id = rec.metadata.get("dvr_job_id")
         except Exception:
             job_id = None
         if job_id:
+            scheduler = self._ensure_dvr_scheduler(start=True)
+            current = scheduler.get_job(str(job_id)) or {}
+            expected = None
+            if current.get("stop_ts") and getattr(rec, "started_at", None):
+                expected = max(0, float(current["stop_ts"]) - rec.started_at)
+            outcome = recording_outcome.classify(rec, rc, exiting=suppressed, planned_seconds=expected)
             detail = "\n".join(rec.stderr_tail[-6:])
-            suppressed = getattr(self, "_suppress_recording_notifications", False)
             produced = _recording_produced_media(rec)
             if suppressed:
                 message = "Stopped because the app exited."
@@ -90,12 +98,14 @@ class RecordingReportsMixin:
                 message = detail
             else:
                 message = "" if produced else _("Nothing was recorded: the stream ended before it wrote anything.")
-            self._ensure_dvr_scheduler(start=True).mark_finished(
+            scheduler.mark_finished(
                 str(job_id),
-                success=(produced and not suppressed),
+                success=outcome == "completed",
                 output_path=rec.out_path,
                 message=message,
+                outcome=outcome,
             )
+        rec.outcome = outcome
         if getattr(self, "_suppress_recording_notifications", False):
             return
         shared = (getattr(self, "_shared_recordings", None) or {}).pop(rec.id, None)
@@ -109,7 +119,11 @@ class RecordingReportsMixin:
         wx.CallAfter(self._sync_internal_player_record_state)
 
         def report():
-            if rc == 0 and _recording_produced_media(rec):
+            if outcome == "partial":
+                self._show_or_queue_message_box(
+                    _("Only part of the programme was recorded. The available file has been kept:\n{path}").format(path=rec.out_path),
+                    _("Recording Warning"), wx.OK | wx.ICON_WARNING)
+            elif rc == 0 and _recording_produced_media(rec):
                 self._report_recording_saved(rec)
             elif rc == 0 and not rec.stopped_by_user:
                 self._report_nothing_recorded(rec)

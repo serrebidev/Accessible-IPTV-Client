@@ -139,6 +139,8 @@ Un account Stalker Portal richiede l'indirizzo del portale e l'indirizzo MAC reg
 
 La guida ai programmi, o EPG, dice cosa va in onda su ciascun canale ora e dopo. Proviene da file XMLTV pubblicati dal provider o da un'altra fonte. Il programma li importa in un database locale, e lo usa per la descrizione dell'episodio, In onda ora, Visualizza EPG…, gli elenchi di replay e le ricerche.
 
+Visualizza > Assegna guida programmi consente di scegliere il canale della guida associato al canale in diretta selezionato. Cercare per nome o identificativo, selezionare una voce e premere OK. Usa associazione automatica rimuove la scelta manuale. La scelta viene salvata separatamente per ogni playlist o fornitore e si applica ai titoli dei programmi, alla guida, alle ricerche e alle registrazioni programmate. Se l’identificativo scompare dopo un’importazione, i dati restano indisponibili finché non si corregge la scelta o si ripristina l’associazione automatica.
+
 ### Gestione EPG {#epg-manager}
 
 File > Gestione EPG (Ctrl+E) elenca le sorgenti della guida.
@@ -227,6 +229,8 @@ Tasti nel lettore:
 
 Gli stessi comandi sono nel menu Riproduzione del lettore. Il lettore si riconnette da solo quando un flusso in diretta si interrompe, e mantiene la traccia audio scelta.
 
+Disattiva / Riattiva audio silenzia il lettore integrato senza sospendere riproduzione o registrazione. I tasti predefiniti sono Ctrl+Maiusc+M nella finestra principale e M nel lettore; entrambi si possono modificare nelle impostazioni delle scorciatoie. L’audio rimane disattivato dopo cambi di canale e riconnessioni. Lettore > Memorizza il volume di ogni canale è inizialmente disabilitato e, quando attivo, ricorda il volume scelto separatamente per playlist o fornitore. I canali privi di un valore salvato usano il volume generale del lettore. Queste funzioni non modificano il volume dello screen reader.
+
 ### Tracce audio {#audio-tracks}
 
 I canali possono portare più tracce audio, come altre lingue o audiodescrizione. Premere A per passare alla traccia successiva, usare Riproduzione > Traccia audio, o Tab fino a Scegli traccia audio, che nomina sempre la traccia in riproduzione.
@@ -284,6 +288,10 @@ Registrare ciò che si guarda nel lettore integrato usa la stessa connessione al
 
 Fermare una registrazione può richiedere un momento mentre il file viene finalizzato. Quando l'applicazione si chiude, anche le registrazioni ancora in corso vengono fermate; il programma concede prima un breve margine per finalizzare i file.
 
+Registrazioni > Controllo spazio per le registrazioni verifica lo spazio libero ogni cinque secondi durante la registrazione. L’avviso è attivo per impostazione predefinita sotto 1024 MiB. L’arresto automatico è inizialmente disabilitato: abilitarlo e scegliere una soglia, inizialmente di 256 MiB, per richiedere la corretta chiusura dei file prima che l’unità si riempia. La soglia di avviso non può essere inferiore a quella di arresto. Le registrazioni sulla stessa unità condividono un avviso; se l’arresto è attivo, vengono fermate tutte quelle interessate. Il controllo non riserva spazio né garantisce la chiusura dei file su un’unità piena o scollegata.
+
+Registrazioni > Raccolta registrazioni elenca i file terminati nella cartella di registrazione corrente, compresi quelli più vecchi. Cercare per titolo, canale o data. Riproduci / Riprendi apre il file nel lettore integrato e propone la posizione salvata, quando disponibile. Durata e stato vengono mostrati se noti; per i file più vecchi può apparire Sconosciuto. Le registrazioni in corso sono escluse. Aggiorna ricarica l’elenco. Elimina file della registrazione cancella definitivamente il file multimediale dopo conferma; chiudere prima la relativa finestra di riproduzione. La rimozione di una voce dalle registrazioni programmate non elimina il file.
+
 ### Formato di registrazione {#recording-formats}
 
 Registrazioni > Formato di registrazione sceglie come sono salvate le registrazioni:
@@ -300,7 +308,7 @@ Per registrare una trasmissione futura, scegliere Programma registrazione su una
 Registrazioni > Registrazioni programmate… elenca ogni registrazione programmata, in corso e conclusa con orario, titolo, canale, stato e formato.
 
 - Il tasto applicazioni o Shift+F10 su una registrazione apre il suo menu: Aggiorna, Annulla ed Elimina.
-- Registra ogni giorno, Registra ogni settimana e Registra serie si trovano nel menu di un programma in Visualizza EPG e In onda ora, accanto a Programma registrazione. La registrazione della serie trova i futuri programmi della guida con lo stesso titolo su quel canale mentre l'app è in esecuzione. Ogni episodio viene registrato una sola volta: quando la guida ripete un episodio che la regola ha già (identificato dal numero di episodio, dal titolo dell'episodio o dalla descrizione), la ripetizione viene saltata.
+- I menu dei programmi in View EPG e In onda ora offrono Registra ogni giorno, Registra ogni settimana e Registra serie accanto a Programma registrazione. Mentre l’applicazione è aperta, una regola di serie cerca le trasmissioni future con lo stesso titolo su quel canale. Un episodio già programmato, in corso di registrazione o registrato correttamente non viene riprogrammato; numero, titolo o descrizione dell’episodio identificano le repliche.
 - Si può selezionare più di una registrazione; Ctrl+A seleziona tutte le righe.
 - Canc o Canc del tastierino numerico chiede conferma, poi rimuove le registrazioni selezionate. Se alcune sono ancora in corso, il programma le ferma prima.
 - Escape chiude la finestra.
@@ -310,6 +318,8 @@ Le registrazioni programmate partono da sole mentre il programma gira, anche min
 Quando una nuova registrazione si sovrappone ad un'altra registrazione programmata, il programma ti avvisa prima di aggiungerla. Il tuo provider potrebbe limitare il numero di stream che possono essere eseguiti contemporaneamente.
 
 Il programma chiede conferma prima di chiudersi se ci sono registrazioni programmate ancora in attesa di iniziare, perché possono iniziare solo mentre il programma è aperto. Se lo chiudi comunque, le registrazioni in attesa non partiranno.
+
+Un file non vuoto non basta a dimostrare che la registrazione sia riuscita. Le registrazioni interrotte sono indicate come Parziale e i file disponibili vengono conservati; un arresto volontario è indicato come Interrotta dall’utente. Gli episodi non riusciti, persi o parziali possono essere programmati per una trasmissione successiva, senza riprovare continuamente la stessa trasmissione. L’aggiornamento conserva la selezione multipla e la conferma di rimozione indica il numero delle voci interessate anche quando è selezionata solo una parte dell’elenco.
 
 ### Margine di programmazione {#schedule-padding}
 

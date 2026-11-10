@@ -148,6 +148,8 @@ A Stalker Portal account needs the portal address and the MAC address your provi
 
 The programme guide, or EPG, tells you what is on each channel now and later. It comes from XMLTV guide files that your provider or another source publishes. The program imports them into a local database, then uses it for the episode description, What's on Now, View EPG, catch-up lists and searches.
 
+View > Assign Programme Guide lets you choose the guide channel for the selected live channel. Search by name or guide ID, select an entry and press OK. Use Automatic Matching removes the override. The choice is saved separately for each playlist or provider and applies to programme labels, guide views, searches and scheduled recordings. If the chosen guide ID disappears after an import, the programme stays unavailable until you correct the choice or restore automatic matching.
+
 ### EPG Manager {#epg-manager}
 
 File > EPG Manager (Ctrl+E) lists your guide sources.
@@ -236,6 +238,8 @@ Keys in the player:
 
 The same commands are on the player's Playback menu. The player reconnects on its own when a live stream drops, and keeps the audio track you chose.
 
+Mute / Unmute silences the built-in player without pausing playback or recording. The default shortcut is Ctrl+Shift+M in the main window and M in the player; both can be changed in Keyboard Shortcuts. Muting survives channel changes and reconnects. Player > Remember Volume for Each Channel is optional and off by default: it recalls your chosen volume separately for each playlist or provider. Channels without a saved value use the ordinary player volume. Neither feature changes screen-reader volume.
+
 ### Audio tracks {#audio-tracks}
 
 Channels can carry several audio tracks, such as other languages or audio description. Press A to move to the next track, use Playback > Audio Track, or Tab to Choose Audio Track, which always names the track that is playing.
@@ -293,6 +297,10 @@ Recording what you are watching in the built-in player uses the same connection 
 
 Stopping a recording can take a moment while its file is finalized. When the application exits, any recordings still in progress are also stopped; the program first gives them a short grace period to finalize their files.
 
+Recordings > Recording Space Monitor checks free space every five seconds while recording. Warning is enabled by default below 1024 MiB. Automatic stopping is off by default; enable it and choose a stop threshold, initially 256 MiB, to request graceful file closure before the drive fills up. The warning threshold must not be lower than the stop threshold. Recordings on the same drive share one warning; if stopping is enabled, all affected recordings are stopped. The check cannot reserve space or guarantee file closure on a full or disconnected drive.
+
+Recordings > Recording Library lists finished files in the current recording folder, including older files. Search by title, channel or date; Play / Resume opens the selected file in the built-in player and offers the saved position when available. Duration and completion status are shown when known; older files may show Unknown. Active recordings are excluded. Refresh updates the list. Delete Recording File permanently deletes the selected media file after confirmation; close its playback window first. Removing an entry from Scheduled Recordings does not delete that media file.
+
 ### Recording format {#recording-formats}
 
 Recordings > Recording Format chooses how recordings are saved:
@@ -309,7 +317,7 @@ To record a programme in the future, choose Schedule Recording on a programme in
 Recordings > Scheduled Recordings lists every scheduled, running and finished recording with its time, title, channel, status and format.
 
 - The Applications key or Shift+F10 on a recording opens its menu: Refresh, Cancel and Delete.
-- Record Daily, Record Weekly and Record Series are on a programme's menu in View EPG and What's on Now, next to Schedule Recording. Series recording finds future guide programmes with the same title on that channel while the app is running. Each episode is recorded once: when the guide repeats an episode the rule already has — identified by its episode number, episode title or description — the repeat is skipped.
+- The programme menus in View EPG and What's on Now offer Record Daily, Record Weekly and Record Series beside Schedule Recording. While the app is running, a series rule finds future programmes with the same title on that channel. An episode already scheduled, being recorded or successfully recorded is not scheduled again; its episode number, episode title or description identifies repeats.
 - More than one recording can be selected; Ctrl+A selects every row.
 - Delete or Numpad Delete asks for confirmation, then removes the selected recordings. If any selected recordings are still in progress, the program stops them first.
 - Escape closes the window.
@@ -319,6 +327,8 @@ Scheduled recordings start by themselves while the program is running, even when
 When a new recording overlaps another scheduled recording, the program warns you before adding it. Your provider may limit how many streams can run at once.
 
 The program asks before it closes while any scheduled recordings are still waiting to start, because they can only start while the program is running. If you close it anyway, the waiting recordings will not start.
+
+A nonempty file alone is not proof of a successful recording. Interrupted captures are marked Partial and their available files are kept; an intentional stop is marked Stopped by user. Failed, missed or partial episodes can be scheduled from a later airing, without retrying the same airing repeatedly. Schedule refresh preserves multiple selections, and confirmation states how many entries a partial selection will remove.
 
 ### Schedule padding {#schedule-padding}
 

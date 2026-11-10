@@ -10,6 +10,7 @@ from typing import Dict, Optional
 
 from catchup_urls import _implicit_catchup_source, _positive_timeshift_days
 from channel_names import canonicalize_name
+import channel_preferences
 from i18n import gettext as _
 from options import utc_to_local
 from providers import ProviderError
@@ -23,6 +24,9 @@ def _now_playing_key(channel: Dict[str, str]) -> str:
     programme. The tvg-id tells them apart.
     """
     raw_name = str(channel.get("name") or "")
+    override = channel_preferences.epg_id(channel)
+    if override:
+        return channel_preferences.channel_key(channel) + "\x1f" + override
     # Names made only of strip tags ("USA", "CAR") canonicalize to nothing.
     name_key = canonicalize_name(raw_name) or raw_name.strip().lower()
     tvg_id = str(channel.get("tvg-id") or "").strip().lower()

@@ -600,7 +600,7 @@ def load_config() -> Dict:
 
 def save_config(cfg: Dict):
     with _SAVE_LOCK:
-        _save_config_locked(cfg)
+        return _save_config_locked(cfg)
 
 
 def _save_config_locked(cfg: Dict):
@@ -651,8 +651,10 @@ def _save_config_locked(cfg: Dict):
                 LOG.debug("save_config: ignored exception", exc_info=True)
             raise
         _CONFIG_PATH = path
+        return True
     except Exception as e:
         _log_error(f"Failed to save config to {path}: {e}")
+        return False
 
 def get_loaded_config_path() -> str:
     """Return the config path most recently loaded or saved, if known."""
