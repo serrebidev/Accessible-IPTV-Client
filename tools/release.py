@@ -930,7 +930,7 @@ def forgejo_release_asset_names(tag):
 
 
 def release_other_platforms(version):
-    """The host's Linux and macOS half: .deb over SSH, macOS on a GitHub runner.
+    """The host's Linux and macOS half: .deb over SSH, macOS on Forgejo's Mac runner.
 
     The Linux .deb is a mandatory leg of every release. It is built and
     uploaded to the Forgejo release first, so a macOS failure can never
@@ -959,24 +959,24 @@ def release_other_platforms(version):
         print(f"WARNING: skipping the macOS build for {tag} (IPTV_SKIP_MACOS is set); "
               "this release ships Windows and Linux only.")
     else:
-        started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        run(["gh", "workflow", "run", "macos-release.yml", "-f", f"release_tag={tag}"])
-
-        run_id = ""
-        for _ in range(12):
-            runs = json.loads(run(
-                ["gh", "run", "list", "--workflow", "macos-release.yml", "--event", "workflow_dispatch",
-                 "--limit", "5", "--json", "databaseId,createdAt"],
-                capture_output=True,
-            ).stdout or "[]")
-            run_id = next((str(r["databaseId"]) for r in runs if r["createdAt"] >= started), "")
-            if run_id:
+        # Forgejo's Mac runner builds it; return_run_info hands back the run id.
+        run_id = forgejo_release_request(
+            "POST", "/actions/workflows/macos-release.yml/dispatches",
+            body=json.dumps({"ref": "main", "inputs": {"release_tag": tag},
+                             "return_run_info": True}).encode(),
+            headers={"Content-Type": "application/json"},
+        )["id"]
+        print(f"Waiting for the macOS build (Forgejo run {run_id})...")
+        deadline = time.monotonic() + 90 * 60
+        while True:
+            status = forgejo_release_request("GET", f"/actions/runs/{run_id}")["status"]
+            if status not in ("waiting", "running", "blocked", "unknown"):
                 break
-            time.sleep(10)
-        if not run_id:
-            raise RuntimeError(f"macos-release.yml run for {tag} never appeared; dispatch it again by hand.")
-        print(f"Waiting for the macOS build (run {run_id})...")
-        run(["gh", "run", "watch", run_id, "--exit-status", "--interval", "30"])
+            if time.monotonic() > deadline:
+                raise RuntimeError(f"macOS build run {run_id} for {tag} still {status} after 90 minutes.")
+            time.sleep(30)
+        if status != "success":
+            raise RuntimeError(f"macOS build run {run_id} for {tag} ended {status}.")
 
     names = forgejo_release_asset_names(tag)
     required = ["_all.deb"] if skip_macos else ["_all.deb", "-macos-arm64.zip"]

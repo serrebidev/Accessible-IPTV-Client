@@ -342,3 +342,31 @@ def test_forgejo_api_without_a_token_is_refused(monkeypatch):
 
     with pytest.raises(RuntimeError, match="FORGEJO_TOKEN"):
         release.forgejo_release_request("GET", "/releases/tags/v1.2.3")
+
+
+def test_macos_leg_dispatches_and_waits_on_forgejo(monkeypatch):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("IPTV_SKIP_MACOS", raising=False)
+    deb = "/tmp/x/src/dist/accessible-iptv-client_1.2.3-1_all.deb"
+    monkeypatch.setattr(release.subprocess, "run",
+                        lambda *a, **k: type("R", (), {"stdout": deb.encode()})())
+    monkeypatch.setattr(release, "run", lambda *a, **k: None)
+    monkeypatch.setattr(release, "forgejo_release_upload", lambda *a: None)
+    monkeypatch.setattr(release.time, "sleep", lambda s: None)
+    monkeypatch.setattr(release, "forgejo_release_asset_names",
+                        lambda tag: ["a_all.deb", "a-macos-arm64.zip"])
+    calls, states = [], iter(["waiting", "running", "success"])
+
+    def api(method, path, body=None, headers=None):
+        calls.append((method, path, json.loads(body) if body else None))
+        return {"id": 7} if method == "POST" else {"status": next(states)}
+
+    monkeypatch.setattr(release, "forgejo_release_request", api)
+    release.release_other_platforms("1.2.3")
+    assert calls[0] == ("POST", "/actions/workflows/macos-release.yml/dispatches",
+                        {"ref": "main", "inputs": {"release_tag": "v1.2.3"}, "return_run_info": True})
+    assert [c[1] for c in calls[1:]] == ["/actions/runs/7"] * 3
+
+    states = iter(["failure"])
+    with pytest.raises(RuntimeError, match="ended failure"):
+        release.release_other_platforms("1.2.3")
