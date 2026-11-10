@@ -374,10 +374,15 @@ class LiveBufferSession:
             def do_PUT(self):
                 prefix = '/' + session._write_token + '/'
                 path = urlsplit(self.path).path
-                if not path.startswith(prefix):
-                    return self.reply(404)
-                name = path[len(prefix):]
+                name = path[len(prefix):] if path.startswith(prefix) else ''
                 if name != 'index.m3u8' and not _SEGMENT.fullmatch(name):
+                    # Closing with the body unread makes Windows reset the
+                    # socket, so the client sees WinError 10053, not the 404.
+                    try:
+                        for _ in self.chunks(_LIMIT):
+                            pass
+                    except (OSError, ValueError, BufferError):
+                        LOG.debug('Rejected upload body not drained', exc_info=True)
                     return self.reply(404)
                 with session._activity_lock:
                     session._uploads += 1
