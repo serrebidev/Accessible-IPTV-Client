@@ -73,6 +73,16 @@ def test_ready_buffer_reaches_recorder_and_keeps_dvr_id_and_output(monkeypatch, 
                    check=True, timeout=15)
     session, registry, manager = LiveBufferSession(max_bytes=4 * 1024**2), LiveBufferRegistry(), recorder.RecordingManager()
     manager.live_buffer_registry = registry
+    # The two-second fixture can finish, and leave _recordings, before the
+    # assertions below look it up; keep every recording that ever started.
+    started = {}
+
+    class _Started(dict):
+        def __setitem__(self, key, value):
+            started[key] = value
+            super().__setitem__(key, value)
+
+    manager._recordings = _Started()
     monkeypatch.setattr(recorder, 'get_ffmpeg_path', lambda: ffmpeg)
     try:
         payload = source.read_bytes()
@@ -89,7 +99,7 @@ def test_ready_buffer_reaches_recorder_and_keeps_dvr_id_and_output(monkeypatch, 
         result = scheduler.get_job(job['id'])
         assert result['status'] == dvr.STATUS_RECORDING and isinstance(result['recording_id'], int)
         assert result['output_path'] and probes[0].startswith(session.origin)
-        recording = manager._recordings[result['recording_id']]
+        recording = started[result['recording_id']]
         assert recording.url.startswith(session.origin) and recording.key == 'dvr:fixture'
         assert recording.process.wait(timeout=15) == 0
         assert Path(result['output_path']).stat().st_size > 188
