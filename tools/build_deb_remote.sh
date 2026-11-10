@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build, lint and smoke-test the .deb for one tag on the Linux release host.
+# Build, lint and smoke-test the .deb for one tag on the Linux release host (local WSL Ubuntu, ssh alias wsl-build).
 # tools/release.py pipes this over SSH and copies the printed .deb back:
 #
-#   ssh root@serrebiradio.com bash -s -- v1.2.3 < tools/build_deb_remote.sh
+#   ssh wsl-build bash -s -- v1.2.3 < tools/build_deb_remote.sh
 #
 # Everything runs in throwaway debian:trixie containers, like debian-package.yml
 # on a runner. The last line of output is the .deb's path on the host.

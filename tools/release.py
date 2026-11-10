@@ -869,7 +869,7 @@ def forgejo_release_create(version, assets):
     delete_draft_releases()
 
 
-LINUX_BUILD_HOST = os.environ.get("LINUX_BUILD_HOST", "root@serrebiradio.com")
+LINUX_BUILD_HOST = os.environ.get("LINUX_BUILD_HOST", "wsl-build")
 FORGEJO_API = (
     f"https://{app_meta.FORGEJO_HOST}/api/v1/repos/"
     f"{app_meta.FORGEJO_OWNER}/{app_meta.FORGEJO_REPO}"
