@@ -344,6 +344,76 @@ def test_forgejo_api_without_a_token_is_refused(monkeypatch):
         release.forgejo_release_request("GET", "/releases/tags/v1.2.3")
 
 
+class _FakeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._payload
+
+
+def _stub_urlopen(monkeypatch, outcomes):
+    """urlopen replays outcomes: exceptions are raised, bytes are returned."""
+    calls, sleeps = [], []
+    outcomes = iter(outcomes)
+
+    def urlopen(request, timeout=None):
+        calls.append(request)
+        outcome = next(outcomes)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return _FakeResponse(outcome)
+
+    monkeypatch.setenv("FORGEJO_TOKEN", "test-token")
+    monkeypatch.setattr(release.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(release.time, "sleep", sleeps.append)
+    return calls, sleeps
+
+
+def test_forgejo_request_retries_url_errors_then_succeeds(monkeypatch):
+    import urllib.error
+    calls, sleeps = _stub_urlopen(monkeypatch, [
+        urllib.error.URLError("timed out"),
+        urllib.error.URLError("timed out"),
+        b'{"ok": true}',
+    ])
+
+    assert release.forgejo_release_request("GET", "/releases/tags/v1.2.3") == {"ok": True}
+    assert len(calls) == 3
+    assert sleeps == [2, 4]
+
+
+def test_forgejo_request_does_not_retry_real_http_errors(monkeypatch):
+    import urllib.error
+    calls, sleeps = _stub_urlopen(monkeypatch, [
+        urllib.error.HTTPError("https://x", 404, "Not Found", None, None),
+    ])
+
+    with pytest.raises(urllib.error.HTTPError) as excinfo:
+        release.forgejo_release_request("GET", "/releases/tags/v9.9.9")
+    assert excinfo.value.code == 404
+    assert len(calls) == 1
+    assert sleeps == []
+
+
+def test_forgejo_request_retries_a_gateway_error_then_succeeds(monkeypatch):
+    import urllib.error
+    calls, sleeps = _stub_urlopen(monkeypatch, [
+        urllib.error.HTTPError("https://x", 503, "Service Unavailable", None, None),
+        b'{"ok": true}',
+    ])
+
+    assert release.forgejo_release_request("GET", "/releases/tags/v1.2.3") == {"ok": True}
+    assert len(calls) == 2
+    assert sleeps == [2]
+
+
 def test_macos_leg_dispatches_and_waits_on_forgejo(monkeypatch):
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.delenv("IPTV_SKIP_MACOS", raising=False)

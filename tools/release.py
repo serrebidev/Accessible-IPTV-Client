@@ -8,6 +8,7 @@ import stat
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -890,9 +891,24 @@ def forgejo_release_request(method, path, body=None, headers=None):
         headers={"Authorization": f"token {token}", **dict(headers or {})},
         method=method,
     )
-    with urllib.request.urlopen(request, timeout=180) as response:
-        raw = response.read().decode()
-    return json.loads(raw) if raw.strip() else None
+    # Transient gateway failures (502/503/504, dropped connections, timeouts)
+    # are retried: a single mid-upload timeout otherwise strands a partial
+    # release (v1.150.64, Forgejo run 187). Real errors fail immediately.
+    last_error = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                raw = response.read().decode()
+            return json.loads(raw) if raw.strip() else None
+        except urllib.error.HTTPError as error:
+            if error.code not in (502, 503, 504):
+                raise
+            last_error = error
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            last_error = error
+        if attempt < 2:
+            time.sleep(2 * (attempt + 1))
+    raise last_error
 
 
 def forgejo_release_upload(tag, local_paths):
