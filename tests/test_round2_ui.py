@@ -1,4 +1,7 @@
 import copy
+from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -85,23 +88,55 @@ def test_next_episode_countdown_cancels_after_a_new_playback_request(owner):
         dialog.Destroy()
 
 
-def test_next_episode_modal_starts_on_cancel(owner):
-    dialog = episode_continuation_ui.NextEpisodeDialog(owner, 'Episode', lambda: True)
-    observed = []
+def test_next_episode_modal_starts_on_cancel():
+    # ShowModal dispatches process-wide events, including work queued by other
+    # tests. Use one fresh wx.App so this native focus check neither drains the
+    # suite's event queue nor inherits its windows, timers or wx.App lifetimes.
+    # A child crash or hang must still fail this test, with captured diagnostics.
+    probe = r'''
+import wx
+from episode_continuation_ui import NextEpisodeDialog
+
+app = wx.App(False)
+wx.Log.SetActiveTarget(wx.LogStderr())
+owner = wx.Frame(None)
+dialog = None
+timer = None
+observed = []
+try:
+    dialog = NextEpisodeDialog(owner, 'Episode', lambda: True)
 
     def inspect():
-        focus = wx.Window.FindFocus()
-        observed.append(focus.GetId() if focus else None)
-        dialog.EndModal(wx.ID_CANCEL)
+        try:
+            focus = wx.Window.FindFocus()
+            default = dialog.GetDefaultItem()
+            observed.append((focus.GetId() if focus else None,
+                             default.GetId() if default else None))
+        finally:
+            dialog.EndModal(wx.ID_CANCEL)
 
     timer = wx.CallLater(100, inspect)
-    try:
-        assert dialog.ShowModal() == wx.ID_CANCEL
-        assert observed == [wx.ID_CANCEL]
-    finally:
+    result = dialog.ShowModal()
+    assert result == wx.ID_CANCEL, result
+    assert observed == [(wx.ID_CANCEL, wx.ID_CANCEL)], observed
+finally:
+    if timer is not None:
         timer.Stop()
+    if dialog is not None:
         dialog.timer.Stop()
         dialog.Destroy()
+    owner.Destroy()
+    app.Yield()
+'''
+    result = subprocess.run(
+        [sys.executable, '-X', 'faulthandler', '-c', probe],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True, text=True, errors='replace', timeout=30,
+    )
+    assert result.returncode == 0, (
+        f'Native next-episode probe exited with {result.returncode}\n'
+        f'{result.stdout}{result.stderr}'
+    )
 
 
 def test_recording_library_switches_between_restore_and_permanent_delete(owner, tmp_path, monkeypatch):
