@@ -1008,6 +1008,7 @@ class RecordingManager:
         self.on_storage_warning = None
         self._space_thread = None
         self._space_monitor = storage_monitor.SpaceMonitor()
+        self.connection_policy = None
 
     # -- queries -----------------------------------------------------------
     def list_active(self) -> List[Recording]:
@@ -1090,6 +1091,11 @@ class RecordingManager:
         # Check before creating files or opening ffmpeg.  A scheduled and a
         # manual recording use different recording keys, so ``is_recording``
         # alone cannot prevent two connections to a one-stream provider.
+        if _buffer_lease is None and callable(self.connection_policy):
+            metadata = dict(metadata or {})
+            account = self.connection_policy(url, metadata, self.list_active())
+            if account:
+                metadata["recording_account"] = account
         if self.has_active_connection(connection_key):
             raise RuntimeError("A recording is already using this provider's only stream.")
 

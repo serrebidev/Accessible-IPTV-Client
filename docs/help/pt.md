@@ -110,6 +110,8 @@ Exibir > TV ao vivo && Replay volta aos canais ao vivo. O campo de pesquisa é e
 
 O vídeo sob demanda funciona melhor com contas Xtream Codes, que descrevem bem o catálogo delas. Para listas M3U simples, o programa reconhece filmes e séries pelos nomes dos grupos e pela numeração dos episódios.
 
+Reprodutor > Reproduzir automaticamente o próximo episódio vem desativado. Quando ativado, um episódio encerrado normalmente inicia uma contagem de dez segundos para o próximo identificado. Reproduzir agora começa imediatamente; Cancelar ou Escape impede a continuação. Uma parada manual ou falha antecipada não a inicia. Mudanças na reprodução ou na lista invalidam uma continuação desatualizada; sem um próximo episódio identificado sem ambiguidade, a reprodução termina.
+
 ## Gerenciador de listas de reprodução {#playlist-manager}
 
 Arquivo > Gerenciador de listas de reprodução (Ctrl+M) lista suas fontes de listas de reprodução. Ele abre com o foco na lista.
@@ -231,6 +233,8 @@ Os mesmos comandos estão no menu Reprodução do reprodutor. O reprodutor se re
 
 Silenciar / Ativar som silencia o player integrado sem pausar a reprodução nem a gravação. Os atalhos padrão são Ctrl+Shift+M na janela principal e M no player; ambos podem ser alterados nas configurações de atalhos. O som continua desativado ao mudar de canal ou reconectar. Reprodutor > Lembrar o volume de cada canal começa desativado e, quando ativado, memoriza o volume escolhido separadamente por lista ou provedor. Canais sem valor salvo usam o volume geral do player. Nenhuma dessas funções altera o volume do leitor de tela.
 
+No menu Reprodução do reprodutor integrado, Adicionar marcador com nome salva a posição atual de conteúdo sob demanda ou de uma gravação local. É necessário poder avançar ou retroceder e conhecer a duração. Marcadores com nome lista os marcadores do conteúdo atual: Enter ou Ir para o marcador abre a posição; Renomear e Excluir gerenciam a entrada selecionada. Os nomes devem ser únicos no mesmo conteúdo. Podem ser salvos até 1000 marcadores no total, separados da posição automática de retomada.
+
 ### Faixas de áudio {#audio-tracks}
 
 Canais podem carregar várias faixas de áudio, como outros idiomas ou audiodescrição. Pressione A para ir à próxima faixa, use Reprodução > Faixa de áudio, ou Tab até Escolher faixa de áudio, que sempre nomeia a faixa em reprodução.
@@ -290,7 +294,11 @@ Parar uma gravação pode levar um momento enquanto o arquivo é finalizado. Ao 
 
 Gravações > Monitoramento do espaço de gravação verifica o espaço livre a cada cinco segundos durante a gravação. O aviso está ativado por padrão abaixo de 1024 MiB. A parada automática começa desativada; ative-a e escolha um limite, inicialmente de 256 MiB, para solicitar o fechamento correto dos arquivos antes que a unidade fique cheia. O limite de aviso não pode ser menor que o de parada. Gravações na mesma unidade compartilham um aviso; com a parada ativada, todas as afetadas são encerradas. A verificação não reserva espaço nem garante o fechamento dos arquivos em uma unidade cheia ou desconectada.
 
-Gravações > Biblioteca de gravações lista os arquivos concluídos da pasta de gravações atual, inclusive os antigos. Pesquise por título, canal ou data. Reproduzir / Retomar abre o arquivo no player integrado e oferece a posição salva quando disponível. A duração e o estado são exibidos quando conhecidos; arquivos antigos podem mostrar Desconhecido. Gravações em andamento são excluídas da lista. Atualizar recarrega a lista. Excluir arquivo de gravação apaga permanentemente o arquivo de mídia após a confirmação; feche primeiro sua janela de reprodução. Remover uma entrada de Gravações agendadas não exclui esse arquivo.
+Gravações > Biblioteca de gravações lista arquivos concluídos de até 20 pastas, incluindo a pasta de gravação atual. Adicionar pasta inclui uma pasta existente sem mudar o destino das novas gravações. Remover pasta da biblioteca mantém os arquivos intactos. A pasta de gravação atual não pode ser removida.
+
+Pesquise por título, canal ou data. Reproduzir / Retomar abre o arquivo e oferece a posição salva, quando disponível. Duração e estado aparecem quando conhecidos; arquivos antigos podem indicar Desconhecido. Gravações em andamento e arquivos abertos no reprodutor integrado são excluídos. Renomear título altera apenas o título exibido, preservando o nome do arquivo, a posição e os marcadores. Atualizar recarrega a lista.
+
+Mover para a lixeira de gravações transfere o arquivo para a lixeira do aplicativo dentro da sua pasta de gravação, sem liberar espaço. Mostrar gravações excluídas exibe esses arquivos. Restaurar gravação devolve o arquivo à pasta original sem substituir arquivos existentes. Nessa visualização, Excluir arquivo de gravação o apaga permanentemente após confirmação. Remover uma entrada de Gravações agendadas não exclui o arquivo de mídia.
 
 ### Formato de gravação {#recording-formats}
 
@@ -315,11 +323,17 @@ Gravações > Gravações agendadas… lista cada gravação agendada, em andame
 
 As gravações agendadas começam sozinhas enquanto o programa está em execução, mesmo minimizado para a bandeja do sistema. A janela se atualiza sozinha ao ser aberta e sempre que uma gravação começa, termina ou é cancelada, por isso o comando Atualizar raramente é necessário.
 
-Quando uma nova gravação se sobrepõe a outra gravação agendada, o programa avisa antes de adicioná-la. Seu provedor pode limitar quantos streams podem ser executados de uma vez.
+Gravações > Limites de conexões para gravações define de 1 a 64 conexões para gravações por conta; 0 não impõe um limite adicional. Considere a reprodução e os outros dispositivos: essa opção não consulta o limite real do provedor. O agendamento verifica o pico de conexões simultâneas das gravações da mesma conta identificada. Exceder o limite requer confirmação; sem um limite conhecido, aparece o aviso habitual de sobreposição. Quando o limite é atingido, uma nova gravação é recusada e as existentes continuam. Uma gravação que usa o buffer local do reprodutor não ocupa outra conexão com o provedor. As proteções existentes para contas com um único fluxo continuam valendo.
 
 O programa pergunta antes de fechar se ainda houver gravações agendadas esperando para começar, porque elas só começam com o programa aberto. Se você fechá-lo mesmo assim, essas gravações não vão começar.
 
 Um arquivo não vazio, por si só, não comprova o sucesso da gravação. Capturas interrompidas recebem o estado Parcial e seus arquivos são preservados; uma parada intencional recebe o estado Interrompida pelo usuário. Episódios com falha, perdidos ou parciais podem ser agendados em uma transmissão posterior, sem repetir tentativas para a mesma transmissão. A atualização preserva a seleção múltipla e a confirmação de remoção informa quantas entradas serão removidas, mesmo quando apenas parte da lista estiver selecionada.
+
+Se falhar o salvamento de um cancelamento, exclusão ou alteração de repetição, o agendamento anterior é preservado e aparece um erro. Uma cópia separada do arquivo ilegível é criada antes de salvar novos agendamentos. Se a cópia também falhar, as alterações são bloqueadas para proteger o original. Verifique o espaço livre e as permissões antes de reiniciar.
+
+No Windows, Gravações > Impedir a suspensão automática durante a gravação vem ativado. Solicita que o Windows permaneça ativo durante as gravações, sem manter a tela ligada nem impedir a suspensão iniciada pelo usuário, como ao fechar a tampa de um notebook.
+
+Reativar para gravações agendadas (Windows) vem desativado. Quando ativado, solicita um temporizador de ativação 60 segundos antes do início da próxima gravação, incluindo a margem anterior. O aplicativo deve permanecer aberto, e o hardware e as configurações de energia devem oferecer suporte a esses temporizadores. Não liga um computador desligado. Alterações e cancelamentos atualizam o temporizador; sair do aplicativo o remove.
 
 ### Margem de agendamento {#schedule-padding}
 
@@ -455,10 +469,12 @@ Ajuda > Sobre… mostra a versão em uso e linka ambos. Ao relatar um problema, 
 
 ## Ferramentas pessoais {#personal-tools}
 
-Mantenha a aplicação aberta para gravações agendadas, lembretes e alertas de pesquisa. Estas ferramentas não despertam o computador suspenso.
+Mantenha o aplicativo aberto para gravações agendadas, lembretes e alertas de pesquisas salvas. Lembretes e alertas de pesquisa não reativam o computador. As gravações podem solicitar um temporizador de ativação no Windows se a opção descrita em Gravações agendadas estiver ativada.
 
-- Gravações > Agendar por horário funciona sem guia. Introduza a hora local como AAAA-MM-DD HH:MM e escolha a ocorrência na mudança de hora. Editar horários altera uma gravação pendente ou o fim de uma em curso. Confirme sobreposições; duração máxima de sete dias.
+- Gravações > Agendar por horário funciona sem guia. Introduza a hora local como AAAA-MM-DD HH:MM e escolha a ocorrência na mudança de hora. Editar horários altera uma gravação pendente ou o fim de uma em curso. Confirme conflitos de conexão conforme Gravações agendadas; duração máxima de sete dias.
 - Na reprodução a pedido, Ctrl+Left/Right salta 10 segundos, Ctrl+Shift+Left/Right 60 segundos, Ctrl+T abre a escolha do instante e T anuncia o tempo decorrido, total e restante. Os atalhos são configuráveis. O fluxo deve permitir saltos e ter duração conhecida; a reprodução em direto não muda.
 - Ver > Listas de favoritos gere até 50 listas com nome e 2000 canais por lista, separadas dos favoritos existentes. Selecione um canal antes de abrir a janela para o adicionar. Mover para cima/baixo ou Ctrl+Up/Down altera a ordem. Canais ausentes ficam na lista, mas só podem ser reproduzidos quando regressarem.
 - Ver > Pesquisas de programas guardadas guarda até 30 pesquisas em títulos ou descrições, em todos os canais, no selecionado ou numa cópia dos canais de uma lista de favoritos. Após importar o guia e a cada 15 minutos pesquisa os próximos 14 dias. Cada pesquisa mostra até 500 resultados; restrinja pesquisas truncadas. As definições de anúncios controlam os novos resultados, que permitem criar lembretes ou gravações.
 - A exportação encriptada inclui agendamentos, lembretes e histórico de pesquisa, sem ficheiros multimédia. A importação mostra quantos elementos substituirá e fecha a aplicação; volte a abri-la para terminar. Termine antes gravações e transferências. Gravações passadas ou já iniciadas não reiniciam. Cópias antigas só substituem definições e mantêm agendamentos e lembretes locais.
+
+Exibir > Histórico de notificações mantém as últimas 200 notificações enfileiradas na sessão atual. Selecione uma entrada para ler Detalhes; Atualizar recarrega a lista e Copiar detalhes copia o texto. Credenciais reconhecíveis em URLs e linhas de autenticação são ocultadas no histórico e no texto copiado. Isso não garante que qualquer mensagem esteja livre de dados privados. Limpar histórico pede confirmação. O histórico é descartado ao fechar o aplicativo; os arquivos de log existentes não são alterados.

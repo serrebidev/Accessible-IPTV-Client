@@ -1,5 +1,12 @@
 # EPG, playlists and channel matching
 
+## Source identity and programme replacement, 2026-11-12
+
+- XMLTV ids remain indexed separately from internal channel ids. Equal ids from different sources share a channel only while their display names agree; conflicting names receive a stable source-qualified identity. Matchers in both directions require an unambiguous name for a collided id, preserve manual overrides, and do not pick an arbitrary feed. Source cleanup uses internal ids.
+- A feed that omits its channel declaration cannot overwrite another source's programme through an equal raw id. Imports still clear parsed XML elements normally.
+- Replacing a programme at the same start/end with a different title also replaces its episode and subtitle, including clearing stale values. Same-title enrichment remains supported.
+- Preserve IPv6 brackets when rebuilding provider URL authorities. Regression fixtures cover the invalid authority and independent feeds, repeated imports, missing declarations and search actions.
+
 Moved here from `agents.md` on 2026-10-22, verbatim. `agents.md`
 points at this file; read it before changing the code it names and
 grep it for the module, symbol or error you are about to touch.

@@ -110,6 +110,8 @@ Affichage > TV en direct && Rattrapage revient aux chaînes en direct. Le champ 
 
 La vidéo à la demande fonctionne mieux avec les comptes Xtream Codes, qui décrivent correctement leur catalogue. Pour les simples listes M3U, le programme reconnaît les films et les séries d'après leurs noms de groupe et leur numérotation d'épisodes.
 
+Lecteur > Lire automatiquement l’épisode suivant est désactivé par défaut. S’il est activé, un épisode terminé normalement déclenche un compte à rebours de dix secondes avant l’épisode suivant identifié. Lire maintenant démarre immédiatement ; Annuler ou Échap empêche la suite. Un arrêt manuel ou une erreur prématurée ne la déclenche pas. Changer de lecture ou de liste invalide une continuation devenue obsolète ; sans épisode suivant identifié sans ambiguïté, la lecture s’arrête.
+
 ## Gestionnaire de listes de lecture {#playlist-manager}
 
 Fichier > Gestionnaire de listes de lecture (Ctrl+M) liste vos sources de listes de lecture. Il s'ouvre avec le focus sur la liste.
@@ -231,6 +233,8 @@ Les mêmes commandes se trouvent dans le menu Lecture du lecteur. Le lecteur se 
 
 Activer / Désactiver le son coupe le son du lecteur intégré sans interrompre la lecture ni l’enregistrement. Les raccourcis par défaut sont Ctrl+Maj+M dans la fenêtre principale et M dans le lecteur ; ils peuvent être modifiés dans les réglages des raccourcis. Le son reste coupé après un changement de chaîne ou une reconnexion. Lecteur > Mémoriser le volume de chaque chaîne est désactivé par défaut et conserve, une fois activé, votre réglage séparément pour chaque liste ou fournisseur. Les chaînes sans valeur mémorisée utilisent le volume général du lecteur. Le volume du lecteur d’écran n’est pas modifié.
 
+Dans le menu Lecture du lecteur intégré, Ajouter un signet nommé mémorise la position actuelle d’un contenu à la demande ou d’un enregistrement local. Le déplacement et une durée connue sont nécessaires. Signets nommés affiche les signets du contenu actuel : Entrée ou Aller au signet rejoint la position ; Renommer et Supprimer gèrent l’entrée choisie. Chaque nom doit être unique pour ce contenu. Jusqu’à 1000 signets peuvent être conservés, indépendamment de la position de reprise automatique.
+
 ### Pistes audio {#audio-tracks}
 
 Les chaînes peuvent porter plusieurs pistes audio, comme d'autres langues ou l'audiodescription. Appuyez sur A pour passer à la piste suivante, utilisez Lecture > Piste audio, ou Tab jusqu'à Choisir la piste audio, qui nomme toujours la piste en lecture.
@@ -290,7 +294,11 @@ L'arrêt d'un enregistrement peut prendre un moment, le temps de finaliser son f
 
 Enregistrements > Surveillance de l’espace d’enregistrement vérifie l’espace libre toutes les cinq secondes pendant l’enregistrement. L’avertissement est activé par défaut en dessous de 1024 MiB. L’arrêt automatique est désactivé par défaut ; activez-le et choisissez un seuil, initialement de 256 MiB, pour demander la fermeture propre des fichiers avant que le lecteur soit plein. Le seuil d’avertissement ne doit pas être inférieur au seuil d’arrêt. Un avertissement commun concerne tous les enregistrements sur un même lecteur ; si l’arrêt est activé, ils sont tous arrêtés. Cette vérification ne réserve pas d’espace et ne garantit pas la fermeture des fichiers sur un lecteur plein ou déconnecté.
 
-Enregistrements > Bibliothèque des enregistrements affiche les fichiers terminés du dossier d’enregistrement actuel, y compris les anciens fichiers. Recherchez par titre, chaîne ou date. Lire / Reprendre ouvre le fichier dans le lecteur intégré et propose la position mémorisée lorsqu’elle existe. La durée et l’état de l’enregistrement sont indiqués s’ils sont connus ; les anciens fichiers peuvent afficher Inconnu. Les enregistrements en cours sont exclus. Actualiser recharge la liste. Supprimer le fichier d’enregistrement efface définitivement le fichier multimédia après confirmation ; fermez d’abord sa fenêtre de lecture. Retirer une entrée de la liste des enregistrements programmés ne supprime pas ce fichier.
+Enregistrements > Bibliothèque des enregistrements affiche les fichiers terminés de 20 dossiers au maximum, dont le dossier d’enregistrement actuel. Ajouter un dossier ajoute un dossier existant sans changer la destination des nouveaux enregistrements. Retirer le dossier de la bibliothèque conserve ses fichiers. Le dossier d’enregistrement actuel ne peut pas être retiré.
+
+Recherchez par titre, chaîne ou date. Lire / Reprendre ouvre le fichier et propose sa position mémorisée, si elle existe. La durée et l’état sont affichés lorsqu’ils sont connus ; les anciens fichiers peuvent indiquer Inconnu. Les enregistrements en cours et les fichiers ouverts dans le lecteur intégré sont exclus. Renommer le titre modifie uniquement le titre affiché, en conservant le nom du fichier, la position et les signets. Actualiser recharge la liste.
+
+Déplacer dans la corbeille des enregistrements place le fichier dans la corbeille de l’application à l’intérieur de son dossier d’enregistrement, sans libérer d’espace. Afficher les enregistrements supprimés les rend visibles. Restaurer l’enregistrement remet le fichier dans son dossier d’origine sans écraser un fichier existant. Dans cette vue, Supprimer le fichier d’enregistrement le supprime définitivement après confirmation. Retirer une entrée des Enregistrements programmés ne supprime pas le fichier multimédia.
 
 ### Format d'enregistrement {#recording-formats}
 
@@ -315,11 +323,17 @@ Enregistrements > Enregistrements programmés… liste chaque enregistrement pro
 
 Les enregistrements programmés démarrent tout seuls pendant que le programme tourne, même réduit dans la barre d'état système. La fenêtre s'actualise d'elle-même à l'ouverture et chaque fois qu'un enregistrement démarre, se termine ou est annulé ; la commande Actualiser est donc rarement utile.
 
-Lorsqu'un nouvel enregistrement chevauche un autre enregistrement programmé, le programme vous avertit avant de l'ajouter. Votre fournisseur peut limiter le nombre de flux pouvant être exécutés simultanément.
+Enregistrements > Limites de connexions pour les enregistrements réserve de 1 à 64 connexions aux enregistrements par compte fournisseur ; 0 n’impose aucune limite supplémentaire. Prévoyez la lecture et les autres appareils : ce réglage ne détecte pas la limite réelle du fournisseur. La programmation vérifie le pic de connexions simultanées des enregistrements du même compte identifié. Un dépassement exige confirmation ; sans quota connu, l’avertissement habituel de chevauchement apparaît. Si le quota est atteint, un nouvel enregistrement est refusé et les autres continuent. Un enregistrement utilisant le tampon local du lecteur ne compte pas comme une connexion supplémentaire. Les protections existantes des comptes limités à un flux restent applicables.
 
 Le programme demande confirmation avant de se fermer si des enregistrements programmés attendent encore de démarrer, car ils ne peuvent démarrer que pendant que le programme tourne. Si vous le fermez quand même, ces enregistrements ne démarreront pas.
 
 Un fichier non vide ne suffit pas à prouver la réussite d’un enregistrement. Les captures interrompues portent l’état Partiel et leurs fichiers sont conservés ; un arrêt volontaire porte l’état Arrêté par l’utilisateur. Les épisodes échoués, manqués ou partiels peuvent être programmés lors d’une diffusion ultérieure, sans réessayer continuellement la même diffusion. L’actualisation conserve la sélection multiple et la confirmation de suppression indique le nombre d’entrées concernées, même lorsque seule une partie de la liste est sélectionnée.
+
+Si l’enregistrement d’une annulation, suppression ou modification de répétition échoue, la programmation précédente est conservée et une erreur s’affiche. Un planning illisible est sauvegardé séparément avant toute nouvelle sauvegarde. Si cette copie échoue aussi, les modifications sont bloquées pour protéger l’original. Vérifiez l’espace libre et les autorisations avant de redémarrer.
+
+Sous Windows, Enregistrements > Empêcher la mise en veille automatique pendant l’enregistrement est activé par défaut. L’application demande à Windows de rester éveillé pendant les enregistrements, sans maintenir l’écran allumé ni empêcher une veille déclenchée par l’utilisateur, notamment en fermant le capot d’un portable.
+
+Sortir de veille pour les enregistrements programmés (Windows) est désactivé par défaut. Une fois activé, il demande un minuteur de réveil 60 secondes avant le début du prochain enregistrement, marge de début comprise. L’application doit rester ouverte ; le matériel et les réglages d’alimentation doivent prendre en charge ces minuteurs. Un ordinateur arrêté ne peut pas être démarré. Modifier ou annuler la programmation met le minuteur à jour ; quitter l’application le supprime.
 
 ### Marge de programmation {#schedule-padding}
 
@@ -455,10 +469,12 @@ Aide > À propos… montre la version en cours d'exécution et lie les deux. Qua
 
 ## Outils personnels {#personal-tools}
 
-Gardez l'application ouverte pour les enregistrements programmés, rappels et alertes de recherche. Ces outils ne réveillent pas l'ordinateur.
+Gardez l’application ouverte pour les enregistrements programmés, rappels et alertes de recherches enregistrées. Les rappels et alertes de recherche ne réveillent pas l’ordinateur. Les enregistrements peuvent demander un minuteur de réveil sous Windows si l’option décrite dans Enregistrements programmés est activée.
 
-- Enregistrements > Programmer selon l'heure fonctionne sans guide. Saisissez l'heure locale au format AAAA-MM-JJ HH:MM et choisissez l'occurrence en cas de changement d'heure. Modifier les horaires change une programmation ou la fin d'un enregistrement en cours. Confirmez les chevauchements ; durée maximale : sept jours.
+- Enregistrements > Programmer selon l'heure fonctionne sans guide. Saisissez l'heure locale au format AAAA-MM-JJ HH:MM et choisissez l'occurrence en cas de changement d'heure. Modifier les horaires change une programmation ou la fin d'un enregistrement en cours. Confirmez les conflits de connexion selon Enregistrements programmés ; durée maximale : sept jours.
 - En lecture à la demande, Ctrl+Left/Right déplace de 10 secondes, Ctrl+Shift+Left/Right de 60 secondes, Ctrl+T ouvre le choix du temps et T annonce les durées écoulée, totale et restante. Les raccourcis sont configurables. Le flux doit permettre le déplacement et fournir sa durée ; le direct reste inchangé.
 - Affichage > Listes de favoris gère jusqu'à 50 listes nommées de 2000 chaînes, séparées des favoris existants. Sélectionnez une chaîne avant d'ouvrir la fenêtre pour l'ajouter. Monter/Descendre ou Ctrl+Up/Down change l'ordre. Les chaînes absentes restent dans la liste mais ne peuvent être lues avant leur retour.
 - Affichage > Recherches de programmes enregistrées conserve jusqu'à 30 recherches dans les titres ou descriptions, sur toutes les chaînes, la chaîne choisie ou un instantané d'une liste de favoris. Après les imports du guide et toutes les 15 minutes, les 14 prochains jours sont examinés. Limite : 500 résultats par recherche ; affinez si nécessaire. Les réglages d'annonce contrôlent les nouveaux résultats. Ceux-ci permettent de créer des rappels ou des enregistrements.
 - L'export chiffré inclut désormais les programmations, rappels et historiques de recherche, sans fichiers multimédias. L'import affiche les nombres remplacés et ferme l'application ; rouvrez-la pour terminer. Terminez d'abord les enregistrements et téléchargements. Les enregistrements passés ou déjà démarrés ne reprennent pas. Les anciennes sauvegardes remplacent uniquement les paramètres et conservent les programmations et rappels locaux.
+
+Affichage > Historique des notifications conserve les 200 dernières notifications mises en file pendant la session actuelle. Sélectionnez une entrée pour lire Détails ; Actualiser recharge la liste et Copier les détails copie le texte. Les identifiants reconnaissables dans les URL et les lignes d’authentification sont masqués dans l’historique et le texte copié. Cela ne garantit pas l’absence de données privées dans tout message. Effacer l’historique demande confirmation. L’historique disparaît à la fermeture ; les fichiers journaux existants restent inchangés.

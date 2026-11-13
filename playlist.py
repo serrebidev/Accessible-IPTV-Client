@@ -18,6 +18,7 @@ import threading
 from http.client import IncompleteRead
 from providers import generate_provider_id
 from channel_identity import expand_tvg_id_candidates
+from channel_names import numbers_disagree
 from options import get_epg_log_path
 from modal_guard import message_box
 from typing import Dict, List, Optional, Tuple, Set
@@ -1424,6 +1425,10 @@ class EPGDatabase:
         """)
         c.execute("CREATE INDEX IF NOT EXISTS idx_channel_sources_source ON channel_sources (source_key)")
         channel_cols = {row[1] for row in c.execute("PRAGMA table_info(channels)").fetchall()}
+        if "xmltv_id" not in channel_cols:
+            c.execute("ALTER TABLE channels ADD COLUMN xmltv_id TEXT")
+            c.execute("UPDATE channels SET xmltv_id = id")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_channels_xmltv_id ON channels (xmltv_id COLLATE NOCASE)")
         # Migration: when an import last saw each channel. Rows that predate it
         # count as seen now, so they get the full grace period.
         if "last_seen" not in channel_cols:
@@ -1460,8 +1465,22 @@ class EPGDatabase:
         self._open()
 
     def insert_channel(self, channel_id: str, display_name: str, source_key: Optional[str] = None):
+        xmltv_id = channel_id
+        if source_key:
+            qualified = "epg:" + source_key + ":" + channel_id
+            existing = self.conn.execute("SELECT 1 FROM channels WHERE id = ?", (qualified,)).fetchone()
+            old_name = self.conn.execute("SELECT display_name FROM channels WHERE id = ?", (channel_id,)).fetchone()
+            other_source = self.conn.execute(
+                "SELECT 1 FROM channel_sources WHERE channel_id = ? AND source_key != ? LIMIT 1",
+                (channel_id, source_key)).fetchone()
+            if existing or (other_source and old_name and old_name[0] != display_name):
+                # Keep existing identities stable; only split ids that collide.
+                # A source that renames its shared id must detach its listing.
+                self.conn.execute("DELETE FROM channel_sources WHERE channel_id = ? AND source_key = ?",
+                                  (channel_id, source_key))
+                channel_id = qualified
         name_region = extract_group(display_name)
-        id_region = _detect_region_from_id(channel_id or "")
+        id_region = _detect_region_from_id(xmltv_id or "")
         # Prefer region derived from the channel id when it contradicts the display name.
         # This avoids false positives like "… Palm Springs CA …" (California) being tagged as Canada.
         if id_region and name_region and id_region != name_region:
@@ -1475,17 +1494,19 @@ class EPGDatabase:
         # renumber. The old channel's schedule must go, or it shows under the
         # new one wherever the new guide has no overlapping slot. XMLTV lists
         # channels before programmes, so this import refills the id right after.
-        old = c.execute("SELECT norm_name FROM channels WHERE id = ?", (channel_id,)).fetchone()
-        if old and old[0] and norm and old[0] != norm:
+        old = c.execute("SELECT norm_name, display_name FROM channels WHERE id = ?", (channel_id,)).fetchone()
+        if old and old[0] and norm and (old[0] != norm or numbers_disagree(
+                significant_channel_numbers(old[1] or ""), significant_channel_numbers(display_name))):
             c.execute("DELETE FROM programmes WHERE channel_id = ?", (channel_id,))
         c.execute(
-            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag, last_seen) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (channel_id, display_name, norm, group_tag, int(time.time()))
+            "INSERT OR REPLACE INTO channels (id, display_name, norm_name, group_tag, last_seen, xmltv_id) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (channel_id, display_name, norm, group_tag, int(time.time()), xmltv_id)
         )
         if source_key:
             c.execute("INSERT OR IGNORE INTO channel_sources (channel_id, source_key) VALUES (?, ?)",
                       (channel_id, source_key))
+        return channel_id
 
     def _repair_channel_regions_prefer_id(self):
         """One-time reconciliation: if a channel's id clearly encodes a region
@@ -1585,9 +1606,11 @@ class EPGDatabase:
             ON CONFLICT(channel_id, start, end) DO UPDATE SET
               title = excluded.title,
               episode = CASE
+                WHEN programmes.title != excluded.title THEN excluded.episode
                 WHEN coalesce(programmes.episode, '') = '' THEN excluded.episode
                 ELSE programmes.episode END,
               subtitle = CASE
+                WHEN programmes.title != excluded.title THEN excluded.subtitle
                 WHEN coalesce(programmes.subtitle, '') = '' THEN excluded.subtitle
                 ELSE programmes.subtitle END,
               description = CASE
@@ -2087,6 +2110,19 @@ class EPGDatabase:
             # station after an EPG import; the user can choose Automatic again.
             row = self.conn.execute("SELECT id FROM channels WHERE id = ?", (override,)).fetchone()
             return row[0] if row else None
+        # Equal XMLTV ids from unrelated feeds are not a shared identity.
+        # Resolve their exact names before the ordinary id-first matcher.
+        from channel_identity import choose_source_collision
+        try:
+            rows = self.conn.execute(
+                "SELECT id, display_name FROM channels WHERE xmltv_id = ? COLLATE NOCASE",
+                (str(channel.get("tvg-id") or "").strip(),)).fetchall()
+        except sqlite3.OperationalError:
+            rows = []  # Read-only database predating the next writable migration.
+        if len(rows) > 1:
+            return choose_source_collision(channel, dict(rows))
+        if len(rows) == 1 and rows[0][0].startswith("epg:"):
+            return rows[0][0]
         matches, playlist_region = self.get_matching_channel_ids(channel)
         if not matches:
             return None
@@ -2644,6 +2680,7 @@ class EPGDatabase:
         # first definition in a source wins; repeats are skipped. Reset per
         # attempt: a retry rolls back the channel rows it would otherwise skip.
         seen_channel_ids: Set[str] = set()
+        source_channels = {}
         # Per imported source: its key and the channel ids it defined, for the
         # stale-channel cleanup after the run.
         imported_sources: List[Tuple[str, Set[str]]] = []
@@ -2656,6 +2693,7 @@ class EPGDatabase:
             while attempts_left > 0:
                 chan_count, prog_count, inserted_since_commit, sample_ok = 0, 0, 0, 0
                 seen_channel_ids.clear()
+                source_channels.clear()
                 stream = None
                 began_txn = False
                 try:
@@ -2730,9 +2768,10 @@ class EPGDatabase:
                                 # in without a name.
                                 dn_elem = elem.find("./{*}display-name")
                                 disp = dn_elem.text.strip() if dn_elem is not None and dn_elem.text else ""
-                                if (ch_id or disp) and ch_id not in seen_channel_ids:
-                                    seen_channel_ids.add(ch_id)
-                                    self.insert_channel(ch_id, disp, source_key)
+                                if (ch_id or disp) and ch_id not in source_channels:
+                                    internal_id = self.insert_channel(ch_id, disp, source_key)
+                                    source_channels[ch_id] = internal_id
+                                    seen_channel_ids.add(internal_id)
                                     chan_count += 1
                             elif tag == 'programme':
                                 ch_id = elem.get("channel", "")
@@ -2768,10 +2807,18 @@ class EPGDatabase:
                                 if not en_utc and st_utc:
                                     en_utc = _calc_end_from_length_or_duration(st_utc, elem)
 
-                                if st_utc and en_utc and ch_id:
+                                internal_id = source_channels.get(ch_id, ch_id)
+                                if ch_id not in source_channels and self.conn.execute(
+                                    "SELECT 1 FROM channel_sources WHERE channel_id = ? AND source_key != ? LIMIT 1",
+                                    (ch_id, source_key),
+                                ).fetchone():
+                                    # A broken feed without a channel declaration
+                                    # must not overwrite another source's guide.
+                                    internal_id = None
+                                if st_utc and en_utc and internal_id:
                                     if DEBUG and sample_ok < 8:
                                         _logger.debug("EPG SAMPLE OK src=%s ...", src); sample_ok += 1
-                                    self.insert_programme(ch_id, title_txt, st_utc, en_utc, desc_txt,
+                                    self.insert_programme(internal_id, title_txt, st_utc, en_utc, desc_txt,
                                                           episode=ep_txt, subtitle=sub_txt)
                                     prog_count += 1
                                     inserted_since_commit += 1

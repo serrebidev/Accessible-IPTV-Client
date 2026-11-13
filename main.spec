@@ -80,6 +80,13 @@ hidden_imports = [
     'vlc',
     'psutil',
     'cryptography',
+    'named_bookmarks',
+    'session_tools_ui',
+    'episode_continuation',
+    'episode_continuation_ui',
+    'recording_power',
+    'recording_limits',
+    'recording_limits_ui',
 ] + chardet_pipeline_hiddenimports
 
 # Explicitly add some submodules that PyInstaller might miss

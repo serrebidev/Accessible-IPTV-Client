@@ -110,6 +110,8 @@ Widok > Telewizja na żywo && Powtórki wraca do kanałów na żywo. Pole wyszuk
 
 Wideo na żądanie działa najlepiej z kontami Xtream Codes, które porządnie opisują swój katalog. Dla zwykłych playlist M3U program rozpoznaje filmy i seriale po nazwach grup i numeracji odcinków.
 
+Odtwarzacz > Automatycznie odtwarzaj następny odcinek jest domyślnie wyłączone. Po włączeniu prawidłowo zakończony odcinek uruchamia dziesięciosekundowe odliczanie do kolejnego rozpoznanego odcinka. Odtwórz teraz zaczyna od razu; Anuluj lub Escape zatrzymuje kontynuację. Ręczne zatrzymanie i przedwczesny błąd jej nie uruchamiają. Zmiana odtwarzania lub listy unieważnia nieaktualną kontynuację; bez jednoznacznego następnego odcinka odtwarzanie kończy się.
+
 ## Menedżer playlist {#playlist-manager}
 
 Plik > Menedżer playlist (Ctrl+M) wypisuje twoje źródła playlist. Otwiera się z fokusem na liście.
@@ -231,6 +233,8 @@ Te same polecenia są w menu Odtwarzanie odtwarzacza. Odtwarzacz sam łączy si�
 
 Wycisz / Włącz dźwięk wycisza wbudowany odtwarzacz bez wstrzymywania odtwarzania lub nagrywania. Domyślne skróty to Ctrl+Shift+M w oknie głównym oraz M w odtwarzaczu; oba można zmienić w ustawieniach skrótów. Wyciszenie pozostaje aktywne po zmianie kanału i ponownym połączeniu. Odtwarzacz > Zapamiętuj głośność każdego kanału jest domyślnie wyłączone. Po włączeniu zapamiętuje wybraną głośność osobno dla każdej listy lub dostawcy. Kanały bez zapisanej wartości używają ogólnej głośności odtwarzacza. Funkcje te nie zmieniają głośności czytnika ekranu.
 
+W menu Odtwarzanie wbudowanego odtwarzacza Dodaj nazwaną zakładkę zapisuje bieżącą pozycję materiału na żądanie lub lokalnego nagrania. Wymagane są przewijanie i znany czas trwania. Nazwane zakładki pokazuje wpisy bieżącego materiału: Enter lub Przejdź do zakładki otwiera pozycję; Zmień nazwę i Usuń zarządzają wybranym wpisem. Nazwy muszą być unikalne w obrębie materiału. Łącznie można zapisać do 1000 zakładek, niezależnie od automatycznej pozycji wznowienia.
+
 ### Ścieżki audio {#audio-tracks}
 
 Kanały mogą nieść wiele ścieżek audio, na przykład inne języki albo audiodeskrypcję. Naciśnij A, aby przejść do następnej ścieżki, użyj Odtwarzanie > Ścieżka audio, albo Tab do Wybierz ścieżkę dźwiękową, które zawsze nazywa grającą ścieżkę.
@@ -290,7 +294,11 @@ Zatrzymanie nagrania może chwilę potrwać, zanim jego plik zostanie domknięty
 
 Nagrania > Monitorowanie miejsca na nagrania sprawdza wolne miejsce co pięć sekund podczas nagrywania. Ostrzeżenie jest domyślnie włączone poniżej 1024 MiB. Automatyczne zatrzymywanie jest początkowo wyłączone; włącz je i wybierz próg, domyślnie 256 MiB, aby program rozpoczął prawidłowe zamykanie plików, zanim dysk się zapełni. Próg ostrzegania nie może być niższy od progu zatrzymania. Nagrania na tym samym dysku otrzymują wspólne ostrzeżenie; przy włączonym zatrzymywaniu wszystkie zostaną zatrzymane. Kontrola nie rezerwuje miejsca ani nie gwarantuje zamknięcia plików na pełnym lub odłączonym dysku.
 
-Nagrania > Biblioteka nagrań pokazuje ukończone pliki z bieżącego folderu nagrań, także starsze. Szukaj według tytułu, kanału lub daty. Odtwórz / Wznów otwiera plik we wbudowanym odtwarzaczu i proponuje zapisaną pozycję, jeśli jest dostępna. Czas trwania i stan ukończenia są wyświetlane, gdy są znane; starsze pliki mogą mieć wartość Nieznany. Nagrania w toku są pomijane. Odśwież ponownie wczytuje listę. Usuń plik nagrania trwale usuwa plik multimedialny po potwierdzeniu; najpierw zamknij jego okno odtwarzania. Usunięcie pozycji z zaplanowanych nagrań nie usuwa pliku.
+Nagrania > Biblioteka nagrań pokazuje ukończone pliki z maksymalnie 20 folderów, w tym bieżącego folderu nagrań. Dodaj folder dołącza istniejący folder bez zmiany miejsca zapisu nowych nagrań. Usuń folder z biblioteki pozostawia pliki bez zmian. Bieżącego folderu nagrań nie można usunąć z listy.
+
+Wyszukuj według tytułu, kanału lub daty. Odtwórz / Wznów otwiera plik i proponuje zapisaną pozycję, jeśli jest dostępna. Czas trwania i stan są wyświetlane, gdy są znane; starsze pliki mogą mieć stan Nieznany. Trwające nagrania i pliki otwarte we wbudowanym odtwarzaczu są pomijane. Zmień tytuł zmienia tylko wyświetlany tytuł, zachowując nazwę pliku, pozycję i zakładki. Odśwież ponownie wczytuje listę.
+
+Przenieś do kosza nagrań umieszcza plik w koszu aplikacji wewnątrz jego folderu nagrań i nie zwalnia miejsca. Pokaż usunięte nagrania wyświetla te pliki. Przywróć nagranie przenosi plik do pierwotnego folderu bez nadpisywania istniejących plików. W tym widoku Usuń plik nagrania usuwa go trwale po potwierdzeniu. Usunięcie wpisu z Zaplanowanych nagrań nie usuwa pliku multimedialnego.
 
 ### Format nagrywania {#recording-formats}
 
@@ -315,11 +323,17 @@ Nagrania > Zaplanowane nagrania... wypisuje każde zaplanowane, trwające i zako
 
 Zaplanowane nagrania startują same, gdy program działa, także zminimalizowany do zasobnika systemowego. Okno odświeża się samo po otwarciu i za każdym razem, gdy nagranie się zaczyna, kończy lub zostaje anulowane, więc polecenie Odśwież rzadko jest potrzebne.
 
-Gdy nowe nagranie nakłada się na inne zaplanowane nagranie, program ostrzega przed jego dodaniem. Twój dostawca może ograniczyć liczbę strumieni jednocześnie.
+Nagrania > Limity połączeń dla nagrań przydziela nagraniom od 1 do 64 połączeń na konto dostawcy; 0 oznacza brak dodatkowego limitu. Uwzględnij odtwarzanie i inne urządzenia: ta opcja nie odczytuje rzeczywistego limitu dostawcy. Podczas planowania sprawdzana jest największa liczba jednoczesnych połączeń nagrań tego samego rozpoznanego konta. Przekroczenie wymaga potwierdzenia; bez znanego limitu pojawia się zwykłe ostrzeżenie o nakładaniu terminów. Po wyczerpaniu limitu nowe nagranie zostaje odrzucone, a dotychczasowe trwają dalej. Nagranie z lokalnego bufora odtwarzacza nie zajmuje kolejnego połączenia z dostawcą. Dotychczasowe zabezpieczenia kont z jednym strumieniem nadal obowiązują.
 
 Program pyta przed zamknięciem, jeśli zaplanowane nagrania wciąż czekają na start, bo mogą się zacząć tylko wtedy, gdy program działa. Jeśli mimo to go zamkniesz, oczekujące nagrania się nie zaczną.
 
 Sam niepusty plik nie potwierdza powodzenia nagrania. Przerwane nagrania mają stan Częściowe, a dostępne pliki są zachowywane; celowe zatrzymanie ma stan Zatrzymane przez użytkownika. Nieudane, pominięte lub częściowe odcinki mogą zostać zaplanowane z późniejszej emisji, bez ponawiania tej samej emisji w kółko. Odświeżenie zachowuje zaznaczenie wielu pozycji, a potwierdzenie usuwania podaje ich liczbę także wtedy, gdy zaznaczono tylko część listy.
+
+Jeśli zapis anulowania, usunięcia lub zmiany powtarzania nie powiedzie się, poprzedni harmonogram pozostaje bez zmian i pojawia się błąd. Nieczytelny harmonogram jest kopiowany do osobnego pliku przed zapisem nowych pozycji. Jeśli kopia również się nie powiedzie, zmiany są blokowane dla ochrony oryginału. Przed ponownym uruchomieniem sprawdź miejsce i uprawnienia.
+
+W Windows opcja Nagrania > Zapobiegaj automatycznemu uśpieniu podczas nagrywania jest domyślnie włączona. Aplikacja prosi Windows o pozostanie w stanie czuwania podczas nagrań. Nie utrzymuje włączonego ekranu ani nie blokuje uśpienia wywołanego przez użytkownika, na przykład zamknięciem pokrywy laptopa.
+
+Wybudzaj dla zaplanowanych nagrań (Windows) jest domyślnie wyłączone. Po włączeniu żąda wybudzenia 60 sekund przed rozpoczęciem następnego nagrania, z uwzględnieniem zapasu przed programem. Aplikacja musi pozostać otwarta, a sprzęt i ustawienia zasilania muszą obsługiwać czasomierze wybudzania. Funkcja nie uruchamia wyłączonego komputera. Zmiany i anulowania aktualizują czasomierz; zamknięcie aplikacji go usuwa.
 
 ### Margines nagrywania {#schedule-padding}
 
@@ -455,10 +469,12 @@ Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszan
 
 ## Narzędzia osobiste {#personal-tools}
 
-Pozostaw aplikację otwartą, aby działały zaplanowane nagrania, przypomnienia i alerty wyszukiwania. Narzędzia nie wybudzają komputera.
+Pozostaw aplikację otwartą, aby działały zaplanowane nagrania, przypomnienia i powiadomienia zapisanych wyszukiwań. Przypomnienia i powiadomienia wyszukiwań nie wybudzają komputera. Nagrania mogą żądać wybudzenia w Windows po włączeniu opcji opisanej w Zaplanowanych nagraniach.
 
-- Nagrania > Zaplanuj według godziny działa bez przewodnika. Podaj czas lokalny jako RRRR-MM-DD GG:MM; przy zmianie czasu wybierz właściwe wystąpienie. Edytuj godziny zmienia oczekujące nagranie lub koniec trwającego. Potwierdź nakładanie się terminów; maksymalna długość to siedem dni.
+- Nagrania > Zaplanuj według godziny działa bez przewodnika. Podaj czas lokalny jako RRRR-MM-DD GG:MM; przy zmianie czasu wybierz właściwe wystąpienie. Edytuj godziny zmienia oczekujące nagranie lub koniec trwającego. Potwierdź konflikty połączeń zgodnie z sekcją Zaplanowane nagrania; maksymalna długość to siedem dni.
 - Podczas odtwarzania na żądanie Ctrl+Left/Right przesuwa o 10 sekund, Ctrl+Shift+Left/Right o 60 sekund, Ctrl+T otwiera wybór czasu, a T odczytuje czas miniony, całkowity i pozostały. Skróty można zmieniać. Strumień musi obsługiwać przewijanie i mieć znaną długość; odtwarzanie na żywo pozostaje bez zmian.
 - Widok > Listy ulubionych zarządza maksymalnie 50 nazwanymi listami po 2000 kanałów, niezależnymi od dotychczasowych ulubionych. Wybierz kanał przed otwarciem okna, aby go dodać. Przenieś w górę/dół lub Ctrl+Up/Down zmienia kolejność. Brakujące kanały pozostają na liście, ale można je odtworzyć dopiero po odzyskaniu dostępności.
 - Widok > Zapisane wyszukiwania audycji przechowuje do 30 wyszukiwań tytułów lub opisów dla wszystkich kanałów, wybranego kanału lub kopii kanałów listy ulubionych. Po imporcie przewodnika i co 15 minut przeszukuje następne 14 dni. Do 500 wyników na wyszukiwanie; zawęź zbyt szerokie zapytania. Ustawienia ogłoszeń sterują nowymi wynikami. Z wyników można tworzyć przypomnienia lub nagrania.
 - Zaszyfrowany eksport zawiera też harmonogramy, przypomnienia i historię wyszukiwań, bez plików multimedialnych. Import pokazuje liczbę zastępowanych wpisów i zamyka aplikację; otwórz ją ponownie. Najpierw zakończ nagrania i pobieranie. Minione lub wcześniej rozpoczęte nagrania nie uruchomią się ponownie. Starsze kopie zastępują tylko ustawienia i zachowują lokalne harmonogramy i przypomnienia.
+
+Widok > Historia powiadomień przechowuje ostatnich 200 powiadomień dodanych do kolejki w bieżącej sesji. Wybierz wpis, aby przeczytać Szczegóły; Odśwież aktualizuje listę, a Kopiuj szczegóły kopiuje tekst. Rozpoznawalne dane logowania w adresach URL i odpowiednich wierszach są maskowane w historii i kopiowanym tekście. Nie gwarantuje to braku prywatnych danych w dowolnej wiadomości. Wyczyść historię wymaga potwierdzenia. Historia znika po zamknięciu aplikacji; istniejące pliki dziennika pozostają niezmienione.

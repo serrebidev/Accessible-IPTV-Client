@@ -119,6 +119,8 @@ View > Live TV && Catch-up switches back to live channels. The search field clea
 
 Video on demand works best with Xtream Codes accounts, which describe their catalogue properly. For plain M3U playlists the program recognizes films and series from their group names and episode numbering.
 
+Player > Automatically Play the Next Episode is off by default. When enabled, a series episode that finishes normally opens a 10-second countdown before the next identified episode. Play Now starts immediately; Cancel or Escape stops the continuation. A manual stop or an early playback failure does not trigger it. Changing playback or the playlist cancels an outdated continuation; if no unambiguous next episode is available, playback ends.
+
 ## Playlist Manager {#playlist-manager}
 
 File > Playlist Manager (Ctrl+M) lists your playlist sources. It opens with the list focused.
@@ -240,6 +242,8 @@ The same commands are on the player's Playback menu. The player reconnects on it
 
 Mute / Unmute silences the built-in player without pausing playback or recording. The default shortcut is Ctrl+Shift+M in the main window and M in the player; both can be changed in Keyboard Shortcuts. Muting survives channel changes and reconnects. Player > Remember Volume for Each Channel is optional and off by default: it recalls your chosen volume separately for each playlist or provider. Channels without a saved value use the ordinary player volume. Neither feature changes screen-reader volume.
 
+In the built-in player's Playback menu, Add Named Bookmark saves the current position in on-demand media or a local recording. Seeking and a known duration are required. Named Bookmarks lists the current item's bookmarks: Enter or Go to Bookmark jumps to a position; Rename and Delete manage the selected entry. Names must be unique within that item. Up to 1000 bookmarks can be saved in total. These bookmarks are separate from the automatic resume position.
+
 ### Audio tracks {#audio-tracks}
 
 Channels can carry several audio tracks, such as other languages or audio description. Press A to move to the next track, use Playback > Audio Track, or Tab to Choose Audio Track, which always names the track that is playing.
@@ -299,7 +303,11 @@ Stopping a recording can take a moment while its file is finalized. When the app
 
 Recordings > Recording Space Monitor checks free space every five seconds while recording. Warning is enabled by default below 1024 MiB. Automatic stopping is off by default; enable it and choose a stop threshold, initially 256 MiB, to request graceful file closure before the drive fills up. The warning threshold must not be lower than the stop threshold. Recordings on the same drive share one warning; if stopping is enabled, all affected recordings are stopped. The check cannot reserve space or guarantee file closure on a full or disconnected drive.
 
-Recordings > Recording Library lists finished files in the current recording folder, including older files. Search by title, channel or date; Play / Resume opens the selected file in the built-in player and offers the saved position when available. Duration and completion status are shown when known; older files may show Unknown. Active recordings are excluded. Refresh updates the list. Delete Recording File permanently deletes the selected media file after confirmation; close its playback window first. Removing an entry from Scheduled Recordings does not delete that media file.
+Recordings > Recording Library lists finished files from up to 20 folders, including the current recording folder. Add Folder adds an existing folder; it does not change where new recordings are saved. Remove Folder from Library leaves its files untouched. The current recording folder cannot be removed.
+
+Search by title, channel or date. Play / Resume opens the selected file and offers its saved position when available. Duration and completion status appear when known; older files may show Unknown. Active recordings and files currently playing in the built-in player are excluded. Rename Title changes only the displayed title, preserving the filename, resume position and bookmarks. Refresh updates the list.
+
+Move to Recording Trash moves a file into the application's trash within its recording folder; this does not free disk space. Show Deleted Recordings lists these files. Restore Recording returns a file to its original folder without overwriting an existing file. Delete Recording File in this view permanently deletes it after confirmation. Removing an entry from Scheduled Recordings does not delete the media file.
 
 ### Recording format {#recording-formats}
 
@@ -324,11 +332,17 @@ Recordings > Scheduled Recordings lists every scheduled, running and finished re
 
 Scheduled recordings start by themselves while the program is running, even when it is minimized to the system tray. The window refreshes by itself when you open it and whenever a recording starts, finishes or is cancelled, so the Refresh command is rarely needed.
 
-When a new recording overlaps another scheduled recording, the program warns you before adding it. Your provider may limit how many streams can run at once.
+Recordings > Recording Connection Limits sets the connections available to recordings for each provider account: 1–64, or 0 for no additional limit. Allow for playback and other devices; this setting does not discover the provider's actual limit. Scheduling checks the peak number of simultaneous recording connections for the same known account. Exceeding its budget requires confirmation; without a known budget, overlapping schedules receive the usual warning. A new recording is refused when its budget is full; existing recordings continue. A recording using the player's local buffer does not count as another provider connection. Existing single-stream protections still apply.
 
 The program asks before it closes while any scheduled recordings are still waiting to start, because they can only start while the program is running. If you close it anyway, the waiting recordings will not start.
 
 A nonempty file alone is not proof of a successful recording. Interrupted captures are marked Partial and their available files are kept; an intentional stop is marked Stopped by user. Failed, missed or partial episodes can be scheduled from a later airing, without retrying the same airing repeatedly. Schedule refresh preserves multiple selections, and confirmation states how many entries a partial selection will remove.
+
+If saving a cancellation, deletion or repeat-rule change fails, the previous schedule is kept and an error is shown. An unreadable schedule is preserved in a separate backup before new schedules can be saved. If that backup also fails, schedule changes are blocked to protect the original file; check disk space and permissions before restarting.
+
+On Windows, Recordings > Prevent Automatic Sleep While Recording is enabled by default. It requests that Windows remain awake during recordings; it does not keep the display on or prevent sleep initiated by the user, such as closing a laptop lid.
+
+Wake for Scheduled Recordings (Windows) is off by default. When enabled, it requests a wake timer 60 seconds before the next recording's start, including schedule padding. The application must stay open, and Windows power settings and hardware must support wake timers. This cannot start a shut-down computer. Changing or cancelling the schedule updates the timer; exiting removes it.
 
 ### Schedule padding {#schedule-padding}
 
@@ -464,10 +478,12 @@ Help > About shows the version you are running and links to both. When you repor
 
 ## Personal tools {#personal-tools}
 
-Keep the application open for recording schedules, reminders and saved-search alerts. These tools do not wake a sleeping computer.
+Keep the application open for recording schedules, reminders and saved-search alerts. Reminders and search alerts do not wake a sleeping computer. Scheduled recordings can request a wake timer on Windows when the option described under Scheduled recordings is enabled.
 
-- Recordings > Schedule by Time schedules the selected channel without a guide. Enter local dates as YYYY-MM-DD HH:MM. Clock-change ambiguities require a choice. Scheduled Recordings > Edit Times changes one pending recording or the end of a running one. Overlaps require confirmation; duration is limited to seven days.
+- Recordings > Schedule by Time schedules the selected channel without a guide. Enter local dates as YYYY-MM-DD HH:MM. Clock-change ambiguities require a choice. Scheduled Recordings > Edit Times changes one pending recording or the end of a running one. Connection conflicts require confirmation as described under Scheduled recordings; duration is limited to seven days.
 - During on-demand playback, Ctrl+Left/Right seeks 10 seconds, Ctrl+Shift+Left/Right 60 seconds, Ctrl+T opens Go to Time, and T announces elapsed, total and remaining time. Shortcuts are configurable. Seeking requires a seekable stream with known duration; live playback is unchanged.
 - View > Favourite Lists manages up to 50 named lists of 2000 channels each, separate from the original favourites. Select a channel before opening the dialog to add it. Move Up/Down or Ctrl+Up/Down changes order. Missing channels remain listed and cannot play until available again.
 - View > Saved Programme Searches stores up to 30 title or description searches. Choose all channels, the selected channel or a snapshot of a named favourite list. Searches run after guide imports and every 15 minutes over the next 14 days. Each search shows up to 500 matches; narrow truncated searches. New matches are announced according to announcement settings. Results can create reminders or recordings.
 - Export Settings now encrypts recording schedules, reminders and search history as well as settings. Media files are not included. Import previews replacement counts and closes the app; reopen it to finish. Finish recordings and downloads first. Past or previously running recordings do not restart. Older backups replace only settings, keeping local schedules and reminders.
+
+View > Notification History retains the latest 200 queued notifications for the current session. Select an entry to read its Details; Refresh updates the list, and Copy Details copies the selected text. Obvious credentials in URLs and credential lines are masked in this history and its copied text. This is not a guarantee that arbitrary messages contain no private information. Clear History asks for confirmation. The history is discarded when the application closes; existing log files are unchanged.

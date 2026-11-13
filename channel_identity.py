@@ -74,6 +74,26 @@ class GuideIndexes(NamedTuple):
     by_id_lower: Dict[str, str]
     name_index: Dict[str, List[str]]
     stripped_index: Dict[str, List[str]]
+    source_ids: Optional[Dict[str, List[str]]] = None
+    collision_cache: Optional[dict] = None
+
+
+def xmltv_id(identity):
+    """Undo only the application's own source qualifier, not an XMLTV suffix."""
+    match = re.fullmatch(r"epg:[0-9a-f]{40}:(.*)", str(identity))
+    return match[1] if match else str(identity)
+
+
+def choose_source_collision(channel, names):
+    """An unscoped duplicate id requires one exact, number-safe display name."""
+    wanted = {canonicalize_name(replace_word_numbers(str(channel.get(field) or "")))
+              for field in ("name", "tvg-name")}
+    wanted.discard("")
+    numbers = significant_channel_numbers(str(channel.get("name") or ""), str(channel.get("tvg-name") or ""))
+    matches = [key for key, name in names.items()
+               if canonicalize_name(replace_word_numbers(name or "")) in wanted
+               and not numbers_disagree(numbers, significant_channel_numbers(name or ""))]
+    return matches[0] if len(matches) == 1 else None
 
 
 def guide_indexes(channels: Dict[str, Dict[str, object]]) -> GuideIndexes:
@@ -83,9 +103,11 @@ def guide_indexes(channels: Dict[str, Dict[str, object]]) -> GuideIndexes:
     because a guide may spell out "BBC Two" where the playlist says "BBC 2".
     """
     by_id_lower = {str(cid).lower(): cid for cid in channels}
+    source_ids = {}
     name_index: Dict[str, List[str]] = {}
     stripped_index: Dict[str, List[str]] = {}
     for channel_id, entry in channels.items():
+        source_ids.setdefault(xmltv_id(channel_id).lower(), []).append(channel_id)
         display = str(entry.get("display_name") or "")
         for key, index in (
             (canonicalize_name(display), name_index),
@@ -98,7 +120,7 @@ def guide_indexes(channels: Dict[str, Dict[str, object]]) -> GuideIndexes:
                 bucket = index.setdefault(key, [])
                 if channel_id not in bucket:
                     bucket.append(channel_id)
-    return GuideIndexes(channels, by_id_lower, name_index, stripped_index)
+    return GuideIndexes(channels, by_id_lower, name_index, stripped_index, source_ids, {})
 
 
 def match_guide_channel(channel, indexes: GuideIndexes,
@@ -127,6 +149,20 @@ def match_guide_channel(channel, indexes: GuideIndexes,
     if override:
         return indexes.by_id.get(override)
     raw_id = str(channel.get("tvg-id") or "").strip()
+    scoped = (indexes.source_ids or {}).get(raw_id.lower(), [])
+    cache = indexes.collision_cache if indexes.collision_cache is not None else {}
+    if cache.get("known_ids") is not known_ids:
+        counts = {}
+        for identity in known_ids or ():
+            original = xmltv_id(identity).lower()
+            counts[original] = counts.get(original, 0) + 1
+        cache.update(known_ids=known_ids, collisions={key for key, count in counts.items() if count > 1})
+    if len(scoped) > 1 or raw_id.lower() in cache.get("collisions", ()):
+        key = choose_source_collision(channel, {identity: str(indexes.by_id[identity].get("display_name") or "")
+                                                for identity in scoped})
+        return indexes.by_id.get(key)
+    if len(scoped) == 1 and xmltv_id(scoped[0]) != scoped[0]:
+        return indexes.by_id[scoped[0]]
     candidates = expand_tvg_id_candidates(raw_id)
     candidates.append(raw_id)
     if "." in raw_id:

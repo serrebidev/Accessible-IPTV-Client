@@ -564,6 +564,11 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self.mute_item = playback_menu.AppendCheckItem(wx.ID_ANY, self._shortcut_label(_("Mute / Unmute"), "mute"))
         self.Bind(wx.EVT_MENU, lambda event: self.toggle_mute(event), self.mute_item)
         self._add_navigation_menu(playback_menu)
+        import session_tools_ui
+        m_bookmark = playback_menu.Append(wx.ID_ANY, _("Add Named Bookmark..."))
+        m_bookmarks = playback_menu.Append(wx.ID_ANY, _("Named Bookmarks..."))
+        self.Bind(wx.EVT_MENU, lambda event: session_tools_ui.add_bookmark(self), m_bookmark)
+        self.Bind(wx.EVT_MENU, lambda event: session_tools_ui.show_bookmarks(self), m_bookmarks)
         m_buffer = playback_menu.Append(wx.ID_ANY, _("Local Live Buffer..."))
         m_rewind = playback_menu.Append(wx.ID_ANY, _("Rewind Live TV..."))
         m_live = playback_menu.Append(wx.ID_ANY, _("Return to Live"))
@@ -2225,8 +2230,15 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 self._schedule_restart("stream ended unexpectedly")
                 prefix = _("Reconnecting...")
             else:
+                import episode_continuation
+                continue_episode = episode_continuation.natural_end(
+                    getattr(self, "_current_stream_kind", ""), self._has_seen_playing,
+                    self._manual_stop, self.player.get_time(), self.player.get_length())
                 self.stop(manual=False)
                 prefix = _("Ended")
+                if continue_episode:
+                    import episode_continuation_ui
+                    wx.CallAfter(episode_continuation_ui.finished, self, self._vlc_generation)
         elif state_key == "buffering":
             prefix = _("Buffering...")
 

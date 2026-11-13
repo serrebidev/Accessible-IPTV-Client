@@ -879,6 +879,7 @@ class _ProgramMatchIndex(NamedTuple):
     by_base: Dict[str, tuple]
     tvg_id_rows: List[tuple]
     mapping_version: int = 0
+    id_collisions: Optional[Dict[str, list]] = None
 
 
 def _channel_numbers(channel: Dict[str, str]) -> frozenset:
@@ -1089,6 +1090,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
         # Recording Manager
         self.recorder = recorder.RecordingManager()
+        import recording_limits
+        self.recorder.connection_policy = lambda url, metadata, active: recording_limits.check_start(
+            self.config, url, metadata, active)
         self.recorder.storage_min_mib = recording_storage.normalize_reserve(self.config.get("recording_min_free_mib"))
         self.recorder.storage_preferences = storage_monitor.settings(self.config)
         self.recorder.on_storage_warning = self._recording_space_warning
@@ -1195,6 +1199,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         ).start()
         self._ensure_db_tuned_background()
         self._start_dvr_scheduler()
+        start_power = getattr(self, "_start_recording_power", None)
+        if callable(start_power):
+            start_power()
         start_reminders = getattr(self, '_start_reminders', None)
         if callable(start_reminders):
             start_reminders()
@@ -1229,6 +1236,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 poll_seconds=10,
             )
             self.dvr_scheduler = scheduler
+            if getattr(scheduler, "load_warning", ""):
+                wx.CallAfter(self._show_or_queue_message_box, scheduler.load_warning,
+                             _("Scheduled Recordings"), wx.OK | wx.ICON_WARNING)
         if start:
             scheduler.start()
         return scheduler
@@ -3034,6 +3044,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         by_base: Dict[str, tuple] = {}
         tvg_id_rows: List[tuple] = []
         manual_ids = {}
+        id_groups = {}
         for position, ch in enumerate(channels):
             mapped = channel_preferences.epg_id(ch)
             if mapped:
@@ -3042,6 +3053,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             ch_name = ch.get("name", "")
             ch_tvg_name = ch.get("tvg-name", "")
             ch_tvg_id = (ch.get("tvg-id", "") or "").lower()
+            if ch_tvg_id:
+                id_groups.setdefault(ch_tvg_id, {}).setdefault(ch_name.casefold(), ch)
             if ch_tvg_id and ch_tvg_id not in by_tvg_id:
                 by_tvg_id[ch_tvg_id] = ch
             ch_name_lower = ch_name.lower()
@@ -3083,6 +3096,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             by_base=by_base,
             tvg_id_rows=tvg_id_rows,
             mapping_version=mapping_version,
+            id_collisions={key: list(group.values()) for key, group in id_groups.items() if len(group) > 1},
         )
         if publish:
             self._program_match_cache = index
@@ -3126,6 +3140,22 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         # An exact tvg-id scores 100, which nothing else reaches, and ties keep
         # the first channel: the same answer the full scan below would give.
         exact = index.by_tvg_id.get(channel_id_lower) if channel_id_lower else None
+        from channel_identity import choose_source_collision, xmltv_id
+        original_id = xmltv_id(channel_id_lower)
+        collisions = (index.id_collisions or {}).get(original_id)
+        owners = {ch.get("provider-id") or ch.get("playlist-id") for ch in collisions or []}
+        owners.discard(None)
+        owners.discard("")
+        # Preserve first-id-wins for ordinary aliases in one source. A
+        # qualified guide id or distinct known playlist/account owners is
+        # evidence of independent namespaces that require a name match.
+        if (len(owners) > 1 or original_id != channel_id_lower) and not (exact and channel_preferences.epg_id(exact)):
+            choices = collisions or ([index.by_tvg_id[original_id]] if original_id in index.by_tvg_id else [])
+            key = choose_source_collision({"name": channel_name}, {str(n): ch.get("name") or ch.get("tvg-name") or ""
+                                                                   for n, ch in enumerate(choices)})
+            selected = choices[int(key)] if key is not None else None
+            memo[memo_key] = selected
+            return selected
         if exact is not None:
             memo[memo_key] = exact
             return exact
@@ -3286,7 +3316,13 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
         duplicate = self._find_duplicate_scheduled_job(job)
         if duplicate:
-            if repeat and self._ensure_dvr_scheduler().set_repeat(str(duplicate["id"]), repeat):
+            try:
+                updated = repeat and self._ensure_dvr_scheduler().set_repeat(str(duplicate["id"]), repeat)
+            except (OSError, ValueError) as error:
+                message_box(_("Could not schedule recording:\n{error}").format(error=error),
+                            _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
+                return
+            if updated:
                 message_box(_("Recording updated to repeat."), _("Schedule Recording"),
                             wx.OK | wx.ICON_INFORMATION)
                 return
@@ -3294,11 +3330,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                           _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
             return
 
-        overlap = [existing for existing in self._ensure_dvr_scheduler().list_jobs(include_done=False)
-                   if float(existing.get("start_ts") or 0) < float(job["stop_ts"])
-                   and float(job["start_ts"]) < float(existing.get("stop_ts") or 0)]
-        if overlap and message_box(
-                _("This recording overlaps {count} other scheduled recording(s). Schedule it anyway?").format(count=len(overlap)),
+        import recording_limits
+        warning = recording_limits.warning(self.config, channel, job["start_ts"], job["stop_ts"],
+                                            self._ensure_dvr_scheduler().list_jobs(include_done=False))
+        if warning and message_box(warning,
                 _("Recording Conflict"), wx.YES_NO | wx.ICON_WARNING) != wx.YES:
             return
 
@@ -3417,6 +3452,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         self._dvr_dialog.Show()
 
     def _on_dvr_schedule_updated(self):
+        manager = getattr(self, "_recording_power", None)
+        if manager:
+            manager.refresh()
         def refresh():
             dlg = getattr(self, "_dvr_dialog", None)
             if dlg:
@@ -3544,7 +3582,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             out_dir,
             key="dvr:{id}".format(id=job.get("id")),
             metadata={"dvr_job_id": job.get("id"), "planned_stop_ts": job.get("stop_ts"),
-                      "channel_name": dvr.channel_name(channel)},
+                      "channel_name": dvr.channel_name(channel), "channel": dict(channel)},
             on_finish=self._on_recording_finished,
             audio_track=audio_track,
             audio_track_count=audio_count,
@@ -3591,9 +3629,13 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         job = self._ensure_dvr_scheduler().get_job(job_id)
         if not job:
             return False
-        if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
-            self._stop_scheduled_recording(job)
-        return self._ensure_dvr_scheduler(start=True).cancel_job(job_id)
+        canceled = self._ensure_dvr_scheduler(start=True).cancel_job(job_id)
+        if canceled:
+            # The recording may have finished starting since the first read.
+            # Stop by the fresh id/key even when that read was still scheduled.
+            current = self._ensure_dvr_scheduler().get_job(job_id) or job
+            self._stop_scheduled_recording(current)
+        return canceled
 
     def _record_selected(self, *_args):
         channel = self._selected_channel()
@@ -3670,7 +3712,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             player_stopped = frame.stop(manual=True)
         if intent is None and not share:
             self._start_live_recording(key, url, name, fmt, headers, out_dir, None,
-                                       media=media)
+                                       media=media, channel=channel)
             return
         # Waiting for the provider, and keeping the right audio track (asking
         # the stream which tracks it carries), are network work: off the UI
@@ -3717,14 +3759,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             pending.discard(key)
             self._start_live_recording(key, url, name, fmt, headers, out_dir, choice,
                                        share_with=channel if share else None,
-                                       player_shown=player_shown, media=media)
+                                       player_shown=player_shown, media=media, channel=channel)
             self._sync_internal_player_record_state()
 
         threading.Thread(target=probe, daemon=True).start()
 
     def _start_live_recording(self, key, url, name, fmt, headers, out_dir, audio_choice,
                               share_with=None, player_shown=False,
-                              media=media_type.MEDIA_UNKNOWN):
+                              media=media_type.MEDIA_UNKNOWN, channel=None):
         """UI thread: start one live recording and say where it is going.
 
         ``share_with`` is the channel the built-in player was showing: the
@@ -3737,7 +3779,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             rec = self.recorder.start(
                 url, name, fmt, headers, out_dir,
                 key=key, on_finish=self._on_recording_finished,
-                metadata={"channel_name": name},
+                metadata={"channel_name": name, "channel": dict(channel or {})},
                 audio_track=audio_track, audio_track_count=audio_count,
                 share_with_player=share_with is not None,
                 connection_key=single_stream_provider_key(url),
@@ -3981,6 +4023,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _note_recording_started(self):
         """Record that there is now something for an armed shutdown to wait for."""
+        manager = getattr(self, "_recording_power", None)
+        if manager:
+            manager.refresh()
         if self._shutdown_after_recordings:
             self._recorded_since_shutdown_armed = True
 
@@ -4116,6 +4161,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
     def _show_or_queue_message_box(self, message: str, caption: str, style: int,
                                    *, parent=None, on_dismiss=None) -> None:
         """Show a wx.MessageBox now, or queue it while a modal box is open."""
+        if not style & wx.YES_NO:
+            import named_bookmarks
+            self._notification_history = named_bookmarks.notification(
+                getattr(self, "_notification_history", []), caption, message)
         if self._modal_box_is_open():
             queue = self._deferred_notifications()
             if len(queue) < self._DEFERRED_NOTIFICATION_LIMIT:
@@ -4526,6 +4575,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         menu.Bind(wx.EVT_MENU, self._configure_space_monitor, monitor_item)
         library_item = menu.Append(wx.ID_ANY, _("Recording Library..."))
         menu.Bind(wx.EVT_MENU, self._show_recording_library, library_item)
+        import recording_limits_ui
+        limits_item = menu.Append(wx.ID_ANY, _("Recording Connection Limits..."))
+        menu.Bind(wx.EVT_MENU, lambda event: recording_limits_ui.show_limits(self), limits_item)
         reserve_item = menu.Append(wx.ID_ANY, _("Minimum Free Space..."))
         menu.Bind(wx.EVT_MENU, self._set_recording_reserve, reserve_item)
         manual_item = menu.Append(wx.ID_ANY, _("Schedule by Time..."))
@@ -4555,6 +4607,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             wx.ID_ANY, _("Shut Down the Computer When Recordings Finish"))
         self._shutdown_after_item.Check(self._shutdown_after_recordings)
         menu.Bind(wx.EVT_MENU, self._on_toggle_shutdown_after_recordings, self._shutdown_after_item)
+        self._add_recording_power_menu(menu)
         user_guide.set_menu_help(self, menu, "recordings")
         user_guide.set_menu_help(self, times_item, "recordings")
         user_guide.set_menu_help(self, format_menu, "recording-formats")
@@ -5724,6 +5777,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 self._release_recordings_on_exit()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            recording_power = getattr(self, "_recording_power", None)
+            if recording_power is not None:
+                recording_power.close()
             shutdown_buffers = getattr(self, '_shutdown_live_buffers', None)
             if callable(shutdown_buffers):
                 shutdown_buffers()
@@ -6538,6 +6594,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         self._vod_show_episodes(name, episodes)
 
     def _vod_show_episodes(self, name: str, episodes: List[Dict]):
+        self._vod_episode_queue = list(episodes)
         displayed = [{"type": "vod_back", "label": _("◄ Back")}]
         for ep in episodes:
             displayed.append({"type": "channel", "data": ep})
@@ -7898,6 +7955,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         _buffer_bypass: bool = False,
         force_internal: bool = False,
     ):
+        self._continuation_request = getattr(self, "_continuation_request", 0) + 1
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
             LOG.warning("_launch_stream: No URL provided")
@@ -8024,6 +8082,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                     self._internal_player_stream_kind = stream_kind
                 buffered = getattr(self, '_live_buffer_current', None)
                 frame._buffer_owned_url = url if buffered and buffered['url'] == url else None
+                import episode_continuation_ui
+                episode_continuation_ui.prepare(self, frame, channel)
                 frame.play(
                     url,
                     display_title,
@@ -9260,8 +9320,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
             message_box(_("Select a scheduled recording first."), _("Scheduled Recordings"),
                           wx.OK | wx.ICON_INFORMATION)
             return
-        if self.parent_frame._cancel_scheduled_recording(str(job.get("id") or "")):
-            self.refresh()
+        try:
+            self.parent_frame._cancel_scheduled_recording(str(job.get("id") or ""))
+        except Exception as error:
+            message_box(_("The operation failed:\n{error}").format(error=error),
+                        _("Scheduled Recordings"), wx.OK | wx.ICON_ERROR, parent=self)
+        self.refresh()
 
     def _on_delete_selected(self, _event):
         jobs = self._selected_jobs()
@@ -9283,9 +9347,14 @@ class ScheduledRecordingsDialog(wx.Dialog):
                        wx.YES_NO | wx.ICON_QUESTION) != wx.YES:
             return
         for job in jobs:
-            if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
-                self.parent_frame._cancel_scheduled_recording(str(job.get("id") or ""))
-            self.scheduler.delete_job(str(job.get("id") or ""))
+            try:
+                if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
+                    self.parent_frame._cancel_scheduled_recording(str(job.get("id") or ""))
+                self.scheduler.delete_job(str(job.get("id") or ""))
+            except Exception as error:
+                message_box(_("The operation failed:\n{error}").format(error=error),
+                            _("Scheduled Recordings"), wx.OK | wx.ICON_ERROR, parent=self)
+                break
         self.refresh()
 
     def _on_close(self, event):

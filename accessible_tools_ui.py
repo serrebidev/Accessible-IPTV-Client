@@ -153,7 +153,22 @@ class RecordingLibraryDialog(wx.Dialog):
         self.rows = []
         layout = wx.BoxSizer(wx.VERTICAL)
         self.search = labeled(self, layout, _("Search recordings:"), wx.TextCtrl(self))
-        layout.Add(wx.StaticText(self, label=_("Recordings") + ": " + self.directory), 0, wx.ALL, 8)
+        self.directories = recording_library.folders(parent.config)
+        self.folder = labeled(self, layout, _("Recording folder:"), wx.Choice(self, choices=self.directories))
+        self.folder.SetSelection(0)
+        self.folder.Bind(wx.EVT_CHOICE, self.change_folder)
+        folder_buttons = wx.BoxSizer(wx.HORIZONTAL)
+        self.add_folder = wx.Button(self, label=_("Add Folder..."))
+        self.forget_folder = wx.Button(self, label=_("Remove Folder from Library"))
+        for button in (self.add_folder, self.forget_folder):
+            folder_buttons.Add(button, 0, wx.ALL, 5)
+        self.add_folder.Bind(wx.EVT_BUTTON, self.choose_folder)
+        self.forget_folder.Bind(wx.EVT_BUTTON, self.remove_folder)
+        layout.Add(folder_buttons, 0, wx.EXPAND)
+        self.deleted = wx.CheckBox(self, label=_("Show Deleted Recordings"))
+        self.deleted.Bind(wx.EVT_CHECKBOX, self.refresh)
+        layout.Add(self.deleted, 0, wx.ALL, 8)
+        layout.Add(wx.StaticText(self, label=_("Recordings")), 0, wx.LEFT, 8)
         self.list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
         self.list.SetName(_("Recordings"))
         for number, label in enumerate((_("Title"), _("Channel"), _("Date"), _("Duration"), _("Status"))):
@@ -161,12 +176,14 @@ class RecordingLibraryDialog(wx.Dialog):
         layout.Add(self.list, 1, wx.EXPAND | wx.ALL, 8)
         self.status = wx.StaticText(self, label="")
         layout.Add(self.status, 0, wx.EXPAND | wx.ALL, 8)
-        buttons = wx.BoxSizer(wx.HORIZONTAL)
+        buttons = wx.FlexGridSizer(cols=3, hgap=5, vgap=5)
         self.play = wx.Button(self, label=_("Play / Resume"))
-        self.remove = wx.Button(self, label=_("Delete Recording File..."))
+        self.remove = wx.Button(self, label=_("Move to Recording Trash..."))
+        self.rename = wx.Button(self, label=_("Rename Title..."))
+        self.restore = wx.Button(self, label=_("Restore Recording"))
         self.reload = wx.Button(self, label=_("Refresh"))
         close = wx.Button(self, wx.ID_CLOSE, label=_("Close"))
-        for button in (self.play, self.remove, self.reload, close):
+        for button in (self.play, self.rename, self.remove, self.restore, self.reload, close):
             buttons.Add(button, 0, wx.ALL, 5)
         layout.Add(buttons, 0, wx.ALIGN_RIGHT)
         self.SetSizer(layout)
@@ -174,6 +191,8 @@ class RecordingLibraryDialog(wx.Dialog):
         self.play.Bind(wx.EVT_BUTTON, self.play_selected)
         self.list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.play_selected)
         self.remove.Bind(wx.EVT_BUTTON, self.delete_selected)
+        self.rename.Bind(wx.EVT_BUTTON, self.rename_selected)
+        self.restore.Bind(wx.EVT_BUTTON, self.restore_selected)
         self.reload.Bind(wx.EVT_BUTTON, self.refresh)
         close.Bind(wx.EVT_BUTTON, self.close)
         self.Bind(wx.EVT_CLOSE, self.close)
@@ -199,19 +218,66 @@ class RecordingLibraryDialog(wx.Dialog):
         self.Destroy()
 
     def active_paths(self):
-        return [rec.written_path for rec in self.owner.recorder.list_active()]
+        paths = [rec.written_path for rec in self.owner.recorder.list_active()]
+        playing = (getattr(self.owner, "_internal_player_channel", None) or {}).get("local-recording")
+        if playing:
+            paths.append(playing)
+        return paths
+
+    def controls(self):
+        return (self.play, self.remove, self.rename, self.restore, self.reload,
+                self.folder, self.deleted, self.add_folder, self.forget_folder)
+
+    def change_folder(self, _event):
+        if not self.busy and self.folder.GetSelection() >= 0:
+            self.directory = self.directories[self.folder.GetSelection()]
+            self.refresh()
+
+    def choose_folder(self, _event):
+        dialog = wx.DirDialog(self, _("Choose a recording folder"), defaultPath=self.directory,
+                              style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
+        try:
+            if show_modal(dialog) == wx.ID_OK:
+                if len(self.directories) >= 20:
+                    raise ValueError(_("The library can contain up to 20 folders."))
+                path = os.path.abspath(dialog.GetPath())
+                self.owner._save_tool_setting("recording_library_folders", lambda old:
+                    list(dict.fromkeys(self.directories[1:] + [path])))
+                self.directories = recording_library.folders(self.owner.config)
+                self.folder.Set(self.directories)
+                self.folder.SetSelection(self.directories.index(path) if path in self.directories else 0)
+                self.change_folder(None)
+        except Exception as error:
+            error_box(self, error)
+        finally:
+            dialog.Destroy()
+
+    def remove_folder(self, _event):
+        if self.folder.GetSelection() <= 0 or self.busy:
+            return
+        try:
+            self.owner._save_tool_setting("recording_library_folders", lambda old:
+                [path for path in self.directories[1:] if path != self.directory])
+            self.directories = recording_library.folders(self.owner.config)
+            self.folder.Set(self.directories)
+            self.folder.SetSelection(0)
+            self.change_folder(None)
+        except Exception as error:
+            error_box(self, error)
 
     def refresh(self, _event=None):
         if self.busy:
             return
         self.busy = True
-        for button in (self.play, self.remove, self.reload):
+        for button in self.controls():
             button.Disable()
         active = self.active_paths()
+        directory, deleted = self.directory, self.deleted.GetValue()
         self.status.SetLabel(_("Loading recordings..."))
         def worker():
             try:
-                rows, error = recording_library.scan(self.directory, active), ""
+                rows = recording_library.scan_trash(directory) if deleted else recording_library.scan(directory, active)
+                error = ""
             except Exception as exc:
                 rows, error = [], str(exc)
             wx.CallAfter(self.loaded, rows, error)
@@ -221,6 +287,8 @@ class RecordingLibraryDialog(wx.Dialog):
         if self.closed:
             return
         self.busy = False
+        for button in self.controls():
+            button.Enable()
         self.all_rows = rows
         self.filter()
         self.reload.Enable()
@@ -247,8 +315,15 @@ class RecordingLibraryDialog(wx.Dialog):
         if self.rows:
             self.list.Select(target)
         if not self.busy:
-            self.play.Enable(bool(self.rows))
+            deleted = self.deleted.GetValue()
+            self.play.Enable(bool(self.rows) and not deleted)
+            self.rename.Enable(bool(self.rows) and not deleted)
+            self.restore.Enable(bool(self.rows) and deleted)
             self.remove.Enable(bool(self.rows))
+            label = _("Delete Recording File...") if deleted else _("Move to Recording Trash...")
+            self.remove.SetLabel(label)
+            self.remove.SetName(label)
+            self.forget_folder.Enable(self.folder.GetSelection() > 0)
         self.status.SetLabel(_("{count} recording(s). Active recordings are not listed.").format(count=len(self.rows)))
 
     def selected(self):
@@ -257,7 +332,7 @@ class RecordingLibraryDialog(wx.Dialog):
 
     def play_selected(self, _event):
         row = self.selected()
-        if not row or self.busy:
+        if not row or self.busy or self.deleted.GetValue():
             return
         try:
             channel = recording_library.playback_channel(self.directory, row, self.active_paths())
@@ -274,18 +349,112 @@ class RecordingLibraryDialog(wx.Dialog):
         if playing and os.path.normcase(os.path.abspath(playing)) == os.path.normcase(row["path"]):
             error_box(self, _("Close playback of this recording before deleting its file."))
             return
-        if message_box(_("Permanently delete the recording file '{title}'? This cannot be undone.").format(title=row["title"]),
+        permanent = self.deleted.GetValue()
+        question = (_("Permanently delete the recording file '{title}'? This cannot be undone.") if permanent else
+                    _("Move '{title}' to the recording trash? You can restore it from Show Deleted Recordings."))
+        if message_box(question.format(title=row["title"]),
                        _("Delete Recording"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING, parent=self) != wx.YES:
             return
-        try:
-            recording_library.delete(self.directory, row, self.active_paths())
-        except Exception as error:
+        directory, active = self.directory, self.active_paths()
+        operation = (lambda: recording_library.delete_trashed(directory, row)) if permanent else (
+            lambda: recording_library.trash(directory, row, active))
+        self.run_operation(operation)
+
+    def run_operation(self, operation):
+        if self.busy:
+            return
+        self.busy = True
+        for control in self.controls():
+            control.Disable()
+        def worker():
+            error = None
+            try:
+                operation()
+            except Exception as exc:
+                error = exc
+            wx.CallAfter(self.operation_done, error)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def operation_done(self, error):
+        if self.closed:
+            return
+        self.busy = False
+        if error:
             error_box(self, error)
         self.refresh()
 
+    def rename_selected(self, _event):
+        row = self.selected()
+        if not row or self.busy or self.deleted.GetValue():
+            return
+        dialog = wx.TextEntryDialog(self, _("Recording title:"), _("Rename Title..."), row["title"])
+        try:
+            if show_modal(dialog) == wx.ID_OK:
+                title, directory = dialog.GetValue(), self.directory
+                self.run_operation(lambda: recording_library.rename_title(directory, row, title))
+        finally:
+            dialog.Destroy()
+
+    def restore_selected(self, _event):
+        row = self.selected()
+        if row and not self.busy and self.deleted.GetValue():
+            directory = self.directory
+            self.run_operation(lambda: recording_library.restore(directory, row))
+
 
 class AccessibleToolsMixin:
+    def _add_recording_power_menu(self, menu):
+        import recording_power
+        for key, label, default in (
+                ("prevent_sleep_while_recording", _("Prevent Automatic Sleep While Recording"), True),
+                ("wake_for_recordings", _("Wake for Scheduled Recordings (Windows)"), False)):
+            item = menu.AppendCheckItem(wx.ID_ANY, label)
+            item.Check(self.config.get(key, default) is True)
+            item.Enable(recording_power.supported())
+            def toggle(event, setting=key, control=item, default_value=default):
+                previous = self.config.get(setting, default_value) is True
+                try:
+                    self._save_tool_setting(setting, lambda old: event.IsChecked())
+                    self._start_recording_power()
+                    manager = getattr(self, "_recording_power", None)
+                    if manager:
+                        manager.refresh()
+                except Exception as error:
+                    control.Check(previous)
+                    error_box(self, error)
+            menu.Bind(wx.EVT_MENU, toggle, item)
+
+    def _start_recording_power(self):
+        import recording_power
+        if not recording_power.supported() or getattr(self, "_recording_power", None):
+            return
+        def snapshot():
+            scheduler = getattr(self, "dvr_scheduler", None)
+            jobs = scheduler.list_jobs(include_done=False) if scheduler else []
+            return dict(self.config), self.recorder.has_active(), jobs
+        def notify(error):
+            wx.CallAfter(self._recording_power_failed, str(error))
+        self._recording_power = recording_power.RecordingPower(snapshot, notify)
+        self._recording_power.start()
+
+    def _recording_power_failed(self, error):
+        manager = getattr(self, "_recording_power", None)
+        if manager and not manager.stopping.is_set():
+            self._show_or_queue_message_box(_("Recording power management failed:\n{error}").format(error=error),
+                                           _("Recording"), wx.OK | wx.ICON_WARNING)
+
     def _add_sound_tools_menu(self, menu):
+        auto_next = menu.AppendCheckItem(wx.ID_ANY, _("Automatically Play the Next Episode"))
+        auto_next.Check(self.config.get("auto_next_episode") is True)
+        def toggle_next(event):
+            previous = self.config.get("auto_next_episode") is True
+            try:
+                self._save_tool_setting("auto_next_episode", lambda old: event.IsChecked())
+            except Exception as error:
+                auto_next.Check(previous)
+                error_box(self, error)
+        menu.Bind(wx.EVT_MENU, toggle_next, auto_next)
+        user_guide.set_menu_help(self, auto_next, "video-on-demand")
         item = menu.Append(wx.ID_ANY, self._shortcut_label(_("Mute / Unmute"), "mute"))
         menu.Bind(wx.EVT_MENU, self._toggle_player_mute, item)
         remember = menu.AppendCheckItem(wx.ID_ANY, _("Remember Volume for Each Channel"))
@@ -305,6 +474,10 @@ class AccessibleToolsMixin:
         menu.Bind(wx.EVT_MENU, toggle, remember)
 
     def _add_channel_tools_menu(self, menu):
+        import session_tools_ui
+        history = menu.Append(wx.ID_ANY, _("Notification History..."))
+        menu.Bind(wx.EVT_MENU, lambda event: session_tools_ui.show_notifications(self), history)
+        user_guide.set_menu_help(self, history, "personal-tools")
         item = menu.Append(wx.ID_ANY, _("Assign Programme Guide..."))
         menu.Bind(wx.EVT_MENU, self._assign_programme_guide, item)
 
@@ -406,7 +579,7 @@ class AccessibleToolsMixin:
 
     def _show_recording_library(self, _event=None):
         dialog = getattr(self, "_recording_library_dialog", None)
-        if dialog and not dialog.closed and dialog.directory != options.get_recordings_dir(self.config):
+        if dialog and not dialog.closed and dialog.directories[0] != options.get_recordings_dir(self.config):
             dialog.close()
             dialog = None
         if dialog and not dialog.closed:

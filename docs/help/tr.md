@@ -109,6 +109,8 @@ Görünüm > Canlı TV && Geri izleme canlı kanallara döner. Geçişte arama a
 
 İstek üzerine video, kataloğunu düzgün anlatan Xtream Codes hesaplarıyla en iyi çalışır. Düz M3U listelerinde program filmleri ve dizileri grup adlarından ve bölüm numaralandırmasından tanır.
 
+Oynatıcı > Sonraki Bölümü Otomatik Oynat varsayılan olarak kapalıdır. Açıkken normal biçimde biten bir bölümden sonra, belirlenen sonraki bölüm için on saniyelik geri sayım başlar. Şimdi Oynat hemen başlatır; İptal veya Escape devamı durdurur. Elle durdurma veya erken oynatma hatası bunu başlatmaz. Oynatma veya liste değişikliği geçersiz kalan devam isteğini iptal eder; sonraki bölüm kesin olarak belirlenemiyorsa oynatma biter.
+
 ## Oynatma listesi yöneticisi {#playlist-manager}
 
 Dosya > Oynatma listesi yöneticisi (Ctrl+M) oynatma listesi kaynaklarınızı listeler. Odak listede olarak açılır.
@@ -230,6 +232,8 @@ Aynı komutlar oynatıcının Oynatma menüsündedir. Oynatıcı, canlı akış 
 
 Sesi kapat / aç, oynatmayı veya kaydı duraklatmadan yerleşik oynatıcının sesini kapatır. Varsayılan kısayollar ana pencerede Ctrl+Shift+M, oynatıcıda M'dir; ikisi de klavye kısayolu ayarlarından değiştirilebilir. Kanal değişimlerinde ve yeniden bağlantılarda ses kapalı kalır. Oynatıcı > Her kanalın ses düzeyini hatırla başlangıçta kapalıdır; açıldığında seçtiğiniz ses düzeyini her liste veya sağlayıcı için ayrı hatırlar. Kayıtlı değeri olmayan kanallar oynatıcının genel ses düzeyini kullanır. Bu özellikler ekran okuyucunun ses düzeyini değiştirmez.
 
+Yerleşik oynatıcının Oynatma menüsündeki Adlandırılmış Yer İşareti Ekle, isteğe bağlı içerik veya yerel kaydın geçerli konumunu kaydeder. İçerik içinde gezinme ve bilinen süre gerekir. Adlandırılmış Yer İşaretleri geçerli içeriğin işaretlerini listeler: Enter veya Yer İşaretine Git konuma gider; Yeniden Adlandır ve Sil seçili girdiyi yönetir. Aynı içerikte adlar benzersiz olmalıdır. Otomatik sürdürme konumundan bağımsız olarak toplam 1000 yer işareti kaydedilebilir.
+
 ### Ses parçaları {#audio-tracks}
 
 Kanallar birkaç ses parçası taşıyabilir: başka diller ya da sesli betimleme gibi. Sonraki parçaya geçmek için A'ya basın, Oynatma > Ses parçası'nı kullanın ya da Tab ile Ses parçası seç'e gidin; o, oynayan parçayı her zaman adlandırır.
@@ -289,7 +293,11 @@ Bir kaydı durdurmak, dosyası tamamlanırken biraz sürebilir. Uygulamadan çı
 
 Kayıtlar > Kayıt alanı izleme, kayıt sırasında boş alanı beş saniyede bir denetler. Uyarı varsayılan olarak 1024 MiB altında etkindir. Otomatik durdurma başlangıçta kapalıdır; açıp başlangıçta 256 MiB olan eşiği seçerek sürücü dolmadan dosyaların düzgün kapatılmasını isteyebilirsiniz. Uyarı eşiği durdurma eşiğinden düşük olamaz. Aynı sürücüye yapılan kayıtlar için ortak bir uyarı verilir; durdurma etkinse etkilenen tüm kayıtlar durdurulur. Denetim alan ayırmaz ve dolu veya bağlantısı kesilmiş bir sürücüde dosyaların kapanacağını garanti etmez.
 
-Kayıtlar > Kayıt kitaplığı, geçerli kayıt klasöründeki tamamlanmış dosyaları eski kayıtlarla birlikte listeler. Başlık, kanal veya tarihe göre arayın. Oynat / Devam et dosyayı yerleşik oynatıcıda açar ve varsa kayıtlı konumu önerir. Süre ve tamamlanma durumu biliniyorsa gösterilir; eski dosyalarda Bilinmiyor yazabilir. Devam eden kayıtlar listelenmez. Yenile listeyi yeniden okur. Kayıt dosyasını sil, onaydan sonra medya dosyasını kalıcı olarak siler; önce oynatma penceresini kapatın. Bir öğeyi zamanlanmış kayıtlardan kaldırmak medya dosyasını silmez.
+Kayıtlar > Kayıt Kitaplığı, geçerli kayıt klasörü dahil en fazla 20 klasördeki tamamlanmış dosyaları listeler. Klasör Ekle, mevcut bir klasörü ekler; yeni kayıtların kaydedileceği yeri değiştirmez. Klasörü Kitaplıktan Kaldır dosyalara dokunmaz. Geçerli kayıt klasörü kaldırılamaz.
+
+Başlık, kanal veya tarihe göre arayın. Oynat / Sürdür dosyayı açar ve varsa kayıtlı konumu önerir. Süre ve tamamlanma durumu biliniyorsa gösterilir; eski dosyalarda Bilinmiyor yazabilir. Devam eden kayıtlar ve yerleşik oynatıcıda açık dosyalar listelenmez. Başlığı Yeniden Adlandır yalnızca görünen başlığı değiştirir; dosya adı, sürdürme konumu ve yer işaretleri korunur. Yenile listeyi yeniden okur.
+
+Kayıt Çöp Kutusuna Taşı dosyayı kendi kayıt klasöründeki uygulama çöp kutusuna taşır; disk alanı boşaltmaz. Silinen Kayıtları Göster bu dosyaları listeler. Kaydı Geri Yükle, mevcut dosyaların üzerine yazmadan dosyayı özgün klasörüne döndürür. Bu görünümde Kayıt Dosyasını Sil, onaydan sonra dosyayı kalıcı olarak siler. Zamanlanmış Kayıtlar listesinden bir girdiyi kaldırmak medya dosyasını silmez.
 
 ### Kayıt biçimi {#recording-formats}
 
@@ -314,11 +322,17 @@ Kayıtlar > Zamanlanmış kayıtlar... her zamanlanmış, süren ve bitmiş kayd
 
 Zamanlanmış kayıtlar, program çalışırken kendi kendine başlar; sistem tepsisine küçültülmüşken bile. Pencere, açtığınızda ve bir kayıt her başladığında, bittiğinde ya da iptal edildiğinde kendiliğinden yenilenir; bu yüzden Yenile komutuna nadiren gerek olur.
 
-Yeni bir kayıt, planlanmış başka bir kayıtla çakıştığında program, onu eklemeden önce sizi uyarır. Sağlayıcınız aynı anda kaç akışın çalıştırılabileceğini sınırlayabilir.
+Kayıtlar > Kayıt Bağlantısı Sınırları her sağlayıcı hesabı için kayıtlara 1–64 bağlantı ayırır; 0 ek sınır koymaz. Oynatmayı ve diğer cihazları hesaba katın; bu ayar sağlayıcının gerçek sınırını öğrenmez. Zamanlama sırasında aynı tanımlanmış hesaptaki kayıtların en yüksek eşzamanlı bağlantı sayısı denetlenir. Sınırın aşılması onay gerektirir; bilinen sınır yoksa olağan çakışma uyarısı gösterilir. Ayrılan bağlantılar doluysa yeni kayıt reddedilir, mevcut kayıtlar devam eder. Oynatıcının yerel arabelleğinden yapılan kayıt ek sağlayıcı bağlantısı sayılmaz. Tek akışlı hesaplar için mevcut korumalar geçerliliğini korur.
 
 Başlamayı bekleyen zamanlanmış kayıtlar varken program kapanmadan önce sorar, çünkü bu kayıtlar yalnızca program çalışırken başlayabilir. Yine de kapatırsanız bekleyen kayıtlar başlamaz.
 
 Boş olmayan bir dosya tek başına kaydın başarılı olduğunu göstermez. Kesintiye uğrayan kayıtlar Kısmi olarak işaretlenir ve oluşturulan dosyalar korunur; kasıtlı durdurma Kullanıcı tarafından durduruldu olarak gösterilir. Başarısız, kaçırılmış veya kısmi bölümler, aynı yayın tekrar tekrar denenmeden sonraki bir yayından zamanlanabilir. Liste yenilendiğinde çoklu seçim korunur ve listenin yalnızca bir bölümü seçilmiş olsa bile kaldırma onayı etkilenen öğe sayısını belirtir.
+
+İptal, silme veya yineleme değişikliği kaydedilemezse önceki zamanlama korunur ve hata gösterilir. Okunamayan zamanlama dosyası, yeni kayıtlar kaydedilmeden önce ayrı olarak yedeklenir. Yedekleme de başarısız olursa özgün dosyayı korumak için değişiklikler engellenir. Yeniden başlatmadan önce disk alanını ve izinleri kontrol edin.
+
+Windows'ta Kayıtlar > Kayıt Sırasında Otomatik Uykuyu Önle varsayılan olarak açıktır. Kayıt boyunca Windows'un uyanık kalmasını ister. Ekranı açık tutmaz; dizüstü bilgisayarın kapağını kapatmak gibi kullanıcının başlattığı uykuyu engellemez.
+
+Zamanlanmış Kayıtlar İçin Uyandır (Windows) varsayılan olarak kapalıdır. Açıldığında, başlangıç öncesi ek süre dahil sonraki kaydın başlangıcından 60 saniye önce uyandırma zamanlayıcısı ister. Uygulama açık kalmalı, donanım ve Windows güç ayarları uyandırma zamanlayıcılarını desteklemelidir. Kapatılmış bir bilgisayarı açamaz. Zamanlama değişiklikleri ve iptaller zamanlayıcıyı günceller; uygulamadan çıkmak kaldırır.
 
 ### Zamanlama payı {#schedule-padding}
 
@@ -454,10 +468,12 @@ Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağ
 
 ## Kişisel araçlar {#personal-tools}
 
-Kayıt planları, hatırlatıcılar ve arama bildirimleri için uygulamayı açık tutun. Bu araçlar uyuyan bilgisayarı uyandırmaz.
+Zamanlanmış kayıtlar, hatırlatıcılar ve kayıtlı arama bildirimleri için uygulamayı açık tutun. Hatırlatıcılar ve arama bildirimleri uyuyan bilgisayarı uyandırmaz. Zamanlanmış Kayıtlar bölümündeki seçenek açıksa kayıtlar Windows'ta uyandırma zamanlayıcısı isteyebilir.
 
-- Kayıtlar > Saate Göre Planla rehber olmadan çalışır. Yerel saati YYYY-AA-GG SS:DD olarak girin; saat değişikliğinde doğru zamanı seçin. Saatleri Düzenle bekleyen kaydı veya süren kaydın bitişini değiştirir. Çakışmaları onaylayın; süre en fazla yedi gündür.
+- Kayıtlar > Saate Göre Planla rehber olmadan çalışır. Yerel saati YYYY-AA-GG SS:DD olarak girin; saat değişikliğinde doğru zamanı seçin. Saatleri Düzenle bekleyen kaydı veya süren kaydın bitişini değiştirir. Bağlantı çakışmalarını Zamanlanmış Kayıtlar bölümüne göre onaylayın; süre en fazla yedi gündür.
 - İsteğe bağlı oynatmada Ctrl+Left/Right 10 saniye, Ctrl+Shift+Left/Right 60 saniye atlar. Ctrl+T zaman seçimini açar, T geçen, toplam ve kalan süreyi okur. Kısayollar değiştirilebilir. Akış konum değiştirmeyi desteklemeli ve süresi bilinmelidir; canlı yayın değişmez.
 - Görünüm > Favori Listeleri, mevcut favorilerden ayrı olarak her biri 2000 kanallı en fazla 50 adlı listeyi yönetir. Eklemek için pencereyi açmadan önce kanalı seçin. Yukarı/Aşağı Taşı veya Ctrl+Up/Down sıralamayı değiştirir. Eksik kanallar listede kalır ancak yeniden kullanılabilir olana kadar oynatılamaz.
 - Görünüm > Kayıtlı Program Aramaları tüm kanallarda, seçili kanalda veya bir favori listesinin o anki kanallarında başlık ya da açıklama arayan en fazla 30 arama saklar. Rehber içe aktarıldıktan sonra ve her 15 dakikada bir gelecek 14 gün aranır. Arama başına en fazla 500 sonuç gösterilir; kesilen aramaları daraltın. Yeni sonuçlar duyuru ayarlarına göre bildirilir. Sonuçlardan hatırlatıcı veya kayıt oluşturabilirsiniz.
 - Şifreli dışa aktarma, medya dosyaları hariç kayıt planlarını, hatırlatıcıları ve arama geçmişini de içerir. İçe aktarma değişecek öğe sayılarını gösterir ve uygulamayı kapatır; bitirmek için yeniden açın. Önce kayıtları ve indirmeleri bitirin. Geçmiş veya önceden başlamış kayıtlar yeniden başlamaz. Eski yedekler yalnızca ayarları değiştirir, yerel planları ve hatırlatıcıları korur.
+
+Görünüm > Bildirim Geçmişi, geçerli oturumda kuyruğa alınan son 200 bildirimi tutar. Ayrıntıları okumak için bir girdi seçin; Yenile listeyi günceller, Ayrıntıları Kopyala metni kopyalar. URL'lerde ve kimlik doğrulama satırlarında tanınabilen giriş bilgileri geçmişte ve kopyalanan metinde gizlenir. Bu, herhangi bir iletinin özel bilgi içermediğini garanti etmez. Geçmişi Temizle onay ister. Uygulama kapanınca geçmiş silinir; mevcut günlük dosyaları değişmez.

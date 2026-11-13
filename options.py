@@ -857,6 +857,14 @@ def normalize_channel_and_audio_settings(cfg: Dict) -> None:
         return
     import favorite_collections
     import saved_searches
+    import named_bookmarks
+    import recording_limits
+    cfg["recording_connection_limits"] = recording_limits.normalize(cfg.get("recording_connection_limits"))
+    cfg["named_playback_bookmarks"] = named_bookmarks.normalize(cfg.get("named_playback_bookmarks"))
+    cfg["recording_library_folders"] = coerce_string_list(cfg.get("recording_library_folders"))[:19]
+    cfg["prevent_sleep_while_recording"] = coerce_bool(cfg.get("prevent_sleep_while_recording"), True)
+    cfg["wake_for_recordings"] = coerce_bool(cfg.get("wake_for_recordings"), False)
+    cfg["auto_next_episode"] = coerce_bool(cfg.get("auto_next_episode"), False)
     cfg["favorite_collections"] = favorite_collections.normalize(cfg.get("favorite_collections"))
     cfg["saved_programme_searches"] = saved_searches.normalize(cfg.get("saved_programme_searches"))
     cfg["favorites"] = coerce_string_list(cfg.get("favorites"))

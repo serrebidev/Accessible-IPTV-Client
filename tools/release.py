@@ -901,14 +901,83 @@ def forgejo_release_request(method, path, body=None, headers=None):
                 raw = response.read().decode()
             return json.loads(raw) if raw.strip() else None
         except urllib.error.HTTPError as error:
+            if method == "POST" and attempt and error.code == 409:
+                recovered = _reconcile_forgejo_post(path, body)
+                if recovered is not None:
+                    return recovered
             if error.code not in (502, 503, 504):
                 raise
             last_error = error
         except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
             last_error = error
+        if method == "POST":
+            # A lost response is not evidence that creation failed. Never
+            # redispatch workflows; release/asset creation can be reconciled.
+            if path != "/releases" and not re.fullmatch(r"/releases/\d+/assets\?name=.+", path):
+                raise last_error
+            recovered = _reconcile_forgejo_post(path, body)
+            if recovered is not None:
+                return recovered
         if attempt < 2:
             time.sleep(2 * (attempt + 1))
     raise last_error
+
+
+def _reconcile_forgejo_post(path, body):
+    """Read back an ambiguously committed creation before permitting a retry."""
+    if path == "/releases":
+        wanted = json.loads(body)
+        try:
+            found = forgejo_release_request("GET", "/releases/tags/" + urllib.parse.quote(wanted["tag_name"], safe=""))
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                return None
+            raise
+        if any(found.get(key) != wanted.get(key) for key in ("tag_name", "name", "body", "draft")):
+            raise RuntimeError("The release already exists with different metadata; refusing to replace it.")
+        return found
+    asset_path, query = path.split("?", 1)
+    name = urllib.parse.parse_qs(query)["name"][0]
+    assets = forgejo_release_request("GET", asset_path)
+    matches = [asset for asset in assets if asset.get("name") == name]
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise RuntimeError("Several assets have the upload name; manual inspection is required.")
+    asset = matches[0]
+    boundary = body.split(b"\r\n", 1)[0]
+    suffix = b"\r\n" + boundary + b"--\r\n"
+    payload = body.split(b"\r\n\r\n", 1)[1][:-len(suffix)]
+    if not body.endswith(suffix) or asset.get("size") != len(payload):
+        raise RuntimeError("The existing release asset does not match the upload size.")
+    url = asset.get("browser_download_url", "")
+    origin = urllib.parse.urlsplit(FORGEJO_API)
+
+    def same_origin(target):
+        parsed = urllib.parse.urlsplit(target)
+        return (parsed.scheme, parsed.netloc) == (origin.scheme, origin.netloc)
+
+    if not same_origin(url):
+        raise RuntimeError("Cannot verify a release asset outside the Forgejo origin.")
+
+    class OriginOnlyRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, hdrs, newurl):
+            if not same_origin(newurl):
+                raise RuntimeError("Refusing to forward Forgejo credentials to another origin.")
+            return super().redirect_request(req, fp, code, msg, hdrs, newurl)
+
+    request = urllib.request.Request(url, headers={"Authorization": "token " + os.environ["FORGEJO_TOKEN"].strip()})
+    digest = hashlib.sha256()
+    total = 0
+    with urllib.request.build_opener(OriginOnlyRedirect()).open(request, timeout=180) as response:
+        while chunk := response.read(1024 * 1024):
+            total += len(chunk)
+            if total > len(payload):
+                raise RuntimeError("The remote asset is larger than the upload.")
+            digest.update(chunk)
+    if total != len(payload) or digest.digest() != hashlib.sha256(payload).digest():
+        raise RuntimeError("The existing release asset has different contents; refusing to overwrite it.")
+    return asset
 
 
 def forgejo_release_upload(tag, local_paths):

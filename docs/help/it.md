@@ -110,6 +110,8 @@ Visualizza > TV in diretta && Replay torna ai canali in diretta. Il campo di ric
 
 Il video on demand funziona meglio con gli account Xtream Codes, che descrivono bene il loro catalogo. Per le semplici playlist M3U il programma riconosce film e serie dai nomi dei gruppi e dalla numerazione degli episodi.
 
+Lettore > Riproduci automaticamente l’episodio successivo è disattivato per impostazione predefinita. Se attivato, un episodio terminato normalmente avvia un conto alla rovescia di dieci secondi per quello successivo identificato. Riproduci ora parte subito; Annulla o Escape interrompe la continuazione. Un arresto manuale o un errore anticipato non la avvia. Cambiare riproduzione o elenco annulla una continuazione non più valida; senza un episodio successivo inequivocabile, la riproduzione termina.
+
 ## Gestione playlist {#playlist-manager}
 
 File > Gestione playlist (Ctrl+M) elenca le sorgenti delle playlist. Si apre con il focus sull'elenco.
@@ -231,6 +233,8 @@ Gli stessi comandi sono nel menu Riproduzione del lettore. Il lettore si riconne
 
 Disattiva / Riattiva audio silenzia il lettore integrato senza sospendere riproduzione o registrazione. I tasti predefiniti sono Ctrl+Maiusc+M nella finestra principale e M nel lettore; entrambi si possono modificare nelle impostazioni delle scorciatoie. L’audio rimane disattivato dopo cambi di canale e riconnessioni. Lettore > Memorizza il volume di ogni canale è inizialmente disabilitato e, quando attivo, ricorda il volume scelto separatamente per playlist o fornitore. I canali privi di un valore salvato usano il volume generale del lettore. Queste funzioni non modificano il volume dello screen reader.
 
+Nel menu Riproduzione del lettore integrato, Aggiungi segnalibro con nome salva la posizione corrente di contenuti su richiesta o registrazioni locali. Sono necessari lo spostamento nella riproduzione e una durata nota. Segnalibri con nome mostra quelli del contenuto attuale: Invio o Vai al segnalibro raggiunge la posizione; Rinomina ed Elimina gestiscono la voce selezionata. I nomi devono essere unici all’interno del contenuto. Sono disponibili fino a 1000 segnalibri complessivi, separati dalla posizione di ripresa automatica.
+
 ### Tracce audio {#audio-tracks}
 
 I canali possono portare più tracce audio, come altre lingue o audiodescrizione. Premere A per passare alla traccia successiva, usare Riproduzione > Traccia audio, o Tab fino a Scegli traccia audio, che nomina sempre la traccia in riproduzione.
@@ -290,7 +294,11 @@ Fermare una registrazione può richiedere un momento mentre il file viene finali
 
 Registrazioni > Controllo spazio per le registrazioni verifica lo spazio libero ogni cinque secondi durante la registrazione. L’avviso è attivo per impostazione predefinita sotto 1024 MiB. L’arresto automatico è inizialmente disabilitato: abilitarlo e scegliere una soglia, inizialmente di 256 MiB, per richiedere la corretta chiusura dei file prima che l’unità si riempia. La soglia di avviso non può essere inferiore a quella di arresto. Le registrazioni sulla stessa unità condividono un avviso; se l’arresto è attivo, vengono fermate tutte quelle interessate. Il controllo non riserva spazio né garantisce la chiusura dei file su un’unità piena o scollegata.
 
-Registrazioni > Raccolta registrazioni elenca i file terminati nella cartella di registrazione corrente, compresi quelli più vecchi. Cercare per titolo, canale o data. Riproduci / Riprendi apre il file nel lettore integrato e propone la posizione salvata, quando disponibile. Durata e stato vengono mostrati se noti; per i file più vecchi può apparire Sconosciuto. Le registrazioni in corso sono escluse. Aggiorna ricarica l’elenco. Elimina file della registrazione cancella definitivamente il file multimediale dopo conferma; chiudere prima la relativa finestra di riproduzione. La rimozione di una voce dalle registrazioni programmate non elimina il file.
+Registrazioni > Raccolta registrazioni elenca i file completati in un massimo di 20 cartelle, compresa quella di registrazione attuale. Aggiungi cartella include una cartella esistente senza cambiare la destinazione delle nuove registrazioni. Rimuovi cartella dalla raccolta lascia intatti i file. La cartella di registrazione attuale non può essere rimossa.
+
+Cercare per titolo, canale o data. Riproduci / Riprendi apre il file e propone la posizione salvata, se disponibile. Durata e stato sono mostrati quando noti; i file meno recenti possono indicare Sconosciuto. Le registrazioni attive e i file aperti nel lettore integrato sono esclusi. Rinomina titolo cambia solo il titolo visualizzato, conservando nome del file, posizione e segnalibri. Aggiorna ricarica l’elenco.
+
+Sposta nel cestino delle registrazioni trasferisce il file nel cestino dell’applicazione dentro la sua cartella di registrazione, senza liberare spazio. Mostra registrazioni eliminate rende visibili questi file. Ripristina registrazione li riporta nella cartella originale senza sovrascrivere file esistenti. In questa vista, Elimina file di registrazione li elimina definitivamente dopo conferma. Rimuovere una voce da Registrazioni programmate non elimina il file multimediale.
 
 ### Formato di registrazione {#recording-formats}
 
@@ -315,11 +323,17 @@ Registrazioni > Registrazioni programmate… elenca ogni registrazione programma
 
 Le registrazioni programmate partono da sole mentre il programma gira, anche minimizzato nella barra delle applicazioni. La finestra si aggiorna da sola quando la apri e ogni volta che una registrazione inizia, finisce o viene annullata, quindi il comando Aggiorna serve di rado.
 
-Quando una nuova registrazione si sovrappone ad un'altra registrazione programmata, il programma ti avvisa prima di aggiungerla. Il tuo provider potrebbe limitare il numero di stream che possono essere eseguiti contemporaneamente.
+Registrazioni > Limiti di connessione per le registrazioni assegna da 1 a 64 connessioni alle registrazioni per account; 0 non impone limiti aggiuntivi. Considerare la riproduzione e gli altri dispositivi: questa opzione non rileva il limite effettivo del fornitore. La programmazione controlla il picco di connessioni simultanee delle registrazioni dello stesso account identificato. Superare il limite richiede conferma; senza un limite noto appare il consueto avviso di sovrapposizione. Se il budget è esaurito, una nuova registrazione viene rifiutata e quelle esistenti proseguono. Registrare dal buffer locale del lettore non richiede un’altra connessione al fornitore. Restano valide le protezioni esistenti per gli account con un solo flusso.
 
 Il programma chiede conferma prima di chiudersi se ci sono registrazioni programmate ancora in attesa di iniziare, perché possono iniziare solo mentre il programma è aperto. Se lo chiudi comunque, le registrazioni in attesa non partiranno.
 
 Un file non vuoto non basta a dimostrare che la registrazione sia riuscita. Le registrazioni interrotte sono indicate come Parziale e i file disponibili vengono conservati; un arresto volontario è indicato come Interrotta dall’utente. Gli episodi non riusciti, persi o parziali possono essere programmati per una trasmissione successiva, senza riprovare continuamente la stessa trasmissione. L’aggiornamento conserva la selezione multipla e la conferma di rimozione indica il numero delle voci interessate anche quando è selezionata solo una parte dell’elenco.
+
+Se il salvataggio di un annullamento, di un’eliminazione o di una modifica alla ripetizione fallisce, la programmazione precedente rimane e viene mostrato un errore. Prima di salvare nuove programmazioni, viene conservata una copia separata del file illeggibile. Se anche la copia fallisce, le modifiche vengono bloccate per proteggere l’originale. Controllare spazio e permessi prima di riavviare.
+
+In Windows, Registrazioni > Impedisci la sospensione automatica durante la registrazione è attivo per impostazione predefinita. Richiede a Windows di restare attivo durante le registrazioni, senza tenere acceso lo schermo né impedire la sospensione avviata dall’utente, per esempio chiudendo il coperchio del portatile.
+
+Riattiva per le registrazioni pianificate (Windows) è disattivato per impostazione predefinita. Se abilitato, richiede un timer di riattivazione 60 secondi prima dell’inizio della prossima registrazione, incluso l’anticipo. L’applicazione deve restare aperta e hardware e impostazioni energetiche devono supportare questi timer. Non avvia un computer spento. Modifiche e annullamenti aggiornano il timer; l’uscita dall’applicazione lo rimuove.
 
 ### Margine di programmazione {#schedule-padding}
 
@@ -455,10 +469,12 @@ Aiuto > Informazioni… mostra la versione in uso e collega entrambi. Quando si 
 
 ## Strumenti personali {#personal-tools}
 
-Lascia l'applicazione aperta per registrazioni programmate, promemoria e avvisi di ricerca. Questi strumenti non riattivano il computer sospeso.
+Lasciare l’applicazione aperta per registrazioni programmate, promemoria e avvisi delle ricerche salvate. Promemoria e avvisi di ricerca non riattivano il computer. Le registrazioni possono richiedere un timer di riattivazione in Windows se è abilitata l’opzione descritta in Registrazioni programmate.
 
-- Registrazioni > Programma per orario funziona senza guida. Inserisci l'ora locale come AAAA-MM-GG HH:MM e scegli l'occorrenza durante il cambio dell'ora. Modifica orari cambia una registrazione in attesa o la fine di una in corso. Conferma le sovrapposizioni; durata massima di sette giorni.
+- Registrazioni > Programma per orario funziona senza guida. Inserisci l'ora locale come AAAA-MM-GG HH:MM e scegli l'occorrenza durante il cambio dell'ora. Modifica orari cambia una registrazione in attesa o la fine di una in corso. Confermare i conflitti di connessione come descritto in Registrazioni programmate; durata massima di sette giorni.
 - Nella riproduzione su richiesta, Ctrl+Left/Right sposta di 10 secondi, Ctrl+Shift+Left/Right di 60 secondi, Ctrl+T apre il salto temporale e T annuncia tempo trascorso, totale e rimanente. I tasti sono configurabili. Il flusso deve consentire gli spostamenti e avere durata nota; la diretta non cambia.
 - Visualizza > Elenchi di preferiti gestisce fino a 50 elenchi con nome e 2000 canali ciascuno, separati dai preferiti originali. Seleziona un canale prima di aprire la finestra per aggiungerlo. Sposta su/giù o Ctrl+Up/Down cambia l'ordine. I canali mancanti restano elencati ma non vengono riprodotti finché non tornano disponibili.
 - Visualizza > Ricerche programmi salvate conserva fino a 30 ricerche nei titoli o nelle descrizioni, su tutti i canali, quello selezionato o una copia dei canali di un elenco di preferiti. Dopo gli import della guida e ogni 15 minuti esamina i prossimi 14 giorni. Mostra fino a 500 risultati per ricerca; restringi quelle troncate. Le impostazioni degli annunci regolano i nuovi risultati, dai quali puoi creare promemoria o registrazioni.
 - L'esportazione cifrata include anche programmazioni, promemoria e cronologia di ricerca, ma non i file multimediali. L'importazione mostra il numero di elementi sostituiti e chiude l'app: riaprila per completare. Prima termina registrazioni e download. Le registrazioni passate o già avviate non ripartono. I vecchi backup sostituiscono solo le impostazioni, mantenendo programmazioni e promemoria locali.
+
+Visualizza > Cronologia notifiche conserva le ultime 200 notifiche accodate nella sessione corrente. Selezionare una voce per leggerne i Dettagli; Aggiorna ricarica l’elenco e Copia dettagli copia il testo. Le credenziali riconoscibili negli URL e nelle righe di autenticazione sono mascherate nella cronologia e nel testo copiato. Ciò non garantisce che qualsiasi messaggio sia privo di dati privati. Cancella cronologia richiede conferma. La cronologia scompare alla chiusura; i file di registro esistenti restano invariati.

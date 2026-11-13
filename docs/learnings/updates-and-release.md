@@ -1,5 +1,11 @@
 # Updates, release and translations
 
+## Ambiguous release writes and localization, 2026-11-12
+
+- A lost POST response does not prove failure. Reconcile release creation by tag and matching metadata before retrying. Reconcile same-name asset uploads by unique identity, length and SHA-256 read-back. Verification uses only the Forgejo origin and rejects cross-origin redirects carrying credentials. Conflicting or unverifiable data requires intervention; do not overwrite it automatically. Never blindly retry a workflow dispatch.
+- The Hungarian application catalogue remains manually maintained. Preserve reviewed text unless a contextual or language review identifies a specific correction. The full 2026-11-13 review covered all 977 messages, 43 guide topics, five current release-note bullets and two prepared future bullets; it corrected 21 existing UI translations and their related guide wording. Hungarian help retains its intentional extra detail and remains exempt from structural synchronization; check its catalogue, placeholders, anchors and release-note completeness separately. Count actual heading anchors: the translator comment also contains a sample `{#topic-id}`, which is not a help topic.
+- The new UI uses existing native controls, modal guards and help topics. Named bookmarks are independent of automatic resume. Notification history is bounded to 200 queued messages in the current session, with sharing-boundary redaction; it does not rewrite provider logs. Automatic next-episode playback is opt-in, uses a cancellable countdown, and invalidates stale requests on generation/playlist changes.
+
 Moved here from `agents.md` on 2026-10-22, verbatim. `agents.md`
 points at this file; read it before changing the code it names and
 grep it for the module, symbol or error you are about to touch.

@@ -475,9 +475,10 @@ class PersonalToolsMixin:
         finally:
             dialog.Destroy()
         try:
-            overlaps = [j for j in scheduler.list_jobs(include_done=False)
-                        if (not job or j["id"] != job["id"]) and j["start_ts"] < end and j["stop_ts"] > start]
-            if overlaps and not confirm(self, _("This overlaps {count} recording(s). Continue?").format(count=len(overlaps))):
+            import recording_limits
+            warning = recording_limits.warning(self.config, channel, start, end,
+                                               scheduler.list_jobs(include_done=False), exclude=job["id"] if job else None)
+            if warning and not confirm(self, warning):
                 return
             if job:
                 expected = tuple(job[k] for k in ("start_ts", "stop_ts", "status"))

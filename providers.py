@@ -34,6 +34,8 @@ def _normalize_base_url(url: str) -> str:
     # Strip any userinfo (http://user:pass@host) so credentials never round-trip
     # into the rebuilt base URL.
     host = parsed.hostname or ""
+    if ":" in host:
+        host = "[" + host + "]"
     if parsed.port:
         host = "{host}:{port}".format(host=host, port=parsed.port)
     path = parsed.path or ""

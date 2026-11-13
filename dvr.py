@@ -237,6 +237,8 @@ class DVRScheduler:
         self._thread: Optional[threading.Thread] = None
         self._last_series_scan = 0.0
         self._series_scan_thread: Optional[threading.Thread] = None
+        self.load_warning = ""
+        self._load_error = None
         self.load()
 
     def load(self) -> None:
@@ -247,11 +249,18 @@ class DVRScheduler:
             try:
                 with open(self.path, "r", encoding="utf-8") as fh:
                     data = json.load(fh)
+                jobs = data.get("jobs") if isinstance(data, dict) else data
+                if not isinstance(jobs, list):
+                    raise ValueError("The schedule does not contain a list of jobs.")
             except Exception:
                 LOG.exception("Failed to load DVR schedule: %s", self.path)
-                return
-            jobs = data.get("jobs") if isinstance(data, dict) else data
-            if not isinstance(jobs, list):
+                try:
+                    backup = self._preserve_corrupt_schedule()
+                    self.load_warning = _("The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones.").format(path=backup)
+                except OSError as exc:
+                    self._load_error = exc
+                    self.load_warning = _("The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application.")
+                    LOG.exception("Could not preserve unreadable DVR schedule")
                 return
             for job in jobs:
                 if not isinstance(job, dict) or not job.get("id"):
@@ -272,22 +281,26 @@ class DVRScheduler:
                         job["message"] = ""
                 self._jobs[str(job["id"])] = job
 
+    def _preserve_corrupt_schedule(self):
+        """Keep the exact bytes before allowing a new schedule to replace them."""
+        backup = self.path + ".corrupt-" + uuid.uuid4().hex
+        try:
+            with open(self.path, "rb") as source, open(backup, "xb") as target:
+                import shutil
+                shutil.copyfileobj(source, target)
+                target.flush()
+                os.fsync(target.fileno())
+        except OSError:
+            try:
+                os.remove(backup)
+            except OSError:
+                LOG.debug("Could not remove incomplete schedule backup", exc_info=True)
+            raise
+        return backup
+
     def save(self) -> None:
-        if not self.path:
-            return
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with self._save_lock:
-            with self._lock:
-                # Serialize while holding the lock: the job dicts are live and
-                # another thread may be changing them.
-                jobs = sorted(self._jobs.values(), key=lambda j: _number(j.get("start_ts")))
-                text = json.dumps({"version": 1, "jobs": jobs}, indent=2, sort_keys=True)
-            tmp = self.path + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as fh:
-                fh.write(text)
-                fh.flush()
-                os.fsync(fh.fileno())
-            os.replace(tmp, self.path)
+        with self._save_lock, self._lock:
+            self._write_proposal(self._jobs)
 
     def _save_schedule(self) -> None:
         """Write the schedule, reporting a failure instead of raising it.
@@ -356,20 +369,24 @@ class DVRScheduler:
     def set_repeat(self, job_id: str, repeat: str) -> bool:
         if repeat not in {"daily", "weekly", "series"}:
             return False
-        with self._lock:
+        with self._save_lock, self._lock:
             job = self._jobs.get(str(job_id))
             if not job:
                 return False
-            job["repeat"] = repeat
+            proposal = dict(self._jobs)
+            proposal[str(job_id)] = dict(job, repeat=repeat)
+            self._write_proposal(proposal)
+            self._jobs = proposal
             if repeat == "series":
                 self._last_series_scan = 0.0
-        self.save()
         self._notify_update()
         self.wake()
         return True
 
     def _write_proposal(self, proposal) -> None:
         """Caller holds save lock then job lock; publish memory only after replace."""
+        if self._load_error is not None:
+            raise OSError(self.load_warning) from self._load_error
         if not self.path:
             return
         import tempfile
@@ -435,32 +452,37 @@ class DVRScheduler:
         return copy.deepcopy(updated)
 
     def cancel_job(self, job_id: str) -> bool:
-        with self._lock:
-            job = self._jobs.get(str(job_id))
+        with self._save_lock, self._lock:
+            proposal = copy.deepcopy(self._jobs)
+            job = proposal.get(str(job_id))
             if not job:
                 return False
             job["status"] = STATUS_CANCELED
             job["message"] = "Canceled by user."
             if job.get("repeat") == "series":
-                for child in self._jobs.values():
+                for child in proposal.values():
                     if child.get("series_source") == str(job_id) and child.get("status") == STATUS_SCHEDULED:
                         child["status"] = STATUS_CANCELED
                         child["message"] = "Series recording canceled."
-        self.save()
+            self._write_proposal(proposal)
+            self._jobs = proposal
         self._notify_update()
         self.wake()
         return True
 
     def delete_job(self, job_id: str) -> bool:
-        with self._lock:
-            removed = self._jobs.pop(str(job_id), None)
+        with self._save_lock, self._lock:
+            proposal = dict(self._jobs)
+            removed = proposal.pop(str(job_id), None)
             existed = removed is not None
             if removed and removed.get("repeat") == "series":
-                for child_id, child in list(self._jobs.items()):
+                for child_id, child in list(proposal.items()):
                     if child.get("series_source") == str(job_id) and child.get("status") == STATUS_SCHEDULED:
-                        del self._jobs[child_id]
+                        del proposal[child_id]
+            if existed:
+                self._write_proposal(proposal)
+                self._jobs = proposal
         if existed:
-            self.save()
             self._notify_update()
             self.wake()
         return existed

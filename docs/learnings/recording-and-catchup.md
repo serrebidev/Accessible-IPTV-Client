@@ -1,5 +1,13 @@
 # Recording and catch-up
 
+## Reliability and recording tools, 2026-11-12
+
+- User-initiated cancellation, deletion and repeat edits persist a proposal before changing memory. Runtime state transitions retain their existing best-effort save behavior so a write failure does not lose management of a running FFmpeg process. Cancellation stops the recording using the fresh post-cancel id/key, including a concurrent scheduled start.
+- An unreadable schedule is copied byte-for-byte to a unique backup before replacement. If preservation fails, subsequent schedule writes fail closed and the UI explains recovery. This does not reconstruct damaged jobs.
+- Recording-library titles are metadata only: filenames and resume/bookmark identities stay stable. Up to 20 folders can be indexed. Trash is application-specific and remains on the same volume; it does not free space. Restore refuses name collisions, validates file identity and rejects symlink/junction redirection. Metadata failures must not be reported as if an already-deleted file survived.
+- Recording connection budgets apply to captures within this app, per normalized account. They are not detected provider limits or global limits across playback and other devices. Admission stays inside the recording manager's storage gate; a shared buffer lease is not another upstream connection. Schedule conflicts use peak same-account demand. Existing single-stream-host protections remain in force.
+- Windows sleep prevention and wake timers are optional native power requests on a dedicated thread; sleep prevention defaults on during recording, wake defaults off. Do not request display or away mode. Wake 60 seconds before the padded pending start, update/cancel on changes and release on exit. Hardware, power policy and real suspend/resume still need native acceptance testing.
+
 Moved here from `agents.md` on 2026-10-22, verbatim. `agents.md`
 points at this file; read it before changing the code it names and
 grep it for the module, symbol or error you are about to touch.

@@ -110,6 +110,8 @@ Ansicht > Live-TV && Nachholen schaltet auf Live-Sender zurück. Das Suchfeld le
 
 Video-on-Demand funktioniert am besten mit Xtream-Codes-Konten, die ihr Angebot korrekt beschreiben. Bei reinen M3U-Wiedergabelisten erkennt das Programm Filme und Serien an ihren Gruppennamen und Folgennummern.
 
+Player > Nächste Folge automatisch abspielen ist standardmäßig aus. Nach einem regulär beendeten Serienteil beginnt bei aktivierter Option ein Countdown von zehn Sekunden zur nächsten eindeutig erkannten Folge. Jetzt abspielen startet sofort; Abbrechen oder Escape beendet den Vorgang. Manuelles Stoppen und vorzeitige Wiedergabefehler lösen ihn nicht aus. Änderungen an Wiedergabe oder Wiedergabeliste verwerfen veraltete Fortsetzungen. Ohne eindeutige nächste Folge endet die Wiedergabe.
+
 ## Wiedergabelisten-Manager {#playlist-manager}
 
 Datei > Wiedergabelisten-Manager (Ctrl+M) listet Ihre Wiedergabelistenquellen auf. Er öffnet mit dem Fokus auf der Liste.
@@ -231,6 +233,8 @@ Dieselben Befehle liegen im Wiedergabe-Menü des Players. Der Player verbindet s
 
 Stummschaltung ein/aus schaltet nur den integrierten Player stumm; Wiedergabe und Aufnahme laufen weiter. Die Standardtasten sind Strg+Umschalt+M im Hauptfenster und M im Player. Beide lassen sich in den Tastenkürzeleinstellungen ändern. Die Stummschaltung bleibt bei Senderwechseln und erneuten Verbindungen erhalten. Player > Lautstärke für jeden Sender speichern ist zunächst ausgeschaltet und merkt sich bei Aktivierung Ihre Lautstärkeauswahl getrennt nach Wiedergabeliste oder Anbieter. Sender ohne gespeicherten Wert verwenden die allgemeine Playerlautstärke. Die Lautstärke des Screenreaders bleibt unverändert.
 
+Im Wiedergabemenü des integrierten Players speichert Benanntes Lesezeichen hinzufügen die aktuelle Position in Abrufmedien oder lokalen Aufnahmen. Die Wiedergabe muss suchbar und ihre Dauer bekannt sein. Benannte Lesezeichen zeigt die Einträge des aktuellen Inhalts: Eingabe oder Zum Lesezeichen springen wechselt zur Position; Umbenennen und Löschen bearbeiten den gewählten Eintrag. Namen müssen innerhalb eines Inhalts eindeutig sein. Insgesamt sind bis zu 1000 Lesezeichen möglich, unabhängig von der automatischen Fortsetzungsposition.
+
 ### Tonspuren {#audio-tracks}
 
 Sender können mehrere Tonspuren mitführen, etwa andere Sprachen oder Audiodeskription. Drücken Sie A für die nächste Spur, benutzen Sie Wiedergabe > Audiospur, oder Tab zu Tonspur wählen, die immer die laufende Spur nennt.
@@ -290,7 +294,11 @@ Das Stoppen einer Aufnahme kann einen Moment dauern, bis ihre Datei fertiggestel
 
 Aufnahmen > Speicherplatzüberwachung für Aufnahmen prüft den freien Speicherplatz während der Aufnahme alle fünf Sekunden. Die Warnung ist standardmäßig unter 1024 MiB aktiviert. Das automatische Beenden ist zunächst ausgeschaltet. Aktivieren Sie es und legen Sie einen Schwellenwert fest, zunächst 256 MiB, damit Dateien vor dem vollständigen Füllen des Laufwerks kontrolliert abgeschlossen werden. Der Warnschwellenwert darf nicht niedriger liegen. Aufnahmen auf demselben Laufwerk erhalten eine gemeinsame Warnung; bei aktiviertem Beenden werden alle betroffenen Aufnahmen gestoppt. Die Prüfung reserviert keinen Speicherplatz und garantiert keinen erfolgreichen Dateiabschluss auf einem vollen oder getrennten Laufwerk.
 
-Aufnahmen > Aufnahmebibliothek zeigt fertige Dateien im aktuellen Aufnahmeordner, auch ältere Aufnahmen. Suchen Sie nach Titel, Sender oder Datum. Wiedergabe / Fortsetzen öffnet die Datei im integrierten Player und bietet gegebenenfalls die gespeicherte Wiedergabeposition an. Dauer und Abschlussstatus erscheinen, sofern bekannt; bei älteren Dateien kann Unbekannt stehen. Laufende Aufnahmen werden ausgeblendet. Aktualisieren liest die Liste neu ein. Aufnahmedatei löschen entfernt nach Bestätigung die Mediendatei endgültig; schließen Sie vorher ihr Wiedergabefenster. Das Entfernen aus der Liste geplanter Aufnahmen löscht diese Datei nicht.
+Aufnahmen > Aufnahmebibliothek zeigt abgeschlossene Dateien aus bis zu 20 Ordnern einschließlich des aktuellen Aufnahmeordners. Ordner hinzufügen nimmt einen vorhandenen Ordner auf, ändert aber nicht das Speicherziel neuer Aufnahmen. Ordner aus Bibliothek entfernen lässt die Dateien unverändert. Der aktuelle Aufnahmeordner kann nicht entfernt werden.
+
+Suchen Sie nach Titel, Sender oder Datum. Wiedergeben / Fortsetzen öffnet die Datei und bietet gegebenenfalls die gespeicherte Position an. Dauer und Abschlussstatus erscheinen, soweit bekannt; ältere Dateien können Unbekannt anzeigen. Laufende Aufnahmen und im integrierten Player geöffnete Dateien werden ausgelassen. Titel umbenennen ändert nur den angezeigten Titel; Dateiname, Wiedergabeposition und Lesezeichen bleiben erhalten. Aktualisieren liest die Liste neu ein.
+
+In den Aufnahme-Papierkorb verschieben verschiebt die Datei in den Papierkorb der Anwendung innerhalb ihres Aufnahmeordners und gibt keinen Speicherplatz frei. Gelöschte Aufnahmen anzeigen zeigt diese Dateien. Aufnahme wiederherstellen bringt sie ohne Überschreiben vorhandener Dateien in den ursprünglichen Ordner zurück. Aufnahmedatei löschen entfernt sie in dieser Ansicht nach Bestätigung endgültig. Das Löschen eines Eintrags aus Geplante Aufnahmen löscht die Mediendatei nicht.
 
 ### Aufnahmeformat {#recording-formats}
 
@@ -315,11 +323,17 @@ Aufnahmen > Geplante Aufnahmen… listet jede geplante, laufende und fertige Auf
 
 Geplante Aufnahmen starten von selbst, während das Programm läuft, auch wenn es in den Infobereich minimiert ist. Das Fenster aktualisiert sich von selbst, wenn Sie es öffnen und wann immer eine Aufnahme beginnt, endet oder abgebrochen wird; der Befehl Aktualisieren ist daher selten nötig.
 
-Wenn eine neue Aufnahme eine andere geplante Aufnahme überschneidet, warnt Sie das Programm vor dem Hinzufügen. Ihr Provider begrenzt möglicherweise die Anzahl der Streams, die gleichzeitig ausgeführt werden können.
+Aufnahmen > Verbindungslimits für Aufnahmen legt pro Anbieterkonto 1–64 Verbindungen für Aufnahmen fest; 0 bedeutet kein zusätzliches Limit. Berücksichtigen Sie Wiedergabe und andere Geräte; das tatsächliche Anbieterlimit wird nicht ermittelt. Beim Planen zählt die höchste gleichzeitige Verbindungszahl der Aufnahmen desselben bekannten Kontos. Eine Überschreitung erfordert Bestätigung; ohne bekanntes Budget erscheint die übliche Überschneidungswarnung. Bei ausgeschöpftem Budget wird eine neue Aufnahme abgelehnt, bestehende laufen weiter. Eine Aufnahme aus dem lokalen Playerpuffer zählt nicht als zusätzliche Anbieterverbindung. Vorhandene Schutzregeln für Konten mit nur einem Stream gelten weiterhin.
 
 Das Programm fragt vor dem Schließen nach, solange geplante Aufnahmen noch auf ihren Start warten, denn sie können nur starten, während das Programm läuft. Schließen Sie es trotzdem, starten die wartenden Aufnahmen nicht.
 
 Eine nicht leere Datei allein beweist keine erfolgreiche Aufnahme. Unterbrochene Aufnahmen werden als Unvollständig gekennzeichnet; die vorhandenen Dateien bleiben erhalten. Absichtlich beendete Aufnahmen erhalten den Status Vom Benutzer beendet. Fehlgeschlagene, verpasste oder unvollständige Folgen können bei einer späteren Ausstrahlung erneut eingeplant werden, ohne dieselbe Ausstrahlung immer wieder zu versuchen. Beim Aktualisieren bleibt die Mehrfachauswahl erhalten. Auch wenn nur ein Teil der Einträge ausgewählt ist, nennt die Löschbestätigung die Anzahl.
+
+Scheitert das Speichern einer Stornierung, Löschung oder Wiederholungsänderung, bleibt der bisherige Aufnahmeplan erhalten und eine Fehlermeldung erscheint. Ein unlesbarer Plan wird vor neuen Speicherungen separat gesichert. Scheitert auch die Sicherung, werden Änderungen zum Schutz des Originals gesperrt. Prüfen Sie Speicherplatz und Dateiberechtigungen vor dem Neustart.
+
+Unter Windows ist Aufnahmen > Automatischen Ruhezustand während der Aufnahme verhindern standardmäßig aktiviert. Die Anwendung fordert Windows auf, während Aufnahmen wach zu bleiben. Sie hält den Bildschirm nicht eingeschaltet und verhindert keinen vom Benutzer ausgelösten Energiesparzustand, etwa beim Schließen des Laptopdeckels.
+
+Für geplante Aufnahmen aufwecken (Windows) ist standardmäßig aus. Aktiviert fordert es einen Weckzeitgeber 60 Sekunden vor dem nächsten Aufnahmestart einschließlich Vorlauf an. Die Anwendung muss geöffnet bleiben; Hardware und Windows-Energieeinstellungen müssen Weckzeitgeber unterstützen. Ein heruntergefahrener Computer wird nicht gestartet. Planänderungen und Stornierungen aktualisieren den Zeitgeber; beim Beenden wird er entfernt.
 
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 
@@ -455,10 +469,12 @@ Hilfe > Über… zeigt die laufende Version und verlinkt beides. Bei einem Probl
 
 ## Persönliche Werkzeuge {#personal-tools}
 
-Lassen Sie die Anwendung für Aufnahmepläne, Erinnerungen und Suchmeldungen geöffnet. Sie wecken keinen schlafenden Computer.
+Lassen Sie die Anwendung für geplante Aufnahmen, Erinnerungen und Suchmeldungen geöffnet. Erinnerungen und Suchmeldungen wecken keinen schlafenden Computer. Geplante Aufnahmen können unter Windows einen Weckzeitgeber anfordern, wenn die unter Geplante Aufnahmen beschriebene Option aktiviert ist.
 
-- Aufnahmen > Aufnahme nach Uhrzeit planen funktioniert ohne Programmführer. Geben Sie Ortszeiten als JJJJ-MM-TT HH:MM ein; bei der Zeitumstellung müssen Sie mehrdeutige Zeiten auswählen. Über Zeiten bearbeiten ändern Sie geplante Aufnahmen oder das Ende laufender Aufnahmen. Überschneidungen benötigen Bestätigung; maximal sieben Tage Dauer.
+- Aufnahmen > Aufnahme nach Uhrzeit planen funktioniert ohne Programmführer. Geben Sie Ortszeiten als JJJJ-MM-TT HH:MM ein; bei der Zeitumstellung müssen Sie mehrdeutige Zeiten auswählen. Über Zeiten bearbeiten ändern Sie geplante Aufnahmen oder das Ende laufender Aufnahmen. Verbindungskonflikte benötigen Bestätigung gemäß dem Abschnitt Geplante Aufnahmen; maximal sieben Tage Dauer.
 - Bei Abrufvideos springen Ctrl+Left/Right 10 Sekunden und Ctrl+Shift+Left/Right 60 Sekunden. Ctrl+T öffnet den Zeitsprung, T liest vergangene, gesamte und verbleibende Zeit vor. Die Tasten sind konfigurierbar. Der Stream muss Zeitsprünge und eine bekannte Dauer unterstützen; Live-Wiedergabe bleibt unverändert.
 - Ansicht > Favoritenlisten verwaltet bis zu 50 benannte Listen mit je 2000 Sendern neben den bisherigen Favoriten. Wählen Sie vor dem Öffnen den hinzuzufügenden Sender. Nach oben/unten oder Ctrl+Up/Down ändert die Reihenfolge. Fehlende Sender bleiben erhalten, sind aber erst nach ihrer Rückkehr abspielbar.
 - Ansicht > Gespeicherte Programmsuchen speichert bis zu 30 Titel- oder Beschreibungssuchen für alle Sender, den gewählten Sender oder eine Momentaufnahme einer Favoritenliste. Nach Guide-Importen und alle 15 Minuten werden die nächsten 14 Tage durchsucht. Pro Suche erscheinen höchstens 500 Treffer; schränken Sie längere Listen ein. Ansageeinstellungen steuern neue Treffer. Ergebnisse können Erinnerungen oder Aufnahmen anlegen.
 - Der verschlüsselte Einstellungsexport enthält auch Aufnahmepläne, Erinnerungen und Suchverlauf, jedoch keine Mediendateien. Der Import zeigt Ersetzungszahlen und schließt die App; öffnen Sie sie erneut. Beenden Sie zuvor Aufnahmen und Downloads. Vergangene oder zuvor laufende Aufnahmen starten nicht neu. Ältere Sicherungen ersetzen nur Einstellungen und behalten lokale Pläne und Erinnerungen.
+
+Ansicht > Benachrichtigungsverlauf hält die letzten 200 eingereihten Benachrichtigungen der aktuellen Sitzung bereit. Wählen Sie einen Eintrag für Details; Aktualisieren erneuert die Liste, Details kopieren kopiert den Text. Erkennbare Zugangsdaten in URLs und entsprechenden Textzeilen werden im Verlauf und beim Kopieren verdeckt. Beliebige Nachrichten können trotzdem private Angaben enthalten. Verlauf löschen verlangt Bestätigung. Beim Beenden geht der Verlauf verloren; vorhandene Protokolldateien bleiben unverändert.

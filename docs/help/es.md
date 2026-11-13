@@ -110,6 +110,8 @@ Ver > TV en vivo && Repetición vuelve a los canales en vivo. El campo de búsqu
 
 El video bajo demanda funciona mejor con cuentas de Xtream Codes, que describen bien su catálogo. En listas M3U simples el programa reconoce películas y series por sus nombres de grupo y numeración de episodios.
 
+Reproductor > Reproducir automáticamente el siguiente episodio está desactivado de forma predeterminada. Si se activa, al terminar normalmente un episodio comienza una cuenta atrás de diez segundos para el siguiente identificado. Reproducir ahora inicia inmediatamente; Cancelar o Escape impide la continuación. Detener manualmente o un fallo prematuro no la activa. Los cambios de reproducción o lista descartan una continuación obsoleta; si no hay un siguiente episodio inequívoco, la reproducción termina.
+
 ## Administrador de listas de reproducción {#playlist-manager}
 
 Archivo > Administrador de listas de reproducción (Ctrl+M) enumera sus fuentes de listas. Se abre con el foco en la lista.
@@ -231,6 +233,8 @@ Los mismos comandos están en el menú Reproducción del reproductor. El reprodu
 
 Silenciar / Activar sonido silencia el reproductor integrado sin pausar la reproducción ni la grabación. Los atajos predeterminados son Ctrl+Mayús+M en la ventana principal y M en el reproductor; ambos se pueden cambiar en los ajustes de atajos. El silencio se mantiene al cambiar de canal o reconectar. Reproductor > Recordar el volumen de cada canal está desactivado inicialmente y, al activarlo, recuerda el volumen elegido por separado para cada lista o proveedor. Los canales sin valor guardado utilizan el volumen general del reproductor. Estas funciones no cambian el volumen del lector de pantalla.
 
+En el menú Reproducción del reproductor integrado, Añadir marcador con nombre guarda la posición actual de un contenido a la carta o una grabación local. Requiere desplazamiento y duración conocida. Marcadores con nombre muestra los del contenido actual: Intro o Ir al marcador salta a la posición; Cambiar nombre y Eliminar gestionan la entrada seleccionada. Los nombres deben ser únicos dentro del mismo contenido. Se pueden guardar hasta 1000 marcadores en total, independientes de la posición automática de reanudación.
+
 ### Pistas de audio {#audio-tracks}
 
 Los canales pueden llevar varias pistas de audio, como otros idiomas o audiodescripción. Pulse A para pasar a la siguiente pista, use Reproducción > Pista de audio, o Tab hasta Elegir pista de audio, que siempre nombra la pista en reproducción.
@@ -290,7 +294,11 @@ Detener una grabación puede tardar un momento mientras se finaliza su archivo. 
 
 Grabaciones > Supervisión del espacio de grabación comprueba el espacio libre cada cinco segundos mientras se graba. El aviso está activado por defecto por debajo de 1024 MiB. La detención automática está desactivada inicialmente; actívela y elija un umbral, inicialmente de 256 MiB, para solicitar el cierre correcto de los archivos antes de llenar la unidad. El umbral de aviso no puede ser inferior al de detención. Las grabaciones de una misma unidad comparten un aviso y, si se activa la detención, se detienen todas las afectadas. La comprobación no reserva espacio ni garantiza el cierre de archivos en una unidad llena o desconectada.
 
-Grabaciones > Biblioteca de grabaciones muestra los archivos terminados de la carpeta de grabaciones actual, incluidos los antiguos. Busque por título, canal o fecha. Reproducir / Continuar abre el archivo en el reproductor integrado y ofrece la posición guardada cuando está disponible. La duración y el estado se muestran si se conocen; los archivos antiguos pueden indicar Desconocido. Las grabaciones en curso quedan excluidas. Actualizar recarga la lista. Eliminar archivo de grabación borra permanentemente el archivo multimedia tras la confirmación; cierre antes su ventana de reproducción. Quitar una entrada de Grabaciones programadas no elimina ese archivo.
+Grabaciones > Biblioteca de grabaciones muestra archivos terminados de hasta 20 carpetas, incluida la carpeta actual de grabación. Añadir carpeta incorpora una carpeta existente, sin cambiar el destino de las grabaciones nuevas. Quitar carpeta de la biblioteca conserva sus archivos. La carpeta actual de grabación no se puede quitar.
+
+Busque por título, canal o fecha. Reproducir / Reanudar abre el archivo y ofrece la posición guardada, si existe. La duración y el estado se muestran cuando se conocen; los archivos antiguos pueden indicar Desconocido. Se excluyen las grabaciones activas y los archivos abiertos en el reproductor integrado. Cambiar título modifica solo el título visible y conserva el nombre del archivo, la posición y los marcadores. Actualizar vuelve a leer la lista.
+
+Mover a la papelera de grabaciones traslada el archivo a la papelera de la aplicación dentro de su carpeta de grabación, sin liberar espacio. Mostrar grabaciones eliminadas permite verlos. Restaurar grabación devuelve el archivo a su carpeta original sin sobrescribir archivos existentes. En esta vista, Eliminar archivo de grabación lo borra definitivamente tras confirmación. Quitar una entrada de Grabaciones programadas no elimina el archivo multimedia.
 
 ### Formato de grabación {#recording-formats}
 
@@ -315,11 +323,17 @@ Grabaciones > Grabaciones programadas… enumera cada grabación programada, en 
 
 Las grabaciones programadas comienzan solas mientras el programa está en ejecución, incluso minimizado a la bandeja del sistema. La ventana se actualiza sola al abrirla y cada vez que una grabación empieza, termina o se cancela, así que la orden Actualizar rara vez hace falta.
 
-Cuando una nueva grabación se superpone a otra grabación programada, el programa te avisa antes de agregarla. Su proveedor puede limitar la cantidad de transmisiones que se pueden ejecutar a la vez.
+Grabaciones > Límites de conexiones para grabaciones asigna entre 1 y 64 conexiones a las grabaciones por cuenta; 0 no añade ningún límite. Reserve capacidad para la reproducción y otros dispositivos; esta opción no consulta el límite real del proveedor. Al programar, se comprueba el máximo de conexiones simultáneas de grabación de la misma cuenta identificada. Superar el presupuesto requiere confirmación; si no se conoce, se muestra el aviso habitual de solapamiento. Si está agotado, se rechaza una grabación nueva y las existentes continúan. Grabar desde el búfer local del reproductor no consume otra conexión al proveedor. Las protecciones existentes para cuentas de un solo flujo siguen vigentes.
 
 El programa pregunta antes de cerrarse si quedan grabaciones programadas esperando a empezar, porque solo pueden empezar mientras el programa está abierto. Si lo cierra de todos modos, esas grabaciones no se iniciarán.
 
 Un archivo no vacío no demuestra por sí solo que una grabación haya finalizado correctamente. Las grabaciones interrumpidas se marcan como Parcial y se conservan sus archivos; una detención voluntaria se indica como Detenida por el usuario. Los episodios fallidos, perdidos o parciales pueden programarse en una emisión posterior, sin reintentar repetidamente la misma emisión. Al actualizar la lista se conserva la selección múltiple y la confirmación de eliminación indica cuántas entradas se quitarán, aunque solo se haya seleccionado parte de la lista.
+
+Si falla el guardado de una cancelación, eliminación o cambio de repetición, se conserva la programación anterior y aparece un error. Antes de guardar otra programación, se crea una copia separada del archivo ilegible. Si tampoco se puede crear esa copia, se bloquean los cambios para proteger el original. Compruebe el espacio y los permisos antes de reiniciar.
+
+En Windows, Grabaciones > Evitar la suspensión automática durante la grabación está activado de forma predeterminada. Solicita que Windows permanezca activo mientras graba, sin mantener encendida la pantalla ni impedir una suspensión iniciada por el usuario, por ejemplo al cerrar la tapa del portátil.
+
+Activar el equipo para grabaciones programadas (Windows) está desactivado de forma predeterminada. Al activarlo, solicita un temporizador de reactivación 60 segundos antes del inicio de la próxima grabación, incluido el margen previo. La aplicación debe permanecer abierta y el hardware y la configuración de energía deben admitir estos temporizadores. No enciende un equipo apagado. Los cambios y cancelaciones actualizan el temporizador; salir de la aplicación lo elimina.
 
 ### Margen de programación {#schedule-padding}
 
@@ -455,10 +469,12 @@ Ayuda > Acerca de… muestra la versión en uso y enlaza ambos. Al reportar un p
 
 ## Herramientas personales {#personal-tools}
 
-Mantenga la aplicación abierta para las grabaciones programadas, los recordatorios y las alertas de búsqueda. Estas herramientas no despiertan el equipo.
+Mantenga la aplicación abierta para las grabaciones programadas, recordatorios y avisos de búsquedas guardadas. Los recordatorios y avisos de búsqueda no reactivan el equipo. Las grabaciones pueden solicitar un temporizador en Windows si se activa la opción descrita en Grabaciones programadas.
 
-- Grabaciones > Programar por horario funciona sin guía. Introduzca la hora local como AAAA-MM-DD HH:MM y elija la ocurrencia si hay un cambio de hora. Editar horarios modifica una grabación pendiente o el final de una activa. Confirme los solapamientos; duración máxima de siete días.
+- Grabaciones > Programar por horario funciona sin guía. Introduzca la hora local como AAAA-MM-DD HH:MM y elija la ocurrencia si hay un cambio de hora. Editar horarios modifica una grabación pendiente o el final de una activa. Confirme los conflictos de conexión según Grabaciones programadas; duración máxima de siete días.
 - En reproducción a la carta, Ctrl+Left/Right salta 10 segundos, Ctrl+Shift+Left/Right 60 segundos, Ctrl+T abre el salto temporal y T anuncia el tiempo transcurrido, total y restante. Los atajos son configurables. Se requiere una transmisión que permita saltos y tenga duración conocida; el directo no cambia.
 - Ver > Listas de favoritos permite hasta 50 listas con nombre y 2000 canales cada una, independientes de los favoritos originales. Seleccione un canal antes de abrir la ventana para añadirlo. Mover arriba/abajo o Ctrl+Up/Down cambia el orden. Los canales ausentes se conservan, pero no se reproducen hasta estar disponibles.
 - Ver > Búsquedas de programas guardadas almacena hasta 30 búsquedas en títulos o descripciones para todos los canales, el seleccionado o una instantánea de una lista de favoritos. Tras importar la guía y cada 15 minutos se revisan los próximos 14 días. Máximo de 500 resultados por búsqueda; limítela si se trunca. Los ajustes de anuncios controlan los nuevos resultados. Puede crear recordatorios o grabaciones desde ellos.
 - La exportación cifrada incluye horarios, recordatorios e historial de búsqueda, sin archivos multimedia. La importación muestra cuántos registros reemplazará y cierra la aplicación; vuelva a abrirla para terminar. Finalice antes las grabaciones y descargas. Las grabaciones pasadas o ya iniciadas no se reinician. Las copias antiguas solo reemplazan los ajustes y conservan horarios y recordatorios locales.
+
+Ver > Historial de notificaciones conserva las últimas 200 notificaciones encoladas durante la sesión actual. Seleccione una para leer Detalles; Actualizar renueva la lista y Copiar detalles copia el texto. Se ocultan las credenciales reconocibles en URL y líneas de autenticación tanto en el historial como al copiar. Esto no garantiza que cualquier mensaje carezca de datos privados. Limpiar historial pide confirmación. El historial se pierde al cerrar la aplicación; los archivos de registro existentes no se modifican.
