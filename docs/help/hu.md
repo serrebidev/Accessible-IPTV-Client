@@ -136,6 +136,10 @@ A régi, kizárólag URL-alapú mentések megmaradnak. Xtream-tartalom ismételt
 
 A Lejátszó > A következő epizód automatikus lejátszása beállítás alapértelmezés szerint ki van kapcsolva. Ha engedélyezi, egy sorozatepizód szabályos befejezése után 10 másodperces visszaszámlálás indul a következő azonosított epizód lejátszása előtt. A Lejátszás most azonnal elindítja, a Mégse vagy az Escape pedig megszakítja az automatikus folytatást. Kézi leállítás vagy idő előtti lejátszási hiba nem indítja el a következő részt. Ha közben másik tartalomra vált vagy megváltozik a lejátszási lista, a korábbi folytatási kérés érvényét veszti. Egyértelműen azonosítható következő epizód hiányában a lejátszás véget ér.
 
+A beépített lejátszó Lejátszás > Előző epizód (Ctrl+PageUp) és Következő epizód (Ctrl+PageDown) parancsával kézzel válthat az aktuális sorozat részei között. A billentyűkombinációk módosíthatók. A keresés közben a jelenlegi tartalom lejátszása folytatódik; ha a szomszédos rész nem érhető el vagy nem azonosítható egyértelműen, a program nem vált. Másik tartalom elindítása vagy a lejátszási lista megváltozása érvényteleníti a korábbi keresést.
+
+A Folytatásra váró tartalmak ablak Típus mezőjében az Igény szerinti videó és a Felvételek között választhat. A helyi felvételek pozícióit a program külön tárolja. Ellenőrzésükkor kizárólag a beállított felvételi mappákban keres, a háttérben; a fájlnak az elérési út és a tárolt fájljellemzők alapján is egyeznie kell. Hiányzó vagy lecserélt fájlt nem indít el. A pozíciók törlése és az összes bejegyzés eltávolítása mindig csak a kiválasztott típusra vonatkozik.
+
 ## Lejátszási lista kezelése {#playlist-manager}
 
 A Fájl > Lejátszási lista kezelése (Ctrl+M) ablakban a beállított források jelennek meg. Megnyitásakor a fókusz ezek listájára kerül.
@@ -306,6 +310,8 @@ Az MPV szöveges feliratai az alkalmazás által indított és felügyelt munkam
 
 Az egyes programok támogatottságát a Beállítások > Feliratfelolvasás > A feliratkezelés támogatottsága… ablakban ellenőrizheti. Az „elérhető”, „ez a lejátszó nem támogatja” és „még nincs ellenőrizve” állapotok eltérő jelentésűek; az utóbbi nem tekinthető a működés igazolásának.
 
+A Lejátszás > Felirat időzítése… (Ctrl+Shift+T) ablakban a felirat időzítését ezredmásodpercben, legfeljebb tíz perccel módosíthatja mindkét irányban. A léptetőmező 500 ezredmásodperces lépésekben változtatja az értéket; pozitív értéknél a felirat később jelenik meg, és a beépített lejátszó a fájlból betöltött feliratot is később olvassa fel. Az Időzítés alaphelyzetbe állítása gomb nullát állít be; a Mégse megőrzi a korábbi értéket. Új tartalom indításakor az igazítás alaphelyzetbe kerül. A beállítás a műsor és a képernyőolvasó sebességét nem módosítja.
+
 ### Hangkimeneti eszköz {#audio-output-device}
 
 A Lejátszás > Hangkimeneti eszköz (D) paranccsal kiválaszthatja, melyik hangszórón vagy fejhallgatón szóljon a beépített lejátszó hangja. Így például a műsor és a képernyőolvasó hangját eltérő kimenetre irányíthatja. Az „A rendszer alapértelmezett eszköze” beállítás a Windowsban kijelölt kimenetet követi. A program megjegyzi a választását.
@@ -368,6 +374,8 @@ Cím, csatorna vagy dátum alapján kereshet. A Lejátszás / Folytatás megnyit
 
 Az Áthelyezés a felvételi lomtárba… parancs a fájlt az alkalmazás saját, az adott felvételi mappán belül tárolt lomtárába helyezi; ettől még nem szabadul fel tárhely. Ezeket a fájlokat a Törölt felvételek megjelenítése jelölőnégyzettel teheti láthatóvá. A Felvétel visszaállítása az eredeti mappába helyezi vissza a fájlt, és nem ír felül azonos nevű meglévő állományt. Ebben a nézetben a Felvételfájl törlése megerősítés után végleg törli a kijelölt fájlt. Az Ütemezett felvételek listájából eltávolított bejegyzéshez tartozó médiafájl megmarad.
 
+Az Összes felvételi mappa lehetőség a beállított mappák közös nézetét nyitja meg. Állapot szerint szűrhet, illetve dátum, cím, időtartam vagy fájlméret alapján rendezhet; a Csökkenő sorrend jelölőnégyzet megfordítja a rendezés irányát. A Ctrl+A valamennyi megjelenített sort kijelöli. Az állapotsor a kijelölt felvételek számát és összesített méretét is közli. A lomtárba helyezés, a végleges törlés és a visszaállítás több kijelölt fájlon is végrehajtható; lejátszáshoz és címváltoztatáshoz egyetlen felvételt jelöljön ki. A beolvasás és a szűrés a háttérben fut. Az ablak bezárása a már jóváhagyott fájlműveletet nem szakítja meg.
+
 ### Rögzítési formátumok {#recording-formats}
 
 A Felvételek > Rögzítési formátum menüponttal választhatja ki, milyen formátumban mentse a program a felvételeket:
@@ -404,6 +412,8 @@ Ha egy felvétel megszakításának, törlésének vagy ismétlési szabálya m�
 Windows alatt a Felvételek > Automatikus alvó állapot tiltása rögzítés közben beállítás alapértelmezés szerint be van kapcsolva. A program azt kéri a Windowstól, hogy felvétel közben ne lépjen automatikusan alvó állapotba. A kijelző bekapcsolva tartását nem kéri, és a felhasználó által kezdeményezett altatást – például a laptop fedelének lecsukásakor – nem akadályozza meg.
 
 Az Ébresztés az ütemezett felvételekhez (Windows) beállítás alapértelmezés szerint ki van kapcsolva. Ha engedélyezi, a program a következő felvétel – a kezdés előtti ráhagyással együtt számított – indulása előtt 60 másodperccel kéri a számítógép felébresztését. Ehhez az alkalmazásnak nyitva kell maradnia, a hardvernek és a Windows energiagazdálkodási beállításainak pedig támogatniuk kell az időzített ébresztést. A funkció a kikapcsolt számítógépet nem tudja elindítani. Az ütemezés módosításakor vagy törlésekor az ébresztés is frissül; kilépéskor a program törli az ébresztési időzítőt.
+
+Az Ütemezett felvételek ablak Felvételi ütközések… gombja a kijelölt bejegyzéssel időben átfedő felvételeket sorolja fel, az ütemezési ráhagyást is figyelembe véve. A részletek között a csatorna, a szolgáltatói fiók beállított elnevezése és a tényleges felvételi időszak is szerepel. Az Időpontok módosítása… gomb a meglévő szerkesztőt nyitja meg. Ütközés megerősítésekor szintén áttekintheti ezeket az adatokat, majd az Ütemezés ennek ellenére gombbal folytathatja a műveletet. Ismert felvételi kapcsolati keretnél az összehasonlítás az adott fiókra korlátozódik; ennek hiányában az időbeli átfedéseket mutatja, és nem állítja, hogy azok túllépnek egy szolgáltatói korlátot.
 
 ### Ütemezési ráhagyás {#schedule-padding}
 

@@ -121,6 +121,10 @@ Video on demand works best with Xtream Codes accounts, which describe their cata
 
 Player > Automatically Play the Next Episode is off by default. When enabled, a series episode that finishes normally opens a 10-second countdown before the next identified episode. Play Now starts immediately; Cancel or Escape stops the continuation. A manual stop or an early playback failure does not trigger it. Changing playback or the playlist cancels an outdated continuation; if no unambiguous next episode is available, playback ends.
 
+Playback > Previous Episode (Ctrl+PageUp) and Next Episode (Ctrl+PageDown) switch manually within the current series. These shortcuts are configurable. The current media keeps playing during lookup; an unavailable or ambiguous episode leaves it unchanged. A newer playback or playlist request invalidates the lookup.
+
+Continue Watching now has a Type choice for Video on Demand or Recordings. Local positions remain in a separate store. Checking a recording searches only the configured recording folders in the background and requires its exact path and file signature. Missing or replaced files are not played. Removing or clearing positions affects only the selected type.
+
 ## Playlist Manager {#playlist-manager}
 
 File > Playlist Manager (Ctrl+M) lists your playlist sources. It opens with the list focused.
@@ -255,6 +259,9 @@ A track you choose is remembered for that channel and comes back next time. See 
 Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and the selected voice reads each subtitle of a loaded SRT, ASS, SSA or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. The built-in player cannot yet read stream-embedded subtitles aloud.
 
 Playback > Read Current Subtitle (C) reads the subtitle on screen, or the last one shown when none is on screen. Playback > Previous Subtitle (Page Up) and Next Subtitle (Page Down) move through the subtitles already shown, so you can hear a line you missed again. They never read ahead of playback, and they work whether Speak Subtitles is on or off. On Windows, Options > Subtitle Speech > Application voice speed adjusts the application voice from -10 to 10 (0 is normal); it does not change playback speed or screen-reader settings.
+
+Playback > Subtitle Timing (Ctrl+Shift+T) adjusts subtitle delay by up to ten minutes in either direction, in milliseconds. The control steps by 500 ms; a positive value delays both display and built-in file-subtitle speech. Reset Timing sets zero; Cancel preserves the previous value. New media resets the adjustment; this does not change media or screen-reader speed.
+
 ### Audio output device {#audio-output-device}
 
 Playback > Audio Output Device (D) chooses the speakers or headphones the player uses, for example to keep TV sound away from your screen reader. System default follows the Windows default device. The choice is remembered.
@@ -309,6 +316,8 @@ Search by title, channel or date. Play / Resume opens the selected file and offe
 
 Move to Recording Trash moves a file into the application's trash within its recording folder; this does not free disk space. Show Deleted Recordings lists these files. Restore Recording returns a file to its original folder without overwriting an existing file. Delete Recording File in this view permanently deletes it after confirmation. Removing an entry from Scheduled Recordings does not delete the media file.
 
+All Recording Folders combines the configured folders. Filter by status and sort by date, title, duration or file size; Descending reverses the order. Ctrl+A selects all visible rows. Selected count and total size are shown. Trash, permanent deletion and restore support multiple selections; playback and title renaming require one. Disk scans and filtering run in the background; closing the window does not cancel a confirmed file action.
+
 ### Recording format {#recording-formats}
 
 Recordings > Recording Format chooses how recordings are saved:
@@ -343,6 +352,8 @@ If saving a cancellation, deletion or repeat-rule change fails, the previous sch
 On Windows, Recordings > Prevent Automatic Sleep While Recording is enabled by default. It requests that Windows remain awake during recordings; it does not keep the display on or prevent sleep initiated by the user, such as closing a laptop lid.
 
 Wake for Scheduled Recordings (Windows) is off by default. When enabled, it requests a wake timer 60 seconds before the next recording's start, including schedule padding. The application must stay open, and Windows power settings and hardware must support wake timers. This cannot start a shut-down computer. Changing or cancelling the schedule updates the timer; exiting removes it.
+
+Recording Conflicts in Scheduled Recordings lists overlaps for one selected entry, including padding. Details include the channel, configured account alias and actual recording window. Edit Times opens the existing timing editor. A conflict confirmation also offers these details and Schedule Anyway. Known account budgets restrict the comparison to that account; unknown budgets show time overlaps without claiming a provider limit.
 
 ### Schedule padding {#schedule-padding}
 

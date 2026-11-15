@@ -144,9 +144,13 @@ def test_recording_library_switches_between_restore_and_permanent_delete(owner, 
     monkeypatch.setattr(accessible_tools_ui.threading, 'Thread', lambda **kwargs: SimpleNamespace(start=lambda: None))
     dialog = accessible_tools_ui.RecordingLibraryDialog(owner)
     try:
+        # Filtering now runs on the serial worker; execute only this pure
+        # stage synchronously here. Separate tests check real async delivery.
+        dialog.worker.submit = lambda work, done: done(work(lambda: False), None)
         dialog.loaded([], '')
         dialog.deleted.SetValue(True)
-        row = {'path': 'fixture', 'title': 'Deleted', 'channel': '', 'date': '', 'duration': None, 'status': 'unknown'}
+        row = {'path': 'fixture', 'title': 'Deleted', 'channel': '', 'date': '', 'duration': None,
+               'status': 'unknown', 'size': 0, 'modified_ns': 0}
         dialog.all_rows = [row]
         dialog.filter()
         assert dialog.restore.IsEnabled() and not dialog.play.IsEnabled()

@@ -112,6 +112,10 @@ La vidéo à la demande fonctionne mieux avec les comptes Xtream Codes, qui déc
 
 Lecteur > Lire automatiquement l’épisode suivant est désactivé par défaut. S’il est activé, un épisode terminé normalement déclenche un compte à rebours de dix secondes avant l’épisode suivant identifié. Lire maintenant démarre immédiatement ; Annuler ou Échap empêche la suite. Un arrêt manuel ou une erreur prématurée ne la déclenche pas. Changer de lecture ou de liste invalide une continuation devenue obsolète ; sans épisode suivant identifié sans ambiguïté, la lecture s’arrête.
 
+Lecture > Épisode précédent (Ctrl+Page précédente) et Épisode suivant (Ctrl+Page suivante) permettent de changer d’épisode dans la série actuelle. Les raccourcis sont configurables. La lecture continue pendant la recherche. Un épisode indisponible ou ambigu ne provoque aucun changement. Une nouvelle lecture ou un changement de liste invalide la recherche précédente.
+
+Continuer à regarder propose un choix de type : vidéo à la demande ou enregistrements. Les positions locales restent séparées. Leur vérification recherche en arrière-plan dans les seuls dossiers configurés et exige un chemin et des caractéristiques de fichier identiques. Les fichiers absents ou remplacés ne sont pas lus. La suppression des positions concerne seulement le type sélectionné.
+
 ## Gestionnaire de listes de lecture {#playlist-manager}
 
 Fichier > Gestionnaire de listes de lecture (Ctrl+M) liste vos sources de listes de lecture. Il s'ouvre avec le focus sur la liste.
@@ -246,6 +250,9 @@ Une piste choisie est mémorisée pour cette chaîne et revient la prochaine foi
 Le texte des sous-titres apparaît dans la vidéo lorsque le flux le fournit. Lecture > Charger le fichier de sous-titres accepte un fichier de sous-titres externe. Activez Lecture > Lire les sous-titres à voix haute (Maj+S) et la voix sélectionnée lit chaque sous-titre d'un fichier SRT, ASS, SSA ou WebVTT chargé au moment où il apparaît, même lorsque la fenêtre du lecteur est masquée. Le sous-titre en cours s'affiche aussi sous forme de texte à la fin des commandes du lecteur. Le lecteur intégré ne peut pas encore lire à voix haute les sous-titres inclus dans le flux.
 
 Lecture > Lire le sous-titre actuel (C) lit le sous-titre à l'écran, ou le dernier affiché s'il n'y en a aucun à l'écran. Lecture > Sous-titre précédent (Page précédente) et Sous-titre suivant (Page suivante) parcourent les sous-titres déjà affichés, pour réentendre une ligne manquée. Ils ne lisent jamais en avance sur la lecture et fonctionnent que Lire les sous-titres à voix haute soit activé ou non. Sous Windows, Options > Lecture des sous-titres > Débit de la voix de l’application… règle le débit de -10 à 10 ; 0 correspond au débit normal. La vitesse de lecture du média et les réglages du lecteur d’écran restent inchangés.
+
+Lecture > Synchronisation des sous-titres (Ctrl+Maj+T) règle un décalage maximal de dix minutes dans chaque sens, en millisecondes par pas de 500 ms. Une valeur positive retarde l’affichage et la lecture vocale des fichiers de sous-titres. Réinitialiser règle zéro ; Annuler conserve la valeur précédente. Un nouveau média réinitialise le réglage. La vitesse du média et du lecteur d’écran reste inchangée.
+
 ### Périphérique de sortie audio {#audio-output-device}
 
 Lecture > Périphérique de sortie audio… (D) choisit les haut-parleurs ou le casque que le lecteur utilise, par exemple pour éloigner le son du téléviseur de votre lecteur d'écran. Par défaut du système suit le périphérique par défaut de Windows. Le choix est mémorisé.
@@ -300,6 +307,8 @@ Recherchez par titre, chaîne ou date. Lire / Reprendre ouvre le fichier et prop
 
 Déplacer dans la corbeille des enregistrements place le fichier dans la corbeille de l’application à l’intérieur de son dossier d’enregistrement, sans libérer d’espace. Afficher les enregistrements supprimés les rend visibles. Restaurer l’enregistrement remet le fichier dans son dossier d’origine sans écraser un fichier existant. Dans cette vue, Supprimer le fichier d’enregistrement le supprime définitivement après confirmation. Retirer une entrée des Enregistrements programmés ne supprime pas le fichier multimédia.
 
+Tous les dossiers d’enregistrements réunit les dossiers configurés. Filtrez par état et triez par date, titre, durée ou taille ; Ordre décroissant inverse le tri. Ctrl+A sélectionne toutes les lignes visibles ; le nombre et la taille totale sont affichés. Corbeille, suppression définitive et restauration acceptent plusieurs fichiers ; lecture et renommage exigent une seule sélection. L’analyse et le filtrage s’effectuent en arrière-plan ; fermer ne suspend pas une action confirmée.
+
 ### Format d'enregistrement {#recording-formats}
 
 Enregistrements > Format d'enregistrement choisit comment les enregistrements sont sauvegardés :
@@ -334,6 +343,8 @@ Si l’enregistrement d’une annulation, suppression ou modification de répét
 Sous Windows, Enregistrements > Empêcher la mise en veille automatique pendant l’enregistrement est activé par défaut. L’application demande à Windows de rester éveillé pendant les enregistrements, sans maintenir l’écran allumé ni empêcher une veille déclenchée par l’utilisateur, notamment en fermant le capot d’un portable.
 
 Sortir de veille pour les enregistrements programmés (Windows) est désactivé par défaut. Une fois activé, il demande un minuteur de réveil 60 secondes avant le début du prochain enregistrement, marge de début comprise. L’application doit rester ouverte ; le matériel et les réglages d’alimentation doivent prendre en charge ces minuteurs. Un ordinateur arrêté ne peut pas être démarré. Modifier ou annuler la programmation met le minuteur à jour ; quitter l’application le supprime.
+
+Conflits d’enregistrement, dans Enregistrements programmés, présente les chevauchements de l’entrée sélectionnée, marges comprises. Les détails indiquent la chaîne, l’alias du compte et la période réelle. Modifier les horaires ouvre l’éditeur existant. La confirmation propose ces détails et Programmer quand même. Un budget connu limite la comparaison au même compte ; sinon, les chevauchements ne prétendent pas représenter une limite du fournisseur.
 
 ### Marge de programmation {#schedule-padding}
 

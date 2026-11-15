@@ -87,6 +87,9 @@ hidden_imports = [
     'recording_power',
     'recording_limits',
     'recording_limits_ui',
+    'background_tasks',
+    'recording_library_ui',
+    'recording_conflicts_ui',
 ] + chardet_pipeline_hiddenimports
 
 # Explicitly add some submodules that PyInstaller might miss

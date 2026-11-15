@@ -112,6 +112,10 @@ O vídeo sob demanda funciona melhor com contas Xtream Codes, que descrevem bem 
 
 Reprodutor > Reproduzir automaticamente o próximo episódio vem desativado. Quando ativado, um episódio encerrado normalmente inicia uma contagem de dez segundos para o próximo identificado. Reproduzir agora começa imediatamente; Cancelar ou Escape impede a continuação. Uma parada manual ou falha antecipada não a inicia. Mudanças na reprodução ou na lista invalidam uma continuação desatualizada; sem um próximo episódio identificado sem ambiguidade, a reprodução termina.
 
+Reprodução > Episódio anterior (Ctrl+PageUp) e Episódio seguinte (Ctrl+PageDown) alternam dentro da série atual. Os atalhos são configuráveis. A reprodução continua durante a busca. Um episódio indisponível ou ambíguo não provoca mudança. Uma nova reprodução ou alteração da lista invalida a busca anterior.
+
+Continuar assistindo permite escolher o tipo: vídeo sob demanda ou gravações. As posições locais são armazenadas separadamente. A verificação busca em segundo plano apenas nas pastas configuradas e exige o mesmo caminho e as mesmas características do arquivo. Arquivos ausentes ou substituídos não são reproduzidos. Remover ou limpar posições afeta apenas o tipo selecionado.
+
 ## Gerenciador de listas de reprodução {#playlist-manager}
 
 Arquivo > Gerenciador de listas de reprodução (Ctrl+M) lista suas fontes de listas de reprodução. Ele abre com o foco na lista.
@@ -246,6 +250,9 @@ Uma faixa que você escolhe é lembrada para aquele canal e volta na próxima ve
 O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e a voz selecionada lerá cada legenda de um arquivo SRT, ASS, SSA ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. O player integrado ainda não pode ler em voz alta as legendas incluídas no próprio stream.
 
 Reprodução > Ler a legenda atual (C) lê a legenda que está na tela, ou a última mostrada quando não há nenhuma na tela. Reprodução > Legenda anterior (Page Up) e Próxima legenda (Page Down) percorrem as legendas já mostradas, para você ouvir de novo uma linha que perdeu. Elas nunca leem à frente da reprodução e funcionam com Ler legendas em voz alta ativado ou desativado. No Windows, Opções > Leitura de legendas > Velocidade da voz da aplicação… permite escolher um valor de -10 a 10; 0 é normal. Isso não altera a velocidade de reprodução nem as configurações do leitor de tela.
+
+Reprodução > Sincronização das legendas (Ctrl+Shift+T) ajusta até dez minutos em cada direção, em milissegundos e passos de 500 ms. Valores positivos atrasam a exibição e a leitura de arquivos de legendas. Redefinir define zero; Cancelar mantém o valor anterior. Uma nova mídia restaura o ajuste inicial. A velocidade da mídia e do leitor de tela não muda.
+
 ### Dispositivo de saída de áudio {#audio-output-device}
 
 Reprodução > Dispositivo de saída de áudio… (D) escolhe os alto-falantes ou fones que o reprodutor usa, por exemplo para manter o som da TV longe do seu leitor de tela. Predefinido do sistema segue o dispositivo predefinido do Windows. A escolha é lembrada.
@@ -300,6 +307,8 @@ Pesquise por título, canal ou data. Reproduzir / Retomar abre o arquivo e ofere
 
 Mover para a lixeira de gravações transfere o arquivo para a lixeira do aplicativo dentro da sua pasta de gravação, sem liberar espaço. Mostrar gravações excluídas exibe esses arquivos. Restaurar gravação devolve o arquivo à pasta original sem substituir arquivos existentes. Nessa visualização, Excluir arquivo de gravação o apaga permanentemente após confirmação. Remover uma entrada de Gravações agendadas não exclui o arquivo de mídia.
 
+Todas as pastas de gravações reúne as pastas configuradas. Filtre por estado e ordene por data, título, duração ou tamanho; Decrescente inverte a ordem. Ctrl+A seleciona todas as linhas visíveis; a quantidade e o tamanho total são exibidos. Lixeira, exclusão permanente e restauração aceitam várias seleções; reprodução e renomeação exigem uma só. Leitura e filtragem ocorrem em segundo plano; fechar não cancela ações confirmadas.
+
 ### Formato de gravação {#recording-formats}
 
 Gravações > Formato de gravação escolhe como as gravações são salvas:
@@ -334,6 +343,8 @@ Se falhar o salvamento de um cancelamento, exclusão ou alteração de repetiç�
 No Windows, Gravações > Impedir a suspensão automática durante a gravação vem ativado. Solicita que o Windows permaneça ativo durante as gravações, sem manter a tela ligada nem impedir a suspensão iniciada pelo usuário, como ao fechar a tampa de um notebook.
 
 Reativar para gravações agendadas (Windows) vem desativado. Quando ativado, solicita um temporizador de ativação 60 segundos antes do início da próxima gravação, incluindo a margem anterior. O aplicativo deve permanecer aberto, e o hardware e as configurações de energia devem oferecer suporte a esses temporizadores. Não liga um computador desligado. Alterações e cancelamentos atualizam o temporizador; sair do aplicativo o remove.
+
+Conflitos de gravação, em Gravações agendadas, lista as sobreposições da entrada selecionada, incluindo as margens. Os detalhes mostram canal, apelido da conta e intervalo real. Editar horários abre o editor existente. A confirmação oferece esses detalhes e Agendar mesmo assim. Um limite conhecido compara apenas a mesma conta; sem ele, as sobreposições não representam necessariamente um limite do provedor.
 
 ### Margem de agendamento {#schedule-padding}
 

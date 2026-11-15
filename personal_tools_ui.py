@@ -478,8 +478,10 @@ class PersonalToolsMixin:
             import recording_limits
             warning = recording_limits.warning(self.config, channel, start, end,
                                                scheduler.list_jobs(include_done=False), exclude=job["id"] if job else None)
-            if warning and not confirm(self, warning):
-                return
+            if warning:
+                from recording_conflicts_ui import confirm_conflicts
+                if not confirm_conflicts(self, channel, start, end, warning, exclude=job['id'] if job else None):
+                    return
             if job:
                 expected = tuple(job[k] for k in ("start_ts", "stop_ts", "status"))
                 scheduler.edit_timing(job["id"], start, end, expected=expected)

@@ -47,6 +47,9 @@ MAIN = {
 }
 
 PLAYER = {
+    "previous_episode": "Ctrl+PageUp",
+    "next_episode": "Ctrl+PageDown",
+    "subtitle_timing": "Ctrl+Shift+T",
     "mute": "M",
     "seek_back_10": "Ctrl+Left",
     "seek_forward_10": "Ctrl+Right",
@@ -97,6 +100,9 @@ LABELS = {
         "what_is_playing": N_("What Is Playing"),
     },
     "player": {
+        "previous_episode": N_("Previous Episode"),
+        "next_episode": N_("Next Episode"),
+        "subtitle_timing": N_("Subtitle Timing..."),
         "mute": N_("Mute / Unmute"),
         "seek_back_10": N_("Back 10 Seconds"),
         "seek_forward_10": N_("Forward 10 Seconds"),
@@ -170,13 +176,16 @@ def effective(config: dict, context: str) -> dict:
         result[action] = value
     # Adding a new default must not steal an existing personal shortcut. Keep
     # an explicit mute binding as chosen; otherwise pick a free modified key.
-    if context + ".mute" not in saved:
-        used = {parse(value)[:2] for action, value in result.items() if action != "mute"}
-        if parse(result["mute"])[:2] in used:
+    additions = ('mute', 'previous_episode', 'next_episode', 'subtitle_timing') if context == 'player' else ('mute',)
+    for addition in additions:
+        if context + '.' + addition in saved:
+            continue
+        used = {parse(value)[:2] for action, value in result.items() if action != addition}
+        if parse(result[addition])[:2] in used:
             for letter in "MABCDEFGHIJKLMNOPQRSTUVWXYZ":
                 alternative = "Ctrl+Alt+Shift+" + letter
                 if parse(alternative)[:2] not in used:
-                    result["mute"] = alternative
+                    result[addition] = alternative
                     break
     return result
 

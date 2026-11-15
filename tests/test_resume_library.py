@@ -162,10 +162,12 @@ def test_modal_checkpoint_updates_to_other_items_are_not_overwritten():
     assert key in config['playback_bookmarks']
 
 
-def test_deleting_progress_disables_active_checkpoint_without_stopping_playback():
+def test_deleting_progress_disables_active_checkpoint_without_stopping_playback(monkeypatch):
+    import options
     item = movie();key = resume.item_key(item)
     active = SimpleNamespace(_resume_key=key, _save_resume_checkpoint=lambda **kwargs: None)
     saved = []
+    monkeypatch.setattr(options, 'load_config', lambda: {'playback_bookmarks': record(item)})
     class Dialog:
         def __init__(self, parent, config, save, resolve):
             save({})
@@ -206,6 +208,7 @@ def dialog_model():
             'datetime': datetime, 'live_announce': SimpleNamespace(speak=lambda text: None),
         })
     instance = cls();instance._closed=False;instance._generation=1;instance._busy=False;instance._status={}
+    instance.store_key = 'playback_bookmarks'
     item=movie();key=resume.item_key(item)
     instance.config={'playback_bookmarks':record(item)}
     instance.rows=list(instance.config['playback_bookmarks'].items())

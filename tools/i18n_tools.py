@@ -47,6 +47,8 @@ SOURCE_FILES = [
     "client_recording.py",
     "accessible_tools_ui.py",
     "recording_library.py",
+    "recording_library_ui.py",
+    "recording_conflicts_ui.py",
     "named_bookmarks.py",
     "session_tools_ui.py",
     "episode_continuation_ui.py",

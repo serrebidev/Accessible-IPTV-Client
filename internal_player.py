@@ -627,6 +627,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self.SetMenuBar(menu_bar)
         # F1 on an open Playback menu item opens the guide section about it.
         user_guide.set_menu_help(self, playback_menu, "built-in-player")
+        for item, topic in getattr(self, '_navigation_help_items', ()):
+            user_guide.set_menu_help(self, item, topic)
         user_guide.set_menu_help(self, audio_track_item, "audio-tracks")
         user_guide.set_menu_help(self, subtitle_item, "built-in-player")
         for item in (m_load_subtitle, self.speak_subtitles_item,
@@ -758,6 +760,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         # Armed first: resolving the new stream can take a while, and a switch
         # already queued must see that it has been replaced.
         self._vlc_generation = generation = getattr(self, "_vlc_generation", 0) + 1
+        if not _retry:
+            self._subtitle_timing_ms = 0
+        self._subtitle_timing_pending = True
 
         if _retry:
             self._manual_stop = False
@@ -2180,6 +2185,18 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 self._stall_ticks = 0
 
         if state_key == "playing":
+            if getattr(self, '_subtitle_timing_pending', False):
+                self._subtitle_timing_pending = False
+                delay = getattr(self, '_subtitle_timing_ms', 0)
+                # libVLC resets delay at set_media and rejects setting it
+                # before input starts. Restore a reconnect's adjustment only
+                # once Playing exists; new media already has its native zero.
+                if delay:
+                    try:
+                        if self.player.video_set_spu_delay(delay * 1000) < 0:
+                            raise ValueError('libVLC rejected subtitle delay')
+                    except Exception:
+                        LOG.warning('Could not restore subtitle timing', exc_info=True)
             self._maybe_apply_preferred_audio_track()
             self._maybe_reapply_audio_track()
 
@@ -2298,6 +2315,12 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self._go_to_media_time()
         elif action == "media_time":
             self._announce_media_time()
+        elif action == 'previous_episode':
+            self._navigate_episode(-1)
+        elif action == 'next_episode':
+            self._navigate_episode(1)
+        elif action == 'subtitle_timing':
+            self._subtitle_timing()
         elif action == "volume_up":
             self._adjust_volume(5 if event.ControlDown() else 2)
         elif action == "volume_down":
@@ -2774,6 +2797,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self._cue_timer.Stop()
 
     def _on_cue_timer(self, _event: Optional[wx.TimerEvent] = None) -> None:
+        if getattr(self, '_subtitle_timing_pending', False) and getattr(self, '_subtitle_timing_ms', 0):
+            return
         pending = getattr(self, "_pending_media_seek", None)
         if pending is not None and pending.generation == getattr(self, "_vlc_generation", 0):
             return
@@ -3168,7 +3193,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             config[store_key] = entries
             try:
                 if callable(self._resume_save):
-                    self._resume_save()
+                    if self._resume_save() is False:
+                        raise OSError(_("Could not save playback history changes."))
             except Exception:
                 config[store_key] = previous
                 raise
@@ -3179,6 +3205,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         return True
 
     def _save_resume_checkpoint(self, force=False) -> None:
+        if getattr(self, '_resume_history_write_pending', False):
+            return
         pending = getattr(self, "_pending_media_seek", None)
         if pending is not None and pending.generation == getattr(self, "_vlc_generation", 0):
             return
@@ -3218,7 +3246,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 config[store_key] = updated
                 try:
                     if callable(self._resume_save):
-                        self._resume_save()
+                        if self._resume_save() is False:
+                            raise OSError(_("Could not save playback history changes."))
                     self._resume_save_failed = False
                 except Exception as error:
                     config[store_key] = previous

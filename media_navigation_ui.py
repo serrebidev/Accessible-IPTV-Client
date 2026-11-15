@@ -2,6 +2,7 @@
 import time
 
 import wx
+import user_guide
 from i18n import gettext as _, N_
 from modal_guard import show_modal, message_box
 from media_navigation import PendingSeek, clock_text, parse_position, target_position
@@ -16,6 +17,7 @@ SEEK_ACTIONS = {
 
 class MediaNavigationMixin:
     def _add_navigation_menu(self, menu):
+        self._navigation_help_items = []
         menu.AppendSeparator()
         for action, (delta, label) in SEEK_ACTIONS.items():
             item = menu.Append(wx.ID_ANY, self._shortcut_label(_(label), action))
@@ -24,6 +26,70 @@ class MediaNavigationMixin:
                                        ("media_time", _("Playback Time"), self._announce_media_time)):
             item = menu.Append(wx.ID_ANY, self._shortcut_label(label, action))
             self.Bind(wx.EVT_MENU, handler, item)
+            user_guide.set_menu_help(self, item, 'video-on-demand')
+            self._navigation_help_items.append((item, 'video-on-demand'))
+        for action, label, handler in (
+                ('previous_episode', _("Previous Episode"), lambda event: self._navigate_episode(-1)),
+                ('next_episode', _("Next Episode"), lambda event: self._navigate_episode(1)),
+                ('subtitle_timing', _("Subtitle Timing..."), lambda event: self._subtitle_timing())):
+            item = menu.Append(wx.ID_ANY, self._shortcut_label(label, action))
+            self.Bind(wx.EVT_MENU, handler, item)
+            user_guide.set_menu_help(self, item, 'subtitle-speech' if action == 'subtitle_timing' else 'video-on-demand')
+            self._navigation_help_items.append((item, 'subtitle-speech' if action == 'subtitle_timing' else 'video-on-demand'))
+
+    def _navigate_episode(self, direction):
+        import episode_continuation_ui
+        episode_continuation_ui.navigate(self, direction)
+
+    def _subtitle_timing(self, _event=None):
+        if getattr(self, '_destroyed', False) or getattr(self, '_manual_stop', False):
+            return
+        generation = getattr(self, '_vlc_generation', 0)
+        try:
+            current = self.player.video_get_spu_delay() // 1000
+            dialog = wx.Dialog(self, title=_("Subtitle Timing..."))
+            layout = wx.BoxSizer(wx.VERTICAL)
+            label = _("Subtitle delay in milliseconds (-600000 to 600000). Positive values display and read subtitles later; 0 resets timing.")
+            layout.Add(wx.StaticText(dialog, label=label), 0, wx.ALL, 10)
+            value = wx.SpinCtrl(dialog, min=-600000, max=600000, initial=max(-600000, min(600000, current)))
+            value.SetName(label)
+            value.SetIncrement(500)
+            layout.Add(value, 0, wx.EXPAND | wx.ALL, 10)
+            reset = wx.Button(dialog, label=_("Reset Timing"))
+            reset.Bind(wx.EVT_BUTTON, lambda event: value.SetValue(0))
+            layout.Add(reset, 0, wx.ALL, 10)
+            layout.Add(dialog.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 10)
+            dialog.SetSizerAndFit(layout)
+            user_guide.set_help_topic(dialog, 'subtitle-speech')
+            value.SetFocus()
+            try:
+                if show_modal(dialog) == wx.ID_OK and generation == getattr(self, '_vlc_generation', 0):
+                    self._apply_subtitle_timing(value.GetValue())
+            finally:
+                dialog.Destroy()
+        except Exception as error:
+            self._navigation_message(str(error))
+
+    def _apply_subtitle_timing(self, milliseconds):
+        if type(milliseconds) is not int or not -600000 <= milliseconds <= 600000:
+            raise ValueError(_("Invalid subtitle delay."))
+        result = self.player.video_set_spu_delay(milliseconds * 1000)
+        if result is not None and result < 0:
+            raise ValueError(_("Subtitle timing could not be changed."))
+        self._subtitle_timing_ms = milliseconds
+        sink = getattr(self, '_subtitle_sink', None)
+        if sink is not None:
+            sink.clear()
+        source = getattr(self, '_subtitle_file_source', None)
+        if source is not None:
+            source.seeked()
+            self._subtitle_generation = source.generation
+        self._cue_index = self._last_cue_index = self._review_cue_index = None
+        self._subtitle_last_time = None
+        label = getattr(self, 'subtitle_label', None)
+        if label is not None:
+            label.SetLabel('')
+        self._navigation_message(_("Subtitle delay: {milliseconds} ms.").format(milliseconds=milliseconds))
 
     def _media_clock(self):
         if (getattr(self, "_destroyed", False) or getattr(self, "_manual_stop", False)

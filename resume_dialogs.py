@@ -34,6 +34,11 @@ class ContinueWatchingDialog(wx.Dialog):
         self._status = {}
         panel = wx.Panel(self)
         layout = wx.BoxSizer(wx.VERTICAL)
+        self.source = wx.Choice(panel, choices=[_("Video on Demand"), _("Recordings")])
+        self.source.SetName(_("Type"))
+        self.source.SetSelection(0)
+        layout.Add(self.source, 0, wx.EXPAND | wx.ALL, 10)
+        self.source.Bind(wx.EVT_CHOICE, self._change_source)
         self.list = wx.ListCtrl(panel, style=wx.LC_REPORT | wx.LC_SINGLE_SEL)
         self.list.SetName(_("Saved playback positions"))
         for i, (label, width) in enumerate([(_("Title"), 290), (_("Position"), 100),
@@ -69,7 +74,7 @@ class ContinueWatchingDialog(wx.Dialog):
         self.list.SetFocus()
 
     def _refresh(self, preferred=None):
-        self.rows = list(playback_resume.normalize(self.config.get("playback_bookmarks")).items())
+        self.rows = list(playback_resume.normalize(self.config.get(self.store_key)).items())
         self.list.DeleteAllItems()
         selected = 0
         for index, (key, entry) in enumerate(self.rows):
@@ -98,11 +103,22 @@ class ContinueWatchingDialog(wx.Dialog):
         index = self.list.GetFirstSelected()
         return self.rows[index][0] if 0 <= index < len(self.rows) else None
 
+    @property
+    def store_key(self):
+        return 'recording_playback_bookmarks' if self.source.GetSelection() == 1 else 'playback_bookmarks'
+
+    def _change_source(self, _event):
+        self._generation += 1
+        self._busy = False
+        self._status.clear()
+        self._refresh()
+
     def _update_buttons(self):
         selected = self._selected_key() is not None and not self._busy
         for button in (self.continue_button, self.check_button, self.remove_button):
             button.Enable(selected)
         self.clear_button.Enable(bool(self.rows) and not self._busy)
+        self.source.Enable(not self._busy)
 
     def _on_key(self, event):
         if event.GetKeyCode() in (wx.WXK_DELETE, wx.WXK_NUMPAD_DELETE):
@@ -119,7 +135,7 @@ class ContinueWatchingDialog(wx.Dialog):
         generation = self._generation
         # Copy on the UI thread. Native playback timers may update config while
         # the provider request is running, but workers never touch wx/config.
-        entries = playback_resume.normalize(self.config.get("playback_bookmarks"))
+        entries = playback_resume.normalize(self.config.get(self.store_key))
         self.status.SetLabel(_("Checking saved content…"))
         self._update_buttons()
         def worker():
@@ -138,7 +154,7 @@ class ContinueWatchingDialog(wx.Dialog):
         if self._closed or generation != self._generation:
             return
         self._busy = False
-        entries = playback_resume.normalize(self.config.get("playback_bookmarks"))
+        entries = playback_resume.normalize(self.config.get(self.store_key))
         if key not in entries:
             self._refresh()
             return
@@ -155,8 +171,50 @@ class ContinueWatchingDialog(wx.Dialog):
             self.EndModal(wx.ID_OK)
 
     def _write(self, entries):
+        persist = getattr(self.save_entries, 'persist', None)
+        if persist is not None:
+            if self._busy:
+                return False
+            store_key = self.store_key
+            self._busy = True
+            self._update_buttons()
+            writing = getattr(self.save_entries, 'writing', lambda *args: None)
+            writing(store_key, True)
+            def completed(error):
+                try:
+                    if error is None:
+                        self.save_entries.applied(entries, store_key)
+                finally:
+                    writing(store_key, False)
+                if self._closed:
+                    return
+                self._busy = False
+                if error:
+                    self.status.SetLabel(_("Could not save playback history changes."))
+                    self._update_buttons()
+                else:
+                    self._generation += 1
+                    self._refresh()
+                    self.list.SetFocus()
+            def worker():
+                error = None
+                try:
+                    persist(entries, store_key)
+                except Exception as exc:
+                    error = exc
+                wx.CallAfter(completed, error)
+            try:
+                threading.Thread(target=worker, daemon=True, name='ResumeHistoryWriter').start()
+            except RuntimeError as error:
+                completed(error)
+            return True
         try:
-            self.save_entries(entries)
+            if self.store_key == 'playback_bookmarks':
+                result = self.save_entries(entries)
+            else:
+                result = self.save_entries(entries, self.store_key)
+            if result is False:
+                raise OSError('history save refused')
         except Exception:
             self.status.SetLabel(_("Could not save playback history changes."))
             return False
@@ -171,7 +229,7 @@ class ContinueWatchingDialog(wx.Dialog):
         key = self._selected_key()
         if key is None or not self._confirm(_("Remove this saved playback position?")):
             return
-        entries = playback_resume.normalize(self.config.get("playback_bookmarks"))
+        entries = playback_resume.normalize(self.config.get(self.store_key))
         entries.pop(key, None)
         self._write(entries)
 

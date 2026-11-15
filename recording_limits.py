@@ -51,20 +51,30 @@ def check_start(config, url, metadata, active):
 
 
 def peak_demand(config, channel, start, end, jobs, *, exclude=None):
+    limits = normalize(config.get('recording_connection_limits'))
+    if not limits:
+        return None
     key = channel_key(channel, config)
-    limit = normalize(config.get("recording_connection_limits")).get(key, 0)
+    limit = limits.get(key, 0)
     if not limit:
         return None
     events = [(start, 1), (end, -1)]
+    by_provider = {account.provider_id: account_key(account)
+                   for source in config.get('playlists', [])
+                   for account in account_info.discover_accounts([source]) if account.provider_id}
     for job in jobs:
         if job.get("id") == exclude or job.get("status") not in {"scheduled", "recording", "stopping"}:
-            continue
-        if channel_key(job.get("channel"), config) != key:
             continue
         a, b = job.get("start_ts"), job.get("stop_ts")
         if not all(type(value) in (int, float) and math.isfinite(value) for value in (a, b)):
             continue
         if a < end and b > start:
+            snapshot = job.get('channel') or {}
+            identity = by_provider.get(snapshot.get('provider-id'))
+            if identity is None:
+                identity = channel_key(snapshot, config)
+            if identity != key:
+                continue
             events.extend(((max(a, start), 1), (min(b, end), -1)))
     current = peak = 0
     for _time, delta in sorted(events):  # End before start at a shared boundary.

@@ -3333,9 +3333,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         import recording_limits
         warning = recording_limits.warning(self.config, channel, job["start_ts"], job["stop_ts"],
                                             self._ensure_dvr_scheduler().list_jobs(include_done=False))
-        if warning and message_box(warning,
-                _("Recording Conflict"), wx.YES_NO | wx.ICON_WARNING) != wx.YES:
-            return
+        if warning:
+            from recording_conflicts_ui import confirm_conflicts
+            if not confirm_conflicts(self, channel, job['start_ts'], job['stop_ts'], warning):
+                return
 
         try:
             self._ensure_dvr_scheduler(start=True).add_job(job)
@@ -6353,23 +6354,49 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         clients = {pid: client for pid, client in self.provider_clients.items()
                    if isinstance(client, XtreamCodesClient)}
 
-        def save_entries(entries):
-            previous = self.config.get("playback_bookmarks", {})
-            self.config["playback_bookmarks"] = entries
-            try:
-                save_config(self.config)
-            except Exception:
-                self.config["playback_bookmarks"] = previous
-                raise
+        import recording_library
+        directories = recording_library.folders(self.config)
+        local_keys = set(playback_resume.normalize(self.config.get('recording_playback_bookmarks')))
+        active = [rec.written_path for rec in self.recorder.list_active()] if hasattr(self, 'recorder') else []
+
+        def apply_entries(entries, store_key="playback_bookmarks"):
+            previous = self.config.get(store_key, {})
+            self.config[store_key] = entries
             # A playing item must not silently recreate a deliberately deleted
             # bookmark on its next timer tick. Tracking resumes at the next play.
-            if (frame is not None and getattr(frame, "_resume_key", "") in previous
+            if (frame is not None and getattr(frame, '_resume_store', 'playback_bookmarks') == store_key
+                    and getattr(frame, "_resume_key", "") in previous
                     and frame._resume_key not in entries):
                 frame._resume_key = ""
 
-        dialog = ContinueWatchingDialog(
-            self, self.config, save_entries,
-            lambda key, entries: playback_resume.resolve_current(key, entries, channels, clients))
+        def persist_entries(entries, store_key="playback_bookmarks"):
+            import options
+            # Worker-only durable write, merging the latest disk config under
+            # the existing save lock so unrelated settings cannot be reverted.
+            with options._SAVE_LOCK:
+                config = options.load_config()
+                config[store_key] = entries
+                if save_config(config) is False:
+                    raise OSError(_("Could not save playback history changes."))
+
+        def save_entries(entries, store_key="playback_bookmarks"):
+            persist_entries(entries, store_key)
+            apply_entries(entries, store_key)
+
+        def writing(store_key, active):
+            if frame is not None and getattr(frame, '_resume_store', 'playback_bookmarks') == store_key:
+                frame._resume_history_write_pending = active
+
+        save_entries.persist = persist_entries
+        save_entries.applied = apply_entries
+        save_entries.writing = writing
+
+        def resolve(key, entries):
+            if key in local_keys:
+                return recording_library.resolve_resume(key, entries, directories, active)
+            return playback_resume.resolve_current(key, entries, channels, clients)
+
+        dialog = ContinueWatchingDialog(self, self.config, save_entries, resolve)
         try:
             if show_modal(dialog) != wx.ID_OK:
                 return
@@ -6381,7 +6408,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                           "Reopen Continue Watching and try again."),
                         _("Continue Watching"), wx.OK | wx.ICON_INFORMATION)
             return
-        if saved_key not in playback_resume.normalize(self.config.get("playback_bookmarks")):
+        store_key = 'recording_playback_bookmarks' if item.get('local-recording') else 'playback_bookmarks'
+        if saved_key not in playback_resume.normalize(self.config.get(store_key)):
             return
         caster = getattr(self, "caster", None)
         if self.default_player not in {"Built-in Player", "player_Internal", "internal", "Internal"} or (
@@ -9174,6 +9202,9 @@ class ScheduledRecordingsDialog(wx.Dialog):
         edit_btn = wx.Button(panel, label=_("Edit Times..."))
         btn_sizer.Insert(0, edit_btn, 0, wx.RIGHT, 5)
         edit_btn.Bind(wx.EVT_BUTTON, self._edit_times)
+        conflicts_btn = wx.Button(panel, label=_("Recording Conflicts..."))
+        btn_sizer.Insert(1, conflicts_btn, 0, wx.RIGHT, 5)
+        conflicts_btn.Bind(wx.EVT_BUTTON, self._show_conflicts)
         refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
         self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False, event=_event))
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
@@ -9183,6 +9214,15 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # but an empty window on a dialog that was never populated reads like
         # "you have no recordings scheduled" even when you do.
         self.refresh()
+
+    def _show_conflicts(self, _event=None):
+        jobs = self._selected_jobs()
+        if len(jobs) == 1:
+            from recording_conflicts_ui import show_conflicts
+            show_conflicts(self.parent_frame, copy.deepcopy(jobs[0]))
+        else:
+            message_box(_("Select a scheduled recording first."), _("Recording Conflicts"),
+                        wx.OK | wx.ICON_INFORMATION, parent=self)
 
     def _edit_times(self, event=None):
         jobs = self._selected_jobs()

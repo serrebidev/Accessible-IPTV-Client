@@ -112,6 +112,10 @@ El video bajo demanda funciona mejor con cuentas de Xtream Codes, que describen 
 
 Reproductor > Reproducir automáticamente el siguiente episodio está desactivado de forma predeterminada. Si se activa, al terminar normalmente un episodio comienza una cuenta atrás de diez segundos para el siguiente identificado. Reproducir ahora inicia inmediatamente; Cancelar o Escape impide la continuación. Detener manualmente o un fallo prematuro no la activa. Los cambios de reproducción o lista descartan una continuación obsoleta; si no hay un siguiente episodio inequívoco, la reproducción termina.
 
+Reproducción > Episodio anterior (Ctrl+RePág) y Episodio siguiente (Ctrl+AvPág) cambian dentro de la serie actual. Los atajos son configurables. La reproducción continúa durante la búsqueda. Si el episodio no está disponible o es ambiguo, no se cambia. Una nueva reproducción o un cambio de lista invalida la búsqueda anterior.
+
+Continuar viendo permite elegir el tipo: vídeo bajo demanda o grabaciones. Las posiciones locales se guardan por separado. La comprobación busca en segundo plano únicamente en las carpetas configuradas y exige coincidencia de ruta y características del archivo. No reproduce archivos ausentes o sustituidos. Quitar o borrar posiciones solo afecta al tipo seleccionado.
+
 ## Administrador de listas de reproducción {#playlist-manager}
 
 Archivo > Administrador de listas de reproducción (Ctrl+M) enumera sus fuentes de listas. Se abre con el foco en la lista.
@@ -246,6 +250,9 @@ Una pista que elija se recuerda para ese canal y vuelve la próxima vez. Para el
 El texto de los subtítulos aparece en el vídeo cuando la transmisión lo proporciona. Reproducción > Cargar archivo de subtítulos acepta un archivo de subtítulos externo. Active Reproducción > Leer subtítulos en voz alta (Mayús+S) y la voz seleccionada leerá cada subtítulo de un archivo SRT, ASS, SSA o WebVTT cargado cuando aparezca, también con la ventana del reproductor oculta. El subtítulo actual se muestra además como texto al final de los controles del reproductor. El reproductor integrado todavía no puede leer en voz alta los subtítulos incluidos en la transmisión.
 
 Reproducción > Leer el subtítulo actual (C) lee el subtítulo que está en pantalla, o el último que se mostró si no hay ninguno en pantalla. Reproducción > Subtítulo anterior (Re Pág) y Subtítulo siguiente (Av Pág) recorren los subtítulos ya mostrados, para que pueda volver a oír una línea que se le escapó. Nunca leen por delante de la reproducción y funcionan tanto si Leer subtítulos en voz alta está activado como si no. En Windows, Opciones > Lectura de subtítulos > Velocidad de la voz de la aplicación… permite ajustar la velocidad de -10 a 10; 0 es normal. No modifica la velocidad de reproducción ni los ajustes del lector de pantalla.
+
+Reproducción > Sincronización de subtítulos (Ctrl+Mayús+T) ajusta hasta diez minutos en ambas direcciones, en milisegundos y pasos de 500 ms. Los valores positivos retrasan tanto la visualización como la lectura de archivos de subtítulos. Restablecer pone cero; Cancelar conserva el valor anterior. Un contenido nuevo restablece el ajuste. No cambia la velocidad del contenido ni del lector de pantalla.
+
 ### Dispositivo de salida de audio {#audio-output-device}
 
 Reproducción > Dispositivo de salida de audio… (D) elige los altavoces o auriculares que usa el reproductor, por ejemplo para alejar el sonido del TV de su lector de pantalla. Predeterminado del sistema sigue al dispositivo predeterminado de Windows. La elección se recuerda.
@@ -300,6 +307,8 @@ Busque por título, canal o fecha. Reproducir / Reanudar abre el archivo y ofrec
 
 Mover a la papelera de grabaciones traslada el archivo a la papelera de la aplicación dentro de su carpeta de grabación, sin liberar espacio. Mostrar grabaciones eliminadas permite verlos. Restaurar grabación devuelve el archivo a su carpeta original sin sobrescribir archivos existentes. En esta vista, Eliminar archivo de grabación lo borra definitivamente tras confirmación. Quitar una entrada de Grabaciones programadas no elimina el archivo multimedia.
 
+Todas las carpetas de grabaciones reúne las carpetas configuradas. Filtre por estado y ordene por fecha, título, duración o tamaño; Descendente invierte el orden. Ctrl+A selecciona todas las filas visibles; se muestran la cantidad y el tamaño total. La papelera, la eliminación permanente y la restauración admiten selección múltiple; reproducir y cambiar el título requieren una grabación. La búsqueda se ejecuta en segundo plano; cerrar no cancela acciones confirmadas.
+
 ### Formato de grabación {#recording-formats}
 
 Grabaciones > Formato de grabación elige cómo se guardan las grabaciones:
@@ -334,6 +343,8 @@ Si falla el guardado de una cancelación, eliminación o cambio de repetición, 
 En Windows, Grabaciones > Evitar la suspensión automática durante la grabación está activado de forma predeterminada. Solicita que Windows permanezca activo mientras graba, sin mantener encendida la pantalla ni impedir una suspensión iniciada por el usuario, por ejemplo al cerrar la tapa del portátil.
 
 Activar el equipo para grabaciones programadas (Windows) está desactivado de forma predeterminada. Al activarlo, solicita un temporizador de reactivación 60 segundos antes del inicio de la próxima grabación, incluido el margen previo. La aplicación debe permanecer abierta y el hardware y la configuración de energía deben admitir estos temporizadores. No enciende un equipo apagado. Los cambios y cancelaciones actualizan el temporizador; salir de la aplicación lo elimina.
+
+Conflictos de grabación, en Grabaciones programadas, muestra las superposiciones de una entrada seleccionada, incluidos los márgenes. Los detalles indican canal, alias de cuenta y período real de grabación. Editar horarios abre el editor existente. La confirmación ofrece estos detalles y Programar de todos modos. Con un límite de grabación conocido se compara la misma cuenta; sin él se muestran superposiciones, sin afirmar un límite del proveedor.
 
 ### Margen de programación {#schedule-padding}
 

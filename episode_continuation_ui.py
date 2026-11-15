@@ -14,8 +14,60 @@ from modal_guard import show_modal
 
 
 def prepare(owner, frame, channel):
+    frame._episode_navigation_token = object()
+    frame._episode_navigation_busy = False
     frame._episode_channel = copy.deepcopy(channel or {})
     frame._episode_queue = copy.deepcopy(getattr(owner, "_vod_episode_queue", ()))
+
+
+def navigate(player, direction):
+    """One on-demand catalogue request, never stop current playback to probe."""
+    if (getattr(player, '_destroyed', False) or getattr(player, '_manual_stop', False)
+            or getattr(player, '_current_stream_kind', '') != 'vod'
+            or getattr(player, '_episode_navigation_busy', False)):
+        return
+    owner = player.GetParent()
+    channel = copy.deepcopy(getattr(player, '_episode_channel', {}))
+    episodes = copy.deepcopy(getattr(player, '_episode_queue', ()))
+    generation = getattr(player, '_vlc_generation', 0)
+    request = getattr(owner, '_continuation_request', 0)
+    source = getattr(owner, '_playlist_load_token', 0)
+    client = getattr(owner, 'provider_clients', {}).get(channel.get('provider-id'))
+    token = player._episode_navigation_token = object()
+    player._episode_navigation_busy = True
+
+    def ready(item, error):
+        if token is not getattr(player, '_episode_navigation_token', None):
+            return
+        player._episode_navigation_busy = False
+        if (getattr(player, '_destroyed', False) or getattr(player, '_manual_stop', False)
+                or getattr(owner, '_exit_requested', False)
+                or generation != getattr(player, '_vlc_generation', 0)
+                or request != getattr(owner, '_continuation_request', 0)
+                or source != getattr(owner, '_playlist_load_token', 0)):
+            return
+        if error:
+            player._navigation_message(_("Could not load episodes:\n{error}").format(error=error))
+        elif item is None:
+            player._navigation_message(_("No adjacent episode is available."))
+        else:
+            owner._launch_stream(item['url'], item.get('name'), stream_kind='vod', channel=item,
+                                 show_internal_player=True, force_internal=True)
+
+    def worker():
+        try:
+            current = episodes
+            if channel.get('resume-type') == 'episode' and client is not None:
+                current = vod.xtream_series_episodes(client, channel['series_id'],
+                                                     channel.get('provider-id'), strict=True)
+            item = episode_continuation.adjacent_item(channel, current, direction)
+            wx.CallAfter(ready, item, '')
+        except Exception as error:
+            wx.CallAfter(ready, None, str(error))
+    try:
+        threading.Thread(target=worker, daemon=True, name='EpisodeNavigation').start()
+    except RuntimeError as error:
+        ready(None, str(error))
 
 
 class NextEpisodeDialog(wx.Dialog):

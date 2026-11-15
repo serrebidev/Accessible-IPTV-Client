@@ -111,6 +111,10 @@ Görünüm > Canlı TV && Geri izleme canlı kanallara döner. Geçişte arama a
 
 Oynatıcı > Sonraki Bölümü Otomatik Oynat varsayılan olarak kapalıdır. Açıkken normal biçimde biten bir bölümden sonra, belirlenen sonraki bölüm için on saniyelik geri sayım başlar. Şimdi Oynat hemen başlatır; İptal veya Escape devamı durdurur. Elle durdurma veya erken oynatma hatası bunu başlatmaz. Oynatma veya liste değişikliği geçersiz kalan devam isteğini iptal eder; sonraki bölüm kesin olarak belirlenemiyorsa oynatma biter.
 
+Oynatma > Önceki Bölüm (Ctrl+PageUp) ve Sonraki Bölüm (Ctrl+PageDown) geçerli dizinin bölümleri arasında geçiş yapar. Kısayollar değiştirilebilir. Arama sırasında oynatma sürer. Kullanılamayan veya belirsiz bir bölüme geçilmez. Yeni oynatma ya da liste değişikliği önceki aramayı geçersiz kılar.
+
+İzlemeye Devam Et, isteğe bağlı video veya kayıt türünü seçmenizi sağlar. Yerel konumlar ayrı saklanır. Denetim, yalnızca yapılandırılan klasörleri arka planda tarar ve dosya yolu ile özelliklerinin eşleşmesini gerektirir. Eksik veya değiştirilmiş dosyalar oynatılmaz. Konumları kaldırma veya temizleme yalnızca seçilen türü etkiler.
+
 ## Oynatma listesi yöneticisi {#playlist-manager}
 
 Dosya > Oynatma listesi yöneticisi (Ctrl+M) oynatma listesi kaynaklarınızı listeler. Odak listede olarak açılır.
@@ -245,6 +249,9 @@ Seçtiğiniz bir parça o kanal için hatırlanır ve gelecek sefer geri gelir. 
 Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda seçili ses, yüklenen SRT, ASS, SSA veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Yerleşik oynatıcı, akışın kendisiyle gelen altyazıları henüz seslendiremez.
 
 Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı yoksa son gösterileni okur. Oynatma > Önceki altyazı (Page Up) ve Sonraki altyazı (Page Down), daha önce gösterilen altyazılar arasında gezinir; böylece kaçırdığınız bir satırı yeniden dinleyebilirsiniz. Hiçbir zaman oynatmanın önüne geçip okumazlar ve Altyazıları seslendir açık da olsa kapalı da olsa çalışırlar. Windows’ta Seçenekler > Altyazı seslendirme > Uygulama sesinin konuşma hızı… ile -10 ile 10 arasında bir değer seçilebilir; 0 normal hızdır. Bu ayar oynatma hızını veya ekran okuyucu ayarlarını değiştirmez.
+
+Oynatma > Altyazı Zamanlaması (Ctrl+Shift+T), her iki yönde en çok on dakikalık kaydırmayı 500 ms adımlarla milisaniye cinsinden ayarlar. Pozitif değerler altyazı dosyalarının gösterimini ve okunmasını geciktirir. Sıfırla sıfır değerini ayarlar; İptal önceki değeri korur. Yeni medya ayarı sıfırlar. Medya ve ekran okuyucu hızı değişmez.
+
 ### Ses çıkış cihazı {#audio-output-device}
 
 Oynatma > Ses çıkış cihazı... (D), oynatıcının hangi hoparlörleri ya da kulaklıkları kullanacağını seçer; örneğin TV sesini ekran okuyucunuzdan uzak tutmak için. Sistem varsayılanı, Windows'un varsayılan cihazını izler. Seçim hatırlanır.
@@ -299,6 +306,8 @@ Başlık, kanal veya tarihe göre arayın. Oynat / Sürdür dosyayı açar ve va
 
 Kayıt Çöp Kutusuna Taşı dosyayı kendi kayıt klasöründeki uygulama çöp kutusuna taşır; disk alanı boşaltmaz. Silinen Kayıtları Göster bu dosyaları listeler. Kaydı Geri Yükle, mevcut dosyaların üzerine yazmadan dosyayı özgün klasörüne döndürür. Bu görünümde Kayıt Dosyasını Sil, onaydan sonra dosyayı kalıcı olarak siler. Zamanlanmış Kayıtlar listesinden bir girdiyi kaldırmak medya dosyasını silmez.
 
+Tüm Kayıt Klasörleri yapılandırılan klasörleri birleştirir. Duruma göre filtreleyin; tarih, başlık, süre veya boyuta göre sıralayın. Azalan sıralamayı tersine çevirir. Ctrl+A görünen tüm satırları seçer; sayı ve toplam boyut gösterilir. Çöp kutusu, kalıcı silme ve geri yükleme çoklu seçimi destekler; oynatma ve yeniden adlandırma tek kayıt gerektirir. Tarama ve filtreleme arka plandadır; kapatma onaylanmış işlemleri iptal etmez.
+
 ### Kayıt biçimi {#recording-formats}
 
 Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
@@ -333,6 +342,8 @@ Boş olmayan bir dosya tek başına kaydın başarılı olduğunu göstermez. Ke
 Windows'ta Kayıtlar > Kayıt Sırasında Otomatik Uykuyu Önle varsayılan olarak açıktır. Kayıt boyunca Windows'un uyanık kalmasını ister. Ekranı açık tutmaz; dizüstü bilgisayarın kapağını kapatmak gibi kullanıcının başlattığı uykuyu engellemez.
 
 Zamanlanmış Kayıtlar İçin Uyandır (Windows) varsayılan olarak kapalıdır. Açıldığında, başlangıç öncesi ek süre dahil sonraki kaydın başlangıcından 60 saniye önce uyandırma zamanlayıcısı ister. Uygulama açık kalmalı, donanım ve Windows güç ayarları uyandırma zamanlayıcılarını desteklemelidir. Kapatılmış bir bilgisayarı açamaz. Zamanlama değişiklikleri ve iptaller zamanlayıcıyı günceller; uygulamadan çıkmak kaldırır.
+
+Zamanlanmış Kayıtlar içindeki Kayıt Çakışmaları, seçilen kaydın zaman payları dahil çakışmalarını listeler. Ayrıntılarda kanal, hesap takma adı ve gerçek kayıt aralığı bulunur. Zamanları Düzenle mevcut düzenleyiciyi açar. Onay penceresi bu ayrıntıları ve Yine de Zamanla seçeneğini sunar. Bilinen bütçe aynı hesabı karşılaştırır; yoksa sağlayıcı sınırı iddiası olmadan zaman çakışmaları gösterilir.
 
 ### Zamanlama payı {#schedule-padding}
 

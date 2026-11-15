@@ -1,5 +1,8 @@
 # Recording and catch-up
 
+- The library reads bounded metadata and preserves unreadable index bytes before any replacement; an unreadable index is not a new empty library. Validate status and duration in both normal and trash rows. Use per-directory locks so metadata on a slow drive cannot serialize an unrelated recording folder. Virtual multi-select lists use one replaceable worker task for scans and cached-data filtering; closing the UI cancels delivery, not an already confirmed media operation.
+- Conflict details include actual padded start/stop windows and the configured provider alias, never account credentials. The detailed account analysis runs on a worker. Peak-demand checks reject non-overlapping windows before resolving account identity, and skip account discovery entirely when no recording budget is configured. These remain app recording budgets, not measured provider-wide quotas.
+
 ## Reliability and recording tools, 2026-11-12
 
 - User-initiated cancellation, deletion and repeat edits persist a proposal before changing memory. Runtime state transitions retain their existing best-effort save behavior so a write failure does not lose management of a running FFmpeg process. Cancellation stops the recording using the fresh post-cancel id/key, including a concurrent scheduled start.

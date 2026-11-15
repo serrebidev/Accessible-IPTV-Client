@@ -112,6 +112,10 @@ Wideo na żądanie działa najlepiej z kontami Xtream Codes, które porządnie o
 
 Odtwarzacz > Automatycznie odtwarzaj następny odcinek jest domyślnie wyłączone. Po włączeniu prawidłowo zakończony odcinek uruchamia dziesięciosekundowe odliczanie do kolejnego rozpoznanego odcinka. Odtwórz teraz zaczyna od razu; Anuluj lub Escape zatrzymuje kontynuację. Ręczne zatrzymanie i przedwczesny błąd jej nie uruchamiają. Zmiana odtwarzania lub listy unieważnia nieaktualną kontynuację; bez jednoznacznego następnego odcinka odtwarzanie kończy się.
 
+Odtwarzanie > Poprzedni odcinek (Ctrl+PageUp) i Następny odcinek (Ctrl+PageDown) przełączają odcinki bieżącego serialu. Skróty można zmienić. Podczas wyszukiwania odtwarzanie trwa nadal. Niedostępny lub niejednoznaczny odcinek nie powoduje przełączenia. Nowe odtwarzanie lub zmiana listy unieważnia poprzednie wyszukiwanie.
+
+Kontynuuj oglądanie pozwala wybrać typ: wideo na żądanie lub nagrania. Lokalne pozycje są przechowywane osobno. Sprawdzanie przeszukuje w tle tylko skonfigurowane foldery i wymaga zgodnej ścieżki oraz cech pliku. Brakujące lub zastąpione pliki nie są odtwarzane. Usuwanie lub czyszczenie pozycji dotyczy tylko wybranego typu.
+
 ## Menedżer playlist {#playlist-manager}
 
 Plik > Menedżer playlist (Ctrl+M) wypisuje twoje źródła playlist. Otwiera się z fokusem na liście.
@@ -246,6 +250,9 @@ Wybrana ścieżka jest zapamiętywana dla tego kanału i wraca następnym razem.
 Tekst napisów pojawia się w filmie, jeśli dostarcza go strumień. Odtwarzanie > Załaduj plik z napisami przyjmuje zewnętrzny plik napisów. Włącz Odtwarzanie > Odczytuj napisy (Shift+S), a wybrany głos odczyta każdy napis z wczytanego pliku SRT, ASS, SSA lub WebVTT w chwili jego pojawienia się, także przy ukrytym oknie odtwarzacza. Bieżący napis jest też wyświetlany jako tekst na końcu elementów sterujących odtwarzacza. Wbudowany odtwarzacz nie może jeszcze odczytywać napisów zawartych w samym strumieniu.
 
 Odtwarzanie > Odczytaj bieżący napis (C) odczytuje napis widoczny na ekranie albo ostatni wyświetlony, gdy żaden nie jest widoczny. Odtwarzanie > Poprzedni napis (Page Up) i Następny napis (Page Down) przechodzą po już wyświetlonych napisach, więc możesz ponownie usłyszeć przegapioną linię. Nigdy nie wyprzedzają odtwarzania i działają niezależnie od tego, czy Odczytuj napisy jest włączone. W systemie Windows pozycja Opcje > Czytanie napisów > Tempo głosu aplikacji… pozwala wybrać wartość od -10 do 10; 0 oznacza zwykłe tempo. Nie zmienia to prędkości odtwarzania ani ustawień czytnika ekranu.
+
+Odtwarzanie > Synchronizacja napisów (Ctrl+Shift+T) ustawia przesunięcie do dziesięciu minut w każdą stronę, w milisekundach z krokiem 500 ms. Wartości dodatnie opóźniają wyświetlanie i odczyt napisów z pliku. Reset ustawia zero; Anuluj zachowuje poprzednią wartość. Nowy materiał resetuje ustawienie. Prędkość materiału i czytnika ekranu pozostaje bez zmian.
+
 ### Urządzenie wyjścia audio {#audio-output-device}
 
 Odtwarzanie > Urządzenie wyjścia audio... (D) wybiera głośniki albo słuchawki, których używa odtwarzacz, na przykład aby odsunąć dźwięk telewizji od czytnika ekranu. Domyślne systemu podąża za domyślnym urządzeniem Windows. Wybór jest zapamiętywany.
@@ -300,6 +307,8 @@ Wyszukuj według tytułu, kanału lub daty. Odtwórz / Wznów otwiera plik i pro
 
 Przenieś do kosza nagrań umieszcza plik w koszu aplikacji wewnątrz jego folderu nagrań i nie zwalnia miejsca. Pokaż usunięte nagrania wyświetla te pliki. Przywróć nagranie przenosi plik do pierwotnego folderu bez nadpisywania istniejących plików. W tym widoku Usuń plik nagrania usuwa go trwale po potwierdzeniu. Usunięcie wpisu z Zaplanowanych nagrań nie usuwa pliku multimedialnego.
 
+Wszystkie foldery nagrań łączy skonfigurowane foldery. Filtruj według stanu i sortuj według daty, tytułu, czasu trwania lub rozmiaru; Malejąco odwraca kolejność. Ctrl+A zaznacza wszystkie widoczne wiersze; wyświetlana jest liczba i łączny rozmiar. Kosz, trwałe usuwanie i przywracanie obsługują wiele plików; odtwarzanie i zmiana tytułu wymagają jednego. Skanowanie i filtrowanie działa w tle; zamknięcie nie przerywa zatwierdzonych operacji.
+
 ### Format nagrywania {#recording-formats}
 
 Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
@@ -334,6 +343,8 @@ Jeśli zapis anulowania, usunięcia lub zmiany powtarzania nie powiedzie się, p
 W Windows opcja Nagrania > Zapobiegaj automatycznemu uśpieniu podczas nagrywania jest domyślnie włączona. Aplikacja prosi Windows o pozostanie w stanie czuwania podczas nagrań. Nie utrzymuje włączonego ekranu ani nie blokuje uśpienia wywołanego przez użytkownika, na przykład zamknięciem pokrywy laptopa.
 
 Wybudzaj dla zaplanowanych nagrań (Windows) jest domyślnie wyłączone. Po włączeniu żąda wybudzenia 60 sekund przed rozpoczęciem następnego nagrania, z uwzględnieniem zapasu przed programem. Aplikacja musi pozostać otwarta, a sprzęt i ustawienia zasilania muszą obsługiwać czasomierze wybudzania. Funkcja nie uruchamia wyłączonego komputera. Zmiany i anulowania aktualizują czasomierz; zamknięcie aplikacji go usuwa.
+
+Konflikty nagrań w Zaplanowanych nagraniach pokazują nakładanie się wybranego wpisu, uwzględniając zapas czasu. Szczegóły obejmują kanał, nazwę konta i rzeczywisty przedział. Edytuj godziny otwiera istniejący edytor. Potwierdzenie oferuje te szczegóły i Zaplanuj mimo to. Znany limit zawęża porównanie do tego samego konta; inaczej są to tylko nakładające się terminy, bez założenia limitu dostawcy.
 
 ### Margines nagrywania {#schedule-padding}
 

@@ -3,13 +3,19 @@ import playback_resume
 
 
 def following_item(current, episodes):
+    return adjacent_item(current, episodes, 1)
+
+
+def adjacent_item(current, episodes, direction):
+    if direction not in (-1, 1):
+        return None
     key = playback_resume.item_key(current)
     if not key:
         return None
     positions = [index for index, item in enumerate(episodes) if playback_resume.item_key(item) == key]
-    if len(positions) != 1 or positions[0] + 1 >= len(episodes):
+    if len(positions) != 1 or not 0 <= positions[0] + direction < len(episodes):
         return None
-    following = episodes[positions[0] + 1]
+    following = episodes[positions[0] + direction]
     if (not playback_resume.item_key(following) or playback_resume.item_key(following) == key
             or following.get("provider-id") != current.get("provider-id")
             or following.get("playlist-id") != current.get("playlist-id")

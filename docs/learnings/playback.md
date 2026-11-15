@@ -1,5 +1,8 @@
 # Playback (libVLC, buffering, subtitles)
 
+- Local recording progress lives in `recording_playback_bookmarks`, separately from provider VOD progress. Continue Watching selects the store explicitly and resolves local files on demand, using configured folders and exact path/size/mtime identity. Do not scan recording folders to resolve a provider movie. History edits must check a false save result; durable UI writes run on a worker, and publish changes back on the GUI thread only after success.
+- Manual episode navigation is one background request at a time, with playback, playlist and request-generation guards. It never stops the playing stream to inspect a catalogue. Subtitle timing uses milliseconds in the UI and microseconds for libVLC; positive delay moves display and file-subtitle speech later. Clear queued speech and invalidate file-source cue history when it changes. Timing changes never call `set_rate` or change screen-reader settings.
+
 Moved here from `agents.md` on 2026-10-22, verbatim. `agents.md`
 points at this file; read it before changing the code it names and
 grep it for the module, symbol or error you are about to touch.

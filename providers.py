@@ -167,21 +167,30 @@ class XtreamCodesClient:
 
     def get_vod_categories(self, timeout: int = 30) -> List[Dict]:
         data = self._player_api("get_vod_categories", timeout=timeout)
-        return data if isinstance(data, list) else []
+        return self._catalogue_list(data)
 
     def get_vod_streams(self, category_id: Optional[str] = None, timeout: int = 60) -> List[Dict]:
         extra = {"category_id": str(category_id)} if category_id is not None else None
         data = self._player_api("get_vod_streams", extra, timeout=timeout)
-        return data if isinstance(data, list) else []
+        return self._catalogue_list(data)
 
     def get_series_categories(self, timeout: int = 30) -> List[Dict]:
         data = self._player_api("get_series_categories", timeout=timeout)
-        return data if isinstance(data, list) else []
+        return self._catalogue_list(data)
 
     def get_series(self, category_id: Optional[str] = None, timeout: int = 60) -> List[Dict]:
         extra = {"category_id": str(category_id)} if category_id is not None else None
         data = self._player_api("get_series", extra, timeout=timeout)
-        return data if isinstance(data, list) else []
+        return self._catalogue_list(data)
+
+    @staticmethod
+    def _catalogue_list(data):
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and isinstance(data.get('user_info'), dict):
+            if str(data['user_info'].get('auth')) == '0':
+                raise ProviderError(_("Authentication failed – the server rejected these credentials"))
+        raise ProviderError(_("Invalid response from Xtream player API"))
 
     def get_series_info(self, series_id, timeout: int = 30) -> Dict:
         extra = {"series_id": str(series_id)}

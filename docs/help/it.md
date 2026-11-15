@@ -112,6 +112,10 @@ Il video on demand funziona meglio con gli account Xtream Codes, che descrivono 
 
 Lettore > Riproduci automaticamente l’episodio successivo è disattivato per impostazione predefinita. Se attivato, un episodio terminato normalmente avvia un conto alla rovescia di dieci secondi per quello successivo identificato. Riproduci ora parte subito; Annulla o Escape interrompe la continuazione. Un arresto manuale o un errore anticipato non la avvia. Cambiare riproduzione o elenco annulla una continuazione non più valida; senza un episodio successivo inequivocabile, la riproduzione termina.
 
+Riproduzione > Episodio precedente (Ctrl+PagSu) ed Episodio successivo (Ctrl+PagGiù) cambiano episodio nella serie attuale. Le scorciatoie sono configurabili. La riproduzione continua durante la ricerca. Un episodio assente o ambiguo non provoca cambiamenti. Una nuova riproduzione o una modifica della playlist invalida la ricerca precedente.
+
+Continua a guardare permette di scegliere il tipo: video su richiesta o registrazioni. Le posizioni locali sono salvate separatamente. Il controllo cerca in background solo nelle cartelle configurate e richiede percorso e caratteristiche del file corrispondenti. I file mancanti o sostituiti non vengono riprodotti. Rimozione e cancellazione delle posizioni interessano solo il tipo selezionato.
+
 ## Gestione playlist {#playlist-manager}
 
 File > Gestione playlist (Ctrl+M) elenca le sorgenti delle playlist. Si apre con il focus sull'elenco.
@@ -246,6 +250,9 @@ Una traccia scelta è ricordata per quel canale e torna la volta successiva. Per
 Il testo dei sottotitoli appare nel video quando lo stream lo fornisce. Riproduzione > Carica file sottotitoli accetta un file di sottotitoli esterno. Attiva Riproduzione > Leggi i sottotitoli ad alta voce (Maiusc+S) e la voce selezionata leggerà ogni sottotitolo di un file SRT, ASS, SSA o WebVTT caricato non appena compare, anche con la finestra del lettore nascosta. Il sottotitolo corrente è mostrato anche come testo alla fine dei controlli del lettore. Il lettore integrato non può ancora leggere ad alta voce i sottotitoli inclusi nello stream.
 
 Riproduzione > Leggi il sottotitolo attuale (C) legge il sottotitolo sullo schermo, o l'ultimo mostrato se sullo schermo non ce n'è nessuno. Riproduzione > Sottotitolo precedente (Pag su) e Sottotitolo successivo (Pag giù) scorrono i sottotitoli già mostrati, così puoi riascoltare una riga che ti è sfuggita. Non leggono mai oltre la riproduzione e funzionano sia con Leggi i sottotitoli ad alta voce attivo sia disattivato. In Windows, Opzioni > Lettura dei sottotitoli > Velocità della voce dell’applicazione… consente di scegliere un valore da -10 a 10; 0 è normale. Non modifica la velocità del contenuto né le impostazioni dello screen reader.
+
+Riproduzione > Sincronizzazione sottotitoli (Ctrl+Maiusc+T) regola fino a dieci minuti in entrambe le direzioni, in millisecondi con incrementi di 500 ms. I valori positivi ritardano visualizzazione e lettura dei file di sottotitoli. Ripristina imposta zero; Annulla conserva il valore precedente. Un nuovo contenuto ripristina il valore iniziale. La velocità del contenuto e del lettore di schermo resta invariata.
+
 ### Dispositivo di uscita audio {#audio-output-device}
 
 Riproduzione > Dispositivo di uscita audio… (D) sceglie gli altoparlanti o le cuffie che il lettore usa, per esempio per tenere lontano il suono della TV dal proprio lettore di schermo. Predefinito di sistema segue il dispositivo predefinito di Windows. La scelta è ricordata.
@@ -300,6 +307,8 @@ Cercare per titolo, canale o data. Riproduci / Riprendi apre il file e propone l
 
 Sposta nel cestino delle registrazioni trasferisce il file nel cestino dell’applicazione dentro la sua cartella di registrazione, senza liberare spazio. Mostra registrazioni eliminate rende visibili questi file. Ripristina registrazione li riporta nella cartella originale senza sovrascrivere file esistenti. In questa vista, Elimina file di registrazione li elimina definitivamente dopo conferma. Rimuovere una voce da Registrazioni programmate non elimina il file multimediale.
 
+Tutte le cartelle delle registrazioni riunisce le cartelle configurate. Filtra per stato e ordina per data, titolo, durata o dimensione; Decrescente inverte l’ordine. Ctrl+A seleziona tutte le righe visibili; vengono mostrati conteggio e dimensione totale. Cestino, eliminazione definitiva e ripristino supportano più selezioni; riproduzione e rinomina richiedono un solo elemento. Analisi e filtri operano in background; la chiusura non annulla operazioni confermate.
+
 ### Formato di registrazione {#recording-formats}
 
 Registrazioni > Formato di registrazione sceglie come sono salvate le registrazioni:
@@ -334,6 +343,8 @@ Se il salvataggio di un annullamento, di un’eliminazione o di una modifica all
 In Windows, Registrazioni > Impedisci la sospensione automatica durante la registrazione è attivo per impostazione predefinita. Richiede a Windows di restare attivo durante le registrazioni, senza tenere acceso lo schermo né impedire la sospensione avviata dall’utente, per esempio chiudendo il coperchio del portatile.
 
 Riattiva per le registrazioni pianificate (Windows) è disattivato per impostazione predefinita. Se abilitato, richiede un timer di riattivazione 60 secondi prima dell’inizio della prossima registrazione, incluso l’anticipo. L’applicazione deve restare aperta e hardware e impostazioni energetiche devono supportare questi timer. Non avvia un computer spento. Modifiche e annullamenti aggiornano il timer; l’uscita dall’applicazione lo rimuove.
+
+Conflitti di registrazione, in Registrazioni programmate, elenca le sovrapposizioni dell’elemento selezionato, inclusi i margini. I dettagli indicano canale, alias dell’account e intervallo effettivo. Modifica orari apre l’editor esistente. La conferma offre questi dettagli e Programma comunque. Un limite noto confronta solo lo stesso account; altrimenti mostra sovrapposizioni temporali senza presumere un limite del fornitore.
 
 ### Margine di programmazione {#schedule-padding}
 
