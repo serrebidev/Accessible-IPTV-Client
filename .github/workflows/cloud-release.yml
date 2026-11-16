@@ -166,11 +166,11 @@ jobs:
             echo "ref=$tag" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: AccessibleIPTVClient-windows
-          path: dist/release/*
-          if-no-files-found: error
+      # No upload-artifact step: Forgejo's GHES-compatible runner rejects
+      # artifact actions (GHESNotSupportedError) after the release is already
+      # published, which marked this job failed and skipped the linux/macos
+      # legs on v1.150.65/v1.150.66. The Forgejo release assets uploaded by
+      # the Release step are the deliverable.
 
   linux:
     if: ${{ !inputs.dry_run }}
@@ -233,11 +233,8 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
         run: bash tools/build_macos.sh
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: AccessibleIPTVClient-macos
-          path: dist/AccessibleIPTVClient-v*-macos-*.zip
-          if-no-files-found: error
+      # No upload-artifact step here either (see the windows job): on Forgejo
+      # it would fail before "Attach to release" and block the .dmg upload.
 
       - name: Attach to release
         if: ${{ !inputs.dry_run }}
