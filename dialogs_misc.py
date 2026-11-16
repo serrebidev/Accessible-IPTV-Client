@@ -52,7 +52,11 @@ class AccessibleAboutDialog(wx.Dialog):
             panel,
             label=_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
                     "Supports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, "
-                    "built-in VLC playback, casting, and XMLTV EPG."),
+                    "built-in VLC playback, casting, and XMLTV EPG.\n\n"
+                    "Author: serrebidev. GitHub: https://github.com/serrebidev/Accessible-IPTV-Client. "
+                    "Forgejo: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client. "
+                    "Projects: https://projects.serrebiradio.com. "
+                    "Telegram: https://t.me/SerrebiProjects. Full credits: CREDITS.md."),
         )
         description.Wrap(500)
         layout.Add(description, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
