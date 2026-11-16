@@ -12,3 +12,12 @@ Third-party projects it uses:
 It casts through the same devices the companion Caster app supports.
 
 Questions and bug reports are welcome in the [SerrebiProjects Telegram group](https://t.me/SerrebiProjects). More serrebi projects: [projects.serrebiradio.com](https://projects.serrebiradio.com).
+
+
+## About this project
+
+- GitHub profile: [serrebidev](https://github.com/serrebidev)
+- Repository (GitHub): [https://github.com/serrebidev/Accessible-IPTV-Clien](https://github.com/serrebidev/Accessible-IPTV-Clien)
+- Repository (Forgejo): [https://git.serrebiradio.com/serrebi/Accessible-IPTV-Clien](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Clien)
+- Projects site: [projects.serrebiradio.com](https://projects.serrebiradio.com)
+- Questions and bug reports: [SerrebiProjects Telegram group](https://t.me/SerrebiProjects)
