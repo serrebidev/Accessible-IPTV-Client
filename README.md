@@ -6,6 +6,8 @@ A vibe-coded, keyboard-first IPTV player for Windows and Linux, built to work we
 
 **Questions, bugs, or release news?** Join the [SerrebiProjects Telegram group](https://t.me/SerrebiProjects), the fastest place to get help.
 
+More serrebi projects: [projects.serrebiradio.com](https://projects.serrebiradio.com)
+
 ## Screenshots
 
 The main window: playlist groups on the left, the channel list on the right, and the on-air episode description plus the optional stream URL for the selected channel underneath.
@@ -201,3 +203,7 @@ Pull requests are welcome. If Accessible IPTV Client has been useful to you, ope
 ## Community and support
 
 Report bugs and request features in [Issues](https://github.com/serrebidev/Accessible-IPTV-Client/issues). For questions, feedback, and release news, join the [SerrebiProjects Telegram group](https://t.me/SerrebiProjects).
+
+## Credits
+
+See [CREDITS.md](CREDITS.md) for where the ideas behind this project came from, and the third-party projects it builds on.
