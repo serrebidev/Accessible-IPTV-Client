@@ -324,12 +324,12 @@ class TestVolumeControl:
     """Test volume control functionality."""
 
     def test_volume_range(self):
-        """Test volume range is 0-100."""
+        """Test volume range is 0-200 (boost past 100, VLC-style)."""
         min_vol = 0
-        max_vol = 100
-        
+        max_vol = 200
+
         assert min_vol >= 0
-        assert max_vol <= 100
+        assert max_vol <= 200
 
     def test_volume_step_default(self):
         """Test default volume step is 2%."""
@@ -346,10 +346,11 @@ class TestVolumeControl:
     def test_volume_clamping(self):
         """Test volume is clamped to valid range."""
         def clamp_volume(vol):
-            return max(0, min(100, vol))
-        
+            return max(0, min(200, vol))
+
         assert clamp_volume(-10) == 0
-        assert clamp_volume(150) == 100
+        assert clamp_volume(150) == 150
+        assert clamp_volume(260) == 200
         assert clamp_volume(50) == 50
 
 

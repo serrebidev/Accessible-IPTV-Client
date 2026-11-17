@@ -487,7 +487,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self.controls_panel,
             value=self._volume_value,
             minValue=0,
-            maxValue=100,
+            # libVLC's percent scale runs to 200: quiet streams can be
+            # boosted past 100, VLC-style.
+            maxValue=200,
             style=wx.SL_HORIZONTAL,
         )
         self.volume_slider.SetName(_("Volume Control"))
@@ -2383,7 +2385,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
     def _sync_volume_slider(self) -> None:
         if hasattr(self, "volume_slider") and self.volume_slider:
             try:
-                self.volume_slider.SetValue(int(min(100, max(0, self._volume_value))))
+                self.volume_slider.SetValue(int(min(200, max(0, self._volume_value))))
             except Exception:
                 LOG.debug("InternalPlayerFrame._sync_volume_slider: ignored exception", exc_info=True)
 
@@ -2396,12 +2398,12 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         event.Skip(False)
 
     def _adjust_volume(self, delta: int) -> None:
-        new_val = max(0, min(100, self._volume_value + delta))
+        new_val = max(0, min(200, self._volume_value + delta))
         if new_val != self._volume_value:
             self._apply_volume(new_val)
 
     def _apply_volume(self, value: float, *, remember=True) -> None:
-        value = max(0, min(100, int(value)))
+        value = max(0, min(200, int(value)))
         self._volume_value = value
         ival = int(value)
         

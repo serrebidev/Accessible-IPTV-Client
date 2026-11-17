@@ -211,6 +211,10 @@ def test_channel_volume_is_bounded_and_provider_scoped():
     assert channel_preferences.volume(config, channel_preferences.channel_key(one), 80) == 45
     assert channel_preferences.volume(config, channel_preferences.channel_key(two), 80) == 80
     assert channel_preferences.volume({"channel_volumes": {"key": False}}, "key", 80) == 80
+    boosted = channel_preferences.remember_volume({}, channel_preferences.channel_key(one), 150)
+    assert channel_preferences.volume({"channel_volumes": boosted}, channel_preferences.channel_key(one), 80) == 150
+    over = channel_preferences.remember_volume({}, channel_preferences.channel_key(one), 260)
+    assert channel_preferences.volume({"channel_volumes": over}, channel_preferences.channel_key(one), 80) == 200
 
 
 def test_mute_restores_sound_without_changing_volume_or_pausing():
@@ -243,6 +247,23 @@ def test_volume_changes_keep_mute_and_apply_sleep_gain():
     internal_player.InternalPlayerFrame._apply_volume(frame, 60)
     assert calls == [("volume", 30), ("mute", True)]
     assert frame._volume_value == 60 and frame._muted is True
+
+
+def test_volume_boosts_past_100_and_clamps_at_200():
+    calls = []
+    slider = SimpleNamespace(GetValue=lambda: 80, SetValue=lambda value: None)
+    frame = SimpleNamespace(_volume_value=80, _muted=False, _sleep_gain=1.0,
+        player=SimpleNamespace(audio_set_volume=lambda value: calls.append(("volume", value)),
+                               audio_set_mute=lambda value: calls.append(("mute", value))),
+        volume_slider=slider, _update_status_label=lambda: None)
+    frame._apply_volume = lambda value: internal_player.InternalPlayerFrame._apply_volume(frame, value)
+    internal_player.InternalPlayerFrame._apply_volume(frame, 150)
+    assert frame._volume_value == 150
+    assert calls[0] == ("volume", 150)
+    internal_player.InternalPlayerFrame._adjust_volume(frame, 60)
+    assert frame._volume_value == 200
+    internal_player.InternalPlayerFrame._apply_volume(frame, 260)
+    assert frame._volume_value == 200
 
 
 def test_local_recording_resumes_only_the_same_file(tmp_path):

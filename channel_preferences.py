@@ -28,11 +28,11 @@ def epg_id(channel):
 def volume(config, key, default):
     values = config.get("channel_volumes", {})
     value = values.get(key) if isinstance(values, dict) else None
-    return value if type(value) is int and 0 <= value <= 100 else default
+    return value if type(value) is int and 0 <= value <= 200 else default
 
 
 def remember_volume(values, key, value):
     values = dict(values) if isinstance(values, dict) else {}
     values.pop(key, None)
-    values[key] = max(0, min(100, int(value)))
+    values[key] = max(0, min(200, int(value)))
     return dict(list(values.items())[-5000:])
