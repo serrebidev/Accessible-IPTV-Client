@@ -12,3 +12,6 @@ PROJECT_FORGEJO_URL = "https://{host}/{owner}/{repo}".format(
     repo=app_meta.FORGEJO_REPO)
 SERREBI_FORGEJO_URL = "https://{host}/{owner}".format(
     host=app_meta.FORGEJO_HOST, owner=app_meta.FORGEJO_OWNER)
+PROJECT_GITHUB_URL = "https://github.com/serrebidev/Accessible-IPTV-Client"
+PROJECTS_SITE_URL = "https://projects.serrebiradio.com"
+CREDITS_URL = PROJECT_FORGEJO_URL + "/src/branch/main/CREDITS.md"

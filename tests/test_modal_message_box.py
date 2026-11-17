@@ -186,7 +186,15 @@ def test_about_dialog_links_activate_on_enter_and_space(wx_app, monkeypatch):
     dlg = appmod.AccessibleAboutDialog(None)
     try:
         links = [w for w in dlg.GetChildren()[0].GetChildren() if isinstance(w, wx.adv.HyperlinkCtrl)]
-        assert len(links) == 3
+        assert [url for _link, url in dlg.links] == [
+            "https://t.me/SerrebiProjects",
+            "https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client",
+            "https://github.com/serrebidev/Accessible-IPTV-Client",
+            "https://projects.serrebiradio.com",
+            "https://git.serrebiradio.com/serrebi",
+            "https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/src/branch/main/CREDITS.md",
+        ]
+        assert len(links) == 6 and all(link.AcceptsFocus() for link in links)
         for link in links:
             key_event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
             key_event.SetKeyCode(wx.WXK_RETURN)
@@ -194,7 +202,7 @@ def test_about_dialog_links_activate_on_enter_and_space(wx_app, monkeypatch):
             key_event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
             key_event.SetKeyCode(wx.WXK_SPACE)
             link.GetEventHandler().ProcessEvent(key_event)
-        assert len(opened) == 6
+        assert opened == [url for _link, url in dlg.links for _key in (0, 1)]
     finally:
         dlg.Destroy()
 

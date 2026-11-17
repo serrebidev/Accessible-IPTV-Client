@@ -21,7 +21,7 @@ msgid "(No EPG debug log has been written yet.)"
 msgstr "(Non è ancora stato scritto alcun registro di debug EPG.)"
 
 #: channel_widgets.py:382
-#: dialogs_misc.py:559
+#: dialogs_misc.py:565
 #: personal_tools_ui.py:181
 #: planning_ui.py:92
 #: planning_ui.py:208
@@ -68,11 +68,11 @@ msgstr "Una registrazione è in corso e {count} registrazione è ancora programm
 msgid "A running recording's start time cannot be changed."
 msgstr "Non è possibile modificare l'ora di inizio di una registrazione in corso."
 
-#: dialogs_misc.py:53
-msgid "A screen reader accessible IPTV client for Windows and Linux.\n\nSupports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, built-in VLC playback, casting, and XMLTV EPG.\n\nAuthor: serrebidev. GitHub: https://github.com/serrebidev/Accessible-IPTV-Client. Forgejo: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client. Projects: https://projects.serrebiradio.com. Telegram: https://t.me/SerrebiProjects. Full credits: CREDITS.md."
-msgstr "Un client IPTV accessibile agli screen reader per Windows e Linux.\n\nSupporta playlist M3U/M3U Plus, Stalker Portal, Xtream Codes, riproduzione VLC integrata, trasmissione ai dispositivi ed EPG XMLTV.\n\nAutore: serrebidev. GitHub: https://github.com/serrebidev/Accessible-IPTV-Client. Forgejo: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client. Progetti: https://projects.serrebiradio.com. Telegram: https://t.me/SerrebiProjects. Riconoscimenti completi: CREDITS.md."
+#: dialogs_misc.py:54
+msgid "A screen reader accessible IPTV client for Windows and Linux.\n\nSupports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, built-in VLC playback, casting, and XMLTV EPG."
+msgstr "Un client IPTV accessibile agli screen reader per Windows e Linux.\n\nSupporta playlist M3U/M3U Plus, Stalker Portal, Xtream Codes, riproduzione VLC integrata, trasmissione ai dispositivi ed EPG XMLTV."
 
-#: dialogs_misc.py:38
+#: dialogs_misc.py:39
 msgid "About {name}"
 msgstr "Informazioni su {name}"
 
@@ -97,7 +97,7 @@ msgstr "Account"
 
 #: client_ui.py:128
 #: client_ui.py:279
-#: dialogs_misc.py:324
+#: dialogs_misc.py:330
 #: shortcuts.py:92
 msgid "Account Info"
 msgstr "Informazioni account"
@@ -106,12 +106,12 @@ msgstr "Informazioni account"
 msgid "Account balance"
 msgstr "Saldo account"
 
-#: dialogs_misc.py:343
-#: dialogs_misc.py:345
+#: dialogs_misc.py:349
+#: dialogs_misc.py:351
 msgid "Account details"
 msgstr "Dettagli account"
 
-#: dialogs_misc.py:463
+#: dialogs_misc.py:469
 msgid "Account details copied to the clipboard."
 msgstr "Dettagli dell'account copiati negli appunti."
 
@@ -119,8 +119,8 @@ msgstr "Dettagli dell'account copiati negli appunti."
 msgid "Account information is not supported for this provider type."
 msgstr "Le informazioni sull'account non sono supportate per questo tipo di provider."
 
-#: dialogs_misc.py:337
-#: dialogs_misc.py:339
+#: dialogs_misc.py:343
+#: dialogs_misc.py:345
 msgid "Accounts"
 msgstr "Account"
 
@@ -223,7 +223,7 @@ msgstr "Tutte le playlist aggiornate."
 msgid "All playlists selected. Press F5 to refresh them all."
 msgstr "Tutte le playlist selezionate. Premi F5 per aggiornarle tutte."
 
-#: dialogs_misc.py:818
+#: dialogs_misc.py:824
 msgid "All recordings have finished.\n\nThe computer will shut down by itself. Seconds remaining: {seconds}"
 msgstr "Tutte le registrazioni sono terminate.\n\nIl computer si spegnerà da solo. Secondi rimanenti: {seconds}"
 
@@ -364,6 +364,10 @@ msgstr "La verifica Authenticode ha restituito dati non validi."
 msgid "Authenticode verification timed out."
 msgstr "La verifica Authenticode è scaduta."
 
+#: dialogs_misc.py:60
+msgid "Author: serrebidev."
+msgstr "Autore: serrebidev."
+
 #: client_ui.py:213
 #: client_ui.py:352
 msgid "Auto-check for Updates"
@@ -482,9 +486,9 @@ msgid "Built-in player unavailable:\n{detail}"
 msgstr "Lettore integrato non disponibile:\n{detail}"
 
 #: accessible_tools_ui.py:29
-#: dialogs_misc.py:234
-#: dialogs_misc.py:675
-#: dialogs_misc.py:736
+#: dialogs_misc.py:240
+#: dialogs_misc.py:681
+#: dialogs_misc.py:742
 #: episode_continuation_ui.py:85
 #: internal_player.py:150
 #: main.py:7781
@@ -505,7 +509,7 @@ msgstr "Annulla"
 msgid "Cancel Download"
 msgstr "Annulla download"
 
-#: dialogs_misc.py:794
+#: dialogs_misc.py:800
 msgid "Cancel Shutdown"
 msgstr "Annulla spegnimento"
 
@@ -572,7 +576,7 @@ msgstr "La trasmissione non è disponibile perché il trasmettitore non è inizi
 msgid "Casting to {device}..."
 msgstr "Trasmissione a {device}..."
 
-#: dialogs_misc.py:490
+#: dialogs_misc.py:496
 #: main.py:2814
 #: main.py:8321
 #: main.py:8344
@@ -595,11 +599,11 @@ msgstr "Replay"
 msgid "Catch-up Download"
 msgstr "Download replay"
 
-#: dialogs_misc.py:525
+#: dialogs_misc.py:531
 msgid "Catch-up programmes"
 msgstr "Programmi catch-up"
 
-#: dialogs_misc.py:491
+#: dialogs_misc.py:497
 msgid "Catch-up: {name}"
 msgstr "Replay: {name}"
 
@@ -661,7 +665,7 @@ msgstr "Verifica disponibilità"
 msgid "Check Recording Storage..."
 msgstr "Verifica spazio per le registrazioni…"
 
-#: dialogs_misc.py:437
+#: dialogs_misc.py:443
 msgid "Check failed."
 msgstr "Controllo non riuscito."
 
@@ -677,7 +681,7 @@ msgstr "Controlla aggiornamenti..."
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "Verifica che le fonti EPG in File > Gestione EPG siano raggiungibili, quindi riprova."
 
-#: dialogs_misc.py:401
+#: dialogs_misc.py:407
 msgid "Checking account, please wait..."
 msgstr "Controllo dell'account, attendere..."
 
@@ -698,7 +702,7 @@ msgstr "Verifica del contenuto salvato…"
 msgid "Checking stream type…"
 msgstr "Controllo del tipo di stream…"
 
-#: dialogs_misc.py:402
+#: dialogs_misc.py:408
 msgid "Checking {account}..."
 msgstr "Controllo di {account}..."
 
@@ -756,10 +760,10 @@ msgstr "Cancella cronologia"
 msgid "Clear the notification history for this session?"
 msgstr "Cancellare la cronologia delle notifiche di questa sessione?"
 
-#: dialogs_misc.py:101
-#: dialogs_misc.py:169
-#: dialogs_misc.py:352
-#: dialogs_misc.py:894
+#: dialogs_misc.py:107
+#: dialogs_misc.py:175
+#: dialogs_misc.py:358
+#: dialogs_misc.py:900
 #: main.py:308
 #: main.py:9139
 #: personal_tools_ui.py:91
@@ -774,7 +778,7 @@ msgstr "Cancellare la cronologia delle notifiche di questa sessione?"
 msgid "Close"
 msgstr "Chiudi"
 
-#: dialogs_misc.py:64
+#: dialogs_misc.py:63
 msgid "Community and support"
 msgstr "Comunità e supporto"
 
@@ -800,7 +804,7 @@ msgstr "Playlist configurate: {count}"
 msgid "Confirm"
 msgstr "Conferma"
 
-#: dialogs_misc.py:232
+#: dialogs_misc.py:238
 msgid "Connect"
 msgstr "Connetti"
 
@@ -834,7 +838,7 @@ msgstr "Continua a guardare"
 msgid "Continue Watching..."
 msgstr "Continua a guardare…"
 
-#: dialogs_misc.py:351
+#: dialogs_misc.py:357
 #: main.py:9136
 #: session_tools_ui.py:160
 msgid "Copy Details"
@@ -857,7 +861,7 @@ msgstr "Impossibile modificare la velocità della voce dell’applicazione."
 msgid "Could not check availability."
 msgstr "Impossibile verificare la disponibilità."
 
-#: dialogs_misc.py:426
+#: dialogs_misc.py:432
 msgid "Could not check this account.\n\n{error}"
 msgstr "Non è stato possibile controllare questo account.\n\n{error}"
 
@@ -932,7 +936,7 @@ msgstr "Impossibile aprire la cartella:\n{error}"
 msgid "Could not open the EPG window: {error}"
 msgstr "Impossibile aprire la finestra EPG: {error}"
 
-#: dialogs_misc.py:456
+#: dialogs_misc.py:462
 #: main.py:9152
 #: playlist.py:3138
 msgid "Could not open the clipboard."
@@ -1000,7 +1004,7 @@ msgstr "Impossibile avviare la registrazione:\n{error}"
 msgid "Created"
 msgstr "Creato"
 
-#: dialogs_misc.py:886
+#: dialogs_misc.py:892
 msgid "Currently airing programs"
 msgstr "Programmi attualmente in onda"
 
@@ -1070,7 +1074,7 @@ msgstr "Eliminare la playlist «{name}»?\n\nVerrà rimossa dall'elenco delle pl
 msgid "Descending"
 msgstr "Decrescente"
 
-#: dialogs_misc.py:510
+#: dialogs_misc.py:516
 #: main.py:9438
 #: personal_tools_ui.py:317
 msgid "Description"
@@ -1123,7 +1127,7 @@ msgstr "Vuoi davvero annullare questo download? Non potrà essere ripreso."
 msgid "Documentation"
 msgstr "Documentazione"
 
-#: dialogs_misc.py:609
+#: dialogs_misc.py:615
 msgid "Download"
 msgstr "Scarica"
 
@@ -1349,7 +1353,7 @@ msgstr "Inserisci nuovamente la password:"
 
 #: client_ui.py:90
 #: client_ui.py:92
-#: dialogs_misc.py:513
+#: dialogs_misc.py:519
 #: main.py:9441
 msgid "Episode description"
 msgstr "Descrizione dell'episodio"
@@ -1378,7 +1382,7 @@ msgstr "Errore"
 msgid "Error fetching EPG: {error}"
 msgstr "Errore durante il recupero dell'EPG: {error}"
 
-#: dialogs_misc.py:270
+#: dialogs_misc.py:276
 msgid "Error: {error}"
 msgstr "Errore: {error}"
 
@@ -1534,11 +1538,11 @@ msgstr "File"
 msgid "File Size"
 msgstr "Dimensione del file"
 
-#: dialogs_misc.py:873
+#: dialogs_misc.py:879
 msgid "Filter (Tab):"
 msgstr "Filtro (Tab):"
 
-#: dialogs_misc.py:875
+#: dialogs_misc.py:881
 msgid "Filter programs"
 msgstr "Filtra programmi"
 
@@ -1556,7 +1560,7 @@ msgstr "Trova successivo"
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Termina registrazioni e download prima di ripristinare un backup."
 
-#: dialogs_misc.py:70
+#: dialogs_misc.py:74
 msgid "Follow Serrebi on Forgejo"
 msgstr "Segui Serrebi su Forgejo"
 
@@ -1578,7 +1582,7 @@ msgstr "Avanti di 10 secondi"
 msgid "Forward 60 Seconds"
 msgstr "Avanti di 60 secondi"
 
-#: dialogs_misc.py:281
+#: dialogs_misc.py:287
 msgid "Found {count} devices:"
 msgstr "Trovati {count} dispositivi:"
 
@@ -1659,7 +1663,7 @@ msgstr "Aiuto"
 msgid "Hide Window"
 msgstr "Nascondi finestra"
 
-#: dialogs_misc.py:202
+#: dialogs_misc.py:208
 msgid "Hide older releases"
 msgstr "Nascondi le versioni precedenti"
 
@@ -1768,7 +1772,7 @@ msgstr "Risposta non valida dal portale"
 msgid "Invalid subtitle delay."
 msgstr "Ritardo dei sottotitoli non valido."
 
-#: dialogs_misc.py:68
+#: dialogs_misc.py:70
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "Unisciti al gruppo Telegram SerrebiProjects"
 
@@ -1780,7 +1784,7 @@ msgstr "Mantieni i canali scelti"
 msgid "Keep this output device?\n{name}"
 msgstr "Mantenere questo dispositivo di uscita?\n{name}"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Conservare da 1 a 30 minuti della diretta; 0 disattiva il buffer locale."
 
@@ -1836,7 +1840,7 @@ msgstr "Anticipo (minuti)"
 msgid "Live TV && Catch-up"
 msgstr "TV in diretta && Replay"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "Il flusso in diretta è terminato; la cronologia conservata rimane disponibile."
 
@@ -1873,12 +1877,12 @@ msgstr "Caricamento delle playlist..."
 msgid "Loading recordings..."
 msgstr "Caricamento delle registrazioni..."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:61
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:99
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:232
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Buffer locale della diretta"
 
@@ -1923,7 +1927,7 @@ msgstr "Le scorciatoie della finestra principale richiedono Ctrl o Alt."
 msgid "Maximum connections"
 msgstr "Connessioni massime"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Dimensione massima del buffer locale per sessione (MiB). I dati più vecchi vengono eliminati al raggiungimento di uno dei limiti."
 
@@ -1940,7 +1944,7 @@ msgstr "Menu"
 msgid "Message from provider"
 msgstr "Messaggio dal provider"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1958,7 +1962,7 @@ msgstr "Spazio libero minimo…"
 msgid "Minimum free space to keep before starting a recording (MiB):"
 msgstr "Spazio libero minimo richiesto prima di avviare una registrazione (MiB):"
 
-#: dialogs_misc.py:716
+#: dialogs_misc.py:722
 #: recording_conflicts_ui.py:170
 msgid "Minutes after programme:"
 msgstr "Minuti dopo il programma:"
@@ -1967,12 +1971,12 @@ msgstr "Minuti dopo il programma:"
 msgid "Minutes and seconds after a colon must be below 60."
 msgstr "Minuti e secondi dopo i due punti devono essere inferiori a 60."
 
-#: dialogs_misc.py:715
+#: dialogs_misc.py:721
 #: recording_conflicts_ui.py:169
 msgid "Minutes before programme:"
 msgstr "Minuti prima del programma:"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:49
 #: internal_player.py:3295
 #: planning_ui.py:21
 msgid "Minutes:"
@@ -2135,13 +2139,13 @@ msgstr "Nessun canale selezionato."
 msgid "No channels found."
 msgstr "Nessun canale trovato."
 
-#: dialogs_misc.py:579
+#: dialogs_misc.py:585
 #: main.py:2747
 #: main.py:9560
 msgid "No description available for this programme."
 msgstr "Nessuna descrizione disponibile per questo programma."
 
-#: dialogs_misc.py:278
+#: dialogs_misc.py:284
 msgid "No devices found."
 msgstr "Nessun dispositivo trovato."
 
@@ -2171,7 +2175,7 @@ msgstr "Non sono stati segnalati dettagli di ffmpeg."
 msgid "No later subtitle."
 msgstr "Nessun sottotitolo successivo."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "Non è disponibile alcuna cronologia locale della diretta."
 
@@ -2220,7 +2224,7 @@ msgstr "Non sono disponibili canali guardati di recente."
 msgid "No recordings are currently active."
 msgstr "Nessuna registrazione è attualmente attiva."
 
-#: dialogs_misc.py:151
+#: dialogs_misc.py:157
 msgid "No release history is available."
 msgstr "La cronologia delle versioni non è disponibile."
 
@@ -2328,9 +2332,9 @@ msgid "Now: {title} ({start} – {end})"
 msgstr "Ora: {title} ({start} – {end})"
 
 #: accessible_tools_ui.py:28
-#: dialogs_misc.py:100
-#: dialogs_misc.py:675
-#: dialogs_misc.py:735
+#: dialogs_misc.py:106
+#: dialogs_misc.py:681
+#: dialogs_misc.py:741
 #: internal_player.py:149
 #: main.py:7780
 #: main.py:7813
@@ -2347,7 +2351,7 @@ msgstr "OK"
 msgid "Off"
 msgstr "Disattivato"
 
-#: dialogs_misc.py:195
+#: dialogs_misc.py:201
 msgid "Older releases (English)"
 msgstr "Versioni precedenti (in inglese)"
 
@@ -2371,7 +2375,7 @@ msgstr "Solo i lettori con un'API documentata per il testo temporizzato possono 
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "Vengono mostrati solo i primi 500 risultati. Restringi la ricerca."
 
-#: dialogs_misc.py:607
+#: dialogs_misc.py:613
 msgid "Open"
 msgstr "Apri"
 
@@ -2388,9 +2392,13 @@ msgstr "Apri cartella dei registri"
 msgid "Open Recordings Folder"
 msgstr "Apri cartella delle registrazioni"
 
-#: dialogs_misc.py:69
+#: dialogs_misc.py:71
 msgid "Open the Accessible IPTV Client project on Forgejo"
 msgstr "Apri il progetto Accessible IPTV Client su Forgejo"
+
+#: dialogs_misc.py:72
+msgid "Open the Accessible IPTV Client project on GitHub"
+msgstr "Apri il progetto Accessible IPTV Client su GitHub"
 
 #: main.py:9127
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
@@ -2499,8 +2507,8 @@ msgstr "Telefono"
 msgid "Platform: {platform}"
 msgstr "Piattaforma: {platform}"
 
-#: dialogs_misc.py:892
-#: dialogs_misc.py:1096
+#: dialogs_misc.py:898
+#: dialogs_misc.py:1102
 #: internal_player.py:942
 #: internal_player.py:2058
 #: main.py:2781
@@ -2638,12 +2646,12 @@ msgstr "Handshake con il portale non riuscito: nessun token restituito"
 msgid "Position"
 msgstr "Posizione"
 
-#: dialogs_misc.py:654
-#: dialogs_misc.py:657
+#: dialogs_misc.py:660
+#: dialogs_misc.py:663
 msgid "Prefer an audio description track when the channel has one"
 msgstr "Preferisci una traccia di audiodescrizione quando il canale ne ha una"
 
-#: dialogs_misc.py:645
+#: dialogs_misc.py:651
 msgid "Preferred Audio Track"
 msgstr "Traccia audio preferita"
 
@@ -2656,7 +2664,7 @@ msgstr "Traccia audio preferita..."
 msgid "Preferred stream container format"
 msgstr "Formato contenitore del flusso preferito"
 
-#: dialogs_misc.py:660
+#: dialogs_misc.py:666
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "Nomi di traccia o lingue preferiti, prima i più desiderati:"
 
@@ -2702,7 +2710,7 @@ msgstr "Contenuto salvato in precedenza (titolo non disponibile)"
 msgid "Processing recordings..."
 msgstr "Elaborazione delle registrazioni…"
 
-#: dialogs_misc.py:887
+#: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "Programma - Canale"
 
@@ -2794,7 +2802,11 @@ msgstr "Leggi sottotitolo corrente"
 msgid "Read previous subtitle"
 msgstr "Leggi sottotitolo precedente"
 
-#: dialogs_misc.py:437
+#: dialogs_misc.py:75
+msgid "Read the full credits"
+msgstr "Leggi i riconoscimenti completi"
+
+#: dialogs_misc.py:443
 msgid "Ready."
 msgstr "Pronto."
 
@@ -2834,17 +2846,17 @@ msgstr "Riconnessione in corso..."
 msgid "Record"
 msgstr "Registra"
 
-#: dialogs_misc.py:1104
+#: dialogs_misc.py:1110
 #: main.py:9524
 msgid "Record Daily"
 msgstr "Registra ogni giorno"
 
-#: dialogs_misc.py:1106
+#: dialogs_misc.py:1112
 #: main.py:9526
 msgid "Record Series"
 msgstr "Registra serie"
 
-#: dialogs_misc.py:1105
+#: dialogs_misc.py:1111
 #: main.py:9525
 msgid "Record Weekly"
 msgstr "Registra ogni settimana"
@@ -3007,7 +3019,7 @@ msgstr "Registrazione aggiornata per la ripetizione."
 msgid "Recordings"
 msgstr "Registrazioni"
 
-#: dialogs_misc.py:350
+#: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9257
 #: personal_tools_ui.py:321
@@ -3038,7 +3050,7 @@ msgstr "Aggiornamento della playlist: {name}"
 msgid "Refreshing stream..."
 msgstr "Aggiornamento del flusso..."
 
-#: dialogs_misc.py:161
+#: dialogs_misc.py:167
 msgid "Release history"
 msgstr "Cronologia delle versioni"
 
@@ -3150,7 +3162,7 @@ msgstr "Torna alla diretta"
 msgid "Review recent subtitles..."
 msgstr "Rivedi sottotitoli recenti..."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Riavvolgi la TV in diretta"
 
@@ -3187,7 +3199,7 @@ msgstr "Le posizioni salvate possono essere ripristinate solo nel lettore integr
 msgid "Schedule Anyway"
 msgstr "Programma comunque"
 
-#: dialogs_misc.py:705
+#: dialogs_misc.py:711
 msgid "Schedule Padding"
 msgstr "Margine di programmazione"
 
@@ -3195,8 +3207,8 @@ msgstr "Margine di programmazione"
 msgid "Schedule Padding..."
 msgstr "Margine di programmazione..."
 
-#: dialogs_misc.py:893
-#: dialogs_misc.py:1101
+#: dialogs_misc.py:899
+#: dialogs_misc.py:1107
 #: main.py:2797
 #: main.py:2876
 #: main.py:3293
@@ -3291,7 +3303,7 @@ msgstr "Cerca canali della guida:"
 msgid "Search recordings:"
 msgstr "Cerca registrazioni:"
 
-#: dialogs_misc.py:225
+#: dialogs_misc.py:231
 msgid "Searching for devices..."
 msgstr "Ricerca dispositivi..."
 
@@ -3299,11 +3311,11 @@ msgstr "Ricerca dispositivi..."
 msgid "Searching programmes..."
 msgstr "Ricerca dei programmi..."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "Secondi di ritardo rispetto all’ultima immagine conservata; 0 torna alla diretta."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:261
 #: internal_player.py:3307
 msgid "Seconds:"
 msgstr "Secondi:"
@@ -3312,9 +3324,9 @@ msgstr "Secondi:"
 msgid "Select Custom Player"
 msgstr "Seleziona lettore personalizzato"
 
-#: dialogs_misc.py:217
-#: dialogs_misc.py:226
-#: dialogs_misc.py:228
+#: dialogs_misc.py:223
+#: dialogs_misc.py:232
+#: dialogs_misc.py:234
 msgid "Select Device to Cast"
 msgstr "Seleziona dispositivo per la trasmissione"
 
@@ -3342,7 +3354,7 @@ msgstr "Seleziona prima un programma."
 msgid "Select a programme guide channel, or choose automatic matching."
 msgstr "Selezionare un canale della guida o scegliere l’associazione automatica."
 
-#: dialogs_misc.py:495
+#: dialogs_misc.py:501
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "Seleziona un programma, quindi premi Invio per aprirlo oppure usa il menu contestuale per scaricarlo. Premi Esc per chiudere."
 
@@ -3352,7 +3364,7 @@ msgstr "Seleziona un programma, quindi premi Invio per aprirlo oppure usa il men
 msgid "Select a scheduled recording first."
 msgstr "Seleziona prima una registrazione programmata."
 
-#: dialogs_misc.py:336
+#: dialogs_misc.py:342
 msgid "Select an account to check its status:"
 msgstr "Seleziona un account per controllarne lo stato:"
 
@@ -3377,7 +3389,7 @@ msgstr "Canale selezionato: {name}"
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "Selezionate: {count}; dimensione totale: {size} MiB."
 
-#: dialogs_misc.py:666
+#: dialogs_misc.py:672
 msgid "Separate them with commas, for example: audio description, English. A track is used when its name contains one of these words. Leave this empty to keep whatever track the channel starts on."
 msgstr "Separali con virgole, ad esempio: audiodescrizione, italiano. Una traccia viene usata quando il suo nome contiene una di queste parole. Lascia vuoto per mantenere la traccia con cui inizia il canale."
 
@@ -3407,7 +3419,7 @@ msgstr "Fuso orario del server"
 msgid "Set Download Folder..."
 msgstr "Imposta cartella download..."
 
-#: dialogs_misc.py:1099
+#: dialogs_misc.py:1105
 #: main.py:2794
 #: main.py:9518
 #: personal_tools_ui.py:322
@@ -3470,8 +3482,8 @@ msgstr "Mostra il lettore con Invio"
 msgid "Show Stream URL"
 msgstr "Mostra l'URL del flusso"
 
-#: dialogs_misc.py:167
-#: dialogs_misc.py:192
+#: dialogs_misc.py:173
+#: dialogs_misc.py:198
 msgid "Show older releases (English)"
 msgstr "Mostra le versioni precedenti (in inglese)"
 
@@ -3479,14 +3491,14 @@ msgstr "Mostra le versioni precedenti (in inglese)"
 msgid "Showing {count} of {total} matching channels. Refine the search if needed."
 msgstr "Visualizzati {count} canali su {total} corrispondenze. Affinare la ricerca se necessario."
 
-#: dialogs_misc.py:781
+#: dialogs_misc.py:787
 #: main.py:4014
 #: main.py:4078
 #: main.py:4088
 msgid "Shut Down After Recordings"
 msgstr "Spegni dopo le registrazioni"
 
-#: dialogs_misc.py:795
+#: dialogs_misc.py:801
 msgid "Shut Down Now"
 msgstr "Spegni ora"
 
@@ -3559,7 +3571,7 @@ msgstr "Avvia registrazione"
 msgid "Start playback in the built-in player first."
 msgstr "Avviare prima la riproduzione nel lettore integrato."
 
-#: dialogs_misc.py:708
+#: dialogs_misc.py:714
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "Avvia le registrazioni programmate in anticipo o continua a registrare dopo la fine del programma. Le registrazioni manuali non vengono modificate."
 
@@ -3618,7 +3630,7 @@ msgstr "Arresta al di sotto di (MiB):"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Interrompere la riproduzione integrata dopo 1–1440 minuti; inserire 0 per annullare il timer."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Arrestare la riproduzione locale memorizzata prima di passare a un dispositivo di trasmissione."
 
@@ -3875,15 +3887,15 @@ msgstr "La libreria può contenere fino a 20 cartelle."
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Il buffer della diretta sta cambiando sorgente. Impossibile avviare la registrazione programmata."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "Il buffer locale alimenta ancora una registrazione. Arrestarla prima di disattivarlo."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "Il buffer locale si è arrestato a causa di un errore di archiviazione o della sorgente."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "Impossibile avviare il buffer locale. Non è stata aperta alcuna connessione aggiuntiva al fornitore. Disattivare il buffer per riprovare la riproduzione diretta."
 
@@ -3900,7 +3912,7 @@ msgstr "La durata del contenuto non è ancora disponibile."
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "L’episodio successivo inizierà tra {seconds} secondi: {title}"
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "La vecchia posizione è scaduta; la riproduzione è stata spostata nell’intervallo conservato."
 
@@ -3923,7 +3935,7 @@ msgstr "Operazione non riuscita:\n{error}"
 msgid "The passwords do not match."
 msgstr "Le password non corrispondono."
 
-#: C:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
+#: c:/Users/admin/git/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "La posizione in pausa è scaduta. La riproduzione riprende dall’immagine più vecchia conservata."
 
@@ -4424,6 +4436,10 @@ msgstr "Visualizza"
 msgid "View EPG..."
 msgstr "Visualizza EPG..."
 
+#: dialogs_misc.py:73
+msgid "Visit the projects site, projects.serrebiradio.com"
+msgstr "Visita il sito dei progetti, projects.serrebiradio.com"
+
 #: internal_player.py:2074
 msgid "Vol {value}%"
 msgstr "Vol {value}%"
@@ -4469,18 +4485,18 @@ msgstr "Che cosa sta giocando"
 
 #: client_ui.py:244
 #: client_ui.py:455
-#: dialogs_misc.py:143
+#: dialogs_misc.py:149
 #: release_notes.py:146
 msgid "What's New"
 msgstr "Novità"
 
 #: client_ui.py:277
-#: dialogs_misc.py:859
+#: dialogs_misc.py:865
 #: shortcuts.py:99
 msgid "What's on Now"
 msgstr "In onda ora"
 
-#: dialogs_misc.py:648
+#: dialogs_misc.py:654
 msgid "When a channel offers more than one audio track, the built-in player can switch to the track you want on its own."
 msgstr "Quando un canale offre più di una traccia audio, il lettore integrato può passare da solo alla traccia che preferisci."
 
@@ -4600,8 +4616,8 @@ msgstr "{app} è stato aggiornato correttamente alla v{version}."
 msgid "{channel}. Now: {current}. Next: {next}. Recording: {recording}."
 msgstr "{channel}. Ora: {current}. Successivo: {next}. Registrazione: {recording}."
 
-#: dialogs_misc.py:881
-#: dialogs_misc.py:1045
+#: dialogs_misc.py:887
+#: dialogs_misc.py:1051
 msgid "{count} programs"
 msgstr "{count} programmi"
 
@@ -4641,7 +4657,7 @@ msgstr "{name} (preferito)"
 msgid "{name} was removed. Favorites is now empty."
 msgstr "{name} è stato rimosso. I preferiti sono vuoti."
 
-#: dialogs_misc.py:46
+#: dialogs_misc.py:47
 msgid "{name} {version}"
 msgstr "{name} {version}"
 

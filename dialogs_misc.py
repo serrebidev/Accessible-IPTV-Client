@@ -16,7 +16,8 @@ import wx.adv
 import account_info
 import app_meta
 import release_notes
-from app_links import PROJECT_FORGEJO_URL, SERREBI_FORGEJO_URL, TELEGRAM_SUPPORT_URL
+from app_links import (CREDITS_URL, PROJECT_FORGEJO_URL, PROJECT_GITHUB_URL, PROJECTS_SITE_URL,
+                       SERREBI_FORGEJO_URL, TELEGRAM_SUPPORT_URL)
 from channel_widgets import _VirtualWhatsOnList
 from dialog_utils import _context_row_index
 from i18n import gettext as _
@@ -52,22 +53,26 @@ class AccessibleAboutDialog(wx.Dialog):
             panel,
             label=_("A screen reader accessible IPTV client for Windows and Linux.\n\n"
                     "Supports M3U/M3U Plus playlists, Stalker Portal, Xtream Codes, "
-                    "built-in VLC playback, casting, and XMLTV EPG.\n\n"
-                    "Author: serrebidev. GitHub: https://github.com/serrebidev/Accessible-IPTV-Client. "
-                    "Forgejo: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client. "
-                    "Projects: https://projects.serrebiradio.com. "
-                    "Telegram: https://t.me/SerrebiProjects. Full credits: CREDITS.md."),
+                    "built-in VLC playback, casting, and XMLTV EPG."),
         )
         description.Wrap(500)
         layout.Add(description, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        author = wx.StaticText(panel, label=_("Author: serrebidev."))
+        layout.Add(author, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         support = wx.StaticText(panel, label=_("Community and support"))
         support.SetFont(support.GetFont().Bold())
         layout.Add(support, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        # Every link is its own tab stop; links written into the text above
+        # could not be reached or opened from the keyboard.
+        self.links = []
         for label, url in (
             (_("Join the SerrebiProjects Telegram group"), TELEGRAM_SUPPORT_URL),
             (_("Open the Accessible IPTV Client project on Forgejo"), PROJECT_FORGEJO_URL),
+            (_("Open the Accessible IPTV Client project on GitHub"), PROJECT_GITHUB_URL),
+            (_("Visit the projects site, projects.serrebiradio.com"), PROJECTS_SITE_URL),
             (_("Follow Serrebi on Forgejo"), SERREBI_FORGEJO_URL),
+            (_("Read the full credits"), CREDITS_URL),
         ):
             link = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
             link.SetName(label)
@@ -91,6 +96,7 @@ class AccessibleAboutDialog(wx.Dialog):
             link.Bind(wx.adv.EVT_HYPERLINK, _open_link)
             link.Bind(wx.EVT_LEFT_DCLICK, _open_link)
             layout.Add(link, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+            self.links.append((link, url))
 
         # Create buttons on the panel and handle both exit paths explicitly.
         # ``CreateButtonSizer`` creates children of the dialog itself; placing
