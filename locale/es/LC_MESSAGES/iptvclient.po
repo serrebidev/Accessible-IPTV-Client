@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:628
+#: internal_player.py:621
 msgid "&Playback"
 msgstr "&Reproducción"
 
@@ -151,7 +151,7 @@ msgstr "Añadir carpeta..."
 msgid "Add Named Bookmark"
 msgstr "Añadir marcador con nombre"
 
-#: internal_player.py:570
+#: internal_player.py:563
 msgid "Add Named Bookmark..."
 msgstr "Añadir marcador con nombre..."
 
@@ -286,20 +286,20 @@ msgid "Attempt to add provider XMLTV"
 msgstr "Intentar agregar el XMLTV del proveedor"
 
 #: internal_player.py:120
-#: internal_player.py:709
+#: internal_player.py:702
 msgid "Audio Output Device"
 msgstr "Dispositivo de salida de audio"
 
-#: internal_player.py:599
+#: internal_player.py:592
 msgid "Audio Output Device..."
 msgstr "Dispositivo de salida de audio..."
 
-#: internal_player.py:585
+#: internal_player.py:578
 #: shortcuts.py:119
 msgid "Audio Track"
 msgstr "Pista de audio"
 
-#: internal_player.py:2557
+#: internal_player.py:2550
 msgid "Audio Track: {name}"
 msgstr "Pista de audio: {name}"
 
@@ -328,7 +328,7 @@ msgstr "Solo audio (WAV)"
 msgid "Audio output devices"
 msgstr "Dispositivos de salida de audio"
 
-#: internal_player.py:2593
+#: internal_player.py:2586
 msgid "Audio track unavailable"
 msgstr "Pista de audio no disponible"
 
@@ -336,9 +336,9 @@ msgstr "Pista de audio no disponible"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Flujo de solo audio detectado. Grabación iniciada ({fmt}):\n{path}"
 
-#: internal_player.py:2086
-#: internal_player.py:2612
-#: internal_player.py:2621
+#: internal_player.py:2079
+#: internal_player.py:2605
+#: internal_player.py:2614
 msgid "Audio: {name}"
 msgstr "Audio: {name}"
 
@@ -456,11 +456,11 @@ msgstr "Cambios incompatibles"
 msgid "Browse..."
 msgstr "Examinar..."
 
-#: internal_player.py:909
-#: internal_player.py:1949
-#: internal_player.py:1962
-#: internal_player.py:2042
-#: internal_player.py:2262
+#: internal_player.py:902
+#: internal_player.py:1942
+#: internal_player.py:1955
+#: internal_player.py:2035
+#: internal_player.py:2255
 msgid "Buffering..."
 msgstr "Almacenando en búfer..."
 
@@ -521,7 +521,7 @@ msgstr "Cancelado"
 msgid "Cannot find \"{text}\"."
 msgstr "No se encuentra \"{text}\"."
 
-#: internal_player.py:473
+#: internal_player.py:466
 msgid "Cast"
 msgstr "Transmitir"
 
@@ -537,18 +537,18 @@ msgstr "Transmitir / Conectar..."
 msgid "Cast To..."
 msgstr "Transmitir a..."
 
-#: internal_player.py:474
+#: internal_player.py:467
 msgid "Cast to Device"
 msgstr "Transmitir al dispositivo"
 
-#: internal_player.py:601
+#: internal_player.py:594
 #: shortcuts.py:116
 msgid "Cast..."
 msgstr "Transmitir..."
 
-#: internal_player.py:2010
-#: internal_player.py:2014
-#: internal_player.py:2033
+#: internal_player.py:2003
+#: internal_player.py:2007
+#: internal_player.py:2026
 #: main.py:8035
 #: main.py:8208
 #: main.py:8237
@@ -556,7 +556,7 @@ msgstr "Transmitir..."
 msgid "Casting"
 msgstr "Transmitiendo"
 
-#: internal_player.py:2033
+#: internal_player.py:2026
 #: main.py:8031
 #: main.py:8038
 #: main.py:8220
@@ -567,7 +567,7 @@ msgstr "Error de transmisión"
 msgid "Casting failed: {error}"
 msgstr "Error al transmitir: {error}"
 
-#: internal_player.py:2010
+#: internal_player.py:2003
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "La transmisión no está disponible porque el emisor no está inicializado."
 
@@ -706,7 +706,7 @@ msgstr "Comprobando el tipo de flujo…"
 msgid "Checking {account}..."
 msgstr "Comprobando {account}..."
 
-#: internal_player.py:501
+#: internal_player.py:494
 msgid "Choose Audio Track"
 msgstr "Elegir pista de audio"
 
@@ -824,7 +824,7 @@ msgstr "Conexiones disponibles para grabaciones (0 = sin límite adicional):"
 msgid "Connections in use"
 msgstr "Conexiones en uso"
 
-#: internal_player.py:3260
+#: internal_player.py:3253
 #: main.py:6409
 #: main.py:6419
 #: main.py:8068
@@ -906,7 +906,7 @@ msgstr "No se pudieron cargar los episodios de esta serie."
 msgid "Could not load episodes:\n{error}"
 msgstr "No se pudieron cargar los episodios:\n{error}"
 
-#: internal_player.py:2722
+#: internal_player.py:2715
 msgid "Could not load subtitle file."
 msgstr "No se ha podido cargar el archivo de subtítulos."
 
@@ -965,8 +965,8 @@ msgstr "No se pudo resolver la URL de transmisión:\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "No se pudo ejecutar la verificación Authenticode: {detail}"
 
-#: internal_player.py:3199
-#: internal_player.py:3252
+#: internal_player.py:3192
+#: internal_player.py:3245
 #: main.py:6380
 #: resume_dialogs.py:193
 #: resume_dialogs.py:219
@@ -991,7 +991,7 @@ msgstr "No se pudo apagar el equipo:\n{error}"
 msgid "Could not start catch-up download:\n{error}"
 msgstr "No se pudo iniciar la descarga de la repetición:\n{error}"
 
-#: internal_player.py:902
+#: internal_player.py:895
 msgid "Could not start playback: {error}"
 msgstr "No se pudo iniciar la reproducción: {error}"
 
@@ -1284,8 +1284,8 @@ msgstr "Copia cifrada guardada, con las grabaciones programadas, los recordatori
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "Fin (hora local, AAAA-MM-DD HH:MM)"
 
-#: internal_player.py:2046
-#: internal_player.py:2257
+#: internal_player.py:2039
+#: internal_player.py:2250
 msgid "Ended"
 msgstr "Finalizado"
 
@@ -1363,7 +1363,7 @@ msgid "Episode {num}"
 msgstr "Episodio {num}"
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:2047
+#: internal_player.py:2040
 #: main.py:2838
 #: main.py:2892
 #: main.py:4686
@@ -1403,11 +1403,11 @@ msgstr "Ejecutable no encontrado: {path}"
 msgid "Exit"
 msgstr "Salir"
 
-#: internal_player.py:3139
+#: internal_player.py:3132
 msgid "Exit Full Screen"
 msgstr "Salir de pantalla completa"
 
-#: internal_player.py:606
+#: internal_player.py:599
 #: shortcuts.py:127
 msgid "Exit Player"
 msgstr "Salir del reproductor"
@@ -1439,7 +1439,7 @@ msgstr "Exportar ajustes"
 msgid "Export Settings..."
 msgstr "Exportar ajustes..."
 
-#: internal_player.py:2700
+#: internal_player.py:2693
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "Los archivos de subtítulos externos no están sincronizados con el búfer local del directo. Utilice los subtítulos integrados en la transmisión."
 
@@ -1451,7 +1451,7 @@ msgstr "Extrayendo actualización..."
 msgid "F1 is reserved for Help."
 msgstr "F1 está reservada para la Ayuda."
 
-#: internal_player.py:3308
+#: internal_player.py:3301
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "Duración del descenso gradual del volumen antes de detenerse (segundos); 0 lo desactiva."
 
@@ -1594,8 +1594,8 @@ msgstr "No se pudo comprobar el espacio libre durante la grabación:\n{path}"
 msgid "Free space could not be determined:\n{error}"
 msgstr "No se pudo determinar el espacio libre:\n{error}"
 
-#: internal_player.py:479
-#: internal_player.py:3139
+#: internal_player.py:472
+#: internal_player.py:3132
 msgid "Full Screen"
 msgstr "Pantalla completa"
 
@@ -1658,7 +1658,7 @@ msgstr "Puerto HTTPS"
 msgid "Help"
 msgstr "Ayuda"
 
-#: internal_player.py:605
+#: internal_player.py:598
 #: shortcuts.py:126
 msgid "Hide Window"
 msgstr "Ocultar ventana"
@@ -1674,9 +1674,9 @@ msgstr "Ocultar versiones anteriores"
 msgid "IPTV Stream"
 msgstr "Transmisión IPTV"
 
-#: internal_player.py:524
-#: internal_player.py:557
-#: internal_player.py:2040
+#: internal_player.py:517
+#: internal_player.py:550
+#: internal_player.py:2033
 msgid "Idle"
 msgstr "Inactivo"
 
@@ -1784,7 +1784,7 @@ msgstr "Conservar los canales elegidos"
 msgid "Keep this output device?\n{name}"
 msgstr "¿Conservar este dispositivo de salida?\n{name}"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:48
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Conservar entre 1 y 30 minutos del directo; 0 desactiva el búfer local."
 
@@ -1812,11 +1812,11 @@ msgstr "Idioma"
 msgid "Last Watched"
 msgstr "Última visualización"
 
-#: internal_player.py:1569
+#: internal_player.py:1562
 msgid "Last error: {reason}"
 msgstr "Último error: {reason}"
 
-#: internal_player.py:2889
+#: internal_player.py:2882
 msgid "Last subtitle: {text}"
 msgstr "Último subtítulo: {text}"
 
@@ -1840,15 +1840,15 @@ msgstr "Antelación (minutos)"
 msgid "Live TV && Catch-up"
 msgstr "TV en vivo && Repetición"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:325
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "La transmisión en directo ha terminado; el historial conservado sigue disponible."
 
-#: internal_player.py:2703
+#: internal_player.py:2696
 msgid "Load Subtitle File"
 msgstr "Cargar archivo de subtítulos"
 
-#: internal_player.py:589
+#: internal_player.py:582
 msgid "Load Subtitle File..."
 msgstr "Cargar archivo de subtítulos..."
 
@@ -1877,16 +1877,16 @@ msgstr "Cargando listas de reproducción..."
 msgid "Loading recordings..."
 msgstr "Cargando grabaciones..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:49
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:61
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:67
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:99
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:232
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:288
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Búfer local del directo"
 
-#: internal_player.py:574
+#: internal_player.py:567
 msgid "Local Live Buffer..."
 msgstr "Búfer local del directo…"
 
@@ -1927,7 +1927,7 @@ msgstr "Los atajos de la ventana principal necesitan Ctrl o Alt."
 msgid "Maximum connections"
 msgstr "Conexiones máximas"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:66
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Tamaño máximo del búfer local por sesión (MiB). Los datos más antiguos se eliminan al alcanzar cualquiera de los límites."
 
@@ -1944,7 +1944,7 @@ msgstr "Menú"
 msgid "Message from provider"
 msgstr "Mensaje del proveedor"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:67
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB:"
@@ -1976,8 +1976,8 @@ msgstr "Los minutos y segundos después de dos puntos deben ser menores que 60."
 msgid "Minutes before programme:"
 msgstr "Minutos antes del programa:"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:49
-#: internal_player.py:3297
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: internal_player.py:3290
 #: planning_ui.py:21
 msgid "Minutes:"
 msgstr "Minutos:"
@@ -2015,14 +2015,14 @@ msgstr "Películas"
 
 #: accessible_tools_ui.py:198
 #: accessible_tools_ui.py:229
-#: internal_player.py:566
+#: internal_player.py:559
 #: shortcuts.py:81
 #: shortcuts.py:106
 msgid "Mute / Unmute"
 msgstr "Silenciar / Activar sonido"
 
-#: internal_player.py:2078
-#: internal_player.py:2460
+#: internal_player.py:2071
+#: internal_player.py:2453
 msgid "Muted"
 msgstr "Silenciado"
 
@@ -2035,7 +2035,7 @@ msgstr "Nombre"
 msgid "Named Bookmarks"
 msgstr "Marcadores con nombre"
 
-#: internal_player.py:571
+#: internal_player.py:564
 msgid "Named Bookmarks..."
 msgstr "Marcadores con nombre..."
 
@@ -2060,7 +2060,7 @@ msgstr "Nuevo..."
 msgid "Next Episode"
 msgstr "Siguiente episodio"
 
-#: internal_player.py:598
+#: internal_player.py:591
 #: shortcuts.py:124
 msgid "Next Subtitle"
 msgstr "Subtítulo siguiente"
@@ -2099,7 +2099,7 @@ msgstr "Sin fuentes"
 msgid "No Video on Demand content found."
 msgstr "No se encontró contenido de video bajo demanda."
 
-#: internal_player.py:2014
+#: internal_player.py:2007
 #: main.py:8208
 msgid "No active stream to cast."
 msgstr "No hay ninguna transmisión activa para transmitir."
@@ -2112,13 +2112,13 @@ msgstr "No hay sesión de subtítulos activa."
 msgid "No adjacent episode is available."
 msgstr "No hay ningún episodio anterior o siguiente disponible."
 
-#: internal_player.py:708
+#: internal_player.py:701
 msgid "No audio output devices were found."
 msgstr "No se encontraron dispositivos de salida de audio."
 
-#: internal_player.py:2552
-#: internal_player.py:2618
-#: internal_player.py:2939
+#: internal_player.py:2545
+#: internal_player.py:2611
+#: internal_player.py:2932
 msgid "No audio tracks available"
 msgstr "No hay pistas de audio disponibles"
 
@@ -2149,7 +2149,7 @@ msgstr "No hay descripción disponible para este programa."
 msgid "No devices found."
 msgstr "No se encontraron dispositivos."
 
-#: internal_player.py:2893
+#: internal_player.py:2886
 msgid "No earlier subtitle."
 msgstr "No hay ningún subtítulo anterior."
 
@@ -2171,11 +2171,11 @@ msgstr "No se informaron detalles del error."
 msgid "No ffmpeg details were reported."
 msgstr "No se informaron detalles de ffmpeg."
 
-#: internal_player.py:2895
+#: internal_player.py:2888
 msgid "No later subtitle."
 msgstr "No hay ningún subtítulo posterior."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:288
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "No hay historial local del directo disponible."
 
@@ -2237,11 +2237,11 @@ msgstr "No hay recordatorios."
 msgid "No saved playback positions."
 msgstr "No hay posiciones de reproducción guardadas."
 
-#: internal_player.py:755
+#: internal_player.py:748
 msgid "No stream URL provided."
 msgstr "No se proporcionó ninguna URL de transmisión."
 
-#: internal_player.py:2883
+#: internal_player.py:2876
 msgid "No subtitle has been shown yet."
 msgstr "Todavía no se ha mostrado ningún subtítulo."
 
@@ -2249,11 +2249,11 @@ msgstr "Todavía no se ha mostrado ningún subtítulo."
 msgid "No subtitle text available yet."
 msgstr "Aún no hay texto de subtítulo disponible."
 
-#: internal_player.py:2762
+#: internal_player.py:2755
 msgid "No subtitle text found in this file."
 msgstr "No se encontró texto de subtítulos en este archivo."
 
-#: internal_player.py:2881
+#: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "No hay texto de subtítulos para leer. Cargue un archivo en un formato compatible."
 
@@ -2345,9 +2345,9 @@ msgstr "Ahora: {title} ({start} – {end})"
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2663
-#: internal_player.py:2669
-#: internal_player.py:2686
+#: internal_player.py:2656
+#: internal_player.py:2662
+#: internal_player.py:2679
 msgid "Off"
 msgstr "Apagado"
 
@@ -2404,7 +2404,7 @@ msgstr "Abrir el proyecto Accessible IPTV Client en GitHub"
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Abra el archivo grabado en VLC, pulse Ctrl+T e introduzca uno de los tiempos indicados. Los tiempos usan el reloj multimedia del archivo cuando FFmpeg lo informó; de lo contrario, son el tiempo transcurrido de grabación y pueden ser ligeramente posteriores tras una interrupción."
 
-#: internal_player.py:2041
+#: internal_player.py:2034
 msgid "Opening"
 msgstr "Abriendo"
 
@@ -2472,17 +2472,17 @@ msgstr "Parcial"
 msgid "Password"
 msgstr "Contraseña"
 
-#: internal_player.py:453
-#: internal_player.py:906
-#: internal_player.py:1915
-#: internal_player.py:1947
-#: internal_player.py:1959
-#: internal_player.py:1972
+#: internal_player.py:446
+#: internal_player.py:899
+#: internal_player.py:1908
+#: internal_player.py:1940
+#: internal_player.py:1952
+#: internal_player.py:1965
 msgid "Pause"
 msgstr "Pausar"
 
-#: internal_player.py:2044
-#: internal_player.py:2230
+#: internal_player.py:2037
+#: internal_player.py:2223
 msgid "Paused"
 msgstr "En pausa"
 
@@ -2509,8 +2509,8 @@ msgstr "Plataforma: {platform}"
 
 #: dialogs_misc.py:898
 #: dialogs_misc.py:1102
-#: internal_player.py:944
-#: internal_player.py:2060
+#: internal_player.py:937
+#: internal_player.py:2053
 #: main.py:2781
 #: personal_tools_ui.py:154
 msgid "Play"
@@ -2528,13 +2528,13 @@ msgstr "Reproducir ahora"
 msgid "Play from Beginning"
 msgstr "Reproducir desde el principio"
 
-#: internal_player.py:454
+#: internal_player.py:447
 msgid "Play or Pause"
 msgstr "Reproducir o pausar"
 
 #: client_ui.py:132
 #: client_ui.py:289
-#: internal_player.py:563
+#: internal_player.py:556
 #: main.py:822
 #: shortcuts.py:86
 #: shortcuts.py:113
@@ -2561,7 +2561,7 @@ msgstr "Tiempo de reproducción"
 msgid "Playback changed. Reopen the bookmark list."
 msgstr "La reproducción ha cambiado. Vuelva a abrir la lista de marcadores."
 
-#: internal_player.py:3351
+#: internal_player.py:3344
 msgid "Playback volume is fading before the sleep timer stops it."
 msgstr "El volumen disminuye gradualmente antes de que el temporizador detenga la reproducción."
 
@@ -2574,11 +2574,11 @@ msgstr "Reproductor"
 msgid "Player Controls"
 msgstr "Controles del reproductor"
 
-#: internal_player.py:753
+#: internal_player.py:746
 msgid "Player window has been destroyed."
 msgstr "La ventana del reproductor se ha cerrado."
 
-#: internal_player.py:2043
+#: internal_player.py:2036
 msgid "Playing"
 msgstr "Reproduciendo"
 
@@ -2612,8 +2612,8 @@ msgstr "Tipo de lista de reproducción"
 msgid "Playlist view"
 msgstr "Vista de lista de reproducción"
 
-#: internal_player.py:1230
-#: internal_player.py:1576
+#: internal_player.py:1223
+#: internal_player.py:1569
 msgid "Please try another channel or try again later."
 msgstr "Pruebe con otro canal o inténtelo de nuevo más tarde."
 
@@ -2697,7 +2697,7 @@ msgstr "Canal anterior"
 msgid "Previous Episode"
 msgstr "Episodio anterior"
 
-#: internal_player.py:596
+#: internal_player.py:589
 #: shortcuts.py:123
 msgid "Previous Subtitle"
 msgstr "Subtítulo anterior"
@@ -2789,7 +2789,7 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "Aleatorizar MAC"
 
-#: internal_player.py:594
+#: internal_player.py:587
 #: shortcuts.py:122
 msgid "Read Current Subtitle"
 msgstr "Leer el subtítulo actual"
@@ -2825,19 +2825,19 @@ msgstr "Vistos recientemente"
 msgid "Recently Watched..."
 msgstr "Vistos recientemente..."
 
-#: internal_player.py:1593
+#: internal_player.py:1586
+#: internal_player.py:2228
 #: internal_player.py:2235
-#: internal_player.py:2242
-#: internal_player.py:2250
-#: internal_player.py:2265
+#: internal_player.py:2243
+#: internal_player.py:2258
 msgid "Reconnecting..."
 msgstr "Reconectando..."
 
-#: internal_player.py:467
-#: internal_player.py:468
-#: internal_player.py:579
-#: internal_player.py:1981
-#: internal_player.py:1997
+#: internal_player.py:460
+#: internal_player.py:461
+#: internal_player.py:572
+#: internal_player.py:1974
+#: internal_player.py:1990
 #: main.py:2790
 #: main.py:3644
 #: main.py:8179
@@ -2909,7 +2909,7 @@ msgstr "Error de grabación"
 msgid "Recording Format"
 msgstr "Formato de grabación"
 
-#: internal_player.py:3260
+#: internal_player.py:3253
 #: recording_library_ui.py:33
 msgid "Recording Library"
 msgstr "Biblioteca de grabaciones"
@@ -2958,7 +2958,7 @@ msgstr "Carpeta de grabaciones:"
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "Carpeta de grabaciones: {path}\nEspacio libre: {free} MiB\nReserva necesaria: {reserve} MiB.\n\nEsta comprobación no garantiza espacio suficiente para toda la grabación."
 
-#: internal_player.py:1980
+#: internal_player.py:1973
 msgid "Recording is not available from this window."
 msgstr "La grabación no está disponible desde esta ventana."
 
@@ -3042,11 +3042,11 @@ msgstr "Actualizando todas las listas..."
 msgid "Refreshing playlist: {name}"
 msgstr "Actualizando lista: {name}"
 
-#: internal_player.py:1242
+#: internal_player.py:1235
+#: internal_player.py:2230
 #: internal_player.py:2237
-#: internal_player.py:2244
-#: internal_player.py:2247
-#: internal_player.py:2265
+#: internal_player.py:2240
+#: internal_player.py:2258
 msgid "Refreshing stream..."
 msgstr "Actualizando transmisión..."
 
@@ -3142,8 +3142,8 @@ msgstr "Restaurar"
 msgid "Restore Recording"
 msgstr "Restaurar grabación"
 
-#: internal_player.py:1915
-#: internal_player.py:1972
+#: internal_player.py:1908
+#: internal_player.py:1965
 #: resume_dialogs.py:17
 #: resume_dialogs.py:18
 #: resume_dialogs.py:51
@@ -3154,7 +3154,7 @@ msgstr "Reanudar"
 msgid "Resume playback from {time}?"
 msgstr "¿Continuar la reproducción desde {time}?"
 
-#: internal_player.py:576
+#: internal_player.py:569
 msgid "Return to Live"
 msgstr "Volver al directo"
 
@@ -3162,11 +3162,11 @@ msgstr "Volver al directo"
 msgid "Review recent subtitles..."
 msgstr "Revisar subtítulos recientes..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:262
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Rebobinar TV en directo"
 
-#: internal_player.py:575
+#: internal_player.py:568
 msgid "Rewind Live TV..."
 msgstr "Rebobinar TV en directo…"
 
@@ -3311,12 +3311,12 @@ msgstr "Buscando dispositivos..."
 msgid "Searching programmes..."
 msgstr "Buscando programas..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:261
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "Segundos de retraso respecto a la última imagen conservada; 0 vuelve al directo."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:261
-#: internal_player.py:3309
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: internal_player.py:3302
 msgid "Seconds:"
 msgstr "Segundos:"
 
@@ -3510,12 +3510,12 @@ msgstr "Apagar el equipo cuando terminen las grabaciones"
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Apagado cancelado. El apagado automático después de las grabaciones está desactivado."
 
-#: internal_player.py:3297
-#: internal_player.py:3309
+#: internal_player.py:3290
+#: internal_player.py:3302
 msgid "Sleep Timer"
 msgstr "Temporizador de reposo"
 
-#: internal_player.py:565
+#: internal_player.py:558
 msgid "Sleep Timer..."
 msgstr "Temporizador de reposo…"
 
@@ -3523,11 +3523,11 @@ msgstr "Temporizador de reposo…"
 msgid "Sort by"
 msgstr "Ordenar por"
 
-#: internal_player.py:2460
+#: internal_player.py:2453
 msgid "Sound restored"
 msgstr "Sonido restablecido"
 
-#: internal_player.py:591
+#: internal_player.py:584
 #: shortcuts.py:121
 msgid "Speak Subtitles"
 msgstr "Leer subtítulos en voz alta"
@@ -3596,8 +3596,8 @@ msgstr "Estado"
 
 #: client_ui.py:133
 #: client_ui.py:290
-#: internal_player.py:459
-#: internal_player.py:564
+#: internal_player.py:452
+#: internal_player.py:557
 #: main.py:823
 #: shortcuts.py:87
 #: shortcuts.py:114
@@ -3608,11 +3608,11 @@ msgstr "Detener"
 msgid "Stop All Recordings"
 msgstr "Detener todas las grabaciones"
 
-#: internal_player.py:460
+#: internal_player.py:453
 msgid "Stop Playback"
 msgstr "Detener reproducción"
 
-#: internal_player.py:1997
+#: internal_player.py:1990
 #: main.py:2788
 #: main.py:4566
 msgid "Stop Recording"
@@ -3626,11 +3626,11 @@ msgstr "Detener grabación(es)"
 msgid "Stop below (MiB):"
 msgstr "Detener por debajo de (MiB):"
 
-#: internal_player.py:3296
+#: internal_player.py:3289
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Detener la reproducción integrada después de 1–1440 minutos; introduzca 0 para cancelar el temporizador."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:98
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Detenga la reproducción local almacenada antes de cambiar a un dispositivo de transmisión."
 
@@ -3638,8 +3638,8 @@ msgstr "Detenga la reproducción local almacenada antes de cambiar a un disposit
 msgid "Stop recordings safely when space is critically low"
 msgstr "Detener las grabaciones de forma controlada si el espacio es crítico"
 
-#: internal_player.py:945
-#: internal_player.py:2045
+#: internal_player.py:938
+#: internal_player.py:2038
 msgid "Stopped"
 msgstr "Detenido"
 
@@ -3666,8 +3666,8 @@ msgstr "Deteniendo la grabación..."
 msgid "Stopping {count} recording(s)..."
 msgstr "Deteniendo {count} grabación(es)..."
 
-#: internal_player.py:1231
-#: internal_player.py:1577
+#: internal_player.py:1224
+#: internal_player.py:1570
 msgid "Stream Lost"
 msgstr "Transmisión perdida"
 
@@ -3676,17 +3676,17 @@ msgstr "Transmisión perdida"
 msgid "Stream URL"
 msgstr "URL del flujo"
 
-#: internal_player.py:1572
+#: internal_player.py:1565
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "La transmisión se desconectó después de {count} reintentos. Puede que esté fuera de línea o con problemas."
 
-#: internal_player.py:1229
+#: internal_player.py:1222
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Transmisión desconectada. Puede estar fuera de línea o tener problemas."
 
-#: internal_player.py:1234
-#: internal_player.py:1580
-#: internal_player.py:2267
+#: internal_player.py:1227
+#: internal_player.py:1573
+#: internal_player.py:2260
 msgid "Stream lost"
 msgstr "Transmisión perdida"
 
@@ -3730,11 +3730,11 @@ msgstr "Retardo de subtítulos en milisegundos (de -600000 a 600000). Los valore
 msgid "Subtitle delay: {milliseconds} ms."
 msgstr "Retardo de subtítulos: {milliseconds} ms."
 
-#: internal_player.py:2726
+#: internal_player.py:2719
 msgid "Subtitle file loaded: {name}"
 msgstr "Archivo de subtítulos cargado: {name}"
 
-#: internal_player.py:2704
+#: internal_player.py:2697
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Archivos de subtítulos (*.srt;*.ass;*.ssa;*.vtt)"
 
@@ -3748,19 +3748,19 @@ msgstr "Voz de subtítulos %s."
 msgid "Subtitle speech failed."
 msgstr "La lectura de subtítulos ha fallado."
 
-#: internal_player.py:2732
+#: internal_player.py:2725
 msgid "Subtitle speech needs a supported text subtitle file."
 msgstr "La lectura requiere un archivo de subtítulos de texto compatible."
 
-#: internal_player.py:2925
+#: internal_player.py:2918
 msgid "Subtitle speech off"
 msgstr "Lectura de subtítulos desactivada"
 
-#: internal_player.py:2927
+#: internal_player.py:2920
 msgid "Subtitle speech on"
 msgstr "Lectura de subtítulos activada"
 
-#: internal_player.py:2929
+#: internal_player.py:2922
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "Lectura de subtítulos activada. Cargue un archivo de subtítulos para escucharlos."
 
@@ -3780,19 +3780,19 @@ msgstr "La lectura de subtítulos usará tu lector de pantalla."
 msgid "Subtitle timing could not be changed."
 msgstr "No se pudo cambiar la sincronización de los subtítulos."
 
-#: internal_player.py:2655
+#: internal_player.py:2648
 msgid "Subtitle track unavailable"
 msgstr "Pista de subtítulos no disponible"
 
 #: client_ui.py:229
 #: client_ui.py:369
-#: internal_player.py:588
-#: internal_player.py:2701
+#: internal_player.py:581
+#: internal_player.py:2694
 #: shortcuts.py:120
 msgid "Subtitles"
 msgstr "Subtítulos"
 
-#: internal_player.py:2666
+#: internal_player.py:2659
 msgid "Subtitles: {name}"
 msgstr "Subtítulos: {name}"
 
@@ -3843,7 +3843,7 @@ msgstr "Se ha alcanzado el límite de marcadores. Elimine primero uno que ya no 
 msgid "The channel list changed. Try again."
 msgstr "La lista de canales ha cambiado. Inténtelo de nuevo."
 
-#: internal_player.py:2442
+#: internal_player.py:2435
 msgid "The channel volume could not be saved:\n{error}"
 msgstr "No se pudo guardar el volumen del canal:\n{error}"
 
@@ -3887,15 +3887,15 @@ msgstr "La biblioteca puede contener hasta 20 carpetas."
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "El búfer del directo está cambiando de fuente. No se pudo iniciar la grabación programada."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:60
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "El búfer local aún alimenta una grabación. Deténgala antes de desactivarlo."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:312
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "El búfer local se detuvo por un fallo de almacenamiento o de la fuente."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:231
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "No se pudo iniciar el búfer local. No se abrió ninguna conexión adicional al proveedor. Desactive el búfer para volver a intentar la reproducción directa."
 
@@ -3912,7 +3912,7 @@ msgstr "La duración del contenido aún no está disponible."
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "El siguiente episodio comienza en {seconds} segundos: {title}"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:316
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "La posición anterior ha caducado; la reproducción se ha trasladado al intervalo conservado."
 
@@ -3921,7 +3921,7 @@ msgid "The operation could not be completed. Refresh and try again."
 msgstr "No se pudo completar la operación. Actualice e inténtelo de nuevo."
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:3259
+#: internal_player.py:3252
 #: main.py:9366
 #: main.py:9395
 #: personal_tools_ui.py:27
@@ -3935,7 +3935,7 @@ msgstr "La operación falló:\n{error}"
 msgid "The passwords do not match."
 msgstr "Las contraseñas no coinciden."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:301
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "La posición de pausa ha caducado. La reproducción continúa desde la imagen más antigua conservada."
 
@@ -3944,7 +3944,7 @@ msgstr "La posición de pausa ha caducado. La reproducción continúa desde la i
 msgid "The playback position is not available yet."
 msgstr "La posición de reproducción aún no está disponible."
 
-#: internal_player.py:2456
+#: internal_player.py:2449
 msgid "The player could not change its mute state."
 msgstr "El reproductor no pudo cambiar el estado del sonido."
 
@@ -3953,7 +3953,7 @@ msgstr "El reproductor no pudo cambiar el estado del sonido."
 msgid "The player could not seek to the requested position."
 msgstr "El reproductor no pudo ir a la posición solicitada."
 
-#: internal_player.py:3185
+#: internal_player.py:3178
 #: main.py:6407
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "Las listas cambiaron durante la comprobación. Vuelva a abrir Continuar viendo e inténtelo de nuevo."
@@ -4049,7 +4049,7 @@ msgstr "No se pudo realizar la operación del recordatorio:\n{error}"
 msgid "The requested position is too large."
 msgstr "La posición solicitada es demasiado grande."
 
-#: internal_player.py:3238
+#: internal_player.py:3231
 msgid "The saved playback position could not be restored."
 msgstr "No se pudo restaurar la posición de reproducción guardada."
 
@@ -4185,8 +4185,8 @@ msgstr "Tiempo restante: {time}"
 msgid "Title"
 msgstr "Título"
 
-#: internal_player.py:480
-#: internal_player.py:602
+#: internal_player.py:473
+#: internal_player.py:595
 #: shortcuts.py:125
 msgid "Toggle Full Screen"
 msgstr "Alternar pantalla completa"
@@ -4196,10 +4196,10 @@ msgstr "Alternar pantalla completa"
 msgid "Topics"
 msgstr "Temas"
 
-#: internal_player.py:2508
-#: internal_player.py:2596
-#: internal_player.py:2649
-#: internal_player.py:2665
+#: internal_player.py:2501
+#: internal_player.py:2589
+#: internal_player.py:2642
+#: internal_player.py:2658
 msgid "Track {id}"
 msgstr "Pista {id}"
 
@@ -4440,16 +4440,16 @@ msgstr "Ver EPG..."
 msgid "Visit the projects site, projects.serrebiradio.com"
 msgstr "Visitar el sitio de proyectos, projects.serrebiradio.com"
 
-#: internal_player.py:2076
+#: internal_player.py:2069
 msgid "Vol {value}%"
 msgstr "Vol {value}%"
 
-#: internal_player.py:485
-#: internal_player.py:2443
+#: internal_player.py:478
+#: internal_player.py:2436
 msgid "Volume"
 msgstr "Volumen"
 
-#: internal_player.py:495
+#: internal_player.py:488
 msgid "Volume Control"
 msgstr "Control de volumen"
 
@@ -4477,7 +4477,7 @@ msgstr "Avisar por debajo de (MiB):"
 
 #: client_ui.py:126
 #: client_ui.py:278
-#: internal_player.py:603
+#: internal_player.py:596
 #: shortcuts.py:100
 #: shortcuts.py:128
 msgid "What Is Playing"
@@ -4669,7 +4669,7 @@ msgstr "{player} no está configurado para Linux."
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nInicio: {time}"
 
-#: internal_player.py:829
+#: internal_player.py:822
 msgid "{title} - Built-in Player"
 msgstr "{title} - Reproductor integrado"
 
@@ -4681,7 +4681,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} a {end}"
 
-#: internal_player.py:2073
+#: internal_player.py:2066
 msgid "{value}s buffer"
 msgstr "búfer de {value}s"
 
@@ -4689,7 +4689,7 @@ msgstr "búfer de {value}s"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Se registraron {warnings} advertencias, {errors} errores y {fatals} errores graves en total."
 
-#: internal_player.py:2072
+#: internal_player.py:2065
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 

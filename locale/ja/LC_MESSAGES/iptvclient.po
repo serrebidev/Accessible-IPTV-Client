@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:628
+#: internal_player.py:621
 msgid "&Playback"
 msgstr "再生(&P)"
 
@@ -151,7 +151,7 @@ msgstr "フォルダーを追加..."
 msgid "Add Named Bookmark"
 msgstr "名前付きブックマークを追加"
 
-#: internal_player.py:570
+#: internal_player.py:563
 msgid "Add Named Bookmark..."
 msgstr "名前付きブックマークを追加..."
 
@@ -286,20 +286,20 @@ msgid "Attempt to add provider XMLTV"
 msgstr "プロバイダーの XMLTV を追加してみる"
 
 #: internal_player.py:120
-#: internal_player.py:709
+#: internal_player.py:702
 msgid "Audio Output Device"
 msgstr "オーディオ出力デバイス"
 
-#: internal_player.py:599
+#: internal_player.py:592
 msgid "Audio Output Device..."
 msgstr "オーディオ出力デバイス..."
 
-#: internal_player.py:585
+#: internal_player.py:578
 #: shortcuts.py:119
 msgid "Audio Track"
 msgstr "音声トラック"
 
-#: internal_player.py:2557
+#: internal_player.py:2550
 msgid "Audio Track: {name}"
 msgstr "音声トラック: {name}"
 
@@ -328,7 +328,7 @@ msgstr "音声のみ（WAV）"
 msgid "Audio output devices"
 msgstr "オーディオ出力デバイス"
 
-#: internal_player.py:2593
+#: internal_player.py:2586
 msgid "Audio track unavailable"
 msgstr "音声トラックを利用できません"
 
@@ -336,9 +336,9 @@ msgstr "音声トラックを利用できません"
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "音声のみのストリームを検出しました。録画を開始しました（{fmt}）：\n{path}"
 
-#: internal_player.py:2086
-#: internal_player.py:2612
-#: internal_player.py:2621
+#: internal_player.py:2079
+#: internal_player.py:2605
+#: internal_player.py:2614
 msgid "Audio: {name}"
 msgstr "音声: {name}"
 
@@ -456,11 +456,11 @@ msgstr "互換性のない変更"
 msgid "Browse..."
 msgstr "参照..."
 
-#: internal_player.py:909
-#: internal_player.py:1949
-#: internal_player.py:1962
-#: internal_player.py:2042
-#: internal_player.py:2262
+#: internal_player.py:902
+#: internal_player.py:1942
+#: internal_player.py:1955
+#: internal_player.py:2035
+#: internal_player.py:2255
 msgid "Buffering..."
 msgstr "バッファリング中..."
 
@@ -521,7 +521,7 @@ msgstr "キャンセルされました"
 msgid "Cannot find \"{text}\"."
 msgstr "「{text}」が見つかりません。"
 
-#: internal_player.py:473
+#: internal_player.py:466
 msgid "Cast"
 msgstr "キャスト"
 
@@ -537,18 +537,18 @@ msgstr "キャスト / 接続..."
 msgid "Cast To..."
 msgstr "キャスト先..."
 
-#: internal_player.py:474
+#: internal_player.py:467
 msgid "Cast to Device"
 msgstr "デバイスにキャスト"
 
-#: internal_player.py:601
+#: internal_player.py:594
 #: shortcuts.py:116
 msgid "Cast..."
 msgstr "キャスト..."
 
-#: internal_player.py:2010
-#: internal_player.py:2014
-#: internal_player.py:2033
+#: internal_player.py:2003
+#: internal_player.py:2007
+#: internal_player.py:2026
 #: main.py:8035
 #: main.py:8208
 #: main.py:8237
@@ -556,7 +556,7 @@ msgstr "キャスト..."
 msgid "Casting"
 msgstr "キャスト中"
 
-#: internal_player.py:2033
+#: internal_player.py:2026
 #: main.py:8031
 #: main.py:8038
 #: main.py:8220
@@ -567,7 +567,7 @@ msgstr "キャストエラー"
 msgid "Casting failed: {error}"
 msgstr "キャストに失敗しました：{error}"
 
-#: internal_player.py:2010
+#: internal_player.py:2003
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "キャスターが初期化されていないため、キャストは利用できません。"
 
@@ -706,7 +706,7 @@ msgstr "ストリームの種類を確認中…"
 msgid "Checking {account}..."
 msgstr "{account} を確認しています..."
 
-#: internal_player.py:501
+#: internal_player.py:494
 msgid "Choose Audio Track"
 msgstr "音声トラックの選択"
 
@@ -824,7 +824,7 @@ msgstr "録画に使用できる接続数（0 = 追加の制限なし）："
 msgid "Connections in use"
 msgstr "使用中の接続数"
 
-#: internal_player.py:3260
+#: internal_player.py:3253
 #: main.py:6409
 #: main.py:6419
 #: main.py:8068
@@ -906,7 +906,7 @@ msgstr "このシリーズのエピソードを読み込めませんでした。
 msgid "Could not load episodes:\n{error}"
 msgstr "エピソードを読み込めませんでした：\n{error}"
 
-#: internal_player.py:2722
+#: internal_player.py:2715
 msgid "Could not load subtitle file."
 msgstr "字幕ファイルを読み込めませんでした。"
 
@@ -965,8 +965,8 @@ msgstr "ストリーム URL を解決できませんでした：\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Authenticode 検証を実行できませんでした: {detail}"
 
-#: internal_player.py:3199
-#: internal_player.py:3252
+#: internal_player.py:3192
+#: internal_player.py:3245
 #: main.py:6380
 #: resume_dialogs.py:193
 #: resume_dialogs.py:219
@@ -991,7 +991,7 @@ msgstr "コンピューターをシャットダウンできませんでした:\n
 msgid "Could not start catch-up download:\n{error}"
 msgstr "見逃し配信のダウンロードを開始できませんでした:\n{error}"
 
-#: internal_player.py:902
+#: internal_player.py:895
 msgid "Could not start playback: {error}"
 msgstr "再生を開始できませんでした: {error}"
 
@@ -1284,8 +1284,8 @@ msgstr "録画予約、リマインダー、保存した検索を含む暗号化
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "終了（現地時刻、YYYY-MM-DD HH:MM）"
 
-#: internal_player.py:2046
-#: internal_player.py:2257
+#: internal_player.py:2039
+#: internal_player.py:2250
 msgid "Ended"
 msgstr "終了"
 
@@ -1363,7 +1363,7 @@ msgid "Episode {num}"
 msgstr "第 {num} 話"
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:2047
+#: internal_player.py:2040
 #: main.py:2838
 #: main.py:2892
 #: main.py:4686
@@ -1403,11 +1403,11 @@ msgstr "実行ファイルが見つかりません：{path}"
 msgid "Exit"
 msgstr "終了"
 
-#: internal_player.py:3139
+#: internal_player.py:3132
 msgid "Exit Full Screen"
 msgstr "全画面表示を終了"
 
-#: internal_player.py:606
+#: internal_player.py:599
 #: shortcuts.py:127
 msgid "Exit Player"
 msgstr "プレーヤーを終了"
@@ -1439,7 +1439,7 @@ msgstr "設定のエクスポート"
 msgid "Export Settings..."
 msgstr "設定をエクスポート..."
 
-#: internal_player.py:2700
+#: internal_player.py:2693
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "外部字幕ファイルはローカルのライブバッファーと同期されません。ストリームに埋め込まれた字幕を使用してください。"
 
@@ -1451,7 +1451,7 @@ msgstr "更新を展開中..."
 msgid "F1 is reserved for Help."
 msgstr "F1 はヘルプ用に予約されています。"
 
-#: internal_player.py:3308
+#: internal_player.py:3301
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "停止前に音量を徐々に下げる時間（秒）。0 で無効になります。"
 
@@ -1594,8 +1594,8 @@ msgstr "録画中に空き容量を確認できませんでした：\n{path}"
 msgid "Free space could not be determined:\n{error}"
 msgstr "空き容量を確認できませんでした:\n{error}"
 
-#: internal_player.py:479
-#: internal_player.py:3139
+#: internal_player.py:472
+#: internal_player.py:3132
 msgid "Full Screen"
 msgstr "全画面表示"
 
@@ -1658,7 +1658,7 @@ msgstr "HTTPS ポート"
 msgid "Help"
 msgstr "ヘルプ"
 
-#: internal_player.py:605
+#: internal_player.py:598
 #: shortcuts.py:126
 msgid "Hide Window"
 msgstr "ウィンドウを非表示"
@@ -1674,9 +1674,9 @@ msgstr "古いリリースを非表示にする"
 msgid "IPTV Stream"
 msgstr "IPTV ストリーム"
 
-#: internal_player.py:524
-#: internal_player.py:557
-#: internal_player.py:2040
+#: internal_player.py:517
+#: internal_player.py:550
+#: internal_player.py:2033
 msgid "Idle"
 msgstr "アイドル"
 
@@ -1784,7 +1784,7 @@ msgstr "選択したチャンネルを維持"
 msgid "Keep this output device?\n{name}"
 msgstr "この出力デバイスを保持しますか？\n{name}"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:48
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "ライブ映像を 1～30 分間保持します。0 でローカルバッファーを無効にします。"
 
@@ -1812,11 +1812,11 @@ msgstr "言語"
 msgid "Last Watched"
 msgstr "最終視聴日時"
 
-#: internal_player.py:1569
+#: internal_player.py:1562
 msgid "Last error: {reason}"
 msgstr "最後のエラー：{reason}"
 
-#: internal_player.py:2889
+#: internal_player.py:2882
 msgid "Last subtitle: {text}"
 msgstr "最後の字幕: {text}"
 
@@ -1840,15 +1840,15 @@ msgstr "事前通知（分）"
 msgid "Live TV && Catch-up"
 msgstr "ライブ TV と見逃し配信"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:325
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "ライブ入力が終了しました。保持された履歴は引き続き利用できます。"
 
-#: internal_player.py:2703
+#: internal_player.py:2696
 msgid "Load Subtitle File"
 msgstr "字幕ファイルをロードする"
 
-#: internal_player.py:589
+#: internal_player.py:582
 msgid "Load Subtitle File..."
 msgstr "字幕ファイルをロード..."
 
@@ -1877,16 +1877,16 @@ msgstr "プレイリストを読み込み中..."
 msgid "Loading recordings..."
 msgstr "録画を読み込み中..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:49
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:61
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:67
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:99
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:232
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:288
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "ローカルライブバッファー"
 
-#: internal_player.py:574
+#: internal_player.py:567
 msgid "Local Live Buffer..."
 msgstr "ローカルライブバッファー…"
 
@@ -1927,7 +1927,7 @@ msgstr "メイン ウィンドウのショートカットには Ctrl または A
 msgid "Maximum connections"
 msgstr "最大接続数"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:66
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "セッションごとのローカルバッファーの上限（MiB）。いずれかの制限に達すると古いデータから削除されます。"
 
@@ -1944,7 +1944,7 @@ msgstr "メニュー"
 msgid "Message from provider"
 msgstr "プロバイダーからのメッセージ"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:67
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
 #: planning_ui.py:287
 msgid "MiB:"
 msgstr "MiB："
@@ -1976,8 +1976,8 @@ msgstr "コロンの後の分と秒は60未満にしてください。"
 msgid "Minutes before programme:"
 msgstr "番組開始前の分数:"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:49
-#: internal_player.py:3297
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: internal_player.py:3290
 #: planning_ui.py:21
 msgid "Minutes:"
 msgstr "分："
@@ -2015,14 +2015,14 @@ msgstr "映画"
 
 #: accessible_tools_ui.py:198
 #: accessible_tools_ui.py:229
-#: internal_player.py:566
+#: internal_player.py:559
 #: shortcuts.py:81
 #: shortcuts.py:106
 msgid "Mute / Unmute"
 msgstr "ミュート / ミュート解除"
 
-#: internal_player.py:2078
-#: internal_player.py:2460
+#: internal_player.py:2071
+#: internal_player.py:2453
 msgid "Muted"
 msgstr "ミュート中"
 
@@ -2035,7 +2035,7 @@ msgstr "名前"
 msgid "Named Bookmarks"
 msgstr "名前付きブックマーク"
 
-#: internal_player.py:571
+#: internal_player.py:564
 msgid "Named Bookmarks..."
 msgstr "名前付きブックマーク..."
 
@@ -2060,7 +2060,7 @@ msgstr "新規..."
 msgid "Next Episode"
 msgstr "次のエピソード"
 
-#: internal_player.py:598
+#: internal_player.py:591
 #: shortcuts.py:124
 msgid "Next Subtitle"
 msgstr "次の字幕"
@@ -2099,7 +2099,7 @@ msgstr "ソースなし"
 msgid "No Video on Demand content found."
 msgstr "ビデオオンデマンドのコンテンツが見つかりませんでした。"
 
-#: internal_player.py:2014
+#: internal_player.py:2007
 #: main.py:8208
 msgid "No active stream to cast."
 msgstr "キャストするアクティブなストリームがありません。"
@@ -2112,13 +2112,13 @@ msgstr "アクティブな字幕セッションがありません。"
 msgid "No adjacent episode is available."
 msgstr "前後のエピソードは利用できません。"
 
-#: internal_player.py:708
+#: internal_player.py:701
 msgid "No audio output devices were found."
 msgstr "オーディオ出力デバイスが見つかりません。"
 
-#: internal_player.py:2552
-#: internal_player.py:2618
-#: internal_player.py:2939
+#: internal_player.py:2545
+#: internal_player.py:2611
+#: internal_player.py:2932
 msgid "No audio tracks available"
 msgstr "利用できる音声トラックがありません"
 
@@ -2149,7 +2149,7 @@ msgstr "この番組の説明はありません。"
 msgid "No devices found."
 msgstr "デバイスが見つかりませんでした。"
 
-#: internal_player.py:2893
+#: internal_player.py:2886
 msgid "No earlier subtitle."
 msgstr "これより前の字幕はありません。"
 
@@ -2171,11 +2171,11 @@ msgstr "エラーの詳細は報告されていません。"
 msgid "No ffmpeg details were reported."
 msgstr "ffmpeg の詳細は報告されませんでした。"
 
-#: internal_player.py:2895
+#: internal_player.py:2888
 msgid "No later subtitle."
 msgstr "これより後の字幕はありません。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:288
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "利用可能なローカルライブ履歴がありません。"
 
@@ -2237,11 +2237,11 @@ msgstr "リマインダーはありません。"
 msgid "No saved playback positions."
 msgstr "保存した再生位置はありません。"
 
-#: internal_player.py:755
+#: internal_player.py:748
 msgid "No stream URL provided."
 msgstr "ストリーム URL が指定されていません。"
 
-#: internal_player.py:2883
+#: internal_player.py:2876
 msgid "No subtitle has been shown yet."
 msgstr "まだ字幕は表示されていません。"
 
@@ -2249,11 +2249,11 @@ msgstr "まだ字幕は表示されていません。"
 msgid "No subtitle text available yet."
 msgstr "字幕テキストはまだ利用できません。"
 
-#: internal_player.py:2762
+#: internal_player.py:2755
 msgid "No subtitle text found in this file."
 msgstr "このファイルに字幕テキストが見つかりません。"
 
-#: internal_player.py:2881
+#: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "読み上げる字幕テキストがありません。対応形式の字幕ファイルを読み込んでください。"
 
@@ -2345,9 +2345,9 @@ msgstr "現在: {title} ({start} – {end})"
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2663
-#: internal_player.py:2669
-#: internal_player.py:2686
+#: internal_player.py:2656
+#: internal_player.py:2662
+#: internal_player.py:2679
 msgid "Off"
 msgstr "オフ"
 
@@ -2404,7 +2404,7 @@ msgstr "GitHub で Accessible IPTV Client プロジェクトを開く"
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "録画ファイルを VLC で開き、Ctrl+T を押して、一覧の時刻を入力します。FFmpeg がファイルのメディア時刻を報告した場合はその時刻を使用します。それ以外は録画開始からの経過時間であり、中断後は実際の再生位置より少し後になることがあります。"
 
-#: internal_player.py:2041
+#: internal_player.py:2034
 msgid "Opening"
 msgstr "開いています"
 
@@ -2472,17 +2472,17 @@ msgstr "不完全"
 msgid "Password"
 msgstr "パスワード"
 
-#: internal_player.py:453
-#: internal_player.py:906
-#: internal_player.py:1915
-#: internal_player.py:1947
-#: internal_player.py:1959
-#: internal_player.py:1972
+#: internal_player.py:446
+#: internal_player.py:899
+#: internal_player.py:1908
+#: internal_player.py:1940
+#: internal_player.py:1952
+#: internal_player.py:1965
 msgid "Pause"
 msgstr "一時停止"
 
-#: internal_player.py:2044
-#: internal_player.py:2230
+#: internal_player.py:2037
+#: internal_player.py:2223
 msgid "Paused"
 msgstr "一時停止中"
 
@@ -2509,8 +2509,8 @@ msgstr "プラットフォーム: {platform}"
 
 #: dialogs_misc.py:898
 #: dialogs_misc.py:1102
-#: internal_player.py:944
-#: internal_player.py:2060
+#: internal_player.py:937
+#: internal_player.py:2053
 #: main.py:2781
 #: personal_tools_ui.py:154
 msgid "Play"
@@ -2528,13 +2528,13 @@ msgstr "今すぐ再生"
 msgid "Play from Beginning"
 msgstr "最初から再生"
 
-#: internal_player.py:454
+#: internal_player.py:447
 msgid "Play or Pause"
 msgstr "再生または一時停止"
 
 #: client_ui.py:132
 #: client_ui.py:289
-#: internal_player.py:563
+#: internal_player.py:556
 #: main.py:822
 #: shortcuts.py:86
 #: shortcuts.py:113
@@ -2561,7 +2561,7 @@ msgstr "再生時間"
 msgid "Playback changed. Reopen the bookmark list."
 msgstr "再生内容が変わりました。ブックマーク一覧を開き直してください。"
 
-#: internal_player.py:3351
+#: internal_player.py:3344
 msgid "Playback volume is fading before the sleep timer stops it."
 msgstr "スリープタイマーによる停止前に再生音量を徐々に下げています。"
 
@@ -2574,11 +2574,11 @@ msgstr "プレーヤー"
 msgid "Player Controls"
 msgstr "プレーヤーコントロール"
 
-#: internal_player.py:753
+#: internal_player.py:746
 msgid "Player window has been destroyed."
 msgstr "プレーヤーウィンドウは破棄されました。"
 
-#: internal_player.py:2043
+#: internal_player.py:2036
 msgid "Playing"
 msgstr "再生中"
 
@@ -2612,8 +2612,8 @@ msgstr "プレイリストの種類"
 msgid "Playlist view"
 msgstr "プレイリスト表示"
 
-#: internal_player.py:1230
-#: internal_player.py:1576
+#: internal_player.py:1223
+#: internal_player.py:1569
 msgid "Please try another channel or try again later."
 msgstr "別のチャンネルを試すか、後でもう一度お試しください。"
 
@@ -2697,7 +2697,7 @@ msgstr "前のチャンネル"
 msgid "Previous Episode"
 msgstr "前のエピソード"
 
-#: internal_player.py:596
+#: internal_player.py:589
 #: shortcuts.py:123
 msgid "Previous Subtitle"
 msgstr "前の字幕"
@@ -2789,7 +2789,7 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "MAC をランダム化"
 
-#: internal_player.py:594
+#: internal_player.py:587
 #: shortcuts.py:122
 msgid "Read Current Subtitle"
 msgstr "現在の字幕を読み上げる"
@@ -2825,19 +2825,19 @@ msgstr "最近見たもの"
 msgid "Recently Watched..."
 msgstr "最近見たもの..."
 
-#: internal_player.py:1593
+#: internal_player.py:1586
+#: internal_player.py:2228
 #: internal_player.py:2235
-#: internal_player.py:2242
-#: internal_player.py:2250
-#: internal_player.py:2265
+#: internal_player.py:2243
+#: internal_player.py:2258
 msgid "Reconnecting..."
 msgstr "再接続中..."
 
-#: internal_player.py:467
-#: internal_player.py:468
-#: internal_player.py:579
-#: internal_player.py:1981
-#: internal_player.py:1997
+#: internal_player.py:460
+#: internal_player.py:461
+#: internal_player.py:572
+#: internal_player.py:1974
+#: internal_player.py:1990
 #: main.py:2790
 #: main.py:3644
 #: main.py:8179
@@ -2909,7 +2909,7 @@ msgstr "録画エラー"
 msgid "Recording Format"
 msgstr "録画形式"
 
-#: internal_player.py:3260
+#: internal_player.py:3253
 #: recording_library_ui.py:33
 msgid "Recording Library"
 msgstr "録画ライブラリ"
@@ -2958,7 +2958,7 @@ msgstr "録画フォルダー："
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "録画フォルダー: {path}\n空き容量: {free} MiB\n必要な予備容量: {reserve} MiB。\n\nこの確認は録画全体に十分な空き容量があることを保証しません。"
 
-#: internal_player.py:1980
+#: internal_player.py:1973
 msgid "Recording is not available from this window."
 msgstr "このウィンドウからは録画を利用できません。"
 
@@ -3042,11 +3042,11 @@ msgstr "すべてのプレイリストを更新しています..."
 msgid "Refreshing playlist: {name}"
 msgstr "プレイリストを更新しています: {name}"
 
-#: internal_player.py:1242
+#: internal_player.py:1235
+#: internal_player.py:2230
 #: internal_player.py:2237
-#: internal_player.py:2244
-#: internal_player.py:2247
-#: internal_player.py:2265
+#: internal_player.py:2240
+#: internal_player.py:2258
 msgid "Refreshing stream..."
 msgstr "ストリームを更新中..."
 
@@ -3142,8 +3142,8 @@ msgstr "元に戻す"
 msgid "Restore Recording"
 msgstr "録画を復元"
 
-#: internal_player.py:1915
-#: internal_player.py:1972
+#: internal_player.py:1908
+#: internal_player.py:1965
 #: resume_dialogs.py:17
 #: resume_dialogs.py:18
 #: resume_dialogs.py:51
@@ -3154,7 +3154,7 @@ msgstr "再開"
 msgid "Resume playback from {time}?"
 msgstr "{time} から再生を再開しますか？"
 
-#: internal_player.py:576
+#: internal_player.py:569
 msgid "Return to Live"
 msgstr "ライブに戻る"
 
@@ -3162,11 +3162,11 @@ msgstr "ライブに戻る"
 msgid "Review recent subtitles..."
 msgstr "最近の字幕を確認..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:262
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "ライブ映像を巻き戻す"
 
-#: internal_player.py:575
+#: internal_player.py:568
 msgid "Rewind Live TV..."
 msgstr "ライブ映像を巻き戻す…"
 
@@ -3311,12 +3311,12 @@ msgstr "デバイスを検索中..."
 msgid "Searching programmes..."
 msgstr "番組を検索中..."
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:261
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "最新の保持映像からの遅延（秒）。0 でライブに戻ります。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:261
-#: internal_player.py:3309
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: internal_player.py:3302
 msgid "Seconds:"
 msgstr "秒："
 
@@ -3510,12 +3510,12 @@ msgstr "録画がすべて終了したらコンピューターをシャットダ
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "シャットダウンを取り消しました。録画終了後の自動シャットダウンはオフになりました。"
 
-#: internal_player.py:3297
-#: internal_player.py:3309
+#: internal_player.py:3290
+#: internal_player.py:3302
 msgid "Sleep Timer"
 msgstr "スリープタイマー"
 
-#: internal_player.py:565
+#: internal_player.py:558
 msgid "Sleep Timer..."
 msgstr "スリープタイマー…"
 
@@ -3523,11 +3523,11 @@ msgstr "スリープタイマー…"
 msgid "Sort by"
 msgstr "並べ替えの基準"
 
-#: internal_player.py:2460
+#: internal_player.py:2453
 msgid "Sound restored"
 msgstr "音声を復元しました"
 
-#: internal_player.py:591
+#: internal_player.py:584
 #: shortcuts.py:121
 msgid "Speak Subtitles"
 msgstr "字幕を読み上げる"
@@ -3596,8 +3596,8 @@ msgstr "ステータス"
 
 #: client_ui.py:133
 #: client_ui.py:290
-#: internal_player.py:459
-#: internal_player.py:564
+#: internal_player.py:452
+#: internal_player.py:557
 #: main.py:823
 #: shortcuts.py:87
 #: shortcuts.py:114
@@ -3608,11 +3608,11 @@ msgstr "停止"
 msgid "Stop All Recordings"
 msgstr "すべての録画を停止"
 
-#: internal_player.py:460
+#: internal_player.py:453
 msgid "Stop Playback"
 msgstr "再生を停止"
 
-#: internal_player.py:1997
+#: internal_player.py:1990
 #: main.py:2788
 #: main.py:4566
 msgid "Stop Recording"
@@ -3626,11 +3626,11 @@ msgstr "録画を停止"
 msgid "Stop below (MiB):"
 msgstr "この空き容量未満で停止（MiB）："
 
-#: internal_player.py:3296
+#: internal_player.py:3289
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "内蔵プレーヤーの再生を1～1440分後に停止します。タイマーを解除するには0を入力してください。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:98
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "キャスト先の機器に切り替える前にローカルバッファーの再生を停止してください。"
 
@@ -3638,8 +3638,8 @@ msgstr "キャスト先の機器に切り替える前にローカルバッファ
 msgid "Stop recordings safely when space is critically low"
 msgstr "空き容量が極端に不足したら録画を正常な手順で停止する"
 
-#: internal_player.py:945
-#: internal_player.py:2045
+#: internal_player.py:938
+#: internal_player.py:2038
 msgid "Stopped"
 msgstr "停止しました"
 
@@ -3666,8 +3666,8 @@ msgstr "録画を停止中..."
 msgid "Stopping {count} recording(s)..."
 msgstr "{count} 件の録画を停止中..."
 
-#: internal_player.py:1231
-#: internal_player.py:1577
+#: internal_player.py:1224
+#: internal_player.py:1570
 msgid "Stream Lost"
 msgstr "ストリームが失われました"
 
@@ -3676,17 +3676,17 @@ msgstr "ストリームが失われました"
 msgid "Stream URL"
 msgstr "ストリーム URL"
 
-#: internal_player.py:1572
+#: internal_player.py:1565
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "{count} 回の再試行後にストリームが切断されました。ストリームがオフラインであるか、問題が発生している可能性があります。"
 
-#: internal_player.py:1229
+#: internal_player.py:1222
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "ストリームが切断されました。オフラインか問題が発生している可能性があります。"
 
-#: internal_player.py:1234
-#: internal_player.py:1580
-#: internal_player.py:2267
+#: internal_player.py:1227
+#: internal_player.py:1573
+#: internal_player.py:2260
 msgid "Stream lost"
 msgstr "ストリームが失われました"
 
@@ -3730,11 +3730,11 @@ msgstr "字幕の遅延をミリ秒で指定します（-600000～600000）。�
 msgid "Subtitle delay: {milliseconds} ms."
 msgstr "字幕の遅延：{milliseconds} ミリ秒。"
 
-#: internal_player.py:2726
+#: internal_player.py:2719
 msgid "Subtitle file loaded: {name}"
 msgstr "ロードされた字幕ファイル: {name}"
 
-#: internal_player.py:2704
+#: internal_player.py:2697
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "字幕ファイル (*.srt;*.ass;*.ssa;*.vtt)"
 
@@ -3748,19 +3748,19 @@ msgstr "字幕音声 %s。"
 msgid "Subtitle speech failed."
 msgstr "字幕の読み上げに失敗しました。"
 
-#: internal_player.py:2732
+#: internal_player.py:2725
 msgid "Subtitle speech needs a supported text subtitle file."
 msgstr "読み上げには対応するテキスト字幕ファイルが必要です。"
 
-#: internal_player.py:2925
+#: internal_player.py:2918
 msgid "Subtitle speech off"
 msgstr "字幕の読み上げ: オフ"
 
-#: internal_player.py:2927
+#: internal_player.py:2920
 msgid "Subtitle speech on"
 msgstr "字幕の読み上げ: オン"
 
-#: internal_player.py:2929
+#: internal_player.py:2922
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "字幕読み上げを有効にしました。字幕ファイルを読み込むとテキストを聞くことができます。"
 
@@ -3780,19 +3780,19 @@ msgstr "字幕読み上げはスクリーンリーダーを使用します。"
 msgid "Subtitle timing could not be changed."
 msgstr "字幕のタイミングを変更できませんでした。"
 
-#: internal_player.py:2655
+#: internal_player.py:2648
 msgid "Subtitle track unavailable"
 msgstr "字幕トラックは利用できません"
 
 #: client_ui.py:229
 #: client_ui.py:369
-#: internal_player.py:588
-#: internal_player.py:2701
+#: internal_player.py:581
+#: internal_player.py:2694
 #: shortcuts.py:120
 msgid "Subtitles"
 msgstr "字幕"
 
-#: internal_player.py:2666
+#: internal_player.py:2659
 msgid "Subtitles: {name}"
 msgstr "字幕: {name}"
 
@@ -3843,7 +3843,7 @@ msgstr "ブックマーク数が上限に達しました。先に不要なブッ
 msgid "The channel list changed. Try again."
 msgstr "チャンネル一覧が変更されました。もう一度お試しください。"
 
-#: internal_player.py:2442
+#: internal_player.py:2435
 msgid "The channel volume could not be saved:\n{error}"
 msgstr "チャンネルの音量を保存できませんでした：\n{error}"
 
@@ -3887,15 +3887,15 @@ msgstr "ライブラリには最大20個のフォルダーを登録できます�
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "ライブバッファーのソースを切り替えています。予約録画を開始できませんでした。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:60
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "ローカルバッファーは録画に使用されています。無効にする前に録画を停止してください。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:312
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "ストレージまたは入力の障害によりローカルバッファーが停止しました。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:231
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "ローカルライブバッファーを開始できませんでした。配信元への追加接続は開いていません。バッファーを無効にして直接再生を再試行してください。"
 
@@ -3912,7 +3912,7 @@ msgstr "メディアの長さはまだ取得できません。"
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "{seconds}秒後に次のエピソードを再生します：{title}"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:316
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "以前の位置は保持期限を過ぎたため、再生を保持範囲内に移動しました。"
 
@@ -3921,7 +3921,7 @@ msgid "The operation could not be completed. Refresh and try again."
 msgstr "操作を完了できませんでした。更新して再試行してください。"
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:3259
+#: internal_player.py:3252
 #: main.py:9366
 #: main.py:9395
 #: personal_tools_ui.py:27
@@ -3935,7 +3935,7 @@ msgstr "操作に失敗しました：\n{error}"
 msgid "The passwords do not match."
 msgstr "パスワードが一致しません。"
 
-#: C:/forgejo-runner/work/6f9348a73ae2e8b9/hostexecutor/client_timeshift.py:301
+#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "一時停止位置は保持期限を過ぎました。保持されている最も古い映像から再生を再開しました。"
 
@@ -3944,7 +3944,7 @@ msgstr "一時停止位置は保持期限を過ぎました。保持されてい
 msgid "The playback position is not available yet."
 msgstr "再生位置はまだ取得できません。"
 
-#: internal_player.py:2456
+#: internal_player.py:2449
 msgid "The player could not change its mute state."
 msgstr "プレーヤーでミュート状態を変更できませんでした。"
 
@@ -3953,7 +3953,7 @@ msgstr "プレーヤーでミュート状態を変更できませんでした。
 msgid "The player could not seek to the requested position."
 msgstr "プレーヤーは指定した位置に移動できませんでした。"
 
-#: internal_player.py:3185
+#: internal_player.py:3178
 #: main.py:6407
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "確認中にプレイリストが変更されました。「視聴を再開」を開き直して、もう一度お試しください。"
@@ -4049,7 +4049,7 @@ msgstr "リマインダーの操作に失敗しました:\n{error}"
 msgid "The requested position is too large."
 msgstr "指定された位置が大きすぎます。"
 
-#: internal_player.py:3238
+#: internal_player.py:3231
 msgid "The saved playback position could not be restored."
 msgstr "保存された再生位置を復元できませんでした。"
 
@@ -4185,8 +4185,8 @@ msgstr "残り時間: {time}"
 msgid "Title"
 msgstr "タイトル"
 
-#: internal_player.py:480
-#: internal_player.py:602
+#: internal_player.py:473
+#: internal_player.py:595
 #: shortcuts.py:125
 msgid "Toggle Full Screen"
 msgstr "全画面表示を切り替え"
@@ -4196,10 +4196,10 @@ msgstr "全画面表示を切り替え"
 msgid "Topics"
 msgstr "トピック"
 
-#: internal_player.py:2508
-#: internal_player.py:2596
-#: internal_player.py:2649
-#: internal_player.py:2665
+#: internal_player.py:2501
+#: internal_player.py:2589
+#: internal_player.py:2642
+#: internal_player.py:2658
 msgid "Track {id}"
 msgstr "トラック {id}"
 
@@ -4440,16 +4440,16 @@ msgstr "EPG を表示..."
 msgid "Visit the projects site, projects.serrebiradio.com"
 msgstr "プロジェクト サイト projects.serrebiradio.com を開く"
 
-#: internal_player.py:2076
+#: internal_player.py:2069
 msgid "Vol {value}%"
 msgstr "音量 {value}%"
 
-#: internal_player.py:485
-#: internal_player.py:2443
+#: internal_player.py:478
+#: internal_player.py:2436
 msgid "Volume"
 msgstr "音量"
 
-#: internal_player.py:495
+#: internal_player.py:488
 msgid "Volume Control"
 msgstr "音量コントロール"
 
@@ -4477,7 +4477,7 @@ msgstr "この空き容量未満で警告（MiB）："
 
 #: client_ui.py:126
 #: client_ui.py:278
-#: internal_player.py:603
+#: internal_player.py:596
 #: shortcuts.py:100
 #: shortcuts.py:128
 msgid "What Is Playing"
@@ -4669,7 +4669,7 @@ msgstr "{player} は Linux 用に構成されていません。"
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\n開始: {time}"
 
-#: internal_player.py:829
+#: internal_player.py:822
 msgid "{title} - Built-in Player"
 msgstr "{title} - 内蔵プレーヤー"
 
@@ -4681,7 +4681,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}、{start} ～ {end}"
 
-#: internal_player.py:2073
+#: internal_player.py:2066
 msgid "{value}s buffer"
 msgstr "{value} 秒バッファ"
 
@@ -4689,7 +4689,7 @@ msgstr "{value} 秒バッファ"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "合計で警告 {warnings} 件、エラー {errors} 件、致命的エラー {fatals} 件が記録されました。"
 
-#: internal_player.py:2072
+#: internal_player.py:2065
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
