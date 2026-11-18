@@ -1,7 +1,7 @@
 name: Cloud Release
 
-# Muse agent and cloud agents ONLY. On the Windows release host run `build.bat release`.
-# Windows runs the same build.bat release on a GitHub runner (version, notes,
+# Every public release runs here, on GitHub runners.
+# Windows runs build.bat release on a GitHub runner (version, notes,
 # translation audit, CHANGELOG, signed exe and installer, manifest, commit,
 # tag, Forgejo release), signed from the WINDOWS_CODESIGN_PFX/PASSWORD secrets
 # (the certificate the updater pins). It needs a FORGEJO_TOKEN secret with
