@@ -24,6 +24,19 @@ def player_frame():
     app.Yield()
 
 
+def test_a_new_player_starts_at_100_percent_whatever_libvlc_reports(monkeypatch):
+    """libVLC reports 0 until its audio output has read the real level."""
+    monkeypatch.setattr(internal_player.vlc.MediaPlayer, "audio_get_volume", lambda _self: 0)
+    app = wx.GetApp() or wx.App()
+    frame = InternalPlayerFrame(None)
+    try:
+        assert frame._volume_value == 100
+        assert frame.volume_slider.GetValue() == 100
+    finally:
+        frame.Destroy()
+        app.Yield()
+
+
 def test_tab_skips_disabled_and_hidden_controls(player_frame):
     frame = player_frame
     frame._current_url = "https://example.invalid/stream"

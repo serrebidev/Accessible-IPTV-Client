@@ -277,7 +277,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._vlc_ops = ThreadPoolExecutor(max_workers=1, thread_name_prefix="VLCControl")
         self._vlc_switch = None
         self._fullscreen = False
-        self._volume_value = 80
+        self._volume_value = 100
         self._muted = False
         self._volume_context = ""
         self._volume_remember = None
@@ -423,13 +423,6 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self.instance.release()
             raise InternalPlayerUnavailableError(_("Could not create libVLC media player object."))
         self._apply_audio_output_device()
-
-        try:
-            current = self.player.audio_get_volume()
-            if current >= 0:
-                self._volume_value = current
-        except Exception:
-            LOG.debug("InternalPlayerFrame.__init__: ignored exception", exc_info=True)
 
         panel = wx.Panel(self)
         panel.SetBackgroundColour(wx.BLACK)
