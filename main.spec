@@ -88,6 +88,8 @@ hidden_imports = [
     'recording_limits',
     'recording_limits_ui',
     'background_tasks',
+    'planning_tools',
+    'planning_tools_ui',
     'recording_library_ui',
     'recording_conflicts_ui',
 ] + chardet_pipeline_hiddenimports

@@ -339,7 +339,7 @@ def test_whats_on_now_context_menu_offers_play_and_schedule(host, monkeypatch):
         _capture_menu(monkeypatch, dlg.listbox, captured)
         dlg._show_context_menu()
         assert [label for label, _enabled in captured] == [
-            "Play", "Schedule Recording", "Record Daily", "Record Weekly", "Record Series"]
+            "Play", "Export to Calendar...", "Schedule Recording", "Record Daily", "Record Weekly", "Record Series"]
 
         dlg.listbox.Select(0)
         dlg._on_schedule(None)

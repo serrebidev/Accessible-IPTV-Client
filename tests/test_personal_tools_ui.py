@@ -117,7 +117,7 @@ def test_saved_search_completion_from_replaced_playlist_is_discarded(owner, monk
     monkeypatch.setattr(ui.wx, "CallAfter", lambda callback, *args: queued.append((callback,args)))
     monkeypatch.setattr(ui.threading, "Thread", lambda **kw: SimpleNamespace(start=lambda: workers.append(kw["target"])))
     monkeypatch.setattr(saved_searches, "scan", lambda *a, **kw: [{"rule":"old","matches":[]}])
-    monkeypatch.setattr(saved_searches, "commit_seen", lambda *a: committed.append(a))
+    monkeypatch.setattr(saved_searches, "commit_seen", lambda *a, **kw: (committed.append(a), ({}, 0))[1])
     owner._scan_saved_searches()
     owner.all_channels = [dict(CHANNEL)]
     workers[0]()

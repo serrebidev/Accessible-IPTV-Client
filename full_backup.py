@@ -77,7 +77,8 @@ def validate(bundle, *, now=None):
     for job in jobs:
         if (not isinstance(job, dict) or not isinstance(job.get("id"), str)
                 or not re.fullmatch(r"[a-zA-Z0-9_-]{1,128}", job["id"]) or job["id"] in ids
-                or job.get("status") not in dvr.ACTIVE_STATUSES | dvr.DONE_STATUSES
+                or not isinstance(job.get("status"), str)
+                or job["status"] not in dvr.ACTIVE_STATUSES | dvr.DONE_STATUSES
                 or not reminders.valid_time(job.get("start_ts"))
                 or not reminders.valid_time(job.get("stop_ts"))
                 or job["stop_ts"] <= job["start_ts"]
@@ -85,6 +86,10 @@ def validate(bundle, *, now=None):
                 or not isinstance(job.get("program"), dict)
                 or not isinstance(job.get("format"), str)):
             raise ValueError(bad)
+        if job.get('repeat') == 'weekdays':
+            from planning_tools import checked_weekdays
+            if not checked_weekdays(job.get('weekdays')):
+                raise ValueError(bad)
         ids.add(job["id"])
         if (job["status"] in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}
                 or job["status"] == dvr.STATUS_SCHEDULED and job["start_ts"] <= now):

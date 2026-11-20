@@ -1104,6 +1104,16 @@ class WhatsOnNowDialog(wx.Dialog):
         if callable(getattr(self, "reminder_callback", None)):
             reminder_item = menu.Append(wx.ID_ANY, _("Set Reminder..."))
             menu.Bind(wx.EVT_MENU, lambda event: self.reminder_callback(self.get_selection()), reminder_item)
+        calendar_item = menu.Append(wx.ID_ANY, _("Export to Calendar..."))
+        def export_calendar(_event):
+            from planning_tools_ui import export_programme
+            program = self.get_selection()
+            if program:
+                owner = self.GetParent()
+                resolver = getattr(owner, '_find_channel_for_epg', None)
+                channel = resolver(program) if callable(resolver) else None
+                export_programme(self, channel or {'name': program.get('channel_name', '')}, program)
+        menu.Bind(wx.EVT_MENU, export_calendar, calendar_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
         schedule_item.Enable(self.schedule_callback is not None)
         menu.Bind(wx.EVT_MENU, self._on_schedule, schedule_item)

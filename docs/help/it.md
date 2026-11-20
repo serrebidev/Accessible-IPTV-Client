@@ -184,6 +184,10 @@ Visualizza EPG…, nel menu di un canale, elenca le trasmissioni di quel canale 
 - Il tasto applicazioni o Shift+F10 su una trasmissione offre Programma registrazione.
 - Escape chiude la finestra.
 
+Il promemoria offre Ricorda di nuovo tra 5 minuti e, prima dell’inizio, Ricorda all’inizio del programma. Il rinvio viene salvato e mantenuto dopo il riavvio; deve precedere la fine del programma. Chiudi conferma l’avviso. L’applicazione deve rimanere aperta; questi promemoria non riattivano il computer.
+
+Esporta nel calendario, nel menu contestuale di un programma o per un promemoria selezionato, salva un file .ics. Include titolo, canale e orari di inizio e fine in UTC, visualizzabili nel fuso del calendario. Non pianifica registrazioni o riattivazioni del computer e non avvia la riproduzione.
+
 ## Replay {#catch-up}
 
 I canali che tengono un archivio permettono di guardare trasmissioni già andate in onda. Questi canali hanno Replay nel loro menu nell'elenco dei canali. Apre la finestra di replay del canale, che elenca le trasmissioni passate con data e ora.
@@ -309,6 +313,8 @@ Sposta nel cestino delle registrazioni trasferisce il file nel cestino dell’ap
 
 Tutte le cartelle delle registrazioni riunisce le cartelle configurate. Filtra per stato e ordina per data, titolo, durata o dimensione; Decrescente inverte l’ordine. Ctrl+A seleziona tutte le righe visibili; vengono mostrati conteggio e dimensione totale. Cestino, eliminazione definitiva e ripristino supportano più selezioni; riproduzione e rinomina richiedono un solo elemento. Analisi e filtri operano in background; la chiusura non annulla operazioni confermate.
 
+Raccolta registrazioni > Esporta elenco in CSV salva l’elenco filtrato e ordinato con titolo, canale, data, durata, stato e dimensione. Non include percorsi o URL dei flussi; protegge i prefissi delle formule nei testi. Alla chiusura, la raccolta ricorda cartella, ricerca, filtro e ordinamento. Le registrazioni eliminate sono sempre nascoste alla riapertura. Le esportazioni avvengono solo su richiesta, senza rileggere i contenuti multimediali.
+
 ### Formato di registrazione {#recording-formats}
 
 Registrazioni > Formato di registrazione sceglie come sono salvate le registrazioni:
@@ -345,6 +351,8 @@ In Windows, Registrazioni > Impedisci la sospensione automatica durante la regis
 Riattiva per le registrazioni pianificate (Windows) è disattivato per impostazione predefinita. Se abilitato, richiede un timer di riattivazione 60 secondi prima dell’inizio della prossima registrazione, incluso l’anticipo. L’applicazione deve restare aperta e hardware e impostazioni energetiche devono supportare questi timer. Non avvia un computer spento. Modifiche e annullamenti aggiornano il timer; l’uscita dall’applicazione lo rimuove.
 
 Conflitti di registrazione, in Registrazioni programmate, elenca le sovrapposizioni dell’elemento selezionato, inclusi i margini. I dettagli indicano canale, alias dell’account e intervallo effettivo. Modifica orari apre l’editor esistente. La conferma offre questi dettagli e Programma comunque. Un limite noto confronta solo lo stesso account; altrimenti mostra sovrapposizioni temporali senza presumere un limite del fornitore.
+
+Scegliere i giorni di ripetizione in Pianifica per orario, oppure in Registrazioni pianificate > Ripeti nei giorni selezionati per una registrazione in attesa che non sia una regola di serie. Senza giorni selezionati, la registrazione è singola. Alla creazione, il primo avvio deve cadere in un giorno scelto. Le ripetizioni conservano gli orari locali, i periodi notturni e i margini; gli intervalli inesistenti al cambio dell’ora vengono saltati. Tenere aperta l’applicazione. Restano validi i limiti di connessione.
 
 ### Margine di programmazione {#schedule-padding}
 
@@ -489,3 +497,5 @@ Lasciare l’applicazione aperta per registrazioni programmate, promemoria e avv
 - L'esportazione cifrata include anche programmazioni, promemoria e cronologia di ricerca, ma non i file multimediali. L'importazione mostra il numero di elementi sostituiti e chiude l'app: riaprila per completare. Prima termina registrazioni e download. Le registrazioni passate o già avviate non ripartono. I vecchi backup sostituiscono solo le impostazioni, mantenendo programmazioni e promemoria locali.
 
 Visualizza > Cronologia notifiche conserva le ultime 200 notifiche accodate nella sessione corrente. Selezionare una voce per leggerne i Dettagli; Aggiorna ricarica l’elenco e Copia dettagli copia il testo. Le credenziali riconoscibili negli URL e nelle righe di autenticazione sono mascherate nella cronologia e nel testo copiato. Ciò non garantisce che qualsiasi messaggio sia privo di dati privati. Cancella cronologia richiede conferma. La cronologia scompare alla chiusura; i file di registro esistenti restano invariati.
+
+Il salvataggio di promemoria e cronologia delle ricerche, la cifratura dei backup e le relative operazioni sui file avvengono in background. Un errore di scrittura conserva i dati precedenti. Le voci con stato non valido vengono ignorate dopo aver conservato il file originale; se ciò non riesce, le modifiche vengono bloccate. L’indice delle registrazioni ha lo stesso limite di dimensione in lettura e scrittura; un sostituto troppo grande non sovrascrive quello precedente.

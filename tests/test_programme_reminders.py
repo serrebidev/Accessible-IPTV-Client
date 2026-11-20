@@ -101,16 +101,28 @@ def test_existing_native_modal_blocks_due_delivery_without_claiming_store():
     obj._poll_reminders()
 
 
+def immediate_operation(owner, name, work, done, dispatch):
+    try:
+        result, error = work(), None
+    except Exception as exc:
+        result, error = None, exc
+    done(result, error)
+    return True
+
+
 def planning_fixture(store,*,play=False,save_fails=False):
     spoken=[];opened=[];dialogs=[]
     class Dialog:
-        def __init__(self,*args):dialogs.append(args)
+        def __init__(self,*args):
+            dialogs.append(args)
+            self.action = "play" if play else "dismiss"
         def SetYesNoLabels(self,*args):pass
         def Destroy(self):pass
     wx=SimpleNamespace(MessageDialog=Dialog,YES_NO=1,NO_DEFAULT=2,ICON_INFORMATION=4,
-                       ICON_ERROR=8,ICON_WARNING=16,ID_YES=42,YES=42,OK=1)
-    cls,env=extract_class('planning_ui.py','PlanningMixin',['_poll_reminders','_confirm_reminder_exit'],{
+                       ICON_ERROR=8,ICON_WARNING=16,ID_YES=42,YES=42,OK=1,CallAfter=lambda fn,*args:fn(*args))
+    cls,env=extract_class('planning_ui.py','PlanningMixin',['_poll_reminders','_reminders_ready','_reminder_failed','_confirm_reminder_exit'],{
         'wx':wx,'reminders':reminders,'show_modal':lambda dialog:42 if play else 43,
+        'ReminderAlert':Dialog,'start_operation':immediate_operation,
         'datetime':datetime,'time':SimpleNamespace(time=lambda:NOW+500,monotonic=lambda:100),
         'message_box':lambda *args,**kwargs:43,
     })

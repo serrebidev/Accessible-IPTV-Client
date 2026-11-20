@@ -184,6 +184,10 @@ Exibir EPG…, no menu de um canal, lista os programas daquele canal do que est�
 - A tecla de menu de aplicativo ou Shift+F10 sobre um programa oferece Agendar gravação.
 - Escape fecha a janela.
 
+O lembrete oferece Lembrar novamente em 5 minutos e, antes do início, Lembrar no início do programa. O adiamento é salvo e mantido após reiniciar; deve ocorrer antes do fim do programa. Fechar confirma o aviso. O aplicativo deve estar aberto; esses lembretes não despertam o computador.
+
+Exportar para o calendário, no menu de contexto de um programa ou de um lembrete selecionado, salva um arquivo .ics. Ele contém título, canal e horários de início e fim em UTC, para o calendário usar seu próprio fuso. Isso não agenda gravações nem despertares e não inicia a reprodução.
+
 ## Replay {#catch-up}
 
 Canais que guardam um arquivo permitem assistir programas que já foram transmitidos. Esses canais têm Replay no menu deles na lista de canais. Ele abre a janela de replay do canal, listando os programas passados com data e hora.
@@ -309,6 +313,8 @@ Mover para a lixeira de gravações transfere o arquivo para a lixeira do aplica
 
 Todas as pastas de gravações reúne as pastas configuradas. Filtre por estado e ordene por data, título, duração ou tamanho; Decrescente inverte a ordem. Ctrl+A seleciona todas as linhas visíveis; a quantidade e o tamanho total são exibidos. Lixeira, exclusão permanente e restauração aceitam várias seleções; reprodução e renomeação exigem uma só. Leitura e filtragem ocorrem em segundo plano; fechar não cancela ações confirmadas.
 
+Biblioteca de gravações > Exportar lista para CSV salva a lista filtrada e ordenada com título, canal, data, duração, estado e tamanho. Caminhos e URLs dos fluxos são excluídos; os prefixos de fórmulas nos textos são protegidos. Ao fechar, a biblioteca lembra pasta, pesquisa, filtro e ordenação. As gravações excluídas ficam sempre ocultas ao reabrir. A exportação ocorre apenas quando solicitada, sem examinar novamente os arquivos de mídia.
+
 ### Formato de gravação {#recording-formats}
 
 Gravações > Formato de gravação escolhe como as gravações são salvas:
@@ -345,6 +351,8 @@ No Windows, Gravações > Impedir a suspensão automática durante a gravação 
 Reativar para gravações agendadas (Windows) vem desativado. Quando ativado, solicita um temporizador de ativação 60 segundos antes do início da próxima gravação, incluindo a margem anterior. O aplicativo deve permanecer aberto, e o hardware e as configurações de energia devem oferecer suporte a esses temporizadores. Não liga um computador desligado. Alterações e cancelamentos atualizam o temporizador; sair do aplicativo o remove.
 
 Conflitos de gravação, em Gravações agendadas, lista as sobreposições da entrada selecionada, incluindo as margens. Os detalhes mostram canal, apelido da conta e intervalo real. Editar horários abre o editor existente. A confirmação oferece esses detalhes e Agendar mesmo assim. Um limite conhecido compara apenas a mesma conta; sem ele, as sobreposições não representam necessariamente um limite do provedor.
+
+Escolha os dias de repetição em Agendar por horário, ou em Gravações agendadas > Repetir nos dias selecionados para uma gravação pendente que não seja uma regra de série. Sem dias selecionados, a gravação é única. Ao criar uma gravação, o primeiro início deve cair em um dia escolhido. As repetições mantêm os horários locais, os períodos noturnos e as margens; períodos inexistentes na mudança de horário são ignorados. Mantenha o aplicativo aberto. Os limites de conexões continuam válidos.
 
 ### Margem de agendamento {#schedule-padding}
 
@@ -489,3 +497,5 @@ Mantenha o aplicativo aberto para gravações agendadas, lembretes e alertas de 
 - A exportação encriptada inclui agendamentos, lembretes e histórico de pesquisa, sem ficheiros multimédia. A importação mostra quantos elementos substituirá e fecha a aplicação; volte a abri-la para terminar. Termine antes gravações e transferências. Gravações passadas ou já iniciadas não reiniciam. Cópias antigas só substituem definições e mantêm agendamentos e lembretes locais.
 
 Exibir > Histórico de notificações mantém as últimas 200 notificações enfileiradas na sessão atual. Selecione uma entrada para ler Detalhes; Atualizar recarrega a lista e Copiar detalhes copia o texto. Credenciais reconhecíveis em URLs e linhas de autenticação são ocultadas no histórico e no texto copiado. Isso não garante que qualquer mensagem esteja livre de dados privados. Limpar histórico pede confirmação. O histórico é descartado ao fechar o aplicativo; os arquivos de log existentes não são alterados.
+
+O salvamento de lembretes e histórico de pesquisas, a criptografia de backups e suas operações com arquivos ocorrem em segundo plano. Falhas de escrita preservam os dados anteriores. Entradas com estado inválido são ignoradas após preservar o arquivo original; se isso falhar, as alterações são bloqueadas. O índice das gravações possui o mesmo limite de tamanho para leitura e escrita; uma substituição grande demais não sobrescreve o índice anterior.

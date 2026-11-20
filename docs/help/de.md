@@ -184,6 +184,10 @@ EPG anzeigen…, im Menü eines Senders, listet die Sendungen dieses Senders von
 - Die Anwendungstaste oder Shift+F10 auf einer Sendung bietet Aufnahme planen an.
 - Escape schließt das Fenster.
 
+Eine Programmerinnerung bietet In 5 Minuten erneut erinnern sowie vor Sendungsbeginn Bei Sendungsbeginn erinnern. Die Verschiebung wird gespeichert und übersteht einen Neustart; sie muss vor Sendungsende liegen. Schließen bestätigt die Meldung. Die Anwendung muss laufen; Erinnerungen wecken den Computer nicht.
+
+In Kalender exportieren im Kontextmenü einer Sendung oder bei einer ausgewählten Erinnerung speichert eine .ics-Datei. Sie enthält Titel, Sender sowie Beginn und Ende in UTC, damit der Kalender seine eigene Ortszeit anzeigen kann. Der Export plant weder eine Aufnahme noch ein Aufwecken und startet keine Wiedergabe.
+
 ## Nachholen {#catch-up}
 
 Sender, die ein Archiv führen, lassen Sie Sendungen ansehen, die schon gelaufen sind. Solche Sender haben Nachholen in ihrem Menü in der Senderliste. Es öffnet das Nachholen-Fenster des Senders, das seine vergangenen Sendungen mit Datum und Uhrzeit auflistet.
@@ -309,6 +313,8 @@ In den Aufnahme-Papierkorb verschieben verschiebt die Datei in den Papierkorb de
 
 Alle Aufnahmeordner zeigt die eingerichteten Ordner gemeinsam. Filtern Sie nach Status und sortieren Sie nach Datum, Titel, Dauer oder Dateigröße; Absteigend kehrt die Reihenfolge um. Strg+A markiert alle sichtbaren Zeilen; Anzahl und Gesamtgröße erscheinen. Papierkorb, endgültiges Löschen und Wiederherstellen unterstützen Mehrfachauswahl. Wiedergabe und Umbenennen benötigen eine Aufnahme. Scannen und Filtern laufen im Hintergrund; bestätigte Dateiaktionen werden beim Schließen fortgesetzt.
 
+Aufnahmebibliothek > Liste als CSV exportieren speichert die aktuell gefilterte und sortierte Liste mit Titel, Sender, Datum, Dauer, Status und Größe. Dateipfade und Stream-URLs sind ausgeschlossen; Formelpräfixe in Text werden geschützt. Beim Schließen merkt sich die Bibliothek Ordner, Suche, Statusfilter und Sortierung. Gelöschte Aufnahmen ist beim erneuten Öffnen immer ausgeschaltet. Exporte erfolgen nur auf Anforderung, ohne Medien erneut einzulesen.
+
 ### Aufnahmeformat {#recording-formats}
 
 Aufnahmen > Aufnahmeformat wählt, wie Aufnahmen gespeichert werden:
@@ -345,6 +351,8 @@ Unter Windows ist Aufnahmen > Automatischen Ruhezustand während der Aufnahme ve
 Für geplante Aufnahmen aufwecken (Windows) ist standardmäßig aus. Aktiviert fordert es einen Weckzeitgeber 60 Sekunden vor dem nächsten Aufnahmestart einschließlich Vorlauf an. Die Anwendung muss geöffnet bleiben; Hardware und Windows-Energieeinstellungen müssen Weckzeitgeber unterstützen. Ein heruntergefahrener Computer wird nicht gestartet. Planänderungen und Stornierungen aktualisieren den Zeitgeber; beim Beenden wird er entfernt.
 
 Aufnahmekonflikte in Geplante Aufnahmen zeigt Überschneidungen des ausgewählten Eintrags einschließlich Vor- und Nachlauf. Die Details nennen Kanal, Kontoname und Aufnahmezeitraum. Zeiten bearbeiten öffnet den vorhandenen Editor. Die Konfliktbestätigung bietet diese Details und Trotzdem planen. Bei bekanntem Aufnahmebudget wird nur dasselbe Konto verglichen; andernfalls werden zeitliche Überschneidungen ohne behauptetes Anbieterlimit gezeigt.
+
+Wählen Sie die Wiederholungstage unter Nach Zeit planen oder für eine einzelne ausstehende Aufnahme unter Geplante Aufnahmen > An ausgewählten Wochentagen wiederholen. Serienregeln sind ausgeschlossen. Ohne Auswahl erfolgt eine einmalige Aufnahme; bei einer neuen Aufnahme muss der erste Start auf einen gewählten Tag fallen. Weitere Termine behalten die lokalen Sendezeiten einschließlich Mitternachtswechsel und Vor-/Nachlauf. Bei der Zeitumstellung nicht existierende Zeitfenster werden übersprungen. Die Anwendung muss geöffnet bleiben; Verbindungslimits gelten weiterhin.
 
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 
@@ -489,3 +497,5 @@ Lassen Sie die Anwendung für geplante Aufnahmen, Erinnerungen und Suchmeldungen
 - Der verschlüsselte Einstellungsexport enthält auch Aufnahmepläne, Erinnerungen und Suchverlauf, jedoch keine Mediendateien. Der Import zeigt Ersetzungszahlen und schließt die App; öffnen Sie sie erneut. Beenden Sie zuvor Aufnahmen und Downloads. Vergangene oder zuvor laufende Aufnahmen starten nicht neu. Ältere Sicherungen ersetzen nur Einstellungen und behalten lokale Pläne und Erinnerungen.
 
 Ansicht > Benachrichtigungsverlauf hält die letzten 200 eingereihten Benachrichtigungen der aktuellen Sitzung bereit. Wählen Sie einen Eintrag für Details; Aktualisieren erneuert die Liste, Details kopieren kopiert den Text. Erkennbare Zugangsdaten in URLs und entsprechenden Textzeilen werden im Verlauf und beim Kopieren verdeckt. Beliebige Nachrichten können trotzdem private Angaben enthalten. Verlauf löschen verlangt Bestätigung. Beim Beenden geht der Verlauf verloren; vorhandene Protokolldateien bleiben unverändert.
+
+Das Speichern von Erinnerungen und Suchverläufen sowie Verschlüsselung und Dateizugriffe bei Sicherungen laufen im Hintergrund. Fehlgeschlagene Schreibvorgänge erhalten die alten Daten. Ungültige Erinnerungs- oder Aufnahmestatus-Einträge werden erst nach Sicherung der Originaldatei übersprungen; schlägt die Sicherung fehl, werden Änderungen gesperrt. Aufnahmeindizes haben eine gemeinsame Lese-/Schreibgrößenbegrenzung; übergroße Ersatzdateien überschreiben den bisherigen Index nicht.

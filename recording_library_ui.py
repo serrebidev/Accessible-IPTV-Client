@@ -5,6 +5,7 @@ import threading
 import wx
 
 from background_tasks import LatestTask
+import planning_tools
 from i18n import gettext as _
 from media_navigation import clock_text
 from modal_guard import message_box, show_modal
@@ -65,7 +66,15 @@ class RecordingLibraryDialog(wx.Dialog):
             _("Date"), _("Title"), _("Duration"), _("File Size")]))
         self.sort.SetSelection(0)
         self.descending = wx.CheckBox(self, label=_("Descending"))
-        self.descending.SetValue(True)
+        view = planning_tools.library_view(parent.config.get('recording_library_view'), self.directories)
+        selected = len(self.directories) if view['folder'] == '*' else self.directories.index(view['folder'])
+        self.folder.SetSelection(selected)
+        if selected < len(self.directories):
+            self.directory = self.directories[selected]
+        self.search.ChangeValue(view['query'])
+        self.state.SetSelection(self.status_values.index(view['status']))
+        self.sort.SetSelection(self.sort_values.index(view['sort']))
+        self.descending.SetValue(view['descending'])
         layout.Add(self.descending, 0, wx.ALL, 5)
         self.list = RecordingList(self)
         self.list.SetName(_("Recordings"))
@@ -81,8 +90,10 @@ class RecordingLibraryDialog(wx.Dialog):
         self.remove = wx.Button(self, label=_("Move to Recording Trash..."))
         self.restore = wx.Button(self, label=_("Restore Recording"))
         self.reload = wx.Button(self, label=_("Refresh"))
+        self.export = wx.Button(self, label=_("Export List to CSV..."))
+        self.export.Bind(wx.EVT_BUTTON, self.export_csv)
         close = wx.Button(self, wx.ID_CLOSE, label=_("Close"))
-        for button in (self.play, self.rename, self.remove, self.restore, self.reload, close):
+        for button in (self.play, self.rename, self.remove, self.restore, self.reload, self.export, close):
             buttons.Add(button, 0, wx.ALL, 5)
         layout.Add(buttons, 0, wx.ALIGN_RIGHT)
         self.SetSizer(layout)
@@ -127,6 +138,38 @@ class RecordingLibraryDialog(wx.Dialog):
             event.Skip()
 
     def close(self, _event=None):
+        if self.closed:
+            return
+        selected = self.folder.GetSelection()
+        view = {'folder': '*' if selected == len(self.directories) else self.directory,
+                'query': self.search.GetValue(), 'status': self.status_values[max(0, self.state.GetSelection())],
+                'sort': self.sort_values[max(0, self.sort.GetSelection())], 'descending': self.descending.GetValue()}
+        owner = self.owner
+        previous = owner.config.get('recording_library_view')
+        owner.config['recording_library_view'] = view
+        writer = getattr(owner, '_library_view_writer', None)
+        if writer is None:
+            writer = owner._library_view_writer = LatestTask(wx.CallAfter)
+        def save(canceled):
+            with options._SAVE_LOCK:
+                if canceled():
+                    return
+                config = options.load_config()
+                config['recording_library_view'] = view
+                if options.save_config(config) is False:
+                    raise OSError(_("Could not save recording library preferences."))
+        def saved(_result, error):
+            if error and bool(owner):
+                if owner.config.get('recording_library_view') == view:
+                    if previous is None:
+                        owner.config.pop('recording_library_view', None)
+                    else:
+                        owner.config['recording_library_view'] = previous
+                error_box(owner, error)
+        try:
+            writer.submit(save, saved)
+        except RuntimeError as error:
+            saved(None, error)
         self.closed = True
         self.worker.close()
         self.owner._recording_library_dialog = None
@@ -141,7 +184,7 @@ class RecordingLibraryDialog(wx.Dialog):
 
     def controls(self):
         return (self.play, self.remove, self.rename, self.restore, self.reload,
-                self.folder, self.deleted, self.add_folder, self.forget_folder)
+                self.folder, self.deleted, self.add_folder, self.forget_folder, self.export)
 
     def change_folder(self, _event):
         if not self.busy and 0 <= self.folder.GetSelection() < len(self.directories):
@@ -310,6 +353,7 @@ class RecordingLibraryDialog(wx.Dialog):
         self.rename.Enable(ready and len(rows) == 1 and not deleted)
         self.restore.Enable(ready and bool(rows) and deleted)
         self.remove.Enable(ready and bool(rows))
+        self.export.Enable(ready and bool(self.rows))
         label = _("Delete Recording File...") if deleted else _("Move to Recording Trash...")
         self.remove.SetLabel(label)
         self.remove.SetName(label)
@@ -320,6 +364,14 @@ class RecordingLibraryDialog(wx.Dialog):
         if self.warnings:
             text += '\n' + '\n'.join(dict.fromkeys(self.warnings))
         self.status.SetLabel(text)
+
+    def export_csv(self, _event=None):
+        if self.busy or self.filter_busy or not self.rows:
+            return
+        from planning_tools_ui import export_file
+        rows = tuple(self.rows)
+        export_file(self, _("Export List to CSV..."), _("CSV file (*.csv)") + '|*.csv', '.csv',
+                    lambda: planning_tools.recording_csv(rows))
 
     def play_selected(self, _event):
         row = self.selected()

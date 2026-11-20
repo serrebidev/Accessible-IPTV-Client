@@ -2,6 +2,37 @@
 import threading
 
 
+def start_operation(owner, name, work, completed, dispatch):
+    """One in-flight operation per owner/key; writes are never silently replaced.
+
+    Called on the UI thread. Work receives no wx objects. Confirmed writes finish
+    after window closure; only delivery is suppressed. No periodic work is added.
+    """
+    active = getattr(owner, '_background_operations', None)
+    if active is None:
+        active = owner._background_operations = set()
+    if name in active:
+        return False
+    active.add(name)
+
+    def deliver(result, error):
+        active.discard(name)
+        if not getattr(owner, 'closed', False) and bool(owner):
+            completed(result, error)
+
+    def run():
+        try:
+            result, error = work(), None
+        except Exception as exc:
+            result, error = None, exc
+        dispatch(deliver, result, error)
+    try:
+        threading.Thread(target=run, name='IPTV-' + name, daemon=True).start()
+    except RuntimeError as error:
+        deliver(None, error)
+    return True
+
+
 class LatestTask:
     def __init__(self, dispatch):
         self.dispatch = dispatch
