@@ -1,0 +1,18 @@
+name: Checks
+
+# Forgejo shadow of .github/workflows/checks.yml — manual-only on purpose.
+# Brandon's order (2026-11-20): checks run on GitHub runners, not on the
+# local Forgejo Windows runner (desknasbox), whose offline periods left PR
+# checks queued forever. Forgejo prefers .forgejo/workflows over
+# .github/workflows for a same-named file, so this stub stops Forgejo from
+# auto-running the suite; the real checks in .github/workflows/checks.yml
+# run on GitHub (push/pull_request) and are the merge gate.
+on:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: macos-latest
+    steps:
+      - name: Checks run on GitHub
+        run: echo "This repo's checks run on GitHub runners (.github/workflows/checks.yml); nothing to do on Forgejo."
