@@ -193,6 +193,10 @@ View EPG, on a channel's menu, lists that channel's programmes from the one on a
 - The Applications key or Shift+F10 on a programme offers Schedule Recording.
 - Escape closes the window.
 
+A programme reminder offers Remind Again in 5 Minutes and, before the start, Remind at Programme Start. Postponement is saved and survives restart; it must remain before the programme ends. Close dismisses the alert. The application must remain open, and these reminders do not wake the computer.
+
+Export to Calendar on a programme’s context menu, or a selected reminder, saves an .ics file for import into a calendar. It includes title, channel and UTC start/end times, so the calendar can display its own local time. It does not create a recording, start playback or schedule a computer wake.
+
 ## Catch-up {#catch-up}
 
 Channels that keep an archive let you watch programmes that have already been broadcast. Such channels have Catch-up on their menu in the channel list. It opens the catch-up window for the channel, listing its past programmes with their dates and times.
@@ -318,6 +322,8 @@ Move to Recording Trash moves a file into the application's trash within its rec
 
 All Recording Folders combines the configured folders. Filter by status and sort by date, title, duration or file size; Descending reverses the order. Ctrl+A selects all visible rows. Selected count and total size are shown. Trash, permanent deletion and restore support multiple selections; playback and title renaming require one. Disk scans and filtering run in the background; closing the window does not cancel a confirmed file action.
 
+Recording Library > Export List to CSV exports the currently filtered and sorted list with title, channel, date, duration, status and size. It excludes file paths and stream URLs; spreadsheet formula prefixes in text are protected. The library remembers its folder, search, status filter, sort and direction when closed. Deleted Recordings is always off on reopening. Exports run only when requested, without rescanning media.
+
 ### Recording format {#recording-formats}
 
 Recordings > Recording Format chooses how recordings are saved:
@@ -354,6 +360,8 @@ On Windows, Recordings > Prevent Automatic Sleep While Recording is enabled by d
 Wake for Scheduled Recordings (Windows) is off by default. When enabled, it requests a wake timer 60 seconds before the next recording's start, including schedule padding. The application must stay open, and Windows power settings and hardware must support wake timers. This cannot start a shut-down computer. Changing or cancelling the schedule updates the timer; exiting removes it.
 
 Recording Conflicts in Scheduled Recordings lists overlaps for one selected entry, including padding. Details include the channel, configured account alias and actual recording window. Edit Times opens the existing timing editor. A conflict confirmation also offers these details and Schedule Anyway. Known account budgets restrict the comparison to that account; unknown budgets show time overlaps without claiming a provider limit.
+
+Choose repeat weekdays in Schedule by Time, or use Scheduled Recordings > Repeat on Weekdays on one pending recording that is not a series rule. Clear every day for a single recording. In Schedule by Time, the first start must fall on a selected day. Later occurrences keep local programme times, including overnight windows and padding; nonexistent clock-change windows are skipped. Keep the application open. Existing recording connection limits still apply.
 
 ### Schedule padding {#schedule-padding}
 
@@ -498,3 +506,5 @@ Keep the application open for recording schedules, reminders and saved-search al
 - Export Settings now encrypts recording schedules, reminders and search history as well as settings. Media files are not included. Import previews replacement counts and closes the app; reopen it to finish. Finish recordings and downloads first. Past or previously running recordings do not restart. Older backups replace only settings, keeping local schedules and reminders.
 
 View > Notification History retains the latest 200 queued notifications for the current session. Select an entry to read its Details; Refresh updates the list, and Copy Details copies the selected text. Obvious credentials in URLs and credential lines are masked in this history and its copied text. This is not a guarantee that arbitrary messages contain no private information. Clear History asks for confirmation. The history is discarded when the application closes; existing log files are unchanged.
+
+Reminder writes, saved-search history writes and backup encryption/file operations run in the background. Failed writes retain the previously saved data. Invalid reminder or recording-status entries are skipped only after preserving the original file; if preservation fails, writes are blocked. Recording metadata has a bounded read/write size limit; an oversized replacement never overwrites the previous index.

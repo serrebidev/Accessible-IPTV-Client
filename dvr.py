@@ -12,6 +12,7 @@ import copy
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 import threading
@@ -68,9 +69,28 @@ def _number(value, default: float = 0.0) -> float:
     startup that loads it - down with it.
     """
     try:
-        return float(value)
-    except (TypeError, ValueError):
+        number = float(value)
+        return number if math.isfinite(number) else default
+    except (TypeError, ValueError, OverflowError):
         return default
+
+
+def _valid_stored_job(job):
+    if (not isinstance(job, dict) or not isinstance(job.get('status'), str)
+            or job['status'] not in ACTIVE_STATUSES | DONE_STATUSES
+            or type(job.get('id')) not in (str, int) or not job['id']):
+        return False
+    repeat = job.get('repeat')
+    if repeat is not None and (not isinstance(repeat, str) or repeat not in ('', 'daily', 'weekly', 'series', 'weekdays')):
+        return False
+    if repeat == 'weekdays':
+        from planning_tools import checked_weekdays
+        try:
+            days = checked_weekdays(job.get('weekdays'))
+        except ValueError:
+            return False
+        return bool(days) and 0 <= _number(job.get('start_ts')) < _number(job.get('stop_ts')) <= 253402300799
+    return True
 
 
 def program_title(program: Dict[str, str]) -> str:
@@ -262,9 +282,21 @@ class DVRScheduler:
                     self.load_warning = _("The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application.")
                     LOG.exception("Could not preserve unreadable DVR schedule")
                 return
+            seen, valid_jobs, invalid = set(), [], False
             for job in jobs:
-                if not isinstance(job, dict) or not job.get("id"):
-                    continue
+                if not _valid_stored_job(job) or str(job['id']) in seen:
+                    invalid = True
+                else:
+                    seen.add(str(job['id']))
+                    valid_jobs.append(job)
+            if invalid:
+                try:
+                    backup = self._preserve_corrupt_schedule()
+                    self.load_warning = _("The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones.").format(path=backup)
+                except OSError as exc:
+                    self._load_error = exc
+                    self.load_warning = _("The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application.")
+            for job in valid_jobs:
                 if job.get("status") in {STATUS_RECORDING, STATUS_STOPPING}:
                     # The ffmpeg process died with the app, so the job is no longer
                     # running whatever the file says. Re-arm it when its window is
@@ -383,6 +415,20 @@ class DVRScheduler:
         self.wake()
         return True
 
+    def set_weekdays(self, job_id, weekdays):
+        from planning_tools import checked_weekdays
+        days = checked_weekdays(weekdays)
+        with self._save_lock, self._lock:
+            job = self._jobs.get(str(job_id))
+            if not job or job.get("status") != STATUS_SCHEDULED or job.get("repeat") == "series":
+                raise ValueError(_("Select one pending recording that is not a series rule."))
+            proposal = dict(self._jobs)
+            proposal[str(job_id)] = dict(job, repeat="weekdays" if days else "", weekdays=days)
+            self._write_proposal(proposal)
+            self._jobs = proposal
+        self._notify_update()
+        self.wake()
+
     def _write_proposal(self, proposal) -> None:
         """Caller holds save lock then job lock; publish memory only after replace."""
         if self._load_error is not None:
@@ -425,7 +471,7 @@ class DVRScheduler:
         self._notify_update()
         self.wake()
 
-    def edit_timing(self, job_id, start, end, *, expected):
+    def edit_timing(self, job_id, start, end, *, expected, weekdays=None):
         """Edit one pending/running occurrence, refusing stale or finishing jobs."""
         import manual_schedule
         with self._save_lock, self._lock:
@@ -443,6 +489,12 @@ class DVRScheduler:
             updated["program"] = dict(updated.get("program") or {},
                 start=datetime.datetime.fromtimestamp(start, datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
                 end=datetime.datetime.fromtimestamp(end, datetime.timezone.utc).strftime("%Y%m%d%H%M%S"))
+            if weekdays is not None:
+                from planning_tools import checked_weekdays
+                if running or old.get('repeat') == 'series':
+                    raise ValueError(_("Select one pending recording that is not a series rule."))
+                days = checked_weekdays(weekdays)
+                updated.update(repeat='weekdays' if days else '', weekdays=days)
             proposal = dict(self._jobs)
             proposal[str(job_id)] = updated
             self._write_proposal(proposal)
@@ -670,6 +722,12 @@ class DVRScheduler:
     def _schedule_next_occurrence(self, job: Dict[str, object]) -> None:
         """Keep one future daily/weekly job when an occurrence has ended."""
         repeat = job.get("repeat")
+        if repeat == "weekdays":
+            from planning_tools import next_weekday_job
+            next_job = next_weekday_job(job, float(self.clock()))
+            if next_job:
+                self._jobs[next_job["id"]] = next_job
+            return
         if repeat not in {"daily", "weekly"}:
             return
         days = 1 if repeat == "daily" else 7

@@ -9205,6 +9205,9 @@ class ScheduledRecordingsDialog(wx.Dialog):
         conflicts_btn = wx.Button(panel, label=_("Recording Conflicts..."))
         btn_sizer.Insert(1, conflicts_btn, 0, wx.RIGHT, 5)
         conflicts_btn.Bind(wx.EVT_BUTTON, self._show_conflicts)
+        repeat_btn = wx.Button(panel, label=_("Repeat on Weekdays..."))
+        btn_sizer.Insert(2, repeat_btn, 0, wx.RIGHT, 5)
+        repeat_btn.Bind(wx.EVT_BUTTON, self._edit_weekdays)
         refresh_btn.Bind(wx.EVT_BUTTON, lambda _event: self.refresh())
         self.list_ctrl.Bind(wx.EVT_CONTEXT_MENU, lambda _event: self._show_context_menu(keyboard=False, event=_event))
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
@@ -9214,6 +9217,25 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # but an empty window on a dialog that was never populated reads like
         # "you have no recordings scheduled" even when you do.
         self.refresh()
+
+    def _edit_weekdays(self, _event=None):
+        jobs = self._selected_jobs()
+        if len(jobs) != 1 or jobs[0].get('status') != dvr.STATUS_SCHEDULED or jobs[0].get('repeat') == 'series':
+            message_box(_("Select one pending recording that is not a series rule."),
+                        _("Scheduled Recordings"), wx.OK | wx.ICON_INFORMATION, parent=self)
+            return
+        from planning_tools_ui import weekdays
+        from background_tasks import start_operation
+        job = jobs[0]
+        days = weekdays(self, job.get('weekdays', []))
+        if days is None:
+            return
+        scheduler = self.parent_frame._ensure_dvr_scheduler()
+        def done(_result, error):
+            if error:
+                message_box(str(error), _("Scheduled Recordings"), wx.OK | wx.ICON_ERROR, parent=self)
+            self.refresh()
+        start_operation(self, 'repeat-days', lambda: scheduler.set_weekdays(job['id'], days), done, wx.CallAfter)
 
     def _show_conflicts(self, _event=None):
         jobs = self._selected_jobs()
@@ -9518,6 +9540,13 @@ class ChannelEPGDialog(wx.Dialog):
             reminder_item = menu.Append(wx.ID_ANY, _("Set Reminder..."))
             menu.Bind(wx.EVT_MENU, lambda event: self.reminder_callback(
                 self.channel, self._selected_programme()), reminder_item)
+        calendar_item = menu.Append(wx.ID_ANY, _("Export to Calendar..."))
+        def export_calendar(_event):
+            from planning_tools_ui import export_programme
+            program = self._selected_programme()
+            if program:
+                export_programme(self, self.channel, program)
+        menu.Bind(wx.EVT_MENU, export_calendar, calendar_item)
         schedule_item = menu.Append(wx.ID_ANY, _("Schedule Recording"))
         schedule_item.Enable(self.schedule_callback is not None)
         menu.Bind(wx.EVT_MENU, self._on_schedule, schedule_item)

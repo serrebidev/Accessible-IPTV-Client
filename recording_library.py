@@ -17,7 +17,7 @@ from programme_reminders import safe_title
 _INDEX = ".iptv-recordings.json"
 _LOCKS = weakref.WeakValueDictionary()
 _LOCKS_GUARD = threading.Lock()
-_MAX_INDEX_BYTES = 8 * 1024 * 1024
+_MAX_INDEX_BYTES = 32 * 1024 * 1024
 LOG = logging.getLogger(__name__)
 _EXTENSIONS = {".mkv", ".mp4", ".ts", ".mts", ".m2ts", ".mp3", ".m4a", ".aac",
                ".flac", ".ogg", ".wav", ".mka", ".opus", ".webm", ".avi", ".mov", ".mpg"}
@@ -82,6 +82,8 @@ def _write(directory, rows):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(rows, handle, ensure_ascii=False)
+            if handle.tell() > _MAX_INDEX_BYTES:
+                raise ValueError(_("Recording metadata exceeds its size limit. The previous index was kept."))
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, Path(directory) / _INDEX)

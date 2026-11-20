@@ -184,6 +184,10 @@ Pokaż EPG..., w menu kanału, wypisuje audycje tego kanału od nadawanej teraz 
 - Klawisz aplikacji albo Shift+F10 na audycji oferuje Zaplanuj nagrywanie.
 - Escape zamyka okno.
 
+Przypomnienie oferuje Przypomnij ponownie za 5 minut oraz, przed rozpoczęciem, Przypomnij na początku programu. Odroczenie jest zapisywane i zachowywane po ponownym uruchomieniu; musi przypadać przed końcem programu. Zamknij potwierdza komunikat. Aplikacja musi działać; przypomnienia nie wybudzają komputera.
+
+Eksportuj do kalendarza w menu kontekstowym programu lub dla wybranego przypomnienia zapisuje plik .ics. Zawiera tytuł, kanał oraz początek i koniec w UTC, które kalendarz może wyświetlić w swojej strefie. Nie planuje nagrywania ani wybudzenia i nie uruchamia odtwarzania.
+
 ## Powtórki {#catch-up}
 
 Kanały, które trzymają archiwum, pozwalają oglądać audycje już nadane. Takie kanały mają Powtórki w swoim menu na liście kanałów. Otwiera okno powtórek kanału, wypisujące jego dawne audycje z datą i godziną.
@@ -309,6 +313,8 @@ Przenieś do kosza nagrań umieszcza plik w koszu aplikacji wewnątrz jego folde
 
 Wszystkie foldery nagrań łączy skonfigurowane foldery. Filtruj według stanu i sortuj według daty, tytułu, czasu trwania lub rozmiaru; Malejąco odwraca kolejność. Ctrl+A zaznacza wszystkie widoczne wiersze; wyświetlana jest liczba i łączny rozmiar. Kosz, trwałe usuwanie i przywracanie obsługują wiele plików; odtwarzanie i zmiana tytułu wymagają jednego. Skanowanie i filtrowanie działa w tle; zamknięcie nie przerywa zatwierdzonych operacji.
 
+Biblioteka nagrań > Eksportuj listę do CSV zapisuje przefiltrowaną i posortowaną listę z tytułem, kanałem, datą, czasem trwania, stanem i rozmiarem. Pomija ścieżki i adresy strumieni; chroni tekst przed interpretacją jako formuły arkusza. Przy zamykaniu zapamiętuje folder, wyszukiwanie, filtr i sortowanie. Usunięte nagrania są zawsze ukryte po ponownym otwarciu. Eksport odbywa się tylko na żądanie, bez ponownego skanowania mediów.
+
 ### Format nagrywania {#recording-formats}
 
 Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
@@ -345,6 +351,8 @@ W Windows opcja Nagrania > Zapobiegaj automatycznemu uśpieniu podczas nagrywani
 Wybudzaj dla zaplanowanych nagrań (Windows) jest domyślnie wyłączone. Po włączeniu żąda wybudzenia 60 sekund przed rozpoczęciem następnego nagrania, z uwzględnieniem zapasu przed programem. Aplikacja musi pozostać otwarta, a sprzęt i ustawienia zasilania muszą obsługiwać czasomierze wybudzania. Funkcja nie uruchamia wyłączonego komputera. Zmiany i anulowania aktualizują czasomierz; zamknięcie aplikacji go usuwa.
 
 Konflikty nagrań w Zaplanowanych nagraniach pokazują nakładanie się wybranego wpisu, uwzględniając zapas czasu. Szczegóły obejmują kanał, nazwę konta i rzeczywisty przedział. Edytuj godziny otwiera istniejący edytor. Potwierdzenie oferuje te szczegóły i Zaplanuj mimo to. Znany limit zawęża porównanie do tego samego konta; inaczej są to tylko nakładające się terminy, bez założenia limitu dostawcy.
+
+Wybierz dni powtarzania w Planowaniu według czasu albo użyj Zaplanowane nagrania > Powtarzaj w wybrane dni tygodnia dla jednego oczekującego nagrania, które nie jest regułą serialu. Brak wyboru oznacza nagranie jednorazowe. Przy tworzeniu pierwszy początek musi przypadać w wybranym dniu. Kolejne terminy zachowują lokalne godziny programu, przejście przez północ i zapas czasu; nieistniejące przedziały przy zmianie czasu są pomijane. Aplikacja musi działać. Nadal obowiązują limity połączeń.
 
 ### Margines nagrywania {#schedule-padding}
 
@@ -489,3 +497,5 @@ Pozostaw aplikację otwartą, aby działały zaplanowane nagrania, przypomnienia
 - Zaszyfrowany eksport zawiera też harmonogramy, przypomnienia i historię wyszukiwań, bez plików multimedialnych. Import pokazuje liczbę zastępowanych wpisów i zamyka aplikację; otwórz ją ponownie. Najpierw zakończ nagrania i pobieranie. Minione lub wcześniej rozpoczęte nagrania nie uruchomią się ponownie. Starsze kopie zastępują tylko ustawienia i zachowują lokalne harmonogramy i przypomnienia.
 
 Widok > Historia powiadomień przechowuje ostatnich 200 powiadomień dodanych do kolejki w bieżącej sesji. Wybierz wpis, aby przeczytać Szczegóły; Odśwież aktualizuje listę, a Kopiuj szczegóły kopiuje tekst. Rozpoznawalne dane logowania w adresach URL i odpowiednich wierszach są maskowane w historii i kopiowanym tekście. Nie gwarantuje to braku prywatnych danych w dowolnej wiadomości. Wyczyść historię wymaga potwierdzenia. Historia znika po zamknięciu aplikacji; istniejące pliki dziennika pozostają niezmienione.
+
+Zapisywanie przypomnień i historii wyszukiwania, szyfrowanie kopii oraz operacje na ich plikach działają w tle. Błąd zapisu zachowuje poprzednie dane. Wpisy z nieprawidłowym stanem są pomijane po zachowaniu oryginalnego pliku; jeśli to się nie uda, zmiany są blokowane. Indeks nagrań ma wspólny limit rozmiaru przy odczycie i zapisie; zbyt duży zamiennik nie nadpisuje starego indeksu.

@@ -183,6 +183,10 @@ Bir kanalın menüsündeki EPG'yi görüntüle..., o kanalın programlarını ya
 - Bir programda Uygulamalar tuşu ya da Shift+F10 Kayıt zamanla sunar.
 - Escape pencereyi kapatır.
 
+Hatırlatmada 5 Dakika Sonra Yeniden Hatırlat ve başlangıçtan önce Program Başladığında Hatırlat seçenekleri bulunur. Erteleme kaydedilir ve yeniden başlatmada korunur; program bitmeden önce olmalıdır. Kapat bildirimi onaylar. Uygulama çalışmalıdır; hatırlatmalar bilgisayarı uyandırmaz.
+
+Programın bağlam menüsündeki veya seçili hatırlatmadaki Takvime Dışa Aktar komutu bir .ics dosyası kaydeder. Başlığı, kanalı, başlangıç ve bitişi UTC olarak içerir; takvim bunları kendi saat diliminde gösterebilir. Kayıt veya bilgisayar uyandırma planlamaz ve oynatmayı başlatmaz.
+
 ## Geri izleme {#catch-up}
 
 Arşiv tutan kanallar, çoktan yayınlanmış programları izlemenizi sağlar. Bu kanalların kanal listesindeki menüsünde Geri izleme bulunur. Kanalın geri izleme penceresini açar; geçmiş programlarını tarih ve saatleriyle listeler.
@@ -308,6 +312,8 @@ Kayıt Çöp Kutusuna Taşı dosyayı kendi kayıt klasöründeki uygulama çöp
 
 Tüm Kayıt Klasörleri yapılandırılan klasörleri birleştirir. Duruma göre filtreleyin; tarih, başlık, süre veya boyuta göre sıralayın. Azalan sıralamayı tersine çevirir. Ctrl+A görünen tüm satırları seçer; sayı ve toplam boyut gösterilir. Çöp kutusu, kalıcı silme ve geri yükleme çoklu seçimi destekler; oynatma ve yeniden adlandırma tek kayıt gerektirir. Tarama ve filtreleme arka plandadır; kapatma onaylanmış işlemleri iptal etmez.
 
+Kayıt Kitaplığı > Listeyi CSV Olarak Dışa Aktar komutu süzülmüş ve sıralanmış listeyi başlık, kanal, tarih, süre, durum ve boyutla kaydeder. Dosya yolları ve akış adresleri dahil edilmez; metindeki formül önekleri korunur. Kitaplık kapanırken klasörü, aramayı, durum süzgecini ve sıralamayı hatırlar. Silinmiş kayıtlar yeniden açılışta daima gizlidir. Dışa aktarma yalnızca istendiğinde yapılır ve medyayı yeniden taramaz.
+
 ### Kayıt biçimi {#recording-formats}
 
 Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
@@ -344,6 +350,8 @@ Windows'ta Kayıtlar > Kayıt Sırasında Otomatik Uykuyu Önle varsayılan olar
 Zamanlanmış Kayıtlar İçin Uyandır (Windows) varsayılan olarak kapalıdır. Açıldığında, başlangıç öncesi ek süre dahil sonraki kaydın başlangıcından 60 saniye önce uyandırma zamanlayıcısı ister. Uygulama açık kalmalı, donanım ve Windows güç ayarları uyandırma zamanlayıcılarını desteklemelidir. Kapatılmış bir bilgisayarı açamaz. Zamanlama değişiklikleri ve iptaller zamanlayıcıyı günceller; uygulamadan çıkmak kaldırır.
 
 Zamanlanmış Kayıtlar içindeki Kayıt Çakışmaları, seçilen kaydın zaman payları dahil çakışmalarını listeler. Ayrıntılarda kanal, hesap takma adı ve gerçek kayıt aralığı bulunur. Zamanları Düzenle mevcut düzenleyiciyi açar. Onay penceresi bu ayrıntıları ve Yine de Zamanla seçeneğini sunar. Bilinen bütçe aynı hesabı karşılaştırır; yoksa sağlayıcı sınırı iddiası olmadan zaman çakışmaları gösterilir.
+
+Zamana Göre Planla penceresinde tekrar günlerini seçin veya dizi kuralı olmayan tek bir bekleyen kayıt için Planlanmış Kayıtlar > Seçilen Günlerde Tekrarla komutunu kullanın. Gün seçilmezse kayıt bir kez yapılır. Yeni kaydın ilk başlangıcı seçilen bir güne denk gelmelidir. Sonraki kayıtlar gece yarısını aşan aralıklar ve paylar dahil yerel program saatlerini korur; saat değişiminde var olmayan aralıklar atlanır. Uygulama açık kalmalıdır. Bağlantı sınırları geçerliliğini korur.
 
 ### Zamanlama payı {#schedule-padding}
 
@@ -488,3 +496,5 @@ Zamanlanmış kayıtlar, hatırlatıcılar ve kayıtlı arama bildirimleri için
 - Şifreli dışa aktarma, medya dosyaları hariç kayıt planlarını, hatırlatıcıları ve arama geçmişini de içerir. İçe aktarma değişecek öğe sayılarını gösterir ve uygulamayı kapatır; bitirmek için yeniden açın. Önce kayıtları ve indirmeleri bitirin. Geçmiş veya önceden başlamış kayıtlar yeniden başlamaz. Eski yedekler yalnızca ayarları değiştirir, yerel planları ve hatırlatıcıları korur.
 
 Görünüm > Bildirim Geçmişi, geçerli oturumda kuyruğa alınan son 200 bildirimi tutar. Ayrıntıları okumak için bir girdi seçin; Yenile listeyi günceller, Ayrıntıları Kopyala metni kopyalar. URL'lerde ve kimlik doğrulama satırlarında tanınabilen giriş bilgileri geçmişte ve kopyalanan metinde gizlenir. Bu, herhangi bir iletinin özel bilgi içermediğini garanti etmez. Geçmişi Temizle onay ister. Uygulama kapanınca geçmiş silinir; mevcut günlük dosyaları değişmez.
+
+Hatırlatma ve arama geçmişi yazımları, yedek şifreleme ve dosya işlemleri arka planda çalışır. Başarısız yazımlarda önceki veriler korunur. Geçersiz durumlu girdiler özgün dosya korunduktan sonra atlanır; koruma başarısızsa değişiklikler engellenir. Kayıt dizininin okuma ve yazma boyut sınırı aynıdır; fazla büyük bir yenisi öncekinin üzerine yazmaz.

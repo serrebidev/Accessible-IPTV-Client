@@ -184,6 +184,10 @@ Afficher l'EPG…, dans le menu d'une chaîne, liste les émissions de cette cha
 - La touche Applications ou Shift+F10 sur une émission propose Programmer l'enregistrement.
 - Échap ferme la fenêtre.
 
+Le rappel propose Rappeler dans 5 minutes et, avant le début, Rappeler au début de l’émission. Le report est enregistré et conservé après redémarrage ; il doit précéder la fin de l’émission. Fermer acquitte l’avis. L’application doit fonctionner ; ces rappels ne réveillent pas l’ordinateur.
+
+Exporter vers un calendrier, dans le menu contextuel d’une émission ou pour un rappel sélectionné, enregistre un fichier .ics. Il contient le titre, la chaîne et les horaires de début et de fin en UTC, que le calendrier peut afficher dans son fuseau. Cela ne programme ni enregistrement ni réveil et ne lance pas la lecture.
+
 ## Rattrapage {#catch-up}
 
 Les chaînes qui tiennent une archive permettent de regarder des émissions déjà diffusées. Ces chaînes ont Rattrapage dans leur menu de la liste des chaînes. Il ouvre la fenêtre de rattrapage de la chaîne, qui liste ses émissions passées avec date et heure.
@@ -309,6 +313,8 @@ Déplacer dans la corbeille des enregistrements place le fichier dans la corbeil
 
 Tous les dossiers d’enregistrements réunit les dossiers configurés. Filtrez par état et triez par date, titre, durée ou taille ; Ordre décroissant inverse le tri. Ctrl+A sélectionne toutes les lignes visibles ; le nombre et la taille totale sont affichés. Corbeille, suppression définitive et restauration acceptent plusieurs fichiers ; lecture et renommage exigent une seule sélection. L’analyse et le filtrage s’effectuent en arrière-plan ; fermer ne suspend pas une action confirmée.
 
+Bibliothèque d’enregistrements > Exporter la liste au format CSV enregistre la liste filtrée et triée avec titre, chaîne, date, durée, état et taille. Les chemins et URL de diffusion sont exclus ; les préfixes de formules dans le texte sont protégés. À la fermeture, la bibliothèque mémorise le dossier, la recherche, le filtre et le tri. Les enregistrements supprimés sont toujours masqués à la réouverture. Les exports sont effectués uniquement sur demande, sans réexaminer les médias.
+
 ### Format d'enregistrement {#recording-formats}
 
 Enregistrements > Format d'enregistrement choisit comment les enregistrements sont sauvegardés :
@@ -345,6 +351,8 @@ Sous Windows, Enregistrements > Empêcher la mise en veille automatique pendant 
 Sortir de veille pour les enregistrements programmés (Windows) est désactivé par défaut. Une fois activé, il demande un minuteur de réveil 60 secondes avant le début du prochain enregistrement, marge de début comprise. L’application doit rester ouverte ; le matériel et les réglages d’alimentation doivent prendre en charge ces minuteurs. Un ordinateur arrêté ne peut pas être démarré. Modifier ou annuler la programmation met le minuteur à jour ; quitter l’application le supprime.
 
 Conflits d’enregistrement, dans Enregistrements programmés, présente les chevauchements de l’entrée sélectionnée, marges comprises. Les détails indiquent la chaîne, l’alias du compte et la période réelle. Modifier les horaires ouvre l’éditeur existant. La confirmation propose ces détails et Programmer quand même. Un budget connu limite la comparaison au même compte ; sinon, les chevauchements ne prétendent pas représenter une limite du fournisseur.
+
+Choisissez les jours de répétition dans Programmer par horaire, ou dans Enregistrements programmés > Répéter les jours choisis pour un enregistrement en attente qui n’est pas une règle de série. Sans jour sélectionné, l’enregistrement est unique. À la création, le premier départ doit correspondre à un jour choisi. Les répétitions conservent les horaires locaux, les passages à minuit et les marges ; les périodes inexistantes lors du changement d’heure sont ignorées. L’application doit rester ouverte. Les limites de connexions restent applicables.
 
 ### Marge de programmation {#schedule-padding}
 
@@ -489,3 +497,5 @@ Gardez l’application ouverte pour les enregistrements programmés, rappels et 
 - L'export chiffré inclut désormais les programmations, rappels et historiques de recherche, sans fichiers multimédias. L'import affiche les nombres remplacés et ferme l'application ; rouvrez-la pour terminer. Terminez d'abord les enregistrements et téléchargements. Les enregistrements passés ou déjà démarrés ne reprennent pas. Les anciennes sauvegardes remplacent uniquement les paramètres et conservent les programmations et rappels locaux.
 
 Affichage > Historique des notifications conserve les 200 dernières notifications mises en file pendant la session actuelle. Sélectionnez une entrée pour lire Détails ; Actualiser recharge la liste et Copier les détails copie le texte. Les identifiants reconnaissables dans les URL et les lignes d’authentification sont masqués dans l’historique et le texte copié. Cela ne garantit pas l’absence de données privées dans tout message. Effacer l’historique demande confirmation. L’historique disparaît à la fermeture ; les fichiers journaux existants restent inchangés.
+
+L’écriture des rappels et de l’historique des recherches, le chiffrement des sauvegardes et leurs opérations sur fichiers s’effectuent en arrière-plan. Un échec d’écriture conserve les données précédentes. Les entrées dont l’état est invalide sont ignorées après conservation du fichier d’origine ; si celle-ci échoue, les modifications sont bloquées. L’index des enregistrements partage une limite de taille en lecture et en écriture ; un remplacement trop volumineux n’écrase pas l’ancien index.

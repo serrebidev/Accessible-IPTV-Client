@@ -162,7 +162,7 @@ def read_seen(path):
         return normalize_seen(json.load(handle))
 
 
-def commit_seen(path, old, results, *, now=None):
+def commit_seen(path, old, results, *, now=None, canceled=lambda: False):
     """Return new count only after durable persistence; failure cannot erase state."""
     seen = normalize_seen(copy.deepcopy(old), now=now)
     matches = {m["id"]: m["end_ts"] for result in results for m in result["matches"]}
@@ -181,6 +181,8 @@ def commit_seen(path, old, results, *, now=None):
             json.dump(seen, handle)
             handle.flush()
             os.fsync(handle.fileno())
+        if canceled():
+            raise ScanCanceled()
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):

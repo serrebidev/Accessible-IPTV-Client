@@ -22,9 +22,9 @@ msgstr "(अभी तक कोई EPG डिबग लॉग नहीं ल�
 
 #: channel_widgets.py:382
 #: dialogs_misc.py:565
-#: personal_tools_ui.py:181
-#: planning_ui.py:92
-#: planning_ui.py:208
+#: personal_tools_ui.py:192
+#: planning_ui.py:107
+#: planning_ui.py:270
 #: recording_conflicts_ui.py:128
 #: recording_conflicts_ui.py:165
 msgid "(No title)"
@@ -51,7 +51,7 @@ msgstr "कोई डाउनलोड या रिकॉर्डिंग �
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "पसंदीदा सूची में अधिकतम 2000 चैनल हो सकते हैं।"
 
-#: recording_library.py:265
+#: recording_library.py:267
 msgid "A file with this name already exists in the recording folder."
 msgstr "रिकॉर्डिंग फ़ोल्डर में इस नाम की फ़ाइल पहले से मौजूद है।"
 
@@ -64,7 +64,7 @@ msgstr "इस नाम की सूची पहले से मौजूद
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "एक रिकॉर्डिंग चल रही है और {count} रिकॉर्डिंग अभी भी निर्धारित है।\n\n{names}\n\nइसे शुरू करने के लिए ऐप खुला रहना चाहिए। फिर भी बाहर निकलें?"
 
-#: dvr.py:438
+#: dvr.py:484
 msgid "A running recording's start time cannot be changed."
 msgstr "चल रही रिकॉर्डिंग का आरंभ समय बदला नहीं जा सकता।"
 
@@ -85,8 +85,8 @@ msgstr "के बारे में..."
 msgid "Accessibility"
 msgstr "सुगम्यता"
 
-#: personal_tools_ui.py:593
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:621
+#: personal_tools_ui.py:643
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Accessible IPTV बैकअप (*.aiptv)"
 
@@ -143,7 +143,7 @@ msgstr "जोड़ें"
 msgid "Add File"
 msgstr "फ़ाइल जोड़ें"
 
-#: recording_library_ui.py:49
+#: recording_library_ui.py:50
 msgid "Add Folder..."
 msgstr "फ़ोल्डर जोड़ें..."
 
@@ -155,7 +155,7 @@ msgstr "नाम वाला बुकमार्क जोड़ें"
 msgid "Add Named Bookmark..."
 msgstr "नाम वाला बुकमार्क जोड़ें..."
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Add Selected Channel"
 msgstr "चयनित चैनल जोड़ें"
 
@@ -190,18 +190,18 @@ msgstr "पसंदीदा में जोड़ें"
 #: main.py:6297
 #: main.py:6298
 #: main.py:7108
-#: personal_tools_ui.py:280
-#: personal_tools_ui.py:282
+#: personal_tools_ui.py:291
+#: personal_tools_ui.py:293
 msgid "All Channels"
 msgstr "सभी चैनल"
 
-#: recording_library_ui.py:45
-#: recording_library_ui.py:162
-#: recording_library_ui.py:178
+#: recording_library_ui.py:46
+#: recording_library_ui.py:205
+#: recording_library_ui.py:221
 msgid "All Recording Folders"
 msgstr "सभी रिकॉर्डिंग फ़ोल्डर"
 
-#: recording_library_ui.py:61
+#: recording_library_ui.py:62
 msgid "All Recordings"
 msgstr "सभी रिकॉर्डिंग"
 
@@ -412,7 +412,7 @@ msgid "Back 60 Seconds"
 msgstr "60 सेकंड पीछे"
 
 #: full_backup.py:54
-#: full_backup.py:148
+#: full_backup.py:153
 #: settings_backup.py:47
 msgid "Backup file is too large."
 msgstr "बैकअप फ़ाइल बहुत बड़ी है।"
@@ -485,6 +485,15 @@ msgstr "अंतर्निहित प्लेयर उपलब्ध न
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "अंतर्निहित प्लेयर उपलब्ध नहीं:\n{detail}"
 
+#: recording_library_ui.py:373
+msgid "CSV file (*.csv)"
+msgstr "CSV फ़ाइल (*.csv)"
+
+#: planning_tools_ui.py:61
+#: planning_ui.py:129
+msgid "Calendar file (*.ics)"
+msgstr "कैलेंडर फ़ाइल (*.ics)"
+
 #: accessible_tools_ui.py:29
 #: dialogs_misc.py:240
 #: dialogs_misc.py:681
@@ -494,9 +503,9 @@ msgstr "अंतर्निहित प्लेयर उपलब्ध न
 #: main.py:7781
 #: main.py:7814
 #: main.py:8947
-#: main.py:9261
+#: main.py:9283
 #: options.py:987
-#: personal_tools_ui.py:91
+#: personal_tools_ui.py:92
 #: playlist.py:3236
 #: playlist.py:3336
 #: playlist.py:3544
@@ -513,7 +522,7 @@ msgstr "डाउनलोड रद्द करें"
 msgid "Cancel Shutdown"
 msgstr "बंद करना रद्द करें"
 
-#: main.py:9292
+#: main.py:9314
 msgid "Canceled"
 msgstr "रद्द किया गया"
 
@@ -619,19 +628,20 @@ msgid "Changes in each version of {app}, newest first. Notes for the latest vers
 msgstr "{app} के हर संस्करण में हुए बदलाव, सबसे नए पहले। नवीनतम संस्करणों के नोट्स अनुवाद हो जाने पर आपकी भाषा में दिखते हैं; पुरानी प्रविष्टियाँ अंग्रेज़ी में रहती हैं।"
 
 #: main.py:9190
-#: personal_tools_ui.py:417
-#: planning_ui.py:40
-#: recording_library_ui.py:72
+#: personal_tools_ui.py:428
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:81
 msgid "Channel"
 msgstr "चैनल"
 
 #: favorite_collections.py:75
 #: main.py:3373
 #: main.py:7068
-#: personal_tools_ui.py:260
-#: personal_tools_ui.py:412
-#: planning_ui.py:220
-#: planning_ui.py:266
+#: personal_tools_ui.py:271
+#: personal_tools_ui.py:423
+#: planning_ui.py:291
+#: planning_ui.py:336
 msgid "Channel Not Found"
 msgstr "चैनल नहीं मिला"
 
@@ -651,9 +661,9 @@ msgstr "चैनल: {name}"
 #: channel_widgets.py:248
 #: channel_widgets.py:250
 #: client_ui.py:71
-#: personal_tools_ui.py:148
-#: personal_tools_ui.py:278
-#: personal_tools_ui.py:293
+#: personal_tools_ui.py:159
+#: personal_tools_ui.py:289
+#: personal_tools_ui.py:304
 msgid "Channels"
 msgstr "चैनल"
 
@@ -710,7 +720,7 @@ msgstr "{account} की जाँच हो रही है..."
 msgid "Choose Audio Track"
 msgstr "ऑडियो ट्रैक चुनें"
 
-#: personal_tools_ui.py:417
+#: personal_tools_ui.py:428
 msgid "Choose Channel"
 msgstr "चैनल चुनें"
 
@@ -740,11 +750,19 @@ msgstr "बदलने के लिए एक कमांड चुनें:
 msgid "Choose a position before the end of the media."
 msgstr "मीडिया के अंत से पहले का स्थान चुनें।"
 
-#: recording_library_ui.py:152
+#: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "रिकॉर्डिंग फ़ोल्डर चुनें"
 
-#: planning_ui.py:49
+#: planning_tools_ui.py:12
+msgid "Choose repeat days. Clear all days to record only once."
+msgstr "दोहराने के दिन चुनें। केवल एक बार रिकॉर्ड करने के लिए सभी दिनों का चयन हटाएँ।"
+
+#: planning_tools.py:17
+msgid "Choose weekdays from Monday to Sunday."
+msgstr "सोमवार से रविवार तक सप्ताह के दिन चुनें।"
+
+#: planning_ui.py:56
 msgid "Clear All Reminders"
 msgstr "सभी अनुस्मारक मिटाएँ"
 
@@ -766,11 +784,11 @@ msgstr "क्या इस सत्र की सूचनाओं का इ
 #: dialogs_misc.py:900
 #: main.py:308
 #: main.py:9139
-#: personal_tools_ui.py:91
-#: planning_ui.py:51
-#: planning_ui.py:211
+#: personal_tools_ui.py:92
+#: planning_tools_ui.py:83
+#: planning_ui.py:60
 #: recording_conflicts_ui.py:99
-#: recording_library_ui.py:84
+#: recording_library_ui.py:95
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
 #: session_tools_ui.py:67
@@ -782,9 +800,10 @@ msgstr "बंद करें"
 msgid "Community and support"
 msgstr "समुदाय और सहायता"
 
-#: main.py:9287
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9309
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Completed"
 msgstr "पूर्ण"
 
@@ -800,7 +819,7 @@ msgstr "कॉन्फ़िगर की गई प्लेलिस्ट �
 msgid "Configured playlists: {count}"
 msgstr "कॉन्फ़िगर की गई प्लेलिस्ट: {count}"
 
-#: personal_tools_ui.py:32
+#: personal_tools_ui.py:33
 msgid "Confirm"
 msgstr "पुष्टि करें"
 
@@ -973,6 +992,10 @@ msgstr "Authenticode सत्यापन नहीं चला सका: {de
 msgid "Could not save playback history changes."
 msgstr "देखने के इतिहास में बदलाव सहेजे नहीं जा सके।"
 
+#: recording_library_ui.py:160
+msgid "Could not save recording library preferences."
+msgstr "रिकॉर्डिंग लाइब्रेरी की दृश्य प्राथमिकताएँ सहेजी नहीं जा सकीं।"
+
 #: main.py:3308
 #: main.py:3322
 #: main.py:3344
@@ -1017,8 +1040,9 @@ msgstr "वर्तमान में इससे कनेक्ट कि�
 msgid "Custom Player..."
 msgstr "कस्टम प्लेयर..."
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: planning_tools.py:86
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Date"
 msgstr "तारीख"
 
@@ -1030,15 +1054,15 @@ msgstr "शेष दिन"
 msgid "Days since expiry"
 msgstr "समाप्ति के बाद के दिन"
 
-#: main.py:9263
-#: personal_tools_ui.py:321
-#: planning_ui.py:48
+#: main.py:9285
+#: personal_tools_ui.py:332
+#: planning_ui.py:55
 #: playlist.py:3174
 #: session_tools_ui.py:63
 msgid "Delete"
 msgstr "हटाएँ"
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 msgid "Delete List"
 msgstr "सूची हटाएँ"
 
@@ -1046,11 +1070,11 @@ msgstr "सूची हटाएँ"
 msgid "Delete Playlist"
 msgstr "प्लेलिस्ट हटाएँ"
 
-#: recording_library_ui.py:339
+#: recording_library_ui.py:391
 msgid "Delete Recording"
 msgstr "रिकॉर्डिंग हटाएँ"
 
-#: recording_library_ui.py:313
+#: recording_library_ui.py:357
 msgid "Delete Recording File..."
 msgstr "रिकॉर्डिंग फ़ाइल हटाएँ..."
 
@@ -1058,11 +1082,11 @@ msgstr "रिकॉर्डिंग फ़ाइल हटाएँ..."
 msgid "Delete bookmark '{name}'?"
 msgstr "क्या '{name}' बुकमार्क हटाना है?"
 
-#: personal_tools_ui.py:215
+#: personal_tools_ui.py:226
 msgid "Delete favourite list '{name}'?"
 msgstr "पसंदीदा सूची '{name}' हटाएँ?"
 
-#: personal_tools_ui.py:393
+#: personal_tools_ui.py:404
 msgid "Delete saved search '{name}'?"
 msgstr "सहेजी गई खोज '{name}' हटाएँ?"
 
@@ -1070,13 +1094,13 @@ msgstr "सहेजी गई खोज '{name}' हटाएँ?"
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "प्लेलिस्ट “{name}” हटाएँ?\n\nयह प्लेलिस्ट की सूची से हटा दी जाएगी। इसे पूर्ववत नहीं किया जा सकता।"
 
-#: recording_library_ui.py:67
+#: recording_library_ui.py:68
 msgid "Descending"
 msgstr "अवरोही क्रम"
 
 #: dialogs_misc.py:516
-#: main.py:9438
-#: personal_tools_ui.py:317
+#: main.py:9460
+#: personal_tools_ui.py:328
 msgid "Description"
 msgstr "विवरण"
 
@@ -1106,7 +1130,7 @@ msgstr "नैदानिक जानकारी क्लिपबोर्�
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:336
+#: personal_tools_ui.py:347
 msgid "Disabled"
 msgstr "निष्क्रिय"
 
@@ -1201,14 +1225,18 @@ msgstr "अपडेट डाउनलोड हो रहा है..."
 msgid "Downloading {name}"
 msgstr "{name} डाउनलोड हो रहा है"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Duration"
 msgstr "अवधि"
 
+#: planning_tools.py:86
+msgid "Duration (seconds)"
+msgstr "अवधि (सेकंड)"
+
 #: main.py:4674
-#: main.py:9422
-#: main.py:9424
+#: main.py:9444
+#: main.py:9446
 msgid "EPG"
 msgstr "EPG"
 
@@ -1250,7 +1278,7 @@ msgstr "EPG आयात पृष्ठभूमि में प्रार�
 msgid "EPG is not enabled."
 msgstr "EPG सक्षम नहीं है।"
 
-#: main.py:9413
+#: main.py:9435
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
@@ -1259,7 +1287,7 @@ msgstr "EPG: {channel}"
 msgid "Edit Times..."
 msgstr "समय बदलें..."
 
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:331
 msgid "Edit..."
 msgstr "संपादित करें..."
 
@@ -1271,15 +1299,15 @@ msgstr "बीता: {elapsed}। कुल: {total}। शेष: {remaining}�
 msgid "Elapsed: {time}"
 msgstr "बीता समय: {time}"
 
-#: personal_tools_ui.py:275
+#: personal_tools_ui.py:286
 msgid "Enabled"
 msgstr "सक्षम"
 
-#: personal_tools_ui.py:608
+#: personal_tools_ui.py:636
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "रिकॉर्डिंग समय-सारणी, रिमाइंडर और सहेजी गई खोजों सहित एन्क्रिप्टेड बैकअप सहेजा गया।"
 
-#: personal_tools_ui.py:105
+#: personal_tools_ui.py:106
 #: recording_conflicts_ui.py:168
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "समाप्ति (स्थानीय समय, YYYY-MM-DD HH:MM)"
@@ -1322,7 +1350,7 @@ msgstr "सेटिंग बैकअप के लिए पासवर्�
 msgid "Enter a positive channel number."
 msgstr "एक पॉज़िटिव चैनल नंबर डालें।"
 
-#: recording_library.py:177
+#: recording_library.py:179
 msgid "Enter a recording title of 1 to 240 characters."
 msgstr "रिकॉर्डिंग के लिए 1 से 240 वर्णों का शीर्षक दर्ज करें।"
 
@@ -1354,7 +1382,7 @@ msgstr "पासवर्ड फिर से डालें:"
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9441
+#: main.py:9463
 msgid "Episode description"
 msgstr "एपिसोड विवरण"
 
@@ -1371,7 +1399,7 @@ msgstr "एपिसोड {num}"
 #: main.py:7041
 #: main.py:7063
 #: main.py:8872
-#: personal_tools_ui.py:27
+#: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
 msgid "Error"
@@ -1417,7 +1445,7 @@ msgid "Expected thumbprints: {thumbprints}."
 msgstr "अपेक्षित थंबप्रिंट: {thumbprints}।"
 
 #: account_info.py:373
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Expired"
 msgstr "समाप्त"
 
@@ -1430,7 +1458,12 @@ msgstr "समाप्त"
 msgid "Expires"
 msgstr "समाप्ति"
 
-#: personal_tools_ui.py:593
+#: recording_library_ui.py:93
+#: recording_library_ui.py:373
+msgid "Export List to CSV..."
+msgstr "सूची को CSV में निर्यात करें…"
+
+#: personal_tools_ui.py:621
 msgid "Export Settings"
 msgstr "सेटिंग एक्सपोर्ट करें"
 
@@ -1438,6 +1471,19 @@ msgstr "सेटिंग एक्सपोर्ट करें"
 #: client_ui.py:353
 msgid "Export Settings..."
 msgstr "सेटिंग एक्सपोर्ट करें..."
+
+#: planning_tools_ui.py:42
+msgid "Export saved."
+msgstr "निर्यात सहेजा गया।"
+
+#: dialogs_misc.py:1107
+#: main.py:9543
+#: planning_tools_ui.py:58
+#: planning_tools_ui.py:61
+#: planning_ui.py:57
+#: planning_ui.py:129
+msgid "Export to Calendar..."
+msgstr "कैलेंडर में निर्यात करें…"
 
 #: internal_player.py:2693
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
@@ -1456,9 +1502,10 @@ msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "रोकने से पहले धीरे-धीरे आवाज़ कम करने की अवधि (सेकंड); 0 से यह बंद हो जाता है।"
 
 #: main.py:3495
-#: main.py:9290
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
+#: main.py:9312
+#: planning_tools.py:88
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
 msgid "Failed"
 msgstr "विफल"
 
@@ -1511,17 +1558,17 @@ msgstr "अंतर्निहित प्लेयर प्रारंभ 
 msgid "Favorites"
 msgstr "पसंदीदा"
 
-#: personal_tools_ui.py:195
-#: personal_tools_ui.py:209
+#: personal_tools_ui.py:206
+#: personal_tools_ui.py:220
 msgid "Favourite List Name"
 msgstr "पसंदीदा सूची का नाम"
 
-#: personal_tools_ui.py:145
-#: personal_tools_ui.py:147
+#: personal_tools_ui.py:156
+#: personal_tools_ui.py:158
 msgid "Favourite Lists"
 msgstr "पसंदीदा सूचियाँ"
 
-#: personal_tools_ui.py:457
+#: personal_tools_ui.py:468
 msgid "Favourite Lists..."
 msgstr "पसंदीदा सूचियाँ..."
 
@@ -1533,8 +1580,8 @@ msgstr "नई सुविधाएँ"
 msgid "File"
 msgstr "फ़ाइल"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:73
+#: recording_library_ui.py:66
+#: recording_library_ui.py:82
 msgid "File Size"
 msgstr "फ़ाइल का आकार"
 
@@ -1556,7 +1603,7 @@ msgstr "ढूँढें"
 msgid "Find Next"
 msgstr "अगला ढूँढें"
 
-#: personal_tools_ui.py:635
+#: personal_tools_ui.py:673
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "बैकअप बहाल करने से पहले रिकॉर्डिंग और डाउनलोड पूरे करें।"
 
@@ -1593,6 +1640,10 @@ msgstr "रिकॉर्डिंग के दौरान खाली स�
 #: recording_storage.py:47
 msgid "Free space could not be determined:\n{error}"
 msgstr "खाली जगह निर्धारित नहीं की जा सकी:\n{error}"
+
+#: planning_tools_ui.py:23
+msgid "Friday"
+msgstr "शुक्रवार"
 
 #: internal_player.py:472
 #: internal_player.py:3132
@@ -1704,7 +1755,7 @@ msgstr "EPG को डेटाबेस में आयात करें"
 msgid "Import Failed"
 msgstr "आयात विफल"
 
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:643
 msgid "Import Settings"
 msgstr "सेटिंग इम्पोर्ट करें"
 
@@ -1731,6 +1782,7 @@ msgid "Importing EPG data…"
 msgstr "EPG डेटा आयात हो रहा है…"
 
 #: main.py:6987
+#: planning_ui.py:176
 msgid "In Progress"
 msgstr "प्रगति पर"
 
@@ -1754,9 +1806,26 @@ msgstr "बैकअप का सॉल्ट अमान्य है।"
 msgid "Invalid keyboard shortcut."
 msgstr "अमान्य कीबोर्ड शॉर्टकट।"
 
+#: planning_tools.py:118
+#: planning_tools_ui.py:56
+msgid "Invalid programme times."
+msgstr "कार्यक्रम के समय अमान्य हैं।"
+
 #: manual_schedule.py:47
 msgid "Invalid recording time."
 msgstr "रिकॉर्डिंग का समय अमान्य है।"
+
+#: programme_reminders.py:197
+msgid "Invalid reminder postponement."
+msgstr "रिमाइंडर स्थगन अमान्य है।"
+
+#: programme_reminders.py:128
+msgid "Invalid reminders could not be backed up. Changes are disabled to protect the original file."
+msgstr "अमान्य रिमाइंडर का बैकअप नहीं बन सका। मूल फ़ाइल की सुरक्षा के लिए बदलाव अक्षम हैं।"
+
+#: programme_reminders.py:121
+msgid "Invalid reminders were skipped. The original file was preserved at {path}."
+msgstr "अमान्य रिमाइंडर छोड़ दिए गए। मूल फ़ाइल {path} पर सुरक्षित है।"
 
 #: providers.py:152
 #: providers.py:193
@@ -1776,7 +1845,7 @@ msgstr "उपशीर्षक की देरी अमान्य है�
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "SerrebiProjects टेलीग्राम समूह में शामिल हों"
 
-#: personal_tools_ui.py:280
+#: personal_tools_ui.py:291
 msgid "Keep chosen channels"
 msgstr "चुने गए चैनल रखें"
 
@@ -1784,7 +1853,7 @@ msgstr "चुने गए चैनल रखें"
 msgid "Keep this output device?\n{name}"
 msgstr "क्या यह आउटपुट डिवाइस रखें?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "लाइव टीवी के 1–30 मिनट सुरक्षित रखें; 0 से स्थानीय बफ़र बंद होता है।"
 
@@ -1831,7 +1900,7 @@ msgstr "नवीनतम रिलीज़ टैग गायब या अ�
 msgid "Launch Error"
 msgstr "लॉन्च त्रुटि"
 
-#: planning_ui.py:41
+#: planning_ui.py:48
 msgid "Lead time (minutes)"
 msgstr "पहले सूचना (मिनट)"
 
@@ -1840,7 +1909,7 @@ msgstr "पहले सूचना (मिनट)"
 msgid "Live TV && Catch-up"
 msgstr "लाइव टीवी && कैच-अप"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "लाइव इनपुट समाप्त हो गया; सुरक्षित इतिहास अब भी उपलब्ध है।"
 
@@ -1873,16 +1942,16 @@ msgstr "गाइड के चैनल लोड हो रहे हैं...
 msgid "Loading playlists..."
 msgstr "प्लेलिस्ट लोड हो रही हैं..."
 
-#: recording_library_ui.py:192
+#: recording_library_ui.py:235
 msgid "Loading recordings..."
 msgstr "रिकॉर्डिंग लोड हो रही हैं..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:61
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:99
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:232
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "स्थानीय लाइव बफ़र"
 
@@ -1927,7 +1996,7 @@ msgstr "मुख्य विंडो के शॉर्टकट में C
 msgid "Maximum connections"
 msgstr "अधिकतम कनेक्शन"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "प्रति सत्र स्थानीय बफ़र का अधिकतम आकार (MiB)। किसी भी सीमा तक पहुँचने पर सबसे पुराना डेटा हटाया जाता है।"
 
@@ -1944,8 +2013,8 @@ msgstr "मेनू"
 msgid "Message from provider"
 msgstr "प्रदाता का संदेश"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: planning_ui.py:287
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: planning_ui.py:365
 msgid "MiB:"
 msgstr "MiB:"
 
@@ -1958,7 +2027,7 @@ msgstr "सिस्टम ट्रे में छोटा करें"
 msgid "Minimum Free Space..."
 msgstr "न्यूनतम खाली जगह…"
 
-#: planning_ui.py:286
+#: planning_ui.py:364
 msgid "Minimum free space to keep before starting a recording (MiB):"
 msgstr "रिकॉर्डिंग शुरू करने से पहले आवश्यक न्यूनतम खाली जगह (MiB):"
 
@@ -1976,35 +2045,39 @@ msgstr "कोलन के बाद मिनट और सेकंड का
 msgid "Minutes before programme:"
 msgstr "कार्यक्रम से पहले के मिनट:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
 #: internal_player.py:3290
-#: planning_ui.py:21
+#: planning_ui.py:24
 msgid "Minutes:"
 msgstr "मिनट:"
 
 #: main.py:3495
-#: main.py:9291
+#: main.py:9313
 msgid "Missed"
 msgstr "छूट गया"
+
+#: planning_tools_ui.py:23
+msgid "Monday"
+msgstr "सोमवार"
 
 #: accessible_tools_ui.py:42
 msgid "Monitor free space while recording"
 msgstr "रिकॉर्डिंग के दौरान खाली स्थान पर नज़र रखें"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Down"
 msgstr "नीचे ले जाएँ"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Up"
 msgstr "ऊपर ले जाएँ"
 
-#: recording_library_ui.py:81
-#: recording_library_ui.py:313
+#: recording_library_ui.py:90
+#: recording_library_ui.py:357
 msgid "Move to Recording Trash..."
 msgstr "रिकॉर्डिंग के कूड़ेदान में भेजें..."
 
-#: recording_library_ui.py:338
+#: recording_library_ui.py:390
 msgid "Move {count} selected recordings to the recording trash?"
 msgstr "क्या चुनी गई {count} रिकॉर्डिंग को रिकॉर्डिंग कूड़ेदान में ले जाना है?"
 
@@ -2043,12 +2116,12 @@ msgstr "नाम वाले बुकमार्क..."
 msgid "Never (no expiry date set)"
 msgstr "कभी नहीं (कोई समाप्ति तिथि निर्धारित नहीं)"
 
-#: personal_tools_ui.py:580
+#: personal_tools_ui.py:606
 msgid "New programme matches: {count}."
 msgstr "नए मेल खाने वाले कार्यक्रम: {count}।"
 
-#: personal_tools_ui.py:151
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:162
+#: personal_tools_ui.py:331
 msgid "New..."
 msgstr "नया..."
 
@@ -2130,8 +2203,8 @@ msgstr "इस चैनल के लिए कोई कैच-अप का�
 msgid "No channel is selected."
 msgstr "कोई चैनल नहीं चुना गया है।"
 
-#: personal_tools_ui.py:185
-#: personal_tools_ui.py:467
+#: personal_tools_ui.py:196
+#: personal_tools_ui.py:481
 msgid "No channel selected."
 msgstr "कोई चैनल चयनित नहीं है।"
 
@@ -2141,7 +2214,7 @@ msgstr "कोई चैनल नहीं मिला।"
 
 #: dialogs_misc.py:585
 #: main.py:2747
-#: main.py:9560
+#: main.py:9589
 msgid "No description available for this programme."
 msgstr "इस कार्यक्रम के लिए कोई विवरण उपलब्ध नहीं है।"
 
@@ -2153,7 +2226,7 @@ msgstr "कोई डिवाइस नहीं मिला।"
 msgid "No earlier subtitle."
 msgstr "इससे पहले कोई उपशीर्षक नहीं है।"
 
-#: personal_tools_ui.py:544
+#: personal_tools_ui.py:571
 msgid "No enabled saved searches."
 msgstr "कोई सहेजी गई खोज सक्षम नहीं है।"
 
@@ -2175,7 +2248,7 @@ msgstr "कोई ffmpeg विवरण रिपोर्ट नहीं क�
 msgid "No later subtitle."
 msgstr "इसके बाद कोई उपशीर्षक नहीं है।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "स्थानीय लाइव इतिहास उपलब्ध नहीं है।"
 
@@ -2228,7 +2301,7 @@ msgstr "वर्तमान में कोई रिकॉर्डिंग
 msgid "No release history is available."
 msgstr "कोई रिलीज़ इतिहास उपलब्ध नहीं है।"
 
-#: planning_ui.py:105
+#: planning_ui.py:120
 msgid "No reminders."
 msgstr "कोई अनुस्मारक नहीं है।"
 
@@ -2265,6 +2338,10 @@ msgstr "नवीनतम रिकॉर्डिंग लॉग में �
 msgid "No upcoming schedule found for this channel."
 msgstr "इस चैनल के लिए कोई आगामी शेड्यूल नहीं मिला।"
 
+#: planning_tools.py:59
+msgid "No valid recording window was found for the selected weekdays."
+msgstr "चुने गए दिनों के लिए मान्य रिकॉर्डिंग अवधि नहीं मिली।"
+
 #: client_ui.py:221
 #: client_ui.py:359
 msgid "None"
@@ -2276,7 +2353,7 @@ msgstr "कोई नहीं"
 msgid "Not Found"
 msgstr "नहीं मिला"
 
-#: full_backup.py:122
+#: full_backup.py:127
 #: settings_backup.py:55
 #: settings_backup.py:57
 msgid "Not an Accessible IPTV settings backup."
@@ -2319,11 +2396,11 @@ msgstr "सूचनाओं का इतिहास..."
 msgid "Notifications from this session:"
 msgstr "इस सत्र की सूचनाएँ:"
 
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Notified"
 msgstr "सूचना दी गई"
 
-#: planning_ui.py:20
+#: planning_ui.py:23
 msgid "Notify before the programme starts (minutes):"
 msgstr "कार्यक्रम शुरू होने से पहले सूचना दें (मिनट):"
 
@@ -2339,7 +2416,7 @@ msgstr "अभी: {title} ({start} – {end})"
 #: main.py:7780
 #: main.py:7813
 #: options.py:987
-#: personal_tools_ui.py:88
+#: personal_tools_ui.py:89
 #: playlist.py:3235
 #: playlist.py:3335
 msgid "OK"
@@ -2371,7 +2448,7 @@ msgstr "कार्यक्रम का केवल कुछ हिस्�
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "केवल दस्तावेज़ीकृत टाइम्ड-टेक्स्ट API वाले प्लेयर ही उपशीर्षक शब्द प्रदान कर सकते हैं। अंतर्निहित प्लेयर SRT, ASS, SSA और WebVTT फ़ाइलें पढ़ता है; MPV एप्लिकेशन के अपने सत्र के माध्यम से काम करता है।"
 
-#: personal_tools_ui.py:354
+#: personal_tools_ui.py:365
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "केवल पहले 500 परिणाम दिखाए गए हैं। खोज का दायरा घटाएँ।"
 
@@ -2379,7 +2456,7 @@ msgstr "केवल पहले 500 परिणाम दिखाए गए 
 msgid "Open"
 msgstr "खोलें"
 
-#: planning_ui.py:211
+#: planning_tools_ui.py:74
 msgid "Open Channel"
 msgstr "चैनल खोलें"
 
@@ -2462,9 +2539,10 @@ msgstr "एक ही समय की रिकॉर्डिंग की स
 msgid "Package"
 msgstr "पैकेज"
 
-#: main.py:9288
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9310
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Partial"
 msgstr "आंशिक"
 
@@ -2487,15 +2565,15 @@ msgid "Paused"
 msgstr "रुका हुआ"
 
 #: account_info.py:376
-#: planning_ui.py:84
+#: planning_ui.py:99
 msgid "Pending"
 msgstr "लंबित"
 
-#: planning_ui.py:237
+#: planning_ui.py:302
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "लंबित कार्यक्रम अनुस्मारक: {count}।\n\nसूचनाएँ दिखाने के लिए अनुप्रयोग चालू रहना चाहिए। फिर भी बाहर निकलें?"
 
-#: recording_library_ui.py:337
+#: recording_library_ui.py:389
 msgid "Permanently delete {count} selected recording files? This cannot be undone."
 msgstr "क्या चुनी गई {count} रिकॉर्डिंग फ़ाइलों को स्थायी रूप से मिटाना है? इसे वापस नहीं किया जा सकता।"
 
@@ -2512,11 +2590,11 @@ msgstr "प्लेटफ़ॉर्म: {platform}"
 #: internal_player.py:937
 #: internal_player.py:2053
 #: main.py:2781
-#: personal_tools_ui.py:154
+#: personal_tools_ui.py:165
 msgid "Play"
 msgstr "चलाएँ"
 
-#: recording_library_ui.py:79
+#: recording_library_ui.py:88
 msgid "Play / Resume"
 msgstr "चलाएँ / जारी रखें"
 
@@ -2706,7 +2784,9 @@ msgstr "पिछला उपशीर्षक"
 msgid "Previously saved content (title unavailable)"
 msgstr "पहले सहेजी गई सामग्री (शीर्षक उपलब्ध नहीं)"
 
-#: recording_library_ui.py:362
+#: personal_tools_ui.py:477
+#: personal_tools_ui.py:514
+#: recording_library_ui.py:414
 msgid "Processing recordings..."
 msgstr "रिकॉर्डिंग संसाधित की जा रही हैं…"
 
@@ -2714,24 +2794,23 @@ msgstr "रिकॉर्डिंग संसाधित की जा र�
 msgid "Program - Channel"
 msgstr "कार्यक्रम - चैनल"
 
-#: planning_ui.py:209
-#: planning_ui.py:220
+#: planning_tools_ui.py:67
+#: planning_ui.py:291
 msgid "Programme Reminder"
 msgstr "कार्यक्रम अनुस्मारक"
 
-#: planning_ui.py:21
-#: planning_ui.py:32
-#: planning_ui.py:38
-#: planning_ui.py:117
-#: planning_ui.py:138
-#: planning_ui.py:170
-#: planning_ui.py:229
-#: planning_ui.py:239
-#: planning_ui.py:246
-#: planning_ui.py:257
-#: planning_ui.py:259
-#: planning_ui.py:266
-#: planning_ui.py:281
+#: planning_ui.py:24
+#: planning_ui.py:35
+#: planning_ui.py:45
+#: planning_ui.py:142
+#: planning_ui.py:167
+#: planning_ui.py:248
+#: planning_ui.py:260
+#: planning_ui.py:304
+#: planning_ui.py:311
+#: planning_ui.py:328
+#: planning_ui.py:336
+#: planning_ui.py:359
 msgid "Programme Reminders"
 msgstr "कार्यक्रम अनुस्मारक"
 
@@ -2846,18 +2925,18 @@ msgstr "पुनः कनेक्ट हो रहा है..."
 msgid "Record"
 msgstr "रिकॉर्ड करें"
 
-#: dialogs_misc.py:1110
-#: main.py:9524
+#: dialogs_misc.py:1120
+#: main.py:9553
 msgid "Record Daily"
 msgstr "रोज़ रिकॉर्ड करें"
 
-#: dialogs_misc.py:1112
-#: main.py:9526
+#: dialogs_misc.py:1122
+#: main.py:9555
 msgid "Record Series"
 msgstr "सीरीज़ रिकॉर्ड करें"
 
-#: dialogs_misc.py:1111
-#: main.py:9525
+#: dialogs_misc.py:1121
+#: main.py:9554
 msgid "Record Weekly"
 msgstr "हर हफ़्ते रिकॉर्ड करें"
 
@@ -2871,7 +2950,7 @@ msgstr "हर हफ़्ते रिकॉर्ड करें"
 #: main.py:3957
 #: main.py:3965
 #: main.py:3968
-#: main.py:9285
+#: main.py:9307
 msgid "Recording"
 msgstr "रिकॉर्डिंग"
 
@@ -2879,7 +2958,7 @@ msgstr "रिकॉर्डिंग"
 msgid "Recording Complete"
 msgstr "रिकॉर्डिंग पूर्ण"
 
-#: main.py:9224
+#: main.py:9246
 #: recording_conflicts_ui.py:71
 msgid "Recording Conflicts"
 msgstr "रिकॉर्डिंग के टकराव"
@@ -2910,7 +2989,7 @@ msgid "Recording Format"
 msgstr "रिकॉर्डिंग प्रारूप"
 
 #: internal_player.py:3253
-#: recording_library_ui.py:33
+#: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "रिकॉर्डिंग संग्रह"
 
@@ -2934,8 +3013,8 @@ msgid "Recording Space Monitor..."
 msgstr "रिकॉर्डिंग स्थान की निगरानी..."
 
 #: accessible_tools_ui.py:286
-#: planning_ui.py:287
-#: planning_ui.py:324
+#: planning_ui.py:365
+#: planning_ui.py:402
 msgid "Recording Storage"
 msgstr "रिकॉर्डिंग संग्रहण"
 
@@ -2949,12 +3028,12 @@ msgstr "रिकॉर्डिंग चेतावनी"
 msgid "Recording connection limit saved."
 msgstr "रिकॉर्डिंग कनेक्शन की सीमा सहेजी गई।"
 
-#: recording_library_ui.py:44
-#: recording_library_ui.py:73
+#: recording_library_ui.py:45
+#: recording_library_ui.py:82
 msgid "Recording folder:"
 msgstr "रिकॉर्डिंग फ़ोल्डर:"
 
-#: planning_ui.py:307
+#: planning_ui.py:385
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "रिकॉर्डिंग फ़ोल्डर: {path}\nखाली जगह: {free} MiB\nआवश्यक आरक्षित जगह: {reserve} MiB।\n\nयह जाँच पूरी रिकॉर्डिंग के लिए पर्याप्त जगह की गारंटी नहीं देती।"
 
@@ -2965,6 +3044,10 @@ msgstr "इस विंडो से रिकॉर्डिंग उपल�
 #: recording_library.py:52
 msgid "Recording metadata could not be read. The media files are still available."
 msgstr "रिकॉर्डिंग का मेटाडेटा पढ़ा नहीं जा सका। मीडिया फ़ाइलें अब भी उपलब्ध हैं।"
+
+#: recording_library.py:86
+msgid "Recording metadata exceeds its size limit. The previous index was kept."
+msgstr "रिकॉर्डिंग मेटाडेटा आकार सीमा से अधिक है। पिछला सूचकांक सुरक्षित रखा गया है।"
 
 #: client_recording.py:74
 msgid "Recording of {name} ended unexpectedly (code {code}).\n\n{detail}"
@@ -2978,7 +3061,7 @@ msgstr "रिकॉर्डिंग के लिए पावर प्र�
 msgid "Recording saved:\n{path}"
 msgstr "रिकॉर्डिंग सहेजी गई:\n{path}"
 
-#: personal_tools_ui.py:491
+#: personal_tools_ui.py:519
 msgid "Recording schedule saved."
 msgstr "रिकॉर्डिंग समय-सारणी सहेजी गई।"
 
@@ -3002,7 +3085,7 @@ msgstr "रिकॉर्डिंग प्रारंभ हुई ({fmt}):\
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "रिकॉर्डिंग रुक गई, लेकिन ffmpeg ने कोड {code} रिपोर्ट किया।\n\n{detail}\n\nफ़ाइल:\n{path}"
 
-#: recording_library_ui.py:395
+#: recording_library_ui.py:447
 msgid "Recording title:"
 msgstr "रिकॉर्डिंग का शीर्षक:"
 
@@ -3014,18 +3097,18 @@ msgstr "दोहराने के लिए रिकॉर्डिंग �
 #: client_ui.py:448
 #: main.py:4266
 #: main.py:4554
-#: recording_library_ui.py:71
+#: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
 msgstr "रिकॉर्डिंग"
 
 #: dialogs_misc.py:356
 #: main.py:9195
-#: main.py:9257
-#: personal_tools_ui.py:321
-#: planning_ui.py:50
+#: main.py:9279
+#: personal_tools_ui.py:332
+#: planning_ui.py:59
 #: playlist.py:3169
-#: recording_library_ui.py:83
+#: recording_library_ui.py:92
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "ताज़ा करें"
@@ -3058,19 +3141,27 @@ msgstr "रिलीज़ इतिहास"
 msgid "Remember Volume for Each Channel"
 msgstr "हर चैनल की आवाज़ का स्तर याद रखें"
 
-#: planning_ui.py:259
+#: planning_tools_ui.py:76
+msgid "Remind Again in 5 Minutes"
+msgstr "5 मिनट बाद फिर याद दिलाएँ"
+
+#: planning_tools_ui.py:78
+msgid "Remind at Programme Start"
+msgstr "कार्यक्रम शुरू होने पर याद दिलाएँ"
+
+#: planning_ui.py:328
 msgid "Reminder set."
 msgstr "अनुस्मारक सेट हो गया।"
 
-#: personal_tools_ui.py:226
+#: personal_tools_ui.py:237
 msgid "Remove '{name}' from this list?"
 msgstr "इस सूची से '{name}' हटाएँ?"
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Remove Channel"
 msgstr "चैनल हटाएँ"
 
-#: recording_library_ui.py:50
+#: recording_library_ui.py:51
 msgid "Remove Folder from Library"
 msgstr "लाइब्रेरी से फ़ोल्डर हटाएँ"
 
@@ -3078,7 +3169,7 @@ msgstr "लाइब्रेरी से फ़ोल्डर हटाएँ
 msgid "Remove Saved Position"
 msgstr "सहेजी गई स्थिति हटाएँ"
 
-#: planning_ui.py:130
+#: planning_ui.py:155
 msgid "Remove all reminders?"
 msgstr "सभी अनुस्मारक हटाएँ?"
 
@@ -3086,7 +3177,7 @@ msgstr "सभी अनुस्मारक हटाएँ?"
 msgid "Remove all saved playback positions?"
 msgstr "सभी सहेजी गई प्लेबैक स्थितियाँ हटाएँ?"
 
-#: main.py:9380
+#: main.py:9402
 msgid "Remove all scheduled recordings from the list?"
 msgstr "सूची से सभी निर्धारित रिकॉर्डिंग हटाएँ?"
 
@@ -3094,15 +3185,15 @@ msgstr "सूची से सभी निर्धारित रिकॉ�
 msgid "Remove from Favorites"
 msgstr "पसंदीदा से हटाएँ"
 
-#: main.py:9385
+#: main.py:9407
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "निर्धारित रिकॉर्डिंग '{title}' को सूची से हटाएँ?"
 
-#: main.py:9382
+#: main.py:9404
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "क्या चुनी गई {count} निर्धारित रिकॉर्डिंग सूची से हटाना चाहते हैं? रिकॉर्डिंग फ़ाइलें सुरक्षित रहेंगी।"
 
-#: planning_ui.py:126
+#: planning_ui.py:151
 msgid "Remove this reminder?"
 msgstr "यह अनुस्मारक हटाएँ?"
 
@@ -3115,20 +3206,34 @@ msgstr "यह सहेजी गई प्लेबैक स्थिति �
 msgid "Rename"
 msgstr "नाम बदलें"
 
-#: recording_library_ui.py:80
-#: recording_library_ui.py:395
+#: recording_library_ui.py:89
+#: recording_library_ui.py:447
 msgid "Rename Title..."
 msgstr "शीर्षक बदलें..."
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 #: session_tools_ui.py:62
 #: session_tools_ui.py:109
 msgid "Rename..."
 msgstr "नाम बदलें..."
 
-#: personal_tools_ui.py:622
+#: main.py:9208
+#: planning_tools_ui.py:13
+msgid "Repeat on Weekdays..."
+msgstr "चुने हुए दिनों में दोहराएँ…"
+
+#: personal_tools_ui.py:108
+#: personal_tools_ui.py:110
+msgid "Repeat on selected weekdays (none: once):"
+msgstr "चुने हुए दिनों में दोहराएँ (कोई नहीं: एक बार):"
+
+#: personal_tools_ui.py:658
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "सेटिंग, {jobs} रिकॉर्डिंग प्रविष्टियाँ और {reminders} रिमाइंडर बदलें? पहले शुरू हुई रिकॉर्डिंग दोबारा शुरू नहीं होंगी।"
+
+#: planning_tools_ui.py:36
+msgid "Replace the existing export file?"
+msgstr "मौजूदा निर्यात फ़ाइल बदलें?"
 
 #: media_navigation_ui.py:58
 msgid "Reset Timing"
@@ -3138,7 +3243,7 @@ msgstr "समय समायोजन रीसेट करें"
 msgid "Restore"
 msgstr "पुनर्स्थापित करें"
 
-#: recording_library_ui.py:82
+#: recording_library_ui.py:91
 msgid "Restore Recording"
 msgstr "रिकॉर्डिंग पुनर्स्थापित करें"
 
@@ -3162,7 +3267,7 @@ msgstr "लाइव पर लौटें"
 msgid "Review recent subtitles..."
 msgstr "हालिया उपशीर्षक समीक्षा..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "लाइव टीवी पीछे करें"
 
@@ -3170,20 +3275,24 @@ msgstr "लाइव टीवी पीछे करें"
 msgid "Rewind Live TV..."
 msgstr "लाइव टीवी पीछे करें…"
 
+#: planning_tools_ui.py:23
+msgid "Saturday"
+msgstr "शनिवार"
+
 #: recording_limits_ui.py:35
 msgid "Save"
 msgstr "सहेजें"
 
-#: personal_tools_ui.py:269
+#: personal_tools_ui.py:280
 msgid "Saved Programme Search"
 msgstr "सहेजी गई कार्यक्रम खोज"
 
-#: personal_tools_ui.py:314
-#: personal_tools_ui.py:315
+#: personal_tools_ui.py:325
+#: personal_tools_ui.py:326
 msgid "Saved Programme Searches"
 msgstr "सहेजी गई कार्यक्रम खोजें"
 
-#: personal_tools_ui.py:459
+#: personal_tools_ui.py:470
 msgid "Saved Programme Searches..."
 msgstr "सहेजी गई कार्यक्रम खोजें..."
 
@@ -3208,7 +3317,7 @@ msgid "Schedule Padding..."
 msgstr "शेड्यूल पैडिंग..."
 
 #: dialogs_misc.py:899
-#: dialogs_misc.py:1107
+#: dialogs_misc.py:1117
 #: main.py:2797
 #: main.py:2876
 #: main.py:3293
@@ -3220,17 +3329,17 @@ msgstr "शेड्यूल पैडिंग..."
 #: main.py:3345
 #: main.py:3358
 #: main.py:3365
-#: main.py:9521
-#: main.py:9569
+#: main.py:9550
+#: main.py:9598
 msgid "Schedule Recording"
 msgstr "रिकॉर्डिंग शेड्यूल करें"
 
 #: main.py:2806
-#: personal_tools_ui.py:323
+#: personal_tools_ui.py:334
 msgid "Schedule Recording..."
 msgstr "रिकॉर्डिंग शेड्यूल करें..."
 
-#: personal_tools_ui.py:97
+#: personal_tools_ui.py:98
 msgid "Schedule by Time"
 msgstr "समय के अनुसार निर्धारित करें"
 
@@ -3238,8 +3347,8 @@ msgstr "समय के अनुसार निर्धारित कर�
 msgid "Schedule by Time..."
 msgstr "समय के अनुसार निर्धारित करें..."
 
-#: main.py:9284
-#: planning_ui.py:84
+#: main.py:9306
+#: planning_ui.py:99
 msgid "Scheduled"
 msgstr "शेड्यूल किया गया"
 
@@ -3250,12 +3359,14 @@ msgstr "शेड्यूल की गई रिकॉर्डिंग"
 
 #: main.py:1241
 #: main.py:9175
-#: main.py:9234
-#: main.py:9360
-#: main.py:9367
-#: main.py:9373
-#: main.py:9386
-#: main.py:9396
+#: main.py:9225
+#: main.py:9236
+#: main.py:9256
+#: main.py:9382
+#: main.py:9389
+#: main.py:9395
+#: main.py:9408
+#: main.py:9418
 msgid "Scheduled Recordings"
 msgstr "शेड्यूल की गई रिकॉर्डिंग"
 
@@ -3283,15 +3394,15 @@ msgstr "शेड्यूल की गई रिकॉर्डिंग"
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:271
+#: personal_tools_ui.py:282
 msgid "Search"
 msgstr "खोज"
 
-#: personal_tools_ui.py:316
+#: personal_tools_ui.py:327
 msgid "Search Results"
 msgstr "खोज परिणाम"
 
-#: personal_tools_ui.py:272
+#: personal_tools_ui.py:283
 msgid "Search descriptions too"
 msgstr "विवरण में भी खोजें"
 
@@ -3299,7 +3410,7 @@ msgstr "विवरण में भी खोजें"
 msgid "Search guide channels:"
 msgstr "गाइड के चैनल खोजें:"
 
-#: recording_library_ui.py:42
+#: recording_library_ui.py:43
 msgid "Search recordings:"
 msgstr "रिकॉर्डिंग खोजें:"
 
@@ -3307,15 +3418,15 @@ msgstr "रिकॉर्डिंग खोजें:"
 msgid "Searching for devices..."
 msgstr "डिवाइस खोजे जा रहे हैं..."
 
-#: personal_tools_ui.py:551
+#: personal_tools_ui.py:578
 msgid "Searching programmes..."
 msgstr "कार्यक्रम खोजे जा रहे हैं..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "सबसे नई सुरक्षित तस्वीर से देरी (सेकंड); 0 से लाइव पर लौटते हैं।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 #: internal_player.py:3302
 msgid "Seconds:"
 msgstr "सेकंड:"
@@ -3346,7 +3457,7 @@ msgstr "पहले रिकॉर्ड करने के लिए एक 
 msgid "Select a live channel first."
 msgstr "पहले कोई लाइव चैनल चुनें।"
 
-#: main.py:9569
+#: main.py:9598
 msgid "Select a programme first."
 msgstr "पहले एक कार्यक्रम चुनें।"
 
@@ -3358,9 +3469,9 @@ msgstr "कार्यक्रम गाइड का कोई चैनल �
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "कोई कार्यक्रम चुनें, फिर उसे खोलने के लिए Enter दबाएँ, या उसे डाउनलोड करने के लिए संदर्भ मेनू का उपयोग करें। बंद करने के लिए Escape दबाएँ।"
 
-#: main.py:9224
-#: main.py:9360
-#: main.py:9373
+#: main.py:9246
+#: main.py:9382
+#: main.py:9395
 msgid "Select a scheduled recording first."
 msgstr "पहले एक शेड्यूल की गई रिकॉर्डिंग चुनें।"
 
@@ -3368,9 +3479,15 @@ msgstr "पहले एक शेड्यूल की गई रिकॉर�
 msgid "Select an account to check its status:"
 msgstr "स्थिति जाँचने के लिए एक खाता चुनें:"
 
-#: main.py:9233
+#: main.py:9255
 msgid "Select one pending or running recording to edit its times."
 msgstr "समय बदलने के लिए एक लंबित या चल रही रिकॉर्डिंग चुनें।"
+
+#: dvr.py:424
+#: dvr.py:495
+#: main.py:9224
+msgid "Select one pending recording that is not a series rule."
+msgstr "एक लंबित रिकॉर्डिंग चुनें जो श्रृंखला का नियम न हो।"
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3380,12 +3497,12 @@ msgstr "इनबिल्ट प्लेयर के लिए ऑडिय�
 msgid "Select the playlist format to download"
 msgstr "डाउनलोड करने के लिए प्लेलिस्ट प्रारूप चुनें"
 
-#: personal_tools_ui.py:184
-#: personal_tools_ui.py:286
+#: personal_tools_ui.py:195
+#: personal_tools_ui.py:297
 msgid "Selected channel: {name}"
 msgstr "चयनित चैनल: {name}"
 
-#: recording_library_ui.py:319
+#: recording_library_ui.py:363
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "चुनी गईं: {count}; कुल आकार: {size} MiB।"
 
@@ -3421,9 +3538,9 @@ msgstr "डाउनलोड फ़ोल्डर सेट करें..."
 
 #: dialogs_misc.py:1105
 #: main.py:2794
-#: main.py:9518
-#: personal_tools_ui.py:322
-#: planning_ui.py:47
+#: main.py:9540
+#: personal_tools_ui.py:333
+#: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "अनुस्मारक सेट करें…"
 
@@ -3436,11 +3553,11 @@ msgstr "डाउनलोड फ़ोल्डर सेट करें"
 #: main.py:2093
 #: main.py:2098
 #: main.py:2103
-#: personal_tools_ui.py:609
+#: personal_tools_ui.py:637
 msgid "Settings Backup"
 msgstr "सेटिंग बैकअप"
 
-#: full_backup.py:113
+#: full_backup.py:118
 #: settings_backup.py:27
 msgid "Settings are too large to back up."
 msgstr "सेटिंग्स बैकअप के लिए बहुत बड़ी हैं।"
@@ -3459,7 +3576,7 @@ msgstr "शॉर्टकट सेव किया गया। इसका �
 msgid "Show Built-in Player"
 msgstr "अंतर्निहित प्लेयर दिखाएँ"
 
-#: recording_library_ui.py:56
+#: recording_library_ui.py:57
 msgid "Show Deleted Recordings"
 msgstr "हटाई गई रिकॉर्डिंग दिखाएँ"
 
@@ -3510,6 +3627,10 @@ msgstr "रिकॉर्डिंग पूरी होने पर कं�
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "बंद करना रद्द किया गया। रिकॉर्डिंग के बाद स्वचालित शटडाउन अब बंद है।"
 
+#: planning_tools.py:86
+msgid "Size (bytes)"
+msgstr "आकार (बाइट)"
+
 #: internal_player.py:3290
 #: internal_player.py:3302
 msgid "Sleep Timer"
@@ -3519,7 +3640,7 @@ msgstr "स्लीप टाइमर"
 msgid "Sleep Timer..."
 msgstr "स्लीप टाइमर…"
 
-#: recording_library_ui.py:64
+#: recording_library_ui.py:65
 msgid "Sort by"
 msgstr "इसके अनुसार क्रमबद्ध करें"
 
@@ -3557,7 +3678,7 @@ msgstr "Stalker Portal"
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: personal_tools_ui.py:104
+#: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "आरंभ (स्थानीय समय, YYYY-MM-DD HH:MM)"
@@ -3588,9 +3709,10 @@ msgstr "{start} पर शुरू: {title}"
 #: account_info.py:554
 #: account_info.py:606
 #: main.py:9191
-#: planning_ui.py:40
-#: recording_library_ui.py:60
-#: recording_library_ui.py:73
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:61
+#: recording_library_ui.py:82
 msgid "Status"
 msgstr "स्थिति"
 
@@ -3630,7 +3752,7 @@ msgstr "इससे कम होने पर रोकें (MiB):"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "अंतर्निहित प्लेयर का प्लेबैक 1–1440 मिनट बाद रोकें; टाइमर रद्द करने के लिए 0 दर्ज करें।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "कास्ट डिवाइस पर जाने से पहले स्थानीय बफ़र से प्लेबैक रोकें।"
 
@@ -3643,13 +3765,14 @@ msgstr "स्थान बहुत कम होने पर रिकॉर�
 msgid "Stopped"
 msgstr "रुका हुआ"
 
-#: main.py:9289
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9311
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Stopped by user"
 msgstr "उपयोगकर्ता ने रोका"
 
-#: main.py:9286
+#: main.py:9308
 msgid "Stopping"
 msgstr "रुक रहा है"
 
@@ -3796,6 +3919,10 @@ msgstr "उपशीर्षक"
 msgid "Subtitles: {name}"
 msgstr "उपशीर्षक: {name}"
 
+#: planning_tools_ui.py:23
+msgid "Sunday"
+msgstr "रविवार"
+
 #: internal_player.py:121
 #: main.py:7836
 msgid "System default"
@@ -3818,7 +3945,7 @@ msgstr "EPG आयात पूरा नहीं हुआ। कार्य�
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "EPG आयात पूरा हो गया। कार्यक्रम गाइड अद्यतन है।"
 
-#: personal_tools_ui.py:625
+#: personal_tools_ui.py:661
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "ऐप बंद होगा। बहाली पूरी करने के लिए इसे फिर खोलें।"
 
@@ -3838,8 +3965,8 @@ msgstr "यह बुकमार्क अब उपलब्ध नहीं �
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "बुकमार्क की अधिकतम संख्या पूरी हो गई है। पहले कोई अनुपयोगी बुकमार्क हटाएँ।"
 
-#: personal_tools_ui.py:258
-#: personal_tools_ui.py:425
+#: personal_tools_ui.py:269
+#: personal_tools_ui.py:436
 msgid "The channel list changed. Try again."
 msgstr "चैनल सूची बदल गई है। फिर कोशिश करें।"
 
@@ -3863,6 +3990,10 @@ msgstr "प्रदाता से कनेक्शन का समय स�
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "समाप्ति भविष्य में और आरंभ के बाद, उससे सात दिनों के भीतर होनी चाहिए।"
 
+#: personal_tools_ui.py:147
+msgid "The first recording must start on a selected weekday."
+msgstr "पहली रिकॉर्डिंग चुने गए दिनों में से किसी दिन शुरू होनी चाहिए।"
+
 #: updater.py:156
 msgid "The installer could not be started."
 msgstr "इंस्टॉलर शुरू नहीं किया जा सका।"
@@ -3879,7 +4010,7 @@ msgstr "15 मिनट बाद भी इंस्टॉलर चल रह�
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "भाषा बदल दी गई है। परिवर्तन पूरी तरह प्रभावी होने के लिए कृपया Accessible IPTV Client पुनः प्रारंभ करें।"
 
-#: recording_library_ui.py:158
+#: recording_library_ui.py:201
 msgid "The library can contain up to 20 folders."
 msgstr "लाइब्रेरी में अधिकतम 20 फ़ोल्डर हो सकते हैं।"
 
@@ -3887,15 +4018,15 @@ msgstr "लाइब्रेरी में अधिकतम 20 फ़ोल
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "लाइव बफ़र का स्रोत बदला जा रहा है। निर्धारित रिकॉर्डिंग शुरू नहीं हो सकी।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "स्थानीय बफ़र अभी रिकॉर्डिंग को डेटा दे रहा है। इसे बंद करने से पहले रिकॉर्डिंग रोकें।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "स्टोरेज या इनपुट की समस्या के कारण स्थानीय बफ़र रुक गया।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "स्थानीय लाइव बफ़र शुरू नहीं हो सका। प्रदाता से कोई अतिरिक्त कनेक्शन नहीं खोला गया। सीधे प्लेबैक का फिर प्रयास करने के लिए बफ़र बंद करें।"
 
@@ -3912,21 +4043,21 @@ msgstr "मीडिया की अवधि अभी उपलब्ध न�
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "अगला एपिसोड {seconds} सेकंड में शुरू होगा: {title}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "पुरानी स्थिति अब उपलब्ध नहीं है; प्लेबैक सुरक्षित दायरे में चला गया है।"
 
-#: personal_tools_ui.py:378
+#: personal_tools_ui.py:389
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "कार्रवाई पूरी नहीं हो सकी। रीफ़्रेश करके फिर कोशिश करें।"
 
 #: accessible_tools_ui.py:15
 #: internal_player.py:3252
-#: main.py:9366
-#: main.py:9395
-#: personal_tools_ui.py:27
-#: personal_tools_ui.py:572
-#: personal_tools_ui.py:577
+#: main.py:9388
+#: main.py:9417
+#: personal_tools_ui.py:28
+#: personal_tools_ui.py:603
+#: planning_tools_ui.py:42
 #: recording_conflicts_ui.py:135
 msgid "The operation failed:\n{error}"
 msgstr "कार्रवाई विफल हुई:\n{error}"
@@ -3935,7 +4066,7 @@ msgstr "कार्रवाई विफल हुई:\n{error}"
 msgid "The passwords do not match."
 msgstr "पासवर्ड मेल नहीं खाते।"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "विराम की स्थिति अब उपलब्ध नहीं है। सबसे पुरानी सुरक्षित तस्वीर से प्लेबैक फिर शुरू हुआ।"
 
@@ -3962,7 +4093,7 @@ msgstr "जाँच के दौरान प्लेलिस्ट बद�
 msgid "The playlists changed. Select the channel again."
 msgstr "प्लेलिस्ट बदल गई हैं। चैनल फिर से चुनें।"
 
-#: planning_ui.py:245
+#: planning_ui.py:310
 msgid "The programme has already started or its times are invalid."
 msgstr "कार्यक्रम शुरू हो चुका है या उसके समय अमान्य हैं।"
 
@@ -3994,7 +4125,7 @@ msgstr "प्रदाता के सर्वर में त्रुट�
 msgid "The provider's server refused the connection."
 msgstr "प्रदाता के सर्वर ने कनेक्शन अस्वीकार कर दिया।"
 
-#: dvr.py:435
+#: dvr.py:481
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "रिकॉर्डिंग बदल गई है। उसके समय की विंडो फिर खोलें।"
 
@@ -4002,14 +4133,14 @@ msgstr "रिकॉर्डिंग बदल गई है। उसके �
 msgid "The recording connection limit for this account has been reached ({limit}). Existing recordings will continue."
 msgstr "इस खाते के रिकॉर्डिंग कनेक्शनों की सीमा ({limit}) पूरी हो गई है। चल रही रिकॉर्डिंग जारी रहेंगी।"
 
-#: recording_library.py:153
-#: recording_library.py:255
+#: recording_library.py:155
+#: recording_library.py:257
 msgid "The recording file changed. Refresh the library."
 msgstr "रिकॉर्डिंग फ़ाइल बदल गई है। संग्रह ताज़ा करें।"
 
-#: recording_library.py:150
-#: recording_library.py:249
-#: recording_library.py:252
+#: recording_library.py:152
+#: recording_library.py:251
+#: recording_library.py:254
 msgid "The recording file is no longer available."
 msgstr "रिकॉर्डिंग फ़ाइल अब उपलब्ध नहीं है।"
 
@@ -4017,15 +4148,17 @@ msgstr "रिकॉर्डिंग फ़ाइल अब उपलब्ध
 msgid "The recording folder is unavailable or not writable:\n{error}"
 msgstr "रिकॉर्डिंग फ़ोल्डर उपलब्ध नहीं है या उसमें लिखा नहीं जा सकता:\n{error}"
 
-#: recording_library.py:155
+#: recording_library.py:157
 msgid "The recording is still in use."
 msgstr "रिकॉर्डिंग अभी उपयोग में है।"
 
-#: dvr.py:262
+#: dvr.py:282
+#: dvr.py:298
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "रिकॉर्डिंग का शेड्यूल पढ़ा नहीं जा सका और उसका बैकअप भी नहीं बन सका। मूल फ़ाइल की सुरक्षा के लिए बदलाव बंद कर दिए गए हैं। फ़ाइल की अनुमतियाँ और डिस्क में खाली जगह जाँचें, फिर एप्लिकेशन दोबारा शुरू करें।"
 
-#: dvr.py:259
+#: dvr.py:279
+#: dvr.py:295
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "रिकॉर्डिंग का शेड्यूल पढ़ा नहीं जा सका। मूल फ़ाइल {path} पर सुरक्षित रखी गई है। नई रिकॉर्डिंग जोड़ने से पहले निर्धारित रिकॉर्डिंग की जाँच करें।"
 
@@ -4033,15 +4166,17 @@ msgstr "रिकॉर्डिंग का शेड्यूल पढ़ा
 msgid "The recording start time has already passed."
 msgstr "रिकॉर्डिंग का आरंभ समय बीत चुका है।"
 
-#: recording_library.py:190
+#: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "रिकॉर्डिंग के कूड़ेदान का फ़ोल्डर उपलब्ध नहीं है।"
 
-#: planning_ui.py:137
-#: planning_ui.py:169
-#: planning_ui.py:228
-#: planning_ui.py:256
-#: planning_ui.py:280
+#: programme_reminders.py:203
+msgid "The reminder cannot be postponed beyond the programme's end."
+msgstr "रिमाइंडर केवल कार्यक्रम समाप्त होने से पहले के किसी बाद के समय तक स्थगित हो सकता है।"
+
+#: planning_ui.py:166
+#: planning_ui.py:247
+#: planning_ui.py:358
 msgid "The reminder operation failed:\n{error}"
 msgstr "अनुस्मारक संबंधी कार्रवाई विफल रही:\n{error}"
 
@@ -4072,7 +4207,7 @@ msgstr "सर्वर ने खाते का कोई विवरण न
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:445
+#: personal_tools_ui.py:456
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "सेटिंग्स सहेजी नहीं जा सकीं। खाली स्थान और लिखने की अनुमति जाँचें, फिर दोबारा कोशिश करें।"
 
@@ -4126,7 +4261,7 @@ msgstr "यह स्थानीय समय मौजूद नहीं ह�
 msgid "This local time occurs twice when the clocks change."
 msgstr "घड़ी बदलने पर यह स्थानीय समय दो बार आता है।"
 
-#: personal_tools_ui.py:623
+#: personal_tools_ui.py:659
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "यह पुराना बैकअप केवल सेटिंग बदलेगा। रिकॉर्डिंग समय-सारणी और रिमाइंडर बने रहेंगे।"
 
@@ -4150,8 +4285,8 @@ msgstr "यह कार्यक्रम अभी कैच-अप साम�
 msgid "This programme's start and end times are invalid."
 msgstr "इस कार्यक्रम का आरंभ और समाप्ति समय अमान्य है।"
 
-#: dvr.py:358
-#: dvr.py:420
+#: dvr.py:390
+#: dvr.py:466
 msgid "This recording is already scheduled."
 msgstr "यह रिकॉर्डिंग पहले से निर्धारित है।"
 
@@ -4164,9 +4299,13 @@ msgstr "इस शेड्यूल के लिए एक ही खाते
 msgid "This stream does not support seeking."
 msgstr "इस स्ट्रीम में समय बदलकर आगे-पीछे जाना समर्थित नहीं है।"
 
+#: planning_tools_ui.py:23
+msgid "Thursday"
+msgstr "गुरुवार"
+
 #: main.py:9188
-#: main.py:9425
-#: planning_ui.py:39
+#: main.py:9447
+#: planning_ui.py:46
 msgid "Time"
 msgstr "समय"
 
@@ -4175,12 +4314,13 @@ msgid "Time remaining: {time}"
 msgstr "शेष समय: {time}"
 
 #: main.py:9189
-#: main.py:9426
-#: personal_tools_ui.py:101
-#: planning_ui.py:39
+#: main.py:9448
+#: personal_tools_ui.py:102
+#: planning_tools.py:86
+#: planning_ui.py:46
 #: recording_conflicts_ui.py:35
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 #: resume_dialogs.py:44
 msgid "Title"
 msgstr "शीर्षक"
@@ -4210,6 +4350,10 @@ msgstr "परीक्षण खाता"
 #: playlist.py:3640
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "पोर्टल का XMLTV गाइड स्वतः जोड़ने का प्रयास करें"
+
+#: planning_tools_ui.py:23
+msgid "Tuesday"
+msgstr "मंगलवार"
 
 #: account_info.py:461
 #: resume_dialogs.py:38
@@ -4254,11 +4398,13 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream सर्वर से अप्रत्याशित खाता प्रतिक्रिया"
 
 #: channel_widgets.py:383
+#: planning_tools.py:88
+#: planning_tools.py:92
 #: recording_conflicts_ui.py:166
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
-#: recording_library_ui.py:265
-#: recording_library_ui.py:266
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
+#: recording_library_ui.py:308
+#: recording_library_ui.py:309
 #: updater.py:967
 msgid "Unknown"
 msgstr "अज्ञात"
@@ -4268,7 +4414,7 @@ msgid "Unknown command."
 msgstr "अज्ञात कमांड।"
 
 #: main.py:3288
-#: planning_ui.py:90
+#: planning_ui.py:105
 #: recording_conflicts_ui.py:21
 #: resume_dialogs.py:88
 msgid "Unknown time"
@@ -4475,6 +4621,10 @@ msgstr "निर्धारित रिकॉर्डिंग के लि
 msgid "Warn below (MiB):"
 msgstr "इससे कम होने पर चेतावनी दें (MiB):"
 
+#: planning_tools_ui.py:23
+msgid "Wednesday"
+msgstr "बुधवार"
+
 #: client_ui.py:126
 #: client_ui.py:278
 #: internal_player.py:596
@@ -4508,7 +4658,7 @@ msgstr "Windows रिकॉर्डिंग के लिए जगाने 
 msgid "Windows did not get permission to install the update."
 msgstr "Windows को अपडेट इंस्टॉल करने की अनुमति नहीं मिली।"
 
-#: full_backup.py:129
+#: full_backup.py:134
 #: settings_backup.py:61
 #: settings_backup.py:68
 msgid "Wrong password or damaged backup."
@@ -4540,7 +4690,7 @@ msgstr "Xtream Codes – {name}"
 msgid "Yes"
 msgstr "हाँ"
 
-#: personal_tools_ui.py:376
+#: personal_tools_ui.py:387
 msgid "You can save up to 30 programme searches."
 msgstr "आप अधिकतम 30 कार्यक्रम खोजें सहेज सकते हैं।"
 
@@ -4600,7 +4750,7 @@ msgstr "x264 पुनः एन्कोड (MKV)"
 msgid "x264 re-encode (MP4)"
 msgstr "x264 पुनः एन्कोड (MP4)"
 
-#: main.py:9626
+#: main.py:9655
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} पहले से चल रहा है, लेकिन उसने जवाब नहीं दिया। कुछ देर प्रतीक्षा करके फिर से प्रयास करें, या इसे सूचना क्षेत्र से बंद करें।"
 
@@ -4625,7 +4775,7 @@ msgstr "{count} कार्यक्रम"
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} रिकॉर्डिंग निर्धारित है लेकिन अभी शुरू नहीं हुई।\n\n{names}\n\nइसे शुरू करने के लिए ऐप खुला रहना चाहिए। फिर भी बाहर निकलें?"
 
-#: recording_library_ui.py:318
+#: recording_library_ui.py:362
 msgid "{count} recording(s). Active recordings are not listed."
 msgstr "कुल {count} रिकॉर्डिंग। चल रही रिकॉर्डिंग सूची में नहीं दिखाई जातीं।"
 
@@ -4665,7 +4815,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} Linux के लिए कॉन्फ़िगर नहीं किया गया है।"
 
-#: planning_ui.py:207
+#: planning_ui.py:269
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nशुरुआत: {time}"
 

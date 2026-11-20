@@ -184,6 +184,10 @@ Ver EPG…, en el menú de un canal, enumera los programas de ese canal desde el
 - La tecla de aplicaciones o Shift+F10 sobre un programa ofrece Programar grabación.
 - Escape cierra la ventana.
 
+El recordatorio ofrece Recordar de nuevo en 5 minutos y, antes del inicio, Recordar al comenzar el programa. El aplazamiento se guarda y se conserva al reiniciar; debe ser anterior al final del programa. Cerrar confirma el aviso. La aplicación debe estar abierta; estos recordatorios no despiertan el equipo.
+
+Exportar al calendario, en el menú contextual de un programa o desde un recordatorio seleccionado, guarda un archivo .ics. Incluye título, canal e inicio y fin en UTC, para que el calendario use su zona horaria. No programa grabaciones ni despertares del equipo y no inicia la reproducción.
+
 ## Repetición {#catch-up}
 
 Los canales que guardan un archivo permiten ver programas ya emitidos. Estos canales tienen Repetición en su menú en la lista de canales. Abre la ventana de repetición del canal, que lista sus programas pasados con fecha y hora.
@@ -309,6 +313,8 @@ Mover a la papelera de grabaciones traslada el archivo a la papelera de la aplic
 
 Todas las carpetas de grabaciones reúne las carpetas configuradas. Filtre por estado y ordene por fecha, título, duración o tamaño; Descendente invierte el orden. Ctrl+A selecciona todas las filas visibles; se muestran la cantidad y el tamaño total. La papelera, la eliminación permanente y la restauración admiten selección múltiple; reproducir y cambiar el título requieren una grabación. La búsqueda se ejecuta en segundo plano; cerrar no cancela acciones confirmadas.
 
+Biblioteca de grabaciones > Exportar lista a CSV guarda la lista filtrada y ordenada con título, canal, fecha, duración, estado y tamaño. No incluye rutas ni URL de transmisión; protege los prefijos de fórmulas en los textos. Al cerrar, la biblioteca recuerda la carpeta, búsqueda, filtro y ordenación. Al abrirla de nuevo, las grabaciones eliminadas siempre están ocultas. La exportación solo se ejecuta al solicitarla y no vuelve a examinar los archivos multimedia.
+
 ### Formato de grabación {#recording-formats}
 
 Grabaciones > Formato de grabación elige cómo se guardan las grabaciones:
@@ -345,6 +351,8 @@ En Windows, Grabaciones > Evitar la suspensión automática durante la grabació
 Activar el equipo para grabaciones programadas (Windows) está desactivado de forma predeterminada. Al activarlo, solicita un temporizador de reactivación 60 segundos antes del inicio de la próxima grabación, incluido el margen previo. La aplicación debe permanecer abierta y el hardware y la configuración de energía deben admitir estos temporizadores. No enciende un equipo apagado. Los cambios y cancelaciones actualizan el temporizador; salir de la aplicación lo elimina.
 
 Conflictos de grabación, en Grabaciones programadas, muestra las superposiciones de una entrada seleccionada, incluidos los márgenes. Los detalles indican canal, alias de cuenta y período real de grabación. Editar horarios abre el editor existente. La confirmación ofrece estos detalles y Programar de todos modos. Con un límite de grabación conocido se compara la misma cuenta; sin él se muestran superposiciones, sin afirmar un límite del proveedor.
+
+Seleccione los días de repetición en Programar por hora, o en Grabaciones programadas > Repetir los días seleccionados para una grabación pendiente que no sea una regla de serie. Sin días seleccionados, se graba una sola vez. Al crear una grabación, el primer inicio debe caer en un día elegido. Las repeticiones conservan los horarios locales, los intervalos nocturnos y los márgenes; se omiten los intervalos inexistentes por el cambio de hora. Mantenga la aplicación abierta. Se siguen aplicando los límites de conexiones.
 
 ### Margen de programación {#schedule-padding}
 
@@ -489,3 +497,5 @@ Mantenga la aplicación abierta para las grabaciones programadas, recordatorios 
 - La exportación cifrada incluye horarios, recordatorios e historial de búsqueda, sin archivos multimedia. La importación muestra cuántos registros reemplazará y cierra la aplicación; vuelva a abrirla para terminar. Finalice antes las grabaciones y descargas. Las grabaciones pasadas o ya iniciadas no se reinician. Las copias antiguas solo reemplazan los ajustes y conservan horarios y recordatorios locales.
 
 Ver > Historial de notificaciones conserva las últimas 200 notificaciones encoladas durante la sesión actual. Seleccione una para leer Detalles; Actualizar renueva la lista y Copiar detalles copia el texto. Se ocultan las credenciales reconocibles en URL y líneas de autenticación tanto en el historial como al copiar. Esto no garantiza que cualquier mensaje carezca de datos privados. Limpiar historial pide confirmación. El historial se pierde al cerrar la aplicación; los archivos de registro existentes no se modifican.
+
+El guardado de recordatorios e historial de búsquedas, el cifrado de copias y las operaciones con archivos se ejecutan en segundo plano. Un fallo de escritura conserva los datos anteriores. Las entradas con estados no válidos se omiten después de preservar el archivo original; si no es posible, se bloquean los cambios. El índice de grabaciones tiene un límite de tamaño común para lectura y escritura; un reemplazo demasiado grande no sobrescribe el anterior.

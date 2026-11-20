@@ -19,6 +19,7 @@ import programme_reminders as reminders
 import saved_searches
 from i18n import gettext as _
 from modal_guard import message_box, show_modal
+from background_tasks import start_operation
 
 LOG = logging.getLogger(__name__)
 
@@ -103,8 +104,18 @@ class RecordingTimesDialog(ToolDialog):
         end = job["stop_ts"] if job else start + 3600
         self.start = self.field(_("Start (local time, YYYY-MM-DD HH:MM)"), self.local(start), self.running)
         self.end = self.field(_("End (local time, YYYY-MM-DD HH:MM)"), self.local(end))
+        from planning_tools_ui import weekday_labels
+        self.label(_("Repeat on selected weekdays (none: once):"))
+        self.days = wx.CheckListBox(self.panel, choices=weekday_labels())
+        self.days.SetName(_("Repeat on selected weekdays (none: once):"))
+        self.days.SetCheckedItems(job.get('weekdays', []) if job and job.get('repeat') == 'weekdays' else [])
+        self.days.Enable(not self.running and not (job and job.get('repeat') == 'series'))
+        self.layout.Add(self.days, 0, wx.EXPAND | wx.ALL, 6)
         self.buttons([], accept=True)
         self.Bind(wx.EVT_BUTTON, self._accept, id=wx.ID_OK)
+        best, size = self.GetBestSize(), self.GetSize()
+        self.SetMinSize(best)
+        self.SetSize((max(size.width, best.width), max(size.height, best.height)))
         (self.end if self.running else self.start).SetFocus()
 
     @staticmethod
@@ -134,6 +145,9 @@ class RecordingTimesDialog(ToolDialog):
             if end is None:
                 return
             manual_schedule.validate_window(start, end, allow_started=self.running)
+            self.weekdays = list(self.days.GetCheckedItems())
+            if self.weekdays and dt.datetime.fromtimestamp(start).weekday() not in self.weekdays and not self.running:
+                raise ValueError(_("The first recording must start on a selected weekday."))
             self.values = self.title_field.GetValue(), start, end
             self.EndModal(wx.ID_OK)
         except (ValueError, OverflowError, OSError) as error:
@@ -462,6 +476,9 @@ class PersonalToolsMixin:
         user_guide.set_menu_help(self, item, "personal-tools")
 
     def _schedule_by_time(self, event=None, job=None):
+        if 'schedule-edit' in getattr(self, '_background_operations', ()):
+            self._tool_status(_("Processing recordings..."))
+            return
         channel = copy.deepcopy(job["channel"] if job else self._selected_channel())
         if not channel:
             error_box(self, _("No channel selected."))
@@ -472,6 +489,8 @@ class PersonalToolsMixin:
             if show_modal(dialog) != wx.ID_OK:
                 return
             title, start, end = dialog.values
+            days = dialog.weekdays
+            edit_days = job is None or not dialog.running and job.get('repeat') != 'series'
         finally:
             dialog.Destroy()
         try:
@@ -484,13 +503,24 @@ class PersonalToolsMixin:
                     return
             if job:
                 expected = tuple(job[k] for k in ("start_ts", "stop_ts", "status"))
-                scheduler.edit_timing(job["id"], start, end, expected=expected)
+                edit = days if edit_days and (days or job.get('repeat') == 'weekdays') else None
+                operation = lambda: scheduler.edit_timing(job["id"], start, end, expected=expected, weekdays=edit)
             else:
                 fmt, media, source = self._recording_format_for_channel(channel)
-                scheduler.add_manual_job(manual_schedule.build_manual_job(channel, title, start, end, fmt))
-            self._tool_status(_("Recording schedule saved."))
+                proposal = manual_schedule.build_manual_job(channel, title, start, end, fmt)
+                if days:
+                    proposal.update(repeat='weekdays', weekdays=days)
+                operation = lambda: scheduler.add_manual_job(proposal)
         except Exception as error:
             error_box(self, error)
+            return
+        self._tool_status(_("Processing recordings..."))
+        def done(_result, failure):
+            if failure:
+                error_box(self, failure)
+            else:
+                self._tool_status(_("Recording schedule saved."))
+        start_operation(self, 'schedule-edit', operation, done, wx.CallAfter)
 
     def _start_saved_searches(self):
         self._saved_search_stopped = False
@@ -549,17 +579,21 @@ class PersonalToolsMixin:
         database = options.get_db_path()
         history = full_backup.paths()["search_seen"]
         self._search_status(_("Searching programmes..."))
+        canceled = lambda: cancel.is_set() or channels is not self.all_channels
         def work():
             try:
-                results = saved_searches.scan(database, rules, channels, canceled=cancel.is_set)
+                results = saved_searches.scan(database, rules, channels, canceled=canceled)
                 seen = saved_searches.read_seen(history)
-                wx.CallAfter(done, results, seen, None)
+                if canceled():
+                    raise saved_searches.ScanCanceled()
+                _new_seen, count = saved_searches.commit_seen(history, seen, results, canceled=canceled)
+                wx.CallAfter(done, results, count, None)
             except saved_searches.ScanCanceled:
                 wx.CallAfter(done, [], {}, None)
             except Exception as error:
                 LOG.exception("Saved programme search failed")
                 wx.CallAfter(done, [], {}, str(error))
-        def done(results, seen, error):
+        def done(results, count, error):
             if getattr(self, "_saved_search_stopped", False):
                 return
             self._saved_search_worker = None
@@ -569,11 +603,6 @@ class PersonalToolsMixin:
                 wx.CallAfter(self._scan_saved_searches)
                 return
             if error:
-                self._search_status(_("The operation failed:\n{error}").format(error=error))
-                return
-            try:
-                new_seen, count = saved_searches.commit_seen(history, seen, results)
-            except Exception as error:
                 self._search_status(_("The operation failed:\n{error}").format(error=error))
                 return
             self._saved_search_results = results
@@ -587,6 +616,8 @@ class PersonalToolsMixin:
         self._saved_search_worker.start()
 
     def _export_full_settings(self, event=None):
+        if 'backup' in getattr(self, '_background_operations', ()):
+            return
         password = self._backup_password(confirm=True)
         if password is None:
             return
@@ -595,20 +626,23 @@ class PersonalToolsMixin:
             if show_modal(dialog) != wx.ID_OK:
                 return
             path = dialog.GetPath()
-        try:
-            scheduler = self._ensure_dvr_scheduler()
-            with scheduler._lock:
-                jobs = copy.deepcopy(scheduler.list_jobs())
+        scheduler = self._ensure_dvr_scheduler()
+        def work():
+            jobs = copy.deepcopy(scheduler.list_jobs())
             bundle = {"config": options.load_config(), "jobs": jobs, "reminders": self._ensure_reminders().list(),
                       "search_seen": saved_searches.read_seen(full_backup.paths()["search_seen"])}
             full_backup.export_bundle(path, bundle, password)
-        except Exception as error:
-            error_box(self, error)
-            return
-        message_box(_("Encrypted backup saved, including recording schedules, reminders and saved searches."),
-                    _("Settings Backup"), wx.OK | wx.ICON_INFORMATION, parent=self)
+        def done(_result, error):
+            if error:
+                error_box(self, error)
+            else:
+                message_box(_("Encrypted backup saved, including recording schedules, reminders and saved searches."),
+                            _("Settings Backup"), wx.OK | wx.ICON_INFORMATION, parent=self)
+        start_operation(self, 'backup', work, done, wx.CallAfter)
 
     def _import_full_settings(self, event=None):
+        if 'backup' in getattr(self, '_background_operations', ()):
+            return
         with wx.FileDialog(self, _("Import Settings"), wildcard=_("Accessible IPTV backup (*.aiptv)") + "|*.aiptv",
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dialog:
             if show_modal(dialog) != wx.ID_OK:
@@ -617,29 +651,38 @@ class PersonalToolsMixin:
         password = self._backup_password()
         if password is None:
             return
-        try:
-            bundle = full_backup.import_bundle(path, password)
-            text = (_("Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart.")
-                    .format(jobs=len(bundle["jobs"]), reminders=len(bundle["reminders"])) if "jobs" in bundle else _(
-                    "This older backup replaces settings only. Recording schedules and reminders will be kept."))
-            text += "\n\n" + _("The app will close. Open it again to finish restoring the backup.")
-            if not confirm(self, text):
-                return
-            scheduler = self._ensure_dvr_scheduler()
-            scheduler.stop(wait=True)
-            # A recording can start during a modal confirmation. Check again
-            # after stopping the poller; starting workers already own a job.
-            active = any(j["status"] in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING} for j in scheduler.list_jobs())
-            if active or self.recorder.has_active() or getattr(self, "_catchup_downloads", None):
-                scheduler.start()
-                raise ValueError(_("Finish recordings and downloads before restoring a backup."))
-            try:
-                full_backup.stage_restore(bundle, full_backup.paths())
-            except Exception:
-                scheduler.start()
-                raise
-        except Exception as error:
+        start_operation(self, 'backup', lambda: full_backup.import_bundle(path, password),
+                        self._backup_import_ready, wx.CallAfter)
+
+    def _backup_import_ready(self, bundle, error):
+        if error:
             error_box(self, error)
             return
-        self._exit_forced = self._exit_requested = True
-        self.Close()
+        text = (_("Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart.")
+                .format(jobs=len(bundle["jobs"]), reminders=len(bundle["reminders"])) if "jobs" in bundle else _(
+                "This older backup replaces settings only. Recording schedules and reminders will be kept."))
+        text += "\n\n" + _("The app will close. Open it again to finish restoring the backup.")
+        if not confirm(self, text):
+            return
+        scheduler = self._ensure_dvr_scheduler()
+        downloads = bool(getattr(self, '_catchup_downloads', None) or getattr(self, '_pending_recording_starts', None))
+        self._stop_reminders()
+        self._stop_saved_searches()
+        self.Enable(False)
+        def work():
+            scheduler.stop(wait=True)
+            active = any(j["status"] in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING} for j in scheduler.list_jobs())
+            if active or self.recorder.has_active() or downloads:
+                raise ValueError(_("Finish recordings and downloads before restoring a backup."))
+            full_backup.stage_restore(bundle, full_backup.paths())
+        def done(_result, failure):
+            self.Enable(True)
+            if failure:
+                scheduler.start()
+                self._start_reminders()
+                self._start_saved_searches()
+                error_box(self, failure)
+            else:
+                self._exit_forced = self._exit_requested = True
+                self.Close()
+        start_operation(self, 'backup', work, done, wx.CallAfter)

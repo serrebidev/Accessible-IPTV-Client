@@ -22,9 +22,9 @@ msgstr "(EPG のデバッグログはまだ作成されていません。)"
 
 #: channel_widgets.py:382
 #: dialogs_misc.py:565
-#: personal_tools_ui.py:181
-#: planning_ui.py:92
-#: planning_ui.py:208
+#: personal_tools_ui.py:192
+#: planning_ui.py:107
+#: planning_ui.py:270
 #: recording_conflicts_ui.py:128
 #: recording_conflicts_ui.py:165
 msgid "(No title)"
@@ -51,7 +51,7 @@ msgstr "ダウンロードまたは録画が進行中です。\n\n今終了す�
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "お気に入りリストには最大2000チャンネルを登録できます。"
 
-#: recording_library.py:265
+#: recording_library.py:267
 msgid "A file with this name already exists in the recording folder."
 msgstr "録画フォルダーに同じ名前のファイルが既に存在します。"
 
@@ -64,7 +64,7 @@ msgstr "同じ名前のリストが既にあります。"
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "録画が進行中で、さらに {count} 件の録画が予約されています。\n\n{names}\n\n開始するにはアプリを開いたままにする必要があります。終了しますか？"
 
-#: dvr.py:438
+#: dvr.py:484
 msgid "A running recording's start time cannot be changed."
 msgstr "録画中の開始時刻は変更できません。"
 
@@ -85,8 +85,8 @@ msgstr "バージョン情報..."
 msgid "Accessibility"
 msgstr "アクセシビリティ"
 
-#: personal_tools_ui.py:593
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:621
+#: personal_tools_ui.py:643
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Accessible IPTV バックアップ (*.aiptv)"
 
@@ -143,7 +143,7 @@ msgstr "追加"
 msgid "Add File"
 msgstr "ファイルを追加"
 
-#: recording_library_ui.py:49
+#: recording_library_ui.py:50
 msgid "Add Folder..."
 msgstr "フォルダーを追加..."
 
@@ -155,7 +155,7 @@ msgstr "名前付きブックマークを追加"
 msgid "Add Named Bookmark..."
 msgstr "名前付きブックマークを追加..."
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Add Selected Channel"
 msgstr "選択したチャンネルを追加"
 
@@ -190,18 +190,18 @@ msgstr "お気に入りに追加"
 #: main.py:6297
 #: main.py:6298
 #: main.py:7108
-#: personal_tools_ui.py:280
-#: personal_tools_ui.py:282
+#: personal_tools_ui.py:291
+#: personal_tools_ui.py:293
 msgid "All Channels"
 msgstr "すべてのチャンネル"
 
-#: recording_library_ui.py:45
-#: recording_library_ui.py:162
-#: recording_library_ui.py:178
+#: recording_library_ui.py:46
+#: recording_library_ui.py:205
+#: recording_library_ui.py:221
 msgid "All Recording Folders"
 msgstr "すべての録画フォルダー"
 
-#: recording_library_ui.py:61
+#: recording_library_ui.py:62
 msgid "All Recordings"
 msgstr "すべての録画"
 
@@ -412,7 +412,7 @@ msgid "Back 60 Seconds"
 msgstr "60秒戻る"
 
 #: full_backup.py:54
-#: full_backup.py:148
+#: full_backup.py:153
 #: settings_backup.py:47
 msgid "Backup file is too large."
 msgstr "バックアップ ファイルが大きすぎます。"
@@ -485,6 +485,15 @@ msgstr "内蔵プレーヤーは利用できません。"
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "内蔵プレーヤーは利用できません：\n{detail}"
 
+#: recording_library_ui.py:373
+msgid "CSV file (*.csv)"
+msgstr "CSV ファイル (*.csv)"
+
+#: planning_tools_ui.py:61
+#: planning_ui.py:129
+msgid "Calendar file (*.ics)"
+msgstr "カレンダーファイル (*.ics)"
+
 #: accessible_tools_ui.py:29
 #: dialogs_misc.py:240
 #: dialogs_misc.py:681
@@ -494,9 +503,9 @@ msgstr "内蔵プレーヤーは利用できません：\n{detail}"
 #: main.py:7781
 #: main.py:7814
 #: main.py:8947
-#: main.py:9261
+#: main.py:9283
 #: options.py:987
-#: personal_tools_ui.py:91
+#: personal_tools_ui.py:92
 #: playlist.py:3236
 #: playlist.py:3336
 #: playlist.py:3544
@@ -513,7 +522,7 @@ msgstr "ダウンロードをキャンセル"
 msgid "Cancel Shutdown"
 msgstr "シャットダウンを取り消す"
 
-#: main.py:9292
+#: main.py:9314
 msgid "Canceled"
 msgstr "キャンセルされました"
 
@@ -619,19 +628,20 @@ msgid "Changes in each version of {app}, newest first. Notes for the latest vers
 msgstr "{app} の各バージョンの変更点（新しい順）。最新のバージョンの説明は、翻訳が済むとお使いの言語で表示されます。それより古い項目は英語のままです。"
 
 #: main.py:9190
-#: personal_tools_ui.py:417
-#: planning_ui.py:40
-#: recording_library_ui.py:72
+#: personal_tools_ui.py:428
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:81
 msgid "Channel"
 msgstr "チャンネル"
 
 #: favorite_collections.py:75
 #: main.py:3373
 #: main.py:7068
-#: personal_tools_ui.py:260
-#: personal_tools_ui.py:412
-#: planning_ui.py:220
-#: planning_ui.py:266
+#: personal_tools_ui.py:271
+#: personal_tools_ui.py:423
+#: planning_ui.py:291
+#: planning_ui.py:336
 msgid "Channel Not Found"
 msgstr "チャンネルが見つかりません"
 
@@ -651,9 +661,9 @@ msgstr "チャンネル：{name}"
 #: channel_widgets.py:248
 #: channel_widgets.py:250
 #: client_ui.py:71
-#: personal_tools_ui.py:148
-#: personal_tools_ui.py:278
-#: personal_tools_ui.py:293
+#: personal_tools_ui.py:159
+#: personal_tools_ui.py:289
+#: personal_tools_ui.py:304
 msgid "Channels"
 msgstr "チャンネル"
 
@@ -710,7 +720,7 @@ msgstr "{account} を確認しています..."
 msgid "Choose Audio Track"
 msgstr "音声トラックの選択"
 
-#: personal_tools_ui.py:417
+#: personal_tools_ui.py:428
 msgid "Choose Channel"
 msgstr "チャンネルを選択"
 
@@ -740,11 +750,19 @@ msgstr "変更するコマンドを選択します。"
 msgid "Choose a position before the end of the media."
 msgstr "メディアの終了前の位置を選んでください。"
 
-#: recording_library_ui.py:152
+#: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "録画フォルダーを選択"
 
-#: planning_ui.py:49
+#: planning_tools_ui.py:12
+msgid "Choose repeat days. Clear all days to record only once."
+msgstr "繰り返す曜日を選択します。すべての選択を解除すると、1 回だけ録画します。"
+
+#: planning_tools.py:17
+msgid "Choose weekdays from Monday to Sunday."
+msgstr "月曜日から日曜日までの曜日を選択してください。"
+
+#: planning_ui.py:56
 msgid "Clear All Reminders"
 msgstr "すべてのリマインダーを削除"
 
@@ -766,11 +784,11 @@ msgstr "このセッションの通知履歴を消去しますか？"
 #: dialogs_misc.py:900
 #: main.py:308
 #: main.py:9139
-#: personal_tools_ui.py:91
-#: planning_ui.py:51
-#: planning_ui.py:211
+#: personal_tools_ui.py:92
+#: planning_tools_ui.py:83
+#: planning_ui.py:60
 #: recording_conflicts_ui.py:99
-#: recording_library_ui.py:84
+#: recording_library_ui.py:95
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
 #: session_tools_ui.py:67
@@ -782,9 +800,10 @@ msgstr "閉じる"
 msgid "Community and support"
 msgstr "コミュニティとサポート"
 
-#: main.py:9287
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9309
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Completed"
 msgstr "完了"
 
@@ -800,7 +819,7 @@ msgstr "設定済みのプレイリストとプロバイダー"
 msgid "Configured playlists: {count}"
 msgstr "設定済みのプレイリスト: {count}"
 
-#: personal_tools_ui.py:32
+#: personal_tools_ui.py:33
 msgid "Confirm"
 msgstr "確認"
 
@@ -973,6 +992,10 @@ msgstr "Authenticode 検証を実行できませんでした: {detail}"
 msgid "Could not save playback history changes."
 msgstr "視聴履歴の変更を保存できませんでした。"
 
+#: recording_library_ui.py:160
+msgid "Could not save recording library preferences."
+msgstr "録画ライブラリの表示設定を保存できませんでした。"
+
 #: main.py:3308
 #: main.py:3322
 #: main.py:3344
@@ -1017,8 +1040,9 @@ msgstr "現在 {device} に接続しています\n\n切断しますか？"
 msgid "Custom Player..."
 msgstr "カスタムプレーヤー..."
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: planning_tools.py:86
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Date"
 msgstr "日付"
 
@@ -1030,15 +1054,15 @@ msgstr "残り日数"
 msgid "Days since expiry"
 msgstr "期限切れからの日数"
 
-#: main.py:9263
-#: personal_tools_ui.py:321
-#: planning_ui.py:48
+#: main.py:9285
+#: personal_tools_ui.py:332
+#: planning_ui.py:55
 #: playlist.py:3174
 #: session_tools_ui.py:63
 msgid "Delete"
 msgstr "削除"
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 msgid "Delete List"
 msgstr "リストを削除"
 
@@ -1046,11 +1070,11 @@ msgstr "リストを削除"
 msgid "Delete Playlist"
 msgstr "プレイリストの削除"
 
-#: recording_library_ui.py:339
+#: recording_library_ui.py:391
 msgid "Delete Recording"
 msgstr "録画を削除"
 
-#: recording_library_ui.py:313
+#: recording_library_ui.py:357
 msgid "Delete Recording File..."
 msgstr "録画ファイルを削除..."
 
@@ -1058,11 +1082,11 @@ msgstr "録画ファイルを削除..."
 msgid "Delete bookmark '{name}'?"
 msgstr "ブックマーク「{name}」を削除しますか？"
 
-#: personal_tools_ui.py:215
+#: personal_tools_ui.py:226
 msgid "Delete favourite list '{name}'?"
 msgstr "お気に入りリスト「{name}」を削除しますか？"
 
-#: personal_tools_ui.py:393
+#: personal_tools_ui.py:404
 msgid "Delete saved search '{name}'?"
 msgstr "保存した検索「{name}」を削除しますか？"
 
@@ -1070,13 +1094,13 @@ msgstr "保存した検索「{name}」を削除しますか？"
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "プレイリスト「{name}」を削除しますか?\n\nプレイリストの一覧から削除されます。元に戻すことはできません。"
 
-#: recording_library_ui.py:67
+#: recording_library_ui.py:68
 msgid "Descending"
 msgstr "降順"
 
 #: dialogs_misc.py:516
-#: main.py:9438
-#: personal_tools_ui.py:317
+#: main.py:9460
+#: personal_tools_ui.py:328
 msgid "Description"
 msgstr "番組説明"
 
@@ -1106,7 +1130,7 @@ msgstr "診断情報をクリップボードにコピーしました。開発者
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:336
+#: personal_tools_ui.py:347
 msgid "Disabled"
 msgstr "無効"
 
@@ -1201,14 +1225,18 @@ msgstr "更新をダウンロード中..."
 msgid "Downloading {name}"
 msgstr "{name} をダウンロード中"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Duration"
 msgstr "長さ"
 
+#: planning_tools.py:86
+msgid "Duration (seconds)"
+msgstr "長さ（秒）"
+
 #: main.py:4674
-#: main.py:9422
-#: main.py:9424
+#: main.py:9444
+#: main.py:9446
 msgid "EPG"
 msgstr "EPG"
 
@@ -1250,7 +1278,7 @@ msgstr "EPG のインポートをバックグラウンドで開始します。�
 msgid "EPG is not enabled."
 msgstr "EPG が有効になっていません。"
 
-#: main.py:9413
+#: main.py:9435
 msgid "EPG: {channel}"
 msgstr "EPG：{channel}"
 
@@ -1259,7 +1287,7 @@ msgstr "EPG：{channel}"
 msgid "Edit Times..."
 msgstr "時刻を編集..."
 
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:331
 msgid "Edit..."
 msgstr "編集..."
 
@@ -1271,15 +1299,15 @@ msgstr "経過：{elapsed}。全体：{total}。残り：{remaining}。"
 msgid "Elapsed: {time}"
 msgstr "経過時間: {time}"
 
-#: personal_tools_ui.py:275
+#: personal_tools_ui.py:286
 msgid "Enabled"
 msgstr "有効"
 
-#: personal_tools_ui.py:608
+#: personal_tools_ui.py:636
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "録画予約、リマインダー、保存した検索を含む暗号化バックアップを保存しました。"
 
-#: personal_tools_ui.py:105
+#: personal_tools_ui.py:106
 #: recording_conflicts_ui.py:168
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "終了（現地時刻、YYYY-MM-DD HH:MM）"
@@ -1322,7 +1350,7 @@ msgstr "設定バックアップのパスワードを入力してください:"
 msgid "Enter a positive channel number."
 msgstr "正のチャネル番号を入力します。"
 
-#: recording_library.py:177
+#: recording_library.py:179
 msgid "Enter a recording title of 1 to 240 characters."
 msgstr "1～240文字の録画タイトルを入力してください。"
 
@@ -1354,7 +1382,7 @@ msgstr "パスワードをもう一度入力してください:"
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9441
+#: main.py:9463
 msgid "Episode description"
 msgstr "エピソードの説明"
 
@@ -1371,7 +1399,7 @@ msgstr "第 {num} 話"
 #: main.py:7041
 #: main.py:7063
 #: main.py:8872
-#: personal_tools_ui.py:27
+#: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
 msgid "Error"
@@ -1417,7 +1445,7 @@ msgid "Expected thumbprints: {thumbprints}."
 msgstr "予期される拇印：{thumbprints}。"
 
 #: account_info.py:373
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Expired"
 msgstr "期限切れ"
 
@@ -1430,7 +1458,12 @@ msgstr "期限切れ"
 msgid "Expires"
 msgstr "有効期限"
 
-#: personal_tools_ui.py:593
+#: recording_library_ui.py:93
+#: recording_library_ui.py:373
+msgid "Export List to CSV..."
+msgstr "一覧を CSV にエクスポート…"
+
+#: personal_tools_ui.py:621
 msgid "Export Settings"
 msgstr "設定のエクスポート"
 
@@ -1438,6 +1471,19 @@ msgstr "設定のエクスポート"
 #: client_ui.py:353
 msgid "Export Settings..."
 msgstr "設定をエクスポート..."
+
+#: planning_tools_ui.py:42
+msgid "Export saved."
+msgstr "エクスポートを保存しました。"
+
+#: dialogs_misc.py:1107
+#: main.py:9543
+#: planning_tools_ui.py:58
+#: planning_tools_ui.py:61
+#: planning_ui.py:57
+#: planning_ui.py:129
+msgid "Export to Calendar..."
+msgstr "カレンダーにエクスポート…"
 
 #: internal_player.py:2693
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
@@ -1456,9 +1502,10 @@ msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "停止前に音量を徐々に下げる時間（秒）。0 で無効になります。"
 
 #: main.py:3495
-#: main.py:9290
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
+#: main.py:9312
+#: planning_tools.py:88
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
 msgid "Failed"
 msgstr "失敗"
 
@@ -1511,17 +1558,17 @@ msgstr "内蔵プレーヤーの起動に失敗しました：\n{error}"
 msgid "Favorites"
 msgstr "お気に入り"
 
-#: personal_tools_ui.py:195
-#: personal_tools_ui.py:209
+#: personal_tools_ui.py:206
+#: personal_tools_ui.py:220
 msgid "Favourite List Name"
 msgstr "お気に入りリスト名"
 
-#: personal_tools_ui.py:145
-#: personal_tools_ui.py:147
+#: personal_tools_ui.py:156
+#: personal_tools_ui.py:158
 msgid "Favourite Lists"
 msgstr "お気に入りリスト"
 
-#: personal_tools_ui.py:457
+#: personal_tools_ui.py:468
 msgid "Favourite Lists..."
 msgstr "お気に入りリスト..."
 
@@ -1533,8 +1580,8 @@ msgstr "新機能"
 msgid "File"
 msgstr "ファイル"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:73
+#: recording_library_ui.py:66
+#: recording_library_ui.py:82
 msgid "File Size"
 msgstr "ファイルサイズ"
 
@@ -1556,7 +1603,7 @@ msgstr "検索"
 msgid "Find Next"
 msgstr "次を検索"
 
-#: personal_tools_ui.py:635
+#: personal_tools_ui.py:673
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "バックアップの復元前に録画とダウンロードを終了してください。"
 
@@ -1593,6 +1640,10 @@ msgstr "録画中に空き容量を確認できませんでした：\n{path}"
 #: recording_storage.py:47
 msgid "Free space could not be determined:\n{error}"
 msgstr "空き容量を確認できませんでした:\n{error}"
+
+#: planning_tools_ui.py:23
+msgid "Friday"
+msgstr "金曜日"
 
 #: internal_player.py:472
 #: internal_player.py:3132
@@ -1704,7 +1755,7 @@ msgstr "EPG をデータベースにインポート"
 msgid "Import Failed"
 msgstr "インポート失敗"
 
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:643
 msgid "Import Settings"
 msgstr "インポート設定"
 
@@ -1731,6 +1782,7 @@ msgid "Importing EPG data…"
 msgstr "EPG データをインポート中…"
 
 #: main.py:6987
+#: planning_ui.py:176
 msgid "In Progress"
 msgstr "進行中"
 
@@ -1754,9 +1806,26 @@ msgstr "バックアップのソルトが無効です。"
 msgid "Invalid keyboard shortcut."
 msgstr "キーボード ショートカットが無効です。"
 
+#: planning_tools.py:118
+#: planning_tools_ui.py:56
+msgid "Invalid programme times."
+msgstr "番組の時刻が無効です。"
+
 #: manual_schedule.py:47
 msgid "Invalid recording time."
 msgstr "録画時刻が無効です。"
+
+#: programme_reminders.py:197
+msgid "Invalid reminder postponement."
+msgstr "リマインダーの延期指定が無効です。"
+
+#: programme_reminders.py:128
+msgid "Invalid reminders could not be backed up. Changes are disabled to protect the original file."
+msgstr "無効なリマインダーをバックアップできませんでした。元のファイルを保護するため変更を無効にしました。"
+
+#: programme_reminders.py:121
+msgid "Invalid reminders were skipped. The original file was preserved at {path}."
+msgstr "無効なリマインダーをスキップしました。元のファイルは {path} に保存しました。"
 
 #: providers.py:152
 #: providers.py:193
@@ -1776,7 +1845,7 @@ msgstr "字幕の遅延が無効です。"
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "SerrebiProjects の Telegram グループに参加"
 
-#: personal_tools_ui.py:280
+#: personal_tools_ui.py:291
 msgid "Keep chosen channels"
 msgstr "選択したチャンネルを維持"
 
@@ -1784,7 +1853,7 @@ msgstr "選択したチャンネルを維持"
 msgid "Keep this output device?\n{name}"
 msgstr "この出力デバイスを保持しますか？\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "ライブ映像を 1～30 分間保持します。0 でローカルバッファーを無効にします。"
 
@@ -1831,7 +1900,7 @@ msgstr "最新リリースのタグが見つからないか無効です。"
 msgid "Launch Error"
 msgstr "起動エラー"
 
-#: planning_ui.py:41
+#: planning_ui.py:48
 msgid "Lead time (minutes)"
 msgstr "事前通知（分）"
 
@@ -1840,7 +1909,7 @@ msgstr "事前通知（分）"
 msgid "Live TV && Catch-up"
 msgstr "ライブ TV と見逃し配信"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "ライブ入力が終了しました。保持された履歴は引き続き利用できます。"
 
@@ -1873,16 +1942,16 @@ msgstr "番組表のチャンネルを読み込み中..."
 msgid "Loading playlists..."
 msgstr "プレイリストを読み込み中..."
 
-#: recording_library_ui.py:192
+#: recording_library_ui.py:235
 msgid "Loading recordings..."
 msgstr "録画を読み込み中..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:61
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:99
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:232
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "ローカルライブバッファー"
 
@@ -1927,7 +1996,7 @@ msgstr "メイン ウィンドウのショートカットには Ctrl または A
 msgid "Maximum connections"
 msgstr "最大接続数"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "セッションごとのローカルバッファーの上限（MiB）。いずれかの制限に達すると古いデータから削除されます。"
 
@@ -1944,8 +2013,8 @@ msgstr "メニュー"
 msgid "Message from provider"
 msgstr "プロバイダーからのメッセージ"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: planning_ui.py:287
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: planning_ui.py:365
 msgid "MiB:"
 msgstr "MiB："
 
@@ -1958,7 +2027,7 @@ msgstr "システムトレイに最小化"
 msgid "Minimum Free Space..."
 msgstr "必要な最小空き容量…"
 
-#: planning_ui.py:286
+#: planning_ui.py:364
 msgid "Minimum free space to keep before starting a recording (MiB):"
 msgstr "録画開始前に必要な最小空き容量（MiB）:"
 
@@ -1976,35 +2045,39 @@ msgstr "コロンの後の分と秒は60未満にしてください。"
 msgid "Minutes before programme:"
 msgstr "番組開始前の分数:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
 #: internal_player.py:3290
-#: planning_ui.py:21
+#: planning_ui.py:24
 msgid "Minutes:"
 msgstr "分："
 
 #: main.py:3495
-#: main.py:9291
+#: main.py:9313
 msgid "Missed"
 msgstr "見逃し"
+
+#: planning_tools_ui.py:23
+msgid "Monday"
+msgstr "月曜日"
 
 #: accessible_tools_ui.py:42
 msgid "Monitor free space while recording"
 msgstr "録画中に空き容量を監視する"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Down"
 msgstr "下へ移動"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Up"
 msgstr "上へ移動"
 
-#: recording_library_ui.py:81
-#: recording_library_ui.py:313
+#: recording_library_ui.py:90
+#: recording_library_ui.py:357
 msgid "Move to Recording Trash..."
 msgstr "録画用ごみ箱に移動..."
 
-#: recording_library_ui.py:338
+#: recording_library_ui.py:390
 msgid "Move {count} selected recordings to the recording trash?"
 msgstr "選択した {count} 件の録画を録画用ごみ箱に移動しますか？"
 
@@ -2043,12 +2116,12 @@ msgstr "名前付きブックマーク..."
 msgid "Never (no expiry date set)"
 msgstr "なし (有効期限が設定されていません)"
 
-#: personal_tools_ui.py:580
+#: personal_tools_ui.py:606
 msgid "New programme matches: {count}."
 msgstr "新しく一致した番組数：{count}。"
 
-#: personal_tools_ui.py:151
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:162
+#: personal_tools_ui.py:331
 msgid "New..."
 msgstr "新規..."
 
@@ -2130,8 +2203,8 @@ msgstr "このチャンネルには利用可能な見逃し配信番組があり
 msgid "No channel is selected."
 msgstr "チャンネルが選択されていません。"
 
-#: personal_tools_ui.py:185
-#: personal_tools_ui.py:467
+#: personal_tools_ui.py:196
+#: personal_tools_ui.py:481
 msgid "No channel selected."
 msgstr "チャンネルが選択されていません。"
 
@@ -2141,7 +2214,7 @@ msgstr "チャンネルが見つかりませんでした。"
 
 #: dialogs_misc.py:585
 #: main.py:2747
-#: main.py:9560
+#: main.py:9589
 msgid "No description available for this programme."
 msgstr "この番組の説明はありません。"
 
@@ -2153,7 +2226,7 @@ msgstr "デバイスが見つかりませんでした。"
 msgid "No earlier subtitle."
 msgstr "これより前の字幕はありません。"
 
-#: personal_tools_ui.py:544
+#: personal_tools_ui.py:571
 msgid "No enabled saved searches."
 msgstr "有効な保存済み検索はありません。"
 
@@ -2175,7 +2248,7 @@ msgstr "ffmpeg の詳細は報告されませんでした。"
 msgid "No later subtitle."
 msgstr "これより後の字幕はありません。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "利用可能なローカルライブ履歴がありません。"
 
@@ -2228,7 +2301,7 @@ msgstr "現在アクティブな録画はありません。"
 msgid "No release history is available."
 msgstr "リリース履歴はありません。"
 
-#: planning_ui.py:105
+#: planning_ui.py:120
 msgid "No reminders."
 msgstr "リマインダーはありません。"
 
@@ -2265,6 +2338,10 @@ msgstr "最新の録画ログには、時刻付きの問題は見つかりませ
 msgid "No upcoming schedule found for this channel."
 msgstr "このチャンネルの今後のスケジュールが見つかりませんでした。"
 
+#: planning_tools.py:59
+msgid "No valid recording window was found for the selected weekdays."
+msgstr "選択した曜日に有効な録画時間帯が見つかりませんでした。"
+
 #: client_ui.py:221
 #: client_ui.py:359
 msgid "None"
@@ -2276,7 +2353,7 @@ msgstr "なし"
 msgid "Not Found"
 msgstr "見つかりません"
 
-#: full_backup.py:122
+#: full_backup.py:127
 #: settings_backup.py:55
 #: settings_backup.py:57
 msgid "Not an Accessible IPTV settings backup."
@@ -2319,11 +2396,11 @@ msgstr "通知履歴..."
 msgid "Notifications from this session:"
 msgstr "このセッションの通知："
 
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Notified"
 msgstr "通知済み"
 
-#: planning_ui.py:20
+#: planning_ui.py:23
 msgid "Notify before the programme starts (minutes):"
 msgstr "番組開始前に通知する時間（分）:"
 
@@ -2339,7 +2416,7 @@ msgstr "現在: {title} ({start} – {end})"
 #: main.py:7780
 #: main.py:7813
 #: options.py:987
-#: personal_tools_ui.py:88
+#: personal_tools_ui.py:89
 #: playlist.py:3235
 #: playlist.py:3335
 msgid "OK"
@@ -2371,7 +2448,7 @@ msgstr "番組の一部のみが録画されました。作成されたファイ
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "文書化された timed-text API を持つプレーヤーのみが字幕テキストを提供できます。内蔵プレーヤーは SRT、ASS、SSA および WebVTT ファイルを読み取ります。MPV はアプリケーション独自のセッション経由で動作します。"
 
-#: personal_tools_ui.py:354
+#: personal_tools_ui.py:365
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "最初の500件のみ表示しています。検索を絞り込んでください。"
 
@@ -2379,7 +2456,7 @@ msgstr "最初の500件のみ表示しています。検索を絞り込んでく
 msgid "Open"
 msgstr "開く"
 
-#: planning_ui.py:211
+#: planning_tools_ui.py:74
 msgid "Open Channel"
 msgstr "チャンネルを開く"
 
@@ -2462,9 +2539,10 @@ msgstr "時間が重なる録画の件数：{count}。"
 msgid "Package"
 msgstr "プラン"
 
-#: main.py:9288
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9310
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Partial"
 msgstr "不完全"
 
@@ -2487,15 +2565,15 @@ msgid "Paused"
 msgstr "一時停止中"
 
 #: account_info.py:376
-#: planning_ui.py:84
+#: planning_ui.py:99
 msgid "Pending"
 msgstr "保留中"
 
-#: planning_ui.py:237
+#: planning_ui.py:302
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "未通知の番組リマインダー: {count}。\n\n通知を表示するにはアプリケーションを起動したままにする必要があります。終了しますか？"
 
-#: recording_library_ui.py:337
+#: recording_library_ui.py:389
 msgid "Permanently delete {count} selected recording files? This cannot be undone."
 msgstr "選択した {count} 件の録画ファイルを完全に削除しますか？この操作は元に戻せません。"
 
@@ -2512,11 +2590,11 @@ msgstr "プラットフォーム: {platform}"
 #: internal_player.py:937
 #: internal_player.py:2053
 #: main.py:2781
-#: personal_tools_ui.py:154
+#: personal_tools_ui.py:165
 msgid "Play"
 msgstr "再生"
 
-#: recording_library_ui.py:79
+#: recording_library_ui.py:88
 msgid "Play / Resume"
 msgstr "再生 / 続きから再生"
 
@@ -2706,7 +2784,9 @@ msgstr "前の字幕"
 msgid "Previously saved content (title unavailable)"
 msgstr "以前保存したコンテンツ（タイトル不明）"
 
-#: recording_library_ui.py:362
+#: personal_tools_ui.py:477
+#: personal_tools_ui.py:514
+#: recording_library_ui.py:414
 msgid "Processing recordings..."
 msgstr "録画を処理中…"
 
@@ -2714,24 +2794,23 @@ msgstr "録画を処理中…"
 msgid "Program - Channel"
 msgstr "番組 - チャンネル"
 
-#: planning_ui.py:209
-#: planning_ui.py:220
+#: planning_tools_ui.py:67
+#: planning_ui.py:291
 msgid "Programme Reminder"
 msgstr "番組リマインダー"
 
-#: planning_ui.py:21
-#: planning_ui.py:32
-#: planning_ui.py:38
-#: planning_ui.py:117
-#: planning_ui.py:138
-#: planning_ui.py:170
-#: planning_ui.py:229
-#: planning_ui.py:239
-#: planning_ui.py:246
-#: planning_ui.py:257
-#: planning_ui.py:259
-#: planning_ui.py:266
-#: planning_ui.py:281
+#: planning_ui.py:24
+#: planning_ui.py:35
+#: planning_ui.py:45
+#: planning_ui.py:142
+#: planning_ui.py:167
+#: planning_ui.py:248
+#: planning_ui.py:260
+#: planning_ui.py:304
+#: planning_ui.py:311
+#: planning_ui.py:328
+#: planning_ui.py:336
+#: planning_ui.py:359
 msgid "Programme Reminders"
 msgstr "番組リマインダー"
 
@@ -2846,18 +2925,18 @@ msgstr "再接続中..."
 msgid "Record"
 msgstr "録画"
 
-#: dialogs_misc.py:1110
-#: main.py:9524
+#: dialogs_misc.py:1120
+#: main.py:9553
 msgid "Record Daily"
 msgstr "毎日録画"
 
-#: dialogs_misc.py:1112
-#: main.py:9526
+#: dialogs_misc.py:1122
+#: main.py:9555
 msgid "Record Series"
 msgstr "シリーズ録画"
 
-#: dialogs_misc.py:1111
-#: main.py:9525
+#: dialogs_misc.py:1121
+#: main.py:9554
 msgid "Record Weekly"
 msgstr "毎週録画"
 
@@ -2871,7 +2950,7 @@ msgstr "毎週録画"
 #: main.py:3957
 #: main.py:3965
 #: main.py:3968
-#: main.py:9285
+#: main.py:9307
 msgid "Recording"
 msgstr "録画中"
 
@@ -2879,7 +2958,7 @@ msgstr "録画中"
 msgid "Recording Complete"
 msgstr "録画完了"
 
-#: main.py:9224
+#: main.py:9246
 #: recording_conflicts_ui.py:71
 msgid "Recording Conflicts"
 msgstr "録画の競合"
@@ -2910,7 +2989,7 @@ msgid "Recording Format"
 msgstr "録画形式"
 
 #: internal_player.py:3253
-#: recording_library_ui.py:33
+#: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "録画ライブラリ"
 
@@ -2934,8 +3013,8 @@ msgid "Recording Space Monitor..."
 msgstr "録画用空き容量の監視..."
 
 #: accessible_tools_ui.py:286
-#: planning_ui.py:287
-#: planning_ui.py:324
+#: planning_ui.py:365
+#: planning_ui.py:402
 msgid "Recording Storage"
 msgstr "録画用ストレージ"
 
@@ -2949,12 +3028,12 @@ msgstr "録画の警告"
 msgid "Recording connection limit saved."
 msgstr "録画用接続数の制限を保存しました。"
 
-#: recording_library_ui.py:44
-#: recording_library_ui.py:73
+#: recording_library_ui.py:45
+#: recording_library_ui.py:82
 msgid "Recording folder:"
 msgstr "録画フォルダー："
 
-#: planning_ui.py:307
+#: planning_ui.py:385
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "録画フォルダー: {path}\n空き容量: {free} MiB\n必要な予備容量: {reserve} MiB。\n\nこの確認は録画全体に十分な空き容量があることを保証しません。"
 
@@ -2965,6 +3044,10 @@ msgstr "このウィンドウからは録画を利用できません。"
 #: recording_library.py:52
 msgid "Recording metadata could not be read. The media files are still available."
 msgstr "録画のメタデータを読み取れませんでした。メディアファイルは引き続き利用できます。"
+
+#: recording_library.py:86
+msgid "Recording metadata exceeds its size limit. The previous index was kept."
+msgstr "録画メタデータがサイズ制限を超えています。以前の索引を保持しました。"
 
 #: client_recording.py:74
 msgid "Recording of {name} ended unexpectedly (code {code}).\n\n{detail}"
@@ -2978,7 +3061,7 @@ msgstr "録画の電源管理に失敗しました：\n{error}"
 msgid "Recording saved:\n{path}"
 msgstr "録画を保存しました：\n{path}"
 
-#: personal_tools_ui.py:491
+#: personal_tools_ui.py:519
 msgid "Recording schedule saved."
 msgstr "録画予約を保存しました。"
 
@@ -3002,7 +3085,7 @@ msgstr "録画を開始しました（{fmt}）：\n{path}"
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "録画は停止しましたが、ffmpeg がコード {code} を報告しました。\n\n{detail}\n\nファイル：\n{path}"
 
-#: recording_library_ui.py:395
+#: recording_library_ui.py:447
 msgid "Recording title:"
 msgstr "録画タイトル："
 
@@ -3014,18 +3097,18 @@ msgstr "録音を更新して繰り返すようになりました。"
 #: client_ui.py:448
 #: main.py:4266
 #: main.py:4554
-#: recording_library_ui.py:71
+#: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
 msgstr "録画"
 
 #: dialogs_misc.py:356
 #: main.py:9195
-#: main.py:9257
-#: personal_tools_ui.py:321
-#: planning_ui.py:50
+#: main.py:9279
+#: personal_tools_ui.py:332
+#: planning_ui.py:59
 #: playlist.py:3169
-#: recording_library_ui.py:83
+#: recording_library_ui.py:92
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "更新"
@@ -3058,19 +3141,27 @@ msgstr "リリース履歴"
 msgid "Remember Volume for Each Channel"
 msgstr "チャンネルごとの音量を記憶する"
 
-#: planning_ui.py:259
+#: planning_tools_ui.py:76
+msgid "Remind Again in 5 Minutes"
+msgstr "5 分後に再度通知"
+
+#: planning_tools_ui.py:78
+msgid "Remind at Programme Start"
+msgstr "番組開始時に通知"
+
+#: planning_ui.py:328
 msgid "Reminder set."
 msgstr "リマインダーを設定しました。"
 
-#: personal_tools_ui.py:226
+#: personal_tools_ui.py:237
 msgid "Remove '{name}' from this list?"
 msgstr "このリストから「{name}」を削除しますか？"
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Remove Channel"
 msgstr "チャンネルを削除"
 
-#: recording_library_ui.py:50
+#: recording_library_ui.py:51
 msgid "Remove Folder from Library"
 msgstr "ライブラリからフォルダーを削除"
 
@@ -3078,7 +3169,7 @@ msgstr "ライブラリからフォルダーを削除"
 msgid "Remove Saved Position"
 msgstr "保存した位置を削除"
 
-#: planning_ui.py:130
+#: planning_ui.py:155
 msgid "Remove all reminders?"
 msgstr "すべてのリマインダーを削除しますか？"
 
@@ -3086,7 +3177,7 @@ msgstr "すべてのリマインダーを削除しますか？"
 msgid "Remove all saved playback positions?"
 msgstr "保存した再生位置をすべて削除しますか？"
 
-#: main.py:9380
+#: main.py:9402
 msgid "Remove all scheduled recordings from the list?"
 msgstr "スケジュールされたすべての録画をリストから削除しますか？"
 
@@ -3094,15 +3185,15 @@ msgstr "スケジュールされたすべての録画をリストから削除し
 msgid "Remove from Favorites"
 msgstr "お気に入りから削除"
 
-#: main.py:9385
+#: main.py:9407
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "スケジュールされた録画 '{title}' をリストから削除しますか？"
 
-#: main.py:9382
+#: main.py:9404
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "選択した {count} 件の予約録画を一覧から削除しますか？録画ファイルは保持されます。"
 
-#: planning_ui.py:126
+#: planning_ui.py:151
 msgid "Remove this reminder?"
 msgstr "このリマインダーを削除しますか？"
 
@@ -3115,20 +3206,34 @@ msgstr "この保存した再生位置を削除しますか？"
 msgid "Rename"
 msgstr "名前の変更"
 
-#: recording_library_ui.py:80
-#: recording_library_ui.py:395
+#: recording_library_ui.py:89
+#: recording_library_ui.py:447
 msgid "Rename Title..."
 msgstr "タイトルを変更..."
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 #: session_tools_ui.py:62
 #: session_tools_ui.py:109
 msgid "Rename..."
 msgstr "名前を変更..."
 
-#: personal_tools_ui.py:622
+#: main.py:9208
+#: planning_tools_ui.py:13
+msgid "Repeat on Weekdays..."
+msgstr "選択した曜日に繰り返す…"
+
+#: personal_tools_ui.py:108
+#: personal_tools_ui.py:110
+msgid "Repeat on selected weekdays (none: once):"
+msgstr "選択した曜日に繰り返す（選択なし：1 回のみ）："
+
+#: personal_tools_ui.py:658
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "設定、{jobs}件の録画項目、{reminders}件のリマインダーを置き換えますか？開始済みの録画は再開しません。"
+
+#: planning_tools_ui.py:36
+msgid "Replace the existing export file?"
+msgstr "既存のエクスポートファイルを置き換えますか？"
 
 #: media_navigation_ui.py:58
 msgid "Reset Timing"
@@ -3138,7 +3243,7 @@ msgstr "時間調整をリセット"
 msgid "Restore"
 msgstr "元に戻す"
 
-#: recording_library_ui.py:82
+#: recording_library_ui.py:91
 msgid "Restore Recording"
 msgstr "録画を復元"
 
@@ -3162,7 +3267,7 @@ msgstr "ライブに戻る"
 msgid "Review recent subtitles..."
 msgstr "最近の字幕を確認..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "ライブ映像を巻き戻す"
 
@@ -3170,20 +3275,24 @@ msgstr "ライブ映像を巻き戻す"
 msgid "Rewind Live TV..."
 msgstr "ライブ映像を巻き戻す…"
 
+#: planning_tools_ui.py:23
+msgid "Saturday"
+msgstr "土曜日"
+
 #: recording_limits_ui.py:35
 msgid "Save"
 msgstr "保存"
 
-#: personal_tools_ui.py:269
+#: personal_tools_ui.py:280
 msgid "Saved Programme Search"
 msgstr "保存した番組検索"
 
-#: personal_tools_ui.py:314
-#: personal_tools_ui.py:315
+#: personal_tools_ui.py:325
+#: personal_tools_ui.py:326
 msgid "Saved Programme Searches"
 msgstr "保存した番組検索一覧"
 
-#: personal_tools_ui.py:459
+#: personal_tools_ui.py:470
 msgid "Saved Programme Searches..."
 msgstr "保存した番組検索一覧..."
 
@@ -3208,7 +3317,7 @@ msgid "Schedule Padding..."
 msgstr "録画の前後マージン..."
 
 #: dialogs_misc.py:899
-#: dialogs_misc.py:1107
+#: dialogs_misc.py:1117
 #: main.py:2797
 #: main.py:2876
 #: main.py:3293
@@ -3220,17 +3329,17 @@ msgstr "録画の前後マージン..."
 #: main.py:3345
 #: main.py:3358
 #: main.py:3365
-#: main.py:9521
-#: main.py:9569
+#: main.py:9550
+#: main.py:9598
 msgid "Schedule Recording"
 msgstr "録画をスケジュール"
 
 #: main.py:2806
-#: personal_tools_ui.py:323
+#: personal_tools_ui.py:334
 msgid "Schedule Recording..."
 msgstr "録画をスケジュール..."
 
-#: personal_tools_ui.py:97
+#: personal_tools_ui.py:98
 msgid "Schedule by Time"
 msgstr "時刻を指定して予約"
 
@@ -3238,8 +3347,8 @@ msgstr "時刻を指定して予約"
 msgid "Schedule by Time..."
 msgstr "時刻を指定して予約..."
 
-#: main.py:9284
-#: planning_ui.py:84
+#: main.py:9306
+#: planning_ui.py:99
 msgid "Scheduled"
 msgstr "スケジュール済み"
 
@@ -3250,12 +3359,14 @@ msgstr "スケジュールされた録画"
 
 #: main.py:1241
 #: main.py:9175
-#: main.py:9234
-#: main.py:9360
-#: main.py:9367
-#: main.py:9373
-#: main.py:9386
-#: main.py:9396
+#: main.py:9225
+#: main.py:9236
+#: main.py:9256
+#: main.py:9382
+#: main.py:9389
+#: main.py:9395
+#: main.py:9408
+#: main.py:9418
 msgid "Scheduled Recordings"
 msgstr "スケジュールされた録画"
 
@@ -3283,15 +3394,15 @@ msgstr "スケジュールされた録画"
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:271
+#: personal_tools_ui.py:282
 msgid "Search"
 msgstr "検索"
 
-#: personal_tools_ui.py:316
+#: personal_tools_ui.py:327
 msgid "Search Results"
 msgstr "検索結果"
 
-#: personal_tools_ui.py:272
+#: personal_tools_ui.py:283
 msgid "Search descriptions too"
 msgstr "説明文も検索"
 
@@ -3299,7 +3410,7 @@ msgstr "説明文も検索"
 msgid "Search guide channels:"
 msgstr "番組表のチャンネルを検索："
 
-#: recording_library_ui.py:42
+#: recording_library_ui.py:43
 msgid "Search recordings:"
 msgstr "録画を検索："
 
@@ -3307,15 +3418,15 @@ msgstr "録画を検索："
 msgid "Searching for devices..."
 msgstr "デバイスを検索中..."
 
-#: personal_tools_ui.py:551
+#: personal_tools_ui.py:578
 msgid "Searching programmes..."
 msgstr "番組を検索中..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "最新の保持映像からの遅延（秒）。0 でライブに戻ります。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 #: internal_player.py:3302
 msgid "Seconds:"
 msgstr "秒："
@@ -3346,7 +3457,7 @@ msgstr "先に録画するチャンネルを選択してください。"
 msgid "Select a live channel first."
 msgstr "最初にライブチャンネルを選択してください。"
 
-#: main.py:9569
+#: main.py:9598
 msgid "Select a programme first."
 msgstr "先に番組を選択してください。"
 
@@ -3358,9 +3469,9 @@ msgstr "番組表のチャンネルを選択するか、自動照合を選んで
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "番組を選んで Enter キーで開くか、コンテキストメニューからダウンロードしてください。 閉じるには Escape キーを押します。"
 
-#: main.py:9224
-#: main.py:9360
-#: main.py:9373
+#: main.py:9246
+#: main.py:9382
+#: main.py:9395
 msgid "Select a scheduled recording first."
 msgstr "先にスケジュールされた録画を選択してください。"
 
@@ -3368,9 +3479,15 @@ msgstr "先にスケジュールされた録画を選択してください。"
 msgid "Select an account to check its status:"
 msgstr "状態を確認するアカウントを選択してください:"
 
-#: main.py:9233
+#: main.py:9255
 msgid "Select one pending or running recording to edit its times."
 msgstr "待機中または録画中の項目を1つ選んで時刻を編集してください。"
+
+#: dvr.py:424
+#: dvr.py:495
+#: main.py:9224
+msgid "Select one pending recording that is not a series rule."
+msgstr "シリーズ録画ルールではない待機中の録画を 1 件選択してください。"
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3380,12 +3497,12 @@ msgstr "内蔵プレーヤーのオーディオ出力デバイスを選択して
 msgid "Select the playlist format to download"
 msgstr "ダウンロードするプレイリスト形式を選択"
 
-#: personal_tools_ui.py:184
-#: personal_tools_ui.py:286
+#: personal_tools_ui.py:195
+#: personal_tools_ui.py:297
 msgid "Selected channel: {name}"
 msgstr "選択したチャンネル：{name}"
 
-#: recording_library_ui.py:319
+#: recording_library_ui.py:363
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "選択済み：{count} 件、合計サイズ：{size} MiB。"
 
@@ -3421,9 +3538,9 @@ msgstr "ダウンロードフォルダを設定..."
 
 #: dialogs_misc.py:1105
 #: main.py:2794
-#: main.py:9518
-#: personal_tools_ui.py:322
-#: planning_ui.py:47
+#: main.py:9540
+#: personal_tools_ui.py:333
+#: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "リマインダーを設定…"
 
@@ -3436,11 +3553,11 @@ msgstr "ダウンロードフォルダを設定"
 #: main.py:2093
 #: main.py:2098
 #: main.py:2103
-#: personal_tools_ui.py:609
+#: personal_tools_ui.py:637
 msgid "Settings Backup"
 msgstr "設定のバックアップ"
 
-#: full_backup.py:113
+#: full_backup.py:118
 #: settings_backup.py:27
 msgid "Settings are too large to back up."
 msgstr "設定が大きすぎてバックアップできません。"
@@ -3459,7 +3576,7 @@ msgstr "ショートカットが保存されました。アプリを再起動し
 msgid "Show Built-in Player"
 msgstr "内蔵プレーヤーを表示"
 
-#: recording_library_ui.py:56
+#: recording_library_ui.py:57
 msgid "Show Deleted Recordings"
 msgstr "削除済みの録画を表示"
 
@@ -3510,6 +3627,10 @@ msgstr "録画がすべて終了したらコンピューターをシャットダ
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "シャットダウンを取り消しました。録画終了後の自動シャットダウンはオフになりました。"
 
+#: planning_tools.py:86
+msgid "Size (bytes)"
+msgstr "サイズ（バイト）"
+
 #: internal_player.py:3290
 #: internal_player.py:3302
 msgid "Sleep Timer"
@@ -3519,7 +3640,7 @@ msgstr "スリープタイマー"
 msgid "Sleep Timer..."
 msgstr "スリープタイマー…"
 
-#: recording_library_ui.py:64
+#: recording_library_ui.py:65
 msgid "Sort by"
 msgstr "並べ替えの基準"
 
@@ -3557,7 +3678,7 @@ msgstr "Stalker Portal"
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: personal_tools_ui.py:104
+#: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "開始（現地時刻、YYYY-MM-DD HH:MM）"
@@ -3588,9 +3709,10 @@ msgstr "{start} に開始: {title}"
 #: account_info.py:554
 #: account_info.py:606
 #: main.py:9191
-#: planning_ui.py:40
-#: recording_library_ui.py:60
-#: recording_library_ui.py:73
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:61
+#: recording_library_ui.py:82
 msgid "Status"
 msgstr "ステータス"
 
@@ -3630,7 +3752,7 @@ msgstr "この空き容量未満で停止（MiB）："
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "内蔵プレーヤーの再生を1～1440分後に停止します。タイマーを解除するには0を入力してください。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "キャスト先の機器に切り替える前にローカルバッファーの再生を停止してください。"
 
@@ -3643,13 +3765,14 @@ msgstr "空き容量が極端に不足したら録画を正常な手順で停止
 msgid "Stopped"
 msgstr "停止しました"
 
-#: main.py:9289
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9311
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Stopped by user"
 msgstr "ユーザーによる停止"
 
-#: main.py:9286
+#: main.py:9308
 msgid "Stopping"
 msgstr "停止中"
 
@@ -3796,6 +3919,10 @@ msgstr "字幕"
 msgid "Subtitles: {name}"
 msgstr "字幕: {name}"
 
+#: planning_tools_ui.py:23
+msgid "Sunday"
+msgstr "日曜日"
+
 #: internal_player.py:121
 #: main.py:7836
 msgid "System default"
@@ -3818,7 +3945,7 @@ msgstr "EPG のインポートが完了しませんでした。番組表が不�
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "EPG のインポートが完了しました。番組表は最新です。"
 
-#: personal_tools_ui.py:625
+#: personal_tools_ui.py:661
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "アプリを終了します。再度開くと復元が完了します。"
 
@@ -3838,8 +3965,8 @@ msgstr "このブックマークは利用できなくなりました。一覧を
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "ブックマーク数が上限に達しました。先に不要なブックマークを削除してください。"
 
-#: personal_tools_ui.py:258
-#: personal_tools_ui.py:425
+#: personal_tools_ui.py:269
+#: personal_tools_ui.py:436
 msgid "The channel list changed. Try again."
 msgstr "チャンネル一覧が変更されました。もう一度お試しください。"
 
@@ -3863,6 +3990,10 @@ msgstr "プロバイダーへの接続がタイムアウトしました。"
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "終了は未来の時刻で、開始後7日以内にしてください。"
 
+#: personal_tools_ui.py:147
+msgid "The first recording must start on a selected weekday."
+msgstr "最初の録画は選択した曜日に開始する必要があります。"
+
 #: updater.py:156
 msgid "The installer could not be started."
 msgstr "インストーラーを起動できませんでした。"
@@ -3879,7 +4010,7 @@ msgstr "15 分経ってもインストーラーが実行中でした。"
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "言語が変更されました。変更を完全に反映するには、Accessible IPTV Client を再起動してください。"
 
-#: recording_library_ui.py:158
+#: recording_library_ui.py:201
 msgid "The library can contain up to 20 folders."
 msgstr "ライブラリには最大20個のフォルダーを登録できます。"
 
@@ -3887,15 +4018,15 @@ msgstr "ライブラリには最大20個のフォルダーを登録できます�
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "ライブバッファーのソースを切り替えています。予約録画を開始できませんでした。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "ローカルバッファーは録画に使用されています。無効にする前に録画を停止してください。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "ストレージまたは入力の障害によりローカルバッファーが停止しました。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "ローカルライブバッファーを開始できませんでした。配信元への追加接続は開いていません。バッファーを無効にして直接再生を再試行してください。"
 
@@ -3912,21 +4043,21 @@ msgstr "メディアの長さはまだ取得できません。"
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "{seconds}秒後に次のエピソードを再生します：{title}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "以前の位置は保持期限を過ぎたため、再生を保持範囲内に移動しました。"
 
-#: personal_tools_ui.py:378
+#: personal_tools_ui.py:389
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "操作を完了できませんでした。更新して再試行してください。"
 
 #: accessible_tools_ui.py:15
 #: internal_player.py:3252
-#: main.py:9366
-#: main.py:9395
-#: personal_tools_ui.py:27
-#: personal_tools_ui.py:572
-#: personal_tools_ui.py:577
+#: main.py:9388
+#: main.py:9417
+#: personal_tools_ui.py:28
+#: personal_tools_ui.py:603
+#: planning_tools_ui.py:42
 #: recording_conflicts_ui.py:135
 msgid "The operation failed:\n{error}"
 msgstr "操作に失敗しました：\n{error}"
@@ -3935,7 +4066,7 @@ msgstr "操作に失敗しました：\n{error}"
 msgid "The passwords do not match."
 msgstr "パスワードが一致しません。"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "一時停止位置は保持期限を過ぎました。保持されている最も古い映像から再生を再開しました。"
 
@@ -3962,7 +4093,7 @@ msgstr "確認中にプレイリストが変更されました。「視聴を再
 msgid "The playlists changed. Select the channel again."
 msgstr "プレイリストが変更されました。チャンネルを選び直してください。"
 
-#: planning_ui.py:245
+#: planning_ui.py:310
 msgid "The programme has already started or its times are invalid."
 msgstr "番組はすでに開始しているか、時刻が無効です。"
 
@@ -3994,7 +4125,7 @@ msgstr "プロバイダーのサーバーでエラーが発生しました（HTT
 msgid "The provider's server refused the connection."
 msgstr "プロバイダーのサーバーが接続を拒否しました。"
 
-#: dvr.py:435
+#: dvr.py:481
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "録画内容が変更されました。時刻の編集画面を開き直してください。"
 
@@ -4002,14 +4133,14 @@ msgstr "録画内容が変更されました。時刻の編集画面を開き直
 msgid "The recording connection limit for this account has been reached ({limit}). Existing recordings will continue."
 msgstr "このアカウントの録画用接続数が上限（{limit}）に達しました。進行中の録画は継続します。"
 
-#: recording_library.py:153
-#: recording_library.py:255
+#: recording_library.py:155
+#: recording_library.py:257
 msgid "The recording file changed. Refresh the library."
 msgstr "録画ファイルが変更されました。ライブラリを更新してください。"
 
-#: recording_library.py:150
-#: recording_library.py:249
-#: recording_library.py:252
+#: recording_library.py:152
+#: recording_library.py:251
+#: recording_library.py:254
 msgid "The recording file is no longer available."
 msgstr "録画ファイルは利用できなくなりました。"
 
@@ -4017,15 +4148,17 @@ msgstr "録画ファイルは利用できなくなりました。"
 msgid "The recording folder is unavailable or not writable:\n{error}"
 msgstr "録画フォルダーが使用できないか、書き込みできません:\n{error}"
 
-#: recording_library.py:155
+#: recording_library.py:157
 msgid "The recording is still in use."
 msgstr "録画はまだ使用中です。"
 
-#: dvr.py:262
+#: dvr.py:282
+#: dvr.py:298
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "録画スケジュールの読み込みとバックアップに失敗しました。元のファイルを保護するため、変更は無効になっています。ファイルのアクセス権とディスクの空き容量を確認し、アプリを再起動してください。"
 
-#: dvr.py:259
+#: dvr.py:279
+#: dvr.py:295
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "録画スケジュールを読み込めませんでした。元のファイルは {path} に保存されています。新しい予約を追加する前に、既存の録画予約を確認してください。"
 
@@ -4033,15 +4166,17 @@ msgstr "録画スケジュールを読み込めませんでした。元のファ
 msgid "The recording start time has already passed."
 msgstr "録画の開始時刻は既に過ぎています。"
 
-#: recording_library.py:190
+#: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "録画用ごみ箱フォルダーを利用できません。"
 
-#: planning_ui.py:137
-#: planning_ui.py:169
-#: planning_ui.py:228
-#: planning_ui.py:256
-#: planning_ui.py:280
+#: programme_reminders.py:203
+msgid "The reminder cannot be postponed beyond the programme's end."
+msgstr "リマインダーは番組終了前の、現在より後の時刻にのみ延期できます。"
+
+#: planning_ui.py:166
+#: planning_ui.py:247
+#: planning_ui.py:358
 msgid "The reminder operation failed:\n{error}"
 msgstr "リマインダーの操作に失敗しました:\n{error}"
 
@@ -4072,7 +4207,7 @@ msgstr "サーバーはアカウントの詳細を報告しませんでした。
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:445
+#: personal_tools_ui.py:456
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "設定を保存できませんでした。空き容量と書き込み権限を確認して、もう一度お試しください。"
 
@@ -4126,7 +4261,7 @@ msgstr "この現地時刻は存在しません。夏時間の切り替え日を
 msgid "This local time occurs twice when the clocks change."
 msgstr "夏時間の切り替え時に、この現地時刻は2回発生します。"
 
-#: personal_tools_ui.py:623
+#: personal_tools_ui.py:659
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "この古いバックアップは設定のみを置き換えます。録画予約とリマインダーは保持されます。"
 
@@ -4150,8 +4285,8 @@ msgstr "この番組はまだ見逃し配信で利用できません。"
 msgid "This programme's start and end times are invalid."
 msgstr "この番組の開始時刻と終了時刻は無効です。"
 
-#: dvr.py:358
-#: dvr.py:420
+#: dvr.py:390
+#: dvr.py:466
 msgid "This recording is already scheduled."
 msgstr "この録画は既に予約されています。"
 
@@ -4164,9 +4299,13 @@ msgstr "このスケジュールでは同じアカウントで同時に{count}�
 msgid "This stream does not support seeking."
 msgstr "このストリームはシークに対応していません。"
 
+#: planning_tools_ui.py:23
+msgid "Thursday"
+msgstr "木曜日"
+
 #: main.py:9188
-#: main.py:9425
-#: planning_ui.py:39
+#: main.py:9447
+#: planning_ui.py:46
 msgid "Time"
 msgstr "時刻"
 
@@ -4175,12 +4314,13 @@ msgid "Time remaining: {time}"
 msgstr "残り時間: {time}"
 
 #: main.py:9189
-#: main.py:9426
-#: personal_tools_ui.py:101
-#: planning_ui.py:39
+#: main.py:9448
+#: personal_tools_ui.py:102
+#: planning_tools.py:86
+#: planning_ui.py:46
 #: recording_conflicts_ui.py:35
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 #: resume_dialogs.py:44
 msgid "Title"
 msgstr "タイトル"
@@ -4210,6 +4350,10 @@ msgstr "試用アカウント"
 #: playlist.py:3640
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "ポータルの XMLTV ガイドを自動的に追加してみる"
+
+#: planning_tools_ui.py:23
+msgid "Tuesday"
+msgstr "火曜日"
 
 #: account_info.py:461
 #: resume_dialogs.py:38
@@ -4254,11 +4398,13 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream サーバーからの予期しないアカウント応答"
 
 #: channel_widgets.py:383
+#: planning_tools.py:88
+#: planning_tools.py:92
 #: recording_conflicts_ui.py:166
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
-#: recording_library_ui.py:265
-#: recording_library_ui.py:266
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
+#: recording_library_ui.py:308
+#: recording_library_ui.py:309
 #: updater.py:967
 msgid "Unknown"
 msgstr "不明"
@@ -4268,7 +4414,7 @@ msgid "Unknown command."
 msgstr "不明なコマンドです。"
 
 #: main.py:3288
-#: planning_ui.py:90
+#: planning_ui.py:105
 #: recording_conflicts_ui.py:21
 #: resume_dialogs.py:88
 msgid "Unknown time"
@@ -4475,6 +4621,10 @@ msgstr "予約録画のためにスリープを解除（Windows）"
 msgid "Warn below (MiB):"
 msgstr "この空き容量未満で警告（MiB）："
 
+#: planning_tools_ui.py:23
+msgid "Wednesday"
+msgstr "水曜日"
+
 #: client_ui.py:126
 #: client_ui.py:278
 #: internal_player.py:596
@@ -4508,7 +4658,7 @@ msgstr "Windowsで録画用のスリープ解除タイマーを有効にでき�
 msgid "Windows did not get permission to install the update."
 msgstr "Windows が更新をインストールする許可を得られませんでした。"
 
-#: full_backup.py:129
+#: full_backup.py:134
 #: settings_backup.py:61
 #: settings_backup.py:68
 msgid "Wrong password or damaged backup."
@@ -4540,7 +4690,7 @@ msgstr "Xtream Codes – {name}"
 msgid "Yes"
 msgstr "はい"
 
-#: personal_tools_ui.py:376
+#: personal_tools_ui.py:387
 msgid "You can save up to 30 programme searches."
 msgstr "番組検索は最大30件保存できます。"
 
@@ -4600,7 +4750,7 @@ msgstr "x264 再エンコード（MKV）"
 msgid "x264 re-encode (MP4)"
 msgstr "x264 再エンコード（MP4）"
 
-#: main.py:9626
+#: main.py:9655
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} はすでに実行中ですが、応答がありません。しばらく待ってからもう一度お試しいただくか、通知領域から終了してください。"
 
@@ -4625,7 +4775,7 @@ msgstr "{count} 件の番組"
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} 件の録画が予約されていますが、まだ開始していません。\n\n{names}\n\n開始するにはアプリを開いたままにする必要があります。終了しますか？"
 
-#: recording_library_ui.py:318
+#: recording_library_ui.py:362
 msgid "{count} recording(s). Active recordings are not listed."
 msgstr "録画は {count} 件です。録画中の項目は表示されません。"
 
@@ -4665,7 +4815,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} は Linux 用に構成されていません。"
 
-#: planning_ui.py:207
+#: planning_ui.py:269
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\n開始: {time}"
 

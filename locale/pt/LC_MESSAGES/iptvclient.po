@@ -22,9 +22,9 @@ msgstr "(Ainda não foi escrito nenhum registo de depuração do EPG.)"
 
 #: channel_widgets.py:382
 #: dialogs_misc.py:565
-#: personal_tools_ui.py:181
-#: planning_ui.py:92
-#: planning_ui.py:208
+#: personal_tools_ui.py:192
+#: planning_ui.py:107
+#: planning_ui.py:270
 #: recording_conflicts_ui.py:128
 #: recording_conflicts_ui.py:165
 msgid "(No title)"
@@ -51,7 +51,7 @@ msgstr "Há uma descarga ou gravação em curso.\n\nSe sair agora, ela será int
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "Uma lista de favoritos pode conter no máximo 2000 canais."
 
-#: recording_library.py:265
+#: recording_library.py:267
 msgid "A file with this name already exists in the recording folder."
 msgstr "Já existe um arquivo com este nome na pasta de gravações."
 
@@ -64,7 +64,7 @@ msgstr "Já existe uma lista com este nome."
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "Está a decorrer uma gravação e {count} gravação continua agendada.\n\n{names}\n\nA aplicação tem de permanecer aberta para a iniciar. Sair na mesma?"
 
-#: dvr.py:438
+#: dvr.py:484
 msgid "A running recording's start time cannot be changed."
 msgstr "Não é possível alterar o início de uma gravação em curso."
 
@@ -85,8 +85,8 @@ msgstr "Sobre..."
 msgid "Accessibility"
 msgstr "Acessibilidade"
 
-#: personal_tools_ui.py:593
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:621
+#: personal_tools_ui.py:643
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Backup do Accessible IPTV (*.aiptv)"
 
@@ -143,7 +143,7 @@ msgstr "Adicionar"
 msgid "Add File"
 msgstr "Adicionar arquivo"
 
-#: recording_library_ui.py:49
+#: recording_library_ui.py:50
 msgid "Add Folder..."
 msgstr "Adicionar pasta..."
 
@@ -155,7 +155,7 @@ msgstr "Adicionar marcador com nome"
 msgid "Add Named Bookmark..."
 msgstr "Adicionar marcador com nome..."
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Add Selected Channel"
 msgstr "Adicionar canal selecionado"
 
@@ -190,18 +190,18 @@ msgstr "Adicionar aos favoritos"
 #: main.py:6297
 #: main.py:6298
 #: main.py:7108
-#: personal_tools_ui.py:280
-#: personal_tools_ui.py:282
+#: personal_tools_ui.py:291
+#: personal_tools_ui.py:293
 msgid "All Channels"
 msgstr "Todos os canais"
 
-#: recording_library_ui.py:45
-#: recording_library_ui.py:162
-#: recording_library_ui.py:178
+#: recording_library_ui.py:46
+#: recording_library_ui.py:205
+#: recording_library_ui.py:221
 msgid "All Recording Folders"
 msgstr "Todas as pastas de gravações"
 
-#: recording_library_ui.py:61
+#: recording_library_ui.py:62
 msgid "All Recordings"
 msgstr "Todas as gravações"
 
@@ -412,7 +412,7 @@ msgid "Back 60 Seconds"
 msgstr "Recuar 60 segundos"
 
 #: full_backup.py:54
-#: full_backup.py:148
+#: full_backup.py:153
 #: settings_backup.py:47
 msgid "Backup file is too large."
 msgstr "O arquivo de backup é grande demais."
@@ -485,6 +485,15 @@ msgstr "O reprodutor integrado não está disponível."
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "Reprodutor integrado indisponível:\n{detail}"
 
+#: recording_library_ui.py:373
+msgid "CSV file (*.csv)"
+msgstr "Arquivo CSV (*.csv)"
+
+#: planning_tools_ui.py:61
+#: planning_ui.py:129
+msgid "Calendar file (*.ics)"
+msgstr "Arquivo de calendário (*.ics)"
+
 #: accessible_tools_ui.py:29
 #: dialogs_misc.py:240
 #: dialogs_misc.py:681
@@ -494,9 +503,9 @@ msgstr "Reprodutor integrado indisponível:\n{detail}"
 #: main.py:7781
 #: main.py:7814
 #: main.py:8947
-#: main.py:9261
+#: main.py:9283
 #: options.py:987
-#: personal_tools_ui.py:91
+#: personal_tools_ui.py:92
 #: playlist.py:3236
 #: playlist.py:3336
 #: playlist.py:3544
@@ -513,7 +522,7 @@ msgstr "Cancelar transferência"
 msgid "Cancel Shutdown"
 msgstr "Cancelar desligamento"
 
-#: main.py:9292
+#: main.py:9314
 msgid "Canceled"
 msgstr "Cancelado"
 
@@ -619,19 +628,20 @@ msgid "Changes in each version of {app}, newest first. Notes for the latest vers
 msgstr "Mudanças de cada versão do {app}, da mais recente para a mais antiga. As notas das versões mais recentes aparecem no seu idioma quando forem traduzidas; as entradas mais antigas continuam em inglês."
 
 #: main.py:9190
-#: personal_tools_ui.py:417
-#: planning_ui.py:40
-#: recording_library_ui.py:72
+#: personal_tools_ui.py:428
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:81
 msgid "Channel"
 msgstr "Canal"
 
 #: favorite_collections.py:75
 #: main.py:3373
 #: main.py:7068
-#: personal_tools_ui.py:260
-#: personal_tools_ui.py:412
-#: planning_ui.py:220
-#: planning_ui.py:266
+#: personal_tools_ui.py:271
+#: personal_tools_ui.py:423
+#: planning_ui.py:291
+#: planning_ui.py:336
 msgid "Channel Not Found"
 msgstr "Canal não encontrado"
 
@@ -651,9 +661,9 @@ msgstr "Canal: {name}"
 #: channel_widgets.py:248
 #: channel_widgets.py:250
 #: client_ui.py:71
-#: personal_tools_ui.py:148
-#: personal_tools_ui.py:278
-#: personal_tools_ui.py:293
+#: personal_tools_ui.py:159
+#: personal_tools_ui.py:289
+#: personal_tools_ui.py:304
 msgid "Channels"
 msgstr "Canais"
 
@@ -710,7 +720,7 @@ msgstr "Verificando {account}..."
 msgid "Choose Audio Track"
 msgstr "Escolher faixa de áudio"
 
-#: personal_tools_ui.py:417
+#: personal_tools_ui.py:428
 msgid "Choose Channel"
 msgstr "Escolher canal"
 
@@ -740,11 +750,19 @@ msgstr "Escolha um comando para alterar:"
 msgid "Choose a position before the end of the media."
 msgstr "Escolha uma posição anterior ao fim do conteúdo."
 
-#: recording_library_ui.py:152
+#: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "Escolher uma pasta de gravações"
 
-#: planning_ui.py:49
+#: planning_tools_ui.py:12
+msgid "Choose repeat days. Clear all days to record only once."
+msgstr "Escolha os dias de repetição. Sem dias selecionados, a gravação ocorrerá apenas uma vez."
+
+#: planning_tools.py:17
+msgid "Choose weekdays from Monday to Sunday."
+msgstr "Escolha os dias de segunda-feira a domingo."
+
+#: planning_ui.py:56
 msgid "Clear All Reminders"
 msgstr "Limpar todos os lembretes"
 
@@ -766,11 +784,11 @@ msgstr "Limpar o histórico de notificações desta sessão?"
 #: dialogs_misc.py:900
 #: main.py:308
 #: main.py:9139
-#: personal_tools_ui.py:91
-#: planning_ui.py:51
-#: planning_ui.py:211
+#: personal_tools_ui.py:92
+#: planning_tools_ui.py:83
+#: planning_ui.py:60
 #: recording_conflicts_ui.py:99
-#: recording_library_ui.py:84
+#: recording_library_ui.py:95
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
 #: session_tools_ui.py:67
@@ -782,9 +800,10 @@ msgstr "Fechar"
 msgid "Community and support"
 msgstr "Comunidade e suporte"
 
-#: main.py:9287
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9309
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Completed"
 msgstr "Concluído"
 
@@ -800,7 +819,7 @@ msgstr "Listas de reprodução e provedores configurados"
 msgid "Configured playlists: {count}"
 msgstr "Listas de reprodução configuradas: {count}"
 
-#: personal_tools_ui.py:32
+#: personal_tools_ui.py:33
 msgid "Confirm"
 msgstr "Confirmar"
 
@@ -973,6 +992,10 @@ msgstr "Não foi possível executar a verificação Authenticode: {detail}"
 msgid "Could not save playback history changes."
 msgstr "Não foi possível salvar as alterações no histórico."
 
+#: recording_library_ui.py:160
+msgid "Could not save recording library preferences."
+msgstr "Não foi possível salvar as preferências da biblioteca de gravações."
+
 #: main.py:3308
 #: main.py:3322
 #: main.py:3344
@@ -1017,8 +1040,9 @@ msgstr "Atualmente conectado a: {device}\n\nDesconectar?"
 msgid "Custom Player..."
 msgstr "Reprodutor personalizado..."
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: planning_tools.py:86
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Date"
 msgstr "Data"
 
@@ -1030,15 +1054,15 @@ msgstr "Dias restantes"
 msgid "Days since expiry"
 msgstr "Dias desde o vencimento"
 
-#: main.py:9263
-#: personal_tools_ui.py:321
-#: planning_ui.py:48
+#: main.py:9285
+#: personal_tools_ui.py:332
+#: planning_ui.py:55
 #: playlist.py:3174
 #: session_tools_ui.py:63
 msgid "Delete"
 msgstr "Eliminar"
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 msgid "Delete List"
 msgstr "Eliminar lista"
 
@@ -1046,11 +1070,11 @@ msgstr "Eliminar lista"
 msgid "Delete Playlist"
 msgstr "Eliminar lista de reprodução"
 
-#: recording_library_ui.py:339
+#: recording_library_ui.py:391
 msgid "Delete Recording"
 msgstr "Excluir gravação"
 
-#: recording_library_ui.py:313
+#: recording_library_ui.py:357
 msgid "Delete Recording File..."
 msgstr "Excluir arquivo de gravação..."
 
@@ -1058,11 +1082,11 @@ msgstr "Excluir arquivo de gravação..."
 msgid "Delete bookmark '{name}'?"
 msgstr "Excluir o marcador '{name}'?"
 
-#: personal_tools_ui.py:215
+#: personal_tools_ui.py:226
 msgid "Delete favourite list '{name}'?"
 msgstr "Eliminar a lista de favoritos «{name}»?"
 
-#: personal_tools_ui.py:393
+#: personal_tools_ui.py:404
 msgid "Delete saved search '{name}'?"
 msgstr "Eliminar a pesquisa guardada «{name}»?"
 
@@ -1070,13 +1094,13 @@ msgstr "Eliminar a pesquisa guardada «{name}»?"
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "Eliminar a lista de reprodução «{name}»?\n\nSerá removida da lista de listas de reprodução. Não é possível anular esta ação."
 
-#: recording_library_ui.py:67
+#: recording_library_ui.py:68
 msgid "Descending"
 msgstr "Decrescente"
 
 #: dialogs_misc.py:516
-#: main.py:9438
-#: personal_tools_ui.py:317
+#: main.py:9460
+#: personal_tools_ui.py:328
 msgid "Description"
 msgstr "Descrição"
 
@@ -1106,7 +1130,7 @@ msgstr "As informações de diagnóstico foram copiadas para a área de transfer
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:336
+#: personal_tools_ui.py:347
 msgid "Disabled"
 msgstr "Desativada"
 
@@ -1201,14 +1225,18 @@ msgstr "Baixando atualização..."
 msgid "Downloading {name}"
 msgstr "A descarregar {name}"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 msgid "Duration"
 msgstr "Duração"
 
+#: planning_tools.py:86
+msgid "Duration (seconds)"
+msgstr "Duração (segundos)"
+
 #: main.py:4674
-#: main.py:9422
-#: main.py:9424
+#: main.py:9444
+#: main.py:9446
 msgid "EPG"
 msgstr "EPG"
 
@@ -1250,7 +1278,7 @@ msgstr "A importação do EPG será iniciada em segundo plano. Você pode contin
 msgid "EPG is not enabled."
 msgstr "O EPG não está habilitado."
 
-#: main.py:9413
+#: main.py:9435
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
@@ -1259,7 +1287,7 @@ msgstr "EPG: {channel}"
 msgid "Edit Times..."
 msgstr "Editar horários..."
 
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:331
 msgid "Edit..."
 msgstr "Editar..."
 
@@ -1271,15 +1299,15 @@ msgstr "Decorrido: {elapsed}. Total: {total}. Restante: {remaining}."
 msgid "Elapsed: {time}"
 msgstr "Decorrido: {time}"
 
-#: personal_tools_ui.py:275
+#: personal_tools_ui.py:286
 msgid "Enabled"
 msgstr "Ativado"
 
-#: personal_tools_ui.py:608
+#: personal_tools_ui.py:636
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "Cópia encriptada guardada, incluindo gravações agendadas, lembretes e pesquisas guardadas."
 
-#: personal_tools_ui.py:105
+#: personal_tools_ui.py:106
 #: recording_conflicts_ui.py:168
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "Fim (hora local, AAAA-MM-DD HH:MM)"
@@ -1322,7 +1350,7 @@ msgstr "Digite uma senha para o backup de configurações:"
 msgid "Enter a positive channel number."
 msgstr "Insira um número de canal positivo."
 
-#: recording_library.py:177
+#: recording_library.py:179
 msgid "Enter a recording title of 1 to 240 characters."
 msgstr "Digite um título de gravação com 1 a 240 caracteres."
 
@@ -1354,7 +1382,7 @@ msgstr "Digite a senha novamente:"
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9441
+#: main.py:9463
 msgid "Episode description"
 msgstr "Descrição do episódio"
 
@@ -1371,7 +1399,7 @@ msgstr "Episódio {num}"
 #: main.py:7041
 #: main.py:7063
 #: main.py:8872
-#: personal_tools_ui.py:27
+#: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
 msgid "Error"
@@ -1417,7 +1445,7 @@ msgid "Expected thumbprints: {thumbprints}."
 msgstr "Impressões digitais esperadas: {thumbprints}."
 
 #: account_info.py:373
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Expired"
 msgstr "Vencida"
 
@@ -1430,7 +1458,12 @@ msgstr "Vencida"
 msgid "Expires"
 msgstr "Vence"
 
-#: personal_tools_ui.py:593
+#: recording_library_ui.py:93
+#: recording_library_ui.py:373
+msgid "Export List to CSV..."
+msgstr "Exportar lista para CSV…"
+
+#: personal_tools_ui.py:621
 msgid "Export Settings"
 msgstr "Exportar configurações"
 
@@ -1438,6 +1471,19 @@ msgstr "Exportar configurações"
 #: client_ui.py:353
 msgid "Export Settings..."
 msgstr "Exportar configurações..."
+
+#: planning_tools_ui.py:42
+msgid "Export saved."
+msgstr "Exportação salva."
+
+#: dialogs_misc.py:1107
+#: main.py:9543
+#: planning_tools_ui.py:58
+#: planning_tools_ui.py:61
+#: planning_ui.py:57
+#: planning_ui.py:129
+msgid "Export to Calendar..."
+msgstr "Exportar para o calendário…"
 
 #: internal_player.py:2693
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
@@ -1456,9 +1502,10 @@ msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "Duração da redução gradual do volume antes de parar (segundos); 0 desativa esta função."
 
 #: main.py:3495
-#: main.py:9290
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
+#: main.py:9312
+#: planning_tools.py:88
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
 msgid "Failed"
 msgstr "Falhou"
 
@@ -1511,17 +1558,17 @@ msgstr "Falha ao iniciar o reprodutor integrado:\n{error}"
 msgid "Favorites"
 msgstr "Favoritos"
 
-#: personal_tools_ui.py:195
-#: personal_tools_ui.py:209
+#: personal_tools_ui.py:206
+#: personal_tools_ui.py:220
 msgid "Favourite List Name"
 msgstr "Nome da lista de favoritos"
 
-#: personal_tools_ui.py:145
-#: personal_tools_ui.py:147
+#: personal_tools_ui.py:156
+#: personal_tools_ui.py:158
 msgid "Favourite Lists"
 msgstr "Listas de favoritos"
 
-#: personal_tools_ui.py:457
+#: personal_tools_ui.py:468
 msgid "Favourite Lists..."
 msgstr "Listas de favoritos..."
 
@@ -1533,8 +1580,8 @@ msgstr "Novidades"
 msgid "File"
 msgstr "Arquivo"
 
-#: recording_library_ui.py:65
-#: recording_library_ui.py:73
+#: recording_library_ui.py:66
+#: recording_library_ui.py:82
 msgid "File Size"
 msgstr "Tamanho do arquivo"
 
@@ -1556,7 +1603,7 @@ msgstr "Localizar"
 msgid "Find Next"
 msgstr "Localizar próxima"
 
-#: personal_tools_ui.py:635
+#: personal_tools_ui.py:673
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Termine as gravações e transferências antes de restaurar uma cópia."
 
@@ -1593,6 +1640,10 @@ msgstr "Não foi possível verificar o espaço livre durante a gravação:\n{pat
 #: recording_storage.py:47
 msgid "Free space could not be determined:\n{error}"
 msgstr "Não foi possível determinar o espaço livre:\n{error}"
+
+#: planning_tools_ui.py:23
+msgid "Friday"
+msgstr "Sexta-feira"
 
 #: internal_player.py:472
 #: internal_player.py:3132
@@ -1704,7 +1755,7 @@ msgstr "Importar EPG para o banco de dados"
 msgid "Import Failed"
 msgstr "Falha na importação"
 
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:643
 msgid "Import Settings"
 msgstr "Importar configurações"
 
@@ -1731,6 +1782,7 @@ msgid "Importing EPG data…"
 msgstr "Importando dados do EPG…"
 
 #: main.py:6987
+#: planning_ui.py:176
 msgid "In Progress"
 msgstr "Em andamento"
 
@@ -1754,9 +1806,26 @@ msgstr "Salt do backup inválido."
 msgid "Invalid keyboard shortcut."
 msgstr "Atalho de teclado inválido."
 
+#: planning_tools.py:118
+#: planning_tools_ui.py:56
+msgid "Invalid programme times."
+msgstr "Horários do programa inválidos."
+
 #: manual_schedule.py:47
 msgid "Invalid recording time."
 msgstr "Hora de gravação inválida."
+
+#: programme_reminders.py:197
+msgid "Invalid reminder postponement."
+msgstr "Adiamento de lembrete inválido."
+
+#: programme_reminders.py:128
+msgid "Invalid reminders could not be backed up. Changes are disabled to protect the original file."
+msgstr "Não foi possível criar uma cópia dos lembretes inválidos. As alterações estão desativadas para proteger o arquivo original."
+
+#: programme_reminders.py:121
+msgid "Invalid reminders were skipped. The original file was preserved at {path}."
+msgstr "Os lembretes inválidos foram ignorados. O arquivo original foi preservado em {path}."
 
 #: providers.py:152
 #: providers.py:193
@@ -1776,7 +1845,7 @@ msgstr "Atraso de legendas inválido."
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "Aderir ao grupo do Telegram SerrebiProjects"
 
-#: personal_tools_ui.py:280
+#: personal_tools_ui.py:291
 msgid "Keep chosen channels"
 msgstr "Manter canais escolhidos"
 
@@ -1784,7 +1853,7 @@ msgstr "Manter canais escolhidos"
 msgid "Keep this output device?\n{name}"
 msgstr "Manter este dispositivo de saída?\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:48
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Conservar entre 1 e 30 minutos do direto; 0 desativa a memória intermédia local."
 
@@ -1831,7 +1900,7 @@ msgstr "A tag da versão mais recente está ausente ou é inválida."
 msgid "Launch Error"
 msgstr "Erro ao iniciar"
 
-#: planning_ui.py:41
+#: planning_ui.py:48
 msgid "Lead time (minutes)"
 msgstr "Antecedência (minutos)"
 
@@ -1840,7 +1909,7 @@ msgstr "Antecedência (minutos)"
 msgid "Live TV && Catch-up"
 msgstr "TV ao vivo && Replay"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:325
 msgid "Live input ended; retained history is still available."
 msgstr "A transmissão em direto terminou; o histórico conservado continua disponível."
 
@@ -1873,16 +1942,16 @@ msgstr "Carregando canais do guia..."
 msgid "Loading playlists..."
 msgstr "Carregando listas de reprodução..."
 
-#: recording_library_ui.py:192
+#: recording_library_ui.py:235
 msgid "Loading recordings..."
 msgstr "Carregando gravações..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:61
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:99
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:232
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "Local Live Buffer"
 msgstr "Memória intermédia local do direto"
 
@@ -1927,7 +1996,7 @@ msgstr "Os atalhos da janela principal precisam de Ctrl ou Alt."
 msgid "Maximum connections"
 msgstr "Conexões máximas"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:66
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Tamanho máximo da memória intermédia por sessão (MiB). Os dados mais antigos são eliminados ao atingir qualquer um dos limites."
 
@@ -1944,8 +2013,8 @@ msgstr "Menu"
 msgid "Message from provider"
 msgstr "Mensagem do provedor"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: planning_ui.py:287
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:67
+#: planning_ui.py:365
 msgid "MiB:"
 msgstr "MiB:"
 
@@ -1958,7 +2027,7 @@ msgstr "Minimizar para a bandeja do sistema"
 msgid "Minimum Free Space..."
 msgstr "Espaço livre mínimo…"
 
-#: planning_ui.py:286
+#: planning_ui.py:364
 msgid "Minimum free space to keep before starting a recording (MiB):"
 msgstr "Espaço livre mínimo necessário antes de iniciar uma gravação (MiB):"
 
@@ -1976,35 +2045,39 @@ msgstr "Os minutos e segundos após dois pontos devem ser inferiores a 60."
 msgid "Minutes before programme:"
 msgstr "Minutos antes do programa:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:49
 #: internal_player.py:3290
-#: planning_ui.py:21
+#: planning_ui.py:24
 msgid "Minutes:"
 msgstr "Minutos:"
 
 #: main.py:3495
-#: main.py:9291
+#: main.py:9313
 msgid "Missed"
 msgstr "Perdido"
+
+#: planning_tools_ui.py:23
+msgid "Monday"
+msgstr "Segunda-feira"
 
 #: accessible_tools_ui.py:42
 msgid "Monitor free space while recording"
 msgstr "Monitorar o espaço livre durante a gravação"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Down"
 msgstr "Mover para baixo"
 
-#: personal_tools_ui.py:153
+#: personal_tools_ui.py:164
 msgid "Move Up"
 msgstr "Mover para cima"
 
-#: recording_library_ui.py:81
-#: recording_library_ui.py:313
+#: recording_library_ui.py:90
+#: recording_library_ui.py:357
 msgid "Move to Recording Trash..."
 msgstr "Mover para a lixeira de gravações..."
 
-#: recording_library_ui.py:338
+#: recording_library_ui.py:390
 msgid "Move {count} selected recordings to the recording trash?"
 msgstr "Mover as {count} gravações selecionadas para a lixeira de gravações?"
 
@@ -2043,12 +2116,12 @@ msgstr "Marcadores com nome..."
 msgid "Never (no expiry date set)"
 msgstr "Nunca (sem data de vencimento)"
 
-#: personal_tools_ui.py:580
+#: personal_tools_ui.py:606
 msgid "New programme matches: {count}."
 msgstr "Novos programas encontrados: {count}."
 
-#: personal_tools_ui.py:151
-#: personal_tools_ui.py:320
+#: personal_tools_ui.py:162
+#: personal_tools_ui.py:331
 msgid "New..."
 msgstr "Novo..."
 
@@ -2130,8 +2203,8 @@ msgstr "Não há programas de replay disponíveis para este canal."
 msgid "No channel is selected."
 msgstr "Nenhum canal está selecionado."
 
-#: personal_tools_ui.py:185
-#: personal_tools_ui.py:467
+#: personal_tools_ui.py:196
+#: personal_tools_ui.py:481
 msgid "No channel selected."
 msgstr "Nenhum canal selecionado."
 
@@ -2141,7 +2214,7 @@ msgstr "Nenhum canal encontrado."
 
 #: dialogs_misc.py:585
 #: main.py:2747
-#: main.py:9560
+#: main.py:9589
 msgid "No description available for this programme."
 msgstr "Sem descrição disponível para este programa."
 
@@ -2153,7 +2226,7 @@ msgstr "Nenhum dispositivo encontrado."
 msgid "No earlier subtitle."
 msgstr "Não há legenda anterior."
 
-#: personal_tools_ui.py:544
+#: personal_tools_ui.py:571
 msgid "No enabled saved searches."
 msgstr "Nenhuma pesquisa guardada está ativada."
 
@@ -2175,7 +2248,7 @@ msgstr "Nenhum detalhe do ffmpeg foi relatado."
 msgid "No later subtitle."
 msgstr "Não há legenda posterior."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:288
 msgid "No local live history is available."
 msgstr "Não existe histórico local do direto disponível."
 
@@ -2228,7 +2301,7 @@ msgstr "Nenhuma gravação está ativa no momento."
 msgid "No release history is available."
 msgstr "Não há histórico de versões disponível."
 
-#: planning_ui.py:105
+#: planning_ui.py:120
 msgid "No reminders."
 msgstr "Nenhum lembrete."
 
@@ -2265,6 +2338,10 @@ msgstr "Não foram encontrados problemas com horário no registro de gravação 
 msgid "No upcoming schedule found for this channel."
 msgstr "Nenhuma programação futura encontrada para este canal."
 
+#: planning_tools.py:59
+msgid "No valid recording window was found for the selected weekdays."
+msgstr "Nenhum período de gravação válido foi encontrado para os dias selecionados."
+
 #: client_ui.py:221
 #: client_ui.py:359
 msgid "None"
@@ -2276,7 +2353,7 @@ msgstr "Nenhum"
 msgid "Not Found"
 msgstr "Não encontrado"
 
-#: full_backup.py:122
+#: full_backup.py:127
 #: settings_backup.py:55
 #: settings_backup.py:57
 msgid "Not an Accessible IPTV settings backup."
@@ -2319,11 +2396,11 @@ msgstr "Histórico de notificações..."
 msgid "Notifications from this session:"
 msgstr "Notificações desta sessão:"
 
-#: planning_ui.py:85
+#: planning_ui.py:100
 msgid "Notified"
 msgstr "Notificado"
 
-#: planning_ui.py:20
+#: planning_ui.py:23
 msgid "Notify before the programme starts (minutes):"
 msgstr "Avisar antes do início do programa (minutos):"
 
@@ -2339,7 +2416,7 @@ msgstr "Agora: {title} ({start} – {end})"
 #: main.py:7780
 #: main.py:7813
 #: options.py:987
-#: personal_tools_ui.py:88
+#: personal_tools_ui.py:89
 #: playlist.py:3235
 #: playlist.py:3335
 msgid "OK"
@@ -2371,7 +2448,7 @@ msgstr "Apenas parte do programa foi gravada. O arquivo disponível foi preserva
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "Somente reprodutores com uma API documentada de texto temporizado podem fornecer as palavras das legendas. O reprodutor integrado lê arquivos SRT, ASS, SSA e WebVTT; o MPV funciona através da sessão própria do aplicativo."
 
-#: personal_tools_ui.py:354
+#: personal_tools_ui.py:365
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "São apresentados apenas os primeiros 500 resultados. Restrinja a pesquisa."
 
@@ -2379,7 +2456,7 @@ msgstr "São apresentados apenas os primeiros 500 resultados. Restrinja a pesqui
 msgid "Open"
 msgstr "Abrir"
 
-#: planning_ui.py:211
+#: planning_tools_ui.py:74
 msgid "Open Channel"
 msgstr "Abrir canal"
 
@@ -2462,9 +2539,10 @@ msgstr "Gravações sobrepostas: {count}."
 msgid "Package"
 msgstr "Pacote"
 
-#: main.py:9288
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9310
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Partial"
 msgstr "Parcial"
 
@@ -2487,15 +2565,15 @@ msgid "Paused"
 msgstr "Pausado"
 
 #: account_info.py:376
-#: planning_ui.py:84
+#: planning_ui.py:99
 msgid "Pending"
 msgstr "Pendente"
 
-#: planning_ui.py:237
+#: planning_ui.py:302
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "Lembretes de programas pendentes: {count}.\n\nO aplicativo precisa estar aberto para exibir os avisos. Sair mesmo assim?"
 
-#: recording_library_ui.py:337
+#: recording_library_ui.py:389
 msgid "Permanently delete {count} selected recording files? This cannot be undone."
 msgstr "Excluir permanentemente os {count} arquivos de gravação selecionados? Esta ação não pode ser desfeita."
 
@@ -2512,11 +2590,11 @@ msgstr "Plataforma: {platform}"
 #: internal_player.py:937
 #: internal_player.py:2053
 #: main.py:2781
-#: personal_tools_ui.py:154
+#: personal_tools_ui.py:165
 msgid "Play"
 msgstr "Reproduzir"
 
-#: recording_library_ui.py:79
+#: recording_library_ui.py:88
 msgid "Play / Resume"
 msgstr "Reproduzir / Retomar"
 
@@ -2706,7 +2784,9 @@ msgstr "Legenda anterior"
 msgid "Previously saved content (title unavailable)"
 msgstr "Conteúdo salvo anteriormente (título indisponível)"
 
-#: recording_library_ui.py:362
+#: personal_tools_ui.py:477
+#: personal_tools_ui.py:514
+#: recording_library_ui.py:414
 msgid "Processing recordings..."
 msgstr "Processando gravações…"
 
@@ -2714,24 +2794,23 @@ msgstr "Processando gravações…"
 msgid "Program - Channel"
 msgstr "Programa - Canal"
 
-#: planning_ui.py:209
-#: planning_ui.py:220
+#: planning_tools_ui.py:67
+#: planning_ui.py:291
 msgid "Programme Reminder"
 msgstr "Lembrete de programa"
 
-#: planning_ui.py:21
-#: planning_ui.py:32
-#: planning_ui.py:38
-#: planning_ui.py:117
-#: planning_ui.py:138
-#: planning_ui.py:170
-#: planning_ui.py:229
-#: planning_ui.py:239
-#: planning_ui.py:246
-#: planning_ui.py:257
-#: planning_ui.py:259
-#: planning_ui.py:266
-#: planning_ui.py:281
+#: planning_ui.py:24
+#: planning_ui.py:35
+#: planning_ui.py:45
+#: planning_ui.py:142
+#: planning_ui.py:167
+#: planning_ui.py:248
+#: planning_ui.py:260
+#: planning_ui.py:304
+#: planning_ui.py:311
+#: planning_ui.py:328
+#: planning_ui.py:336
+#: planning_ui.py:359
 msgid "Programme Reminders"
 msgstr "Lembretes de programas"
 
@@ -2846,18 +2925,18 @@ msgstr "Reconectando..."
 msgid "Record"
 msgstr "Gravar"
 
-#: dialogs_misc.py:1110
-#: main.py:9524
+#: dialogs_misc.py:1120
+#: main.py:9553
 msgid "Record Daily"
 msgstr "Gravar diariamente"
 
-#: dialogs_misc.py:1112
-#: main.py:9526
+#: dialogs_misc.py:1122
+#: main.py:9555
 msgid "Record Series"
 msgstr "Gravar série"
 
-#: dialogs_misc.py:1111
-#: main.py:9525
+#: dialogs_misc.py:1121
+#: main.py:9554
 msgid "Record Weekly"
 msgstr "Gravar semanalmente"
 
@@ -2871,7 +2950,7 @@ msgstr "Gravar semanalmente"
 #: main.py:3957
 #: main.py:3965
 #: main.py:3968
-#: main.py:9285
+#: main.py:9307
 msgid "Recording"
 msgstr "Gravando"
 
@@ -2879,7 +2958,7 @@ msgstr "Gravando"
 msgid "Recording Complete"
 msgstr "Gravação concluída"
 
-#: main.py:9224
+#: main.py:9246
 #: recording_conflicts_ui.py:71
 msgid "Recording Conflicts"
 msgstr "Conflitos de gravação"
@@ -2910,7 +2989,7 @@ msgid "Recording Format"
 msgstr "Formato de gravação"
 
 #: internal_player.py:3253
-#: recording_library_ui.py:33
+#: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "Biblioteca de gravações"
 
@@ -2934,8 +3013,8 @@ msgid "Recording Space Monitor..."
 msgstr "Monitoramento do espaço de gravação..."
 
 #: accessible_tools_ui.py:286
-#: planning_ui.py:287
-#: planning_ui.py:324
+#: planning_ui.py:365
+#: planning_ui.py:402
 msgid "Recording Storage"
 msgstr "Espaço para gravação"
 
@@ -2949,12 +3028,12 @@ msgstr "Aviso de gravação"
 msgid "Recording connection limit saved."
 msgstr "Limite de conexões para gravações salvo."
 
-#: recording_library_ui.py:44
-#: recording_library_ui.py:73
+#: recording_library_ui.py:45
+#: recording_library_ui.py:82
 msgid "Recording folder:"
 msgstr "Pasta de gravações:"
 
-#: planning_ui.py:307
+#: planning_ui.py:385
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "Pasta de gravações: {path}\nEspaço livre: {free} MiB\nReserva necessária: {reserve} MiB.\n\nEsta verificação não garante espaço suficiente para toda a gravação."
 
@@ -2965,6 +3044,10 @@ msgstr "A gravação não está disponível a partir desta janela."
 #: recording_library.py:52
 msgid "Recording metadata could not be read. The media files are still available."
 msgstr "Não foi possível ler os metadados das gravações. Os arquivos de mídia continuam disponíveis."
+
+#: recording_library.py:86
+msgid "Recording metadata exceeds its size limit. The previous index was kept."
+msgstr "Os metadados das gravações excedem o limite de tamanho. O índice anterior foi mantido."
 
 #: client_recording.py:74
 msgid "Recording of {name} ended unexpectedly (code {code}).\n\n{detail}"
@@ -2978,7 +3061,7 @@ msgstr "Falha no gerenciamento de energia das gravações:\n{error}"
 msgid "Recording saved:\n{path}"
 msgstr "Gravação salva:\n{path}"
 
-#: personal_tools_ui.py:491
+#: personal_tools_ui.py:519
 msgid "Recording schedule saved."
 msgstr "Agendamento da gravação guardado."
 
@@ -3002,7 +3085,7 @@ msgstr "Gravação iniciada ({fmt}):\n{path}"
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "A gravação foi interrompida, mas o ffmpeg relatou o código {code}.\n\n{detail}\n\nArquivo:\n{path}"
 
-#: recording_library_ui.py:395
+#: recording_library_ui.py:447
 msgid "Recording title:"
 msgstr "Título da gravação:"
 
@@ -3014,18 +3097,18 @@ msgstr "Gravação atualizada para repetir."
 #: client_ui.py:448
 #: main.py:4266
 #: main.py:4554
-#: recording_library_ui.py:71
+#: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
 msgstr "Gravações"
 
 #: dialogs_misc.py:356
 #: main.py:9195
-#: main.py:9257
-#: personal_tools_ui.py:321
-#: planning_ui.py:50
+#: main.py:9279
+#: personal_tools_ui.py:332
+#: planning_ui.py:59
 #: playlist.py:3169
-#: recording_library_ui.py:83
+#: recording_library_ui.py:92
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "Atualizar"
@@ -3058,19 +3141,27 @@ msgstr "Histórico de versões"
 msgid "Remember Volume for Each Channel"
 msgstr "Lembrar o volume de cada canal"
 
-#: planning_ui.py:259
+#: planning_tools_ui.py:76
+msgid "Remind Again in 5 Minutes"
+msgstr "Lembrar novamente em 5 minutos"
+
+#: planning_tools_ui.py:78
+msgid "Remind at Programme Start"
+msgstr "Lembrar no início do programa"
+
+#: planning_ui.py:328
 msgid "Reminder set."
 msgstr "Lembrete definido."
 
-#: personal_tools_ui.py:226
+#: personal_tools_ui.py:237
 msgid "Remove '{name}' from this list?"
 msgstr "Remover «{name}» desta lista?"
 
-#: personal_tools_ui.py:152
+#: personal_tools_ui.py:163
 msgid "Remove Channel"
 msgstr "Remover canal"
 
-#: recording_library_ui.py:50
+#: recording_library_ui.py:51
 msgid "Remove Folder from Library"
 msgstr "Remover pasta da biblioteca"
 
@@ -3078,7 +3169,7 @@ msgstr "Remover pasta da biblioteca"
 msgid "Remove Saved Position"
 msgstr "Remover posição salva"
 
-#: planning_ui.py:130
+#: planning_ui.py:155
 msgid "Remove all reminders?"
 msgstr "Remover todos os lembretes?"
 
@@ -3086,7 +3177,7 @@ msgstr "Remover todos os lembretes?"
 msgid "Remove all saved playback positions?"
 msgstr "Remover todas as posições de reprodução salvas?"
 
-#: main.py:9380
+#: main.py:9402
 msgid "Remove all scheduled recordings from the list?"
 msgstr "Remover todas as gravações agendadas da lista?"
 
@@ -3094,15 +3185,15 @@ msgstr "Remover todas as gravações agendadas da lista?"
 msgid "Remove from Favorites"
 msgstr "Remover dos favoritos"
 
-#: main.py:9385
+#: main.py:9407
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "Remover a gravação agendada '{title}' da lista?"
 
-#: main.py:9382
+#: main.py:9404
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "Remover da lista as {count} gravações agendadas selecionadas? Os arquivos serão mantidos."
 
-#: planning_ui.py:126
+#: planning_ui.py:151
 msgid "Remove this reminder?"
 msgstr "Remover este lembrete?"
 
@@ -3115,20 +3206,34 @@ msgstr "Remover esta posição de reprodução salva?"
 msgid "Rename"
 msgstr "Renomear"
 
-#: recording_library_ui.py:80
-#: recording_library_ui.py:395
+#: recording_library_ui.py:89
+#: recording_library_ui.py:447
 msgid "Rename Title..."
 msgstr "Renomear título..."
 
-#: personal_tools_ui.py:151
+#: personal_tools_ui.py:162
 #: session_tools_ui.py:62
 #: session_tools_ui.py:109
 msgid "Rename..."
 msgstr "Mudar nome..."
 
-#: personal_tools_ui.py:622
+#: main.py:9208
+#: planning_tools_ui.py:13
+msgid "Repeat on Weekdays..."
+msgstr "Repetir nos dias selecionados…"
+
+#: personal_tools_ui.py:108
+#: personal_tools_ui.py:110
+msgid "Repeat on selected weekdays (none: once):"
+msgstr "Repetir nos dias selecionados (nenhum: uma vez):"
+
+#: personal_tools_ui.py:658
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "Substituir definições, {jobs} entradas de gravação e {reminders} lembretes? As gravações já iniciadas não serão reiniciadas."
+
+#: planning_tools_ui.py:36
+msgid "Replace the existing export file?"
+msgstr "Substituir o arquivo de exportação existente?"
 
 #: media_navigation_ui.py:58
 msgid "Reset Timing"
@@ -3138,7 +3243,7 @@ msgstr "Redefinir sincronização"
 msgid "Restore"
 msgstr "Restaurar"
 
-#: recording_library_ui.py:82
+#: recording_library_ui.py:91
 msgid "Restore Recording"
 msgstr "Restaurar gravação"
 
@@ -3162,7 +3267,7 @@ msgstr "Voltar ao direto"
 msgid "Review recent subtitles..."
 msgstr "Rever legendas recentes..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:262
 msgid "Rewind Live TV"
 msgstr "Recuar na TV em direto"
 
@@ -3170,20 +3275,24 @@ msgstr "Recuar na TV em direto"
 msgid "Rewind Live TV..."
 msgstr "Recuar na TV em direto…"
 
+#: planning_tools_ui.py:23
+msgid "Saturday"
+msgstr "Sábado"
+
 #: recording_limits_ui.py:35
 msgid "Save"
 msgstr "Salvar"
 
-#: personal_tools_ui.py:269
+#: personal_tools_ui.py:280
 msgid "Saved Programme Search"
 msgstr "Pesquisa de programas guardada"
 
-#: personal_tools_ui.py:314
-#: personal_tools_ui.py:315
+#: personal_tools_ui.py:325
+#: personal_tools_ui.py:326
 msgid "Saved Programme Searches"
 msgstr "Pesquisas de programas guardadas"
 
-#: personal_tools_ui.py:459
+#: personal_tools_ui.py:470
 msgid "Saved Programme Searches..."
 msgstr "Pesquisas de programas guardadas..."
 
@@ -3208,7 +3317,7 @@ msgid "Schedule Padding..."
 msgstr "Margem de agendamento..."
 
 #: dialogs_misc.py:899
-#: dialogs_misc.py:1107
+#: dialogs_misc.py:1117
 #: main.py:2797
 #: main.py:2876
 #: main.py:3293
@@ -3220,17 +3329,17 @@ msgstr "Margem de agendamento..."
 #: main.py:3345
 #: main.py:3358
 #: main.py:3365
-#: main.py:9521
-#: main.py:9569
+#: main.py:9550
+#: main.py:9598
 msgid "Schedule Recording"
 msgstr "Agendar gravação"
 
 #: main.py:2806
-#: personal_tools_ui.py:323
+#: personal_tools_ui.py:334
 msgid "Schedule Recording..."
 msgstr "Agendar gravação..."
 
-#: personal_tools_ui.py:97
+#: personal_tools_ui.py:98
 msgid "Schedule by Time"
 msgstr "Agendar por horário"
 
@@ -3238,8 +3347,8 @@ msgstr "Agendar por horário"
 msgid "Schedule by Time..."
 msgstr "Agendar por horário..."
 
-#: main.py:9284
-#: planning_ui.py:84
+#: main.py:9306
+#: planning_ui.py:99
 msgid "Scheduled"
 msgstr "Agendado"
 
@@ -3250,12 +3359,14 @@ msgstr "Gravação agendada"
 
 #: main.py:1241
 #: main.py:9175
-#: main.py:9234
-#: main.py:9360
-#: main.py:9367
-#: main.py:9373
-#: main.py:9386
-#: main.py:9396
+#: main.py:9225
+#: main.py:9236
+#: main.py:9256
+#: main.py:9382
+#: main.py:9389
+#: main.py:9395
+#: main.py:9408
+#: main.py:9418
 msgid "Scheduled Recordings"
 msgstr "Gravações agendadas"
 
@@ -3283,15 +3394,15 @@ msgstr "Gravações agendadas"
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:271
+#: personal_tools_ui.py:282
 msgid "Search"
 msgstr "Pesquisar"
 
-#: personal_tools_ui.py:316
+#: personal_tools_ui.py:327
 msgid "Search Results"
 msgstr "Resultados da pesquisa"
 
-#: personal_tools_ui.py:272
+#: personal_tools_ui.py:283
 msgid "Search descriptions too"
 msgstr "Pesquisar também nas descrições"
 
@@ -3299,7 +3410,7 @@ msgstr "Pesquisar também nas descrições"
 msgid "Search guide channels:"
 msgstr "Pesquisar canais do guia:"
 
-#: recording_library_ui.py:42
+#: recording_library_ui.py:43
 msgid "Search recordings:"
 msgstr "Pesquisar gravações:"
 
@@ -3307,15 +3418,15 @@ msgstr "Pesquisar gravações:"
 msgid "Searching for devices..."
 msgstr "Procurando dispositivos..."
 
-#: personal_tools_ui.py:551
+#: personal_tools_ui.py:578
 msgid "Searching programmes..."
 msgstr "A pesquisar programas..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "Segundos de atraso em relação à última imagem conservada; 0 regressa ao direto."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:261
 #: internal_player.py:3302
 msgid "Seconds:"
 msgstr "Segundos:"
@@ -3346,7 +3457,7 @@ msgstr "Selecione primeiro um canal para gravar."
 msgid "Select a live channel first."
 msgstr "Selecione primeiro um canal ao vivo."
 
-#: main.py:9569
+#: main.py:9598
 msgid "Select a programme first."
 msgstr "Selecione primeiro um programa."
 
@@ -3358,9 +3469,9 @@ msgstr "Selecione um canal do guia ou escolha a associação automática."
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "Selecione um programa e prima Enter para o abrir, ou use o menu de contexto para o transferir. Prima Escape para fechar."
 
-#: main.py:9224
-#: main.py:9360
-#: main.py:9373
+#: main.py:9246
+#: main.py:9382
+#: main.py:9395
 msgid "Select a scheduled recording first."
 msgstr "Selecione primeiro uma gravação agendada."
 
@@ -3368,9 +3479,15 @@ msgstr "Selecione primeiro uma gravação agendada."
 msgid "Select an account to check its status:"
 msgstr "Selecione uma conta para verificar o status:"
 
-#: main.py:9233
+#: main.py:9255
 msgid "Select one pending or running recording to edit its times."
 msgstr "Selecione uma gravação pendente ou em curso para editar os horários."
+
+#: dvr.py:424
+#: dvr.py:495
+#: main.py:9224
+msgid "Select one pending recording that is not a series rule."
+msgstr "Selecione uma gravação pendente que não seja uma regra de série."
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3380,12 +3497,12 @@ msgstr "Selecione o dispositivo de saída de áudio para o leitor integrado."
 msgid "Select the playlist format to download"
 msgstr "Selecione o formato da lista de reprodução para baixar"
 
-#: personal_tools_ui.py:184
-#: personal_tools_ui.py:286
+#: personal_tools_ui.py:195
+#: personal_tools_ui.py:297
 msgid "Selected channel: {name}"
 msgstr "Canal selecionado: {name}"
 
-#: recording_library_ui.py:319
+#: recording_library_ui.py:363
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "Selecionadas: {count}; tamanho total: {size} MiB."
 
@@ -3421,9 +3538,9 @@ msgstr "Definir pasta de descarga..."
 
 #: dialogs_misc.py:1105
 #: main.py:2794
-#: main.py:9518
-#: personal_tools_ui.py:322
-#: planning_ui.py:47
+#: main.py:9540
+#: personal_tools_ui.py:333
+#: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "Definir lembrete…"
 
@@ -3436,11 +3553,11 @@ msgstr "Definir pasta de descarga"
 #: main.py:2093
 #: main.py:2098
 #: main.py:2103
-#: personal_tools_ui.py:609
+#: personal_tools_ui.py:637
 msgid "Settings Backup"
 msgstr "Backup de configurações"
 
-#: full_backup.py:113
+#: full_backup.py:118
 #: settings_backup.py:27
 msgid "Settings are too large to back up."
 msgstr "As configurações são grandes demais para o backup."
@@ -3459,7 +3576,7 @@ msgstr "Atalho salvo. Reinicie o aplicativo para usá-lo."
 msgid "Show Built-in Player"
 msgstr "Mostrar reprodutor integrado"
 
-#: recording_library_ui.py:56
+#: recording_library_ui.py:57
 msgid "Show Deleted Recordings"
 msgstr "Mostrar gravações excluídas"
 
@@ -3510,6 +3627,10 @@ msgstr "Desligar o computador quando as gravações terminarem"
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Desligamento cancelado. O desligamento automático após as gravações está desativado."
 
+#: planning_tools.py:86
+msgid "Size (bytes)"
+msgstr "Tamanho (bytes)"
+
 #: internal_player.py:3290
 #: internal_player.py:3302
 msgid "Sleep Timer"
@@ -3519,7 +3640,7 @@ msgstr "Temporizador de suspensão"
 msgid "Sleep Timer..."
 msgstr "Temporizador de suspensão…"
 
-#: recording_library_ui.py:64
+#: recording_library_ui.py:65
 msgid "Sort by"
 msgstr "Ordenar por"
 
@@ -3557,7 +3678,7 @@ msgstr "Stalker Portal"
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
-#: personal_tools_ui.py:104
+#: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "Início (hora local, AAAA-MM-DD HH:MM)"
@@ -3588,9 +3709,10 @@ msgstr "Começa às {start}: {title}"
 #: account_info.py:554
 #: account_info.py:606
 #: main.py:9191
-#: planning_ui.py:40
-#: recording_library_ui.py:60
-#: recording_library_ui.py:73
+#: planning_tools.py:86
+#: planning_ui.py:47
+#: recording_library_ui.py:61
+#: recording_library_ui.py:82
 msgid "Status"
 msgstr "Status"
 
@@ -3630,7 +3752,7 @@ msgstr "Parar abaixo de (MiB):"
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Parar a reprodução integrada após 1–1440 minutos; introduza 0 para cancelar o temporizador."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:98
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "Pare a reprodução local armazenada antes de mudar para um dispositivo de transmissão."
 
@@ -3643,13 +3765,14 @@ msgstr "Encerrar as gravações de forma controlada quando o espaço estiver cr�
 msgid "Stopped"
 msgstr "Parado"
 
-#: main.py:9289
-#: recording_library_ui.py:61
-#: recording_library_ui.py:257
+#: main.py:9311
+#: planning_tools.py:87
+#: recording_library_ui.py:62
+#: recording_library_ui.py:300
 msgid "Stopped by user"
 msgstr "Interrompida pelo usuário"
 
-#: main.py:9286
+#: main.py:9308
 msgid "Stopping"
 msgstr "Parando"
 
@@ -3796,6 +3919,10 @@ msgstr "Legendas"
 msgid "Subtitles: {name}"
 msgstr "Legendas: {name}"
 
+#: planning_tools_ui.py:23
+msgid "Sunday"
+msgstr "Domingo"
+
 #: internal_player.py:121
 #: main.py:7836
 msgid "System default"
@@ -3818,7 +3945,7 @@ msgstr "A importação do EPG não foi concluída. A guia de programação pode 
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "A importação do EPG foi concluída. A guia de programação está atualizada."
 
-#: personal_tools_ui.py:625
+#: personal_tools_ui.py:661
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "A aplicação será fechada. Abra-a novamente para concluir o restauro."
 
@@ -3838,8 +3965,8 @@ msgstr "O marcador não está mais disponível. Abra a lista novamente."
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "O limite de marcadores foi atingido. Exclua primeiro um marcador que não usa mais."
 
-#: personal_tools_ui.py:258
-#: personal_tools_ui.py:425
+#: personal_tools_ui.py:269
+#: personal_tools_ui.py:436
 msgid "The channel list changed. Try again."
 msgstr "A lista de canais mudou. Tente novamente."
 
@@ -3863,6 +3990,10 @@ msgstr "A conexão com o provedor expirou."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "O fim deve ser futuro e posterior ao início, no prazo máximo de sete dias."
 
+#: personal_tools_ui.py:147
+msgid "The first recording must start on a selected weekday."
+msgstr "A primeira gravação deve começar em um dos dias selecionados."
+
 #: updater.py:156
 msgid "The installer could not be started."
 msgstr "Não foi possível iniciar o instalador."
@@ -3879,7 +4010,7 @@ msgstr "O instalador ainda estava em execução após 15 minutos."
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "O idioma foi alterado. Reinicie o Accessible IPTV Client para que a alteração tenha efeito completo."
 
-#: recording_library_ui.py:158
+#: recording_library_ui.py:201
 msgid "The library can contain up to 20 folders."
 msgstr "A biblioteca pode conter até 20 pastas."
 
@@ -3887,15 +4018,15 @@ msgstr "A biblioteca pode conter até 20 pastas."
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "A memória intermédia do direto está a mudar de origem. Não foi possível iniciar a gravação agendada."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:60
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "A memória intermédia local ainda alimenta uma gravação. Pare-a antes de desativar esta função."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:312
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "A memória intermédia local parou devido a uma falha de armazenamento ou da origem."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:231
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "Não foi possível iniciar a memória intermédia local. Não foi aberta uma ligação adicional ao fornecedor. Desative esta função para tentar novamente a reprodução direta."
 
@@ -3912,21 +4043,21 @@ msgstr "A duração do conteúdo ainda não está disponível."
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "O próximo episódio começa em {seconds} segundos: {title}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:316
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "A posição anterior expirou; a reprodução passou para o intervalo conservado."
 
-#: personal_tools_ui.py:378
+#: personal_tools_ui.py:389
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "Não foi possível concluir a operação. Atualize e tente novamente."
 
 #: accessible_tools_ui.py:15
 #: internal_player.py:3252
-#: main.py:9366
-#: main.py:9395
-#: personal_tools_ui.py:27
-#: personal_tools_ui.py:572
-#: personal_tools_ui.py:577
+#: main.py:9388
+#: main.py:9417
+#: personal_tools_ui.py:28
+#: personal_tools_ui.py:603
+#: planning_tools_ui.py:42
 #: recording_conflicts_ui.py:135
 msgid "The operation failed:\n{error}"
 msgstr "A operação falhou:\n{error}"
@@ -3935,7 +4066,7 @@ msgstr "A operação falhou:\n{error}"
 msgid "The passwords do not match."
 msgstr "As senhas não coincidem."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: /workspace/scratch/683e52da44ed/iptv-development-20261116/client_timeshift.py:301
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "A posição em pausa expirou. A reprodução continua a partir da imagem mais antiga conservada."
 
@@ -3962,7 +4093,7 @@ msgstr "As listas foram alteradas durante a verificação. Abra Continuar assist
 msgid "The playlists changed. Select the channel again."
 msgstr "As listas de reprodução foram alteradas. Selecione o canal novamente."
 
-#: planning_ui.py:245
+#: planning_ui.py:310
 msgid "The programme has already started or its times are invalid."
 msgstr "O programa já começou ou seus horários são inválidos."
 
@@ -3994,7 +4125,7 @@ msgstr "O servidor do provedor apresentou um erro (HTTP 5xx). Tente novamente ma
 msgid "The provider's server refused the connection."
 msgstr "O servidor do provedor recusou a conexão."
 
-#: dvr.py:435
+#: dvr.py:481
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "A gravação mudou. Volte a abrir a janela dos horários."
 
@@ -4002,14 +4133,14 @@ msgstr "A gravação mudou. Volte a abrir a janela dos horários."
 msgid "The recording connection limit for this account has been reached ({limit}). Existing recordings will continue."
 msgstr "O limite de conexões para gravações desta conta foi atingido ({limit}). As gravações em andamento continuarão."
 
-#: recording_library.py:153
-#: recording_library.py:255
+#: recording_library.py:155
+#: recording_library.py:257
 msgid "The recording file changed. Refresh the library."
 msgstr "O arquivo de gravação foi alterado. Atualize a biblioteca."
 
-#: recording_library.py:150
-#: recording_library.py:249
-#: recording_library.py:252
+#: recording_library.py:152
+#: recording_library.py:251
+#: recording_library.py:254
 msgid "The recording file is no longer available."
 msgstr "O arquivo de gravação não está mais disponível."
 
@@ -4017,15 +4148,17 @@ msgstr "O arquivo de gravação não está mais disponível."
 msgid "The recording folder is unavailable or not writable:\n{error}"
 msgstr "A pasta de gravações está indisponível ou não permite gravação:\n{error}"
 
-#: recording_library.py:155
+#: recording_library.py:157
 msgid "The recording is still in use."
 msgstr "A gravação ainda está em uso."
 
-#: dvr.py:262
+#: dvr.py:282
+#: dvr.py:298
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "Não foi possível ler nem criar uma cópia de segurança do agendamento. As alterações foram desativadas para proteger o arquivo original. Verifique as permissões do arquivo e o espaço livre e reinicie o aplicativo."
 
-#: dvr.py:259
+#: dvr.py:279
+#: dvr.py:295
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "Não foi possível ler o agendamento das gravações. O arquivo original foi preservado em {path}. Verifique as gravações agendadas antes de adicionar outras."
 
@@ -4033,15 +4166,17 @@ msgstr "Não foi possível ler o agendamento das gravações. O arquivo original
 msgid "The recording start time has already passed."
 msgstr "A hora de início da gravação já passou."
 
-#: recording_library.py:190
+#: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "A pasta da lixeira de gravações não está disponível."
 
-#: planning_ui.py:137
-#: planning_ui.py:169
-#: planning_ui.py:228
-#: planning_ui.py:256
-#: planning_ui.py:280
+#: programme_reminders.py:203
+msgid "The reminder cannot be postponed beyond the programme's end."
+msgstr "O lembrete só pode ser adiado para um horário posterior, antes do fim do programa."
+
+#: planning_ui.py:166
+#: planning_ui.py:247
+#: planning_ui.py:358
 msgid "The reminder operation failed:\n{error}"
 msgstr "A operação do lembrete falhou:\n{error}"
 
@@ -4072,7 +4207,7 @@ msgstr "O servidor não informou nenhum detalhe da conta."
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:445
+#: personal_tools_ui.py:456
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "Não foi possível salvar as configurações. Verifique o espaço livre e a permissão de escrita e tente novamente."
 
@@ -4126,7 +4261,7 @@ msgstr "Esta hora local não existe. Verifique a data da mudança de hora."
 msgid "This local time occurs twice when the clocks change."
 msgstr "Esta hora local ocorre duas vezes na mudança de hora."
 
-#: personal_tools_ui.py:623
+#: personal_tools_ui.py:659
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "Esta cópia antiga substitui apenas as definições. As gravações agendadas e os lembretes serão mantidos."
 
@@ -4150,8 +4285,8 @@ msgstr "Este programa ainda não está disponível como replay."
 msgid "This programme's start and end times are invalid."
 msgstr "A hora de início e a de fim deste programa não são válidas."
 
-#: dvr.py:358
-#: dvr.py:420
+#: dvr.py:390
+#: dvr.py:466
 msgid "This recording is already scheduled."
 msgstr "Esta gravação já está agendada."
 
@@ -4164,9 +4299,13 @@ msgstr "Este agendamento requer {count} conexões de gravação simultâneas par
 msgid "This stream does not support seeking."
 msgstr "Este fluxo não permite mudar de posição."
 
+#: planning_tools_ui.py:23
+msgid "Thursday"
+msgstr "Quinta-feira"
+
 #: main.py:9188
-#: main.py:9425
-#: planning_ui.py:39
+#: main.py:9447
+#: planning_ui.py:46
 msgid "Time"
 msgstr "Hora"
 
@@ -4175,12 +4314,13 @@ msgid "Time remaining: {time}"
 msgstr "Tempo restante: {time}"
 
 #: main.py:9189
-#: main.py:9426
-#: personal_tools_ui.py:101
-#: planning_ui.py:39
+#: main.py:9448
+#: personal_tools_ui.py:102
+#: planning_tools.py:86
+#: planning_ui.py:46
 #: recording_conflicts_ui.py:35
-#: recording_library_ui.py:65
-#: recording_library_ui.py:72
+#: recording_library_ui.py:66
+#: recording_library_ui.py:81
 #: resume_dialogs.py:44
 msgid "Title"
 msgstr "Título"
@@ -4210,6 +4350,10 @@ msgstr "Conta de teste"
 #: playlist.py:3640
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "Tentar adicionar automaticamente o guia XMLTV do portal"
+
+#: planning_tools_ui.py:23
+msgid "Tuesday"
+msgstr "Terça-feira"
 
 #: account_info.py:461
 #: resume_dialogs.py:38
@@ -4254,11 +4398,13 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Resposta de conta inesperada do servidor Xtream"
 
 #: channel_widgets.py:383
+#: planning_tools.py:88
+#: planning_tools.py:92
 #: recording_conflicts_ui.py:166
-#: recording_library_ui.py:61
-#: recording_library_ui.py:258
-#: recording_library_ui.py:265
-#: recording_library_ui.py:266
+#: recording_library_ui.py:62
+#: recording_library_ui.py:301
+#: recording_library_ui.py:308
+#: recording_library_ui.py:309
 #: updater.py:967
 msgid "Unknown"
 msgstr "Desconhecido"
@@ -4268,7 +4414,7 @@ msgid "Unknown command."
 msgstr "Comando desconhecido."
 
 #: main.py:3288
-#: planning_ui.py:90
+#: planning_ui.py:105
 #: recording_conflicts_ui.py:21
 #: resume_dialogs.py:88
 msgid "Unknown time"
@@ -4475,6 +4621,10 @@ msgstr "Reativar para gravações agendadas (Windows)"
 msgid "Warn below (MiB):"
 msgstr "Avisar abaixo de (MiB):"
 
+#: planning_tools_ui.py:23
+msgid "Wednesday"
+msgstr "Quarta-feira"
+
 #: client_ui.py:126
 #: client_ui.py:278
 #: internal_player.py:596
@@ -4508,7 +4658,7 @@ msgstr "O Windows não conseguiu ativar o temporizador de ativação da gravaç�
 msgid "Windows did not get permission to install the update."
 msgstr "O Windows não obteve permissão para instalar a atualização."
 
-#: full_backup.py:129
+#: full_backup.py:134
 #: settings_backup.py:61
 #: settings_backup.py:68
 msgid "Wrong password or damaged backup."
@@ -4540,7 +4690,7 @@ msgstr "Xtream Codes – {name}"
 msgid "Yes"
 msgstr "Sim"
 
-#: personal_tools_ui.py:376
+#: personal_tools_ui.py:387
 msgid "You can save up to 30 programme searches."
 msgstr "Pode guardar até 30 pesquisas de programas."
 
@@ -4600,7 +4750,7 @@ msgstr "Recodificação x264 (MKV)"
 msgid "x264 re-encode (MP4)"
 msgstr "Recodificação x264 (MP4)"
 
-#: main.py:9626
+#: main.py:9655
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "O {app} já está em execução, mas não respondeu. Aguarde um momento e tente novamente, ou feche-o pela área de notificação."
 
@@ -4625,7 +4775,7 @@ msgstr "{count} programas"
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} gravação está agendada mas ainda não começou.\n\n{names}\n\nA aplicação tem de permanecer aberta para a iniciar. Sair na mesma?"
 
-#: recording_library_ui.py:318
+#: recording_library_ui.py:362
 msgid "{count} recording(s). Active recordings are not listed."
 msgstr "{count} gravações. As gravações em andamento não são exibidas."
 
@@ -4665,7 +4815,7 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "O {player} não está configurado para Linux."
 
-#: planning_ui.py:207
+#: planning_ui.py:269
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nInício: {time}"
 
