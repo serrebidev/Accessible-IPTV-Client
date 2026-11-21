@@ -16,13 +16,13 @@ msgstr ""
 msgid "&Playback"
 msgstr "&Oynatma"
 
-#: main.py:4311
+#: main.py:4338
 msgid "(No EPG debug log has been written yet.)"
 msgstr "(Henüz EPG hata ayıklama günlüğü yazılmadı.)"
 
 #: channel_widgets.py:382
 #: dialogs_misc.py:565
-#: personal_tools_ui.py:195
+#: personal_tools_ui.py:340
 #: planning_ui.py:107
 #: planning_ui.py:270
 #: recording_conflicts_ui.py:128
@@ -34,7 +34,7 @@ msgstr "(Başlık yok)"
 msgid "(thumbprint {thumbprint})."
 msgstr "(parmak izi {thumbprint})."
 
-#: main.py:2093
+#: main.py:2101
 #: settings_backup.py:18
 msgid "A backup password is required."
 msgstr "Yedekleme şifresi gereklidir."
@@ -43,7 +43,7 @@ msgstr "Yedekleme şifresi gereklidir."
 msgid "A bookmark with this name already exists for this item."
 msgstr "Bu içerik için aynı adda bir yer işareti zaten var."
 
-#: main.py:5738
+#: main.py:5782
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "Bir indirme veya kayıt devam ediyor.\n\nŞimdi çıkarsanız duracak ve yalnızca şu ana kadar yakalanan kısım korunacak.\n\nYine de çıkılsın mı?"
 
@@ -51,7 +51,7 @@ msgstr "Bir indirme veya kayıt devam ediyor.\n\nŞimdi çıkarsanız duracak ve
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "Bir favori listesi en fazla 2000 kanal içerebilir."
 
-#: recording_library.py:267
+#: recording_library.py:327
 msgid "A file with this name already exists in the recording folder."
 msgstr "Kayıt klasöründe aynı adda bir dosya zaten var."
 
@@ -60,11 +60,11 @@ msgstr "Kayıt klasöründe aynı adda bir dosya zaten var."
 msgid "A list with this name already exists."
 msgstr "Bu adda bir liste zaten var."
 
-#: main.py:5715
+#: main.py:5759
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "Bir kayıt devam ediyor ve {count} kayıt hâlâ zamanlanmış durumda.\n\n{names}\n\nUygulamanın, kaydı başlatmak için açık kalması gerekiyor. Yine de çıkılsın mı?"
 
-#: dvr.py:484
+#: dvr.py:577
 msgid "A running recording's start time cannot be changed."
 msgstr "Devam eden bir kaydın başlangıç saati değiştirilemez."
 
@@ -76,8 +76,8 @@ msgstr "Windows ve Linux için ekran okuyucuyla erişilebilir bir IPTV istemcisi
 msgid "About {name}"
 msgstr "{name} hakkında"
 
-#: client_ui.py:247
-#: client_ui.py:461
+#: client_ui.py:249
+#: client_ui.py:465
 msgid "About..."
 msgstr "Hakkında..."
 
@@ -85,8 +85,8 @@ msgstr "Hakkında..."
 msgid "Accessibility"
 msgstr "Erişilebilirlik"
 
-#: personal_tools_ui.py:624
-#: personal_tools_ui.py:646
+#: personal_tools_ui.py:839
+#: personal_tools_ui.py:861
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Accessible IPTV yedeği (*.aiptv)"
 
@@ -95,8 +95,8 @@ msgstr "Accessible IPTV yedeği (*.aiptv)"
 msgid "Account"
 msgstr "Hesap"
 
-#: client_ui.py:128
-#: client_ui.py:279
+#: client_ui.py:130
+#: client_ui.py:283
 #: dialogs_misc.py:330
 #: shortcuts.py:92
 msgid "Account Info"
@@ -129,17 +129,17 @@ msgstr "Hesaplar"
 msgid "Active"
 msgstr "Etkin"
 
-#: main.py:4306
+#: main.py:4333
 msgid "Active recordings: {count}"
 msgstr "Etkin kayıtlar: {count}"
 
-#: playlist.py:3543
-#: playlist.py:3662
+#: playlist.py:3583
+#: playlist.py:3702
 msgid "Add"
 msgstr "Ekle"
 
-#: playlist.py:3217
-#: playlist.py:3320
+#: playlist.py:3257
+#: playlist.py:3360
 msgid "Add File"
 msgstr "Dosya ekle"
 
@@ -155,49 +155,50 @@ msgstr "Adlandırılmış Yer İşareti Ekle"
 msgid "Add Named Bookmark..."
 msgstr "Adlandırılmış Yer İşareti Ekle..."
 
-#: personal_tools_ui.py:166
+#: personal_tools_ui.py:310
 msgid "Add Selected Channel"
 msgstr "Seçili Kanalı Ekle"
 
-#: playlist.py:3323
+#: playlist.py:3363
 msgid "Add Stalker Portal"
 msgstr "Stalker Portal ekle"
 
-#: playlist.py:3596
+#: playlist.py:3636
 msgid "Add Stalker Portal Account"
 msgstr "Stalker Portal hesabı ekle"
 
-#: playlist.py:3218
-#: playlist.py:3321
+#: playlist.py:3258
+#: playlist.py:3361
 msgid "Add URL"
 msgstr "URL ekle"
 
-#: playlist.py:3322
+#: playlist.py:3362
 msgid "Add Xtream Codes"
 msgstr "Xtream Codes ekle"
 
-#: playlist.py:3481
+#: playlist.py:3521
 msgid "Add Xtream Codes Account"
 msgstr "Xtream Codes hesabı ekle"
 
-#: client_ui.py:306
-#: main.py:1959
+#: client_ui.py:310
+#: main.py:1967
 #: shortcuts.py:93
 msgid "Add to Favorites"
 msgstr "Sık kullanılanlara ekle"
 
-#: main.py:6261
-#: main.py:6297
-#: main.py:6298
-#: main.py:7108
-#: personal_tools_ui.py:294
-#: personal_tools_ui.py:296
+#: main.py:6305
+#: main.py:6341
+#: main.py:6342
+#: main.py:7152
+#: personal_tools_ui.py:177
+#: personal_tools_ui.py:499
+#: personal_tools_ui.py:501
 msgid "All Channels"
 msgstr "Tüm kanallar"
 
 #: recording_library_ui.py:46
-#: recording_library_ui.py:205
-#: recording_library_ui.py:221
+#: recording_library_ui.py:207
+#: recording_library_ui.py:223
 msgid "All Recording Folders"
 msgstr "Tüm Kayıt Klasörleri"
 
@@ -205,21 +206,21 @@ msgstr "Tüm Kayıt Klasörleri"
 msgid "All Recordings"
 msgstr "Tüm Kayıtlar"
 
-#: playlist.py:3256
-#: playlist.py:3356
+#: playlist.py:3296
+#: playlist.py:3396
 msgid "All files"
 msgstr "Tüm dosyalar"
 
-#: main.py:1461
-#: main.py:6908
+#: main.py:1469
+#: main.py:6952
 msgid "All playlists"
 msgstr "Tüm oynatma listeleri"
 
-#: main.py:6906
+#: main.py:6950
 msgid "All playlists refreshed."
 msgstr "Tüm oynatma listeleri yenilendi."
 
-#: playlist.py:3379
+#: playlist.py:3419
 msgid "All playlists selected. Press F5 to refresh them all."
 msgstr "Tüm oynatma listeleri seçildi. Hepsini yenilemek için F5 tuşuna basın."
 
@@ -235,39 +236,39 @@ msgstr "Bu sınırı belirlerken oynatmayı ve diğer cihazları da hesaba katı
 msgid "Allowed formats"
 msgstr "İzin verilen biçimler"
 
-#: playlist.py:3231
+#: playlist.py:3271
 msgid "Also use the guide each playlist links to"
 msgstr "Her oynatma listesinin belirttiği EPG'yi de kullan"
 
-#: main.py:4770
+#: main.py:4814
 msgid "An update is already in progress."
 msgstr "Zaten bir güncelleme sürüyor."
 
-#: main.py:7844
+#: main.py:7888
 msgid "Application voice output"
 msgstr "Uygulama sesi çıkışı"
 
-#: client_ui.py:414
+#: client_ui.py:418
 msgid "Application voice output..."
 msgstr "Uygulama sesi çıkışı..."
 
-#: main.py:7876
+#: main.py:7920
 msgid "Application voice output: {name}"
 msgstr "Uygulama sesi çıkışı: {name}"
 
-#: main.py:7800
+#: main.py:7844
 msgid "Application voice speed"
 msgstr "Uygulama sesinin konuşma hızı"
 
-#: client_ui.py:417
+#: client_ui.py:421
 msgid "Application voice speed..."
 msgstr "Uygulama sesinin konuşma hızı…"
 
-#: main.py:7769
+#: main.py:7813
 msgid "Application voice volume"
 msgstr "Uygulama sesi düzeyi"
 
-#: client_ui.py:411
+#: client_ui.py:415
 msgid "Application voice volume..."
 msgstr "Uygulama sesi düzeyi..."
 
@@ -279,9 +280,9 @@ msgstr "Program rehberi ata"
 msgid "Assign Programme Guide..."
 msgstr "Program rehberi ata..."
 
-#: playlist.py:3636
-#: playlist.py:3637
-#: playlist.py:3639
+#: playlist.py:3676
+#: playlist.py:3677
+#: playlist.py:3679
 msgid "Attempt to add provider XMLTV"
 msgstr "Sağlayıcının XMLTV'sini eklemeyi dene"
 
@@ -299,27 +300,27 @@ msgstr "Ses çıkış cihazı..."
 msgid "Audio Track"
 msgstr "Ses parçası"
 
-#: internal_player.py:2550
+#: internal_player.py:2571
 msgid "Audio Track: {name}"
 msgstr "Ses parçası: {name}"
 
-#: main.py:3272
+#: main.py:3280
 msgid "Audio only (AAC, M4A)"
 msgstr "Yalnızca ses (AAC, M4A)"
 
-#: main.py:3270
+#: main.py:3278
 msgid "Audio only (FLAC)"
 msgstr "Yalnızca ses (FLAC)"
 
-#: main.py:3269
+#: main.py:3277
 msgid "Audio only (MP3 V0)"
 msgstr "Yalnızca ses (MP3 V0)"
 
-#: main.py:3273
+#: main.py:3281
 msgid "Audio only (Opus)"
 msgstr "Yalnızca ses (Opus)"
 
-#: main.py:3271
+#: main.py:3279
 msgid "Audio only (WAV)"
 msgstr "Yalnızca ses (WAV)"
 
@@ -328,17 +329,17 @@ msgstr "Yalnızca ses (WAV)"
 msgid "Audio output devices"
 msgstr "Ses çıkış cihazları"
 
-#: internal_player.py:2586
+#: internal_player.py:2607
 msgid "Audio track unavailable"
 msgstr "Ses parçası kullanılamıyor"
 
-#: main.py:3807
+#: main.py:3834
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Yalnızca ses akışı algılandı. Kayıt başladı ({fmt}):\n{path}"
 
-#: internal_player.py:2079
-#: internal_player.py:2605
-#: internal_player.py:2614
+#: internal_player.py:2084
+#: internal_player.py:2626
+#: internal_player.py:2635
 msgid "Audio: {name}"
 msgstr "Ses: {name}"
 
@@ -368,18 +369,18 @@ msgstr "Authenticode doğrulaması zaman aşımına uğradı."
 msgid "Author: serrebidev."
 msgstr "Yazar: serrebidev."
 
-#: client_ui.py:213
-#: client_ui.py:352
+#: client_ui.py:215
+#: client_ui.py:356
 msgid "Auto-check for Updates"
 msgstr "Güncellemeleri otomatik denetle"
 
-#: client_ui.py:190
-#: client_ui.py:342
+#: client_ui.py:192
+#: client_ui.py:346
 msgid "Automatic"
 msgstr "Otomatik"
 
-#: client_ui.py:234
-#: client_ui.py:375
+#: client_ui.py:236
+#: client_ui.py:379
 msgid "Automatic Announcements"
 msgstr "Otomatik Duyurular"
 
@@ -387,9 +388,9 @@ msgstr "Otomatik Duyurular"
 msgid "Automatically Play the Next Episode"
 msgstr "Sonraki Bölümü Otomatik Oynat"
 
-#: playlist.py:3523
-#: playlist.py:3524
-#: playlist.py:3526
+#: playlist.py:3563
+#: playlist.py:3564
+#: playlist.py:3566
 msgid "Automatically add XMLTV URL"
 msgstr "XMLTV URL'sini otomatik ekle"
 
@@ -426,11 +427,11 @@ msgstr "Yedekteki ayarlar geçersiz."
 msgid "Banned"
 msgstr "Yasaklı"
 
-#: playlist.py:3649
+#: playlist.py:3689
 msgid "Base URL of the Stalker/Ministra portal"
 msgstr "Stalker/Ministra portalının temel URL'si"
 
-#: playlist.py:3531
+#: playlist.py:3571
 msgid "Base URL of the Xtream Codes server"
 msgstr "Xtream Codes sunucusunun temel URL'si"
 
@@ -456,11 +457,11 @@ msgstr "Uyumsuz değişiklikler"
 msgid "Browse..."
 msgstr "Gözat..."
 
-#: internal_player.py:902
-#: internal_player.py:1942
-#: internal_player.py:1955
-#: internal_player.py:2035
-#: internal_player.py:2255
+#: internal_player.py:907
+#: internal_player.py:1947
+#: internal_player.py:1960
+#: internal_player.py:2040
+#: internal_player.py:2276
 msgid "Buffering..."
 msgstr "Arabelleğe alınıyor..."
 
@@ -472,20 +473,20 @@ msgstr "Hata düzeltmeleri"
 msgid "Built-in IPTV Player"
 msgstr "Yerleşik IPTV oynatıcısı"
 
-#: main.py:905
-#: main.py:7910
+#: main.py:913
+#: main.py:7954
 msgid "Built-in Player"
 msgstr "Yerleşik oynatıcı"
 
-#: main.py:651
+#: main.py:659
 msgid "Built-in player is unavailable."
 msgstr "Yerleşik oynatıcı kullanılamıyor."
 
-#: main.py:8052
+#: main.py:8097
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "Yerleşik oynatıcı kullanılamıyor:\n{detail}"
 
-#: recording_library_ui.py:373
+#: recording_library_ui.py:376
 msgid "CSV file (*.csv)"
 msgstr "CSV dosyası (*.csv)"
 
@@ -500,21 +501,21 @@ msgstr "Takvim dosyası (*.ics)"
 #: dialogs_misc.py:742
 #: episode_continuation_ui.py:85
 #: internal_player.py:150
-#: main.py:7781
-#: main.py:7814
-#: main.py:8947
-#: main.py:9283
+#: main.py:7825
+#: main.py:7858
+#: main.py:8999
+#: main.py:9442
 #: options.py:987
 #: personal_tools_ui.py:92
-#: playlist.py:3236
-#: playlist.py:3336
-#: playlist.py:3544
-#: playlist.py:3663
+#: playlist.py:3276
+#: playlist.py:3376
+#: playlist.py:3584
+#: playlist.py:3703
 #: recording_conflicts_ui.py:99
 msgid "Cancel"
 msgstr "İptal"
 
-#: main.py:9044
+#: main.py:9096
 msgid "Cancel Download"
 msgstr "İndirmeyi iptal et"
 
@@ -522,11 +523,11 @@ msgstr "İndirmeyi iptal et"
 msgid "Cancel Shutdown"
 msgstr "Kapatmayı iptal et"
 
-#: main.py:9314
+#: main.py:9470
 msgid "Canceled"
 msgstr "İptal edildi"
 
-#: main.py:429
+#: main.py:437
 msgid "Cannot find \"{text}\"."
 msgstr "\"{text}\" bulunamadı."
 
@@ -534,15 +535,15 @@ msgstr "\"{text}\" bulunamadı."
 msgid "Cast"
 msgstr "Yayınla"
 
-#: client_ui.py:134
-#: client_ui.py:291
-#: main.py:826
+#: client_ui.py:136
+#: client_ui.py:295
+#: main.py:834
 #: shortcuts.py:88
 msgid "Cast / Connect..."
 msgstr "Yayınla / Bağlan..."
 
-#: client_ui.py:255
-#: client_ui.py:282
+#: client_ui.py:257
+#: client_ui.py:286
 msgid "Cast To..."
 msgstr "Şuraya yayınla..."
 
@@ -555,56 +556,58 @@ msgstr "Cihaza yayınla"
 msgid "Cast..."
 msgstr "Yayınla..."
 
-#: internal_player.py:2003
-#: internal_player.py:2007
-#: internal_player.py:2026
-#: main.py:8035
-#: main.py:8208
-#: main.py:8237
-#: main.py:8856
+#: internal_player.py:2008
+#: internal_player.py:2012
+#: internal_player.py:2031
+#: main.py:8080
+#: main.py:8259
+#: main.py:8288
+#: main.py:8908
 msgid "Casting"
 msgstr "Yayınlanıyor"
 
-#: internal_player.py:2026
-#: main.py:8031
-#: main.py:8038
-#: main.py:8220
+#: internal_player.py:2031
+#: main.py:8076
+#: main.py:8083
+#: main.py:8271
 msgid "Casting Error"
 msgstr "Yayınlama hatası"
 
-#: main.py:8028
+#: main.py:8073
 msgid "Casting failed: {error}"
 msgstr "Yayınlama başarısız oldu: {error}"
 
-#: internal_player.py:2003
+#: internal_player.py:2008
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "Yayınlayıcı başlatılmadığı için yayınlama kullanılamıyor."
 
-#: main.py:8035
-#: main.py:8237
+#: main.py:8080
+#: main.py:8288
 msgid "Casting to {device}..."
 msgstr "{device} cihazına yayınlanıyor..."
 
 #: dialogs_misc.py:496
-#: main.py:2814
-#: main.py:8321
-#: main.py:8344
-#: main.py:8368
-#: main.py:8371
+#: main.py:2822
+#: main.py:8372
+#: main.py:8395
+#: main.py:8419
+#: main.py:8422
 msgid "Catch-up"
 msgstr "Geri izleme"
 
-#: main.py:8426
-#: main.py:8432
-#: main.py:8444
-#: main.py:8457
-#: main.py:8548
-#: main.py:8556
+#: main.py:8478
+#: main.py:8484
+#: main.py:8496
+#: main.py:8509
 #: main.py:8600
-#: main.py:8664
-#: main.py:8682
-#: main.py:8686
-#: main.py:8729
+#: main.py:8608
+#: main.py:8651
+#: main.py:8715
+#: main.py:8733
+#: main.py:8737
+#: main.py:8781
+#: main.py:9356
+#: main.py:9363
 msgid "Catch-up Download"
 msgstr "Geri izleme indirmesi"
 
@@ -627,19 +630,22 @@ msgstr "Kategoriler"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "{app} uygulamasının her sürümündeki değişiklikler, en yenisi önce. En son sürümlerin notları çevrildikten sonra sizin dilinizde görünür; daha eski girişler İngilizce kalır."
 
-#: main.py:9190
-#: personal_tools_ui.py:431
-#: planning_tools.py:86
+#: main.py:9269
+#: personal_tools_ui.py:636
+#: planning_tools.py:87
 #: planning_ui.py:47
 #: recording_library_ui.py:81
 msgid "Channel"
 msgstr "Kanal"
 
 #: favorite_collections.py:75
-#: main.py:3373
-#: main.py:7068
-#: personal_tools_ui.py:274
-#: personal_tools_ui.py:426
+#: main.py:3400
+#: main.py:7112
+#: main.py:9336
+#: personal_tools_ui.py:287
+#: personal_tools_ui.py:422
+#: personal_tools_ui.py:479
+#: personal_tools_ui.py:631
 #: planning_ui.py:291
 #: planning_ui.py:336
 msgid "Channel Not Found"
@@ -650,7 +656,7 @@ msgstr "Kanal bulunamadı"
 msgid "Channel missing command reference"
 msgstr "Kanalda komut referansı eksik"
 
-#: main.py:3008
+#: main.py:3016
 msgid "Channel number {number} was not found."
 msgstr "Kanal numarası {number} bulunamadı."
 
@@ -661,9 +667,10 @@ msgstr "Kanal: {name}"
 #: channel_widgets.py:248
 #: channel_widgets.py:250
 #: client_ui.py:71
-#: personal_tools_ui.py:162
-#: personal_tools_ui.py:292
-#: personal_tools_ui.py:307
+#: personal_tools_ui.py:175
+#: personal_tools_ui.py:306
+#: personal_tools_ui.py:497
+#: personal_tools_ui.py:512
 msgid "Channels"
 msgstr "Kanallar"
 
@@ -671,7 +678,7 @@ msgstr "Kanallar"
 msgid "Check Availability"
 msgstr "Kullanılabilirliği Kontrol Et"
 
-#: main.py:4573
+#: main.py:4617
 msgid "Check Recording Storage..."
 msgstr "Kayıt Alanını Kontrol Et…"
 
@@ -679,15 +686,15 @@ msgstr "Kayıt Alanını Kontrol Et…"
 msgid "Check failed."
 msgstr "Denetim başarısız."
 
-#: client_ui.py:237
+#: client_ui.py:239
 msgid "Check for Updates"
 msgstr "Güncellemeleri denetle"
 
-#: client_ui.py:457
+#: client_ui.py:461
 msgid "Check for Updates..."
 msgstr "Güncellemeleri denetle..."
 
-#: main.py:6872
+#: main.py:6916
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "Dosya > EPG Yöneticisi'ndeki EPG kaynaklarına erişilebildiğini denetleyin, sonra yeniden deneyin."
 
@@ -695,7 +702,7 @@ msgstr "Dosya > EPG Yöneticisi'ndeki EPG kaynaklarına erişilebildiğini denet
 msgid "Checking account, please wait..."
 msgstr "Hesap denetleniyor, lütfen bekleyin..."
 
-#: main.py:4949
+#: main.py:4993
 msgid "Checking for update details..."
 msgstr "Güncelleme ayrıntıları denetleniyor..."
 
@@ -708,7 +715,7 @@ msgstr "Kayıt çakışmaları denetleniyor…"
 msgid "Checking saved content…"
 msgstr "Kayıtlı içerik kontrol ediliyor…"
 
-#: main.py:4376
+#: main.py:4403
 msgid "Checking stream type…"
 msgstr "Akış türü denetleniyor…"
 
@@ -720,31 +727,31 @@ msgstr "{account} denetleniyor..."
 msgid "Choose Audio Track"
 msgstr "Ses parçası seç"
 
-#: personal_tools_ui.py:431
+#: personal_tools_ui.py:636
 msgid "Choose Channel"
 msgstr "Kanal Seç"
 
-#: playlist.py:3258
+#: playlist.py:3298
 msgid "Choose EPG XML file"
 msgstr "EPG XML dosyasını seç"
 
-#: playlist.py:3358
+#: playlist.py:3398
 msgid "Choose M3U file"
 msgstr "M3U dosyasını seç"
 
-#: main.py:6896
+#: main.py:6940
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "Yeni oynatma listesini kaydetmek için Tamam'ı seçin, sonra yenileyin."
 
-#: main.py:2977
+#: main.py:2985
 msgid "Choose a channel to play:"
 msgstr "Oynatılacak kanalı seçin:"
 
-#: main.py:2147
+#: main.py:2155
 msgid "Choose a command to change:"
 msgstr "Değiştirilecek komutu seçin:"
 
-#: favorite_collections.py:101
+#: favorite_collections.py:103
 msgid "Choose a different channel that is not already in this list."
 msgstr "Bu listede henüz bulunmayan başka bir kanal seçin."
 
@@ -754,7 +761,7 @@ msgstr "Bu listede henüz bulunmayan başka bir kanal seçin."
 msgid "Choose a position before the end of the media."
 msgstr "Medyanın bitişinden önce bir konum seçin."
 
-#: recording_library_ui.py:195
+#: recording_library_ui.py:197
 msgid "Choose a recording folder"
 msgstr "Bir kayıt klasörü seçin"
 
@@ -790,13 +797,13 @@ msgstr "Bu oturumun bildirim geçmişi temizlensin mi?"
 #: dialogs_misc.py:175
 #: dialogs_misc.py:358
 #: dialogs_misc.py:900
-#: main.py:308
-#: main.py:9139
+#: main.py:316
+#: main.py:9198
 #: personal_tools_ui.py:92
 #: planning_tools_ui.py:83
 #: planning_ui.py:60
 #: recording_conflicts_ui.py:99
-#: recording_library_ui.py:95
+#: recording_library_ui.py:97
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
 #: session_tools_ui.py:67
@@ -808,22 +815,22 @@ msgstr "Kapat"
 msgid "Community and support"
 msgstr "Topluluk ve destek"
 
-#: main.py:9309
-#: planning_tools.py:87
+#: main.py:9465
+#: planning_tools.py:88
 #: recording_library_ui.py:62
-#: recording_library_ui.py:300
+#: recording_library_ui.py:302
 msgid "Completed"
 msgstr "Tamamlandı"
 
-#: playlist.py:3223
+#: playlist.py:3263
 msgid "Configured EPG sources"
 msgstr "Yapılandırılmış EPG kaynakları"
 
-#: playlist.py:3328
+#: playlist.py:3368
 msgid "Configured playlists and providers"
 msgstr "Yapılandırılmış oynatma listeleri ve sağlayıcılar"
 
-#: main.py:4305
+#: main.py:4332
 msgid "Configured playlists: {count}"
 msgstr "Yapılandırılmış oynatma listeleri: {count}"
 
@@ -835,11 +842,11 @@ msgstr "Onayla"
 msgid "Connect"
 msgstr "Bağlan"
 
-#: main.py:8869
+#: main.py:8921
 msgid "Connected"
 msgstr "Bağlandı"
 
-#: main.py:8869
+#: main.py:8921
 msgid "Connected to {device}"
 msgstr "{device} cihazına bağlandı"
 
@@ -851,36 +858,36 @@ msgstr "Kayıtlar için kullanılabilir bağlantılar (0 = ek sınır yok):"
 msgid "Connections in use"
 msgstr "Kullanılan bağlantılar"
 
-#: internal_player.py:3253
-#: main.py:6409
-#: main.py:6419
-#: main.py:8068
+#: internal_player.py:3276
+#: main.py:6453
+#: main.py:6463
+#: main.py:8119
 #: resume_dialogs.py:30
 #: resume_dialogs.py:242
 msgid "Continue Watching"
 msgstr "İzlemeye Devam Et"
 
-#: client_ui.py:149
-#: client_ui.py:301
+#: client_ui.py:151
+#: client_ui.py:305
 msgid "Continue Watching..."
 msgstr "İzlemeye Devam Et…"
 
 #: dialogs_misc.py:357
-#: main.py:9136
+#: main.py:9195
 #: session_tools_ui.py:160
 msgid "Copy Details"
 msgstr "Ayrıntıları kopyala"
 
-#: client_ui.py:246
-#: client_ui.py:459
+#: client_ui.py:248
+#: client_ui.py:463
 msgid "Copy Log and Debug Information"
 msgstr "Günlüğü ve hata ayıklama bilgilerini kopyala"
 
-#: playlist.py:3166
+#: playlist.py:3206
 msgid "Copy URL"
 msgstr "URL'yi kopyala"
 
-#: main.py:7825
+#: main.py:7869
 msgid "Could not change the application voice speed."
 msgstr "Uygulama sesinin konuşma hızı değiştirilemedi."
 
@@ -892,7 +899,7 @@ msgstr "Kullanılabilirlik kontrol edilemedi."
 msgid "Could not check this account.\n\n{error}"
 msgstr "Bu hesap denetlenemedi.\n\n{error}"
 
-#: main.py:4321
+#: main.py:4348
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "Tanılama bilgileri kopyalanamadı:\n{error}"
 
@@ -900,40 +907,40 @@ msgstr "Tanılama bilgileri kopyalanamadı:\n{error}"
 msgid "Could not create libVLC media player object."
 msgstr "libVLC medya oynatıcı nesnesi oluşturulamadı."
 
-#: main.py:3541
-#: main.py:3677
+#: main.py:3568
+#: main.py:3704
 msgid "Could not find a stream URL for this channel."
 msgstr "Bu kanal için bir yayın URL'si bulunamadı."
 
-#: main.py:3371
-#: main.py:7068
+#: main.py:3398
+#: main.py:7112
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "'{channel}' kanalı oynatma listenizde bulunamadı."
 
-#: main.py:7990
+#: main.py:8035
 msgid "Could not find stream URL for this selection."
 msgstr "Bu seçim için yayın URL'si bulunamadı."
 
-#: main.py:961
+#: main.py:969
 msgid "Could not finish restoring the backup. No background services were started.\n{error}"
 msgstr "Yedek geri yükleme tamamlanamadı. Arka plan hizmetleri başlatılmadı.\n{error}"
 
-#: main.py:3293
-#: main.py:7063
+#: main.py:3301
+#: main.py:7107
 msgid "Could not identify the channel."
 msgstr "Kanal tanımlanamadı."
 
-#: main.py:6593
+#: main.py:6637
 msgid "Could not load episodes for this series."
 msgstr "Bu dizinin bölümleri yüklenemedi."
 
 #: episode_continuation_ui.py:50
 #: episode_continuation_ui.py:138
-#: main.py:6612
+#: main.py:6656
 msgid "Could not load episodes:\n{error}"
 msgstr "Bölümler yüklenemedi:\n{error}"
 
-#: internal_player.py:2715
+#: internal_player.py:2736
 msgid "Could not load subtitle file."
 msgstr "Altyazı dosyası yüklenemedi."
 
@@ -946,30 +953,30 @@ msgstr "{player} uygulaması bulunamadı."
 msgid "Could not locate {player} executable."
 msgstr "{player} yürütülebilir dosyası bulunamadı."
 
-#: main.py:6970
+#: main.py:7014
 msgid "Could not look for provider accounts: {error}"
 msgstr "Sağlayıcı hesapları aranamadı: {error}"
 
-#: main.py:7329
+#: main.py:7373
 msgid "Could not match this programme to a playlist channel."
 msgstr "Bu program bir oynatma listesi kanalıyla eşleştirilemedi."
 
-#: main.py:4265
-#: main.py:4278
+#: main.py:4292
+#: main.py:4305
 msgid "Could not open folder:\n{error}"
 msgstr "Klasör açılamadı:\n{error}"
 
-#: main.py:4685
+#: main.py:4729
 msgid "Could not open the EPG window: {error}"
 msgstr "EPG penceresi açılamadı: {error}"
 
 #: dialogs_misc.py:462
-#: main.py:9152
-#: playlist.py:3138
+#: main.py:9231
+#: playlist.py:3178
 msgid "Could not open the clipboard."
 msgstr "Pano açılamadı."
 
-#: main.py:8067
+#: main.py:8118
 msgid "Could not prepare saved playback:\n{error}"
 msgstr "Kayıtlı konumdan oynatma hazırlanamadı:\n{error}"
 
@@ -982,9 +989,9 @@ msgstr "Xtream sunucusuna ulaşılamadı: {error}"
 msgid "Could not reach the portal: {error}"
 msgstr "Portala ulaşılamadı: {error}"
 
-#: main.py:2956
-#: main.py:3673
-#: main.py:7346
+#: main.py:2964
+#: main.py:3700
+#: main.py:7390
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Yayın URL'si çözümlenemedi:\n{error}"
 
@@ -992,42 +999,41 @@ msgstr "Yayın URL'si çözümlenemedi:\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Authenticode doğrulaması çalıştırılamadı: {detail}"
 
-#: internal_player.py:3192
-#: internal_player.py:3245
-#: main.py:6380
+#: internal_player.py:3214
+#: internal_player.py:3268
+#: main.py:6424
 #: resume_dialogs.py:193
 #: resume_dialogs.py:219
 msgid "Could not save playback history changes."
 msgstr "İzleme geçmişindeki değişiklikler kaydedilemedi."
 
-#: recording_library_ui.py:160
+#: recording_library_ui.py:162
 msgid "Could not save recording library preferences."
 msgstr "Kayıt kitaplığı görünüm tercihleri kaydedilemedi."
 
-#: main.py:3308
-#: main.py:3322
-#: main.py:3344
+#: main.py:3316
+#: main.py:3338
 msgid "Could not schedule recording:\n{error}"
 msgstr "Kayıt zamanlanamadı:\n{error}"
 
-#: main.py:7861
+#: main.py:7905
 msgid "Could not select that output device."
 msgstr "Bu çıkış aygıtı seçilemedi."
 
-#: main.py:4087
+#: main.py:4114
 msgid "Could not shut down the computer:\n{error}"
 msgstr "Bilgisayar kapatılamadı:\n{error}"
 
-#: main.py:8599
+#: main.py:8650
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Geri izleme indirmesi başlatılamadı:\n{error}"
 
-#: internal_player.py:895
+#: internal_player.py:900
 msgid "Could not start playback: {error}"
 msgstr "Oynatma başlatılamadı: {error}"
 
-#: main.py:3750
-#: main.py:3789
+#: main.py:3777
+#: main.py:3816
 msgid "Could not start recording:\n{error}"
 msgstr "Kayıt başlatılamadı:\n{error}"
 
@@ -1039,16 +1045,16 @@ msgstr "Oluşturulma"
 msgid "Currently airing programs"
 msgstr "Şu anda yayınlanan programlar"
 
-#: main.py:8854
+#: main.py:8906
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "Şu anda şuna bağlı: {device}\n\nBağlantı kesilsin mi?"
 
-#: client_ui.py:175
-#: client_ui.py:334
+#: client_ui.py:177
+#: client_ui.py:338
 msgid "Custom Player..."
 msgstr "Özel oynatıcı..."
 
-#: planning_tools.py:86
+#: planning_tools.py:87
 #: recording_library_ui.py:66
 #: recording_library_ui.py:81
 msgid "Date"
@@ -1062,27 +1068,27 @@ msgstr "Kalan gün"
 msgid "Days since expiry"
 msgstr "Bitişten sonra geçen gün"
 
-#: main.py:9285
-#: personal_tools_ui.py:335
+#: main.py:9444
+#: personal_tools_ui.py:540
 #: planning_ui.py:55
-#: playlist.py:3174
+#: playlist.py:3214
 #: session_tools_ui.py:63
 msgid "Delete"
 msgstr "Sil"
 
-#: personal_tools_ui.py:165
+#: personal_tools_ui.py:309
 msgid "Delete List"
 msgstr "Listeyi Sil"
 
-#: playlist.py:3445
+#: playlist.py:3485
 msgid "Delete Playlist"
 msgstr "Oynatma listesini sil"
 
-#: recording_library_ui.py:391
+#: recording_library_ui.py:422
 msgid "Delete Recording"
 msgstr "Kaydı sil"
 
-#: recording_library_ui.py:357
+#: recording_library_ui.py:360
 msgid "Delete Recording File..."
 msgstr "Kayıt dosyasını sil..."
 
@@ -1090,15 +1096,15 @@ msgstr "Kayıt dosyasını sil..."
 msgid "Delete bookmark '{name}'?"
 msgstr "'{name}' yer işareti silinsin mi?"
 
-#: personal_tools_ui.py:229
+#: personal_tools_ui.py:374
 msgid "Delete favourite list '{name}'?"
 msgstr "'{name}' favori listesi silinsin mi?"
 
-#: personal_tools_ui.py:407
+#: personal_tools_ui.py:612
 msgid "Delete saved search '{name}'?"
 msgstr "'{name}' kayıtlı araması silinsin mi?"
 
-#: playlist.py:3442
+#: playlist.py:3482
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "“{name}” oynatma listesi silinsin mi?\n\nOynatma listeleri arasından kaldırılacak. Bu işlem geri alınamaz."
 
@@ -1107,13 +1113,13 @@ msgid "Descending"
 msgstr "Azalan"
 
 #: dialogs_misc.py:516
-#: main.py:9460
-#: personal_tools_ui.py:331
+#: main.py:9617
+#: personal_tools_ui.py:536
 msgid "Description"
 msgstr "Açıklama"
 
-#: client_ui.py:222
-#: client_ui.py:360
+#: client_ui.py:224
+#: client_ui.py:364
 msgid "Detailed status"
 msgstr "Ayrıntılı durum"
 
@@ -1127,31 +1133,31 @@ msgstr "Ayrıntılar"
 msgid "Detected from"
 msgstr "Şuradan algılandı"
 
-#: main.py:4322
-#: main.py:4325
+#: main.py:4349
+#: main.py:4352
 msgid "Diagnostic Information"
 msgstr "Tanılama bilgileri"
 
-#: main.py:4324
+#: main.py:4351
 msgid "Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."
 msgstr "Tanılama bilgileri panoya kopyalandı. Geliştiriciye göndereceğiniz mesaja yapıştırabilirsiniz."
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:350
+#: personal_tools_ui.py:555
 msgid "Disabled"
 msgstr "Devre dışı"
 
-#: main.py:8029
+#: main.py:8074
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "Yayınlama cihazının bağlantısı kesildi. Başka bir cihaz seçmek için yayınlama menüsünü açın."
 
-#: playlist.py:3530
-#: playlist.py:3648
+#: playlist.py:3570
+#: playlist.py:3688
 msgid "Display name"
 msgstr "Görünen ad"
 
-#: main.py:9042
+#: main.py:9094
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "Bu indirmeyi gerçekten iptal etmek istiyor musunuz? Daha sonra devam edilemez."
 
@@ -1163,73 +1169,73 @@ msgstr "Belgeler"
 msgid "Download"
 msgstr "İndir"
 
-#: main.py:4862
+#: main.py:4906
 msgid "Download and install now? The app will restart after the update."
 msgstr "Şimdi indirilip yüklensin mi? Güncellemeden sonra uygulama yeniden başlatılacak."
 
-#: main.py:8663
+#: main.py:8714
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "İndirme iptal edildi. Eksik dosya atıldı."
 
-#: main.py:8685
+#: main.py:8736
 msgid "Download complete:\n{path}"
 msgstr "İndirme tamamlandı:\n{path}"
 
-#: main.py:8955
+#: main.py:9007
 msgid "Download details"
 msgstr "İndirme ayrıntıları"
 
-#: main.py:8675
+#: main.py:8726
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "İndirme erken sona erdi:\n{path}\n\nSağlayıcı bağlantıyı kapatmadan önce {expected} yerine yalnızca {written} alındı. Eksik dosya korunmuş durumda."
 
-#: main.py:8993
+#: main.py:9045
 msgid "Download failed (code {code})."
 msgstr "İndirme başarısız (kod {code})."
 
-#: main.py:8722
+#: main.py:8774
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "İndirme başarısız (kod {code}):\n{path}\n\n{detail}"
 
-#: main.py:9009
+#: main.py:9061
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "İndirme başarısız - yeniden deneniyor ({attempt}/{total} deneme) {seconds} saniye içinde..."
 
-#: main.py:8719
+#: main.py:8771
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "İndirme başarısız:\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:5741
+#: main.py:5785
 msgid "Download in progress"
 msgstr "İndirme sürüyor"
 
-#: main.py:8954
+#: main.py:9006
 msgid "Download progress"
 msgstr "İndirme ilerlemesi"
 
-#: main.py:8953
+#: main.py:9005
 msgid "Download status"
 msgstr "İndirme durumu"
 
-#: main.py:4975
-#: main.py:5016
+#: main.py:5019
+#: main.py:5060
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "İndirilen güncelleme SHA-256 doğrulamasında başarısız oldu."
 
-#: main.py:9033
+#: main.py:9085
 msgid "Downloaded: {size}"
 msgstr "İndirilen: {size}"
 
-#: main.py:4967
-#: main.py:4971
-#: main.py:5008
-#: main.py:5012
+#: main.py:5011
+#: main.py:5015
+#: main.py:5052
+#: main.py:5056
 msgid "Downloading update..."
 msgstr "Güncelleme indiriliyor..."
 
-#: main.py:8913
-#: main.py:9022
-#: main.py:9026
+#: main.py:8965
+#: main.py:9074
+#: main.py:9078
 msgid "Downloading {name}"
 msgstr "{name} indiriliyor"
 
@@ -1238,64 +1244,66 @@ msgstr "{name} indiriliyor"
 msgid "Duration"
 msgstr "Süre"
 
-#: planning_tools.py:86
+#: planning_tools.py:87
 msgid "Duration (seconds)"
 msgstr "Süre (saniye)"
 
-#: main.py:4674
-#: main.py:9444
-#: main.py:9446
+#: main.py:4718
+#: main.py:9601
+#: main.py:9603
 msgid "EPG"
 msgstr "EPG"
 
-#: main.py:2853
+#: main.py:2861
 msgid "EPG Database Update Needed"
 msgstr "EPG Veritabanı Güncellemesi Gerekli"
 
 #: client_ui.py:124
-#: client_ui.py:275
-#: playlist.py:3204
+#: client_ui.py:277
+#: playlist.py:3244
 #: shortcuts.py:83
 msgid "EPG Manager"
 msgstr "EPG Yöneticisi"
 
-#: main.py:6995
-#: main.py:7013
-#: main.py:8321
+#: main.py:7039
+#: main.py:7057
+#: main.py:8372
+#: personal_tools_ui.py:654
 msgid "EPG Not Available"
 msgstr "EPG kullanılamıyor"
 
-#: main.py:4308
+#: main.py:4335
 msgid "EPG debug log (latest 128 KiB):"
 msgstr "EPG hata ayıklama günlüğü (son 128 KiB):"
 
-#: main.py:4304
+#: main.py:4331
 msgid "EPG enabled: {enabled}"
 msgstr "EPG etkin: {enabled}"
 
-#: main.py:6987
+#: main.py:7031
 msgid "EPG import is already in progress."
 msgstr "EPG içe aktarma zaten devam ediyor."
 
-#: main.py:7006
+#: main.py:7050
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "EPG içe aktarma arka planda başlayacak. Uygulamayı kullanmaya devam edebilirsiniz; içe aktarma bittiğinde bir ileti sizi bilgilendirecek."
 
-#: main.py:6995
-#: main.py:7013
+#: main.py:7039
+#: main.py:7057
+#: personal_tools_ui.py:654
 msgid "EPG is not enabled."
 msgstr "EPG etkin değil."
 
-#: main.py:9435
+#: main.py:9592
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
-#: main.py:9202
+#: main.py:9281
 #: recording_conflicts_ui.py:91
 msgid "Edit Times..."
 msgstr "Saatleri Düzenle..."
 
-#: personal_tools_ui.py:334
+#: personal_tools_ui.py:539
 msgid "Edit..."
 msgstr "Düzenle..."
 
@@ -1303,33 +1311,33 @@ msgstr "Düzenle..."
 msgid "Elapsed: {elapsed}. Total: {total}. Remaining: {remaining}."
 msgstr "Geçen: {elapsed}. Toplam: {total}. Kalan: {remaining}."
 
-#: main.py:9031
+#: main.py:9083
 msgid "Elapsed: {time}"
 msgstr "Geçen süre: {time}"
 
-#: personal_tools_ui.py:289
+#: personal_tools_ui.py:494
 msgid "Enabled"
 msgstr "Etkin"
 
-#: personal_tools_ui.py:639
+#: personal_tools_ui.py:854
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "Kayıt planları, hatırlatıcılar ve kayıtlı aramalar dahil şifrelenmiş yedek kaydedildi."
 
-#: personal_tools_ui.py:106
+#: personal_tools_ui.py:121
 #: recording_conflicts_ui.py:168
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "Bitiş (yerel saat, YYYY-AA-GG SS:DD)"
 
-#: internal_player.py:2039
-#: internal_player.py:2250
+#: internal_player.py:2044
+#: internal_player.py:2271
 msgid "Ended"
 msgstr "Sona erdi"
 
-#: playlist.py:3266
+#: playlist.py:3306
 msgid "Enter EPG XML URL"
 msgstr "EPG XML URL'sini girin"
 
-#: playlist.py:3366
+#: playlist.py:3406
 msgid "Enter M3U URL"
 msgstr "M3U URL'sini girin"
 
@@ -1338,7 +1346,7 @@ msgstr "M3U URL'sini girin"
 msgid "Enter a bookmark name of 1 to 120 characters."
 msgstr "1 ile 120 karakter arasında bir yer işareti adı girin."
 
-#: main.py:2990
+#: main.py:2998
 msgid "Enter a channel number:"
 msgstr "Bir kanal numarası girin:"
 
@@ -1350,15 +1358,15 @@ msgstr "Yerel tarih ve saati YYYY-AA-GG SS:DD biçiminde girin."
 msgid "Enter a name of 1 to 80 characters."
 msgstr "1 ile 80 karakter arasında bir ad girin."
 
-#: main.py:2084
+#: main.py:2092
 msgid "Enter a password for the settings backup:"
 msgstr "Ayarların yedeğini almak için bir şifre girin:"
 
-#: main.py:2999
+#: main.py:3007
 msgid "Enter a positive channel number."
 msgstr "Pozitif bir kanal numarası girin."
 
-#: recording_library.py:179
+#: recording_library.py:233
 msgid "Enter a recording title of 1 to 240 characters."
 msgstr "1 ile 240 karakter arasında bir kayıt başlığı girin."
 
@@ -1366,7 +1374,7 @@ msgstr "1 ile 240 karakter arasında bir kayıt başlığı girin."
 msgid "Enter a search of 2 to 100 characters and choose at most 2000 channels."
 msgstr "2 ile 100 karakter arasında bir arama girin ve en fazla 2000 kanal seçin."
 
-#: main.py:2157
+#: main.py:2165
 msgid "Enter a shortcut (leave blank to restore the default):"
 msgstr "Bir kısayol girin (varsayılanı geri yüklemek için boş bırakın):"
 
@@ -1383,14 +1391,14 @@ msgstr "Oynatıcı yürütülebilir dosyasını veya yolunu girin:"
 msgid "Enter seconds, MM:SS or HH:MM:SS."
 msgstr "Saniye, DD:SS veya SS:DD:SS biçiminde girin."
 
-#: main.py:2097
+#: main.py:2105
 msgid "Enter the password again:"
 msgstr "Şifreyi tekrar girin:"
 
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9463
+#: main.py:9620
 msgid "Episode description"
 msgstr "Bölüm açıklaması"
 
@@ -1399,22 +1407,22 @@ msgid "Episode {num}"
 msgstr "{num}. bölüm"
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:2040
-#: main.py:2838
-#: main.py:2892
-#: main.py:4686
-#: main.py:6971
-#: main.py:7041
-#: main.py:7063
-#: main.py:8872
+#: internal_player.py:2045
+#: main.py:2846
+#: main.py:2900
+#: main.py:4730
+#: main.py:7015
+#: main.py:7085
+#: main.py:7107
+#: main.py:8924
 #: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
 msgid "Error"
 msgstr "Hata"
 
-#: main.py:2838
-#: main.py:2891
+#: main.py:2846
+#: main.py:2899
 msgid "Error fetching EPG: {error}"
 msgstr "EPG alınırken hata: {error}"
 
@@ -1422,8 +1430,8 @@ msgstr "EPG alınırken hata: {error}"
 msgid "Error: {error}"
 msgstr "Hata: {error}"
 
-#: client_ui.py:221
-#: client_ui.py:359
+#: client_ui.py:223
+#: client_ui.py:363
 msgid "Errors only"
 msgstr "Yalnızca hatalar"
 
@@ -1432,14 +1440,14 @@ msgstr "Yalnızca hatalar"
 msgid "Executable not found: {path}"
 msgstr "Yürütülebilir dosya bulunamadı: {path}"
 
-#: client_ui.py:258
-#: client_ui.py:284
-#: main.py:837
+#: client_ui.py:260
+#: client_ui.py:288
+#: main.py:845
 #: shortcuts.py:85
 msgid "Exit"
 msgstr "Çıkış"
 
-#: internal_player.py:3132
+#: internal_player.py:3153
 msgid "Exit Full Screen"
 msgstr "Tam ekrandan çık"
 
@@ -1466,17 +1474,17 @@ msgstr "Süresi doldu"
 msgid "Expires"
 msgstr "Bitiş tarihi"
 
-#: recording_library_ui.py:93
-#: recording_library_ui.py:373
+#: recording_library_ui.py:95
+#: recording_library_ui.py:376
 msgid "Export List to CSV..."
 msgstr "Listeyi CSV Olarak Dışa Aktar…"
 
-#: personal_tools_ui.py:624
+#: personal_tools_ui.py:839
 msgid "Export Settings"
 msgstr "Ayarları Dışa Aktarma"
 
-#: client_ui.py:216
-#: client_ui.py:353
+#: client_ui.py:218
+#: client_ui.py:357
 msgid "Export Settings..."
 msgstr "Ayarları Dışa Aktar..."
 
@@ -1484,8 +1492,8 @@ msgstr "Ayarları Dışa Aktar..."
 msgid "Export saved."
 msgstr "Dışa aktarma kaydedildi."
 
-#: dialogs_misc.py:1107
-#: main.py:9543
+#: dialogs_misc.py:1111
+#: main.py:9700
 #: planning_tools_ui.py:58
 #: planning_tools_ui.py:61
 #: planning_ui.py:57
@@ -1493,11 +1501,11 @@ msgstr "Dışa aktarma kaydedildi."
 msgid "Export to Calendar..."
 msgstr "Takvime Dışa Aktar…"
 
-#: internal_player.py:2693
+#: internal_player.py:2714
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "Harici altyazı dosyaları yerel canlı yayın arabelleğiyle eşzamanlı değildir. Akışın gömülü altyazılarını kullanın."
 
-#: main.py:5018
+#: main.py:5062
 msgid "Extracting update..."
 msgstr "Güncelleme çıkarılıyor..."
 
@@ -1505,24 +1513,24 @@ msgstr "Güncelleme çıkarılıyor..."
 msgid "F1 is reserved for Help."
 msgstr "F1 Yardım için ayrılmıştır."
 
-#: internal_player.py:3301
+#: internal_player.py:3324
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "Durdurmadan önce sesi kademeli azaltma süresi (saniye); 0 bu özelliği kapatır."
 
-#: main.py:3495
-#: main.py:9312
-#: planning_tools.py:88
+#: main.py:3522
+#: main.py:9468
+#: planning_tools.py:89
 #: recording_library_ui.py:62
-#: recording_library_ui.py:301
+#: recording_library_ui.py:303
 msgid "Failed"
 msgstr "Başarısız"
 
-#: main.py:8038
-#: main.py:8220
+#: main.py:8083
+#: main.py:8271
 msgid "Failed to cast: {error}"
 msgstr "Yayınlama başarısız oldu: {error}"
 
-#: main.py:8872
+#: main.py:8924
 msgid "Failed to connect: {error}"
 msgstr "Bağlanılamadı: {error}"
 
@@ -1534,7 +1542,7 @@ msgstr "Bildirim indirilemedi ({code})."
 msgid "Failed to download update ({code})."
 msgstr "Güncelleme indirilemedi ({code})."
 
-#: main.py:7041
+#: main.py:7085
 msgid "Failed to fetch EPG data: {error}"
 msgstr "EPG verileri alınamadı: {error}"
 
@@ -1550,33 +1558,35 @@ msgstr "libVLC örneği başlatılamadı."
 msgid "Failed to initialise media player: {error}"
 msgstr "Medya oynatıcı başlatılamadı: {error}"
 
-#: main.py:8149
+#: main.py:8200
 msgid "Failed to launch {player}:\n{error}"
 msgstr "{player} başlatılamadı:\n{error}"
 
-#: main.py:8141
+#: main.py:8192
 msgid "Failed to start built-in player:\n{error}"
 msgstr "Yerleşik oynatıcı başlatılamadı:\n{error}"
 
-#: main.py:1320
-#: main.py:1786
+#: main.py:1328
 #: main.py:1794
-#: main.py:1910
-#: main.py:1969
+#: main.py:1802
+#: main.py:1918
+#: main.py:1977
+#: personal_tools_ui.py:177
 msgid "Favorites"
 msgstr "Sık kullanılanlar"
 
-#: personal_tools_ui.py:209
-#: personal_tools_ui.py:223
+#: personal_tools_ui.py:354
+#: personal_tools_ui.py:368
 msgid "Favourite List Name"
 msgstr "Favori Listesi Adı"
 
-#: personal_tools_ui.py:159
-#: personal_tools_ui.py:161
+#: personal_tools_ui.py:303
+#: personal_tools_ui.py:305
+#: personal_tools_ui.py:425
 msgid "Favourite Lists"
 msgstr "Favori Listeleri"
 
-#: personal_tools_ui.py:471
+#: personal_tools_ui.py:686
 msgid "Favourite Lists..."
 msgstr "Favori Listeleri..."
 
@@ -1584,7 +1594,7 @@ msgstr "Favori Listeleri..."
 msgid "Features"
 msgstr "Yeni özellikler"
 
-#: client_ui.py:285
+#: client_ui.py:289
 msgid "File"
 msgstr "Dosya"
 
@@ -1601,17 +1611,17 @@ msgstr "Filtre (Tab):"
 msgid "Filter programs"
 msgstr "Programları filtrele"
 
-#: main.py:304
-#: main.py:306
-#: main.py:2133
+#: main.py:312
+#: main.py:314
+#: main.py:2141
 msgid "Find"
 msgstr "Bul"
 
-#: main.py:307
+#: main.py:315
 msgid "Find Next"
 msgstr "Sonrakini bul"
 
-#: personal_tools_ui.py:676
+#: personal_tools_ui.py:891
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Yedeği geri yüklemeden önce kayıtları ve indirmeleri bitirin."
 
@@ -1623,7 +1633,7 @@ msgstr "Serrebi'yi Forgejo'da takip et"
 msgid "Forgejo API rate limit exceeded. Please try again later."
 msgstr "Forgejo API istek sınırı aşıldı. Lütfen daha sonra tekrar deneyin."
 
-#: main.py:9192
+#: main.py:9271
 msgid "Format"
 msgstr "Biçim"
 
@@ -1654,7 +1664,7 @@ msgid "Friday"
 msgstr "Cuma"
 
 #: internal_player.py:472
-#: internal_player.py:3132
+#: internal_player.py:3153
 msgid "Full Screen"
 msgstr "Tam ekran"
 
@@ -1662,7 +1672,7 @@ msgstr "Tam ekran"
 msgid "Full ffmpeg log:\n{path}"
 msgstr "Tam ffmpeg günlüğü:\n{path}"
 
-#: playlist.py:3255
+#: playlist.py:3295
 msgid "GZip XML"
 msgstr "GZip XML"
 
@@ -1670,20 +1680,20 @@ msgstr "GZip XML"
 msgid "Go to Bookmark"
 msgstr "Yer İşaretine Git"
 
-#: main.py:2991
-#: main.py:3000
-#: main.py:3009
+#: main.py:2999
+#: main.py:3008
+#: main.py:3017
 msgid "Go to Channel Number"
 msgstr "Kanal Numarasına Git"
 
-#: client_ui.py:156
-#: client_ui.py:310
+#: client_ui.py:158
+#: client_ui.py:314
 #: shortcuts.py:97
 msgid "Go to Channel Number..."
 msgstr "Kanal Numarasına Git..."
 
-#: client_ui.py:153
-#: client_ui.py:307
+#: client_ui.py:155
+#: client_ui.py:311
 msgid "Go to Favorites"
 msgstr "Sık kullanılanlara git"
 
@@ -1694,17 +1704,17 @@ msgstr "Sık kullanılanlara git"
 msgid "Go to Time..."
 msgstr "Zamana Git..."
 
-#: client_ui.py:230
-#: client_ui.py:370
+#: client_ui.py:232
+#: client_ui.py:374
 msgid "Guide"
 msgstr "Rehber"
 
-#: main.py:1862
+#: main.py:1870
 msgid "Guide information unavailable"
 msgstr "Kılavuz bilgisi mevcut değil"
 
-#: main.py:299
-#: main.py:303
+#: main.py:307
+#: main.py:311
 msgid "Guide text"
 msgstr "Kılavuz metni"
 
@@ -1712,8 +1722,8 @@ msgstr "Kılavuz metni"
 msgid "HTTPS port"
 msgstr "HTTPS bağlantı noktası"
 
-#: client_ui.py:252
-#: client_ui.py:462
+#: client_ui.py:254
+#: client_ui.py:466
 msgid "Help"
 msgstr "Yardım"
 
@@ -1726,75 +1736,75 @@ msgstr "Pencereyi gizle"
 msgid "Hide older releases"
 msgstr "Eski sürümleri gizle"
 
-#: main.py:2935
-#: main.py:7370
-#: main.py:8014
-#: main.py:8054
+#: main.py:2943
+#: main.py:7414
+#: main.py:8059
+#: main.py:8099
 msgid "IPTV Stream"
 msgstr "IPTV Yayını"
 
 #: internal_player.py:517
 #: internal_player.py:550
-#: internal_player.py:2033
+#: internal_player.py:2038
 msgid "Idle"
 msgstr "Boşta"
 
-#: main.py:7896
+#: main.py:7940
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "Çıkış aygıtı kaybolursa, aygıt dönene kadar altyazı seslendirme duraklatılır."
 
-#: main.py:7900
+#: main.py:7944
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "Çıkış aygıtı kaybolursa, uygulama sesi sistem varsayılanına döner."
 
-#: main.py:6868
+#: main.py:6912
 msgid "Import Complete"
 msgstr "İçe aktarma tamamlandı"
 
 #: client_ui.py:125
-#: client_ui.py:276
+#: client_ui.py:278
 #: shortcuts.py:84
 msgid "Import EPG to DB"
 msgstr "EPG'yi veritabanına aktar"
 
-#: main.py:2860
-#: main.py:6875
-#: main.py:7001
+#: main.py:2868
+#: main.py:6919
+#: main.py:7045
 msgid "Import Failed"
 msgstr "İçe aktarma başarısız"
 
-#: personal_tools_ui.py:646
+#: personal_tools_ui.py:861
 msgid "Import Settings"
 msgstr "Ayarları İçe Aktarma"
 
-#: client_ui.py:217
-#: client_ui.py:354
+#: client_ui.py:219
+#: client_ui.py:358
 msgid "Import Settings..."
 msgstr "Ayarları İçe Aktar..."
 
-#: main.py:7008
+#: main.py:7052
 msgid "Import Started"
 msgstr "İçe aktarma başladı"
 
-#: client_ui.py:222
-#: client_ui.py:360
+#: client_ui.py:224
+#: client_ui.py:364
 msgid "Important events"
 msgstr "Önemli olaylar"
 
-#: playlist.py:3000
+#: playlist.py:3040
 msgid "Importing EPG"
 msgstr "EPG içe aktarılıyor"
 
-#: playlist.py:3010
+#: playlist.py:3050
 msgid "Importing EPG data…"
 msgstr "EPG verileri içe aktarılıyor…"
 
-#: main.py:6987
+#: main.py:7031
 #: planning_ui.py:176
 msgid "In Progress"
 msgstr "Devam ediyor"
 
-#: playlist.py:3527
+#: playlist.py:3567
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "Sağlayıcının XMLTV kılavuzunu otomatik olarak dahil et"
 
@@ -1802,7 +1812,7 @@ msgstr "Sağlayıcının XMLTV kılavuzunu otomatik olarak dahil et"
 msgid "Installer message: {message}"
 msgstr "Yükleyici iletisi: {message}"
 
-#: main.py:5201
+#: main.py:5245
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "Güncelleme yükleniyor. {app} kapanacak ve kendiliğinden yeniden başlayacak; bu sırada lütfen kendiniz açmayın."
 
@@ -1814,7 +1824,9 @@ msgstr "Yedek tuzu geçersiz."
 msgid "Invalid keyboard shortcut."
 msgstr "Geçersiz klavye kısayolu."
 
-#: planning_tools.py:118
+#: dvr.py:200
+#: main.py:8454
+#: planning_tools.py:119
 #: planning_tools_ui.py:56
 msgid "Invalid programme times."
 msgstr "Program saatleri geçersiz."
@@ -1853,11 +1865,11 @@ msgstr "Geçersiz altyazı gecikmesi."
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "SerrebiProjects Telegram grubuna katıl"
 
-#: personal_tools_ui.py:294
+#: personal_tools_ui.py:499
 msgid "Keep chosen channels"
 msgstr "Seçilen kanalları koru"
 
-#: main.py:7869
+#: main.py:7913
 msgid "Keep this output device?\n{name}"
 msgstr "Bu çıkış aygıtı korunsun mu?\n{name}"
 
@@ -1865,23 +1877,23 @@ msgstr "Bu çıkış aygıtı korunsun mu?\n{name}"
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "Canlı yayının 1–30 dakikasını saklayın; 0 yerel arabelleği kapatır."
 
-#: main.py:2133
-#: main.py:2143
-#: main.py:2148
-#: main.py:2158
-#: main.py:2168
-#: main.py:2172
+#: main.py:2141
+#: main.py:2151
+#: main.py:2156
+#: main.py:2166
+#: main.py:2176
+#: main.py:2180
 msgid "Keyboard Shortcuts"
 msgstr "Klavye Kısayolları"
 
-#: client_ui.py:235
-#: client_ui.py:442
+#: client_ui.py:237
+#: client_ui.py:446
 msgid "Keyboard Shortcuts..."
 msgstr "Klavye Kısayolları..."
 
-#: client_ui.py:196
-#: client_ui.py:348
-#: main.py:4748
+#: client_ui.py:198
+#: client_ui.py:352
+#: main.py:4792
 msgid "Language"
 msgstr "Dil"
 
@@ -1889,22 +1901,22 @@ msgstr "Dil"
 msgid "Last Watched"
 msgstr "Son İzleme"
 
-#: internal_player.py:1562
+#: internal_player.py:1567
 msgid "Last error: {reason}"
 msgstr "Son hata: {reason}"
 
-#: internal_player.py:2882
+#: internal_player.py:2903
 msgid "Last subtitle: {text}"
 msgstr "Son altyazı: {text}"
 
-#: main.py:4800
+#: main.py:4844
 msgid "Latest release tag is missing or invalid."
 msgstr "En son sürüm etiketi eksik veya geçersiz."
 
-#: main.py:7999
-#: main.py:8052
-#: main.py:8141
-#: main.py:8150
+#: main.py:8044
+#: main.py:8097
+#: main.py:8192
+#: main.py:8201
 msgid "Launch Error"
 msgstr "Başlatma hatası"
 
@@ -1912,8 +1924,8 @@ msgstr "Başlatma hatası"
 msgid "Lead time (minutes)"
 msgstr "Önceden bildirim (dakika)"
 
-#: client_ui.py:143
-#: client_ui.py:297
+#: client_ui.py:145
+#: client_ui.py:301
 msgid "Live TV && Catch-up"
 msgstr "Canlı TV && Geri izleme"
 
@@ -1921,7 +1933,7 @@ msgstr "Canlı TV && Geri izleme"
 msgid "Live input ended; retained history is still available."
 msgstr "Canlı giriş sona erdi; saklanan geçmiş kullanılabilir durumda."
 
-#: internal_player.py:2696
+#: internal_player.py:2717
 msgid "Load Subtitle File"
 msgstr "Altyazı Dosyasını Yükle"
 
@@ -1929,7 +1941,7 @@ msgstr "Altyazı Dosyasını Yükle"
 msgid "Load Subtitle File..."
 msgstr "Altyazı Dosyasını Yükle..."
 
-#: main.py:6471
+#: main.py:6515
 msgid "Loading Video on Demand…"
 msgstr "İstek üzerine video yükleniyor…"
 
@@ -1937,20 +1949,21 @@ msgstr "İstek üzerine video yükleniyor…"
 msgid "Loading accounts..."
 msgstr "Hesaplar yükleniyor..."
 
-#: main.py:6601
+#: main.py:6645
 msgid "Loading episodes…"
 msgstr "Bölümler yükleniyor…"
 
 #: accessible_tools_ui.py:79
+#: personal_tools_ui.py:226
 msgid "Loading guide channels..."
 msgstr "Rehber kanalları yükleniyor..."
 
-#: main.py:1181
-#: main.py:6255
+#: main.py:1189
+#: main.py:6299
 msgid "Loading playlists..."
 msgstr "Oynatma listeleri yükleniyor..."
 
-#: recording_library_ui.py:235
+#: recording_library_ui.py:237
 msgid "Loading recordings..."
 msgstr "Kayıtlar yükleniyor..."
 
@@ -1971,32 +1984,32 @@ msgstr "Yerel Canlı Yayın Arabelleği…"
 msgid "Local date and time (YYYY-MM-DD HH:MM)"
 msgstr "Yerel tarih ve saat (YYYY-AA-GG SS:DD)"
 
-#: main.py:4279
+#: main.py:4306
 msgid "Logs"
 msgstr "Günlükler"
 
-#: playlist.py:3355
+#: playlist.py:3395
 msgid "M3U files"
 msgstr "M3U dosyaları"
 
 #: account_info.py:470
-#: playlist.py:3652
+#: playlist.py:3692
 msgid "MAC address"
 msgstr "MAC adresi"
 
-#: playlist.py:3701
+#: playlist.py:3741
 msgid "MAC address must contain six octets (e.g., 00:1A:79:12:34:56)."
 msgstr "MAC adresi altı sekizli içermelidir (örn. 00:1A:79:12:34:56)."
 
-#: playlist.py:3652
+#: playlist.py:3692
 msgid "MAC address presented to the portal"
 msgstr "Portala sunulan MAC adresi"
 
-#: main.py:7935
+#: main.py:7979
 msgid "MPV subtitle speech on."
 msgstr "MPV altyazı seslendirme açık."
 
-#: main.py:7938
+#: main.py:7982
 msgid "MPV subtitle speech unavailable."
 msgstr "MPV altyazı seslendirme kullanılamıyor."
 
@@ -2012,8 +2025,8 @@ msgstr "En fazla bağlantı"
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "Oturum başına en fazla yerel arabellek boyutu (MiB). Sınırlardan birine ulaşılınca en eski veriler silinir."
 
-#: client_ui.py:179
-#: client_ui.py:335
+#: client_ui.py:181
+#: client_ui.py:339
 msgid "Media Player to Use"
 msgstr "Kullanılacak medya oynatıcı"
 
@@ -2030,12 +2043,12 @@ msgstr "Sağlayıcıdan mesaj"
 msgid "MiB:"
 msgstr "MiB:"
 
-#: client_ui.py:198
-#: client_ui.py:349
+#: client_ui.py:200
+#: client_ui.py:353
 msgid "Minimize to System Tray"
 msgstr "Sistem tepsisine küçült"
 
-#: main.py:4582
+#: main.py:4626
 msgid "Minimum Free Space..."
 msgstr "En Az Boş Alan…"
 
@@ -2058,13 +2071,13 @@ msgid "Minutes before programme:"
 msgstr "Programdan önceki dakika:"
 
 #: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: internal_player.py:3290
+#: internal_player.py:3313
 #: planning_ui.py:24
 msgid "Minutes:"
 msgstr "Dakika:"
 
-#: main.py:3495
-#: main.py:9313
+#: main.py:3522
+#: main.py:9469
 msgid "Missed"
 msgstr "Kaçırıldı"
 
@@ -2076,20 +2089,20 @@ msgstr "Pazartesi"
 msgid "Monitor free space while recording"
 msgstr "Kayıt sırasında boş alanı izle"
 
-#: personal_tools_ui.py:167
+#: personal_tools_ui.py:312
 msgid "Move Down"
 msgstr "Aşağı Taşı"
 
-#: personal_tools_ui.py:167
+#: personal_tools_ui.py:312
 msgid "Move Up"
 msgstr "Yukarı Taşı"
 
-#: recording_library_ui.py:90
-#: recording_library_ui.py:357
+#: recording_library_ui.py:92
+#: recording_library_ui.py:360
 msgid "Move to Recording Trash..."
 msgstr "Kayıt Çöp Kutusuna Taşı..."
 
-#: recording_library_ui.py:390
+#: recording_library_ui.py:421
 msgid "Move {count} selected recordings to the recording trash?"
 msgstr "Seçilen {count} kayıt, kayıt çöp kutusuna taşınsın mı?"
 
@@ -2106,12 +2119,12 @@ msgstr "Filmler"
 msgid "Mute / Unmute"
 msgstr "Sesi kapat / aç"
 
-#: internal_player.py:2071
-#: internal_player.py:2453
+#: internal_player.py:2076
+#: internal_player.py:2474
 msgid "Muted"
 msgstr "Ses kapalı"
 
-#: playlist.py:3091
+#: playlist.py:3131
 msgid "Name"
 msgstr "Ad"
 
@@ -2128,12 +2141,12 @@ msgstr "Adlandırılmış Yer İşaretleri..."
 msgid "Never (no expiry date set)"
 msgstr "Hiçbir zaman (bitiş tarihi ayarlanmamış)"
 
-#: personal_tools_ui.py:609
+#: personal_tools_ui.py:824
 msgid "New programme matches: {count}."
 msgstr "Yeni program eşleşmeleri: {count}."
 
-#: personal_tools_ui.py:165
-#: personal_tools_ui.py:334
+#: personal_tools_ui.py:309
+#: personal_tools_ui.py:539
 msgid "New..."
 msgstr "Yeni..."
 
@@ -2154,7 +2167,7 @@ msgstr "Sonraki altyazı"
 msgid "Next recording: {time}"
 msgstr "Sonraki kayıt: {time}"
 
-#: main.py:1693
+#: main.py:1701
 msgid "Next: {programme}"
 msgstr "Sırada: {programme}"
 
@@ -2163,37 +2176,37 @@ msgid "Next: {title} ({start} – {end})"
 msgstr "Sıradaki: {title} ({start} – {end})"
 
 #: account_info.py:359
-#: main.py:1872
+#: main.py:1880
 msgid "No"
 msgstr "Hayır"
 
-#: main.py:6979
+#: main.py:7023
 msgid "No Accounts"
 msgstr "Hesap yok"
 
-#: main.py:7044
+#: main.py:7088
 msgid "No Data"
 msgstr "Veri yok"
 
-#: main.py:6991
+#: main.py:7035
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "Yapılandırılmış EPG kaynağı yok. Lütfen Dosya > EPG Yöneticisi'nden bir tane ekleyin."
 
-#: main.py:6991
+#: main.py:7035
 msgid "No Sources"
 msgstr "Kaynak yok"
 
-#: main.py:6533
-#: main.py:6537
+#: main.py:6577
+#: main.py:6581
 msgid "No Video on Demand content found."
 msgstr "İstek üzerine video içeriği bulunamadı."
 
-#: internal_player.py:2007
-#: main.py:8208
+#: internal_player.py:2012
+#: main.py:8259
 msgid "No active stream to cast."
 msgstr "Yayınlanacak etkin yayın yok."
 
-#: main.py:7634
+#: main.py:7678
 msgid "No active subtitle session."
 msgstr "Etkin altyazı oturumu yok."
 
@@ -2205,32 +2218,32 @@ msgstr "Önceki veya sonraki bölüm kullanılamıyor."
 msgid "No audio output devices were found."
 msgstr "Ses çıkış cihazı bulunamadı."
 
-#: internal_player.py:2545
-#: internal_player.py:2611
-#: internal_player.py:2932
+#: internal_player.py:2566
+#: internal_player.py:2632
+#: internal_player.py:2953
 msgid "No audio tracks available"
 msgstr "Kullanılabilir ses parçası yok"
 
-#: main.py:8343
+#: main.py:8394
 msgid "No catch-up programmes are available for this channel."
 msgstr "Bu kanal için geri izleme programı yok."
 
-#: main.py:1835
+#: main.py:1843
 msgid "No channel is selected."
 msgstr "Hiçbir kanal seçilmedi."
 
-#: personal_tools_ui.py:199
-#: personal_tools_ui.py:484
+#: personal_tools_ui.py:344
+#: personal_tools_ui.py:699
 msgid "No channel selected."
 msgstr "Kanal seçilmedi."
 
-#: main.py:6256
+#: main.py:6300
 msgid "No channels found."
 msgstr "Kanal bulunamadı."
 
 #: dialogs_misc.py:585
-#: main.py:2747
-#: main.py:9589
+#: main.py:2755
+#: main.py:9746
 msgid "No description available for this programme."
 msgstr "Bu program için açıklama yok."
 
@@ -2238,21 +2251,21 @@ msgstr "Bu program için açıklama yok."
 msgid "No devices found."
 msgstr "Cihaz bulunamadı."
 
-#: internal_player.py:2886
+#: internal_player.py:2907
 msgid "No earlier subtitle."
 msgstr "Daha önceki altyazı yok."
 
-#: personal_tools_ui.py:574
+#: personal_tools_ui.py:789
 msgid "No enabled saved searches."
 msgstr "Etkin kayıtlı arama yok."
 
-#: main.py:6633
+#: main.py:6677
 msgid "No episodes found for this series."
 msgstr "Bu dizi için bölüm bulunamadı."
 
 #: external_player.py:297
 #: external_player.py:348
-#: main.py:9002
+#: main.py:9054
 msgid "No error details were reported."
 msgstr "Hata ayrıntısı bildirilmedi."
 
@@ -2260,7 +2273,7 @@ msgstr "Hata ayrıntısı bildirilmedi."
 msgid "No ffmpeg details were reported."
 msgstr "Hiçbir ffmpeg ayrıntısı bildirilmedi."
 
-#: internal_player.py:2888
+#: internal_player.py:2909
 msgid "No later subtitle."
 msgstr "Daha sonraki altyazı yok."
 
@@ -2276,11 +2289,11 @@ msgstr "Bu dosyaya ait kayıt günlüğü bulunamadı."
 msgid "No notable changes."
 msgstr "Kayda değer değişiklik yok."
 
-#: main.py:2966
+#: main.py:2974
 msgid "No previous channel is available."
 msgstr "Önceki kanal mevcut değil."
 
-#: main.py:7645
+#: main.py:7689
 msgid "No previous subtitle."
 msgstr "Önceki altyazı yok."
 
@@ -2288,7 +2301,7 @@ msgstr "Önceki altyazı yok."
 msgid "No program currently airing."
 msgstr "Şu anda yayında program yok."
 
-#: main.py:2872
+#: main.py:2880
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "Henüz hiçbir program rehberi içe aktarılmadı, bu yüzden zamanlanacak bir şey yok.\n\nÖnce bir rehber içe aktarın (Dosya > EPG Yöneticisi, ardından Dosya > EPG'yi Veritabanına İçe Aktar) ve zamanlamayı yeniden deneyin."
 
@@ -2296,7 +2309,7 @@ msgstr "Henüz hiçbir program rehberi içe aktarılmadı, bu yüzden zamanlanac
 msgid "No programmes were found for this time and channel selection."
 msgstr "Seçilen saat ve kanallar için program bulunamadı."
 
-#: main.py:7044
+#: main.py:7088
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "Şu anda yayınlanan program yok veya EPG verileri henüz içe aktarılmadı."
 
@@ -2304,20 +2317,20 @@ msgstr "Şu anda yayınlanan program yok veya EPG verileri henüz içe aktarılm
 msgid "No provider accounts found."
 msgstr "Sağlayıcı hesabı bulunamadı."
 
-#: main.py:6975
+#: main.py:7019
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "Hiçbir sağlayıcı hesabı bulunamadı.\n\nOynatma listesi yöneticisinde eklenen Xtream Codes ve Stalker Portal hesapları, bir oynatma listesi veya yayın URL'sinden algılanan hesaplarla birlikte burada listelenir."
 
-#: main.py:7656
+#: main.py:7700
 msgid "No recent subtitles."
 msgstr "Son altyazı yok."
 
-#: main.py:2974
+#: main.py:2982
 msgid "No recently watched channels are available."
 msgstr "Yakın zamanda izlenen kanal yok."
 
-#: main.py:3956
-#: main.py:3967
+#: main.py:3983
+#: main.py:3994
 msgid "No recordings are currently active."
 msgstr "Şu anda etkin kayıt yok."
 
@@ -2338,19 +2351,19 @@ msgstr "Kayıtlı oynatma konumu yok."
 msgid "No stream URL provided."
 msgstr "Yayın URL'si sağlanmadı."
 
-#: internal_player.py:2876
+#: internal_player.py:2897
 msgid "No subtitle has been shown yet."
 msgstr "Henüz hiçbir altyazı gösterilmedi."
 
-#: main.py:7636
+#: main.py:7680
 msgid "No subtitle text available yet."
 msgstr "Henüz altyazı metni yok."
 
-#: internal_player.py:2755
+#: internal_player.py:2776
 msgid "No subtitle text found in this file."
 msgstr "Bu dosyada altyazı metni bulunamadı."
 
-#: internal_player.py:2874
+#: internal_player.py:2895
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "Okunacak altyazı metni yok. Desteklenen biçimde bir altyazı dosyası yükleyin."
 
@@ -2358,26 +2371,26 @@ msgstr "Okunacak altyazı metni yok. Desteklenen biçimde bir altyazı dosyası 
 msgid "No timed problems were found for this recording."
 msgstr "Bu kaydın günlüğünde zaman bilgisi içeren bir sorun bulunamadı."
 
-#: main.py:9123
+#: main.py:9182
 msgid "No timed problems were found in the newest recording log."
 msgstr "En son kayıt günlüğünde zaman bilgisi olan bir sorun bulunamadı."
 
-#: main.py:4674
+#: main.py:4718
 msgid "No upcoming schedule found for this channel."
 msgstr "Bu kanal için yaklaşan program bulunamadı."
 
-#: planning_tools.py:59
+#: planning_tools.py:60
 msgid "No valid recording window was found for the selected weekdays."
 msgstr "Seçilen günler için geçerli bir kayıt aralığı bulunamadı."
 
-#: client_ui.py:221
-#: client_ui.py:359
+#: client_ui.py:223
+#: client_ui.py:363
 msgid "None"
 msgstr "Yok"
 
-#: main.py:2143
-#: main.py:7330
-#: main.py:7990
+#: main.py:2151
+#: main.py:7374
+#: main.py:8035
 msgid "Not Found"
 msgstr "Bulunamadı"
 
@@ -2401,7 +2414,7 @@ msgstr "Kaydı başlatmak için yeterli boş alan yok: {free} MiB kullanılabili
 msgid "Not reported by the server"
 msgstr "Sunucu bildirmedi"
 
-#: main.py:8178
+#: main.py:8229
 msgid "Nothing is playing in the built-in player."
 msgstr "Yerleşik oynatıcıda hiçbir şey oynatılmıyor."
 
@@ -2441,18 +2454,18 @@ msgstr "Şimdi: {title} ({start} – {end})"
 #: dialogs_misc.py:681
 #: dialogs_misc.py:741
 #: internal_player.py:149
-#: main.py:7780
-#: main.py:7813
+#: main.py:7824
+#: main.py:7857
 #: options.py:987
 #: personal_tools_ui.py:89
-#: playlist.py:3235
-#: playlist.py:3335
+#: playlist.py:3275
+#: playlist.py:3375
 msgid "OK"
 msgstr "OK"
 
-#: internal_player.py:2656
-#: internal_player.py:2662
-#: internal_player.py:2679
+#: internal_player.py:2677
+#: internal_player.py:2683
+#: internal_player.py:2700
 msgid "Off"
 msgstr "Kapalı"
 
@@ -2460,11 +2473,11 @@ msgstr "Kapalı"
 msgid "Older releases (English)"
 msgstr "Eski sürümler (İngilizce)"
 
-#: client_ui.py:427
+#: client_ui.py:431
 msgid "On device loss: pause until the device returns"
 msgstr "Aygıt kaybında: aygıt dönene kadar duraklat"
 
-#: client_ui.py:428
+#: client_ui.py:432
 msgid "On device loss: use the system default"
 msgstr "Aygıt kaybında: sistem varsayılanını kullan"
 
@@ -2472,11 +2485,11 @@ msgstr "Aygıt kaybında: sistem varsayılanını kullan"
 msgid "Only part of the programme was recorded. The available file has been kept:\n{path}"
 msgstr "Programın yalnızca bir bölümü kaydedildi. Oluşturulan dosya korundu:\n{path}"
 
-#: main.py:7913
+#: main.py:7957
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "Yalnızca belgelenmiş zamanlı metin API'sine sahip oynatıcılar altyazı sözcüklerini sağlayabilir. Yerleşik oynatıcı SRT, ASS, SSA ve WebVTT dosyalarını okur; MPV, uygulamanın kendi oturumu üzerinden çalışır."
 
-#: personal_tools_ui.py:368
+#: personal_tools_ui.py:573
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "Yalnızca ilk 500 eşleşme gösteriliyor. Aramayı daraltın."
 
@@ -2488,12 +2501,12 @@ msgstr "Aç"
 msgid "Open Channel"
 msgstr "Kanalı Aç"
 
-#: client_ui.py:245
-#: client_ui.py:458
+#: client_ui.py:247
+#: client_ui.py:462
 msgid "Open Logs Folder"
 msgstr "Günlük klasörünü aç"
 
-#: main.py:4602
+#: main.py:4646
 msgid "Open Recordings Folder"
 msgstr "Kayıt klasörünü aç"
 
@@ -2505,31 +2518,31 @@ msgstr "Accessible IPTV Client projesini Forgejo'da aç"
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "Accessible IPTV Client projesini GitHub'da aç"
 
-#: main.py:9127
+#: main.py:9186
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Kaydedilen dosyayı VLC'de açın, Ctrl+T'ye basın ve listelenen zamanlardan birini girin. FFmpeg bildirdiyse dosyanın medya zamanı kullanılır; aksi halde kaydın başlangıcından beri geçen süre kullanılır ve bu süre bir kesintiden sonra biraz ileride olabilir."
 
-#: internal_player.py:2034
+#: internal_player.py:2039
 msgid "Opening"
 msgstr "Açılıyor"
 
-#: playlist.py:3530
+#: playlist.py:3570
 msgid "Optional nickname for this Xtream Codes account"
 msgstr "Bu Xtream Codes hesabı için isteğe bağlı takma ad"
 
-#: playlist.py:3648
+#: playlist.py:3688
 msgid "Optional nickname for this portal account"
 msgstr "Bu portal hesabı için isteğe bağlı takma ad"
 
-#: playlist.py:3651
+#: playlist.py:3691
 msgid "Optional portal account password"
 msgstr "İsteğe bağlı portal hesabı parolası"
 
-#: playlist.py:3650
+#: playlist.py:3690
 msgid "Optional portal account username"
 msgstr "İsteğe bağlı portal hesabı kullanıcı adı"
 
-#: client_ui.py:444
+#: client_ui.py:448
 msgid "Options"
 msgstr "Seçenekler"
 
@@ -2542,11 +2555,11 @@ msgstr "Diğer değişiklikler"
 msgid "Other details reported by the server"
 msgstr "Sunucunun bildirdiği diğer ayrıntılar"
 
-#: main.py:6291
+#: main.py:6335
 msgid "Other playlists"
 msgstr "Diğer oynatma listeleri"
 
-#: main.py:7843
+#: main.py:7887
 msgid "Output device for the application voice:"
 msgstr "Uygulama sesi için çıkış aygıtı:"
 
@@ -2567,28 +2580,28 @@ msgstr "Çakışan kayıt sayısı: {count}."
 msgid "Package"
 msgstr "Paket"
 
-#: main.py:9310
-#: planning_tools.py:87
+#: main.py:9466
+#: planning_tools.py:88
 #: recording_library_ui.py:62
-#: recording_library_ui.py:300
+#: recording_library_ui.py:302
 msgid "Partial"
 msgstr "Kısmi"
 
-#: playlist.py:3533
+#: playlist.py:3573
 msgid "Password"
 msgstr "Parola"
 
 #: internal_player.py:446
-#: internal_player.py:899
-#: internal_player.py:1908
-#: internal_player.py:1940
-#: internal_player.py:1952
-#: internal_player.py:1965
+#: internal_player.py:904
+#: internal_player.py:1913
+#: internal_player.py:1945
+#: internal_player.py:1957
+#: internal_player.py:1970
 msgid "Pause"
 msgstr "Duraklat"
 
-#: internal_player.py:2037
-#: internal_player.py:2223
+#: internal_player.py:2042
+#: internal_player.py:2244
 msgid "Paused"
 msgstr "Duraklatıldı"
 
@@ -2601,7 +2614,7 @@ msgstr "Beklemede"
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "Bekleyen program hatırlatıcıları: {count}.\n\nBildirimleri göstermek için uygulama çalışır durumda kalmalıdır. Yine de çıkılsın mı?"
 
-#: recording_library_ui.py:389
+#: recording_library_ui.py:420
 msgid "Permanently delete {count} selected recording files? This cannot be undone."
 msgstr "Seçilen {count} kayıt dosyası kalıcı olarak silinsin mi? Bu işlem geri alınamaz."
 
@@ -2609,16 +2622,16 @@ msgstr "Seçilen {count} kayıt dosyası kalıcı olarak silinsin mi? Bu işlem 
 msgid "Phone"
 msgstr "Telefon"
 
-#: main.py:4301
+#: main.py:4328
 msgid "Platform: {platform}"
 msgstr "Platform: {platform}"
 
 #: dialogs_misc.py:898
-#: dialogs_misc.py:1102
-#: internal_player.py:937
-#: internal_player.py:2053
-#: main.py:2781
-#: personal_tools_ui.py:168
+#: dialogs_misc.py:1106
+#: internal_player.py:942
+#: internal_player.py:2058
+#: main.py:2789
+#: personal_tools_ui.py:313
 msgid "Play"
 msgstr "Oynat"
 
@@ -2642,23 +2655,23 @@ msgstr "Bu Noktadan Oynat"
 msgid "Play or Pause"
 msgstr "Oynat veya duraklat"
 
-#: client_ui.py:132
-#: client_ui.py:289
+#: client_ui.py:134
+#: client_ui.py:293
 #: internal_player.py:556
-#: main.py:822
+#: main.py:830
 #: shortcuts.py:86
 #: shortcuts.py:113
 msgid "Play/Pause"
 msgstr "Oynat/Duraklat"
 
-#: client_ui.py:228
-#: client_ui.py:368
+#: client_ui.py:230
+#: client_ui.py:372
 msgid "Playback"
 msgstr "Oynatma"
 
-#: main.py:2957
-#: main.py:7343
-#: main.py:7346
+#: main.py:2965
+#: main.py:7387
+#: main.py:7390
 msgid "Playback Error"
 msgstr "Oynatma hatası"
 
@@ -2671,16 +2684,16 @@ msgstr "Oynatma Süresi"
 msgid "Playback changed. Reopen the bookmark list."
 msgstr "Oynatılan içerik değişti. Yer işareti listesini yeniden açın."
 
-#: internal_player.py:3344
+#: internal_player.py:3367
 msgid "Playback volume is fading before the sleep timer stops it."
 msgstr "Uyku zamanlayıcısı oynatmayı durdurmadan önce ses kademeli olarak azaltılıyor."
 
-#: client_ui.py:136
-#: client_ui.py:294
+#: client_ui.py:138
+#: client_ui.py:298
 msgid "Player"
 msgstr "Oynatıcı"
 
-#: main.py:833
+#: main.py:841
 msgid "Player Controls"
 msgstr "Oynatıcı denetimleri"
 
@@ -2688,31 +2701,31 @@ msgstr "Oynatıcı denetimleri"
 msgid "Player window has been destroyed."
 msgstr "Oynatıcı penceresi kapatıldı."
 
-#: internal_player.py:2036
+#: internal_player.py:2041
 msgid "Playing"
 msgstr "Oynatılıyor"
 
-#: main.py:1441
+#: main.py:1449
 msgid "Playlist"
 msgstr "Oynatma listesi"
 
 #: client_ui.py:123
-#: client_ui.py:274
-#: playlist.py:3305
+#: client_ui.py:276
+#: playlist.py:3345
 #: shortcuts.py:82
 msgid "Playlist Manager"
 msgstr "Oynatma listesi yöneticisi"
 
-#: main.py:6907
-#: main.py:6913
+#: main.py:6951
+#: main.py:6957
 msgid "Playlist refresh failed: {name}"
 msgstr "Oynatma listesi yenilenemedi: {name}"
 
-#: main.py:6912
+#: main.py:6956
 msgid "Playlist refreshed: {name}"
 msgstr "Oynatma listesi yenilendi: {name}"
 
-#: playlist.py:3534
+#: playlist.py:3574
 msgid "Playlist type"
 msgstr "Oynatma listesi türü"
 
@@ -2722,17 +2735,17 @@ msgstr "Oynatma listesi türü"
 msgid "Playlist view"
 msgstr "Çalma listesi görünümü"
 
-#: internal_player.py:1223
-#: internal_player.py:1569
+#: internal_player.py:1228
+#: internal_player.py:1574
 msgid "Please try another channel or try again later."
 msgstr "Lütfen başka bir kanal deneyin veya daha sonra tekrar deneyin."
 
-#: playlist.py:3697
+#: playlist.py:3737
 msgid "Portal URL is required."
 msgstr "Portal URL'si gereklidir."
 
-#: playlist.py:3531
-#: playlist.py:3649
+#: playlist.py:3571
+#: playlist.py:3689
 msgid "Portal base URL"
 msgstr "Portal temel URL'si"
 
@@ -2765,12 +2778,12 @@ msgstr "Kanalda varsa sesli betimleme parçasını tercih et"
 msgid "Preferred Audio Track"
 msgstr "Tercih edilen ses parçası"
 
-#: client_ui.py:180
-#: client_ui.py:336
+#: client_ui.py:182
+#: client_ui.py:340
 msgid "Preferred Audio Track..."
 msgstr "Tercih edilen ses parçası..."
 
-#: playlist.py:3535
+#: playlist.py:3575
 msgid "Preferred stream container format"
 msgstr "Tercih edilen yayın kapsayıcı biçimi"
 
@@ -2778,12 +2791,12 @@ msgstr "Tercih edilen yayın kapsayıcı biçimi"
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "Tercih edilen parça adları veya diller, en çok istenen önce:"
 
-#: main.py:8924
+#: main.py:8976
 msgid "Preparing download..."
 msgstr "İndirme hazırlanıyor..."
 
-#: main.py:4993
-#: main.py:5047
+#: main.py:5037
+#: main.py:5091
 msgid "Preparing to restart..."
 msgstr "Yeniden başlatmaya hazırlanıyor..."
 
@@ -2791,7 +2804,7 @@ msgstr "Yeniden başlatmaya hazırlanıyor..."
 msgid "Press Enter to play the recording from the selected time."
 msgstr "Kaydı seçili noktadan oynatmak için Enter tuşuna basın."
 
-#: main.py:8938
+#: main.py:8990
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Bu pencereyi gizlemek için Escape tuşuna basın; indirme devam eder. Görünüm > İndirmeleri göster (Ctrl+Shift+D) pencereyi geri getirir."
 
@@ -2799,9 +2812,9 @@ msgstr "Bu pencereyi gizlemek için Escape tuşuna basın; indirme devam eder. G
 msgid "Prevent Automatic Sleep While Recording"
 msgstr "Kayıt Sırasında Otomatik Uykuyu Önle"
 
-#: client_ui.py:154
-#: client_ui.py:308
-#: main.py:2966
+#: client_ui.py:156
+#: client_ui.py:312
+#: main.py:2974
 #: shortcuts.py:96
 msgid "Previous Channel"
 msgstr "Önceki Kanal"
@@ -2820,9 +2833,9 @@ msgstr "Önceki altyazı"
 msgid "Previously saved content (title unavailable)"
 msgstr "Önceden kaydedilmiş içerik (başlık yok)"
 
-#: personal_tools_ui.py:480
-#: personal_tools_ui.py:517
-#: recording_library_ui.py:414
+#: personal_tools_ui.py:695
+#: personal_tools_ui.py:732
+#: recording_library_ui.py:445
 msgid "Processing recordings..."
 msgstr "Kayıtlar işleniyor…"
 
@@ -2863,7 +2876,7 @@ msgstr "Program Hatırlatıcısı"
 msgid "Programme Reminders"
 msgstr "Program Hatırlatıcıları"
 
-#: main.py:4571
+#: main.py:4615
 msgid "Programme Reminders..."
 msgstr "Program Hatırlatıcıları…"
 
@@ -2871,13 +2884,13 @@ msgstr "Program Hatırlatıcıları…"
 msgid "Programme guide channels"
 msgstr "Program rehberi kanalları"
 
-#: main.py:9030
+#: main.py:9082
 msgid "Progress: {percent}%"
 msgstr "İlerleme: {percent}%"
 
 #: account_info.py:111
-#: main.py:1444
-#: playlist.py:3456
+#: main.py:1452
+#: playlist.py:3496
 msgid "Provider"
 msgstr "Sağlayıcı"
 
@@ -2885,35 +2898,35 @@ msgstr "Sağlayıcı"
 msgid "Provider accounts"
 msgstr "Sağlayıcı hesapları"
 
-#: main.py:3669
-#: main.py:7343
-#: main.py:8368
-#: main.py:8426
+#: main.py:3696
+#: main.py:7387
+#: main.py:8419
+#: main.py:8478
 msgid "Provider error: {error}"
 msgstr "Sağlayıcı hatası: {error}"
 
-#: main.py:3264
+#: main.py:3272
 msgid "Provider quality (copy, MKV)"
 msgstr "Sağlayıcı kalitesi (kopya, MKV)"
 
-#: main.py:3265
+#: main.py:3273
 msgid "Provider quality (copy, MP4)"
 msgstr "Sağlayıcı kalitesi (kopya, MP4)"
 
-#: main.py:3268
+#: main.py:3276
 msgid "Provider quality (stream copy, MKA)"
 msgstr "Sağlayıcı kalitesi (akış kopyası, MKA)"
 
-#: main.py:1449
-#: playlist.py:3461
+#: main.py:1457
+#: playlist.py:3501
 msgid "Provider – {name}"
 msgstr "Sağlayıcı – {name}"
 
-#: main.py:4302
+#: main.py:4329
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
-#: playlist.py:3645
+#: playlist.py:3685
 msgid "Randomise MAC"
 msgstr "MAC'i rastgele oluştur"
 
@@ -2922,11 +2935,11 @@ msgstr "MAC'i rastgele oluştur"
 msgid "Read Current Subtitle"
 msgstr "Geçerli altyazıyı oku"
 
-#: client_ui.py:397
+#: client_ui.py:401
 msgid "Read current subtitle"
 msgstr "Mevcut altyazıyı oku"
 
-#: client_ui.py:401
+#: client_ui.py:405
 msgid "Read previous subtitle"
 msgstr "Önceki altyazıyı oku"
 
@@ -2938,68 +2951,68 @@ msgstr "Tüm teşekkürleri oku"
 msgid "Ready."
 msgstr "Hazır."
 
-#: main.py:7664
+#: main.py:7708
 msgid "Recent Subtitles"
 msgstr "Son Altyazılar"
 
-#: main.py:2975
-#: main.py:2978
+#: main.py:2983
+#: main.py:2986
 msgid "Recently Watched"
 msgstr "Son İzlenenler"
 
-#: client_ui.py:155
-#: client_ui.py:309
+#: client_ui.py:157
+#: client_ui.py:313
 #: shortcuts.py:98
 msgid "Recently Watched..."
 msgstr "Son İzlediklerim..."
 
-#: internal_player.py:1586
-#: internal_player.py:2228
-#: internal_player.py:2235
-#: internal_player.py:2243
-#: internal_player.py:2258
+#: internal_player.py:1591
+#: internal_player.py:2249
+#: internal_player.py:2256
+#: internal_player.py:2264
+#: internal_player.py:2279
 msgid "Reconnecting..."
 msgstr "Yeniden bağlanılıyor..."
 
 #: internal_player.py:460
 #: internal_player.py:461
 #: internal_player.py:572
-#: internal_player.py:1974
-#: internal_player.py:1990
-#: main.py:2790
-#: main.py:3644
-#: main.py:8179
-#: main.py:8187
+#: internal_player.py:1979
+#: internal_player.py:1995
+#: main.py:2798
+#: main.py:3671
+#: main.py:8230
+#: main.py:8238
 #: shortcuts.py:115
 msgid "Record"
 msgstr "Kaydet"
 
-#: dialogs_misc.py:1120
-#: main.py:9553
+#: dialogs_misc.py:1124
+#: main.py:9710
 msgid "Record Daily"
 msgstr "Her gün kaydet"
 
-#: dialogs_misc.py:1122
-#: main.py:9555
+#: dialogs_misc.py:1126
+#: main.py:9712
 msgid "Record Series"
 msgstr "Diziyi kaydet"
 
-#: dialogs_misc.py:1121
-#: main.py:9554
+#: dialogs_misc.py:1125
+#: main.py:9711
 msgid "Record Weekly"
 msgstr "Her hafta kaydet"
 
 #: accessible_tools_ui.py:184
-#: main.py:3660
-#: main.py:3751
-#: main.py:3813
-#: main.py:3940
-#: main.py:3943
-#: main.py:3954
-#: main.py:3957
-#: main.py:3965
-#: main.py:3968
-#: main.py:9307
+#: main.py:3687
+#: main.py:3778
+#: main.py:3840
+#: main.py:3967
+#: main.py:3970
+#: main.py:3981
+#: main.py:3984
+#: main.py:3992
+#: main.py:3995
+#: main.py:9463
 msgid "Recording"
 msgstr "Kaydediliyor"
 
@@ -3007,12 +3020,12 @@ msgstr "Kaydediliyor"
 msgid "Recording Complete"
 msgstr "Kayıt tamamlandı"
 
-#: main.py:9246
+#: main.py:9393
 #: recording_conflicts_ui.py:71
 msgid "Recording Conflicts"
 msgstr "Kayıt Çakışmaları"
 
-#: main.py:9205
+#: main.py:9284
 msgid "Recording Conflicts..."
 msgstr "Kayıt Çakışmaları…"
 
@@ -3020,36 +3033,38 @@ msgstr "Kayıt Çakışmaları…"
 msgid "Recording Connection Limits"
 msgstr "Kayıt Bağlantısı Sınırları"
 
-#: main.py:4580
+#: main.py:4624
 msgid "Recording Connection Limits..."
 msgstr "Kayıt Bağlantısı Sınırları..."
 
 #: client_recording.py:76
-#: main.py:3670
-#: main.py:3674
-#: main.py:3678
-#: main.py:3703
-#: main.py:3790
+#: main.py:3697
+#: main.py:3701
+#: main.py:3705
+#: main.py:3730
+#: main.py:3817
 msgid "Recording Error"
 msgstr "Kayıt hatası"
 
-#: main.py:4590
+#: main.py:4634
 msgid "Recording Format"
 msgstr "Kayıt biçimi"
 
-#: internal_player.py:3253
+#: internal_player.py:3276
 #: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "Kayıt kitaplığı"
 
-#: main.py:4577
+#: main.py:4621
 msgid "Recording Library..."
 msgstr "Kayıt kitaplığı..."
 
-#: main.py:4600
-#: main.py:9108
-#: main.py:9114
-#: main.py:9153
+#: main.py:4582
+#: main.py:4644
+#: main.py:9160
+#: main.py:9166
+#: main.py:9232
+#: recording_library_ui.py:89
 msgid "Recording Problem Times"
 msgstr "Kayıt Sorunlarının Zamanları"
 
@@ -3057,7 +3072,7 @@ msgstr "Kayıt Sorunlarının Zamanları"
 msgid "Recording Space Monitor"
 msgstr "Kayıt alanı izleme"
 
-#: main.py:4575
+#: main.py:4619
 msgid "Recording Space Monitor..."
 msgstr "Kayıt alanı izleme..."
 
@@ -3086,7 +3101,7 @@ msgstr "Kayıt klasörü:"
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "Kayıt klasörü: {path}\nBoş alan: {free} MiB\nGereken yedek alan: {reserve} MiB.\n\nBu kontrol, kaydın tamamı için yeterli alanı garanti etmez."
 
-#: internal_player.py:1973
+#: internal_player.py:1978
 msgid "Recording is not available from this window."
 msgstr "Bu pencereden kayıt yapılamaz."
 
@@ -3110,11 +3125,11 @@ msgstr "Kayıtlar için güç yönetimi başarısız oldu:\n{error}"
 msgid "Recording saved:\n{path}"
 msgstr "Kayıt kaydedildi:\n{path}"
 
-#: personal_tools_ui.py:522
+#: personal_tools_ui.py:737
 msgid "Recording schedule saved."
 msgstr "Kayıt planı kaydedildi."
 
-#: main.py:3353
+#: main.py:3380
 msgid "Recording scheduled.\n\nThe programme guide has not been imported yet, so the Scheduled Recordings window may not list anything, and this may be the only episode you can schedule. Import the guide from File > Import EPG to DB to see and schedule upcoming programmes."
 msgstr "Kayıt zamanlandı.\n\nProgram rehberi henüz içe aktarılmadı, bu yüzden Zamanlanmış Kayıtlar penceresi hiçbir şey listelemeyebilir ve bu, zamanlayabileceğiniz tek bölüm olabilir. Yaklaşan programları görmek ve zamanlamak için rehberi Dosya > EPG'yi Veritabanına İçe Aktar menüsünden içe aktarın."
 
@@ -3126,7 +3141,7 @@ msgstr "Boş alan kritik düzeyde az ({free} MiB). Bu sürücüdeki {count} kay�
 msgid "Recording space is running low: {free} MiB remains.\n{path}"
 msgstr "Kayıt alanı azalıyor: {free} MiB kaldı.\n{path}"
 
-#: main.py:3809
+#: main.py:3836
 msgid "Recording started ({fmt}):\n{path}"
 msgstr "Kayıt başladı ({fmt}):\n{path}"
 
@@ -3134,18 +3149,18 @@ msgstr "Kayıt başladı ({fmt}):\n{path}"
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "Kayıt durduruldu ancak ffmpeg {code} kodunu bildirdi.\n\n{detail}\n\nDosya:\n{path}"
 
-#: recording_library_ui.py:447
+#: recording_library_ui.py:478
 msgid "Recording title:"
 msgstr "Kayıt başlığı:"
 
-#: main.py:3326
+#: main.py:3366
 msgid "Recording updated to repeat."
 msgstr "Kayıt tekrarlanacak şekilde güncellendi."
 
-#: client_ui.py:185
-#: client_ui.py:448
-#: main.py:4266
-#: main.py:4554
+#: client_ui.py:187
+#: client_ui.py:452
+#: main.py:4293
+#: main.py:4598
 #: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
@@ -3156,33 +3171,33 @@ msgid "Recover from Channel Archive..."
 msgstr "Kanal Arşivinden Al..."
 
 #: dialogs_misc.py:356
-#: main.py:9195
-#: main.py:9279
-#: personal_tools_ui.py:335
+#: main.py:9274
+#: main.py:9438
+#: personal_tools_ui.py:540
 #: planning_ui.py:59
-#: playlist.py:3169
-#: recording_library_ui.py:92
+#: playlist.py:3209
+#: recording_library_ui.py:94
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "Yenile"
 
-#: playlist.py:3169
+#: playlist.py:3209
 msgid "Refresh All Playlists"
 msgstr "Tüm Oynatma Listelerini Yenile"
 
-#: main.py:6909
+#: main.py:6953
 msgid "Refreshing all playlists..."
 msgstr "Tüm oynatma listeleri yenileniyor..."
 
-#: main.py:6914
+#: main.py:6958
 msgid "Refreshing playlist: {name}"
 msgstr "Oynatma listesi yenileniyor: {name}"
 
-#: internal_player.py:1235
-#: internal_player.py:2230
-#: internal_player.py:2237
-#: internal_player.py:2240
+#: internal_player.py:1240
+#: internal_player.py:2251
 #: internal_player.py:2258
+#: internal_player.py:2261
+#: internal_player.py:2279
 msgid "Refreshing stream..."
 msgstr "Yayın yenileniyor..."
 
@@ -3210,11 +3225,11 @@ msgstr "Program Başladığında Hatırlat"
 msgid "Reminder set."
 msgstr "Hatırlatıcı ayarlandı."
 
-#: personal_tools_ui.py:240
+#: personal_tools_ui.py:385
 msgid "Remove '{name}' from this list?"
 msgstr "'{name}' bu listeden kaldırılsın mı?"
 
-#: personal_tools_ui.py:166
+#: personal_tools_ui.py:310
 msgid "Remove Channel"
 msgstr "Kanalı Kaldır"
 
@@ -3234,19 +3249,19 @@ msgstr "Tüm hatırlatıcılar kaldırılsın mı?"
 msgid "Remove all saved playback positions?"
 msgstr "Tüm kayıtlı oynatma konumları kaldırılsın mı?"
 
-#: main.py:9402
+#: main.py:9559
 msgid "Remove all scheduled recordings from the list?"
 msgstr "Tüm zamanlanmış kayıtlar listeden kaldırılsın mı?"
 
-#: main.py:1959
+#: main.py:1967
 msgid "Remove from Favorites"
 msgstr "Sık kullanılanlardan kaldır"
 
-#: main.py:9407
+#: main.py:9564
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "Zamanlanmış '{title}' kaydı listeden kaldırılsın mı?"
 
-#: main.py:9404
+#: main.py:9561
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "Seçili {count} zamanlanmış kayıt listeden kaldırılsın mı? Kayıt dosyaları korunacak."
 
@@ -3258,33 +3273,33 @@ msgstr "Bu hatırlatıcı kaldırılsın mı?"
 msgid "Remove this saved playback position?"
 msgstr "Bu kayıtlı oynatma konumu kaldırılsın mı?"
 
-#: playlist.py:3092
-#: playlist.py:3173
+#: playlist.py:3132
+#: playlist.py:3213
 msgid "Rename"
 msgstr "Yeniden adlandır"
 
-#: recording_library_ui.py:89
-#: recording_library_ui.py:447
+#: recording_library_ui.py:91
+#: recording_library_ui.py:478
 msgid "Rename Title..."
 msgstr "Başlığı Değiştir..."
 
-#: personal_tools_ui.py:165
+#: personal_tools_ui.py:309
 #: session_tools_ui.py:62
 #: session_tools_ui.py:109
 msgid "Rename..."
 msgstr "Yeniden Adlandır..."
 
-#: main.py:9208
+#: main.py:9287
 #: planning_tools_ui.py:13
 msgid "Repeat on Weekdays..."
 msgstr "Seçilen Günlerde Tekrarla…"
 
-#: personal_tools_ui.py:108
-#: personal_tools_ui.py:110
+#: personal_tools_ui.py:123
+#: personal_tools_ui.py:125
 msgid "Repeat on selected weekdays (none: once):"
 msgstr "Seçilen günlerde tekrarla (seçim yoksa: bir kez):"
 
-#: personal_tools_ui.py:661
+#: personal_tools_ui.py:876
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "Ayarlar, {jobs} kayıt girdisi ve {reminders} hatırlatıcı değiştirilsin mi? Başlamış kayıtlar yeniden başlamayacak."
 
@@ -3296,16 +3311,16 @@ msgstr "Mevcut dışa aktarma dosyası değiştirilsin mi?"
 msgid "Reset Timing"
 msgstr "Zamanlamayı Sıfırla"
 
-#: main.py:818
+#: main.py:826
 msgid "Restore"
 msgstr "Geri yükle"
 
-#: recording_library_ui.py:91
+#: recording_library_ui.py:93
 msgid "Restore Recording"
 msgstr "Kaydı Geri Yükle"
 
-#: internal_player.py:1908
-#: internal_player.py:1965
+#: internal_player.py:1913
+#: internal_player.py:1970
 #: resume_dialogs.py:17
 #: resume_dialogs.py:18
 #: resume_dialogs.py:51
@@ -3320,7 +3335,7 @@ msgstr "Oynatmaya {time} konumundan devam edilsin mi?"
 msgid "Return to Live"
 msgstr "Canlı Yayına Dön"
 
-#: client_ui.py:405
+#: client_ui.py:409
 msgid "Review recent subtitles..."
 msgstr "Son altyazıları gözden geçir..."
 
@@ -3340,16 +3355,16 @@ msgstr "Cumartesi"
 msgid "Save"
 msgstr "Kaydet"
 
-#: personal_tools_ui.py:283
+#: personal_tools_ui.py:488
 msgid "Saved Programme Search"
 msgstr "Kayıtlı Program Araması"
 
-#: personal_tools_ui.py:328
-#: personal_tools_ui.py:329
+#: personal_tools_ui.py:533
+#: personal_tools_ui.py:534
 msgid "Saved Programme Searches"
 msgstr "Kayıtlı Program Aramaları"
 
-#: personal_tools_ui.py:473
+#: personal_tools_ui.py:688
 msgid "Saved Programme Searches..."
 msgstr "Kayıtlı Program Aramaları..."
 
@@ -3357,7 +3372,7 @@ msgstr "Kayıtlı Program Aramaları..."
 msgid "Saved playback positions"
 msgstr "Kayıtlı oynatma konumları"
 
-#: main.py:6417
+#: main.py:6461
 msgid "Saved positions can only be restored in the built-in player. Select it and disconnect casting before continuing."
 msgstr "Kayıtlı konumlar yalnızca yerleşik oynatıcıda geri yüklenebilir. Bu oynatıcıyı seçin ve başka cihaza aktarımı kesin."
 
@@ -3369,97 +3384,99 @@ msgstr "Yine de Zamanla"
 msgid "Schedule Padding"
 msgstr "Zamanlama payı"
 
-#: main.py:4596
+#: main.py:4640
 msgid "Schedule Padding..."
 msgstr "Zamanlama payı..."
 
 #: dialogs_misc.py:899
-#: dialogs_misc.py:1117
-#: main.py:2797
-#: main.py:2876
-#: main.py:3293
-#: main.py:3309
-#: main.py:3313
-#: main.py:3323
-#: main.py:3326
-#: main.py:3330
-#: main.py:3345
-#: main.py:3358
-#: main.py:3365
-#: main.py:9550
-#: main.py:9598
+#: dialogs_misc.py:1121
+#: main.py:2805
+#: main.py:2884
+#: main.py:3301
+#: main.py:3317
+#: main.py:3321
+#: main.py:3339
+#: main.py:3348
+#: main.py:3366
+#: main.py:3385
+#: main.py:3392
+#: main.py:9707
+#: main.py:9755
+#: personal_tools_ui.py:189
 msgid "Schedule Recording"
 msgstr "Kayıt zamanla"
 
-#: main.py:2806
-#: personal_tools_ui.py:337
+#: main.py:2814
+#: personal_tools_ui.py:542
 msgid "Schedule Recording..."
 msgstr "Kayıt zamanla..."
 
-#: personal_tools_ui.py:98
+#: personal_tools_ui.py:113
 msgid "Schedule by Time"
 msgstr "Saate Göre Planla"
 
-#: main.py:4584
+#: main.py:4628
 msgid "Schedule by Time..."
 msgstr "Saate Göre Planla..."
 
-#: main.py:9306
+#: main.py:9462
 #: planning_ui.py:99
 msgid "Scheduled"
 msgstr "Zamanlandı"
 
-#: main.py:3500
-#: main.py:3601
+#: main.py:3527
+#: main.py:3628
 msgid "Scheduled Recording"
 msgstr "Zamanlanmış kayıt"
 
-#: main.py:1241
-#: main.py:9175
-#: main.py:9225
-#: main.py:9236
-#: main.py:9256
-#: main.py:9382
-#: main.py:9389
-#: main.py:9395
-#: main.py:9408
-#: main.py:9418
+#: main.py:1249
+#: main.py:9254
+#: main.py:9312
+#: main.py:9315
+#: main.py:9372
+#: main.py:9383
+#: main.py:9403
+#: main.py:9539
+#: main.py:9546
+#: main.py:9552
+#: main.py:9565
+#: main.py:9575
 msgid "Scheduled Recordings"
 msgstr "Zamanlanmış kayıtlar"
 
-#: main.py:4586
+#: main.py:4630
 msgid "Scheduled Recordings..."
 msgstr "Zamanlanmış kayıtlar..."
 
-#: main.py:3538
+#: main.py:3565
 msgid "Scheduled recording is missing channel data."
 msgstr "Zamanlanmış kayıtta kanal verileri eksik."
 
-#: main.py:3599
+#: main.py:3626
 msgid "Scheduled recording started:\n{title}"
 msgstr "Zamanlanmış kayıt başladı:\n{title}"
 
-#: main.py:3361
+#: main.py:3388
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "Zamanlanmış kayıt:\n{title}\n{time}"
 
-#: main.py:5728
-#: main.py:9187
+#: main.py:5772
+#: main.py:9266
 msgid "Scheduled recordings"
 msgstr "Zamanlanmış kayıtlar"
 
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:285
+#: personal_tools_ui.py:490
 msgid "Search"
 msgstr "Ara"
 
-#: personal_tools_ui.py:330
+#: personal_tools_ui.py:535
 msgid "Search Results"
 msgstr "Arama Sonuçları"
 
-#: personal_tools_ui.py:286
+#: personal_tools_ui.py:491
 msgid "Search descriptions too"
 msgstr "Açıklamalarda da ara"
 
@@ -3479,7 +3496,7 @@ msgstr "Kayıtlarda ara:"
 msgid "Searching for devices..."
 msgstr "Cihazlar aranıyor..."
 
-#: personal_tools_ui.py:581
+#: personal_tools_ui.py:796
 msgid "Searching programmes..."
 msgstr "Programlar aranıyor..."
 
@@ -3488,7 +3505,7 @@ msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "En son saklanan görüntüye göre gecikme (saniye); 0 canlı yayına döner."
 
 #: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
-#: internal_player.py:3302
+#: internal_player.py:3325
 msgid "Seconds:"
 msgstr "Saniye:"
 
@@ -3506,11 +3523,11 @@ msgstr "Yayınlanacak cihazı seç"
 msgid "Select Player Executable"
 msgstr "Oynatıcı yürütülebilir dosyasını seç"
 
-#: main.py:1786
+#: main.py:1794
 msgid "Select a channel first."
 msgstr "Önce bir kanal seçin."
 
-#: main.py:3644
+#: main.py:3671
 msgid "Select a channel to record first."
 msgstr "Önce kaydedilecek bir kanal seçin."
 
@@ -3522,7 +3539,7 @@ msgstr "Önce bir canlı kanal seçin."
 msgid "Select a missed, failed or partial recording."
 msgstr "Kaçırılmış, başarısız veya kısmi bir kayıt seçin."
 
-#: main.py:9598
+#: main.py:9755
 msgid "Select a programme first."
 msgstr "Önce bir program seçin."
 
@@ -3534,9 +3551,9 @@ msgstr "Bir program rehberi kanalı seçin veya otomatik eşleştirmeyi kullanı
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "Bir program seçin, ardından açmak için Enter tuşuna basın veya indirmek için bağlam menüsünü kullanın. Kapatmak için Escape tuşuna basın."
 
-#: main.py:9246
-#: main.py:9382
-#: main.py:9395
+#: main.py:9393
+#: main.py:9539
+#: main.py:9552
 msgid "Select a scheduled recording first."
 msgstr "Önce zamanlanmış bir kayıt seçin."
 
@@ -3544,17 +3561,17 @@ msgstr "Önce zamanlanmış bir kayıt seçin."
 msgid "Select an account to check its status:"
 msgstr "Durumunu denetlemek için bir hesap seçin:"
 
-#: main.py:9255
+#: main.py:9402
 msgid "Select one pending or running recording to edit its times."
 msgstr "Saatlerini düzenlemek için bekleyen veya devam eden bir kayıt seçin."
 
-#: dvr.py:424
-#: dvr.py:495
-#: main.py:9224
+#: dvr.py:521
+#: dvr.py:588
+#: main.py:9371
 msgid "Select one pending recording that is not a series rule."
 msgstr "Dizi kuralı olmayan tek bir bekleyen kayıt seçin."
 
-#: dvr.py:632
+#: dvr.py:635
 msgid "Select one pending recurring recording."
 msgstr "Henüz başlamamış, yinelenen bir kayıt seçin."
 
@@ -3562,16 +3579,16 @@ msgstr "Henüz başlamamış, yinelenen bir kayıt seçin."
 msgid "Select the audio output device for the built-in player."
 msgstr "Yerleşik oynatıcı için ses çıkış cihazını seçin."
 
-#: playlist.py:3534
+#: playlist.py:3574
 msgid "Select the playlist format to download"
 msgstr "İndirilecek oynatma listesi biçimini seçin"
 
-#: personal_tools_ui.py:198
-#: personal_tools_ui.py:300
+#: personal_tools_ui.py:343
+#: personal_tools_ui.py:505
 msgid "Selected channel: {name}"
 msgstr "Seçili kanal: {name}"
 
-#: recording_library_ui.py:363
+#: recording_library_ui.py:366
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "Seçilen: {count}; toplam boyut: {size} MiB."
 
@@ -3601,28 +3618,29 @@ msgstr "Sunucu saati"
 msgid "Server time zone"
 msgstr "Sunucu saat dilimi"
 
-#: main.py:4604
+#: main.py:4648
 msgid "Set Download Folder..."
 msgstr "İndirme klasörünü ayarla..."
 
-#: dialogs_misc.py:1105
-#: main.py:2794
-#: main.py:9540
-#: personal_tools_ui.py:336
+#: dialogs_misc.py:1109
+#: main.py:2802
+#: main.py:9697
+#: personal_tools_ui.py:189
+#: personal_tools_ui.py:541
 #: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "Hatırlatıcı Ayarla…"
 
-#: main.py:4329
+#: main.py:4356
 msgid "Set download folder"
 msgstr "İndirme klasörünü ayarla"
 
-#: main.py:962
-#: main.py:2085
+#: main.py:970
 #: main.py:2093
-#: main.py:2098
-#: main.py:2103
-#: personal_tools_ui.py:640
+#: main.py:2101
+#: main.py:2106
+#: main.py:2111
+#: personal_tools_ui.py:855
 msgid "Settings Backup"
 msgstr "Ayarlar Yedekleme"
 
@@ -3635,12 +3653,12 @@ msgstr "Ayarlar yedeklenemeyecek kadar büyük."
 msgid "Shortcut conflicts with {command}."
 msgstr "Kısayol {command} ile çakışıyor."
 
-#: main.py:2171
+#: main.py:2179
 msgid "Shortcut saved. Restart the app to use it."
 msgstr "Kısayol kaydedildi. Kullanmak için uygulamayı yeniden başlatın."
 
-#: client_ui.py:131
-#: client_ui.py:288
+#: client_ui.py:133
+#: client_ui.py:292
 #: shortcuts.py:95
 msgid "Show Built-in Player"
 msgstr "Yerleşik oynatıcıyı göster"
@@ -3649,17 +3667,17 @@ msgstr "Yerleşik oynatıcıyı göster"
 msgid "Show Deleted Recordings"
 msgstr "Silinen Kayıtları Göster"
 
-#: client_ui.py:315
+#: client_ui.py:319
 #: shortcuts.py:94
 msgid "Show Downloads"
 msgstr "İndirmeleri göster"
 
-#: main.py:821
+#: main.py:829
 msgid "Show Player"
 msgstr "Oynatıcıyı göster"
 
-#: client_ui.py:203
-#: client_ui.py:350
+#: client_ui.py:205
+#: client_ui.py:354
 msgid "Show Player on Enter"
 msgstr "Enter'a basıldığında oynatıcıyı göster"
 
@@ -3667,8 +3685,8 @@ msgstr "Enter'a basıldığında oynatıcıyı göster"
 msgid "Show Programmes"
 msgstr "Programları Göster"
 
-#: client_ui.py:207
-#: client_ui.py:351
+#: client_ui.py:209
+#: client_ui.py:355
 msgid "Show Stream URL"
 msgstr "Yayın URL'sini göster"
 
@@ -3682,9 +3700,9 @@ msgid "Showing {count} of {total} matching channels. Refine the search if needed
 msgstr "Eşleşen {total} kanaldan {count} tanesi gösteriliyor. Gerekirse aramayı daraltın."
 
 #: dialogs_misc.py:787
-#: main.py:4014
-#: main.py:4078
-#: main.py:4088
+#: main.py:4041
+#: main.py:4105
+#: main.py:4115
 msgid "Shut Down After Recordings"
 msgstr "Kayıtlardan sonra kapat"
 
@@ -3692,15 +3710,15 @@ msgstr "Kayıtlardan sonra kapat"
 msgid "Shut Down Now"
 msgstr "Şimdi kapat"
 
-#: main.py:4608
+#: main.py:4652
 msgid "Shut Down the Computer When Recordings Finish"
 msgstr "Kayıtlar bittiğinde bilgisayarı kapat"
 
-#: main.py:4077
+#: main.py:4104
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Kapatma iptal edildi. Kayıtlardan sonra otomatik kapatma artık kapalı."
 
-#: planning_tools.py:86
+#: planning_tools.py:87
 msgid "Size (bytes)"
 msgstr "Boyut (bayt)"
 
@@ -3717,8 +3735,8 @@ msgstr "“{title}” için bu kayıt atlansın mı?"
 msgid "Skipped"
 msgstr "Atlandı"
 
-#: internal_player.py:3290
-#: internal_player.py:3302
+#: internal_player.py:3313
+#: internal_player.py:3325
 msgid "Sleep Timer"
 msgstr "Uyku zamanlayıcısı"
 
@@ -3730,7 +3748,7 @@ msgstr "Uyku zamanlayıcısı…"
 msgid "Sort by"
 msgstr "Sıralama ölçütü"
 
-#: internal_player.py:2453
+#: internal_player.py:2474
 msgid "Sound restored"
 msgstr "Ses açıldı"
 
@@ -3739,19 +3757,19 @@ msgstr "Ses açıldı"
 msgid "Speak Subtitles"
 msgstr "Altyazıları seslendir"
 
-#: client_ui.py:391
+#: client_ui.py:395
 msgid "Speak subtitles"
 msgstr "Altyazıları seslendir"
 
-#: client_ui.py:382
+#: client_ui.py:386
 msgid "Speak through application voice"
 msgstr "Uygulama sesiyle seslendir"
 
-#: client_ui.py:381
+#: client_ui.py:385
 msgid "Speak through screen reader"
 msgstr "Ekran okuyucuyla seslendir"
 
-#: main.py:7805
+#: main.py:7849
 msgid "Speech speed (-10 to 10; 0 is normal):"
 msgstr "Konuşma hızı (-10 ile 10 arası; 0 normal hızdır):"
 
@@ -3759,8 +3777,8 @@ msgstr "Konuşma hızı (-10 ile 10 arası; 0 normal hızdır):"
 msgid "Stalker Portal"
 msgstr "Stalker Portal"
 
-#: main.py:1448
-#: playlist.py:3460
+#: main.py:1456
+#: playlist.py:3500
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
@@ -3773,12 +3791,12 @@ msgstr "Stalker portalı istemcisi henüz başlatılmadı."
 msgid "Stalker portal entry missing provider identifier."
 msgstr "Stalker portalı kaydında sağlayıcı kimliği eksik."
 
-#: personal_tools_ui.py:105
+#: personal_tools_ui.py:120
 #: recording_conflicts_ui.py:167
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "Başlangıç (yerel saat, YYYY-AA-GG SS:DD)"
 
-#: main.py:4564
+#: main.py:4608
 #: shortcuts.py:91
 msgid "Start Recording"
 msgstr "Kaydı başlat"
@@ -3791,7 +3809,7 @@ msgstr "Önce yerleşik oynatıcıda oynatmayı başlatın."
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "Zamanlanmış kayıtları erken başlatın ya da program bittikten sonra kaydı sürdürün. Elle başlatılan kayıtlar değişmez."
 
-#: main.py:4880
+#: main.py:4924
 msgid "Starting update..."
 msgstr "Güncelleme başlatılıyor..."
 
@@ -3803,25 +3821,25 @@ msgstr "{start} tarihinde başlıyor: {title}"
 #: account_info.py:552
 #: account_info.py:554
 #: account_info.py:606
-#: main.py:9191
-#: planning_tools.py:86
+#: main.py:9270
+#: planning_tools.py:87
 #: planning_ui.py:47
 #: recording_library_ui.py:61
 #: recording_library_ui.py:82
 msgid "Status"
 msgstr "Durum"
 
-#: client_ui.py:133
-#: client_ui.py:290
+#: client_ui.py:135
+#: client_ui.py:294
 #: internal_player.py:452
 #: internal_player.py:557
-#: main.py:823
+#: main.py:831
 #: shortcuts.py:87
 #: shortcuts.py:114
 msgid "Stop"
 msgstr "Durdur"
 
-#: main.py:4568
+#: main.py:4612
 msgid "Stop All Recordings"
 msgstr "Tüm kayıtları durdur"
 
@@ -3829,13 +3847,13 @@ msgstr "Tüm kayıtları durdur"
 msgid "Stop Playback"
 msgstr "Oynatmayı durdur"
 
-#: internal_player.py:1990
-#: main.py:2788
-#: main.py:4566
+#: internal_player.py:1995
+#: main.py:2796
+#: main.py:4610
 msgid "Stop Recording"
 msgstr "Kaydı durdur"
 
-#: main.py:835
+#: main.py:843
 msgid "Stop Recording(s)"
 msgstr "Kaydı/kayıtları durdur"
 
@@ -3843,7 +3861,7 @@ msgstr "Kaydı/kayıtları durdur"
 msgid "Stop below (MiB):"
 msgstr "Şu değerin altında durdur (MiB):"
 
-#: internal_player.py:3289
+#: internal_player.py:3312
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Yerleşik oynatmayı 1–1440 dakika sonra durdur; zamanlayıcıyı iptal etmek için 0 girin."
 
@@ -3855,37 +3873,37 @@ msgstr "Bir yayın cihazına geçmeden önce yerel arabellekten oynatmayı durdu
 msgid "Stop recordings safely when space is critically low"
 msgstr "Alan kritik düzeye indiğinde kayıtları kontrollü olarak durdur"
 
-#: internal_player.py:938
-#: internal_player.py:2038
+#: internal_player.py:943
+#: internal_player.py:2043
 msgid "Stopped"
 msgstr "Durduruldu"
 
-#: main.py:9311
-#: planning_tools.py:87
+#: main.py:9467
+#: planning_tools.py:88
 #: recording_library_ui.py:62
-#: recording_library_ui.py:300
+#: recording_library_ui.py:302
 msgid "Stopped by user"
 msgstr "Kullanıcı tarafından durduruldu"
 
-#: main.py:9308
+#: main.py:9464
 msgid "Stopping"
 msgstr "Durduruluyor"
 
-#: main.py:3658
-#: main.py:3938
+#: main.py:3685
+#: main.py:3965
 msgid "Stopping recording for {name}..."
 msgstr "{name} kaydı durduruluyor..."
 
-#: main.py:3954
+#: main.py:3981
 msgid "Stopping recording..."
 msgstr "Kayıt durduruluyor..."
 
-#: main.py:3964
+#: main.py:3991
 msgid "Stopping {count} recording(s)..."
 msgstr "{count} kayıt durduruluyor..."
 
-#: internal_player.py:1224
-#: internal_player.py:1570
+#: internal_player.py:1229
+#: internal_player.py:1575
 msgid "Stream Lost"
 msgstr "Yayın kaybedildi"
 
@@ -3894,21 +3912,21 @@ msgstr "Yayın kaybedildi"
 msgid "Stream URL"
 msgstr "Yayın URL'si"
 
-#: internal_player.py:1565
+#: internal_player.py:1570
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Yayın {count} yeniden denemeden sonra bağlantısı kesildi. Yayın çevrimdışı olabilir veya sorun yaşıyor olabilir."
 
-#: internal_player.py:1222
+#: internal_player.py:1227
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Akış kesildi. Yayın çevrimdışı olabilir veya sorun yaşıyor olabilir."
 
-#: internal_player.py:1227
-#: internal_player.py:1573
-#: internal_player.py:2260
+#: internal_player.py:1232
+#: internal_player.py:1578
+#: internal_player.py:2281
 msgid "Stream lost"
 msgstr "Yayın kaybedildi"
 
-#: playlist.py:3535
+#: playlist.py:3575
 msgid "Stream output"
 msgstr "Yayın çıkışı"
 
@@ -3917,16 +3935,16 @@ msgstr "Yayın çıkışı"
 msgid "Subscription"
 msgstr "Abonelik"
 
-#: main.py:7916
+#: main.py:7960
 msgid "Subtitle Capabilities"
 msgstr "Altyazı özellikleri"
 
-#: client_ui.py:439
-#: main.py:7755
-#: main.py:7826
-#: main.py:7862
-#: main.py:7866
+#: client_ui.py:443
+#: main.py:7799
 #: main.py:7870
+#: main.py:7906
+#: main.py:7910
+#: main.py:7914
 msgid "Subtitle Speech"
 msgstr "Altyazı seslendirme"
 
@@ -3936,7 +3954,7 @@ msgstr "Altyazı seslendirme"
 msgid "Subtitle Timing..."
 msgstr "Altyazı Zamanlaması…"
 
-#: client_ui.py:437
+#: client_ui.py:441
 msgid "Subtitle capabilities..."
 msgstr "Altyazı özellikleri..."
 
@@ -3948,49 +3966,49 @@ msgstr "Milisaniye cinsinden altyazı gecikmesi (-600000 ile 600000 arası). Poz
 msgid "Subtitle delay: {milliseconds} ms."
 msgstr "Altyazı gecikmesi: {milliseconds} ms."
 
-#: internal_player.py:2719
+#: internal_player.py:2740
 msgid "Subtitle file loaded: {name}"
 msgstr "Altyazı dosyası yüklendi: {name}"
 
-#: internal_player.py:2697
+#: internal_player.py:2718
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Altyazı dosyaları (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:7620
+#: main.py:7664
 msgid "Subtitle speech %s."
 msgstr "Altyazı sesi %s."
 
-#: main.py:7716
-#: main.py:7725
-#: main.py:7865
+#: main.py:7760
+#: main.py:7769
+#: main.py:7909
 msgid "Subtitle speech failed."
 msgstr "Altyazı seslendirme başarısız oldu."
 
-#: internal_player.py:2725
+#: internal_player.py:2746
 msgid "Subtitle speech needs a supported text subtitle file."
 msgstr "Sesli okuma için desteklenen bir metin altyazı dosyası gereklidir."
 
-#: internal_player.py:2918
+#: internal_player.py:2939
 msgid "Subtitle speech off"
 msgstr "Altyazı seslendirme kapalı"
 
-#: internal_player.py:2920
+#: internal_player.py:2941
 msgid "Subtitle speech on"
 msgstr "Altyazı seslendirme açık"
 
-#: internal_player.py:2922
+#: internal_player.py:2943
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "Altyazıları sesli okuma açık. Metni dinlemek için bir altyazı dosyası yükleyin."
 
-#: main.py:7719
+#: main.py:7763
 msgid "Subtitle speech paused: the selected audio output is unavailable."
 msgstr "Altyazı sesi duraklatıldı: seçili ses çıkışı kullanılamıyor."
 
-#: main.py:7762
+#: main.py:7806
 msgid "Subtitle speech will use the application voice."
 msgstr "Altyazı seslendirme, uygulama sesini kullanacak."
 
-#: main.py:7764
+#: main.py:7808
 msgid "Subtitle speech will use your screen reader."
 msgstr "Altyazı seslendirme, ekran okuyucunuzu kullanacak."
 
@@ -3998,19 +4016,19 @@ msgstr "Altyazı seslendirme, ekran okuyucunuzu kullanacak."
 msgid "Subtitle timing could not be changed."
 msgstr "Altyazı zamanlaması değiştirilemedi."
 
-#: internal_player.py:2648
+#: internal_player.py:2669
 msgid "Subtitle track unavailable"
 msgstr "Altyazı parçası kullanılamıyor"
 
-#: client_ui.py:229
-#: client_ui.py:369
+#: client_ui.py:231
+#: client_ui.py:373
 #: internal_player.py:581
-#: internal_player.py:2694
+#: internal_player.py:2715
 #: shortcuts.py:120
 msgid "Subtitles"
 msgstr "Altyazılar"
 
-#: internal_player.py:2659
+#: internal_player.py:2680
 msgid "Subtitles: {name}"
 msgstr "Altyazılar: {name}"
 
@@ -4019,32 +4037,32 @@ msgid "Sunday"
 msgstr "Pazar"
 
 #: internal_player.py:121
-#: main.py:7836
+#: main.py:7880
 msgid "System default"
 msgstr "Sistem varsayılanı"
 
-#: main.py:2850
+#: main.py:2858
 msgid "The EPG database was created by an older version and is missing newer fields. Import the guide again to update it?\n\n(Without this, the EPG views cannot show programme descriptions.)"
 msgstr "EPG veritabanı eski bir sürüm tarafından oluşturulmuş ve yeni alanlar eksik. Güncellemek için kılavuzu yeniden içe aktarmak ister misiniz?\n\n(Bu olmadan, EPG görünümleri program açıklamalarını gösteremez.)"
 
-#: main.py:2860
-#: main.py:7001
+#: main.py:2868
+#: main.py:7045
 msgid "The EPG import could not be started."
 msgstr "EPG içe aktarma başlatılamadı."
 
-#: main.py:6871
+#: main.py:6915
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "EPG içe aktarma tamamlanmadı. Yayın rehberi eksik veya değişmemiş olabilir."
 
-#: main.py:6867
+#: main.py:6911
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "EPG içe aktarma tamamlandı. Yayın rehberi güncel."
 
-#: personal_tools_ui.py:664
+#: personal_tools_ui.py:879
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "Uygulama kapanacak. Geri yüklemeyi bitirmek için yeniden açın."
 
-#: main.py:7754
+#: main.py:7798
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "Uygulama sesi yalnızca SAPI ile Windows'ta kullanılabilir."
 
@@ -4065,20 +4083,25 @@ msgstr "Yer işareti sınırına ulaşıldı. Önce kullanılmayan bir yer işar
 msgid "The channel cannot be identified unambiguously."
 msgstr "Kanal kesin olarak belirlenemedi."
 
-#: personal_tools_ui.py:272
-#: personal_tools_ui.py:439
+#: favorite_collections.py:100
+#: main.py:9354
+#: personal_tools_ui.py:260
+#: personal_tools_ui.py:282
+#: personal_tools_ui.py:419
+#: personal_tools_ui.py:477
+#: personal_tools_ui.py:644
 msgid "The channel list changed. Try again."
 msgstr "Kanal listesi değişti. Yeniden deneyin."
 
-#: internal_player.py:2435
+#: internal_player.py:2456
 msgid "The channel volume could not be saved:\n{error}"
 msgstr "Kanalın ses düzeyi kaydedilemedi:\n{error}"
 
-#: main.py:4315
+#: main.py:4342
 msgid "The clipboard is unavailable."
 msgstr "Pano kullanılamıyor."
 
-#: main.py:4009
+#: main.py:4036
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
 msgstr "Çalışan veya hâlâ zamanlanmış olan her kayıt tamamlandığında bilgisayar kapatılacak.\n\nÖnce iptal edebileceğiniz bir geri sayım görürsünüz ve bu ayar kullanıldığı anda kendiliğinden kapanır.\n\nKayıtlar bittiğinde bilgisayar kapatılsın mı?"
 
@@ -4090,7 +4113,7 @@ msgstr "Sağlayıcıya bağlantı zaman aşımına uğradı."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "Bitiş gelecekte, başlangıçtan sonra ve en fazla yedi gün içinde olmalıdır."
 
-#: personal_tools_ui.py:150
+#: personal_tools_ui.py:154
 msgid "The first recording must start on a selected weekday."
 msgstr "İlk kayıt seçilen günlerden birinde başlamalıdır."
 
@@ -4106,15 +4129,15 @@ msgstr "Yükleyici {code} çıkış koduyla durdu."
 msgid "The installer was still running after 15 minutes."
 msgstr "Yükleyici 15 dakika sonra hâlâ çalışıyordu."
 
-#: main.py:4746
+#: main.py:4790
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "Dil değiştirildi. Değişikliğin tam olarak etkili olması için lütfen Accessible IPTV Client'ı yeniden başlatın."
 
-#: recording_library_ui.py:201
+#: recording_library_ui.py:203
 msgid "The library can contain up to 20 folders."
 msgstr "Kitaplık en fazla 20 klasör içerebilir."
 
-#: main.py:3545
+#: main.py:3572
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Canlı yayın arabelleği kaynak değiştiriyor. Zamanlanmış kayıt başlatılamadı."
 
@@ -4147,22 +4170,22 @@ msgstr "Sonraki bölüm {seconds} saniye sonra başlayacak: {title}"
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "Eski konumun süresi doldu; oynatma saklanan aralığa taşındı."
 
-#: personal_tools_ui.py:392
+#: personal_tools_ui.py:597
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "İşlem tamamlanamadı. Yenileyip yeniden deneyin."
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:3252
-#: main.py:9388
-#: main.py:9417
+#: internal_player.py:3275
+#: main.py:9545
+#: main.py:9574
 #: personal_tools_ui.py:28
-#: personal_tools_ui.py:606
+#: personal_tools_ui.py:821
 #: planning_tools_ui.py:42
 #: recording_conflicts_ui.py:135
 msgid "The operation failed:\n{error}"
 msgstr "İşlem başarısız oldu:\n{error}"
 
-#: main.py:2103
+#: main.py:2111
 msgid "The passwords do not match."
 msgstr "Şifreler eşleşmiyor."
 
@@ -4175,17 +4198,18 @@ msgstr "Duraklatılan konumun süresi doldu. Oynatma saklanan en eski görüntü
 msgid "The playback position is not available yet."
 msgstr "Oynatma konumu henüz kullanılamıyor."
 
-#: internal_player.py:2449
+#: internal_player.py:2470
 msgid "The player could not change its mute state."
 msgstr "Oynatıcı sessiz durumunu değiştiremedi."
 
+#: internal_player.py:2167
 #: media_navigation_ui.py:117
 #: media_navigation_ui.py:153
 msgid "The player could not seek to the requested position."
 msgstr "Oynatıcı istenen konuma gidemedi."
 
-#: internal_player.py:3178
-#: main.py:6407
+#: internal_player.py:3200
+#: main.py:6451
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "Kontrol sırasında oynatma listeleri değişti. İzlemeye Devam Et penceresini yeniden açıp tekrar deneyin."
 
@@ -4225,7 +4249,8 @@ msgstr "Sağlayıcının sunucusunda bir hata oluştu (HTTP 5xx). Daha sonra yen
 msgid "The provider's server refused the connection."
 msgstr "Sağlayıcının sunucusu bağlantıyı reddetti."
 
-#: dvr.py:481
+#: dvr.py:574
+#: main.py:3358
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "Kayıt değişti. Saat penceresini yeniden açın."
 
@@ -4234,13 +4259,14 @@ msgid "The recording connection limit for this account has been reached ({limit}
 msgstr "Bu hesabın kayıt bağlantısı sınırına ulaşıldı ({limit}). Devam eden kayıtlar sürecek."
 
 #: recording_library.py:155
-#: recording_library.py:257
+#: recording_library.py:317
 msgid "The recording file changed. Refresh the library."
 msgstr "Kayıt dosyası değişti. Kitaplığı yenileyin."
 
+#: main.py:8109
 #: recording_library.py:152
-#: recording_library.py:251
-#: recording_library.py:254
+#: recording_library.py:311
+#: recording_library.py:314
 msgid "The recording file is no longer available."
 msgstr "Kayıt dosyası artık kullanılamıyor."
 
@@ -4252,13 +4278,13 @@ msgstr "Kayıt klasörü kullanılamıyor veya yazılabilir değil:\n{error}"
 msgid "The recording is still in use."
 msgstr "Kayıt hâlâ kullanımda."
 
-#: dvr.py:282
-#: dvr.py:298
+#: dvr.py:293
+#: dvr.py:309
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "Kayıt zamanlaması okunamadı veya yedeklenemedi. Özgün dosyayı korumak için değişiklikler devre dışı bırakıldı. Dosya izinlerini ve boş disk alanını kontrol edip uygulamayı yeniden başlatın."
 
-#: dvr.py:279
-#: dvr.py:295
+#: dvr.py:290
+#: dvr.py:306
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "Kayıt zamanlaması okunamadı. Özgün dosya {path} konumunda korundu. Yeni kayıt eklemeden önce zamanlanmış kayıtlarınızı kontrol edin."
 
@@ -4266,15 +4292,15 @@ msgstr "Kayıt zamanlaması okunamadı. Özgün dosya {path} konumunda korundu. 
 msgid "The recording start time has already passed."
 msgstr "Kaydın başlangıç saati geçti."
 
-#: dvr.py:331
+#: dvr.py:334
 msgid "The recording times are invalid. Check the recording schedule."
 msgstr "Kayıt saatleri geçersiz. Kayıt zamanlamasını kontrol edin."
 
-#: recording_library.py:192
+#: recording_library.py:246
 msgid "The recording trash folder is not available."
 msgstr "Kayıt çöp kutusu klasörüne erişilemiyor."
 
-#: dvr.py:337
+#: dvr.py:340
 msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
 msgstr "Kurtarılan kayıt zamanlaması kaydedilemedi. Zamanlamayı ve diskteki boş alanı kontrol edin."
 
@@ -4292,7 +4318,7 @@ msgstr "Hatırlatıcı işlemi başarısız oldu:\n{error}"
 msgid "The requested position is too large."
 msgstr "İstenen konum çok büyük."
 
-#: internal_player.py:3231
+#: internal_player.py:3254
 msgid "The saved playback position could not be restored."
 msgstr "Kaydedilen oynatma konumu geri yüklenemedi."
 
@@ -4301,11 +4327,12 @@ msgstr "Kaydedilen oynatma konumu geri yüklenemedi."
 msgid "The saved search history is damaged."
 msgstr "Kayıtlı arama geçmişi bozuk."
 
-#: main.py:7736
+#: main.py:7780
 msgid "The selected audio output is unavailable. Subtitle speech is paused."
 msgstr "Seçili ses çıkışı kullanılamıyor. Altyazı sesi duraklatıldı."
 
 #: favorite_collections.py:64
+#: favorite_collections.py:97
 msgid "The selected list no longer exists."
 msgstr "Seçili liste artık mevcut değil."
 
@@ -4315,7 +4342,7 @@ msgstr "Sunucu hiçbir hesap ayrıntısı bildirmedi."
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:459
+#: personal_tools_ui.py:674
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "Ayarlar kaydedilemedi. Boş alanı ve yazma izinlerini denetleyip yeniden deneyin."
 
@@ -4323,11 +4350,11 @@ msgstr "Ayarlar kaydedilemedi. Boş alanı ve yazma izinlerini denetleyip yenide
 msgid "The stream sent data that could not be read."
 msgstr "Yayın okunamayan veriler gönderdi."
 
-#: main.py:5281
+#: main.py:5325
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "v{version} sürümüne güncelleme tamamlanmadı, bu yüzden {app} hâlâ v{current} sürümünde. Yardım > Güncellemeleri denetle... yolundan yeniden deneyebilirsiniz."
 
-#: main.py:484
+#: main.py:492
 msgid "The user guide could not be opened: {error}"
 msgstr "Kullanım kılavuzu açılamadı: {error}"
 
@@ -4335,8 +4362,8 @@ msgstr "Kullanım kılavuzu açılamadı: {error}"
 msgid "The warning threshold must be at least as high as the stop threshold."
 msgstr "Uyarı eşiği, durdurma eşiğinden düşük olamaz."
 
-#: main.py:8443
-#: main.py:8547
+#: main.py:8495
+#: main.py:8599
 msgid "This catch-up programme is already downloading."
 msgstr "Bu program zaten indiriliyor."
 
@@ -4344,7 +4371,7 @@ msgstr "Bu program zaten indiriliyor."
 msgid "This channel does not provide catch-up streaming."
 msgstr "Bu kanal geçmiş yayınları izleme olanağı sunmuyor."
 
-#: main.py:3942
+#: main.py:3969
 msgid "This channel is not currently recording."
 msgstr "Bu kanal şu anda kaydedilmiyor."
 
@@ -4353,7 +4380,7 @@ msgstr "Bu kanal şu anda kaydedilmiyor."
 msgid "This command is available during on-demand playback."
 msgstr "Bu komut isteğe bağlı içerik oynatılırken kullanılabilir."
 
-#: main.py:1794
+#: main.py:1802
 msgid "This entry cannot be added to Favorites."
 msgstr "Bu öğe sık kullanılanlara eklenemez."
 
@@ -4361,11 +4388,11 @@ msgstr "Bu öğe sık kullanılanlara eklenemez."
 msgid "This favourite is already available."
 msgstr "Bu sık kullanılan kanal zaten kullanılabilir."
 
-#: main.py:8185
+#: main.py:8236
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "Bu bir catch-up yayınıdır. Kaydetmek için catch-up listesindeki İndir seçeneğini kullanın."
 
-#: main.py:7864
+#: main.py:7908
 msgid "This is the application voice."
 msgstr "Bu, uygulama sesidir."
 
@@ -4377,7 +4404,7 @@ msgstr "Bu yerel saat mevcut değil. Saat değişikliği tarihini kontrol edin."
 msgid "This local time occurs twice when the clocks change."
 msgstr "Saatler değiştiğinde bu yerel saat iki kez oluşur."
 
-#: personal_tools_ui.py:662
+#: personal_tools_ui.py:877
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "Bu eski yedek yalnızca ayarları değiştirir. Kayıt planları ve hatırlatıcılar korunur."
 
@@ -4385,15 +4412,16 @@ msgstr "Bu eski yedek yalnızca ayarları değiştirir. Kayıt planları ve hat�
 msgid "This overlaps {count} recording(s). Continue?"
 msgstr "Bu işlem {count} kayıtla çakışıyor. Devam edilsin mi?"
 
-#: main.py:3313
+#: dvr.py:481
+#: main.py:3321
 msgid "This programme has already ended."
 msgstr "Bu program zaten sona erdi."
 
-#: main.py:3329
+#: main.py:3347
 msgid "This programme is already scheduled to record."
 msgstr "Bu program zaten kayıt için zamanlandı."
 
-#: main.py:8421
+#: main.py:8467
 msgid "This programme is not available as catch-up content yet."
 msgstr "Bu program henüz geri izlemede yok."
 
@@ -4409,8 +4437,9 @@ msgstr "Bu program kanal arşivinde bulunmuyor."
 msgid "This programme's start and end times are invalid."
 msgstr "Bu programın başlangıç ve bitiş saatleri geçersiz."
 
-#: dvr.py:390
-#: dvr.py:466
+#: dvr.py:478
+#: dvr.py:486
+#: dvr.py:561
 msgid "This recording is already scheduled."
 msgstr "Bu kayıt zaten planlanmış."
 
@@ -4427,20 +4456,20 @@ msgstr "Bu akış konum değiştirmeyi desteklemiyor."
 msgid "Thursday"
 msgstr "Perşembe"
 
-#: main.py:9188
-#: main.py:9447
+#: main.py:9267
+#: main.py:9604
 #: planning_ui.py:46
 msgid "Time"
 msgstr "Saat"
 
-#: main.py:9032
+#: main.py:9084
 msgid "Time remaining: {time}"
 msgstr "Kalan süre: {time}"
 
-#: main.py:9189
-#: main.py:9448
-#: personal_tools_ui.py:102
-#: planning_tools.py:86
+#: main.py:9268
+#: main.py:9605
+#: personal_tools_ui.py:117
+#: planning_tools.py:87
 #: planning_ui.py:46
 #: recording_conflicts_ui.py:35
 #: recording_library_ui.py:66
@@ -4459,15 +4488,15 @@ msgstr "Tam ekranı aç/kapat"
 msgid "Too many matches. Enter a more specific channel name."
 msgstr "Çok fazla eşleşme var. Kanal adını daha ayrıntılı girin."
 
-#: main.py:295
-#: main.py:298
+#: main.py:303
+#: main.py:306
 msgid "Topics"
 msgstr "Konular"
 
-#: internal_player.py:2501
-#: internal_player.py:2589
-#: internal_player.py:2642
-#: internal_player.py:2658
+#: internal_player.py:2522
+#: internal_player.py:2610
+#: internal_player.py:2663
+#: internal_player.py:2679
 msgid "Track {id}"
 msgstr "Parça {id}"
 
@@ -4475,7 +4504,7 @@ msgstr "Parça {id}"
 msgid "Trial account"
 msgstr "Deneme hesabı"
 
-#: playlist.py:3640
+#: playlist.py:3680
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "Portalın XMLTV kılavuzunu otomatik olarak eklemeyi dene"
 
@@ -4488,7 +4517,7 @@ msgstr "Salı"
 msgid "Type"
 msgstr "Tür"
 
-#: playlist.py:3135
+#: playlist.py:3175
 msgid "URL copied to the clipboard."
 msgstr "URL panoya kopyalandı."
 
@@ -4505,11 +4534,11 @@ msgstr "Bildirim indirilemedi. Lütfen bağlantınızı kontrol edin."
 msgid "Unable to download update. Please check your connection."
 msgstr "Güncelleme indirilemedi. Lütfen bağlantınızı kontrol edin."
 
-#: main.py:8431
+#: main.py:8483
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "Geri izleme indirmesi hazırlanamadı:\n{error}"
 
-#: main.py:8371
+#: main.py:8422
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Geri izleme yayını hazırlanamadı:\n{error}"
 
@@ -4530,13 +4559,13 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "Xtream sunucusundan beklenmeyen hesap yanıtı"
 
 #: channel_widgets.py:383
-#: planning_tools.py:88
-#: planning_tools.py:92
+#: planning_tools.py:89
+#: planning_tools.py:93
 #: recording_conflicts_ui.py:166
 #: recording_library_ui.py:62
-#: recording_library_ui.py:301
-#: recording_library_ui.py:308
-#: recording_library_ui.py:309
+#: recording_library_ui.py:303
+#: recording_library_ui.py:310
+#: recording_library_ui.py:311
 #: updater.py:967
 msgid "Unknown"
 msgstr "Bilinmiyor"
@@ -4545,33 +4574,33 @@ msgstr "Bilinmiyor"
 msgid "Unknown command."
 msgstr "Bilinmeyen komut."
 
-#: main.py:3288
+#: main.py:3296
 #: planning_ui.py:105
 #: recording_conflicts_ui.py:21
 #: resume_dialogs.py:88
 msgid "Unknown time"
 msgstr "Bilinmeyen saat"
 
-#: main.py:4864
+#: main.py:4908
 msgid "Update Available"
 msgstr "Güncelleme mevcut"
 
-#: main.py:5296
+#: main.py:5340
 msgid "Update Complete"
 msgstr "Güncelleme tamamlandı"
 
-#: main.py:5067
-#: main.py:5083
-#: main.py:5126
+#: main.py:5111
+#: main.py:5127
 #: main.py:5170
+#: main.py:5214
 msgid "Update Error"
 msgstr "Güncelleme hatası"
 
-#: main.py:5285
+#: main.py:5329
 msgid "Update Not Completed"
 msgstr "Güncelleme tamamlanmadı"
 
-#: main.py:4859
+#: main.py:4903
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Güncelleme mevcut: v{latest} (geçerli v{current})."
 
@@ -4579,35 +4608,35 @@ msgstr "Güncelleme mevcut: v{latest} (geçerli v{current})."
 msgid "Update cancelled."
 msgstr "Güncelleme iptal edildi."
 
-#: main.py:4823
-#: main.py:4835
+#: main.py:4867
+#: main.py:4879
 msgid "Update check failed: {error}"
 msgstr "Güncelleme denetimi başarısız oldu: {error}"
 
-#: main.py:4775
+#: main.py:4819
 msgid "Update check is already running."
 msgstr "Güncelleme denetimi zaten çalışıyor."
 
-#: main.py:5125
 #: main.py:5169
+#: main.py:5213
 msgid "Update failed to start: {error}"
 msgstr "Güncelleme başlatılamadı: {error}"
 
-#: main.py:5066
-#: main.py:5082
+#: main.py:5110
+#: main.py:5126
 msgid "Update failed: {error}"
 msgstr "Güncelleme başarısız oldu: {error}"
 
-#: main.py:4986
-#: main.py:5040
+#: main.py:5030
+#: main.py:5084
 msgid "Update helper is missing from this build."
 msgstr "Bu derlemede güncelleme yardımcısı eksik."
 
-#: main.py:5006
+#: main.py:5050
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "Güncelleme bildirimi güvenli olmayan bir varlık dosya adı içeriyor."
 
-#: main.py:4965
+#: main.py:5009
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "Güncelleme bildirimi güvenli olmayan bir yükleyici dosya adı içeriyor."
 
@@ -4615,12 +4644,12 @@ msgstr "Güncelleme bildirimi güvenli olmayan bir yükleyici dosya adı içeriy
 msgid "Update manifest download URL is missing."
 msgstr "Güncelleme bildirimi indirme URL'si eksik."
 
-#: main.py:4961
+#: main.py:5005
 #: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "Güncelleme bildiriminde gerekli alanlar eksik."
 
-#: main.py:4956
+#: main.py:5000
 msgid "Update manifest version is not newer than the current app."
 msgstr "Güncelleme bildirimi sürümü geçerli uygulamadan daha yeni değil."
 
@@ -4632,28 +4661,28 @@ msgstr "Güncelleme bildirimi en son sürümde bulunamadı."
 msgid "Update package contains an unsafe file path."
 msgstr "Güncelleme paketi güvenli olmayan bir dosya yolu içeriyor."
 
-#: main.py:5025
+#: main.py:5069
 msgid "Updated executable '{name}' not found in the package."
 msgstr "Güncellenmiş '{name}' yürütülebilir dosyası pakette bulunamadı."
 
-#: main.py:4770
-#: main.py:4775
-#: main.py:4809
-#: main.py:4824
-#: main.py:4836
+#: main.py:4814
+#: main.py:4819
+#: main.py:4853
+#: main.py:4868
+#: main.py:4880
 msgid "Updates"
 msgstr "Güncellemeler"
 
-#: main.py:4785
+#: main.py:4829
 msgid "Updates are only available in the packaged build."
 msgstr "Güncellemeler yalnızca paketlenmiş derlemede kullanılabilir."
 
-#: main.py:4783
+#: main.py:4827
 msgid "Updates are only supported on Windows builds."
 msgstr "Güncellemeler yalnızca Windows derlemelerinde desteklenir."
 
-#: main.py:4879
-#: main.py:5209
+#: main.py:4923
+#: main.py:5253
 msgid "Updating {app}"
 msgstr "{app} güncelleniyor"
 
@@ -4661,56 +4690,56 @@ msgstr "{app} güncelleniyor"
 msgid "Use Automatic Matching"
 msgstr "Otomatik eşleştirme kullan"
 
-#: client_ui.py:242
-#: client_ui.py:454
-#: main.py:284
-#: main.py:429
-#: main.py:485
+#: client_ui.py:244
+#: client_ui.py:458
+#: main.py:292
+#: main.py:437
+#: main.py:493
 msgid "User Guide"
 msgstr "Kullanım Kılavuzu"
 
 #: account_info.py:465
-#: playlist.py:3532
+#: playlist.py:3572
 msgid "Username"
 msgstr "Kullanıcı adı"
 
-#: playlist.py:3563
+#: playlist.py:3603
 msgid "Username, password, and URL are required."
 msgstr "Kullanıcı adı, parola ve URL gereklidir."
 
-#: playlist.py:3563
-#: playlist.py:3697
-#: playlist.py:3701
+#: playlist.py:3603
+#: playlist.py:3737
+#: playlist.py:3741
 msgid "Validation"
 msgstr "Doğrulama"
 
-#: main.py:4973
-#: main.py:5014
+#: main.py:5017
+#: main.py:5058
 msgid "Verifying download..."
 msgstr "İndirme doğrulanıyor..."
 
-#: main.py:4977
-#: main.py:5027
+#: main.py:5021
+#: main.py:5071
 msgid "Verifying signature..."
 msgstr "İmza doğrulanıyor..."
 
-#: main.py:6594
-#: main.py:6613
+#: main.py:6638
+#: main.py:6657
 #: resume_dialogs.py:37
 msgid "Video on Demand"
 msgstr "İstek üzerine video"
 
-#: client_ui.py:144
-#: client_ui.py:298
+#: client_ui.py:146
+#: client_ui.py:302
 msgid "Video on Demand (Movies && Series)"
 msgstr "İstek üzerine video (filmler && diziler)"
 
-#: client_ui.py:164
-#: client_ui.py:318
+#: client_ui.py:166
+#: client_ui.py:322
 msgid "View"
 msgstr "Görünüm"
 
-#: main.py:2810
+#: main.py:2818
 msgid "View EPG..."
 msgstr "EPG'yi görüntüle..."
 
@@ -4718,12 +4747,12 @@ msgstr "EPG'yi görüntüle..."
 msgid "Visit the projects site, projects.serrebiradio.com"
 msgstr "Projeler sitesini ziyaret et, projects.serrebiradio.com"
 
-#: internal_player.py:2069
+#: internal_player.py:2074
 msgid "Vol {value}%"
 msgstr "Ses %{value}"
 
 #: internal_player.py:478
-#: internal_player.py:2436
+#: internal_player.py:2457
 msgid "Volume"
 msgstr "Ses düzeyi"
 
@@ -4741,7 +4770,7 @@ msgstr "Sesi Kısma"
 msgid "Volume Up"
 msgstr "Sesi Artırma"
 
-#: main.py:7773
+#: main.py:7817
 msgid "Volume:"
 msgstr "Ses düzeyi:"
 
@@ -4757,22 +4786,22 @@ msgstr "Şu değerin altında uyar (MiB):"
 msgid "Wednesday"
 msgstr "Çarşamba"
 
-#: client_ui.py:126
-#: client_ui.py:278
+#: client_ui.py:128
+#: client_ui.py:282
 #: internal_player.py:596
 #: shortcuts.py:100
 #: shortcuts.py:128
 msgid "What Is Playing"
 msgstr "Ne Oynuyor"
 
-#: client_ui.py:244
-#: client_ui.py:455
+#: client_ui.py:246
+#: client_ui.py:459
 #: dialogs_misc.py:149
 #: release_notes.py:146
 msgid "What's New"
 msgstr "Yenilikler"
 
-#: client_ui.py:277
+#: client_ui.py:279
 #: dialogs_misc.py:865
 #: shortcuts.py:99
 msgid "What's on Now"
@@ -4796,7 +4825,7 @@ msgstr "Windows güncellemeyi yüklemek için izin alamadı."
 msgid "Wrong password or damaged backup."
 msgstr "Yanlış parola veya hasarlı yedek."
 
-#: playlist.py:3254
+#: playlist.py:3294
 msgid "XML files"
 msgstr "XML dosyaları"
 
@@ -4804,29 +4833,29 @@ msgstr "XML dosyaları"
 msgid "Xtream Codes"
 msgstr "Xtream Codes"
 
-#: playlist.py:3533
+#: playlist.py:3573
 msgid "Xtream Codes password"
 msgstr "Xtream Codes parolası"
 
-#: playlist.py:3532
+#: playlist.py:3572
 msgid "Xtream Codes username"
 msgstr "Xtream Codes kullanıcı adı"
 
-#: main.py:1446
-#: playlist.py:3458
+#: main.py:1454
+#: playlist.py:3498
 msgid "Xtream Codes – {name}"
 msgstr "Xtream Codes – {name}"
 
 #: account_info.py:359
-#: main.py:1872
+#: main.py:1880
 msgid "Yes"
 msgstr "Evet"
 
-#: personal_tools_ui.py:390
+#: personal_tools_ui.py:595
 msgid "You can save up to 30 programme searches."
 msgstr "En fazla 30 program araması kaydedebilirsiniz."
 
-#: main.py:1967
+#: main.py:1975
 msgid "You have not added any favorites yet. Select a channel and press Ctrl+D to add it."
 msgstr "Henüz sık kullanılan eklemediniz. Bir kanal seçin ve eklemek için Ctrl+D tuşlarına basın."
 
@@ -4838,7 +4867,7 @@ msgstr "kullanılabilir"
 msgid "channel stream URL"
 msgstr "kanal yayın URL'si"
 
-#: main.py:8994
+#: main.py:9046
 msgid "ffmpeg exit code: {code}"
 msgstr "ffmpeg çıkış kodu: {code}"
 
@@ -4850,11 +4879,11 @@ msgstr "bu oynatıcı tarafından desteklenmiyor"
 msgid "not verified yet"
 msgstr "henüz doğrulanmadı"
 
-#: main.py:7619
+#: main.py:7663
 msgid "off"
 msgstr "kapalı"
 
-#: main.py:7619
+#: main.py:7663
 msgid "on"
 msgstr "açık"
 
@@ -4870,44 +4899,45 @@ msgstr "python-vlc (libVLC) kullanılamıyor."
 msgid "unknown source"
 msgstr "bilinmeyen kaynak"
 
-#: main.py:4303
+#: main.py:4330
 msgid "wxPython: {version}"
 msgstr "wxPython: {version}"
 
-#: main.py:3266
+#: main.py:3274
 msgid "x264 re-encode (MKV)"
 msgstr "x264 yeniden kodlama (MKV)"
 
-#: main.py:3267
+#: main.py:3275
 msgid "x264 re-encode (MP4)"
 msgstr "x264 yeniden kodlama (MP4)"
 
-#: main.py:9655
+#: main.py:9812
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} zaten çalışıyor ancak yanıt vermedi. Biraz bekleyip yeniden deneyin veya bildirim alanından kapatın."
 
-#: main.py:4807
+#: main.py:4851
 msgid "{app} is up to date (v{version})."
 msgstr "{app} güncel (v{version})."
 
-#: main.py:5294
+#: main.py:5338
 msgid "{app} was successfully updated to v{version}."
 msgstr "{app}, v{version} sürümüne başarıyla güncellendi."
 
-#: main.py:1870
+#: main.py:1878
 msgid "{channel}. Now: {current}. Next: {next}. Recording: {recording}."
 msgstr "{channel}. Şimdi: {current}. Sonraki: {next}. Kayıt: {recording}."
 
 #: dialogs_misc.py:887
-#: dialogs_misc.py:1051
+#: dialogs_misc.py:1055
+#: personal_tools_ui.py:266
 msgid "{count} programs"
 msgstr "{count} program"
 
-#: main.py:5721
+#: main.py:5765
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} kayıt zamanlandı ama henüz başlamadı.\n\n{names}\n\nUygulamanın, kaydı başlatmak için açık kalması gerekiyor. Yine de çıkılsın mı?"
 
-#: recording_library_ui.py:362
+#: recording_library_ui.py:365
 msgid "{count} recording(s). Active recordings are not listed."
 msgstr "{count} kayıt. Devam eden kayıtlar listelenmez."
 
@@ -4919,23 +4949,23 @@ msgstr "{kind} – {who}"
 msgid "{kind} – {who} (detected)"
 msgstr "{kind} – {who} (algılandı)"
 
-#: playlist.py:3500
-#: playlist.py:3615
+#: playlist.py:3540
+#: playlist.py:3655
 msgid "{label} field"
 msgstr "{label} alanı"
 
-#: playlist.py:3494
-#: playlist.py:3496
-#: playlist.py:3609
-#: playlist.py:3611
+#: playlist.py:3534
+#: playlist.py:3536
+#: playlist.py:3649
+#: playlist.py:3651
 msgid "{label} label"
 msgstr "{label} etiketi"
 
-#: main.py:1560
+#: main.py:1568
 msgid "{name} (Favorite)"
 msgstr "{name} (sık kullanılan)"
 
-#: main.py:1909
+#: main.py:1917
 msgid "{name} was removed. Favorites is now empty."
 msgstr "{name} kaldırıldı. Sık kullanılanlar artık boş."
 
@@ -4951,23 +4981,23 @@ msgstr "{player} Linux için yapılandırılmamış."
 msgid "{time} (estimated) – {message}"
 msgstr "{time} (tahmini) – {message}"
 
-#: internal_player.py:822
-msgid "{title} - Built-in Player"
-msgstr "{title} - Yerleşik oynatıcı"
-
-#: main.py:8437
-msgid "{title} - {channel}"
-msgstr "{title} - {channel}"
-
-#: main.py:1865
-msgid "{title}, {start} to {end}"
-msgstr "{title}, {start}'den {end}'ye"
-
 #: planning_ui.py:269
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nBaşlangıç: {time}"
 
-#: internal_player.py:2066
+#: internal_player.py:827
+msgid "{title} - Built-in Player"
+msgstr "{title} - Yerleşik oynatıcı"
+
+#: main.py:8489
+msgid "{title} - {channel}"
+msgstr "{title} - {channel}"
+
+#: main.py:1873
+msgid "{title}, {start} to {end}"
+msgstr "{title}, {start}'den {end}'ye"
+
+#: internal_player.py:2071
 msgid "{value}s buffer"
 msgstr "{value}s arabellek"
 
@@ -4975,12 +5005,12 @@ msgstr "{value}s arabellek"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Toplam {warnings} uyarı, {errors} hata ve {fatals} ölümcül hata kaydedildi."
 
-#: internal_player.py:2065
+#: internal_player.py:2070
 msgid "~{value} Mbps"
 msgstr "~{value} Mbps"
 
-#: main.py:6600
-#: main.py:6626
+#: main.py:6644
+#: main.py:6670
 msgid "◄ Back"
 msgstr "◄ Geri"
 
