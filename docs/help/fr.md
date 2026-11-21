@@ -102,6 +102,8 @@ Les favoris sont stockés par fournisseur et chaîne, pas par adresse de flux ; 
 
 Affichage > Récemment regardés répertorie les chaînes que vous avez écoutées. Affichage > Chaîne précédente (Ctrl+0) revient à la chaîne que vous avez regardée avant celle-ci.
 
+Dans les listes de favoris, exportez une seule liste en conservant son ordre, sans adresse de flux ni identifiants. Importez-la sur l’autre ordinateur sous un nouveau nom. Vérifiez les correspondances et choisissez une chaîne locale en cas d’ambiguïté. Les entrées non associées gardent leur place et peuvent être rattachées plus tard.
+
 ## Vidéo à la demande {#video-on-demand}
 
 Affichage > Vidéo à la demande (films && séries) bascule la liste des catégories des chaînes en direct vers les films et séries de votre fournisseur. Les catégories s'appellent Movies ou Series suivis de la catégorie du fournisseur. Choisir une série liste ses épisodes dans l'ordre des saisons et des épisodes. Appuyez sur Entrée pour lire un film ou un épisode.
@@ -178,6 +180,8 @@ Fichier > À l'affiche maintenant (Ctrl+W) liste chaque émission à l'antenne e
 - Programmer l'enregistrement, ou le menu de l'émission, programme son enregistrement.
 - Échap ferme la fenêtre.
 
+Dans le guide par horaire, choisissez une ligne puis Détails de l’émission pour lire le résumé, le titre et le numéro de l’épisode si le guide les fournit. Échap ramène à la ligne sélectionnée.
+
 ### Guide de la chaîne (Afficher l'EPG) {#channel-epg}
 
 Afficher l'EPG…, dans le menu d'une chaîne, liste les émissions de cette chaîne de celle à l'antenne jusqu'où va le guide. L'émission à l'antenne vient en premier.
@@ -244,6 +248,8 @@ Les mêmes commandes se trouvent dans le menu Lecture du lecteur. Le lecteur se 
 Activer / Désactiver le son coupe le son du lecteur intégré sans interrompre la lecture ni l’enregistrement. Les raccourcis par défaut sont Ctrl+Maj+M dans la fenêtre principale et M dans le lecteur ; ils peuvent être modifiés dans les réglages des raccourcis. Le son reste coupé après un changement de chaîne ou une reconnexion. Lecteur > Mémoriser le volume de chaque chaîne est désactivé par défaut et conserve, une fois activé, votre réglage séparément pour chaque liste ou fournisseur. Les chaînes sans valeur mémorisée utilisent le volume général du lecteur. Le volume du lecteur d’écran n’est pas modifié.
 
 Dans le menu Lecture du lecteur intégré, Ajouter un signet nommé mémorise la position actuelle d’un contenu à la demande ou d’un enregistrement local. Le déplacement et une durée connue sont nécessaires. Signets nommés affiche les signets du contenu actuel : Entrée ou Aller au signet rejoint la position ; Renommer et Supprimer gèrent l’entrée choisie. Chaque nom doit être unique pour ce contenu. Jusqu’à 1000 signets peuvent être conservés, indépendamment de la position de reprise automatique.
+
+Si la mémoire tampon locale est active, Lecture > Enregistrer les dernières minutes crée un fichier MPEG-TS. Indiquez la durée en secondes et choisissez un nouveau nom de fichier. L’extrait commence au début d’un segment complet et peut donc démarrer un peu plus tôt. L’exportation peut être annulée.
 
 ### Pistes audio {#audio-tracks}
 
@@ -360,9 +366,13 @@ Conflits d’enregistrement, dans Enregistrements programmés, présente les che
 
 Choisissez les jours de répétition dans Programmer par horaire, ou dans Enregistrements programmés > Répéter les jours choisis pour un enregistrement en attente qui n’est pas une règle de série. Sans jour sélectionné, l’enregistrement est unique. À la création, le premier départ doit correspondre à un jour choisi. Les répétitions conservent les horaires locaux, les passages à minuit et les marges ; les périodes inexistantes lors du changement d’heure sont ignorées. L’application doit rester ouverte. Les limites de connexions restent applicables.
 
+Sélectionnez Chercher une autre diffusion dans le menu contextuel d’un enregistrement prévu ou dans la fenêtre des conflits. La recherche porte sur les 14 prochains jours. Un numéro d’épisode identique désigne le même épisode. Un titre identique seul indique une rediffusion possible. Vérifiez l’horaire et les conflits avant de confirmer. Les autres occurrences gardent leur horaire.
+
 ### Marge de programmation {#schedule-padding}
 
 Les émissions commencent et finissent rarement exactement à l'heure. Enregistrements > Marge de programmation… fixe combien de minutes avant une émission un enregistrement programmé commence, et combien de minutes après sa fin il continue d'enregistrer. Les enregistrements manuels ne sont pas concernés. Les téléchargements de rattrapage utilisent les mêmes minutes : la plage d'archive demandée au fournisseur est élargie d'autant chaque fois qu'il peut la fournir, et le téléchargement est relancé quand le fichier reçu est plus court que l'émission.
+
+Dans le menu contextuel d’un enregistrement prévu, choisissez Marges de cet enregistrement. Les horaires d’origine de l’émission sont conservés. Pour un enregistrement récurrent, vous pouvez également appliquer ces marges aux prochaines occurrences.
 
 ### Éteindre après les enregistrements {#shutdown-after-recordings}
 

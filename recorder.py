@@ -311,10 +311,11 @@ def count_log_problems(path: str) -> Dict[str, int]:
     neither warnings nor errors do not count. A decoder's own messages
     (``[h264 @ ...] [error] ...``) count like ffmpeg's.
     """
+    return _problem_counts(summarize_log(path))
+
+
+def _problem_counts(summary):
     counts = {"warnings": 0, "errors": 0, "fatals": 0}
-    if not path:
-        return counts
-    summary = summarize_log(path)
     for phase in summary["phases"].values():
         for kind in phase:
             counts[_COUNT_KEYS[kind["level"]]] += kind["count"]
@@ -1386,7 +1387,8 @@ class RecordingManager:
             # Deliberately not rewritten: the log keeps the stream URL and
             # credentials so a failed capture can be diagnosed from it.
             rec.stderr_tail = read_log_problems(rec.log_path)
-            rec.problem_counts = count_log_problems(rec.log_path)
+            summary = summarize_log(rec.log_path)
+            rec.problem_counts = _problem_counts(summary)
             if any(rec.problem_counts.values()):
                 LOG.info(
                     "Recording log problem summary for %s: %d warnings, "
@@ -1399,7 +1401,7 @@ class RecordingManager:
         rec.media_written_seconds = parse_ffmpeg_progress(rec.log_path) if rec.log_path else None
         self._settle_partial_output(rec, rc)
         if rec.log_path:
-            self._append_log_summary(rec, rc)
+            self._append_log_summary(rec, rc, summary)
         with self._lock:
             self._recordings.pop(rec.id, None)
         LOG.info("Recording finished: %s (rc=%s, log=%s)", rec.out_path, rc, rec.log_path or "-")
@@ -1414,7 +1416,7 @@ class RecordingManager:
             LOG.exception("Could not save recording library metadata")
 
     @staticmethod
-    def _append_log_summary(rec: Recording, rc: Optional[int]) -> None:
+    def _append_log_summary(rec: Recording, rc: Optional[int], summary) -> None:
         """Close the recording's log with a readable summary of how it went."""
         try:
             path = rec.out_path if os.path.exists(rec.out_path) else rec.written_path
@@ -1440,7 +1442,7 @@ class RecordingManager:
                 written_seconds=rec.media_written_seconds,
                 file_size=size,
                 ending=ending,
-                summary=summarize_log(rec.log_path),
+                summary=summary,
             )
             if stamp:
                 lines.insert(2, f"# Media signature: {stamp.st_size} {stamp.st_mtime_ns}")

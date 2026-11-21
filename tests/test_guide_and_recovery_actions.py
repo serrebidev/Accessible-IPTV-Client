@@ -110,6 +110,144 @@ def until(app, predicate):
     assert predicate()
 
 
+def activate_button(button):
+    event = wx.CommandEvent(wx.EVT_BUTTON.typeId, button.GetId())
+    event.SetEventObject(button)
+    button.GetEventHandler().ProcessEvent(event)
+
+
+def test_guide_details_reads_selected_long_text_and_escape_keeps_selection(gui, tmp_path, monkeypatch):
+    app, owner = gui
+    when = dt.datetime.now(dt.timezone.utc).replace(second=0, microsecond=0)
+    path = tmp_path / "guide.db"
+    db = create_guide(path, when)
+    text = "Árvíztűrő tükörfúrógép. " * 120
+    db.conn.execute("UPDATE programmes SET description=?, episode='S01E03', subtitle='Finálé' WHERE channel_id='south'", (text,))
+    db.commit()
+    db.close()
+    owner.config, owner.all_channels = {}, []
+    owner._program_match_index = Mock()
+    monkeypatch.setattr(ui.options, 'get_db_path', lambda: str(path))
+    dlg = ui.GuideAtDialog(owner, owner)
+    captured = []
+    def modal(details):
+        field = next(w for w in details.panel.GetChildren() if isinstance(w, wx.TextCtrl))
+        captured.append((field.GetValue(), field.GetName(), field.IsEditable(), field.IsMultiLine()))
+        wx.CallLater(100, wx.UIActionSimulator().Char, wx.WXK_ESCAPE)
+        # Ensure a broken native Escape path fails the test without stranding the suite.
+        fallback = wx.CallLater(1500, lambda: details.EndModal(wx.ID_ABORT) if details.IsModal() else None)
+        result = details.ShowModal()
+        fallback.Stop()
+        captured.append(result)
+        return result
+    monkeypatch.setattr(ui, 'show_modal', modal)
+    try:
+        owner.Show()
+        dlg.Show()
+        dlg.search(None)
+        until(app, lambda: any(row['channel_id'] == 'south' for row in dlg.filtered_programs))
+        index = next(i for i, row in enumerate(dlg.filtered_programs) if row['channel_id'] == 'south')
+        dlg.listbox.Select(index)
+        button = next(w for w in dlg.panel.GetChildren() if isinstance(w, wx.Button) and w.GetLabel() == ui._('Programme Details...'))
+        assert button.AcceptsFocusFromKeyboard()
+        activate_button(button)
+        until(app, lambda: len(captured) == 2)
+        value, name, editable, multiline = captured[0]
+        assert text in value and 'S01E03' in value and 'Finálé' in value
+        assert name == ui._('Details') and multiline and not editable
+        assert captured[1] == wx.ID_CANCEL and dlg.listbox.GetFirstSelected() == index
+        assert wx.Window.FindFocus() is dlg.listbox
+    finally:
+        dlg.Destroy()
+
+
+def test_native_recording_edits_select_airing_and_preserve_padding(gui, tmp_path, monkeypatch):
+    import recording_edits_ui as editing
+    app, owner = gui
+    now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0) + dt.timedelta(days=1)
+    fmt = '%Y%m%d%H%M%S'
+    programme = dict(title='Concert', start=now.strftime(fmt), end=(now + dt.timedelta(hours=1)).strftime(fmt),
+                     episode='S01E01')
+    ch = channel('radio')
+    db = playlist.EPGDatabase(str(tmp_path / 'epg'))
+    db.insert_channel('radio', ch['name'])
+    for hours in (0, 3, 6):
+        db.insert_programme('radio', 'Concert', (now + dt.timedelta(hours=hours)).strftime(fmt),
+                            (now + dt.timedelta(hours=hours+1)).strftime(fmt), episode=programme['episode'])
+    db.commit()
+    db.close()
+    scheduler = dvr.DVRScheduler(str(tmp_path / 'dvr'), on_start=Mock(), on_stop=Mock())
+    initial = scheduler.add_job(dvr.build_job(ch, programme, 'provider_mkv', repeat='weekly'))
+    competing = dict(programme, start=(now + dt.timedelta(hours=3)).strftime(fmt),
+                     end=(now + dt.timedelta(hours=4)).strftime(fmt))
+    scheduler.add_job(dvr.build_job(channel('other'), competing, 'provider_mkv'))
+    owner.config, owner.all_channels = {}, [ch]
+    owner._ensure_dvr_scheduler = lambda **kw: scheduler
+    monkeypatch.setattr(editing.options, 'get_db_path', lambda: str(tmp_path / 'epg'))
+    changed, labels = [], []
+    def modal(dialog):
+        if hasattr(dialog, 'before_ctrl'):
+            assert dialog.before_ctrl.GetName() and dialog.after_ctrl.GetName()
+            assert dialog.future.GetLabel() and not dialog.future.GetValue()
+            dialog.before_ctrl.SetValue(3)
+            dialog.after_ctrl.SetValue(19)
+        else:
+            listing = next(w for w in dialog.panel.GetChildren() if isinstance(w, wx.ListBox))
+            labels.extend(listing.GetStrings())
+            listing.SetSelection(1)
+        return wx.ID_OK
+    monkeypatch.setattr(editing, 'show_modal', modal)
+    monkeypatch.setattr(editing, 'confirm', lambda *_: True)
+    monkeypatch.setattr(editing, 'error_box', lambda _, error: changed.append(str(error)))
+    editing.padding_dialog(owner, owner, initial, lambda: changed.append(True))
+    until(app, lambda: bool(changed))
+    assert changed == [True]
+    updated = scheduler.get_job(initial['id'])
+    assert updated['program'] == initial['program'] and updated['post_padding_minutes'] == 19
+    editing.find_airing(owner, owner, updated, lambda: changed.append(True))
+    until(app, lambda: len(changed) == 2)
+    assert changed == [True, True] and len(labels) == 2
+    assert editing._('Recording Conflicts') in labels[0] and editing._('Recording Conflicts') not in labels[1]
+    new = next(j for j in scheduler.list_jobs(include_done=False) if j['channel'] == ch and not j.get('repeat'))
+    assert new['program']['start'] == (now + dt.timedelta(hours=6)).strftime(fmt)
+    assert (new['pre_padding_minutes'], new['post_padding_minutes']) == (3, 19)
+
+
+def test_favourite_import_preview_respects_explicit_unresolved(gui, monkeypatch):
+    import favourite_transfer as transfer
+    import favourite_transfer_ui as portable
+    import user_guide
+    app, owner = gui
+    owner.config = {}
+    ch = channel('concert')
+    entry = dict(name=ch['name'], key=reminders.channel_key(ch), guide=transfer.guide_key(ch))
+    parent = ui.ToolDialog(owner, 'Favourites')
+    parent.rows = []
+    dialog = portable.ImportDialog(parent, 'Rádiók', transfer.match([entry], [ch]))
+    try:
+        assert dialog.channels.GetName() and dialog.name_field.GetName()
+        assert user_guide.topic_for_window(dialog.channels) == "favorites"
+        row = dialog.channels.GetString(0)
+        assert row.casefold().count(ch['name'].casefold()) == 1
+        assert portable._("Source {number}").format(number=1) in row
+        other_name = dict(ch, name='Másik adónév')
+        assert other_name['name'] in dialog.channel_label(other_name, 0, shown_name=ch['name'])
+        def unresolved(choice):
+            choice.SetSelection(0)
+            return wx.ID_OK
+        monkeypatch.setattr(portable, 'show_modal', unresolved)
+        dialog.choose(None)
+        assert dialog.choices == [None]
+        assert portable._('Leave unresolved') in dialog.channels.GetString(0)
+        wx.CallAfter(activate_button, dialog.FindWindowById(wx.ID_OK, dialog))
+        assert dialog.ShowModal() == wx.ID_OK
+        assert dialog.list_name == 'Rádiók' and lists.resolve(dialog.entries, [ch])[0][1] is None
+        assert dialog.entries[0]['guide'] == entry['guide']
+    finally:
+        dialog.Destroy()
+        parent.Destroy()
+
+
 def test_native_guide_actions_use_the_selected_playlist_channel(gui, tmp_path, monkeypatch):
     app, owner = gui
     when = dt.datetime.now(dt.timezone.utc).replace(second=0, microsecond=0) + dt.timedelta(days=1)

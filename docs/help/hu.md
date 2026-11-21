@@ -114,6 +114,8 @@ A program a kedvenceket a szolgáltató és a csatorna alapján azonosítja, nem
 
 A Nézet > Kedvenclisták… paranccsal több, külön elnevezett csatornalistát is létrehozhat. Ezek kezelését a Lejátszás, ütemezés és biztonsági mentés című szakasz ismerteti. A Nézet > Legutóbb lejátszott csatornák menüpont a korábban hallgatott vagy nézett adók listáját nyitja meg. A Nézet > Előző csatorna (Ctrl+0) paranccsal visszatérhet ahhoz, amelyet közvetlenül a jelenlegi előtt választott.
 
+A „Kedvenclisták” ablakban jelölje ki az átvinni kívánt listát, majd nyomja meg a „Kedvenclista exportálása…” gombot. A fájl megőrzi a csatornák sorrendjét. Lejátszási címek és bejelentkezési adatok nem kerülnek bele. A másik gépen a „Kedvenclista importálása…” gombbal nyissa meg a fájlt. Az előnézetben ellenőrizheti a párosításokat. Ha egy állomáshoz több találat tartozik, a „Csatorna kiválasztása…” gombbal adhatja meg a megfelelő forrást. Ha később szeretne dönteni, válassza az „Egyelőre hozzárendelés nélkül” lehetőséget. Az állomás így is a helyén marad. A felajánlott listanevet megtarthatja, ha még nem foglalt.
+
 ## Igény szerinti videó {#video-on-demand}
 
 A Nézet > Igény szerinti videó (filmek és sorozatok) paranccsal az élő csatornák helyett a szolgáltató film- és sorozatkínálata jelenik meg. A kategóriák neve a Filmek vagy Sorozatok megjelöléssel kezdődik; ezt a szolgáltató által megadott kategórianév követi. Sorozat kiválasztásakor az epizódok évad- és epizódsorrendben jelennek meg. Film vagy epizód lejátszásához nyomja meg az Enter billentyűt.
@@ -201,6 +203,8 @@ A Fájl > Most adásban (Ctrl+W) ablak az összes csatorna aktuális műsorát f
 - Az Escape bezárja az ablakot.
 
 Ha arra kíváncsi, mit sugároznak a csatornák egy adott időpontban, válassza a Fájl menü vagy a Most adásban ablak Műsorújság időpont szerint parancsát. A kívánt időpontot ÉÉÉÉ-HH-NN ÓÓ:PP formátumban, a számítógép helyi ideje szerint adja meg. A Csatornák mezőben az Összes csatorna, a Kedvencek és a saját kedvenclistái közül választhat. Nyomja meg a Műsorok megjelenítése gombot. A találatokban a csatorna neve után a műsor címe, majd kezdési és befejezési ideje következik. A Felvétel ütemezése paranccsal beállíthatja a kijelölt adás rögzítését. Az Értesítés kérése műsorkezdés előtt… gombot a még el nem kezdődött adásoknál használhatja.
+
+A „Műsorújság időpont szerint” ablakban jelöljön ki egy adást, majd nyomja meg a „Műsoradatok…” gombot. A „Részletek” szövegmezőben elolvashatja a műsor leírását, valamint az epizód címét és számát, ha a szolgáltató megadta ezeket az adatokat. Az Escape billentyűvel visszatérhet a kijelölt sorra.
 
 ### Csatorna műsorújsága (Műsorújság megtekintése) {#channel-epg}
 
@@ -291,6 +295,8 @@ Ebben az üzemmódban külső feliratfájl nem tölthető be, mert időzítése 
 A Némítás be- és kikapcsolása parancs a lejátszás és a felvétel megszakítása nélkül némítja el a beépített lejátszót. Alapértelmezett gyorsbillentyűje a főablakban Ctrl+Shift+M, a lejátszóban M; mindkettő módosítható a Billentyűparancsok beállításainál. A némítás csatornaváltáskor és újracsatlakozáskor is megmarad. A Lejátszó > Hangerő megjegyzése csatornánként lehetőség kezdetben ki van kapcsolva. Bekapcsolásakor a program lejátszási listánként, illetve szolgáltatónként külön megjegyzi az egyes csatornákhoz választott hangerőt. Amelyik csatornához még nem tartozik mentett érték, az a lejátszó általános hangerejével szólal meg. Egyik funkció sem változtatja meg a képernyőolvasó hangerejét.
 
 A beépített lejátszó Lejátszás menüjében a Könyvjelző hozzáadása… paranccsal elmentheti egy igény szerinti videó vagy helyi felvétel aktuális lejátszási pozícióját. Ehhez ismert időtartamú, tekerhető tartalom szükséges. A Könyvjelzők… ablak az adott tartalomhoz mentett bejegyzéseket sorolja fel: az Enter vagy az Ugrás a könyvjelzőhöz a kijelölt pozícióra lép; az Átnevezés… és a Törlés a kiválasztott bejegyzést módosítja, illetve távolítja el. Egy tartalmon belül minden könyvjelzőnek különböző nevet kell adni. Összesen legfeljebb 1000 könyvjelző menthető. Ezek az automatikusan megjegyzett folytatási pozíciótól függetlenül használhatók.
+
+Ha bekapcsolta az „Élő adás helyi tárolása…” funkciót, a beépített lejátszó „Lejátszás” menüjében válassza „Az elmúlt percek mentése…” parancsot. Az ablak jelzi, hány másodpercnyi adás áll rendelkezésre. Adja meg a kívánt időtartamot, majd válasszon új fájlnevet. A program a már lezárult adásszakaszokat teljes hosszukban menti. Az elkészült MPEG-TS-fájl ezért a kértnél valamivel hosszabb részletet tartalmazhat. A „Mégse” gombbal megszakíthatja a mentést. A lejátszás és a külön elindított felvétel eközben is folytatódik.
 
 ### Hangsávok {#audio-tracks}
 
@@ -431,9 +437,13 @@ Az Ütemezett felvételek ablak Felvételi ütközések… gombja a kijelölt be
 
 A Felvétel ütemezése időpont alapján ablakban kijelölheti az ismétlés napjait. Meglévő bejegyzésnél az Ütemezett felvételek > Ismétlés a hét kijelölt napjain… paranccsal válassza ki ezeket; ehhez egyetlen várakozó felvételt jelöljön ki, amely nem sorozatfelvételi szabály. Ha egyik nap sincs kijelölve, a rögzítés egyszeri. Új felvételnél az első kezdési időpontnak is a kijelölt napok egyikére kell esnie. A további alkalmak a helyi műsoridőpontokat követik, az éjszakába átnyúló időszakot és a ráhagyást is megőrizve. A tavaszi óraátállítás miatt nem létező időszakot a program kihagyja. Az alkalmazást nyitva kell tartani; a meglévő felvételi kapcsolati korlátok továbbra is érvényesek.
 
+A „Másik adásidőpont keresése…” parancs a még el nem indult felvétel helyi menüjéből és a „Felvételi ütközések” ablakból is elérhető. A program a következő 14 nap műsorában keres. Az „Ugyanaz az epizód” jelölés egyező epizódszámot jelent. A „Lehetséges ismétlés” felirat azonos című adást jelöl, amelynek a tartalma eltérhet az eredetiétől. Jóváhagyás előtt ellenőrizheti a csatornát, az időpontot és az esetleges ütközéseket. Ismétlődő felvételnél csak a kijelölt alkalom időpontja változik.
+
 ### Ütemezési ráhagyás {#schedule-padding}
 
 A műsorok a gyakorlatban nem mindig pontosan a meghirdetett időben kezdődnek vagy fejeződnek be. A Felvételek > Ütemezési ráhagyás… beállítással megadhatja, hány perccel a műsor kezdete előtt induljon el a műsorújság alapján ütemezett felvétel, illetve a tervezett befejezés után mennyi ideig folytatódjon. A kézzel indított vagy kézzel megadott időpontokra ütemezett rögzítéseket ez a beállítás nem érinti. Archív műsor letöltésekor a program szintén a ráhagyással kibővített időszakot kéri le, ha ezt a szolgáltató lehetővé teszi. Az Ütemezett felvételek ablakból indított pótlásnál az adott felvételhez mentett ráhagyást veszi figyelembe. Ha az elkészült fájl rövidebb a műsor várható időtartamánál, ismét megkísérli a letöltést.
+
+Az „Ütemezett felvételek” ablakban nyissa meg egy még el nem indult felvétel helyi menüjét, majd válassza „A kijelölt felvétel ráhagyása…” parancsot. Az első mezőben a műsor kezdete előtti, a másodikban a vége utáni ráhagyást adhatja meg percben. A műsor eredeti kezdési és befejezési időpontja megmarad. Sorozatfelvételnél és ismétlődő időzítésnél külön jelölőnégyzet jelenik meg „A ráhagyás a későbbi alkalmakra is vonatkozzon” felirattal. Alaphelyzetben üres, így a változtatás csak a kijelölt felvételt érinti.
 
 ### A számítógép leállítása a felvételek után {#shutdown-after-recordings}
 

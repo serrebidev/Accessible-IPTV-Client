@@ -101,6 +101,8 @@ Sık kullanılanlar sağlayıcı ve kanala göre saklanır, yayın adresine gör
 
 Görünüm > Son İzlenenler, oynattığınız kanalları listeler. Görünüm > Önceki Kanal (Ctrl+0) bundan önce izlediğiniz kanala geri döner.
 
+Favori listelerinde tek bir listeyi kanal sırasını koruyarak dışa aktarabilirsiniz. Akış adresleri ve oturum açma bilgileri dosyaya alınmaz. Diğer bilgisayarda listeyi yeni bir adla içe aktarın. Eşleşmeleri kontrol edin ve birden fazla aday varsa yerel kanalı seçin. Eşleştirilmemiş kanallar yerlerini korur ve daha sonra eşleştirilebilir.
+
 ## İstek üzerine video {#video-on-demand}
 
 Görünüm > İstek üzerine video (filmler && diziler), kategori listesini canlı kanallardan sağlayıcınızın filmlerine ve dizilerine çevirir. Kategoriler, sağlayıcının kategorisiyle birlikte Movies ya da Series olarak adlandırılır. Bir dizi seçmek bölümlerini sezon ve bölüm sırasıyla listeler. Bir filmi ya da bölümü oynatmak için Enter'a basın.
@@ -177,6 +179,8 @@ Dosya > Şimdi yayında (Ctrl+W) şu an tüm kanallarda yayında olan her progra
 - Kayıt zamanla, ya da programın menüsü, kaydını zamanlar.
 - Escape pencereyi kapatır.
 
+Saate göre yayın rehberinde bir satır seçip Program ayrıntıları komutunu açın. Rehberde varsa açıklamayı, bölüm adını ve numarasını okuyabilirsiniz. Escape ile seçili satıra dönersiniz.
+
 ### Kanal rehberi (EPG'yi görüntüle) {#channel-epg}
 
 Bir kanalın menüsündeki EPG'yi görüntüle..., o kanalın programlarını yayında olandan rehberin sonuna kadar listeler. Yayında olan program ilk sırada gelir.
@@ -243,6 +247,8 @@ Aynı komutlar oynatıcının Oynatma menüsündedir. Oynatıcı, canlı akış 
 Sesi kapat / aç, oynatmayı veya kaydı duraklatmadan yerleşik oynatıcının sesini kapatır. Varsayılan kısayollar ana pencerede Ctrl+Shift+M, oynatıcıda M'dir; ikisi de klavye kısayolu ayarlarından değiştirilebilir. Kanal değişimlerinde ve yeniden bağlantılarda ses kapalı kalır. Oynatıcı > Her kanalın ses düzeyini hatırla başlangıçta kapalıdır; açıldığında seçtiğiniz ses düzeyini her liste veya sağlayıcı için ayrı hatırlar. Kayıtlı değeri olmayan kanallar oynatıcının genel ses düzeyini kullanır. Bu özellikler ekran okuyucunun ses düzeyini değiştirmez.
 
 Yerleşik oynatıcının Oynatma menüsündeki Adlandırılmış Yer İşareti Ekle, isteğe bağlı içerik veya yerel kaydın geçerli konumunu kaydeder. İçerik içinde gezinme ve bilinen süre gerekir. Adlandırılmış Yer İşaretleri geçerli içeriğin işaretlerini listeler: Enter veya Yer İşaretine Git konuma gider; Yeniden Adlandır ve Sil seçili girdiyi yönetir. Aynı içerikte adlar benzersiz olmalıdır. Otomatik sürdürme konumundan bağımsız olarak toplam 1000 yer işareti kaydedilebilir.
+
+Yerel arabellek etkinken Oynatma > Son dakikaları kaydet, seçtiğiniz bölümü yeni bir MPEG-TS dosyasına kaydeder. Süreyi saniye olarak girip bir dosya adı seçin. Tam parçalar kullanıldığı için kayıt biraz daha erken başlayabilir. Dışa aktarmayı iptal edebilirsiniz.
 
 ### Ses parçaları {#audio-tracks}
 
@@ -359,9 +365,13 @@ Zamanlanmış Kayıtlar içindeki Kayıt Çakışmaları, seçilen kaydın zaman
 
 Zamana Göre Planla penceresinde tekrar günlerini seçin veya dizi kuralı olmayan tek bir bekleyen kayıt için Planlanmış Kayıtlar > Seçilen Günlerde Tekrarla komutunu kullanın. Gün seçilmezse kayıt bir kez yapılır. Yeni kaydın ilk başlangıcı seçilen bir güne denk gelmelidir. Sonraki kayıtlar gece yarısını aşan aralıklar ve paylar dahil yerel program saatlerini korur; saat değişiminde var olmayan aralıklar atlanır. Uygulama açık kalmalıdır. Bağlantı sınırları geçerliliğini korur.
 
+Planlanmış kaydın bağlam menüsünden veya çakışma penceresinden Başka bir yayın saati bul komutunu seçin. Arama önümüzdeki 14 günü kapsar. Bölüm numarası eşleşirse aynı bölüm, yalnızca başlık eşleşirse olası tekrar olarak gösterilir. Onaylamadan önce saati ve çakışmaları kontrol edin. Diğer kayıtların saatleri korunur.
+
 ### Zamanlama payı {#schedule-padding}
 
 Programlar nadiren tam zamanında başlar ve biter. Kayıtlar > Zamanlama payı..., zamanlanmış bir kaydın bir programdan kaç dakika önce başlayacağını ve bitiminden kaç dakika sonra kaydetmeye devam edeceğini ayarlar. Elle yapılan kayıtlar etkilenmez. Geri izleme indirmeleri de aynı dakikaları kullanır: sağlayıcı sunabildiği sürece sağlayıcıdan istenen arşiv aralığı bu dakikalar kadar genişletilir ve dosya programdan kısa gelirse indirme yeniden denenir.
+
+Bekleyen bir kaydın bağlam menüsünde Bu kaydın ön ve son ek süreleri komutunu seçin. Programın özgün saatleri korunur. Yinelenen kayıtlarda değişikliği sonraki kayıtlara da uygulayabilirsiniz.
 
 ### Kayıtlardan sonra kapatma {#shutdown-after-recordings}
 

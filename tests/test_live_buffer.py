@@ -164,6 +164,8 @@ def test_unsupported_codec_warning_prevents_silent_subtitle_loss():
 
 
 def test_real_recording_rewind_and_player_stop_share_one_provider_get(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    import buffer_clip
     import http.server
     import shutil
     import subprocess
@@ -218,13 +220,24 @@ def test_real_recording_rewind_and_player_stop_share_one_provider_get(tmp_path, 
             result = subprocess.check_output([ffprobe, '-v', 'error', '-select_streams', 'v:0',
                 '-read_intervals', '%+#1', '-show_entries', 'packet=pts_time', '-of', 'json', input_url], timeout=10)
             return float(json.loads(result)['packets'][0]['pts_time'])
-        assert abs(first_pts(local) - first_pts(str(source)) - chosen.start) < 0.5
         recording = manager.start(url, 'Buffered recording', 'provider_mkv', headers,
                                   str(tmp_path / 'recordings'), duration=1)
         assert recording.url.startswith(session.origin)
         assert recording.key == url  # public identity must not become a private loopback cursor
-        session.release()
+        selected = buffer_clip.select_segments(session.window.snapshot(), 3)
+        clip = tmp_path / 'last-seconds.ts'
+        # Read the player's local URL and capture from the live edge while exporting older segments.
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            playback = workers.submit(subprocess.check_output, [ffmpeg, '-v', 'error', '-i', local,
+                                      '-t', '1', '-map', '0:a:0', '-f', 's16le', '-'], timeout=16)
+            saved = workers.submit(buffer_clip.save, session.window, selected, clip, ffmpeg, 0)
+            assert len(playback.result(timeout=18)) >= 48000
+            saved.result(timeout=16)
+        assert abs(first_pts(local) - first_pts(str(source)) - chosen.start) < 0.5
+        assert abs(first_pts(str(clip)) - first_pts(str(source))) < 0.5
+        # The recording may already have released its lease while both files were read.
         assert not session._closed.is_set()
+        session.release()
         assert recording.process.wait(timeout=15) == 0
         deadline = time.monotonic() + 8
         while recording.buffer_lease is not None and time.monotonic() < deadline:

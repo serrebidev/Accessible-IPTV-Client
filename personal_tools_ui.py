@@ -79,10 +79,12 @@ class ToolDialog(wx.Dialog):
         self.layout.Add(control, proportion, wx.EXPAND | wx.LEFT | wx.RIGHT, 6)
         return control
 
-    def buttons(self, pairs, *, accept=False):
+    def buttons(self, pairs, *, accept=False, help_topics=None):
         row = wx.WrapSizer(wx.HORIZONTAL)
         for text, handler in pairs:
             button = wx.Button(self.panel, label=text)
+            if help_topics and handler in help_topics:
+                button.help_topic = help_topics[handler]
             button.Bind(wx.EVT_BUTTON, handler)
             row.Add(button, 0, wx.ALL, 4)
         if accept:
@@ -186,7 +188,8 @@ class GuideAtDialog(ToolDialog):
         self.layout.Add(self.listbox, 1, wx.EXPAND | wx.ALL, 6)
         self.status = wx.StaticText(self.panel, label="")
         self.layout.Add(self.status, 0, wx.ALL, 4)
-        self.buttons([(_("Schedule Recording"), self.schedule), (_("Set Reminder..."), self.remind)])
+        self.buttons([(_("Programme Details..."), self.show_details), (_("Schedule Recording"), self.schedule),
+                      (_("Set Reminder..."), self.remind)])
         load.Bind(wx.EVT_BUTTON, self.search)
         self.time.Bind(wx.EVT_TEXT, self.invalidate)
         self.scope.Bind(wx.EVT_CHOICE, self.invalidate)
@@ -223,6 +226,7 @@ class GuideAtDialog(ToolDialog):
         selection = self.scope.GetSelection()
         entries = self.named[selection - 2]["entries"] if selection >= 2 else []
         keys = self.client.config.get("favorites", [])
+        source_names = reminders.source_names(self.client.config)
         self.status.SetLabel(_("Loading guide channels..."))
         def work(canceled):
             def stale():
@@ -236,7 +240,7 @@ class GuideAtDialog(ToolDialog):
             db = EPGDatabase(options.get_db_path(), readonly=True)
             try:
                 db.conn.set_progress_handler(lambda: int(stale()), 2000)
-                rows = db.programmes_at(when, scope)
+                rows = db.programmes_at(when, scope, source_names)
             finally:
                 db.close()
             if scope is None and not stale():
@@ -287,6 +291,50 @@ class GuideAtDialog(ToolDialog):
             error_box(self, _("Channel Not Found"))
         return ch, row
 
+    def show_details(self, _event):
+        from playlist import EPGDatabase
+        index = self.listbox.GetFirstSelected()
+        if not 0 <= index < len(self.filtered_programs):
+            return
+        row = self.filtered_programs[index]
+        generation = self.generation
+        def read():
+            db = EPGDatabase(options.get_db_path(), readonly=True)
+            try:
+                return db.programme_details(row)
+            finally:
+                db.close()
+        def ready(info, error):
+            if self.generation != generation or self.listbox.GetFirstSelected() != index:
+                return
+            if self.channels is not self.client.all_channels:
+                self.invalidate()
+                error_box(self, _("The channel list changed. Try again."))
+                return
+            if error:
+                error_box(self, error)
+                return
+            lines = [row['title'], row.get('channel_label') or row['channel_name'], row['time_label']]
+            if info['subtitle']:
+                lines.append(info['subtitle'])
+            if info['episode']:
+                lines.append(_("Episode: {episode}").format(episode=info['episode']))
+            lines.append(info['description'] or _("No description available for this programme."))
+            dialog = ToolDialog(self, _("Programme Details..."))
+            dialog.help_topic = 'whats-on-now'
+            field = wx.TextCtrl(dialog.panel, value="\n\n".join(lines), style=wx.TE_MULTILINE | wx.TE_READONLY)
+            field.SetName(_("Details"))
+            dialog.layout.Add(field, 1, wx.EXPAND | wx.ALL, 8)
+            dialog.buttons([])
+            field.SetInsertionPoint(0)
+            field.SetFocus()
+            try:
+                show_modal(dialog)
+            finally:
+                dialog.Destroy()
+                self.listbox.SetFocus()
+        start_operation(self, "guide-details", read, ready, wx.CallAfter)
+
     def schedule(self, _event):
         channel, row = self.selected()
         if channel:
@@ -309,8 +357,10 @@ class FavouriteListsDialog(ToolDialog):
         self.buttons([(_("New..."), self._new), (_("Rename..."), self._rename), (_("Delete List"), self._delete),
                       (_("Add Selected Channel"), self._add), (_("Remove Channel"), self._remove),
                       (_("Relink Missing Channel..."), self._relink),
+                      (_("Export Favourite List..."), self._export_list), (_("Import Favourite List..."), self._import_list),
                       (_("Move Up"), lambda e: self._move(-1)), (_("Move Down"), lambda e: self._move(1)),
-                      (_("Play"), self._play)])
+                      (_("Play"), self._play)],
+                     help_topics={self._export_list: "favorites", self._import_list: "favorites"})
         self.lists.Bind(wx.EVT_LISTBOX, lambda e: self._entries())
         self.entries.Bind(wx.EVT_LISTBOX_DCLICK, self._play)
         self.entries.Bind(wx.EVT_KEY_DOWN, self._key)
@@ -325,6 +375,29 @@ class FavouriteListsDialog(ToolDialog):
         row, index = self.selected(), self.entries.GetSelection()
         return row["entries"][index] if row and 0 <= index < len(row["entries"]) else None
 
+    def _export_list(self, _event):
+        import favourite_transfer as transfer
+        row = self.selected()
+        if not row:
+            return
+        with wx.FileDialog(self, _("Export Favourite List..."), wildcard='IPTV (*.aiptvfav)|*.aiptvfav',
+                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as dialog:
+            dialog.help_topic = "favorites"
+            if show_modal(dialog) != wx.ID_OK:
+                return
+            path = dialog.GetPath()
+        channels = self.owner.all_channels
+        def done(_result, error):
+            if error:
+                error_box(self, error)
+            else:
+                self.status.SetLabel(_("Saved to {path}.").format(path=path))
+        start_operation(self, 'export-list', lambda: transfer.export_list(path, row, channels), done, wx.CallAfter)
+
+    def _import_list(self, _event):
+        from favourite_transfer_ui import import_list
+        import_list(self)
+
     def refresh(self, identity=None, entry=None):
         old = self.selected() if hasattr(self, "rows") else None
         identity = identity or (old["id"] if old else None)
@@ -337,7 +410,7 @@ class FavouriteListsDialog(ToolDialog):
     def _entries(self, selected=None):
         row = self.selected()
         entries = row["entries"] if row else []
-        self.entries.Set([e["name"] or _("(No title)") for e in entries])
+        self.entries.Set([e["name"] or _("(No channel name)") for e in entries])
         if entries:
             self.entries.SetSelection(next((i for i, e in enumerate(entries) if e["key"] == selected), 0))
         self.status.SetLabel(_("Selected channel: {name}").format(name=dvr.channel_name(self.channel))

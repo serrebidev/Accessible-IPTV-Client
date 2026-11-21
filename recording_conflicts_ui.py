@@ -67,11 +67,12 @@ def conflict_rows(config, channel, start, end, jobs, *, exclude=None, canceled=l
 
 
 class RecordingConflictsDialog(wx.Dialog):
-    def __init__(self, owner, channel, start, end, *, exclude=None, question='', allow_schedule=False):
+    def __init__(self, owner, channel, start, end, *, exclude=None, question='', allow_schedule=False, proposal=None):
         super().__init__(owner, title=_("Recording Conflicts"), size=(820, 540),
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.owner, self.channel, self.start, self.end = owner, copy.deepcopy(channel), start, end
         self.exclude = exclude
+        self.proposal = proposal
         self.rows = []
         self.closed = False
         self.worker = LatestTask(wx.CallAfter)
@@ -91,6 +92,9 @@ class RecordingConflictsDialog(wx.Dialog):
         self.edit = wx.Button(self, label=_("Edit Times..."))
         self.edit.Disable()
         buttons.Add(self.edit, 0, wx.ALL, 5)
+        self.alternative = wx.Button(self, label=_("Find Another Airing..."))
+        buttons.Add(self.alternative, 0, wx.ALL, 5)
+        self.alternative.Bind(wx.EVT_BUTTON, self.find_airing)
         self.accept = None
         if allow_schedule:
             self.accept = wx.Button(self, wx.ID_OK, label=_("Schedule Anyway"))
@@ -112,6 +116,18 @@ class RecordingConflictsDialog(wx.Dialog):
             self.closed = True
             self.worker.close()
         event.Skip()
+
+    def find_airing(self, _event):
+        from recording_edits_ui import find_airing
+        identity = self.exclude
+        if not identity and not self.proposal:
+            index = self.list.GetFirstSelected()
+            if 0 <= index < len(self.rows):
+                identity = self.rows[index]['job']['id']
+        job = self.proposal or self.owner._ensure_dvr_scheduler().get_job(identity)
+        if job and job.get('status') == dvr.STATUS_SCHEDULED:
+            done = (lambda: self.EndModal(wx.ID_CANCEL)) if self.proposal or self.exclude else self.refresh
+            find_airing(self, self.owner, job, done, new=bool(self.proposal))
 
     def refresh(self):
         config = copy.deepcopy(self.owner.config)
@@ -157,6 +173,8 @@ class RecordingConflictsDialog(wx.Dialog):
         index = self.list.GetFirstSelected()
         valid = 0 <= index < len(self.rows)
         self.edit.Enable(valid and self.rows[index]['job'].get('status') in {'scheduled', 'recording'})
+        self.alternative.Enable(bool(self.proposal or self.exclude or
+                                     (valid and self.rows[index]['job'].get('status') == dvr.STATUS_SCHEDULED)))
         if not valid:
             self.details.ChangeValue('')
             return
@@ -181,9 +199,9 @@ class RecordingConflictsDialog(wx.Dialog):
         self.refresh()
 
 
-def confirm_conflicts(owner, channel, start, end, warning, *, exclude=None):
+def confirm_conflicts(owner, channel, start, end, warning, *, exclude=None, proposal=None):
     dialog = RecordingConflictsDialog(owner, channel, start, end, exclude=exclude,
-                                      question=warning, allow_schedule=True)
+                                      question=warning, allow_schedule=True, proposal=proposal)
     try:
         return show_modal(dialog) == wx.ID_OK
     finally:

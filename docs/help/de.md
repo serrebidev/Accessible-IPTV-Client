@@ -102,6 +102,8 @@ Favoriten werden nach Anbieter und Sender gespeichert, nicht nach Stream-Adresse
 
 Unter „Ansicht“ > „Zuletzt angesehen“ werden die von Ihnen abgespielten Kanäle aufgelistet. „Ansicht“ > „Vorheriger Kanal“ (Strg+0) wechselt zurück zu dem Kanal, den Sie zuvor gesehen haben.
 
+Unter Favoritenlisten können Sie eine einzelne Liste in ihrer Reihenfolge ohne Streamadressen und Zugangsdaten exportieren. Importieren Sie sie auf dem anderen Rechner unter einem neuen Namen. Prüfen Sie die Zuordnung und wählen Sie bei mehreren Treffern den lokalen Sender aus. Offene Einträge behalten ihren Platz und lassen sich später zuordnen.
+
 ## Video-on-Demand {#video-on-demand}
 
 Ansicht > Video-on-Demand (Filme && Serien) schaltet die Kategorieliste von Live-Sendern auf die Filme und Serien Ihres Anbieters um. Kategorien heißen Movies oder Series, gefolgt von der Anbieterkategorie. Die Wahl einer Serie listet ihre Folgen in Staffel- und Folgenreihenfolge. Drücken Sie Enter, um einen Film oder eine Folge abzuspielen.
@@ -178,6 +180,8 @@ Datei > Jetzt im Programm (Ctrl+W) listet jede Sendung, die gerade über alle Se
 - Aufnahme planen, oder das Menü der Sendung, plant ihre Aufnahme.
 - Escape schließt das Fenster.
 
+Wählen Sie im zeitbezogenen Programmführer eine Sendung und dann Sendungsdetails. Sie können Beschreibung, Folgentitel und Folgennummer lesen, sofern diese vorliegen. Escape führt zur ausgewählten Zeile zurück.
+
 ### Senderzeitschrift (EPG anzeigen) {#channel-epg}
 
 EPG anzeigen…, im Menü eines Senders, listet die Sendungen dieses Senders von der laufenden bis so weit, wie die Zeitschrift reicht. Die laufende Sendung steht zuerst.
@@ -244,6 +248,8 @@ Dieselben Befehle liegen im Wiedergabe-Menü des Players. Der Player verbindet s
 Stummschaltung ein/aus schaltet nur den integrierten Player stumm; Wiedergabe und Aufnahme laufen weiter. Die Standardtasten sind Strg+Umschalt+M im Hauptfenster und M im Player. Beide lassen sich in den Tastenkürzeleinstellungen ändern. Die Stummschaltung bleibt bei Senderwechseln und erneuten Verbindungen erhalten. Player > Lautstärke für jeden Sender speichern ist zunächst ausgeschaltet und merkt sich bei Aktivierung Ihre Lautstärkeauswahl getrennt nach Wiedergabeliste oder Anbieter. Sender ohne gespeicherten Wert verwenden die allgemeine Playerlautstärke. Die Lautstärke des Screenreaders bleibt unverändert.
 
 Im Wiedergabemenü des integrierten Players speichert Benanntes Lesezeichen hinzufügen die aktuelle Position in Abrufmedien oder lokalen Aufnahmen. Die Wiedergabe muss suchbar und ihre Dauer bekannt sein. Benannte Lesezeichen zeigt die Einträge des aktuellen Inhalts: Eingabe oder Zum Lesezeichen springen wechselt zur Position; Umbenennen und Löschen bearbeiten den gewählten Eintrag. Namen müssen innerhalb eines Inhalts eindeutig sein. Insgesamt sind bis zu 1000 Lesezeichen möglich, unabhängig von der automatischen Fortsetzungsposition.
+
+Bei aktivem lokalem Puffer speichert Wiedergabe > Die letzten Minuten speichern einen Ausschnitt als neue MPEG-TS-Datei. Geben Sie die Dauer in Sekunden und einen neuen Dateinamen an. Der Ausschnitt beginnt am Anfang eines vollständigen Segments und dadurch gegebenenfalls etwas früher. Sie können den Export abbrechen.
 
 ### Tonspuren {#audio-tracks}
 
@@ -360,9 +366,13 @@ Aufnahmekonflikte in Geplante Aufnahmen zeigt Überschneidungen des ausgewählte
 
 Wählen Sie die Wiederholungstage unter Nach Zeit planen oder für eine einzelne ausstehende Aufnahme unter Geplante Aufnahmen > An ausgewählten Wochentagen wiederholen. Serienregeln sind ausgeschlossen. Ohne Auswahl erfolgt eine einmalige Aufnahme; bei einer neuen Aufnahme muss der erste Start auf einen gewählten Tag fallen. Weitere Termine behalten die lokalen Sendezeiten einschließlich Mitternachtswechsel und Vor-/Nachlauf. Bei der Zeitumstellung nicht existierende Zeitfenster werden übersprungen. Die Anwendung muss geöffnet bleiben; Verbindungslimits gelten weiterhin.
 
+Wählen Sie im Kontextmenü einer geplanten Aufnahme oder im Konfliktdialog Weitere Ausstrahlung suchen. Die Suche umfasst 14 Tage. Eine übereinstimmende Folgennummer kennzeichnet dieselbe Folge, ein übereinstimmender Titel eine mögliche Wiederholung. Prüfen Sie Termin und Konflikte und bestätigen Sie die Änderung. Weitere Termine bleiben erhalten.
+
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 
 Sendungen beginnen und enden selten genau auf die Minute. Aufnahmen > Zeitpuffer für Aufnahmen… legt fest, wie viele Minuten vor einer Sendung eine geplante Aufnahme beginnt und wie viele Minuten nach ihrem Ende sie weiterläuft. Manuelle Aufnahmen sind nicht betroffen. Nachholen-Downloads verwenden dieselben Minuten: Das beim Anbieter angeforderte Archivfenster wird um sie erweitert, wann immer der Anbieter es liefern kann, und der Download wird wiederholt, wenn die Datei kürzer als die Sendung ankommt.
+
+Wählen Sie im Kontextmenü einer geplanten Aufnahme Vor- und Nachlauf für diese Aufnahme. Die Programmzeiten bleiben erhalten. Bei wiederkehrenden Aufnahmen können Sie die Änderung auch für künftige Termine übernehmen.
 
 ### Herunterfahren nach Aufnahmen {#shutdown-after-recordings}
 

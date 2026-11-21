@@ -68,3 +68,7 @@ grep it for the module, symbol or error you are about to touch.
 - Library view settings persist once on close using a single replaceable pending task. Publish the selected preferences in memory immediately so rapid reopen/close sequences retain the latest view; merge onto current disk configuration. Never restore trash mode implicitly.
 
 DVR state transitions can overtake a durable edit. Keep jobs in an in-flight JSON snapshot immutable, revalidate the edit before publishing it, and derive the next recurring ID from its predecessor so crash recovery is idempotent. A selected recording can only use a finalised log that identifies that file. FFmpeg progress can end in a carriage return without a newline.
+
+- Commit discovered series episodes against the still-current rule in the same scheduler transaction. Restore an expired repeating job by its next local wall-time slot, keeping an existing or explicitly canceled successor.
+- For a one-occurrence edit, keep guide boundaries separate from capture padding. Review conflicts on a snapshot and apply the replacement only if that revision is still current.
+- Save recent broadcasts from completed local segments with an independent snapshot. A slow fallback copy must allow the ingest ring to evict its source on Windows, and cancellation must never publish a partial file.

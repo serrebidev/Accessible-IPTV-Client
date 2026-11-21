@@ -102,6 +102,8 @@ Los favoritos se guardan por proveedor y canal, no por dirección de flujo, así
 
 Ver > Vistos recientemente enumera los canales que ha reproducido. Ver > Canal anterior (Ctrl+0) vuelve al canal que viste antes de este.
 
+En las listas de favoritos puede exportar una sola lista en su orden original, sin direcciones de emisión ni credenciales. Impórtela en el otro equipo con un nombre nuevo, revise las coincidencias y elija el canal local si hay varias opciones. Los canales pendientes conservan su posición y pueden asignarse más tarde.
+
 ## Video bajo demanda {#video-on-demand}
 
 Ver > Video bajo demanda (películas && series) cambia la lista de categorías de canales en vivo a las películas y series de su proveedor. Las categorías se llaman Movies o Series seguidas de la categoría del proveedor. Elegir una serie lista sus episodios en orden de temporada y episodio. Pulse Intro para reproducir una película o un episodio.
@@ -178,6 +180,8 @@ Archivo > Qué hay ahora (Ctrl+W) enumera todo programa en emisión ahora en tod
 - Programar grabación, o el menú del programa, programa su grabación.
 - Escape cierra la ventana.
 
+En la guía por hora, seleccione una emisión y abra Detalles del programa. Podrá leer la descripción, el título del episodio y su número si la guía los incluye. Escape devuelve el foco a la fila seleccionada.
+
 ### Guía del canal (Ver EPG) {#channel-epg}
 
 Ver EPG…, en el menú de un canal, enumera los programas de ese canal desde el que está en emisión hasta donde alcance la guía. El programa en emisión va primero.
@@ -244,6 +248,8 @@ Los mismos comandos están en el menú Reproducción del reproductor. El reprodu
 Silenciar / Activar sonido silencia el reproductor integrado sin pausar la reproducción ni la grabación. Los atajos predeterminados son Ctrl+Mayús+M en la ventana principal y M en el reproductor; ambos se pueden cambiar en los ajustes de atajos. El silencio se mantiene al cambiar de canal o reconectar. Reproductor > Recordar el volumen de cada canal está desactivado inicialmente y, al activarlo, recuerda el volumen elegido por separado para cada lista o proveedor. Los canales sin valor guardado utilizan el volumen general del reproductor. Estas funciones no cambian el volumen del lector de pantalla.
 
 En el menú Reproducción del reproductor integrado, Añadir marcador con nombre guarda la posición actual de un contenido a la carta o una grabación local. Requiere desplazamiento y duración conocida. Marcadores con nombre muestra los del contenido actual: Intro o Ir al marcador salta a la posición; Cambiar nombre y Eliminar gestionan la entrada seleccionada. Los nombres deben ser únicos dentro del mismo contenido. Se pueden guardar hasta 1000 marcadores en total, independientes de la posición automática de reanudación.
+
+Con el búfer local activo, Reproducción > Guardar los últimos minutos permite guardar un fragmento en un archivo MPEG-TS nuevo. Indique la duración en segundos y elija un nombre. Como se usan segmentos completos, el fragmento puede empezar un poco antes. Puede cancelar la exportación.
 
 ### Pistas de audio {#audio-tracks}
 
@@ -360,9 +366,13 @@ Conflictos de grabación, en Grabaciones programadas, muestra las superposicione
 
 Seleccione los días de repetición en Programar por hora, o en Grabaciones programadas > Repetir los días seleccionados para una grabación pendiente que no sea una regla de serie. Sin días seleccionados, se graba una sola vez. Al crear una grabación, el primer inicio debe caer en un día elegido. Las repeticiones conservan los horarios locales, los intervalos nocturnos y los márgenes; se omiten los intervalos inexistentes por el cambio de hora. Mantenga la aplicación abierta. Se siguen aplicando los límites de conexiones.
 
+Elija Buscar otra emisión en el menú contextual de una grabación pendiente o en el diálogo de conflictos. Se buscan emisiones en los próximos 14 días. Un número de episodio coincidente identifica el mismo episodio. Si solo coincide el título, se indica una posible repetición. Revise la hora y los conflictos antes de confirmar. Los demás horarios se conservan.
+
 ### Margen de programación {#schedule-padding}
 
 Los programas rara vez empiezan y terminan exactamente a tiempo. Grabaciones > Margen de programación… fija cuántos minutos antes de un programa comienza una grabación programada, y cuántos minutos después de su fin sigue grabando. Las grabaciones manuales no se ven afectadas. Las descargas de repetición usan los mismos minutos: la ventana de archivo que se pide al proveedor se amplía con ellos siempre que el proveedor pueda servirla, y la descarga se reintenta cuando el archivo llega más corto que el programa.
+
+En el menú contextual de una grabación pendiente, seleccione Ajustar los márgenes de esta grabación. Se conserva el horario original del programa. Para una grabación recurrente también puede aplicar el cambio a las próximas emisiones.
 
 ### Apagado tras las grabaciones {#shutdown-after-recordings}
 

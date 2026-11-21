@@ -42,6 +42,17 @@ def valid_time(value):
     return type(value) in (int, float) and 0 <= value <= 253402300799 and math.isfinite(value)
 
 
+def source_names(config):
+    names = {source.get('id') or source.get('provider_id'): safe_title(source.get('name'))
+             for source in config.get('playlists', ()) if isinstance(source, dict)
+             and (source.get('id') or source.get('provider_id'))}
+    aliases = config.get('playlist_names')
+    if isinstance(aliases, dict):
+        names.update({'m3u:' + key: safe_title(name) for key, name in aliases.items()
+                      if isinstance(key, str) and re.fullmatch('[a-f0-9]{64}', key)})
+    return names
+
+
 def normalize(rows):
     if not isinstance(rows, list):
         return []
@@ -87,8 +98,12 @@ def build(channel, program, lead=5, *, now=None):
             'lead': lead, 'status': 'scheduled'}
 
 
+def media_identity(channel):
+    return str(channel['url']), json.dumps(channel_http_headers(channel), sort_keys=True, default=str)
+
+
 def resolve_channel(row, channels):
-    matches = {(str(ch['url']), json.dumps(channel_http_headers(ch), sort_keys=True, default=str)): ch
+    matches = {media_identity(ch): ch
                for ch in channels if ch.get('url') and channel_key(ch) == row['channel_key']}
     return next(iter(matches.values())) if len(matches) == 1 else None
 
@@ -210,4 +225,20 @@ class ReminderStore:
             for row in rows:
                 if row['id'] == key and row['status'] == 'ready':
                     row['status'] = 'notified'
+            self._commit(rows)
+
+    def save_alert_choice(self, key, target, *, now=None):
+        """A retry keeps the originally requested time and respects subsequent edits."""
+        now = time.time() if now is None else now
+        with self._write_lock:
+            rows = self.list()
+            row = next((r for r in rows if r['id'] == key), None)
+            if not row or row['status'] != 'ready':
+                return
+            if row['end'] <= now:
+                row['status'] = 'expired'
+            elif target <= now or target >= row['end']:
+                return  # Still due. The next poll can show it again.
+            else:
+                row.update(status='scheduled', notify_at=target)
             self._commit(rows)

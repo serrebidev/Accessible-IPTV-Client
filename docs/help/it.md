@@ -102,6 +102,8 @@ I preferiti sono salvati per provider e canale, non per indirizzo di flusso: sop
 
 Visualizza > Guardati di recente elenca i canali riprodotti. Visualizza > Canale precedente (Ctrl+0) torna al canale guardato prima di questo.
 
+Negli elenchi dei preferiti puoi esportare un solo elenco mantenendo l’ordine dei canali, senza indirizzi dei flussi né credenziali. Importalo sull’altro computer con un nuovo nome. Verifica gli abbinamenti e scegli il canale locale in caso di ambiguità. Le voci da associare mantengono la posizione e possono essere completate in seguito.
+
 ## Video on demand {#video-on-demand}
 
 Visualizza > Video on demand (film && serie) cambia l'elenco delle categorie dai canali in diretta ai film e alle serie del provider. Le categorie si chiamano Movies o Series seguiti dalla categoria del provider. Scegliere una serie elenca i suoi episodi in ordine di stagione ed episodio. Premere Invio per riprodurre un film o un episodio.
@@ -178,6 +180,8 @@ File > In onda ora (Ctrl+W) elenca ogni trasmissione in onda adesso su tutti i c
 - Programma registrazione, o il menu della trasmissione, ne programma la registrazione.
 - Escape chiude la finestra.
 
+Nella guida per orario, seleziona una trasmissione e apri Dettagli del programma per leggere la descrizione, il titolo e il numero dell’episodio, se disponibili. Esc riporta alla riga selezionata.
+
 ### Guida del canale (Visualizza EPG) {#channel-epg}
 
 Visualizza EPG…, nel menu di un canale, elenca le trasmissioni di quel canale da quella in onda fino a dove arriva la guida. La trasmissione in onda viene prima.
@@ -244,6 +248,8 @@ Gli stessi comandi sono nel menu Riproduzione del lettore. Il lettore si riconne
 Disattiva / Riattiva audio silenzia il lettore integrato senza sospendere riproduzione o registrazione. I tasti predefiniti sono Ctrl+Maiusc+M nella finestra principale e M nel lettore; entrambi si possono modificare nelle impostazioni delle scorciatoie. L’audio rimane disattivato dopo cambi di canale e riconnessioni. Lettore > Memorizza il volume di ogni canale è inizialmente disabilitato e, quando attivo, ricorda il volume scelto separatamente per playlist o fornitore. I canali privi di un valore salvato usano il volume generale del lettore. Queste funzioni non modificano il volume dello screen reader.
 
 Nel menu Riproduzione del lettore integrato, Aggiungi segnalibro con nome salva la posizione corrente di contenuti su richiesta o registrazioni locali. Sono necessari lo spostamento nella riproduzione e una durata nota. Segnalibri con nome mostra quelli del contenuto attuale: Invio o Vai al segnalibro raggiunge la posizione; Rinomina ed Elimina gestiscono la voce selezionata. I nomi devono essere unici all’interno del contenuto. Sono disponibili fino a 1000 segnalibri complessivi, separati dalla posizione di ripresa automatica.
+
+Con il buffer locale attivo, Riproduzione > Salva gli ultimi minuti crea un nuovo file MPEG-TS. Indica la durata in secondi e scegli un nome per il file. Vengono salvati segmenti interi, quindi l’estratto può iniziare un po’ prima. Puoi annullare l’esportazione.
 
 ### Tracce audio {#audio-tracks}
 
@@ -360,9 +366,13 @@ Conflitti di registrazione, in Registrazioni programmate, elenca le sovrapposizi
 
 Scegliere i giorni di ripetizione in Pianifica per orario, oppure in Registrazioni pianificate > Ripeti nei giorni selezionati per una registrazione in attesa che non sia una regola di serie. Senza giorni selezionati, la registrazione è singola. Alla creazione, il primo avvio deve cadere in un giorno scelto. Le ripetizioni conservano gli orari locali, i periodi notturni e i margini; gli intervalli inesistenti al cambio dell’ora vengono saltati. Tenere aperta l’applicazione. Restano validi i limiti di connessione.
 
+Scegli Cerca un’altra messa in onda nel menu contestuale di una registrazione pianificata o nella finestra dei conflitti. La ricerca copre i prossimi 14 giorni. Un numero di episodio uguale identifica lo stesso episodio. Se coincide solo il titolo, la trasmissione è indicata come possibile replica. Verifica l’orario e i conflitti prima di confermare. Le altre occorrenze mantengono i propri orari.
+
 ### Margine di programmazione {#schedule-padding}
 
 Le trasmissioni raramente iniziano e finiscono esattamente in orario. Registrazioni > Margine di programmazione… fissa quanti minuti prima di una trasmissione parte una registrazione programmata, e quanti minuti dopo la sua fine continua a registrare. Le registrazioni manuali non sono toccate. I download dei replay usano gli stessi minuti: la finestra d'archivio richiesta al provider viene allargata di tanto ogni volta che il provider può fornirla, e il download viene ritentato quando il file arriva più corto del programma.
+
+Nel menu contestuale di una registrazione pianificata scegli Margini per questa registrazione. Gli orari originali del programma vengono conservati. Per le registrazioni ricorrenti puoi applicare i margini anche alle occorrenze successive.
 
 ### Spegnere dopo le registrazioni {#shutdown-after-recordings}
 

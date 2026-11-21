@@ -43,7 +43,7 @@ NO_NOTABLE_CHANGES = "No notable changes."  # an iptvclient string, not a note
 # Application modules that contain user-facing text. Extra files are harmless
 # (no marker calls = no strings), but listing them keeps extraction deterministic.
 SOURCE_FILES = [
-    os.path.join(REPO_ROOT, "client_timeshift.py"),
+    "client_timeshift.py",
     "main.py",
     "client_ui.py",
     "client_epg.py",
@@ -52,6 +52,11 @@ SOURCE_FILES = [
     "recording_library.py",
     "recording_library_ui.py",
     "recording_conflicts_ui.py",
+    "recording_edits.py",
+    "recording_edits_ui.py",
+    "favourite_transfer.py",
+    "favourite_transfer_ui.py",
+    "buffer_clip.py",
     "named_bookmarks.py",
     "session_tools_ui.py",
     "episode_continuation_ui.py",

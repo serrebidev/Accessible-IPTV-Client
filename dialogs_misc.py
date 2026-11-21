@@ -707,11 +707,12 @@ class RecordingPaddingDialog(wx.Dialog):
     MAX_PADDING_MINUTES = 180
     help_topic = "schedule-padding"
 
-    def __init__(self, parent, before_minutes=0, after_minutes=2):
-        super().__init__(parent, title=_("Schedule Padding"), style=wx.DEFAULT_DIALOG_STYLE)
+    def __init__(self, parent, before_minutes=0, after_minutes=2, *, job=None):
+        super().__init__(parent, title=_("Padding for This Recording...") if job else _("Schedule Padding"),
+                         style=wx.DEFAULT_DIALOG_STYLE)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        intro = wx.StaticText(self, label=_(
+        intro = wx.StaticText(self, label=str(job['title']) if job else _(
             "Start scheduled recordings early or keep recording after the programme ends. "
             "Manual recordings are not changed."))
         intro.Wrap(430)
@@ -736,6 +737,11 @@ class RecordingPaddingDialog(wx.Dialog):
             grid.Add(control, 0, wx.EXPAND)
         grid.AddGrowableCol(1, 1)
         sizer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        self.future = None
+        if job and (job.get('repeat') in {'daily', 'weekly', 'weekdays', 'series'} or job.get('series_source')):
+            self.future = wx.CheckBox(self, label=_("Apply to future occurrences too"))
+            sizer.Add(self.future, 0, wx.ALL, 8)
 
         buttons = wx.StdDialogButtonSizer()
         self.ok_btn = wx.Button(self, id=wx.ID_OK, label=_("OK"))

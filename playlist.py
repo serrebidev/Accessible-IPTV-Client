@@ -1318,6 +1318,7 @@ class EPGDatabase:
         self.db_path = db_path
         self.readonly = readonly
         self.for_threading = for_threading
+        self._cross_date_index = True
         self._open()
 
     def _open(self):
@@ -1371,6 +1372,9 @@ class EPGDatabase:
             # plainly so the UI can offer a one-click repair instead of an
             # opaque sqlite error.
             self._missing_columns = self._check_schema()
+            self._cross_date_index = self.conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_programmes_cross_date'"
+            ).fetchone() is not None
 
     def _check_schema(self) -> List[str]:
         """Columns this build's queries require but the database lacks."""
@@ -1445,6 +1449,8 @@ class EPGDatabase:
         c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_channel_start_end ON programmes (channel_id, start, end)")
         # Covering index for "what's on now": range-scan start, filter end, no row lookups.
         c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_start_cover ON programmes (start, end, channel_id, title)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_programmes_cross_date ON programmes(end, start, channel_id, title) "
+                  "WHERE substr(start,1,8) <> substr(end,1,8)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_channels_norm ON channels (norm_name)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_channels_group ON channels (group_tag)")
         self.conn.commit()
@@ -2208,43 +2214,25 @@ class EPGDatabase:
         if not channel_id:
             return None
         
-        c = self.conn.cursor()
-        now = self._utcnow()
-        now_str = now.strftime("%Y%m%d%H%M%S")
-        now_int = int(now_str)
-
-        rows = c.execute(
-            "SELECT title, start, end, description FROM programmes WHERE channel_id = ? AND end > ? ORDER BY start ASC LIMIT 6",
-            (channel_id, now_str)
-        ).fetchall()
-
-        current_shows = []
-        next_shows = []
-        
-        for title, start, end, description in rows:
-            st_i = int(start)
-            en_i = int(end)
-            payload = {
-                'channel_id': channel_id,
-                'title': title,
-                'description': description or "",
-                'start': datetime.datetime.strptime(start, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc),
-                'end': datetime.datetime.strptime(end, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
-            }
-            
-            if st_i <= now_int < en_i:
-                current_shows.append(payload)
-            elif st_i > now_int:
-                next_shows.append(payload)
-
-        now_show = current_shows[0] if current_shows else None
-        next_show = next_shows[0] if next_shows else None
-        
-        # If we have nothing, return None to indicate no data
-        if not now_show and not next_show:
-            return None
-            
-        return now_show, next_show
+        stamp = self._utcnow().strftime("%Y%m%d%H%M%S")
+        rows = self.conn.execute("""
+            SELECT 0, title, start, end, description FROM (
+              SELECT title,start,end,description FROM programmes WHERE channel_id=? AND start<=? AND end>?
+              ORDER BY start DESC,end DESC,id DESC LIMIT 1)
+            UNION ALL
+            SELECT 1, title, start, end, description FROM (
+              SELECT title,start,end,description FROM programmes WHERE channel_id=? AND start>?
+              ORDER BY start,end,id LIMIT 1)
+        """, (channel_id, stamp, stamp, channel_id, stamp))
+        values = [None, None]
+        for index, title, start, end, description in rows:
+            try:
+                a, b = (datetime.datetime.strptime(t, "%Y%m%d%H%M%S").replace(tzinfo=datetime.timezone.utc)
+                        for t in (start, end))
+            except (ValueError, TypeError):
+                continue
+            values[index] = dict(channel_id=channel_id, title=title, description=description or "", start=a, end=b)
+        return tuple(values) if any(values) else None
 
     def get_now_next(self, channel: Dict[str, str]) -> Optional[tuple]:
         """Legacy wrapper: resolves best ID then fetches schedule."""
@@ -2357,29 +2345,39 @@ class EPGDatabase:
                     break
         return final
 
+    def _airing_window(self, now, horizon):
+        """Normal slots use the existing covering index; only cross-date slots can outlive the floor."""
+        stamp = now.strftime("%Y%m%d%H%M%S")
+        floor = (now - datetime.timedelta(days=1)).strftime("%Y%m%d%H%M%S")
+        if self._cross_date_index:
+            earlier = """SELECT id, channel_id, title, start, end FROM programmes INDEXED BY idx_programmes_cross_date
+                         WHERE substr(start,1,8) <> substr(end,1,8) AND end > ? AND start < ?"""
+        else:
+            # Pre-upgrade, read-only guide. Seek within each channel using its existing index
+            # until a normal writer creates the cross-date index at its next import.
+            earlier = """SELECT p.id, p.channel_id, p.title, p.start, p.end FROM channels c
+                         JOIN programmes p ON p.id=(SELECT q.id FROM programmes q
+                           WHERE q.channel_id=c.id AND q.end>? AND q.start<?
+                           ORDER BY q.start DESC, q.end DESC, q.id DESC LIMIT 1)"""
+        return self.conn.execute("""
+            SELECT id, channel_id, title, start, end FROM programmes
+              WHERE start >= ? AND start <= ? AND end > ?
+            UNION ALL
+            """ + earlier + """
+            ORDER BY 4 ASC, 5 ASC, 1 ASC
+        """, (floor, horizon.strftime("%Y%m%d%H%M%S"), stamp, stamp, floor))
+
     def get_all_now_playing(self) -> List[Dict[str, str]]:
         """Get all currently airing programs across all channels.
         
         Returns a list of dicts with: title, channel_name, channel_id, start, end
         Sorted alphabetically by title.
         """
-        c = self.conn.cursor()
         now = self._utcnow()
-        now_str = now.strftime("%Y%m%d%H%M%S")
-        # A programme airing *now* cannot have started more than ~a day ago; this floor lets
-        # SQLite range-scan idx_programmes_start_cover instead of scanning all past programmes.
-        floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
-
-        # Get all programs where start <= now < end
-        rows = c.execute("""
-            SELECT p.title, p.start, p.end, c.display_name, c.id
-            FROM programmes p
-            JOIN channels c ON c.id = p.channel_id
-            WHERE p.start >= ? AND p.start <= ? AND p.end > ?
-            ORDER BY p.title COLLATE NOCASE ASC
-        """, (floor_str, now_str, now_str)).fetchall()
-        
-        return self._programme_rows(rows)
+        current = {row[1]: row for row in self._airing_window(now, now)}
+        rows = [(current[cid][2], current[cid][3], current[cid][4], name, cid)
+                for cid, name in self.conn.execute("SELECT id, display_name FROM channels") if cid in current]
+        return self._programme_rows(sorted(rows, key=lambda row: ((row[0] or '').casefold(), row[4])))
 
     @staticmethod
     def _programme_rows(rows):
@@ -2396,7 +2394,7 @@ class EPGDatabase:
                 row["channel_label"] = "{} ({})".format(row["channel_name"], row["channel_id"])
         return result
 
-    def programmes_at(self, when, channels=None):
+    def programmes_at(self, when, channels=None, source_names=None):
         """One airing per EPG channel at the given UTC instant, including long broadcasts."""
         from channel_identity import guide_indexes, match_guide_channel
         stamp = when.astimezone(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -2429,10 +2427,33 @@ class EPGDatabase:
                 row["channel_label"] = name
                 names[name.casefold()] = names.get(name.casefold(), 0) + 1
                 result.append(row)
+        variants = {}
         for row in result:
             if names[row["channel_label"].casefold()] > 1:
                 row["channel_label"] += " ({})".format(row["channel_id"])
+            variants.setdefault(row['channel_label'].casefold(), []).append(row)
+        for group in variants.values():
+            if len(group) < 2:
+                continue
+            for number, row in enumerate(group, 1):
+                channel = row['playlist_channel']
+                source = channel.get('provider-id') or channel.get('playlist-id')
+                alias = (source_names or {}).get(source, '')
+                ordinal = _("Source {number}").format(number=number)
+                row['channel_label'] += " — " + (alias + ", " if alias else "") + ordinal
         return result
+
+    def programme_metadata_fields(self):
+        columns = {r[1] for r in self.conn.execute("PRAGMA table_info(programmes)")}
+        return ", ".join(key if key in columns else "''" for key in ('subtitle', 'episode', 'description'))
+
+    def programme_details(self, row):
+        match = self.conn.execute(
+            "SELECT " + self.programme_metadata_fields() + " FROM programmes WHERE channel_id=? AND start=? AND end=? AND title=?",
+            (row['channel_id'], row['start'], row['end'], row['title'])).fetchone()
+        if match is None:
+            raise ValueError(_("The programme guide changed. Refresh the list and try again."))
+        return dict(zip(('subtitle', 'episode', 'description'), match))
 
     def get_recent_programmes(self, channel: Dict[str, str], hours: int = 48, limit: int = 60) -> List[Dict[str, str]]:
         # One best-matching EPG channel, exactly like the "what's on" view uses.
@@ -2527,36 +2548,20 @@ class EPGDatabase:
         return results
 
     def get_all_now_next(self) -> Dict[str, Dict[str, object]]:
-        """On-air and next programme for every EPG channel in one indexed pass.
+        """On-air and next programme for each guide channel.
 
         Returns ``{channel_id: {"display_name": str, "now": row, "next": row}}``
         where each row is ``{title, start, end, description}`` in UTC
         "YYYYMMDDHHMMSS" strings (description may be empty); either entry may
         be missing. Keyed by channel id so callers can match playlist channels
         through tvg-id first and fall back to names. Feeds the channel-row
-        labels and the on-air description field, so it must stay a single
-        covering-index range scan (no per-channel queries); the description
-        rides along as an extra column and costs no extra lookups.
+        labels and the on-air description field. Read both time ranges in one
+        statement and fetch only the descriptions of the current programmes.
         """
         c = self.conn.cursor()
         now = self._utcnow()
         now_str = now.strftime("%Y%m%d%H%M%S")
-        # A programme airing now cannot have started more than ~a day ago; this
-        # floor lets SQLite range-scan idx_programmes_start_cover. The horizon
-        # bounds the "next" side of the scan.
-        floor_str = (now - datetime.timedelta(hours=24)).strftime("%Y%m%d%H%M%S")
-        horizon_str = (now + datetime.timedelta(hours=6)).strftime("%Y%m%d%H%M%S")
-        # Only the covering index's columns here: fetching the description
-        # with every row forced a table lookup for all ~200,000 rows in the
-        # window, once a minute, to keep one "now" row per channel. The
-        # descriptions of the on-air rows are fetched afterwards by id.
-        rows = c.execute("""
-            SELECT id, channel_id, title, start, end
-            FROM programmes
-            WHERE start >= ? AND start <= ? AND end > ?
-            ORDER BY start ASC
-        """, (floor_str, horizon_str, now_str)).fetchall()
-
+        rows = self._airing_window(now, now + datetime.timedelta(hours=6))
         now_rows: Dict[str, tuple] = {}
         next_rows: Dict[str, tuple] = {}
         for row in rows:
@@ -2564,7 +2569,7 @@ class EPGDatabase:
             if start <= now_str:
                 # Airing now; on overlapping entries prefer the most recent start.
                 current = now_rows.get(channel_id)
-                if current is None or start > current[3]:
+                if current is None or start >= current[3]:
                     now_rows[channel_id] = row
             elif channel_id not in next_rows:
                 # Rows arrive ordered by start, so the first future one wins.

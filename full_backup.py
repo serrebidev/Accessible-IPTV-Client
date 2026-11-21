@@ -84,7 +84,13 @@ def validate(bundle, *, now=None):
                 or job["stop_ts"] <= job["start_ts"]
                 or not isinstance(job.get("channel"), dict)
                 or not isinstance(job.get("program"), dict)
+                or (job.get("title") is not None and not isinstance(job["title"], str))
+                or (job.get("repeat") is not None and not isinstance(job["repeat"], str))
                 or not isinstance(job.get("format"), str)):
+            raise ValueError(bad)
+        if 'future_padding' in job and not dvr.valid_padding_pair(job['future_padding']):
+            raise ValueError(bad)
+        if 'series_padding_changes' in job and not dvr.valid_series_padding(job['series_padding_changes']):
             raise ValueError(bad)
         if job.get('repeat') == 'weekdays':
             from planning_tools import checked_weekdays
@@ -93,6 +99,8 @@ def validate(bundle, *, now=None):
         ids.add(job["id"])
         if (job["status"] in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}
                 or job["status"] == dvr.STATUS_SCHEDULED and job["start_ts"] <= now):
+            if job.get('repeat') in dvr.TIME_REPEATS:
+                job['restore_next_occurrence'] = True
             job.update(status=dvr.STATUS_MISSED, message="")
         job["recording_id"] = None
     rows = data["reminders"]
@@ -162,7 +170,22 @@ def apply_pending(targets=None):
     bundle = validate(read_json(pending))
     for key, value in bundle.items():
         if key == "jobs":
-            value = {"version": 1, "jobs": value}
+            jobs = {job['id']: job for job in value}
+            def slot(job):
+                start = job['start_ts'] + dvr._number(job.get('pre_padding_minutes')) * 60
+                end = job['stop_ts'] - dvr._number(job.get('post_padding_minutes')) * 60
+                return (reminders.channel_key(job.get('channel')), job.get('title') or '', job.get('repeat'),
+                        tuple(sorted(set(job['weekdays']))) if job.get('repeat') == 'weekdays' else (), start, end)
+            existing = {slot(job) for job in value if job.get('repeat') in dvr.TIME_REPEATS}
+            now = time.time()
+            for job in value:
+                if (job.pop('restore_next_occurrence', False) and job['status'] == dvr.STATUS_MISSED
+                        and job.get('repeat') in dvr.TIME_REPEATS):
+                    successor = dvr.next_time_occurrence(job, now, future_only=True)
+                    if slot(successor) not in existing:
+                        jobs.setdefault(successor['id'], successor)
+                        existing.add(slot(successor))
+            value = {"version": 1, "jobs": list(jobs.values())}
         elif key == "reminders":
             value = {"version": 1, "reminders": value}
         atomic_json(targets[key], value)

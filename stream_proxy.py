@@ -355,6 +355,12 @@ def _is_upstream_gone(error) -> bool:
 
 def get_ffmpeg_path():
     """Resolve ffmpeg path, prioritizing bundled executable in frozen mode."""
+    if sys.platform != 'win32':
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            native = os.path.join(sys._MEIPASS, 'ffmpeg')
+            if os.path.isfile(native) and os.access(native, os.X_OK):
+                return native
+        return shutil.which('ffmpeg') or 'ffmpeg'
     # PyInstaller onefile
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         bundled = os.path.join(sys._MEIPASS, 'ffmpeg.exe')
