@@ -1,6 +1,7 @@
 """GUI-side local buffer ownership; transport/setup/cleanup run in workers."""
 import logging
 import threading
+import time
 
 import wx
 from http_headers import channel_http_headers
@@ -267,6 +268,86 @@ class LiveBufferMixin:
         finally:
             dlg.Destroy()
 
+    def _save_recent_broadcast(self):
+        import math
+        import os
+        import buffer_clip
+        import recorder
+        import recording_storage
+        import storage_monitor
+        from background_tasks import start_operation
+        from options import get_recordings_dir
+        from modal_guard import show_modal
+        frame = self._internal_player_frame
+        pending = getattr(self, '_buffer_clip_dialog', None)
+        if pending:
+            pending.Raise()
+            return
+        current = getattr(self, '_live_buffer_current', None)
+        rows = current['session'].window.snapshot() if current else ()
+        if not rows:
+            message_box(_("No buffered audio or video is available."), _("Save Recent Broadcast..."), wx.OK, parent=frame)
+            return
+        seconds = max(1, math.ceil(rows[-1].end - rows[0].start))
+        dlg = wx.NumberEntryDialog(frame, _("Available history: {seconds} seconds.").format(seconds=seconds),
+                                   _("Duration (seconds)"), _("Save Recent Broadcast..."), min(300, seconds), 1, seconds)
+        user_guide.set_help_topic(dlg, 'built-in-player')
+        try:
+            if show_modal(dlg) != wx.ID_OK:
+                return
+            selected = buffer_clip.select_segments(rows, dlg.GetValue())
+        finally:
+            dlg.Destroy()
+        folder = get_recordings_dir(self.config)
+        name = recorder.sanitize_filename(current.get('title') or 'IPTV') + time.strftime('-%Y%m%d-%H%M%S.ts')
+        with wx.FileDialog(frame, _("Save Recent Broadcast..."), defaultDir=folder, defaultFile=name,
+                           wildcard='MPEG-TS (*.ts)|*.ts', style=wx.FD_SAVE) as dialog:
+            if show_modal(dialog) != wx.ID_OK:
+                return
+            path = dialog.GetPath()
+        if not path.lower().endswith('.ts'):
+            path += '.ts'
+        try:
+            lease = current['session'].acquire()
+        except Exception as error:
+            message_box(str(error), _("Save Recent Broadcast..."), wx.OK | wx.ICON_ERROR, parent=frame)
+            return
+        cancel = self._buffer_clip_cancel = threading.Event()
+        progress = self._buffer_clip_dialog = wx.Dialog(frame, title=_("Save Recent Broadcast..."))
+        layout = wx.BoxSizer(wx.VERTICAL)
+        layout.Add(wx.StaticText(progress, label=_("Saving the broadcast excerpt...")), 0, wx.ALL, 10)
+        button = wx.Button(progress, wx.ID_CANCEL, _("Cancel"))
+        layout.Add(button, 0, wx.ALL, 8)
+        progress.SetSizerAndFit(layout)
+        def stop(event):
+            cancel.set()
+            button.Disable()
+            if isinstance(event, wx.CloseEvent) and event.CanVeto():
+                event.Veto()
+        progress.Bind(wx.EVT_CLOSE, stop)
+        button.Bind(wx.EVT_BUTTON, stop)
+        progress.Show()
+        reserve = recording_storage.normalize_reserve(self.config.get('recording_min_free_mib'))
+        enabled, _warning, critical, auto_stop = storage_monitor.settings(self.config)
+        if enabled and auto_stop:
+            reserve = max(reserve, critical)
+        def work():
+            try:
+                os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+                buffer_clip.save(current['session'].window, selected, path, recorder.get_ffmpeg_path(), reserve,
+                                 cancel.is_set, on_staged=lease.release)
+            finally:
+                lease.release()
+        def done(_result, error):
+            lease.release()
+            self._buffer_clip_dialog = None
+            if progress:
+                progress.Destroy()
+            if not getattr(self, '_exit_requested', False) and not isinstance(error, InterruptedError):
+                message_box(str(error) if error else _("Saved to {path}.").format(path=path),
+                            _("Save Recent Broadcast..."), wx.OK | (wx.ICON_ERROR if error else wx.ICON_INFORMATION), parent=self)
+        start_operation(self, 'save-buffer-clip', work, done, wx.CallAfter)
+
     def _jump_live_buffer(self, behind):
         current = getattr(self, '_live_buffer_current', None)
         if current is None:
@@ -347,6 +428,9 @@ class LiveBufferMixin:
             threading.Thread(target=retire, daemon=True).start()
 
     def _shutdown_live_buffers(self):
+        cancel = getattr(self, '_buffer_clip_cancel', None)
+        if cancel:
+            cancel.set()
         self._close_live_buffer_player()
         registry = getattr(self, '_live_buffers', None)
         if registry is not None:

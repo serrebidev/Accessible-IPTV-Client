@@ -79,3 +79,6 @@ grep it for the module, symbol or error you are about to touch.
 - Saved guide searches run on a read-only SQLite snapshot with cancellation, a deadline, a 14-day horizon and bounded results. Publish only if the rule signature and channel-list object still match the UI. History must retain current matches before older entries when full, or the next scan repeatedly announces evicted future programmes. Scope keys include the provider/playlist identity; actions resolve against current channels and reject ambiguous URLs or headers.
 
 An all-channel airing is identified by the EPG channel ID and programme window. Display names and titles coincide across regional services. A time-specific lookup uses inclusive starts and exclusive ends, and its favourites matcher must know about channels with no airing so a namesake cannot replace them.
+
+- A rolling one-day start range misses longer live events. Pair it with an indexed cross-date lookup. Apply a saved search's resolved guide scope before its Unicode text comparison.
+- Multiple playable sources can share a name and guide ID. Keep the selected local channel with its guide row, and distinguish the alternatives with a safe source label.

@@ -566,6 +566,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self.Bind(wx.EVT_MENU, lambda event: session_tools_ui.show_bookmarks(self), m_bookmarks)
         m_buffer = playback_menu.Append(wx.ID_ANY, _("Local Live Buffer..."))
         m_rewind = playback_menu.Append(wx.ID_ANY, _("Rewind Live TV..."))
+        m_save_clip = playback_menu.Append(wx.ID_ANY, _("Save Recent Broadcast..."))
         m_live = playback_menu.Append(wx.ID_ANY, _("Return to Live"))
         self.play_pause_menu_item = m_play_pause
         self.stop_menu_item = m_stop
@@ -603,6 +604,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self.Bind(wx.EVT_MENU, self._configure_sleep_timer, m_sleep)
         self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._configure_live_buffer(), m_buffer)
         self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._seek_live_buffer(), m_rewind)
+        self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._save_recent_broadcast(), m_save_clip)
         self.Bind(wx.EVT_MENU, lambda evt: self.GetParent()._return_live_buffer(), m_live)
         self.Bind(wx.EVT_MENU, self._on_record, self.record_menu_item)
         self.Bind(wx.EVT_MENU, self._on_audio_device_menu, m_audio_device)
@@ -631,7 +633,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             user_guide.set_menu_help(self, item, "subtitle-speech")
         user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
         user_guide.set_menu_help(self, m_sleep, "built-in-player")
-        for item in (m_buffer, m_rewind, m_live):
+        for item in (m_buffer, m_rewind, m_live, m_save_clip):
             user_guide.set_menu_help(self, item, "built-in-player")
         user_guide.set_menu_help(self, self.record_menu_item, "recordings")
         user_guide.set_menu_help(self, m_cast, "casting")

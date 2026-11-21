@@ -79,6 +79,9 @@ def scan(path, rules, channels, *, canceled=lambda: False, now=None, budget=20):
                   for key, name in db.execute("SELECT id, display_name FROM channels")}
         checkpoint()
         indexes = channel_identity.guide_indexes(guides)
+        enabled = [rule for rule in normalize(rules) if rule["enabled"]]
+        requested = {key for rule in enabled for key in rule["channels"]}
+        by_source = {}
         mapped = {}
         for i, channel in enumerate(channels):
             if i % 256 == 0:
@@ -90,24 +93,33 @@ def scan(path, rules, channels, *, canceled=lambda: False, now=None, budget=20):
                 key = programme_reminders.channel_key(channel)
                 if key:
                     mapped.setdefault(entry["id"], {})[key] = programme_reminders.safe_title(channel.get("name"))
+                    if key in requested:
+                        by_source.setdefault(key, set()).add(entry["id"])
         stamp = lambda x: dt.datetime.fromtimestamp(x, dt.timezone.utc).strftime("%Y%m%d%H%M%S")
         db.create_function("search_fold", 1, lambda x: str(x or "").casefold(), deterministic=True)
         output = []
         columns = {row[1] for row in db.execute("PRAGMA table_info(programmes)")}
-        for rule in normalize(rules):
+        for rule in enabled:
             checkpoint()
-            if not rule["enabled"]:
-                continue
             where = "instr(search_fold(title), ?) > 0"
             args = [stamp(now), stamp(now + 14 * 86400), rule["query"].casefold()]
             if rule["description"] and "description" in columns:
                 where += " OR instr(search_fold(description), ?) > 0"
                 args.append(rule["query"].casefold())
             desc = "description" if "description" in columns else "''"
-            query = ("SELECT channel_id, title, start, end, " + desc + " FROM programmes "
-                     "WHERE start >= ? AND start <= ? AND (" + where + ") ORDER BY start, channel_id, title")
             matches, identities, truncated = [], set(), False
             scope = set(rule["channels"])
+            restriction = ""
+            if scope:
+                ids = sorted({cid for key in scope for cid in by_source.get(key, ())})
+                if not ids:
+                    output.append({"rule": rule["id"], "query": rule["query"], "matches": [], "truncated": False})
+                    continue
+                # Bound one JSON parameter, including on SQLite builds with the 999-variable limit.
+                restriction = "channel_id IN (SELECT value FROM json_each(?)) AND "
+                args.insert(0, json.dumps(ids))
+            query = ("SELECT channel_id, title, start, end, " + desc + " FROM programmes WHERE " + restriction
+                     + "start >= ? AND start <= ? AND (" + where + ") ORDER BY start, channel_id, title")
             for cid, title, start, end, description in db.execute(query, args):
                 checkpoint()
                 eligible = mapped.get(str(cid), {})

@@ -3349,7 +3349,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 return
             if warning:
                 from recording_conflicts_ui import confirm_conflicts
-                if not confirm_conflicts(self, channel, job["start_ts"], job["stop_ts"], warning):
+                if not confirm_conflicts(self, channel, job["start_ts"], job["stop_ts"], warning, proposal=job):
                     return
             def save():
                 if duplicate:
@@ -3424,7 +3424,6 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         if not rules or not epg_database_has_programmes(get_db_path()):
             return
         now = datetime.datetime.now(datetime.timezone.utc)
-        all_jobs = scheduler.list_jobs()
         db = EPGDatabase(get_db_path(), readonly=True)
         try:
             for rule in rules:
@@ -3432,38 +3431,17 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 title = str(rule.get("title") or "").strip().casefold()
                 if not channel or not title:
                     continue
-                # Rerun suppression: an episode this rule already has —
-                # the picked airing, a job an earlier scan added, or one
-                # already recorded — is not scheduled again when the
-                # guide repeats it inside the horizon. Programmes whose
-                # episode cannot be identified are never suppressed.
-                taken_episodes = dvr.taken_episode_keys(all_jobs, rule.get("id"))
+                candidates = []
                 for program in db.get_schedule(channel, now, now + datetime.timedelta(days=14)):
                     if dvr.program_title(program).strip().casefold() != title:
                         continue
-                    episode_key = dvr.program_episode_key(program)
-                    if episode_key is not None and episode_key in taken_episodes:
-                        continue
                     try:
-                        job = dvr.build_job(
-                            channel, program, str(rule.get("format") or "provider_mkv"),
-                            pre_padding_minutes=rule.get("pre_padding_minutes", 0),
-                            post_padding_minutes=rule.get("post_padding_minutes", 2))
+                        pre, post = dvr.series_padding_at(rule, program.get('start') or '')
+                        candidates.append(dvr.build_job(channel, program, str(rule.get("format") or "provider_mkv"),
+                                                        pre_padding_minutes=pre, post_padding_minutes=post))
                     except (ValueError, TypeError):
                         continue
-                    if float(job["stop_ts"]) <= time.time():
-                        continue
-                    if any(existing.get("start_at") == job["start_at"]
-                           and self._channel_record_key(existing.get("channel") or {})
-                           == self._channel_record_key(channel)
-                           for existing in scheduler.list_jobs()):
-                        continue
-                    if job["start_at"] == rule.get("start_at"):
-                        continue
-                    job["series_source"] = rule["id"]
-                    scheduler.add_job(job)
-                    if episode_key is not None:
-                        taken_episodes.add(episode_key)
+                scheduler.add_series_episodes(rule, candidates, self._channel_record_key)
         finally:
             db.close()
 
@@ -9446,6 +9424,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
             jobs = self._selected_jobs()
             if len(jobs) == 1:
                 job = jobs[0]
+                if job.get("status") == dvr.STATUS_SCHEDULED:
+                    from recording_edits_ui import padding_dialog, find_airing
+                    item = menu.Append(wx.ID_ANY, _("Padding for This Recording..."))
+                    menu.Bind(wx.EVT_MENU, lambda e: padding_dialog(self, self.parent_frame, job, self.refresh), item)
+                    item = menu.Append(wx.ID_ANY, _("Find Another Airing..."))
+                    menu.Bind(wx.EVT_MENU, lambda e: find_airing(self, self.parent_frame, job, self.refresh), item)
                 if job.get("status") == dvr.STATUS_SCHEDULED and job.get("repeat") in dvr.TIME_REPEATS:
                     item = menu.Append(wx.ID_ANY, _("Skip This Occurrence"))
                     menu.Bind(wx.EVT_MENU, self._skip_occurrence, item)

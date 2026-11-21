@@ -111,6 +111,8 @@ Favorites are stored by provider and channel, not by stream address, so they sur
 
 View > Recently Watched lists channels you have played. View > Previous Channel (Ctrl+0) switches back to the channel you watched before this one.
 
+In Favourite Lists, Export Favourite List saves one ordered list without stream addresses or account credentials. On the other computer, choose Import Favourite List. Review the matches, choose a local channel for ambiguous entries, and enter a new list name. Unresolved entries keep their places and can be linked later.
+
 ## Video on demand {#video-on-demand}
 
 View > Video on Demand (Movies && Series) switches the category list from live channels to your provider's films and series. Categories are named Movies or Series followed by the provider's category. Choosing a series lists its episodes in season and episode order. Press Enter to play a film or an episode.
@@ -187,6 +189,8 @@ File > What's on Now (Ctrl+W) lists every programme on air right now across all 
 - Schedule Recording, or the programme's menu, schedules a recording of it.
 - Escape closes the window.
 
+In Programme Guide by Time, select a row and choose Programme Details to read the description, episode title and number supplied by the guide. Escape returns to the selected row.
+
 ### Channel guide (View EPG) {#channel-epg}
 
 View EPG, on a channel's menu, lists that channel's programmes from the one on air now to as far as the guide goes. The programme on air now comes first.
@@ -253,6 +257,8 @@ The same commands are on the player's Playback menu. The player reconnects on it
 Mute / Unmute silences the built-in player without pausing playback or recording. The default shortcut is Ctrl+Shift+M in the main window and M in the player; both can be changed in Keyboard Shortcuts. Muting survives channel changes and reconnects. Player > Remember Volume for Each Channel is optional and off by default: it recalls your chosen volume separately for each playlist or provider. Channels without a saved value use the ordinary player volume. Neither feature changes screen-reader volume.
 
 In the built-in player's Playback menu, Add Named Bookmark saves the current position in on-demand media or a local recording. Seeking and a known duration are required. Named Bookmarks lists the current item's bookmarks: Enter or Go to Bookmark jumps to a position; Rename and Delete manage the selected entry. Names must be unique within that item. Up to 1000 bookmarks can be saved in total. These bookmarks are separate from the automatic resume position.
+
+With the local live buffer active, Playback > Save Recent Broadcast saves the last seconds or minutes as a new MPEG-TS file. Choose the duration and a filename. Only complete local segments are used, so the excerpt may start slightly earlier. Cancel stops the export and keeps existing files.
 
 ### Audio tracks {#audio-tracks}
 
@@ -369,9 +375,13 @@ Recording Conflicts in Scheduled Recordings lists overlaps for one selected entr
 
 Choose repeat weekdays in Schedule by Time, or use Scheduled Recordings > Repeat on Weekdays on one pending recording that is not a series rule. Clear every day for a single recording. In Schedule by Time, the first start must fall on a selected day. Later occurrences keep local programme times, including overnight windows and padding; nonexistent clock-change windows are skipped. Keep the application open. Existing recording connection limits still apply.
 
+Choose Find Another Airing from a pending recording’s context menu or from Recording Conflicts. The app searches the next 14 days. A matching episode number identifies the same episode. A title match alone is shown as a possible repeat. Review the time and any conflicts before confirming. Moving one occurrence preserves the rest of the schedule.
+
 ### Schedule padding {#schedule-padding}
 
 Programmes rarely start and end exactly on time. Recordings > Schedule Padding sets how many minutes before a programme a scheduled recording starts, and how many minutes after it ends it keeps recording. Manual recordings are not affected. Catch-up downloads use the same minutes: the archive window requested from the provider is widened by them whenever the provider can serve it, and the download is retried when the file arrives shorter than the programme.
+
+In Scheduled Recordings, open the context menu for a pending entry and choose Padding for This Recording. The original programme times are retained. For a recurring recording, select Apply to future occurrences too to change later recordings as well.
 
 ### Shutting down after recordings {#shutdown-after-recordings}
 

@@ -7,6 +7,7 @@ stored channel snapshot into a playable URL and how to notify the user.
 
 from __future__ import annotations
 
+import bisect
 import datetime
 import copy
 import hashlib
@@ -82,6 +83,10 @@ def _valid_stored_job(job):
             or job['status'] not in ACTIVE_STATUSES | DONE_STATUSES
             or type(job.get('id')) not in (str, int) or not job['id']):
         return False
+    if 'future_padding' in job and not valid_padding_pair(job['future_padding']):
+        return False
+    if 'series_padding_changes' in job and not valid_series_padding(job['series_padding_changes']):
+        return False
     repeat = job.get('repeat')
     if repeat is not None and (not isinstance(repeat, str) or repeat not in ('', 'daily', 'weekly', 'series', 'weekdays')):
         return False
@@ -96,6 +101,32 @@ def _valid_stored_job(job):
     if repeat in TIME_REPEATS:
         return 0 <= _number(job.get('start_ts'), -1) < _number(job.get('stop_ts')) <= 253402300799
     return True
+
+
+def valid_padding_pair(value):
+    return (isinstance(value, (tuple, list)) and len(value) == 2
+            and all(type(n) is int and 0 <= n <= 180 for n in value))
+
+
+def valid_series_padding(changes):
+    if not isinstance(changes, list):
+        return False
+    previous = ''
+    for change in changes:
+        if (not isinstance(change, list) or len(change) != 3 or not isinstance(change[0], str)
+                or not re.fullmatch('[0-9]{14}', change[0]) or change[0] <= previous
+                or not valid_padding_pair(change[1:])):
+            return False
+        previous = change[0]
+    return True
+
+
+def series_padding_at(rule, start):
+    changes = rule.get('series_padding_changes', ())
+    index = bisect.bisect_right(changes, start, key=lambda item: item[0])
+    if index:
+        return changes[index - 1][1:]
+    return rule.get('future_padding', (rule.get('pre_padding_minutes', 0), rule.get('post_padding_minutes', 2)))
 
 
 def program_title(program: Dict[str, str]) -> str:
@@ -230,6 +261,21 @@ def build_job(
         "message": "",
         "repeat": repeat if repeat in {"daily", "weekly", "series"} else "",
     }
+
+
+def next_time_occurrence(job, now, *, future_only=False):
+    from planning_tools import next_weekday_job
+    repeat = job["repeat"]
+    if repeat == "daily":
+        days = list(range(7))
+    elif repeat == "weekly":
+        start = float(job["start_ts"]) + _number(job.get("pre_padding_minutes")) * 60
+        days = [datetime.datetime.fromtimestamp(start).weekday()]
+    else:
+        days = job["weekdays"]
+    successor = next_weekday_job(job, now, weekdays=days, future_only=future_only)
+    successor["id"] = uuid.uuid5(uuid.NAMESPACE_URL, "iptv-dvr:" + str(job["id"])).hex
+    return successor
 
 
 class DVRScheduler:
@@ -512,6 +558,38 @@ class DVRScheduler:
         self.wake()
         return True
 
+    def add_series_episodes(self, rule, candidates, channel_key):
+        """Publish a guide scan against the current rule and schedule in one transaction."""
+        if not candidates:
+            return
+        def add(proposal):
+            parent = proposal.get(str(rule['id']))
+            fields = ('repeat', 'channel', 'title', 'format', 'start_at', 'end_at',
+                      'pre_padding_minutes', 'post_padding_minutes', 'future_padding', 'series_padding_changes')
+            if (not parent or parent.get('status') == STATUS_CANCELED or parent.get('repeat') != 'series'
+                    or any(parent.get(k) != rule.get(k) for k in fields)):
+                return False
+            channel = channel_key(parent['channel'])
+            starts = {j['start_at'] for j in candidates}
+            slots = {j.get('start_at') for j in proposal.values()
+                     if j.get('start_at') in starts and channel_key(j.get('channel') or {}) == channel}
+            episodes = taken_episode_keys(proposal.values(), parent['id'])
+            added = False
+            now = self.clock()
+            for job in candidates:
+                episode = program_episode_key(job['program'])
+                if job['start_at'] in slots or job['stop_ts'] <= now or (episode and episode in episodes):
+                    continue
+                proposal[job['id']] = dict(job, series_source=parent['id'])
+                slots.add(job['start_at'])
+                if episode:
+                    episodes.add(episode)
+                added = True
+            return added
+        if self._transaction(add):
+            self._notify_update()
+            self.wake()
+
     def set_weekdays(self, job_id, weekdays):
         from planning_tools import checked_weekdays
         days = checked_weekdays(weekdays)
@@ -521,6 +599,19 @@ class DVRScheduler:
                 raise ValueError(_("Select one pending recording that is not a series rule."))
             proposal[str(job_id)] = dict(job, repeat="weekdays" if days else "", weekdays=days)
         self._transaction(change)
+        self._notify_update()
+        self.wake()
+
+    def edit_snapshot(self):
+        with self._lock:
+            return self._revision, self._jobs.copy()
+
+    def apply_reviewed_edit(self, revision, changes, *, future_start=None):
+        def apply(proposal):
+            if revision != self._revision or (future_start is not None and future_start <= self.clock()):
+                raise ValueError(_("The recording schedule changed. Check the times and try again."))
+            proposal.update(copy.deepcopy(changes))
+        self._transaction(apply)
         self._notify_update()
         self.wake()
 
@@ -828,19 +919,7 @@ class DVRScheduler:
         self._jobs.setdefault(successor["id"], successor)
 
     def _next_occurrence(self, job):
-        from planning_tools import next_weekday_job
-        repeat = job["repeat"]
-        if repeat == "daily":
-            days = list(range(7))
-        elif repeat == "weekly":
-            start = float(job["start_ts"]) + _number(job.get("pre_padding_minutes")) * 60
-            days = [datetime.datetime.fromtimestamp(start).weekday()]
-        else:
-            days = job["weekdays"]
-        successor = next_weekday_job(job, float(self.clock()), weekdays=days)
-        # Stable even if the process exits before the restored state reaches disk.
-        successor["id"] = uuid.uuid5(uuid.NAMESPACE_URL, "iptv-dvr:" + str(job["id"])).hex
-        return successor
+        return next_time_occurrence(job, float(self.clock()))
 
     def _notify_update(self) -> None:
         if self.on_update:

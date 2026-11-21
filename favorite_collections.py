@@ -1,5 +1,7 @@
 """Named, ordered favourites, independent of the existing default favourites."""
 import copy
+import hashlib
+import json
 import re
 import uuid
 
@@ -39,6 +41,11 @@ def normalize(value):
             if not isinstance(key, str) or not re.fullmatch(r"[a-f0-9]{64}", key) or key in seen:
                 continue
             entries.append({"key": key, "name": programme_reminders.safe_title(entry.get("name"))})
+            if isinstance(entry.get('guide'), str) and re.fullmatch(r'[a-f0-9]{64}', entry['guide']):
+                entries[-1]['guide'] = entry['guide']
+            if all(isinstance(entry.get(k), str) and re.fullmatch('[a-f0-9]{64}', entry[k])
+                   for k in ('match_key', 'variant')):
+                entries[-1].update(match_key=entry['match_key'], variant=entry['variant'])
             seen.add(key)
         ids.add(item["id"])
         names.add(name.casefold())
@@ -102,16 +109,30 @@ def relink(collections, identity, old_key, channel):
     if not key or any(e["key"] == key for e in row["entries"]):
         raise ValueError(_("Choose a different channel that is not already in this list."))
     entry.update(key=key, name=programme_reminders.safe_title(channel.get("name")))
+    entry.pop('guide', None)
+    entry.pop('match_key', None)
+    entry.pop('variant', None)
     return rows
+
+
+def variant_key(channel):
+    identity = programme_reminders.media_identity(channel)
+    return hashlib.sha256(json.dumps(identity).encode()).hexdigest()
 
 
 def resolve(entries, channels):
     """Preserve missing rows; ambiguous identities cannot start arbitrary media."""
     index = {}
-    wanted = {e["key"] for e in entries}
+    wanted = {e.get("match_key", e["key"]) for e in entries}
     for channel in channels:
         key = programme_reminders.channel_key(channel)
         if key in wanted:
             index.setdefault(key, []).append(channel)
-    return [(entry, programme_reminders.resolve_channel({"channel_key": entry["key"]}, index.get(entry["key"], [])))
-            for entry in entries]
+    result = []
+    for entry in entries:
+        key = entry.get('match_key', entry['key'])
+        matches = index.get(key, ())
+        if 'variant' in entry:
+            matches = [ch for ch in matches if ch.get('url') and variant_key(ch) == entry['variant']]
+        result.append((entry, programme_reminders.resolve_channel({'channel_key': key}, matches)))
+    return result

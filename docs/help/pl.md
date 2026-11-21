@@ -102,6 +102,8 @@ Ulubione są zapisywane według dostawcy i kanału, nie według adresu strumieni
 
 Widok > Ostatnio oglądane zawiera listę kanałów, z których korzystałeś. Widok > Poprzedni kanał (Ctrl+0) powoduje powrót do kanału, który oglądałeś wcześniej.
 
+W oknie list ulubionych można wyeksportować jedną listę wraz z kolejnością kanałów, bez adresów strumieni i danych logowania. Na drugim komputerze zaimportuj ją pod nową nazwą. Sprawdź dopasowania i w razie wątpliwości wybierz lokalny kanał. Nieprzypisane pozycje zachowają swoją kolejność i można je dopasować później.
+
 ## Wideo na żądanie {#video-on-demand}
 
 Widok > Wideo na żądanie (filmy && seriale) przełącza listę kategorii z kanałów na żywo na filmy i seriale twojego dostawcy. Kategorie nazywają się Movies albo Series, po czym następuje kategoria dostawcy. Wybranie serialu wypisuje jego odcinki w kolejności sezonów i odcinków. Naciśnij Enter, aby odtworzyć film albo odcinek.
@@ -178,6 +180,8 @@ Plik > Teraz w programie (Ctrl+W) wypisuje każdą audycję nadawaną teraz na w
 - Zaplanuj nagrywanie, albo menu audycji, planuje jej nagranie.
 - Escape zamyka okno.
 
+W przewodniku według czasu wybierz audycję i otwórz Szczegóły audycji. Możesz odczytać opis, tytuł i numer odcinka, jeśli podano je w przewodniku. Escape przenosi z powrotem do zaznaczonego wiersza.
+
 ### Przewodnik kanału (Pokaż EPG) {#channel-epg}
 
 Pokaż EPG..., w menu kanału, wypisuje audycje tego kanału od nadawanej teraz po tyle, ile przewodnik ma. Audycja nadawana teraz idzie pierwsza.
@@ -244,6 +248,8 @@ Te same polecenia są w menu Odtwarzanie odtwarzacza. Odtwarzacz sam łączy si�
 Wycisz / Włącz dźwięk wycisza wbudowany odtwarzacz bez wstrzymywania odtwarzania lub nagrywania. Domyślne skróty to Ctrl+Shift+M w oknie głównym oraz M w odtwarzaczu; oba można zmienić w ustawieniach skrótów. Wyciszenie pozostaje aktywne po zmianie kanału i ponownym połączeniu. Odtwarzacz > Zapamiętuj głośność każdego kanału jest domyślnie wyłączone. Po włączeniu zapamiętuje wybraną głośność osobno dla każdej listy lub dostawcy. Kanały bez zapisanej wartości używają ogólnej głośności odtwarzacza. Funkcje te nie zmieniają głośności czytnika ekranu.
 
 W menu Odtwarzanie wbudowanego odtwarzacza Dodaj nazwaną zakładkę zapisuje bieżącą pozycję materiału na żądanie lub lokalnego nagrania. Wymagane są przewijanie i znany czas trwania. Nazwane zakładki pokazuje wpisy bieżącego materiału: Enter lub Przejdź do zakładki otwiera pozycję; Zmień nazwę i Usuń zarządzają wybranym wpisem. Nazwy muszą być unikalne w obrębie materiału. Łącznie można zapisać do 1000 zakładek, niezależnie od automatycznej pozycji wznowienia.
+
+Gdy działa lokalny bufor, polecenie Odtwarzanie > Zapisz ostatnie minuty zapisuje fragment w nowym pliku MPEG-TS. Podaj długość w sekundach i nazwę pliku. Zapisywane są całe segmenty, więc fragment może zaczynać się nieco wcześniej. Eksport można anulować.
 
 ### Ścieżki audio {#audio-tracks}
 
@@ -360,9 +366,13 @@ Konflikty nagrań w Zaplanowanych nagraniach pokazują nakładanie się wybraneg
 
 Wybierz dni powtarzania w Planowaniu według czasu albo użyj Zaplanowane nagrania > Powtarzaj w wybrane dni tygodnia dla jednego oczekującego nagrania, które nie jest regułą serialu. Brak wyboru oznacza nagranie jednorazowe. Przy tworzeniu pierwszy początek musi przypadać w wybranym dniu. Kolejne terminy zachowują lokalne godziny programu, przejście przez północ i zapas czasu; nieistniejące przedziały przy zmianie czasu są pomijane. Aplikacja musi działać. Nadal obowiązują limity połączeń.
 
+Z menu kontekstowego zaplanowanego nagrania lub okna konfliktów wybierz Znajdź inną emisję. Wyszukiwanie obejmuje najbliższe 14 dni. Zgodny numer oznacza ten sam odcinek. Sama zgodność tytułu oznacza możliwą powtórkę. Przed zatwierdzeniem sprawdź czas emisji i konflikty. Pozostałe nagrania zachowują swoje terminy.
+
 ### Margines nagrywania {#schedule-padding}
 
 Audycje rzadko zaczynają się i kończą dokładnie na czas. Nagrania > Margines nagrywania... ustawia, ile minut przed audycją zaczyna się zaplanowane nagranie i ile minut po jej końcu nagrywa dalej. Nagrania ręczne nie są dotknięte. Pobieranie powtórek używa tych samych minut: okno archiwum żądane od dostawcy jest o nie poszerzane, gdy tylko dostawca może je udostępnić, a pobieranie jest ponawiane, gdy plik okaże się krótszy niż program.
+
+W menu kontekstowym oczekującego nagrania wybierz Marginesy tego nagrania. Pierwotne godziny audycji zostaną zachowane. W przypadku nagrania cyklicznego możesz zastosować zmianę także do kolejnych terminów.
 
 ### Wyłączanie po nagraniach {#shutdown-after-recordings}
 

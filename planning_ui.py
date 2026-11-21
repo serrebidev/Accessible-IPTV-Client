@@ -202,6 +202,7 @@ class PlanningMixin:
         self._reminder_errors_after = 0
         self._reminder_error_reported = False
         self._reminder_seen = set()
+        self._reminder_pending_choice = None
         self._reminder_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._poll_reminders, self._reminder_timer)
         self._reminder_timer.Start(5000)
@@ -230,6 +231,10 @@ class PlanningMixin:
         if (getattr(self, '_reminders_stopped', False) or self._reminder_modal_open()
                 or 'reminder-ack' in getattr(self, '_background_operations', ())
                 or time.monotonic() < getattr(self, '_reminder_errors_after', 0)):
+            return
+        pending = getattr(self, '_reminder_pending_choice', None)
+        if pending:
+            self._save_alert_choice(*pending)
             return
         def work():
             store = self._ensure_reminders()
@@ -274,23 +279,33 @@ class PlanningMixin:
             action = dialog.action
         finally:
             dialog.Destroy()
-        store = self._ensure_reminders()
-        def commit():
-            if action in {'snooze', 'start'}:
-                store.snooze(row['id'], at_start=action == 'start')
+        target = row['start'] if action == 'start' else time.time() + 300 if action == 'snooze' else None
+        self._reminder_pending_choice = (row['id'], target)
+        self._save_alert_choice(row['id'], target)
+        if action == 'play' and not self._reminders_stopped:
+            channel = reminders.resolve_channel(row, self.all_channels)
+            if channel is None:
+                message_box(_("Channel Not Found"), _("Programme Reminder"), wx.OK | wx.ICON_INFORMATION)
             else:
-                store.acknowledge(row['id'])
+                self._play_live_channel(channel)
+
+    def _save_alert_choice(self, key, target):
+        generation = getattr(self, '_reminder_generation', 0)
         def saved(_result, failure):
+            if generation != getattr(self, '_reminder_generation', 0):
+                return
             if failure:
                 self._reminder_failed(failure)
-            elif action in {'snooze', 'start'}:
-                self._reminder_seen.discard(row['id'])
-            if action == 'play' and not self._reminders_stopped:
-                channel = reminders.resolve_channel(row, self.all_channels)
-                if channel is None:
-                    message_box(_("Channel Not Found"), _("Programme Reminder"), wx.OK | wx.ICON_INFORMATION)
-                else:
-                    self._play_live_channel(channel)
+                return
+            self._reminder_pending_choice = None
+            self._reminder_error_reported = False
+            self._reminder_seen.discard(key)
+        def commit():
+            store = self._ensure_reminders()
+            if target is None:
+                store.acknowledge(key)
+            else:
+                store.save_alert_choice(key, target)
         start_operation(self, 'reminder-ack', commit, saved, wx.CallAfter)
 
     def _confirm_reminder_exit(self):

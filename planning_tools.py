@@ -18,7 +18,7 @@ def checked_weekdays(value):
     return sorted(set(value))
 
 
-def next_weekday_job(job, now, *, weekdays=None):
+def next_weekday_job(job, now, *, weekdays=None, future_only=False):
     """Keep programme wall times. Skip nonexistent DST windows, never guess gaps."""
     import dvr
     from manual_schedule import local_candidates
@@ -30,6 +30,8 @@ def next_weekday_job(job, now, *, weekdays=None):
     previous_start = float(job['start_ts'])
     original = dt.datetime.fromtimestamp(previous_start + pre)
     end = dt.datetime.fromtimestamp(float(job['stop_ts']) - post)
+    pre_minutes, post_minutes = job.get('future_padding', (pre // 60, post // 60))
+    pre, post = int(pre_minutes) * 60, int(post_minutes) * 60
     offset = (end.date() - original.date()).days
     first = max(original.date() + dt.timedelta(days=1),
                 dt.datetime.fromtimestamp(now).date() - dt.timedelta(days=max(1, offset)))
@@ -46,10 +48,12 @@ def next_weekday_job(job, now, *, weekdays=None):
             continue
         start = a[min(original.fold, len(a) - 1)] + original.second - pre
         stop = b[min(end.fold, len(b) - 1)] + end.second + post
-        if start <= previous_start or stop <= now or stop <= start:
+        if start <= previous_start or stop <= now or stop <= start or (future_only and start <= now):
             continue
         result = copy.deepcopy(job)
+        result.pop('future_padding', None)
         result.update(id=uuid.uuid4().hex, start_ts=start, stop_ts=stop,
+                      pre_padding_minutes=pre // 60, post_padding_minutes=post // 60,
                       start_at=dvr.iso_from_ts(start + pre), end_at=dvr.iso_from_ts(stop - post),
                       status=dvr.STATUS_SCHEDULED, recording_id=None, output_path='', message='',
                       created_at=dvr.iso_from_ts(now))
