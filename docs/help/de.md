@@ -71,7 +71,7 @@ Die Kategorieliste enthält die Sendergruppen Ihrer Wiedergabelisten. Ihre erste
 
 ### Suchen {#search}
 
-Tippen Sie ins Suchfeld, um die Senderliste zu filtern, und drücken Sie dann Enter oder Tab, um den Filter anzuwenden und weiterzugehen. Die Suche in Alle Sender durchsucht auch die Programmzeitschrift; eine Suche nach einem Sendungstitel listet also die Sender auf, die sie zeigen. Leeren Sie das Feld und drücken Sie Enter, um wieder die ganze Kategorie zu sehen.
+Geben Sie den Sendernamen oder einen Teil davon ein und drücken Sie Eingabe oder Tab. Leeren Sie das Suchfeld und drücken Sie Eingabe, um die ganze Kategorie wieder anzuzeigen. Aktuelle Sendungen finden Sie nach Titel mit Strg+W im Filterfeld.
 
 ### Die Senderliste {#channel-list}
 
@@ -167,6 +167,8 @@ Die Zeitschrift wird auch von Zeit zu Zeit automatisch und lautlos aufgefrischt.
 Wenn eine importierte Zeitschrift bei einem Sender nicht erscheint, prüfen Sie, ob eine Ihrer Quellen ihn abdeckt, und importieren Sie erneut. Der Import schreibt ein ausführliches Protokoll; siehe Fehlerbehebung.
 
 ### Jetzt im Programm {#whats-on-now}
+
+Geben Sie in der Programmübersicht nach Uhrzeit das lokale Datum und die Uhrzeit ein. Wählen Sie alle Sender, Favoriten oder eine benannte Liste und dann „Sendungen anzeigen“. Jede Zeile nennt Sender, Titel, Beginn und Ende. Für die gewählte Sendung können Sie eine Aufnahme oder Erinnerung einrichten.
 
 Datei > Jetzt im Programm (Ctrl+W) listet jede Sendung, die gerade über alle Sender läuft, in der Form „Sendung - Sender“.
 
@@ -290,6 +292,8 @@ Aufnahmen folgen derselben Wahl. Eine reine Audioaufnahme behält die eine Spur,
 
 ## Aufnahmen {#recordings}
 
+Wählen Sie in der Aufnahmebibliothek eine Datei und öffnen Sie die Zeitpunkte der Aufnahmeprobleme. Drücken Sie auf einer Meldung die Eingabetaste, um den internen Player an dieser Stelle zu starten. Geschätzte Zeitpunkte sind gekennzeichnet. Ein zugehöriges Aufnahmeprotokoll ist erforderlich.
+
 Das Programm kann jeden Sender in eine Datei aufnehmen, während Sie etwas anderes ansehen oder gar nichts läuft.
 
 - Aufnahmen > Aufnahme starten (Ctrl+Shift+R) nimmt den markierten Sender auf. Noch einmal gedrückt, stoppt sie.
@@ -325,6 +329,8 @@ Aufnahmen > Aufnahmeformat wählt, wie Aufnahmen gespeichert werden:
 - Nur Audio (MP3 V0, FLAC, WAV, AAC M4A oder Opus): nur der Ton, nützlich für Radio.
 
 ### Geplante Aufnahmen {#scheduled-recordings}
+
+Bei einer anstehenden wiederkehrenden Aufnahme wählen Sie im Kontextmenü „Diesen Termin überspringen“. Nach der Bestätigung erscheint der nächste Termin. Eine verpasste, fehlgeschlagene oder unvollständige Aufnahme können Sie aus dem Senderarchiv als separate Datei nachholen, sofern die Sendung noch verfügbar und eine Aufnahmeverbindung frei ist.
 
 Um eine künftige Sendung aufzunehmen, wählen Sie Aufnahme planen auf einer Sendung in EPG anzeigen…, Jetzt im Programm oder einer Sendungszeile in den Suchtreffern. Aufnahme planen auf einem Sender öffnet seine Zeitschrift, damit Sie zuerst die Sendung wählen.
 
@@ -487,6 +493,8 @@ Fragen, Fehlerberichte und Release-Neuigkeiten:
 Hilfe > Über… zeigt die laufende Version und verlinkt beides. Bei einem Problem liefert Hilfe > Protokoll und Debug-Informationen kopieren die nötigen Einzelheiten.
 
 ## Persönliche Werkzeuge {#personal-tools}
+
+Wählen Sie in einer benannten Favoritenliste einen fehlenden Kanal und „Fehlenden Kanal neu zuordnen“. Suchen Sie den Ersatzkanal und bestätigen Sie die Auswahl. Der Listenplatz bleibt erhalten.
 
 Lassen Sie die Anwendung für geplante Aufnahmen, Erinnerungen und Suchmeldungen geöffnet. Erinnerungen und Suchmeldungen wecken keinen schlafenden Computer. Geplante Aufnahmen können unter Windows einen Weckzeitgeber anfordern, wenn die unter Geplante Aufnahmen beschriebene Option aktiviert ist.
 

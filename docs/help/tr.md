@@ -70,7 +70,7 @@ Kategori listesi, oynatma listelerinizdeki kanal gruplarını tutar. İlk satır
 
 ### Arama {#search}
 
-Kanal listesini süzmek için Ara alanına yazın, sonra süzmeyi uygulayıp devam etmek için Enter'a ya da Tab'a basın. Tüm kanallar içinde aramak program rehberine de bakar; bir program adıyla arama onu yayınlayan kanalları listeleyebilir. Alanı boşaltın ve tüm kategoriyi yeniden görmek için Enter'a basın.
+Kanal adını veya bir bölümünü yazıp Enter ya da Tab tuşuna basın. Kategorinin tamamını yeniden görmek için alanı temizleyip Enter tuşuna basın. Yayındaki bir programı adına göre aramak için Ctrl+W tuşlarına basıp filtreyi kullanın.
 
 ### Kanal listesi {#channel-list}
 
@@ -166,6 +166,8 @@ Rehber ayrıca zaman zaman kendiliğinden, sessizce tazelenir. Kanallar, rehberl
 İçe aktarılan rehber bir kanalda görünmüyorsa, kaynaklarınızdan birinin onu kapsadığını denetleyin, sonra yeniden içe aktarın. İçe aktarma ayrıntılı bir günlük tutar; bkz. Sorun giderme.
 
 ### Şimdi yayında {#whats-on-now}
+
+Saate Göre Yayın Akışı penceresinde yerel tarih ve saati girin. Tüm kanalları, sık kullanılanları veya adlandırılmış bir listeyi seçip Programları Göster düğmesine basın. Her satırda kanal, program adı, başlangıç ve bitiş saatleri yer alır. Seçili program için kayıt ya da hatırlatıcı ayarlayabilirsiniz.
 
 Dosya > Şimdi yayında (Ctrl+W) şu an tüm kanallarda yayında olan her programı "program - kanal" biçiminde listeler.
 
@@ -289,6 +291,8 @@ Kayıtlar aynı seçimi izler. Yalnızca ses kaydı duyacağınız tek parçayı
 
 ## Kayıtlar {#recordings}
 
+Kayıt kitaplığında bir dosya seçip kayıt sorunlarının zamanlarını açın. İstediğiniz sorun üzerinde Enter tuşuna basarak yerleşik oynatıcıyı o noktadan başlatın. Tahmini zamanlar ayrıca belirtilir. Bu işlem için dosyayla eşleşen bir kayıt günlüğü gerekir.
+
 Program, siz başka bir şey izlerken ya da hiçbir şey oynamazken herhangi bir kanalı dosyaya kaydedebilir.
 
 - Kayıtlar > Kaydı başlat (Ctrl+Shift+R) vurgulanan kanalı kaydeder. Yeniden basıldığında durur.
@@ -324,6 +328,8 @@ Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
 - Yalnızca ses (MP3 V0, FLAC, WAV, AAC M4A ya da Opus): yalnızca ses; radyo için kullanışlı.
 
 ### Zamanlanmış kayıtlar {#scheduled-recordings}
+
+Henüz başlamamış, yinelenen bir kaydın bağlam menüsünden Yalnızca Bu Kaydı Atla seçeneğini kullanın. Onaydan sonra sonraki kaydın saati bildirilir. Kaçırılmış, başarısız veya kısmi bir kaydı, program kanal arşivinde durduğu ve boş bir kayıt bağlantısı bulunduğu sürece ayrı bir dosyaya indirebilirsiniz.
 
 Gelecek bir programı kaydetmek için EPG'yi görüntüle..., Şimdi yayında ya da arama sonuçlarındaki bir program satırında bir program üzerinde Kayıt zamanla'yı seçin. Bir kanalda Kayıt zamanla, önce programı seçebilmeniz için onun rehberini açar.
 
@@ -486,6 +492,8 @@ Sorular, hata raporları ve sürüm haberleri:
 Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağlantı verir. Sorun bildirirken Yardım > Günlüğü ve hata ayıklama bilgilerini kopyala, izlenmesi için gereken ayrıntıları verir.
 
 ## Kişisel araçlar {#personal-tools}
+
+Adlandırılmış bir sık kullanılanlar listesinde kullanılamayan kanalı seçip Kullanılamayan Kanalı Yeniden Eşleştir komutunu kullanın. Yerine kullanacağınız kanalı arayıp seçimi onaylayın. Kanalın listedeki yeri korunur.
 
 Zamanlanmış kayıtlar, hatırlatıcılar ve kayıtlı arama bildirimleri için uygulamayı açık tutun. Hatırlatıcılar ve arama bildirimleri uyuyan bilgisayarı uyandırmaz. Zamanlanmış Kayıtlar bölümündeki seçenek açıksa kayıtlar Windows'ta uyandırma zamanlayıcısı isteyebilir.
 

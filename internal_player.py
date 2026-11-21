@@ -746,7 +746,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             raise InternalPlayerUnavailableError(_("Player window has been destroyed."))
         if not url:
             raise InternalPlayerUnavailableError(_("No stream URL provided."))
+        requested = None
         if not _retry and getattr(self, "_resume_prepared", None) is not None:
+            requested = getattr(self, "_explicit_recording_start_ms", None)
             self._resume_key, self._resume_start_ms, self._resume_metadata = self._resume_prepared
             self._resume_store = getattr(self, "_resume_prepared_store", "playback_bookmarks")
             self._resume_prepared = None
@@ -756,6 +758,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         # already queued must see that it has been replaced.
         self._vlc_generation = generation = getattr(self, "_vlc_generation", 0) + 1
         if not _retry:
+            self._explicit_recording_start_ms = None
+            self._recording_seek_when_ready = ((generation, requested, time.monotonic() + 30)
+                                               if requested is not None and requested > 0 else None)
             self._subtitle_timing_ms = 0
         self._subtitle_timing_pending = True
 
@@ -2148,7 +2153,23 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             name = str(state)
         return name.rsplit(".", 1)[-1].strip() or "Unknown"
 
+    def _apply_recording_seek(self, request):
+        generation, position, deadline = request
+        if generation != self._vlc_generation or self._manual_stop:
+            self._recording_seek_when_ready = None
+            return
+        length = self.player.get_length() if self.player.is_seekable() else 0
+        if length > 0:
+            self._recording_seek_when_ready = None
+            self._seek_media(target=min(position, length - 1))
+        elif time.monotonic() >= deadline:
+            self._recording_seek_when_ready = None
+            self._navigation_message(_("The player could not seek to the requested position."))
+
     def _on_timer(self, _event: wx.TimerEvent) -> None:
+        opening_seek = getattr(self, "_recording_seek_when_ready", None)
+        if opening_seek:
+            self._apply_recording_seek(opening_seek)
         poll_seek = getattr(self, '_poll_media_seek', None)
         if callable(poll_seek) and poll_seek():
             return
@@ -3155,7 +3176,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._resume_config = config
         self._resume_save = save
 
-    def prepare_vod_resume(self, channel) -> bool:
+    def prepare_vod_resume(self, channel, *, position_ms=None) -> bool:
         if getattr(self, "_resume_config", None) is not None:
             self._save_resume_checkpoint(force=True)
         self._resume_prepared = None
@@ -3165,7 +3186,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             config.get(store_key) if isinstance(config, dict) else {}, channel)
         entry = entries.get(key)
         start = 0
-        if entry is not None:
+        choice = None
+        if entry is not None and position_ms is None:
             choice = choose_resume(self, entry["position_ms"])
             if choice == "cancel":
                 return False
@@ -3197,6 +3219,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         # play() consumes this proposal only after the caller accepted it.
         self._resume_prepared = (key, start, playback_resume.metadata(channel))
         self._resume_prepared_store = store_key
+        self._explicit_recording_start_ms = position_ms
         return True
 
     def _save_resume_checkpoint(self, force=False) -> None:

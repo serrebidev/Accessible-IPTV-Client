@@ -18,17 +18,18 @@ def checked_weekdays(value):
     return sorted(set(value))
 
 
-def next_weekday_job(job, now):
+def next_weekday_job(job, now, *, weekdays=None):
     """Keep programme wall times. Skip nonexistent DST windows, never guess gaps."""
     import dvr
     from manual_schedule import local_candidates
-    days = checked_weekdays(job.get('weekdays', []))
+    days = checked_weekdays(job.get('weekdays', []) if weekdays is None else weekdays)
     if not days:
         return None
     pre = int(dvr._number(job.get('pre_padding_minutes'))) * 60
     post = int(dvr._number(job.get('post_padding_minutes'))) * 60
-    original = dt.datetime.fromtimestamp(job['start_ts'] + pre)
-    end = dt.datetime.fromtimestamp(job['stop_ts'] - post)
+    previous_start = float(job['start_ts'])
+    original = dt.datetime.fromtimestamp(previous_start + pre)
+    end = dt.datetime.fromtimestamp(float(job['stop_ts']) - post)
     offset = (end.date() - original.date()).days
     first = max(original.date() + dt.timedelta(days=1),
                 dt.datetime.fromtimestamp(now).date() - dt.timedelta(days=max(1, offset)))
@@ -45,7 +46,7 @@ def next_weekday_job(job, now):
             continue
         start = a[min(original.fold, len(a) - 1)] + original.second - pre
         stop = b[min(end.fold, len(b) - 1)] + end.second + post
-        if start <= job['start_ts'] or stop <= now or stop <= start:
+        if start <= previous_start or stop <= now or stop <= start:
             continue
         result = copy.deepcopy(job)
         result.update(id=uuid.uuid4().hex, start_ts=start, stop_ts=stop,

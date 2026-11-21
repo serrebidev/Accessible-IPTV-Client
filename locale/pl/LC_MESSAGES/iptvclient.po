@@ -744,6 +744,10 @@ msgstr "Wybierz kanał do odtworzenia:"
 msgid "Choose a command to change:"
 msgstr "Wybierz polecenie do zmiany:"
 
+#: favorite_collections.py:101
+msgid "Choose a different channel that is not already in this list."
+msgstr "Wybierz inny kanał, którego jeszcze nie ma na tej liście."
+
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
@@ -753,6 +757,10 @@ msgstr "Wybierz pozycję przed końcem materiału."
 #: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "Wybierz folder nagrań"
+
+#: personal_tools_ui.py:424
+msgid "Choose a replacement channel:"
+msgstr "Wybierz kanał zastępczy:"
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1959,6 +1967,10 @@ msgstr "Lokalny bufor transmisji"
 msgid "Local Live Buffer..."
 msgstr "Lokalny bufor transmisji…"
 
+#: personal_tools_ui.py:173
+msgid "Local date and time (YYYY-MM-DD HH:MM)"
+msgstr "Lokalna data i godzina (RRRR-MM-DD GG:MM)"
+
 #: main.py:4279
 msgid "Logs"
 msgstr "Dzienniki"
@@ -2138,6 +2150,10 @@ msgstr "Następny odcinek"
 msgid "Next Subtitle"
 msgstr "Następny napis"
 
+#: main.py:9314
+msgid "Next recording: {time}"
+msgstr "Następne nagranie: {time}"
+
 #: main.py:1693
 msgid "Next: {programme}"
 msgstr "Następnie: {programme}"
@@ -2252,6 +2268,10 @@ msgstr "Brak późniejszego napisu."
 msgid "No local live history is available."
 msgstr "Brak lokalnej historii transmisji na żywo."
 
+#: recording_library.py:167
+msgid "No matching recording log is available for this file."
+msgstr "Brak dziennika nagrania odpowiadającego temu plikowi."
+
 #: release_notes.py:40
 msgid "No notable changes."
 msgstr "Brak istotnych zmian."
@@ -2271,6 +2291,10 @@ msgstr "Obecnie nie jest nadawany żaden program."
 #: main.py:2872
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "Nie zaimportowano jeszcze żadnego przewodnika po programach, więc nie ma czego planować.\n\nNajpierw zaimportuj przewodnik (Plik > Menedżer EPG, a następnie Plik > Importuj EPG do bazy danych), po czym spróbuj ponownie."
+
+#: personal_tools_ui.py:272
+msgid "No programmes were found for this time and channel selection."
+msgstr "Nie znaleziono audycji dla wybranej godziny i kanałów."
 
 #: main.py:7044
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2329,6 +2353,10 @@ msgstr "Nie znaleziono tekstu napisów w tym pliku."
 #: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "Brak tekstu napisów do odczytania. Wczytaj plik w obsługiwanym formacie."
+
+#: main.py:9181
+msgid "No timed problems were found for this recording."
+msgstr "Dziennik tego nagrania nie zawiera problemów z oznaczeniem czasu."
 
 #: main.py:9123
 msgid "No timed problems were found in the newest recording log."
@@ -2606,6 +2634,10 @@ msgstr "Odtwórz teraz"
 msgid "Play from Beginning"
 msgstr "Odtwórz od początku"
 
+#: main.py:9201
+msgid "Play from This Time"
+msgstr "Odtwórz od tego miejsca"
+
 #: internal_player.py:447
 msgid "Play or Pause"
 msgstr "Odtwórz lub wstrzymaj"
@@ -2755,6 +2787,10 @@ msgstr "Przygotowywanie pobierania..."
 msgid "Preparing to restart..."
 msgstr "Przygotowywanie do ponownego uruchomienia..."
 
+#: main.py:9186
+msgid "Press Enter to play the recording from the selected time."
+msgstr "Naciśnij Enter, aby odtworzyć nagranie od wybranego miejsca."
+
 #: main.py:8938
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Naciśnij Escape, aby ukryć to okno; pobieranie będzie kontynuowane. Widok > Pokaż pobierane (Ctrl+Shift+D) przywraca je."
@@ -2793,6 +2829,19 @@ msgstr "Przetwarzanie nagrań…"
 #: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "Program - Kanał"
+
+#: dvr.py:202
+msgid "Program end time must be after the start time."
+msgstr "Godzina zakończenia audycji musi być późniejsza niż godzina jej rozpoczęcia."
+
+#: client_ui.py:126
+#: client_ui.py:280
+#: dialogs_misc.py:904
+#: personal_tools_ui.py:167
+#: personal_tools_ui.py:184
+#: personal_tools_ui.py:185
+msgid "Programme Guide by Time"
+msgstr "Program według godziny"
 
 #: planning_tools_ui.py:67
 #: planning_ui.py:291
@@ -3102,6 +3151,10 @@ msgstr "Nagranie zaktualizowane do powtórzenia."
 msgid "Recordings"
 msgstr "Nagrania"
 
+#: main.py:9453
+msgid "Recover from Channel Archive..."
+msgstr "Odzyskaj z archiwum kanału..."
+
 #: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9279
@@ -3136,6 +3189,10 @@ msgstr "Odświeżanie strumienia..."
 #: dialogs_misc.py:167
 msgid "Release history"
 msgstr "Historia wydań"
+
+#: personal_tools_ui.py:311
+msgid "Relink Missing Channel..."
+msgstr "Przypisz ponownie niedostępny kanał..."
 
 #: accessible_tools_ui.py:200
 msgid "Remember Volume for Each Channel"
@@ -3406,6 +3463,10 @@ msgstr "Wyniki wyszukiwania"
 msgid "Search descriptions too"
 msgstr "Szukaj także w opisach"
 
+#: personal_tools_ui.py:392
+msgid "Search for the replacement channel:"
+msgstr "Wyszukaj kanał zastępczy:"
+
 #: accessible_tools_ui.py:74
 msgid "Search guide channels:"
 msgstr "Szukaj kanałów przewodnika:"
@@ -3457,6 +3518,10 @@ msgstr "Najpierw wybierz kanał do nagrania."
 msgid "Select a live channel first."
 msgstr "Najpierw wybierz kanał na żywo."
 
+#: main.py:9332
+msgid "Select a missed, failed or partial recording."
+msgstr "Wybierz nagranie pominięte, nieudane lub częściowe."
+
 #: main.py:9598
 msgid "Select a programme first."
 msgstr "Najpierw wybierz program."
@@ -3488,6 +3553,10 @@ msgstr "Wybierz jedno oczekujące lub trwające nagranie, aby zmienić jego godz
 #: main.py:9224
 msgid "Select one pending recording that is not a series rule."
 msgstr "Wybierz jedno oczekujące nagranie, które nie jest regułą serialu."
+
+#: dvr.py:632
+msgid "Select one pending recurring recording."
+msgstr "Wybierz oczekujące nagranie cykliczne."
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3594,6 +3663,10 @@ msgstr "Pokaż odtwarzacz"
 msgid "Show Player on Enter"
 msgstr "Pokaż odtwarzacz po naciśnięciu Enter"
 
+#: personal_tools_ui.py:181
+msgid "Show Programmes"
+msgstr "Pokaż audycje"
+
 #: client_ui.py:207
 #: client_ui.py:351
 msgid "Show Stream URL"
@@ -3630,6 +3703,19 @@ msgstr "Wyłączanie anulowane. Automatyczne wyłączanie po nagraniach jest ter
 #: planning_tools.py:86
 msgid "Size (bytes)"
 msgstr "Rozmiar (bajty)"
+
+#: main.py:9307
+#: main.py:9450
+msgid "Skip This Occurrence"
+msgstr "Pomiń tylko ten termin"
+
+#: main.py:9306
+msgid "Skip this occurrence of {title}?"
+msgstr "Pominąć to nagranie audycji „{title}”?"
+
+#: main.py:9471
+msgid "Skipped"
+msgstr "Pominięto"
 
 #: internal_player.py:3290
 #: internal_player.py:3302
@@ -3677,6 +3763,15 @@ msgstr "Stalker Portal"
 #: playlist.py:3460
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
+
+#: client_epg.py:182
+#: client_epg.py:200
+msgid "Stalker portal client is not initialized."
+msgstr "Klient portalu Stalker nie został jeszcze zainicjowany."
+
+#: client_epg.py:179
+msgid "Stalker portal entry missing provider identifier."
+msgstr "We wpisie portalu Stalker brakuje identyfikatora dostawcy."
 
 #: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
@@ -3965,6 +4060,11 @@ msgstr "Zakładka nie jest już dostępna. Otwórz ponownie listę."
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "Osiągnięto limit zakładek. Najpierw usuń nieużywaną zakładkę."
 
+#: personal_tools_ui.py:432
+#: personal_tools_ui.py:441
+msgid "The channel cannot be identified unambiguously."
+msgstr "Nie można jednoznacznie zidentyfikować kanału."
+
 #: personal_tools_ui.py:272
 #: personal_tools_ui.py:439
 msgid "The channel list changed. Try again."
@@ -4166,9 +4266,17 @@ msgstr "Nie udało się odczytać harmonogramu nagrań. Oryginalny plik zachowan
 msgid "The recording start time has already passed."
 msgstr "Czas rozpoczęcia nagrania już minął."
 
+#: dvr.py:331
+msgid "The recording times are invalid. Check the recording schedule."
+msgstr "Godziny nagrania są nieprawidłowe. Sprawdź harmonogram nagrań."
+
 #: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "Folder kosza nagrań jest niedostępny."
+
+#: dvr.py:337
+msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
+msgstr "Nie udało się zapisać odzyskanego harmonogramu. Sprawdź harmonogram nagrań i wolne miejsce na dysku."
 
 #: programme_reminders.py:203
 msgid "The reminder cannot be postponed beyond the programme's end."
@@ -4232,6 +4340,10 @@ msgstr "Próg ostrzegania nie może być niższy od progu zatrzymania."
 msgid "This catch-up programme is already downloading."
 msgstr "Ta powtórka jest już pobierana."
 
+#: client_epg.py:150
+msgid "This channel does not provide catch-up streaming."
+msgstr "Ten kanał nie udostępnia archiwalnych audycji."
+
 #: main.py:3942
 msgid "This channel is not currently recording."
 msgstr "Ten kanał nie jest obecnie nagrywany."
@@ -4244,6 +4356,10 @@ msgstr "To polecenie jest dostępne podczas odtwarzania na żądanie."
 #: main.py:1794
 msgid "This entry cannot be added to Favorites."
 msgstr "Tej pozycji nie można dodać do ulubionych."
+
+#: personal_tools_ui.py:401
+msgid "This favourite is already available."
+msgstr "Ten ulubiony kanał jest już dostępny."
 
 #: main.py:8185
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
@@ -4280,6 +4396,14 @@ msgstr "Ten program jest już zaplanowany do nagrania."
 #: main.py:8421
 msgid "This programme is not available as catch-up content yet."
 msgstr "Ten program nie jest jeszcze dostępny jako powtórka."
+
+#: client_epg.py:152
+msgid "This programme is older than the catch-up window allows."
+msgstr "Audycja wykracza poza okres dostępny w archiwum kanału."
+
+#: main.py:9343
+msgid "This programme is unavailable in the channel archive."
+msgstr "Ta audycja nie jest dostępna w archiwum kanału."
 
 #: client_epg.py:194
 msgid "This programme's start and end times are invalid."
@@ -4331,6 +4455,10 @@ msgstr "Tytuł"
 msgid "Toggle Full Screen"
 msgstr "Przełącz tryb pełnoekranowy"
 
+#: personal_tools_ui.py:415
+msgid "Too many matches. Enter a more specific channel name."
+msgstr "Zbyt wiele wyników. Podaj dokładniejszą nazwę kanału."
+
 #: main.py:295
 #: main.py:298
 msgid "Topics"
@@ -4363,6 +4491,10 @@ msgstr "Typ"
 #: playlist.py:3135
 msgid "URL copied to the clipboard."
 msgstr "Adres URL skopiowano do schowka."
+
+#: client_epg.py:155
+msgid "Unable to construct catch-up URL for this programme."
+msgstr "Nie udało się utworzyć adresu URL archiwalnej audycji."
 
 #: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
@@ -4815,9 +4947,9 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} nie jest skonfigurowany dla systemu Linux."
 
-#: planning_ui.py:269
-msgid "{title}\n{channel}\nStarts: {time}"
-msgstr "{title}\n{channel}\nPoczątek: {time}"
+#: main.py:9172
+msgid "{time} (estimated) – {message}"
+msgstr "{time} (w przybliżeniu) – {message}"
 
 #: internal_player.py:822
 msgid "{title} - Built-in Player"
@@ -4830,6 +4962,10 @@ msgstr "{title} - {channel}"
 #: main.py:1865
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} do {end}"
+
+#: planning_ui.py:269
+msgid "{title}\n{channel}\nStarts: {time}"
+msgstr "{title}\n{channel}\nPoczątek: {time}"
 
 #: internal_player.py:2066
 msgid "{value}s buffer"

@@ -1,4 +1,6 @@
 """Check manually maintained Hungarian notes without changing release policy."""
+import gettext
+import struct
 from pathlib import Path
 import sys
 
@@ -9,9 +11,15 @@ from tools import i18n_tools  # noqa: E402
 
 def problems():
     messages = i18n_tools.extract_release_notes()
-    entries = {e['msgid']: e.get('msgstr', '') for e in i18n_tools.parse_po(
-        str(ROOT / 'locale/hu/LC_MESSAGES/release_notes.po')) if e.get('msgid')}
-    return [message for message in messages if not entries.get(message, '').strip()]
+    try:
+        entries = {e['msgid']: e.get('msgstr', '') for e in i18n_tools.parse_po(
+            str(ROOT / 'locale/hu/LC_MESSAGES/release_notes.po')) if e.get('msgid')}
+        with (ROOT / 'locale/hu/LC_MESSAGES/release_notes.mo').open('rb') as handle:
+            compiled = gettext.GNUTranslations(handle)
+    except (OSError, EOFError, ValueError, UnicodeError, struct.error):
+        return list(messages)
+    return [message for message in messages if not entries.get(message, '').strip()
+            or compiled.gettext(message) != entries[message]]
 
 
 if __name__ == '__main__':

@@ -71,7 +71,7 @@ La liste des catégories contient les groupes de chaînes de vos listes. Ses pre
 
 ### Recherche {#search}
 
-Tapez dans le champ Rechercher pour filtrer la liste des chaînes, puis appuyez sur Entrée ou Tab pour appliquer le filtre et continuer. Chercher dans Toutes les chaînes interroge aussi le guide de programmes ; une recherche sur le titre d'une émission peut donc lister les chaînes qui la diffusent. Videz le champ et appuyez sur Entrée pour revoir toute la catégorie.
+Saisissez tout ou partie du nom de la chaîne, puis appuyez sur Entrée ou Tab. Effacez le champ et appuyez sur Entrée pour retrouver toute la catégorie. Pour rechercher par titre une émission en cours, appuyez sur Ctrl+W et utilisez le filtre.
 
 ### La liste des chaînes {#channel-list}
 
@@ -167,6 +167,8 @@ Le guide est aussi rafraîchi automatiquement de temps en temps, en silence. Les
 Si un guide importé n'apparaît pas pour une chaîne, vérifiez qu'une de vos sources la couvre, puis importez à nouveau. L'importation écrit un journal détaillé ; voir Dépannage.
 
 ### À l'affiche maintenant {#whats-on-now}
+
+Dans le guide des programmes par horaire, indiquez la date et l’heure locales. Choisissez toutes les chaînes, les favoris ou une liste nommée, puis Afficher les émissions. Chaque ligne présente la chaîne, le titre et les heures de début et de fin. Vous pouvez programmer un enregistrement ou un rappel pour l’émission sélectionnée.
 
 Fichier > À l'affiche maintenant (Ctrl+W) liste chaque émission à l'antenne en ce moment sur toutes les chaînes, sous la forme « émission - chaîne ».
 
@@ -290,6 +292,8 @@ Les enregistrements suivent le même choix. Un enregistrement audio seul garde l
 
 ## Enregistrements {#recordings}
 
+Dans la bibliothèque d’enregistrements, sélectionnez un fichier et ouvrez la liste des incidents horodatés. Appuyez sur Entrée sur un incident pour lancer le lecteur intégré à cet endroit. Les positions estimées sont signalées. Le journal correspondant au fichier est nécessaire.
+
 Le programme peut enregistrer n'importe quelle chaîne dans un fichier pendant que vous regardez autre chose, ou sans rien lire du tout.
 
 - Enregistrements > Démarrer l'enregistrement (Ctrl+Shift+R) enregistre la chaîne surlignée. Appuyé de nouveau, il s'arrête.
@@ -325,6 +329,8 @@ Enregistrements > Format d'enregistrement choisit comment les enregistrements so
 - Audio seulement (MP3 V0, FLAC, WAV, AAC M4A ou Opus) : le son seul, utile pour la radio.
 
 ### Enregistrements programmés {#scheduled-recordings}
+
+Dans le menu contextuel d’un enregistrement récurrent en attente, choisissez Ignorer uniquement cette occurrence. Après confirmation, l’application indique le prochain horaire. Vous pouvez récupérer un enregistrement manqué, en échec ou partiel dans un fichier distinct si l’émission figure encore dans les archives et qu’une connexion d’enregistrement est disponible.
 
 Pour enregistrer une émission à venir, choisissez Programmer l'enregistrement sur une émission dans Afficher l'EPG…, À l'affiche maintenant ou une ligne d'émission dans les résultats de recherche. Programmer l'enregistrement sur une chaîne ouvre son guide pour que vous choisissiez d'abord l'émission.
 
@@ -487,6 +493,8 @@ Questions, rapports de bogues et nouvelles des versions :
 Aide > À propos… montre la version en cours d'exécution et lie les deux. Quand vous signalez un problème, Aide > Copier le journal et les informations de débogage donne les détails nécessaires pour le retrouver.
 
 ## Outils personnels {#personal-tools}
+
+Dans une liste de favoris nommée, sélectionnez une chaîne indisponible, puis Réassocier une chaîne indisponible. Recherchez sa remplaçante et confirmez votre choix. L’entrée conserve sa place dans la liste.
 
 Gardez l’application ouverte pour les enregistrements programmés, rappels et alertes de recherches enregistrées. Les rappels et alertes de recherche ne réveillent pas l’ordinateur. Les enregistrements peuvent demander un minuteur de réveil sous Windows si l’option décrite dans Enregistrements programmés est activée.
 

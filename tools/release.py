@@ -1151,6 +1151,11 @@ def main():
         update_version_file(next_version)
         update_changelog(next_version, release_notes)
         sync_translations()
+        # Hungarian is maintained separately. Report missing final bullets
+        # (including the merge suffix) without changing the release policy.
+        import check_hungarian_notes
+        for missing in check_hungarian_notes.problems():
+            print("Missing Hungarian release note:", missing)
         validate_ffmpeg_binary()
         clean_build_artifacts()
         run_pyinstaller()

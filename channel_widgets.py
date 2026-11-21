@@ -380,6 +380,8 @@ class _VirtualWhatsOnList(wx.ListCtrl):
         if 0 <= item < len(self.dialog.filtered_programs):
             prog = self.dialog.filtered_programs[item]
             title = prog.get("title") or _("(No title)")
-            channel = prog.get("channel_name") or _("Unknown")
+            channel = prog.get("channel_label") or prog.get("channel_name") or _("Unknown")
+            if prog.get("time_label"):
+                return f"{channel} – {title} – {prog['time_label']}"
             return f"{title} - {channel}"
         return ""

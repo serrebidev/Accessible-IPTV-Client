@@ -240,14 +240,13 @@ def _is_problem_line(line: str) -> bool:
     return bool(parsed) and parsed["level"] in _PROBLEM_LEVELS
 
 
-def _read_log_lines(path: str) -> List[str]:
-    """Every line of a recording log. ffmpeg ends stats lines with a bare CR."""
+def _read_log_lines(path):
+    """Stream complete lines including ffmpeg's CR-delimited progress records."""
     try:
-        with open(path, "rb") as handle:
-            data = handle.read()
+        with open(path, encoding="utf-8", errors="replace", newline=None) as handle:
+            yield from handle
     except OSError:
-        return []
-    return data.decode("utf-8", errors="replace").splitlines()
+        return
 
 
 _LOG_DATETIME_SUPPORT: Dict[str, bool] = {}
@@ -325,7 +324,7 @@ def count_log_problems(path: str) -> Dict[str, int]:
 _COUNT_KEYS = {"warning": "warnings", "error": "errors", "fatal": "fatals", "panic": "fatals"}
 
 
-def summarize_log(path: str) -> Dict[str, object]:
+def summarize_log(path: str, *, timed_limit=None) -> Dict[str, object]:
     """Group a recording log's problems by kind, split at the start of writing.
 
     ``phases["opening"]`` holds what ffmpeg reported before the output file was
@@ -342,14 +341,21 @@ def summarize_log(path: str) -> Dict[str, object]:
     output_opened = False
     timestamps = False
     last_kind: Optional[Dict[str, object]] = None
+    media_clock = ""
+    media_when = None
     for line in _read_log_lines(path) if path else []:
+        if line.strip() == _SUMMARY_MARKER:
+            break
         repeated = _REPEATED_RE.search(line)
         if repeated:
             if last_kind is not None:
                 extra = int(repeated.group(1))
                 last_kind["count"] += extra
                 if last_kind["offsets"]:
-                    last_kind["offsets"].extend([last_kind["offsets"][-1]] * extra)
+                    room = extra if timed_limit is None else min(extra, timed_limit - len(last_kind["offsets"]))
+                    last_kind["offsets"].extend([last_kind["offsets"][-1]] * room)
+                    if timed_limit is not None:
+                        last_kind["media"].extend([last_kind["media"][-1]] * room)
             continue
         parsed = parse_log_line(line)
         if parsed is None:
@@ -361,6 +367,12 @@ def summarize_log(path: str) -> Dict[str, object]:
             output_opened = True
             opened_at = parsed["when"]
             continue
+        if timed_limit is not None and opened_at and parsed["when"] and "time=" in message:
+            progress = _FFMPEG_TIME_RE.search(message)
+            if progress:
+                hours, minutes, seconds = progress.groups()
+                media_clock = _clock(int(hours) * 3600 + int(minutes) * 60 + float(seconds))
+                media_when = parsed["when"]
         if parsed["level"] not in _PROBLEM_LEVELS:
             last_kind = None
             continue
@@ -372,10 +384,15 @@ def summarize_log(path: str) -> Dict[str, object]:
         if kind is None:
             kind = {"level": level, "component": parsed["component"], "message": message,
                     "count": 0, "offsets": []}
+            if timed_limit is not None:
+                kind["media"] = []
             index[key] = kind
             phases[phase].append(kind)
         kind["count"] += 1
-        if phase == "recording" and opened_at is not None and parsed["when"] is not None:
+        if (phase == "recording" and opened_at is not None and parsed["when"] is not None
+                and (timed_limit is None or len(kind["offsets"]) < timed_limit)):
+            if timed_limit is not None:
+                kind["media"].append(media_clock if media_when and media_when <= parsed["when"] else "")
             kind["offsets"].append(max(0.0, (parsed["when"] - opened_at).total_seconds()))
         last_kind = kind
     return {"phases": phases, "output_opened": output_opened,
@@ -577,15 +594,10 @@ def recording_problem_times(
     if not log_path:
         return []
     try:
-        summary = summarize_log(log_path)
-    except Exception:
-        LOG.debug("recording_problem_times: could not read %s", log_path,
-                  exc_info=True)
+        summary = summarize_log(log_path, timed_limit=max(0, max_times))
+    except OSError:
         return []
     if not summary.get("timestamps"):
-        return []
-    data, opened_at = _read_log_and_opened_at(log_path)
-    if opened_at is None:
         return []
     results: List[Dict[str, object]] = []
     for kind in summary["phases"].get("recording") or []:
@@ -594,8 +606,7 @@ def recording_problem_times(
             continue
         placed = clocks[:max_times]
         stamps = [_clock(value) for value in placed]
-        media = [media_at_offset_from(data, opened_at, value)
-                 for value in placed]
+        media = kind["media"]
         jump_times = list(dict.fromkeys(
             media_time or clock_time
             for media_time, clock_time in zip(media, stamps)
@@ -607,6 +618,7 @@ def recording_problem_times(
             "clock_times": stamps,
             "media_times": [stamp for stamp in media if stamp],
             "jump_times": jump_times,
+            "positions": list(dict.fromkeys((m or c, not bool(m)) for m, c in zip(media, stamps))),
         })
     results.sort(key=lambda kind: (not kind["clock_times"], kind["clock_times"]))
     return results
@@ -1290,8 +1302,11 @@ class RecordingManager:
             in_use.add(os.path.normcase(rec.out_path))
         in_use = {os.path.normcase(path) for path in in_use}
 
+        used_logs = {os.path.normcase(recording_log_path(out_dir, path)) for path in in_use}
         def taken(path: str) -> bool:
-            return (os.path.normcase(path) in in_use or os.path.exists(path)
+            log = recording_log_path(out_dir, path)
+            return (os.path.normcase(log) in used_logs or os.path.exists(log)
+                    or os.path.normcase(path) in in_use or os.path.exists(path)
                     or os.path.exists(path + ".part"))
 
         candidate = os.path.join(out_dir, f"{base} - {stamp}.{ext}")
@@ -1404,9 +1419,10 @@ class RecordingManager:
         try:
             path = rec.out_path if os.path.exists(rec.out_path) else rec.written_path
             try:
-                size: Optional[int] = os.path.getsize(path)
+                stamp = os.stat(path)
             except OSError:
-                size = None
+                stamp = None
+            size = stamp.st_size if stamp else None
             if rec.finalize_timed_out or rec.detached:
                 ending = ("ffmpeg had to be stopped before it finished writing the file "
                           "(exit code {rc}); the file may be incomplete.").format(rc=rc)
@@ -1426,6 +1442,8 @@ class RecordingManager:
                 ending=ending,
                 summary=summarize_log(rec.log_path),
             )
+            if stamp:
+                lines.insert(2, f"# Media signature: {stamp.st_size} {stamp.st_mtime_ns}")
             with open(rec.log_path, "ab") as handle:
                 handle.write(("\n" + "\n".join(lines) + "\n").encode("utf-8", errors="replace"))
         except Exception:

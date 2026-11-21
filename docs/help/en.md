@@ -80,7 +80,7 @@ The category list holds the channel groups from your playlists. Its first rows a
 
 ### Searching {#search}
 
-Type in the Search field to filter the channel list, then press Enter or Tab to apply the filter and move on. Searching in All Channels also looks in the programme guide, so a search for a programme title can list the channels showing it. Clear the field and press Enter to see the whole category again.
+Enter a channel name or part of it in Search and press Enter or Tab. Clear the field and press Enter to show the whole category again. To find a programme currently on air by title, press Ctrl+W and use the Filter field.
 
 ### The channel list {#channel-list}
 
@@ -176,6 +176,8 @@ The guide is also refreshed automatically from time to time, silently. Channels 
 If an imported guide does not show up for a channel, check that the source covers that channel, then import again. The import writes a detailed log; see Troubleshooting.
 
 ### What's on Now {#whats-on-now}
+
+In Programme Guide by Time, enter a local date and time, choose all channels, favourites or a named list, then select Show Programmes. Each row gives the channel, title, start and end. Select a programme to schedule a recording or set a reminder.
 
 File > What's on Now (Ctrl+W) lists every programme on air right now across all channels, as "programme - channel".
 
@@ -299,6 +301,8 @@ Recordings follow the same choice. An audio-only recording keeps the one track y
 
 ## Recordings {#recordings}
 
+In the Recording Library, select a file and open Recording Problem Times. Select a problem and press Enter to start the built-in player at that point. Estimated positions are marked. This action requires a matching recording log.
+
 The program can record any channel to a file while you watch something else, or with nothing playing at all.
 
 - Recordings > Start Recording (Ctrl+Shift+R) records the highlighted channel. Pressed again, it stops.
@@ -334,6 +338,8 @@ Recordings > Recording Format chooses how recordings are saved:
 - Audio only (MP3 V0, FLAC, WAV, AAC M4A or Opus): the sound only, useful for radio.
 
 ### Scheduled recordings {#scheduled-recordings}
+
+In Scheduled Recordings, open a pending recurring recording’s context menu and choose Skip This Occurrence. The confirmation gives the next recording time. For a missed, failed or partial recording, Recover from Channel Archive downloads a separate copy if the programme is still available and the recording connection limit allows it.
 
 To record a programme in the future, choose Schedule Recording on a programme in View EPG, What's on Now or a programme row in the search results. Schedule Recording on a channel opens its guide so you can choose the programme first.
 
@@ -496,6 +502,8 @@ Questions, bug reports and release news:
 Help > About shows the version you are running and links to both. When you report a problem, Help > Copy Log and Debug Information gives the details needed to track it down.
 
 ## Personal tools {#personal-tools}
+
+In a named favourite list, select an unavailable channel and choose Relink Missing Channel. Search for its replacement and confirm your choice. The entry keeps its position in the list.
 
 Keep the application open for recording schedules, reminders and saved-search alerts. Reminders and search alerts do not wake a sleeping computer. Scheduled recordings can request a wake timer on Windows when the option described under Scheduled recordings is enabled.
 

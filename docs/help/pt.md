@@ -71,7 +71,7 @@ A lista de categorias contém os grupos de canais das suas listas. Suas primeira
 
 ### Pesquisa {#search}
 
-Digite no campo Pesquisar para filtrar a lista de canais, e pressione Enter ou Tab para aplicar o filtro e seguir. Pesquisar em Todos os canais também consulta o guia de programação, então uma pesquisa pelo título de um programa pode listar os canais que o exibem. Esvazie o campo e pressione Enter para ver a categoria inteira de novo.
+Digite o nome do canal ou parte dele e pressione Enter ou Tab. Limpe o campo e pressione Enter para exibir toda a categoria novamente. Para buscar um programa no ar pelo título, pressione Ctrl+W e use o filtro.
 
 ### A lista de canais {#channel-list}
 
@@ -167,6 +167,8 @@ O guia também é atualizado automaticamente de tempos em tempos, em silêncio. 
 Se um guia importado não aparece para um canal, confira se uma das suas fontes o cobre, e importe de novo. A importação escreve um registro detalhado; veja Solução de problemas.
 
 ### No ar agora {#whats-on-now}
+
+No guia de programação por horário, informe a data e a hora locais. Selecione todos os canais, os favoritos ou uma lista nomeada e escolha Mostrar programas. Cada linha apresenta o canal, o título e os horários de início e término. Você pode agendar uma gravação ou definir um lembrete para o programa selecionado.
 
 Arquivo > No ar agora (Ctrl+W) lista todo programa no ar agora em todos os canais, como "programa - canal".
 
@@ -290,6 +292,8 @@ As gravações seguem a mesma escolha. Uma gravação de só áudio mantém a ú
 
 ## Gravações {#recordings}
 
+Na biblioteca de gravações, selecione um arquivo e abra os horários dos problemas de gravação. Pressione Enter em uma ocorrência para iniciar o reprodutor integrado a partir desse ponto. As posições estimadas são identificadas. É necessário o registro correspondente ao arquivo.
+
 O programa pode gravar qualquer canal para um arquivo enquanto você assiste outra coisa, ou sem nada reproduzindo.
 
 - Gravações > Iniciar gravação (Ctrl+Shift+R) grava o canal destacado. Pressionado de novo, ela para.
@@ -325,6 +329,8 @@ Gravações > Formato de gravação escolhe como as gravações são salvas:
 - Somente áudio (MP3 V0, FLAC, WAV, AAC M4A ou Opus): só o som, útil para rádio.
 
 ### Gravações agendadas {#scheduled-recordings}
+
+No menu de contexto de uma gravação recorrente pendente, escolha Pular apenas esta ocorrência. Após a confirmação, o programa informa a próxima gravação. É possível recuperar uma gravação perdida, incompleta ou com falha em um arquivo separado se o programa ainda estiver no arquivo do canal e houver uma conexão de gravação disponível.
 
 Para gravar um programa futuro, escolha Agendar gravação sobre um programa em Exibir EPG…, No ar agora ou uma linha de programa nos resultados da pesquisa. Agendar gravação sobre um canal abre o guia dele para que você escolha primeiro o programa.
 
@@ -487,6 +493,8 @@ Perguntas, relatórios de erro e notícias de versões:
 Ajuda > Sobre… mostra a versão em uso e linka ambos. Ao relatar um problema, Ajuda > Copiar registo e informações de depuração dá os detalhes necessários para rastreá-lo.
 
 ## Ferramentas pessoais {#personal-tools}
+
+Em uma lista de favoritos nomeada, selecione um canal indisponível e escolha Vincular novamente o canal indisponível. Busque o canal substituto e confirme. A posição na lista é preservada.
 
 Mantenha o aplicativo aberto para gravações agendadas, lembretes e alertas de pesquisas salvas. Lembretes e alertas de pesquisa não reativam o computador. As gravações podem solicitar um temporizador de ativação no Windows se a opção descrita em Gravações agendadas estiver ativada.
 

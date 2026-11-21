@@ -147,12 +147,12 @@ class EpgRoutingMixin:
 
         if end_dt < now:
             if not self._channel_has_catchup(channel):
-                raise ProviderError("This channel does not provide catch-up streaming.")
+                raise ProviderError(_("This channel does not provide catch-up streaming."))
             if not self._within_catchup_window(channel, start_dt):
-                raise ProviderError("This programme is older than the catch-up window allows.")
+                raise ProviderError(_("This programme is older than the catch-up window allows."))
             url = self._resolve_catchup_url(channel, start_dt, end_dt)
             if not url:
-                raise ProviderError("Unable to construct catch-up URL for this programme.")
+                raise ProviderError(_("Unable to construct catch-up URL for this programme."))
             return url, True
 
         # Future programme: return live stream so playback starts when available.
@@ -176,10 +176,10 @@ class EpgRoutingMixin:
 
         if provider_type == "stalker":
             if not provider_id:
-                raise ProviderError("Stalker portal entry missing provider identifier.")
+                raise ProviderError(_("Stalker portal entry missing provider identifier."))
             client = self.provider_clients.get(provider_id)
             if not client:
-                raise ProviderError("Stalker portal client is not initialized.")
+                raise ProviderError(_("Stalker portal client is not initialized."))
             pdata = channel.get("provider-data") or {}
             url = client.resolve_stream(pdata)
             return url
@@ -197,7 +197,7 @@ class EpgRoutingMixin:
         if provider_type == "stalker" and provider_id:
             client = self.provider_clients.get(provider_id)
             if not client:
-                raise ProviderError("Stalker portal client is not initialized.")
+                raise ProviderError(_("Stalker portal client is not initialized."))
             pdata = channel.get("provider-data") or {}
             start_local = utc_to_local(start_dt)
             duration = max(1, int((end_dt - start_dt).total_seconds() // 60))

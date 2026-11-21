@@ -158,6 +158,60 @@ def checked_path(directory, row, active_paths=()):
     return path
 
 
+def problem_log(directory, row, active_paths=()):
+    """Select a finalised log only when its own footer identifies this media."""
+    import recorder
+    path = checked_path(directory, row, active_paths)
+    base = path.with_suffix("") if path.suffix == ".part" else path
+    log = Path(recorder.recording_log_path(str(path.parent), str(base)))
+    unavailable = _("No matching recording log is available for this file.")
+    if log.is_symlink() or log.resolve() != log or not log.is_file():
+        raise ValueError(unavailable)
+    # The fixed-size summary header can precede a long list of errors. Seek
+    # backwards in blocks so ordinary recordings read only one small block.
+    with log.open("rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        end = handle.tell()
+        overlap = b""
+        marker = recorder._SUMMARY_MARKER.encode()
+        while end:
+            start = max(0, end - 65536)
+            handle.seek(start)
+            data = handle.read(end - start) + overlap
+            offset = data.rfind(marker)
+            if offset >= 0:
+                handle.seek(start + offset)
+                header = [handle.readline(8192).decode("utf-8", "replace").rstrip() for _ in range(5)]
+                break
+            overlap = data[:len(marker) - 1]
+            end = start
+        else:
+            raise ValueError(unavailable)
+    if len(header) < 3 or not header[1].startswith("# File: "):
+        raise ValueError(unavailable)
+    recorded = Path(header[1][8:]).resolve()
+    if recorded != path:
+        raise ValueError(unavailable)
+    if header[2].startswith("# Media signature: "):
+        if header[2] != f"# Media signature: {row['size']} {row['modified_ns']}":
+            raise ValueError(unavailable)
+    else:
+        # Legacy summaries include the final path and end time, to the second.
+        # A later replacement of this file must not inherit its old diagnostics.
+        try:
+            started = datetime.datetime.strptime(header[2], "# Started: %Y-%m-%d %H:%M:%S")
+            ended = datetime.datetime.strptime(header[3].split(" (ran for ", 1)[0], "# Ended: %Y-%m-%d %H:%M:%S")
+        except ValueError:
+            raise ValueError(unavailable) from None
+        # Compare local wall times, including both folds of a clock change.
+        earliest = min(started.replace(fold=f).timestamp() for f in (0, 1))
+        latest = max(ended.replace(fold=f).timestamp() for f in (0, 1))
+        modified = row["modified_ns"] / 1_000_000_000
+        if not earliest - 2 <= modified <= latest + 2 or log.stat().st_mtime_ns < row["modified_ns"]:
+            raise ValueError(unavailable)
+    return str(log)
+
+
 def delete(directory, row, active_paths=()):
     with _lock_for(directory):
         path = checked_path(directory, row, active_paths)
@@ -215,6 +269,27 @@ def trash(directory, row, active_paths=()):
         # Do not report a successful media move as failed because of cleanup.
 
 
+def _trash_row(directory, folder, warnings=None):
+    if folder.is_symlink() or folder.resolve() != folder or not folder.is_dir() or not all(c in "0123456789abcdef" for c in folder.name) or len(folder.name) != 32:
+        return None
+    manifest = _read(folder, warnings=warnings)
+    name, info = manifest.get("file"), manifest.get("entry")
+    if not isinstance(name, str) or Path(name).name != name or name in (".", "..") or not isinstance(info, dict):
+        return None
+    path = folder / name
+    if path.is_symlink() or path.resolve() != path or not path.is_file():
+        return None
+    try:
+        stamp = path.stat()
+    except OSError:
+        return None
+    if (info.get("size"), info.get("modified_ns")) != (stamp.st_size, stamp.st_mtime_ns):
+        return None
+    return dict(_clean_info(info), path=str(path), trash_id=folder.name, original_name=name,
+                directory=str(Path(directory).resolve()),
+                date=datetime.datetime.fromtimestamp(stamp.st_mtime).strftime("%Y-%m-%d %H:%M"))
+
+
 def scan_trash(directory, *, canceled=lambda: False, warnings=None):
     root = _trash_root(directory)
     if not root.exists():
@@ -223,24 +298,9 @@ def scan_trash(directory, *, canceled=lambda: False, warnings=None):
     for folder in root.iterdir():
         if canceled():
             return []
-        if folder.is_symlink() or folder.resolve() != folder or not folder.is_dir() or not all(c in "0123456789abcdef" for c in folder.name) or len(folder.name) != 32:
-            continue
-        manifest = _read(folder, warnings=warnings)
-        name, info = manifest.get("file"), manifest.get("entry")
-        if not isinstance(name, str) or Path(name).name != name or name in (".", "..") or not isinstance(info, dict):
-            continue
-        path = folder / name
-        if path.is_symlink() or path.resolve() != path or not path.is_file():
-            continue
-        try:
-            stamp = path.stat()
-        except OSError:
-            continue
-        if (info.get("size"), info.get("modified_ns")) != (stamp.st_size, stamp.st_mtime_ns):
-            continue
-        rows.append(dict(_clean_info(info), path=str(path), trash_id=folder.name, original_name=name,
-                         directory=str(Path(directory).resolve()),
-                         date=datetime.datetime.fromtimestamp(stamp.st_mtime).strftime("%Y-%m-%d %H:%M")))
+        row = _trash_row(directory, folder, warnings)
+        if row is not None:
+            rows.append(row)
     return sorted(rows, key=lambda row: (-row["modified_ns"], row["path"]))
 
 
@@ -252,7 +312,7 @@ def _checked_trash(directory, row):
     folder = root / identity
     if folder.is_symlink():
         raise ValueError(_("The recording file is no longer available."))
-    current = next((item for item in scan_trash(directory) if item["trash_id"] == identity), None)
+    current = _trash_row(directory, folder)
     if current is None or current != row:
         raise ValueError(_("The recording file changed. Refresh the library."))
     return folder, Path(current["path"])

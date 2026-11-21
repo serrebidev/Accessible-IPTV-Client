@@ -71,7 +71,7 @@ L'elenco delle categorie contiene i gruppi di canali delle playlist. Le sue prim
 
 ### Ricerca {#search}
 
-Digitare nel campo Cerca per filtrare l'elenco dei canali, poi premere Invio o Tab per applicare il filtro e proseguire. Cercare in Tutti i canali interroga anche la guida ai programmi, quindi una ricerca per titolo di trasmissione può elencare i canali che la trasmettono. Svuotare il campo e premere Invio per rivedere tutta la categoria.
+Digitare il nome del canale, anche parziale, e premere Invio o Tab. Svuotare il campo e premere Invio per visualizzare nuovamente l’intera categoria. Per cercare per titolo un programma in onda, premere Ctrl+W e usare il filtro.
 
 ### L'elenco dei canali {#channel-list}
 
@@ -167,6 +167,8 @@ La guida viene anche rinfrescata automaticamente di tanto in tanto, in silenzio.
 Se una guida importata non compare per un canale, controllare che una delle sorgenti lo copra, poi importare di nuovo. L'importazione scrive un registro dettagliato; vedere Risoluzione dei problemi.
 
 ### In onda ora {#whats-on-now}
+
+Nella guida ai programmi per orario, inserire la data e l’ora locali. Scegliere tutti i canali, i preferiti o un elenco con nome, quindi Mostra programmi. Ogni riga indica canale, titolo, inizio e fine. Per il programma selezionato è possibile pianificare una registrazione o un promemoria.
 
 File > In onda ora (Ctrl+W) elenca ogni trasmissione in onda adesso su tutti i canali, come "trasmissione - canale".
 
@@ -290,6 +292,8 @@ Le registrazioni seguono la stessa scelta. Una registrazione di solo audio tiene
 
 ## Registrazioni {#recordings}
 
+Nella raccolta delle registrazioni, selezionare un file e aprire l’elenco degli orari dei problemi. Premere Invio su una voce per avviare il lettore integrato da quel punto. Le posizioni stimate sono segnalate. È necessario il registro corrispondente al file.
+
 Il programma può registrare qualsiasi canale in un file mentre si guarda altro, o senza nulla in riproduzione.
 
 - Registrazioni > Avvia registrazione (Ctrl+Shift+R) registra il canale evidenziato. Premuto di nuovo, si ferma.
@@ -325,6 +329,8 @@ Registrazioni > Formato di registrazione sceglie come sono salvate le registrazi
 - Solo audio (MP3 V0, FLAC, WAV, AAC M4A o Opus): solo il suono, utile per la radio.
 
 ### Registrazioni programmate {#scheduled-recordings}
+
+Nel menu contestuale di una registrazione periodica in attesa, scegliere Salta solo questa volta. Dopo la conferma viene indicata la prossima registrazione. Se una registrazione è mancata, non è riuscita o è parziale, è possibile recuperarla in un file separato finché il programma è presente nell’archivio del canale e vi è una connessione di registrazione libera.
 
 Per registrare una trasmissione futura, scegliere Programma registrazione su una trasmissione in Visualizza EPG…, In onda ora o una riga di trasmissione nei risultati della ricerca. Programma registrazione su un canale apre la sua guida per scegliere prima la trasmissione.
 
@@ -487,6 +493,8 @@ Domande, segnalazioni di errori e notizie delle versioni:
 Aiuto > Informazioni… mostra la versione in uso e collega entrambi. Quando si segnala un problema, Aiuto > Copia registro e informazioni di debug dà i dettagli necessari per trovarlo.
 
 ## Strumenti personali {#personal-tools}
+
+In un elenco di preferiti con nome, selezionare un canale non disponibile e scegliere Riassocia il canale non disponibile. Cercare il sostituto e confermare la scelta. La posizione nell’elenco viene mantenuta.
 
 Lasciare l’applicazione aperta per registrazioni programmate, promemoria e avvisi delle ricerche salvate. Promemoria e avvisi di ricerca non riattivano il computer. Le registrazioni possono richiedere un timer di riattivazione in Windows se è abilitata l’opzione descritta in Registrazioni programmate.
 

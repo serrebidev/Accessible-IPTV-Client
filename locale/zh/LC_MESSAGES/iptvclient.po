@@ -744,6 +744,10 @@ msgstr "选择要播放的频道："
 msgid "Choose a command to change:"
 msgstr "选择要更改的命令："
 
+#: favorite_collections.py:101
+msgid "Choose a different channel that is not already in this list."
+msgstr "请选择尚未列入此列表的其他频道。"
+
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
@@ -753,6 +757,10 @@ msgstr "请选择媒体结束之前的位置。"
 #: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "选择录制文件夹"
+
+#: personal_tools_ui.py:424
+msgid "Choose a replacement channel:"
+msgstr "选择替代频道："
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1959,6 +1967,10 @@ msgstr "本地直播缓冲区"
 msgid "Local Live Buffer..."
 msgstr "本地直播缓冲区…"
 
+#: personal_tools_ui.py:173
+msgid "Local date and time (YYYY-MM-DD HH:MM)"
+msgstr "本地日期和时间（YYYY-MM-DD HH:MM）"
+
 #: main.py:4279
 msgid "Logs"
 msgstr "日志"
@@ -2138,6 +2150,10 @@ msgstr "下一集"
 msgid "Next Subtitle"
 msgstr "下一条字幕"
 
+#: main.py:9314
+msgid "Next recording: {time}"
+msgstr "下次录制时间：{time}"
+
 #: main.py:1693
 msgid "Next: {programme}"
 msgstr "接下来：{programme}"
@@ -2252,6 +2268,10 @@ msgstr "没有更晚的字幕。"
 msgid "No local live history is available."
 msgstr "没有可用的本地直播历史内容。"
 
+#: recording_library.py:167
+msgid "No matching recording log is available for this file."
+msgstr "找不到与此文件匹配的录制日志。"
+
 #: release_notes.py:40
 msgid "No notable changes."
 msgstr "没有值得注意的更改。"
@@ -2271,6 +2291,10 @@ msgstr "当前没有正在播出的节目。"
 #: main.py:2872
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "尚未导入任何节目指南，因此没有可安排的内容。\n\n请先导入指南（文件 > EPG 管理器，然后是 文件 > 将 EPG 导入数据库），再重新尝试安排。"
+
+#: personal_tools_ui.py:272
+msgid "No programmes were found for this time and channel selection."
+msgstr "在所选时间和频道中未找到节目。"
 
 #: main.py:7044
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2329,6 +2353,10 @@ msgstr "此文件中未找到字幕文本。"
 #: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "没有可朗读的字幕文本。请加载受支持格式的字幕文件。"
+
+#: main.py:9181
+msgid "No timed problems were found for this recording."
+msgstr "此录制的日志中没有带时间标记的问题。"
 
 #: main.py:9123
 msgid "No timed problems were found in the newest recording log."
@@ -2606,6 +2634,10 @@ msgstr "立即播放"
 msgid "Play from Beginning"
 msgstr "从头播放"
 
+#: main.py:9201
+msgid "Play from This Time"
+msgstr "从此处播放"
+
 #: internal_player.py:447
 msgid "Play or Pause"
 msgstr "播放或暂停"
@@ -2755,6 +2787,10 @@ msgstr "正在准备下载..."
 msgid "Preparing to restart..."
 msgstr "正在准备重新启动..."
 
+#: main.py:9186
+msgid "Press Enter to play the recording from the selected time."
+msgstr "按回车键从选定的位置播放录制文件。"
+
 #: main.py:8938
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "按 Esc 隐藏此窗口；下载会继续。视图 > 显示下载 (Ctrl+Shift+D) 可重新显示。"
@@ -2793,6 +2829,19 @@ msgstr "正在处理录制内容…"
 #: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "节目 - 频道"
+
+#: dvr.py:202
+msgid "Program end time must be after the start time."
+msgstr "节目的结束时间必须晚于开始时间。"
+
+#: client_ui.py:126
+#: client_ui.py:280
+#: dialogs_misc.py:904
+#: personal_tools_ui.py:167
+#: personal_tools_ui.py:184
+#: personal_tools_ui.py:185
+msgid "Programme Guide by Time"
+msgstr "按时间查看节目指南"
 
 #: planning_tools_ui.py:67
 #: planning_ui.py:291
@@ -3102,6 +3151,10 @@ msgstr "录音已更新以重复。"
 msgid "Recordings"
 msgstr "录制"
 
+#: main.py:9453
+msgid "Recover from Channel Archive..."
+msgstr "从频道回看中补录..."
+
 #: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9279
@@ -3136,6 +3189,10 @@ msgstr "正在刷新流..."
 #: dialogs_misc.py:167
 msgid "Release history"
 msgstr "版本历史记录"
+
+#: personal_tools_ui.py:311
+msgid "Relink Missing Channel..."
+msgstr "重新关联不可用的频道..."
 
 #: accessible_tools_ui.py:200
 msgid "Remember Volume for Each Channel"
@@ -3406,6 +3463,10 @@ msgstr "搜索结果"
 msgid "Search descriptions too"
 msgstr "同时搜索描述"
 
+#: personal_tools_ui.py:392
+msgid "Search for the replacement channel:"
+msgstr "搜索替代频道："
+
 #: accessible_tools_ui.py:74
 msgid "Search guide channels:"
 msgstr "搜索指南频道："
@@ -3457,6 +3518,10 @@ msgstr "请先选择要录制的频道。"
 msgid "Select a live channel first."
 msgstr "请先选择直播频道。"
 
+#: main.py:9332
+msgid "Select a missed, failed or partial recording."
+msgstr "请选择一项错过、失败或只完成了部分内容的录制。"
+
 #: main.py:9598
 msgid "Select a programme first."
 msgstr "请先选择一个节目。"
@@ -3488,6 +3553,10 @@ msgstr "请选择一条待开始或正在进行的录制，以编辑其时间。
 #: main.py:9224
 msgid "Select one pending recording that is not a series rule."
 msgstr "请选择一项非剧集规则的待录制任务。"
+
+#: dvr.py:632
+msgid "Select one pending recurring recording."
+msgstr "请选择一项尚未开始的定期录制。"
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3594,6 +3663,10 @@ msgstr "显示播放器"
 msgid "Show Player on Enter"
 msgstr "按 Enter 时显示播放器"
 
+#: personal_tools_ui.py:181
+msgid "Show Programmes"
+msgstr "显示节目"
+
 #: client_ui.py:207
 #: client_ui.py:351
 msgid "Show Stream URL"
@@ -3630,6 +3703,19 @@ msgstr "已取消关机。录制完成后自动关机现已关闭。"
 #: planning_tools.py:86
 msgid "Size (bytes)"
 msgstr "大小（字节）"
+
+#: main.py:9307
+#: main.py:9450
+msgid "Skip This Occurrence"
+msgstr "仅跳过本次录制"
+
+#: main.py:9306
+msgid "Skip this occurrence of {title}?"
+msgstr "是否跳过本次“{title}”的录制？"
+
+#: main.py:9471
+msgid "Skipped"
+msgstr "已跳过"
 
 #: internal_player.py:3290
 #: internal_player.py:3302
@@ -3677,6 +3763,15 @@ msgstr "Stalker Portal"
 #: playlist.py:3460
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
+
+#: client_epg.py:182
+#: client_epg.py:200
+msgid "Stalker portal client is not initialized."
+msgstr "Stalker 门户客户端尚未初始化。"
+
+#: client_epg.py:179
+msgid "Stalker portal entry missing provider identifier."
+msgstr "Stalker 门户条目中缺少服务提供商标识。"
 
 #: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
@@ -3965,6 +4060,11 @@ msgstr "此书签已不可用。请重新打开列表。"
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "已达到书签数量上限。请先删除不再使用的书签。"
 
+#: personal_tools_ui.py:432
+#: personal_tools_ui.py:441
+msgid "The channel cannot be identified unambiguously."
+msgstr "无法唯一确定该频道。"
+
 #: personal_tools_ui.py:272
 #: personal_tools_ui.py:439
 msgid "The channel list changed. Try again."
@@ -4166,9 +4266,17 @@ msgstr "无法读取录制计划。原始文件已保存在 {path}。添加新�
 msgid "The recording start time has already passed."
 msgstr "录制开始时间已过。"
 
+#: dvr.py:331
+msgid "The recording times are invalid. Check the recording schedule."
+msgstr "录制时间无效。请检查录制计划。"
+
 #: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "录制回收站文件夹不可用。"
+
+#: dvr.py:337
+msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
+msgstr "无法保存恢复的录制计划。请检查计划和可用磁盘空间。"
 
 #: programme_reminders.py:203
 msgid "The reminder cannot be postponed beyond the programme's end."
@@ -4232,6 +4340,10 @@ msgstr "警告阈值不得低于停止阈值。"
 msgid "This catch-up programme is already downloading."
 msgstr "该回看节目已在下载中。"
 
+#: client_epg.py:150
+msgid "This channel does not provide catch-up streaming."
+msgstr "此频道不提供节目回看。"
+
 #: main.py:3942
 msgid "This channel is not currently recording."
 msgstr "此频道当前未在录制。"
@@ -4244,6 +4356,10 @@ msgstr "此命令可在点播播放期间使用。"
 #: main.py:1794
 msgid "This entry cannot be added to Favorites."
 msgstr "无法将此条目添加到收藏。"
+
+#: personal_tools_ui.py:401
+msgid "This favourite is already available."
+msgstr "此收藏频道已可用。"
 
 #: main.py:8185
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
@@ -4280,6 +4396,14 @@ msgstr "此节目已被安排录制。"
 #: main.py:8421
 msgid "This programme is not available as catch-up content yet."
 msgstr "该节目暂不支持回看。"
+
+#: client_epg.py:152
+msgid "This programme is older than the catch-up window allows."
+msgstr "此节目已超出频道的回看期限。"
+
+#: main.py:9343
+msgid "This programme is unavailable in the channel archive."
+msgstr "频道回看中没有此节目。"
 
 #: client_epg.py:194
 msgid "This programme's start and end times are invalid."
@@ -4331,6 +4455,10 @@ msgstr "标题"
 msgid "Toggle Full Screen"
 msgstr "切换全屏"
 
+#: personal_tools_ui.py:415
+msgid "Too many matches. Enter a more specific channel name."
+msgstr "匹配结果过多。请输入更准确的频道名称。"
+
 #: main.py:295
 #: main.py:298
 msgid "Topics"
@@ -4363,6 +4491,10 @@ msgstr "类型"
 #: playlist.py:3135
 msgid "URL copied to the clipboard."
 msgstr "已将 URL 复制到剪贴板。"
+
+#: client_epg.py:155
+msgid "Unable to construct catch-up URL for this programme."
+msgstr "无法生成此节目的回看链接。"
 
 #: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
@@ -4815,9 +4947,9 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} 未针对 Linux 配置。"
 
-#: planning_ui.py:269
-msgid "{title}\n{channel}\nStarts: {time}"
-msgstr "{title}\n{channel}\n开始：{time}"
+#: main.py:9172
+msgid "{time} (estimated) – {message}"
+msgstr "{time}（估计时间）– {message}"
 
 #: internal_player.py:822
 msgid "{title} - Built-in Player"
@@ -4830,6 +4962,10 @@ msgstr "{title} - {channel}"
 #: main.py:1865
 msgid "{title}, {start} to {end}"
 msgstr "{title}、{start} 至 {end}"
+
+#: planning_ui.py:269
+msgid "{title}\n{channel}\nStarts: {time}"
+msgstr "{title}\n{channel}\n开始：{time}"
 
 #: internal_player.py:2066
 msgid "{value}s buffer"

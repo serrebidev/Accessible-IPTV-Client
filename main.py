@@ -151,6 +151,14 @@ _INTERNAL_PLAYER_IMPORT_ERROR = None
 # loaded playlist.
 ALL_PLAYLISTS_SCOPE = ""
 
+def _archive_padding(config, show):
+    saved = show.get("schedule_padding") if show.get("from_schedule") else None
+    if saved is not None:
+        return tuple(max(0, int(value or 0)) for value in saved)
+    return (max(0, int(config.get("recording_pre_padding_minutes", 0) or 0)),
+            max(0, int(config.get("recording_post_padding_minutes", 2) or 0)))
+
+
 def _source_scope_id(src) -> str:
     """The stable id that tags a playlist's channels for the scope filter."""
     if isinstance(src, dict):
@@ -3314,37 +3322,56 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                           wx.OK | wx.ICON_INFORMATION)
             return
 
-        duplicate = self._find_duplicate_scheduled_job(job)
-        if duplicate:
-            try:
-                updated = repeat and self._ensure_dvr_scheduler().set_repeat(str(duplicate["id"]), repeat)
-            except (OSError, ValueError) as error:
-                message_box(_("Could not schedule recording:\n{error}").format(error=error),
-                            _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
-                return
-            if updated:
-                message_box(_("Recording updated to repeat."), _("Schedule Recording"),
-                            wx.OK | wx.ICON_INFORMATION)
-                return
-            message_box(_("This programme is already scheduled to record."),
-                          _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION)
-            return
-
+        from background_tasks import start_operation
         import recording_limits
-        warning = recording_limits.warning(self.config, channel, job["start_ts"], job["stop_ts"],
-                                            self._ensure_dvr_scheduler().list_jobs(include_done=False))
-        if warning:
-            from recording_conflicts_ui import confirm_conflicts
-            if not confirm_conflicts(self, channel, job['start_ts'], job['stop_ts'], warning):
-                return
+        scheduler = self._ensure_dvr_scheduler(start=True)
+        config = dict(self.config)
+        operation = "epg-schedule-" + str(hash((self._channel_record_key(channel), job["start_at"], job["end_at"])))
 
-        try:
-            self._ensure_dvr_scheduler(start=True).add_job(job)
-        except (OSError, ValueError) as err:
-            message_box(_("Could not schedule recording:\n{error}").format(error=err),
-                        _("Schedule Recording"), wx.OK | wx.ICON_ERROR)
-            return
-        if not self._epg_guide_is_usable():
+        def preflight():
+            duplicate = self._find_duplicate_scheduled_job(job)
+            warning = "" if duplicate else recording_limits.warning(
+                config, channel, job["start_ts"], job["stop_ts"], scheduler.list_jobs(include_done=False))
+            return duplicate, warning
+
+        def error_message(error):
+            message_box(_("Could not schedule recording:\n{error}").format(error=error),
+                        _("Schedule Recording"), wx.OK | wx.ICON_ERROR, parent=self)
+
+        def ready(result, error):
+            if error:
+                error_message(error)
+                return
+            duplicate, warning = result
+            if duplicate and not repeat:
+                message_box(_("This programme is already scheduled to record."),
+                            _("Schedule Recording"), wx.OK | wx.ICON_INFORMATION, parent=self)
+                return
+            if warning:
+                from recording_conflicts_ui import confirm_conflicts
+                if not confirm_conflicts(self, channel, job["start_ts"], job["stop_ts"], warning):
+                    return
+            def save():
+                if duplicate:
+                    if not scheduler.set_repeat(str(duplicate["id"]), repeat,
+                                                expected_window=(duplicate["start_ts"], duplicate["stop_ts"])):
+                        raise ValueError(_("The recording changed. Reopen its timing dialog."))
+                else:
+                    scheduler.add_job(job, channel_key=self._channel_record_key)
+                return True if duplicate else self._epg_guide_is_usable()
+            def saved(usable, error):
+                if error:
+                    error_message(error)
+                elif duplicate:
+                    message_box(_("Recording updated to repeat."), _("Schedule Recording"),
+                                wx.OK | wx.ICON_INFORMATION, parent=self)
+                else:
+                    self._report_scheduled_program(job, usable)
+            start_operation(self, operation + "-write", save, saved, wx.CallAfter)
+        start_operation(self, operation, preflight, ready, wx.CallAfter)
+
+    def _report_scheduled_program(self, job, usable):
+        if not usable:
             # The guide is not imported (or not current), so this is the only
             # programme the user could see and the schedule can offer no
             # picture of what is coming. Say so: an empty Scheduled Recordings
@@ -4546,12 +4573,29 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             return ""
 
     def _show_recording_problem_times(self, _event=None) -> None:
-        log_path = self._latest_recording_log()
-        problems = recorder.recording_problem_times(log_path)
+        from background_tasks import start_operation
+        def read():
+            log_path = self._latest_recording_log()
+            return os.path.splitext(os.path.basename(log_path))[0], recorder.recording_problem_times(log_path)
+        def done(result, error):
+            if error:
+                message_box(str(error), _("Recording Problem Times"), wx.OK | wx.ICON_ERROR, parent=self)
+            else:
+                self._present_recording_problems(result[0], result[1])
+        start_operation(self, "latest-recording-problems", read, done, wx.CallAfter)
+
+    def _choose_recording_position(self, parent, title, problems):
+        from modal_guard import show_modal
+        dialog = RecordingProblemTimesDialog(parent, title, problems, seek=True)
+        try:
+            return dialog.position_ms if show_modal(dialog) == wx.ID_OK else None
+        finally:
+            dialog.Destroy()
+
+    def _present_recording_problems(self, title, problems):
         dlg = RecordingProblemTimesDialog(
             self,
-            title=(os.path.splitext(os.path.basename(log_path))[0]
-                   if log_path else _("Recordings")),
+            title=title or _("Recordings"),
             problems=problems,
         )
         try:
@@ -7982,6 +8026,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         focus_player: bool = True,
         _buffer_bypass: bool = False,
         force_internal: bool = False,
+        initial_position_ms: Optional[int] = None,
     ):
         self._continuation_request = getattr(self, "_continuation_request", 0) + 1
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
@@ -8057,9 +8102,15 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 source_generation = getattr(self, "_playlist_load_token", None)
                 frame._resume_validate = lambda: source_generation == getattr(self, "_playlist_load_token", None)
                 try:
-                    if callable(prepare_resume) and prepare_resume(
-                            channel if stream_kind in {"live", "vod"} else None) is False:
-                        return
+                    if callable(prepare_resume):
+                        item = channel if stream_kind in {"live", "vod"} else None
+                        if initial_position_ms is not None:
+                            if not item or not item.get("local-recording"):
+                                raise ValueError(_("The recording file is no longer available."))
+                            if prepare_resume(item, position_ms=initial_position_ms) is False:
+                                return
+                        elif prepare_resume(item) is False:
+                            return
                 finally:
                     frame._resume_validate = None
             except Exception as err:
@@ -8393,44 +8444,45 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             end_dt = self._parse_epg_time(show.get("end", ""))
         except (TypeError, ValueError):
             return None
-        config = self.config or {}
-        pre_minutes = max(0, int(config.get("recording_pre_padding_minutes", 0) or 0))
-        post_minutes = max(0, int(config.get("recording_post_padding_minutes", 2) or 0))
+        pre_minutes, post_minutes = _archive_padding(self.config or {}, show)
         return (start_dt - datetime.timedelta(minutes=pre_minutes),
                 end_dt + datetime.timedelta(minutes=post_minutes))
 
-    def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str]):
+    def _prepare_archive_download(self, channel, show):
+        padded = self._padded_catchup_window(show)
+        if padded is None:
+            raise ValueError(_("Invalid programme times."))
+        padded_start, padded_end = padded
+        pre_minutes, post_minutes = _archive_padding(self.config, show)
+        if pre_minutes or post_minutes:
+            LOG.info("Catch-up download window padded by %d+%d minutes for %s",
+                     pre_minutes, post_minutes, show.get("start", ""))
+        duration = max(1.0, (padded_end - padded_start).total_seconds())
+        # Availability and the catch-up window are checked against the
+        # programme itself: a padded end can still lie in the future for a
+        # show that just finished, and pre-padding must not make a show
+        # look older than the archive window allows.
+        url, is_catchup = self._resolve_show_url(channel, show)
+        if not is_catchup:
+            raise ProviderError(_("This programme is not available as catch-up content yet."))
+        # Then ask the provider for the padded window, falling back to the
+        # programme-exact URL when the padded one cannot be built.
+        url = self._resolve_catchup_url(channel, padded_start, padded_end) or url
+        return url, duration
+
+    def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str], *, prepared=None):
         """Save a completed catch-up programme using its finite EPG time window."""
         try:
-            padded = self._padded_catchup_window(show)
-            if padded is None:
-                raise ValueError("programme times missing")
-            padded_start, padded_end = padded
-            pre_minutes = max(0, int(self.config.get("recording_pre_padding_minutes", 0) or 0))
-            post_minutes = max(0, int(self.config.get("recording_post_padding_minutes", 2) or 0))
-            if pre_minutes or post_minutes:
-                LOG.info("Catch-up download window padded by %d+%d minutes for %s",
-                         pre_minutes, post_minutes, show.get("start", ""))
-            duration = max(1.0, (padded_end - padded_start).total_seconds())
-            # Availability and the catch-up window are checked against the
-            # programme itself: a padded end can still lie in the future for a
-            # show that just finished, and pre-padding must not make a show
-            # look older than the archive window allows.
-            url, is_catchup = self._resolve_show_url(channel, show)
-            if not is_catchup:
-                raise ProviderError(_("This programme is not available as catch-up content yet."))
-            # Then ask the provider for the padded window, falling back to the
-            # programme-exact URL when the padded one cannot be built.
-            url = self._resolve_catchup_url(channel, padded_start, padded_end) or url
+            url, duration = prepared or IPTVClient._prepare_archive_download(self, channel, show)
         except ProviderError as err:
             message_box(_("Provider error: {error}").format(error=err), _("Catch-up Download"),
                           wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
         except (TypeError, ValueError) as err:
             message_box(_("Unable to prepare catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
 
         title = show.get("show_title") or show.get("title") or self._channel_display_name(channel)
@@ -8442,7 +8494,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         if self.recorder.is_recording(key):
             message_box(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
         # Issue #33: catch-up/archive downloads classify the channel the same
         # way live recordings do, so a radio archive records audio-only.
@@ -8546,7 +8598,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 self._catchup_retry_state.pop(retry_of, None)
             message_box(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
         provider_url = hls_url or url
         if IPTVClient._single_stream_provider_busy(self, provider_url):
@@ -8554,7 +8606,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 self._catchup_retry_state.pop(retry_of, None)
             message_box(IPTVClient._single_stream_provider_refusal(self),
                         _("Catch-up Download"), wx.OK | wx.ICON_WARNING)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
         try:
             # The file is named for when the programme aired, as the EPG lists
@@ -8566,15 +8618,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         # The programme length the completion check compares against: the
         # padded window minus the padding minutes that stretched it.
         config = getattr(self, "config", None) or {}
-        pad_seconds = 60.0 * (
-            max(0, int(config.get("recording_pre_padding_minutes", 0) or 0))
-            + max(0, int(config.get("recording_post_padding_minutes", 2) or 0)))
+        pad_seconds = 60.0 * sum(_archive_padding(config, show))
         expected_media = max(1.0, float(duration or 0.0) - pad_seconds)
         try:
             rec = self.recorder.start(
                 url, display_name, fmt, headers, get_recordings_dir(self.config),
                 key=key,
-                metadata={"catchup": True, "programme_start": show.get("start", ""),
+                metadata={"catchup": True, "from_schedule": bool(show.get("from_schedule")),
+                          "schedule_padding": show.get("schedule_padding"), "programme_start": show.get("start", ""),
                           "programme_end": show.get("end", ""),
                           "channel": dict(channel) if channel else {},
                           "hls_url": hls_url or url,
@@ -8598,7 +8649,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             LOG.error("Catch-up download failed to start for %s: %s", url, err)
             message_box(_("Could not start catch-up download:\n{error}").format(error=err),
                           _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(channel, show.get("start", ""))
+            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
             return
         if retry_of is not None:
             # The budget belongs to the programme, not the recorder id: pass it
@@ -8665,7 +8716,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                     if shown_now:
                         metadata = getattr(rec, "metadata", None) or {}
                         self._return_to_catchup_after_download(
-                            metadata.get("channel") or {},
+                            None if metadata.get("from_schedule") else metadata.get("channel"),
                             metadata.get("programme_start", ""))
                 elif truncated:
                     # No retry was scheduled (budget spent): the partial file
@@ -8699,7 +8750,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             # growing delay instead of making the user start over.
             if self._maybe_retry_catchup_download(
                     rec, rc, channel=rec.metadata.get("channel") or {},
-                    show={"start": rec.metadata.get("programme_start", ""),
+                    show={"from_schedule": bool(rec.metadata.get("from_schedule")),
+                          "schedule_padding": rec.metadata.get("schedule_padding"), "start": rec.metadata.get("programme_start", ""),
                           "end": rec.metadata.get("programme_end", "")},
                     duration=rec.metadata.get("duration") or 0.0,
                     fmt=rec.fmt):
@@ -8730,7 +8782,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             if shown_now:
                 metadata = getattr(rec, "metadata", None) or {}
                 self._return_to_catchup_after_download(
-                    metadata.get("channel") or {}, metadata.get("programme_start", ""))
+                    None if metadata.get("from_schedule") else metadata.get("channel"), metadata.get("programme_start", ""))
 
         # Everything below touches the UI: marshal onto the main thread.
         wx.CallAfter(self._maybe_shutdown_after_recordings)
@@ -9104,7 +9156,7 @@ class RecordingProblemTimesDialog(wx.Dialog):
 
     help_topic = "recordings"
 
-    def __init__(self, parent, title: str, problems):
+    def __init__(self, parent, title: str, problems, *, seek=False):
         super().__init__(parent, title=_("Recording Problem Times"),
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         layout = wx.BoxSizer(wx.VERTICAL)
@@ -9112,19 +9164,26 @@ class RecordingProblemTimesDialog(wx.Dialog):
 
         self.list_box = wx.ListBox(self, style=wx.LB_SINGLE)
         self.list_box.SetName(_("Recording Problem Times"))
+        self.positions = []
+        self.position_ms = None
         for problem in problems:
-            times = problem.get("jump_times") or problem.get("clock_times") or []
-            if times:
-                self.list_box.Append("{times}: {message}".format(
-                    times=", ".join(times),
-                    message=str(problem.get("message") or ""),
-                ))
+            if seek:
+                for clock, estimated in problem.get("positions", []):
+                    self.list_box.Append(_("{time} (estimated) – {message}").format(time=clock, message=problem["message"])
+                                         if estimated else f"{clock} – {problem['message']}")
+                    hours, minutes, seconds = map(int, clock.split(":"))
+                    self.positions.append((hours * 3600 + minutes * 60 + seconds) * 1000)
+            else:
+                times = problem.get("jump_times") or problem.get("clock_times") or []
+                if times:
+                    self.list_box.Append("{times}: {message}".format(times=", ".join(times), message=problem["message"]))
         if not self.list_box.GetCount():
-            self.list_box.Append(_(
-                "No timed problems were found in the newest recording log."))
+            self.list_box.Append(_("No timed problems were found for this recording.") if seek else
+                                 _("No timed problems were found in the newest recording log."))
+        self.list_box.SetSelection(0)
         layout.Add(self.list_box, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
 
-        hint = wx.StaticText(self, label=_(
+        hint = wx.StaticText(self, label=_("Press Enter to play the recording from the selected time.") if seek else _(
             "Open the recorded file in VLC, press Ctrl+T, and enter a listed "
             "time. Times use the file's media clock when FFmpeg reported it; "
             "otherwise they are elapsed recording time and may be slightly "
@@ -9138,14 +9197,34 @@ class RecordingProblemTimesDialog(wx.Dialog):
         buttons.AddButton(self.copy_btn)
         close_btn = wx.Button(self, id=wx.ID_CANCEL, label=_("Close"))
         buttons.AddButton(close_btn)
+        if seek and self.positions:
+            play = wx.Button(self, id=wx.ID_OK, label=_("Play from This Time"))
+            buttons.AddButton(play)
+            play.SetDefault()
+            play.Bind(wx.EVT_BUTTON, self._choose_position)
+            self.list_box.Bind(wx.EVT_LISTBOX_DCLICK, self._choose_position)
+            self.list_box.Bind(wx.EVT_CHAR_HOOK, self._position_key)
+        else:
+            close_btn.SetDefault()
         buttons.Realize()
         layout.Add(buttons, 0, wx.ALIGN_RIGHT | wx.ALL, 12)
 
         self.SetSizerAndFit(layout)
         self.SetSize((620, 460))
         self.CentreOnParent()
-        close_btn.SetDefault()
         self.list_box.SetFocus()
+
+    def _position_key(self, event):
+        if event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self._choose_position(event)
+        else:
+            event.Skip()
+
+    def _choose_position(self, _event):
+        index = self.list_box.GetSelection()
+        if 0 <= index < len(self.positions):
+            self.position_ms = self.positions[index]
+            self.EndModal(wx.ID_OK)
 
     def _on_copy(self, _event):
         if not wx.TheClipboard.Open():
@@ -9218,6 +9297,74 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # "you have no recordings scheduled" even when you do.
         self.refresh()
 
+    def _skip_occurrence(self, _event):
+        from background_tasks import start_operation
+        jobs = self._selected_jobs()
+        if len(jobs) != 1:
+            return
+        job = jobs[0]
+        if message_box(_("Skip this occurrence of {title}?").format(title=job.get("display_title") or job.get("title", "")),
+                       _("Skip This Occurrence"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION, parent=self) != wx.YES:
+            return
+        def done(successor, error):
+            self.refresh()
+            if error:
+                message_box(str(error), _("Scheduled Recordings"), wx.OK | wx.ICON_ERROR, parent=self)
+            else:
+                message_box(_("Next recording: {time}").format(time=self.parent_frame._schedule_window_label(successor)),
+                            _("Scheduled Recordings"), wx.OK | wx.ICON_INFORMATION, parent=self)
+        start_operation(self, "skip-occurrence",
+                        lambda: self.scheduler.skip_occurrence(job["id"], expected_start=job["start_ts"]), done, wx.CallAfter)
+
+    def _recover_archive(self, _event):
+        from background_tasks import start_operation
+        import programme_reminders
+        import recording_limits
+        jobs = self._selected_jobs()
+        if len(jobs) != 1:
+            return
+        job = jobs[0]
+        owner = self.parent_frame
+        channels = owner.all_channels
+        def prepare():
+            current = self.scheduler.get_job(job["id"])
+            if not current or current.get("status") not in {dvr.STATUS_MISSED, dvr.STATUS_FAILED, dvr.STATUS_PARTIAL}:
+                raise ValueError(_("Select a missed, failed or partial recording."))
+            channel = programme_reminders.resolve_channel(
+                {"channel_key": programme_reminders.channel_key(current.get("channel"))}, channels)
+            if channel is None:
+                raise ValueError(_("Channel Not Found"))
+            pre = int(current.get("pre_padding_minutes") or 0)
+            post = int(current.get("post_padding_minutes") or 0)
+            start = datetime.datetime.fromtimestamp(float(current["start_ts"]) + pre * 60, datetime.timezone.utc)
+            end = datetime.datetime.fromtimestamp(float(current["stop_ts"]) - post * 60, datetime.timezone.utc)
+            if (end <= start or end >= datetime.datetime.now(datetime.timezone.utc)
+                    or not owner._channel_has_catchup(channel) or not owner._within_catchup_window(channel, start)):
+                raise ValueError(_("This programme is unavailable in the channel archive."))
+            show = dict(current.get("program") or {}, from_schedule=True, schedule_padding=(pre, post),
+                        title=current.get("title", ""),
+                        start=start.strftime("%Y%m%d%H%M%S"), end=end.strftime("%Y%m%d%H%M%S"))
+            recording_limits.check_start(owner.config, channel.get("url", ""), {"channel": channel},
+                                         owner.recorder.list_active())
+            if IPTVClient._single_stream_provider_busy(owner, channel.get("url", "")):
+                raise ValueError(IPTVClient._single_stream_provider_refusal(owner))
+            return channel, show, owner._prepare_archive_download(channel, show)
+        def ready(result, error):
+            if not error and owner.all_channels is not channels:
+                error = _("The channel list changed. Try again.")
+            if error:
+                message_box(str(error), _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION, parent=self)
+                return
+            channel, show, prepared = result
+            try:
+                recording_limits.check_start(owner.config, channel.get("url", ""), {"channel": channel},
+                                             owner.recorder.list_active())
+            except RuntimeError as error:
+                message_box(str(error), _("Catch-up Download"), wx.OK | wx.ICON_WARNING, parent=self)
+                return
+            owner._download_catchup_programme(channel, show, prepared=prepared)
+        start_operation(self, "recover-archive", prepare, ready, wx.CallAfter)
+
     def _edit_weekdays(self, _event=None):
         jobs = self._selected_jobs()
         if len(jobs) != 1 or jobs[0].get('status') != dvr.STATUS_SCHEDULED or jobs[0].get('repeat') == 'series':
@@ -9275,15 +9422,6 @@ class ScheduledRecordingsDialog(wx.Dialog):
             event.Skip()
 
     def _show_context_menu(self, keyboard: bool, event=None):
-        menu = wx.Menu()
-        refresh_item = menu.Append(wx.ID_ANY, _("Refresh"))
-        menu.Bind(wx.EVT_MENU, lambda _event: self.refresh(), refresh_item)
-        if self.list_ctrl.GetItemCount():
-            menu.AppendSeparator()
-            cancel_item = menu.Append(wx.ID_ANY, _("Cancel"))
-            menu.Bind(wx.EVT_MENU, self._on_cancel_selected, cancel_item)
-            delete_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
-            menu.Bind(wx.EVT_MENU, self._on_delete_selected, delete_item)
         pos = wx.DefaultPosition
         if keyboard:
             idx = self.list_ctrl.GetFirstSelected()
@@ -9296,6 +9434,24 @@ class ScheduledRecordingsDialog(wx.Dialog):
                     LOG.debug("ScheduledRecordingsDialog._show_context_menu: ignored exception", exc_info=True)
         else:
             _context_row_index(self.list_ctrl, event, keep_multi_selection=True)
+        menu = wx.Menu()
+        refresh_item = menu.Append(wx.ID_ANY, _("Refresh"))
+        menu.Bind(wx.EVT_MENU, lambda _event: self.refresh(), refresh_item)
+        if self.list_ctrl.GetItemCount():
+            menu.AppendSeparator()
+            cancel_item = menu.Append(wx.ID_ANY, _("Cancel"))
+            menu.Bind(wx.EVT_MENU, self._on_cancel_selected, cancel_item)
+            delete_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
+            menu.Bind(wx.EVT_MENU, self._on_delete_selected, delete_item)
+            jobs = self._selected_jobs()
+            if len(jobs) == 1:
+                job = jobs[0]
+                if job.get("status") == dvr.STATUS_SCHEDULED and job.get("repeat") in dvr.TIME_REPEATS:
+                    item = menu.Append(wx.ID_ANY, _("Skip This Occurrence"))
+                    menu.Bind(wx.EVT_MENU, self._skip_occurrence, item)
+                if job.get("status") in {dvr.STATUS_MISSED, dvr.STATUS_FAILED, dvr.STATUS_PARTIAL}:
+                    item = menu.Append(wx.ID_ANY, _("Recover from Channel Archive..."))
+                    menu.Bind(wx.EVT_MENU, self._recover_archive, item)
         try:
             self.list_ctrl.PopupMenu(menu, pos)
         finally:
@@ -9312,6 +9468,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
             dvr.STATUS_FAILED: _("Failed"),
             dvr.STATUS_MISSED: _("Missed"),
             dvr.STATUS_CANCELED: _("Canceled"),
+            dvr.STATUS_SKIPPED: _("Skipped"),
         }
         return labels.get(status, status or "")
 

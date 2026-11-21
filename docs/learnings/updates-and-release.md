@@ -49,3 +49,5 @@ grep it for the module, symbol or error you are about to touch.
 - `debian-package.yml` must keep `workflow_dispatch` as its only trigger. The Forgejo-to-GitHub sync disables every GitHub workflow with an automatic trigger, so its old `push` trigger left it disabled and failed the Linux job of `cloud-release.yml` on v1.151.2.
 
 - Hungarian release notes remain manually maintained and exempt from the standard multi-language audit. `python tools/check_hungarian_notes.py` and its regression test separately check the current three-release window. Preserve existing reviewed wording and compile the MO after filling actual current blanks; prepared future translations must be matched to the final changelog bullet, including any PR suffix, during release preparation.
+
+The release-note preparation and final catalogue sync can fill empty entries from the reviewed tables in docs/release-note-translations-*.json. They match an exact English bullet or the same bullet followed by a Forgejo PR number. Existing translations take precedence. The final Hungarian check reads the compiled catalogue as well as its source.

@@ -93,6 +93,21 @@ class ToolDialog(wx.Dialog):
         self.layout.Add(row, 0, wx.ALL | wx.EXPAND, 4)
 
 
+def field_timestamp(parent, field):
+    try:
+        return manual_schedule.local_timestamp(field.GetValue())
+    except manual_schedule.AmbiguousTime as error:
+        choices = [dt.datetime.fromtimestamp(stamp).astimezone().strftime("%Y-%m-%d %H:%M %z")
+                   for stamp in error.candidates]
+        dialog = wx.SingleChoiceDialog(parent, str(error), field.GetName(), choices)
+        try:
+            if show_modal(dialog) != wx.ID_OK:
+                return None
+            return error.candidates[dialog.GetSelection()]
+        finally:
+            dialog.Destroy()
+
+
 class RecordingTimesDialog(ToolDialog):
     def __init__(self, parent, channel, job=None):
         super().__init__(parent, _("Schedule by Time"), (650, 450))
@@ -123,18 +138,7 @@ class RecordingTimesDialog(ToolDialog):
         return dt.datetime.fromtimestamp(stamp).strftime("%Y-%m-%d %H:%M")
 
     def _stamp(self, field):
-        try:
-            return manual_schedule.local_timestamp(field.GetValue())
-        except manual_schedule.AmbiguousTime as error:
-            choices = [dt.datetime.fromtimestamp(stamp).astimezone().strftime("%Y-%m-%d %H:%M %z")
-                       for stamp in error.candidates]
-            dialog = wx.SingleChoiceDialog(self, str(error), field.GetName(), choices)
-            try:
-                if show_modal(dialog) != wx.ID_OK:
-                    return None
-                return error.candidates[dialog.GetSelection()]
-            finally:
-                dialog.Destroy()
+        return field_timestamp(self, field)
 
     def _accept(self, event):
         try:
@@ -154,6 +158,146 @@ class RecordingTimesDialog(ToolDialog):
             error_box(self, error)
 
 
+class GuideAtDialog(ToolDialog):
+    help_topic = "whats-on-now"
+
+    def __init__(self, parent, owner):
+        from background_tasks import LatestTask
+        from channel_widgets import _VirtualWhatsOnList
+        super().__init__(parent, _("Programme Guide by Time"), size=(780, 540))
+        self.client = owner
+        self.worker = LatestTask(wx.CallAfter)
+        self.channels = None
+        self.filtered_programs = []
+        self.generation = 0
+        self.time = self.field(_("Local date and time (YYYY-MM-DD HH:MM)"), RecordingTimesDialog.local(time.time()))
+        self.named = collections.normalize(owner.config.get("favorite_collections"))
+        label = _("Channels")
+        self.label(label)
+        self.scope = wx.Choice(self.panel, choices=[_("All Channels"), _("Favorites")] + [r["name"] for r in self.named])
+        self.scope.SetName(label)
+        self.scope.SetSelection(0)
+        self.layout.Add(self.scope, 0, wx.EXPAND | wx.ALL, 6)
+        load = wx.Button(self.panel, label=_("Show Programmes"))
+        self.layout.Add(load, 0, wx.ALL, 6)
+        self.listbox = _VirtualWhatsOnList(self.panel, self)
+        self.listbox.SetName(_("Programme Guide by Time"))
+        self.listbox.InsertColumn(0, _("Programme Guide by Time"), width=700)
+        self.layout.Add(self.listbox, 1, wx.EXPAND | wx.ALL, 6)
+        self.status = wx.StaticText(self.panel, label="")
+        self.layout.Add(self.status, 0, wx.ALL, 4)
+        self.buttons([(_("Schedule Recording"), self.schedule), (_("Set Reminder..."), self.remind)])
+        load.Bind(wx.EVT_BUTTON, self.search)
+        self.time.Bind(wx.EVT_TEXT, self.invalidate)
+        self.scope.Bind(wx.EVT_CHOICE, self.invalidate)
+        self.listbox.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.schedule)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.destroy_worker)
+        self.time.SetFocus()
+
+    def destroy_worker(self, event):
+        if event.GetEventObject() is self:
+            self.worker.close()
+        event.Skip()
+
+    def invalidate(self, _event=None):
+        self.generation += 1
+        self.channels = None
+        self.filtered_programs = []
+        self.listbox.SetItemCount(0)
+        self.status.SetLabel("")
+
+    def search(self, _event):
+        import favorites
+        from playlist import EPGDatabase
+        self.invalidate()
+        try:
+            stamp = field_timestamp(self, self.time)
+            if stamp is None:
+                return
+            when = dt.datetime.fromtimestamp(stamp, dt.timezone.utc)
+        except (ValueError, OverflowError, OSError) as error:
+            error_box(self, error)
+            return
+        generation = self.generation
+        channels = self.client.all_channels
+        selection = self.scope.GetSelection()
+        entries = self.named[selection - 2]["entries"] if selection >= 2 else []
+        keys = self.client.config.get("favorites", [])
+        self.status.SetLabel(_("Loading guide channels..."))
+        def work(canceled):
+            def stale():
+                return canceled() or self.generation != generation
+            if selection == 1:
+                scope = favorites.filter_channels(channels, keys)
+            elif selection >= 2:
+                scope = [ch for entry, ch in collections.resolve(entries, channels) if ch]
+            else:
+                scope = None
+            db = EPGDatabase(options.get_db_path(), readonly=True)
+            try:
+                db.conn.set_progress_handler(lambda: int(stale()), 2000)
+                rows = db.programmes_at(when, scope)
+            finally:
+                db.close()
+            if scope is None and not stale():
+                self.client._program_match_index()
+            valid = []
+            for row in rows:
+                if stale():
+                    return []
+                try:
+                    times = [dvr.parse_epg_utc(row[k]).astimezone() for k in ("start", "end")]
+                except (ValueError, TypeError, OverflowError, OSError):
+                    continue
+                row["time_label"] = " – ".join(stamp.strftime("%Y-%m-%d %H:%M") for stamp in times)
+                valid.append(row)
+            return valid
+        def done(rows, error):
+            if generation != self.generation:
+                return
+            if error or self.client.all_channels is not channels:
+                self.status.SetLabel("")
+                error_box(self, error or _("The channel list changed. Try again."))
+                return
+            self.channels = channels
+            self.filtered_programs = rows
+            self.listbox.SetItemCount(len(rows))
+            self.listbox.Refresh()
+            self.status.SetLabel(_("{count} programs").format(count=len(rows)))
+            if rows:
+                self.listbox.Select(0)
+                self.listbox.Focus(0)
+                self.listbox.SetFocus()
+            else:
+                message_box(_("No programmes were found for this time and channel selection."), self.GetTitle(),
+                            wx.OK | wx.ICON_INFORMATION, parent=self)
+        self.worker.submit(work, done)
+
+    def selected(self):
+        index = self.listbox.GetFirstSelected()
+        if not 0 <= index < len(self.filtered_programs):
+            return None, None
+        if self.channels is not self.client.all_channels:
+            self.invalidate()
+            error_box(self, _("The channel list changed. Try again."))
+            return None, None
+        row = self.filtered_programs[index]
+        ch = row.get("playlist_channel") or self.client._find_matching_channel_for_program(row)
+        if not ch:
+            error_box(self, _("Channel Not Found"))
+        return ch, row
+
+    def schedule(self, _event):
+        channel, row = self.selected()
+        if channel:
+            self.client._schedule_program_recording(channel, {k: v for k, v in row.items() if k != "playlist_channel"})
+
+    def remind(self, _event):
+        channel, row = self.selected()
+        if channel:
+            self.client._set_programme_reminder(channel, row)
+
+
 class FavouriteListsDialog(ToolDialog):
     def __init__(self, parent):
         super().__init__(parent, _("Favourite Lists"))
@@ -164,6 +308,7 @@ class FavouriteListsDialog(ToolDialog):
         self.layout.Add(self.status, 0, wx.ALL, 6)
         self.buttons([(_("New..."), self._new), (_("Rename..."), self._rename), (_("Delete List"), self._delete),
                       (_("Add Selected Channel"), self._add), (_("Remove Channel"), self._remove),
+                      (_("Relink Missing Channel..."), self._relink),
                       (_("Move Up"), lambda e: self._move(-1)), (_("Move Down"), lambda e: self._move(1)),
                       (_("Play"), self._play)])
         self.lists.Bind(wx.EVT_LISTBOX, lambda e: self._entries())
@@ -239,6 +384,66 @@ class FavouriteListsDialog(ToolDialog):
         row, entry = self.selected(), self.entry()
         if entry and confirm(self, _("Remove '{name}' from this list?").format(name=entry["name"])):
             self._change(lambda value: collections.edit(value, row["id"], remove=entry["key"]))
+
+    def _relink(self, _event):
+        row, entry = self.selected(), self.entry()
+        if not row or not entry:
+            return
+        query = text_entry(self, _("Search for the replacement channel:"))
+        if query is None:
+            return
+        channels = self.owner.all_channels
+        from main import _source_scope_id
+        sources = {_source_scope_id(src): self.owner._scope_choice_label(src)
+                   for src in self.owner._scoped_sources()}
+        def find():
+            if collections.resolve([entry], channels)[0][1] is not None:
+                raise ValueError(_("This favourite is already available."))
+            needle = query.strip().casefold()
+            found = []
+            for ch in channels:
+                if not ch.get("url") or ch.get("kind") in {"movie", "series"}:
+                    continue
+                fields = [reminders.safe_title(dvr.channel_name(ch))]
+                fields.extend(reminders.safe_title(value) for value in
+                              (ch.get("group") or ch.get("group-title"), ch.get("tvg-id"),
+                               sources.get(ch.get("playlist-id") or ch.get("provider-id"))))
+                label = " – ".join(dict.fromkeys(f for f in fields if f))
+                if needle in label.casefold():
+                    found.append((label, ch))
+                    if len(found) > 200:
+                        raise ValueError(_("Too many matches. Enter a more specific channel name."))
+            return found
+        def ready(found, error):
+            if error or self.owner.all_channels is not channels:
+                error_box(self, error or _("The channel list changed. Try again."))
+                return
+            if not found:
+                error_box(self, _("Channel Not Found"))
+                return
+            choose = wx.SingleChoiceDialog(self, _("Choose a replacement channel:"),
+                                           _("Favourite Lists"), [label for label, ch in found])
+            try:
+                if show_modal(choose) != wx.ID_OK:
+                    return
+                label, candidate = found[choose.GetSelection()]
+                if any(other_label == label and reminders.channel_key(other) != reminders.channel_key(candidate)
+                       for other_label, other in found):
+                    error_box(self, _("The channel cannot be identified unambiguously."))
+                    return
+            finally:
+                choose.Destroy()
+            key = reminders.channel_key(candidate)
+            def verify():
+                return reminders.resolve_channel({"channel_key": key}, channels)
+            def save(channel, error):
+                if error or not channel or self.owner.all_channels is not channels:
+                    error_box(self, error or _("The channel cannot be identified unambiguously."))
+                    return
+                self._change(lambda value: collections.relink(value, row["id"], entry["key"], channel), selected=key)
+                self.entries.SetFocus()
+            start_operation(self, "verify-replacement", verify, save, wx.CallAfter)
+        start_operation(self, "find-replacement", find, ready, wx.CallAfter)
 
     def _move(self, delta):
         row, entry = self.selected(), self.entry()
@@ -444,6 +649,16 @@ class SavedSearchesDialog(ToolDialog):
 
 
 class PersonalToolsMixin:
+    def _show_guide_at(self, _event=None, *, parent=None):
+        if not self.config.get("epg_enabled", True):
+            message_box(_("EPG is not enabled."), _("EPG Not Available"), wx.OK | wx.ICON_INFORMATION, parent=self)
+            return
+        dialog = GuideAtDialog(parent or self, self)
+        try:
+            show_modal(dialog)
+        finally:
+            dialog.Destroy()
+
     def _tool_status(self, text):
         bar = getattr(self, "_info_status_bar", None)
         if bar is not None:

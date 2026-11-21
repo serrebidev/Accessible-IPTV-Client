@@ -86,6 +86,8 @@ class RecordingLibraryDialog(wx.Dialog):
         layout.Add(self.status, 0, wx.EXPAND | wx.ALL, 8)
         buttons = wx.WrapSizer(wx.HORIZONTAL)
         self.play = wx.Button(self, label=_("Play / Resume"))
+        self.problems = wx.Button(self, label=_("Recording Problem Times") + "...")
+        self.problems.Bind(wx.EVT_BUTTON, self.show_problems)
         self.rename = wx.Button(self, label=_("Rename Title..."))
         self.remove = wx.Button(self, label=_("Move to Recording Trash..."))
         self.restore = wx.Button(self, label=_("Restore Recording"))
@@ -93,7 +95,7 @@ class RecordingLibraryDialog(wx.Dialog):
         self.export = wx.Button(self, label=_("Export List to CSV..."))
         self.export.Bind(wx.EVT_BUTTON, self.export_csv)
         close = wx.Button(self, wx.ID_CLOSE, label=_("Close"))
-        for button in (self.play, self.rename, self.remove, self.restore, self.reload, self.export, close):
+        for button in (self.play, self.problems, self.rename, self.remove, self.restore, self.reload, self.export, close):
             buttons.Add(button, 0, wx.ALL, 5)
         layout.Add(buttons, 0, wx.ALIGN_RIGHT)
         self.SetSizer(layout)
@@ -183,7 +185,7 @@ class RecordingLibraryDialog(wx.Dialog):
         return paths
 
     def controls(self):
-        return (self.play, self.remove, self.rename, self.restore, self.reload,
+        return (self.play, self.problems, self.remove, self.rename, self.restore, self.reload,
                 self.folder, self.deleted, self.add_folder, self.forget_folder, self.export)
 
     def change_folder(self, _event):
@@ -350,6 +352,7 @@ class RecordingLibraryDialog(wx.Dialog):
         ready = not self.busy and not self.filter_busy
         deleted = self.deleted.GetValue()
         self.play.Enable(ready and len(rows) == 1 and not deleted)
+        self.problems.Enable(ready and len(rows) == 1 and not deleted)
         self.rename.Enable(ready and len(rows) == 1 and not deleted)
         self.restore.Enable(ready and bool(rows) and deleted)
         self.remove.Enable(ready and bool(rows))
@@ -380,6 +383,34 @@ class RecordingLibraryDialog(wx.Dialog):
         directory = row.get('directory', self.directory)
         active = self.active_paths()
         self.run_operation(lambda: library.playback_channel(directory, row, active), play=True)
+
+    def show_problems(self, _event):
+        from background_tasks import start_operation
+        from recorder import recording_problem_times
+        row = self.selected()
+        if row is None or self.busy or self.filter_busy or self.deleted.GetValue():
+            return
+        directory, active = row["directory"], self.active_paths()
+        def read():
+            return recording_problem_times(library.problem_log(directory, row, active))
+        def ready(problems, error):
+            if error:
+                error_box(self, error)
+                return
+            position = self.owner._choose_recording_position(self, row["title"], problems)
+            if position is None:
+                return
+            current_active = self.active_paths()
+            def validate():
+                return library.playback_channel(directory, row, current_active)
+            def play(channel, error):
+                if error:
+                    error_box(self, error)
+                else:
+                    self.owner._launch_stream(channel["url"], channel["name"], stream_kind="vod", channel=channel,
+                                              show_internal_player=True, force_internal=True, initial_position_ms=position)
+            start_operation(self, "play-recording-position", validate, play, wx.CallAfter)
+        start_operation(self, "read-recording-problems", read, ready, wx.CallAfter)
 
     def delete_selected(self, _event):
         rows = self.selected_rows()

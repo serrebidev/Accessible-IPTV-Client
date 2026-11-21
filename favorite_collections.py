@@ -89,6 +89,22 @@ def edit(collections, identity, *, name=None, add=None, remove=None, move=None, 
     return copy.deepcopy(rows)
 
 
+def relink(collections, identity, old_key, channel):
+    """Replace one stale entry in place, preserving the order of the list."""
+    rows = normalize(collections)
+    row = next((item for item in rows if item["id"] == identity), None)
+    if row is None:
+        raise ValueError(_("The selected list no longer exists."))
+    entry = next((e for e in row["entries"] if e["key"] == old_key), None)
+    if entry is None:
+        raise ValueError(_("The channel list changed. Try again."))
+    key = programme_reminders.channel_key(channel)
+    if not key or any(e["key"] == key for e in row["entries"]):
+        raise ValueError(_("Choose a different channel that is not already in this list."))
+    entry.update(key=key, name=programme_reminders.safe_title(channel.get("name")))
+    return rows
+
+
 def resolve(entries, channels):
     """Preserve missing rows; ambiguous identities cannot start arbitrary media."""
     index = {}

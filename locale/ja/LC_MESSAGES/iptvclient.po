@@ -744,6 +744,10 @@ msgstr "再生するチャンネルを選択してください:"
 msgid "Choose a command to change:"
 msgstr "変更するコマンドを選択します。"
 
+#: favorite_collections.py:101
+msgid "Choose a different channel that is not already in this list."
+msgstr "この一覧にまだ含まれていない別のチャンネルを選んでください。"
+
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
@@ -753,6 +757,10 @@ msgstr "メディアの終了前の位置を選んでください。"
 #: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "録画フォルダーを選択"
+
+#: personal_tools_ui.py:424
+msgid "Choose a replacement channel:"
+msgstr "代わりのチャンネルを選択してください："
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1959,6 +1967,10 @@ msgstr "ローカルライブバッファー"
 msgid "Local Live Buffer..."
 msgstr "ローカルライブバッファー…"
 
+#: personal_tools_ui.py:173
+msgid "Local date and time (YYYY-MM-DD HH:MM)"
+msgstr "現地の日付と時刻（YYYY-MM-DD HH:MM）"
+
 #: main.py:4279
 msgid "Logs"
 msgstr "ログ"
@@ -2138,6 +2150,10 @@ msgstr "次のエピソード"
 msgid "Next Subtitle"
 msgstr "次の字幕"
 
+#: main.py:9314
+msgid "Next recording: {time}"
+msgstr "次回の録画：{time}"
+
 #: main.py:1693
 msgid "Next: {programme}"
 msgstr "次: {programme}"
@@ -2252,6 +2268,10 @@ msgstr "これより後の字幕はありません。"
 msgid "No local live history is available."
 msgstr "利用可能なローカルライブ履歴がありません。"
 
+#: recording_library.py:167
+msgid "No matching recording log is available for this file."
+msgstr "このファイルに対応する録画ログが見つかりません。"
+
 #: release_notes.py:40
 msgid "No notable changes."
 msgstr "目立った変更はありません。"
@@ -2271,6 +2291,10 @@ msgstr "現在放送中の番組はありません。"
 #: main.py:2872
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "番組ガイドがまだインポートされていないため、予約できるものがありません。\n\nまずガイドをインポートしてください（ファイル > EPG マネージャー、次に ファイル > EPG をデータベースにインポート）。その後、もう一度お試しください。"
+
+#: personal_tools_ui.py:272
+msgid "No programmes were found for this time and channel selection."
+msgstr "指定した日時とチャンネルに該当する番組はありません。"
 
 #: main.py:7044
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2329,6 +2353,10 @@ msgstr "このファイルに字幕テキストが見つかりません。"
 #: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "読み上げる字幕テキストがありません。対応形式の字幕ファイルを読み込んでください。"
+
+#: main.py:9181
+msgid "No timed problems were found for this recording."
+msgstr "この録画のログには、発生時刻が記録された問題はありません。"
 
 #: main.py:9123
 msgid "No timed problems were found in the newest recording log."
@@ -2606,6 +2634,10 @@ msgstr "今すぐ再生"
 msgid "Play from Beginning"
 msgstr "最初から再生"
 
+#: main.py:9201
+msgid "Play from This Time"
+msgstr "この位置から再生"
+
 #: internal_player.py:447
 msgid "Play or Pause"
 msgstr "再生または一時停止"
@@ -2755,6 +2787,10 @@ msgstr "ダウンロードを準備中..."
 msgid "Preparing to restart..."
 msgstr "再起動の準備中..."
 
+#: main.py:9186
+msgid "Press Enter to play the recording from the selected time."
+msgstr "Enter キーを押すと、選んだ位置から録画を再生します。"
+
 #: main.py:8938
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Esc キーでこのウィンドウを隠せます。ダウンロードは続行されます。表示 > ダウンロードを表示 (Ctrl+Shift+D) で再表示します。"
@@ -2793,6 +2829,19 @@ msgstr "録画を処理中…"
 #: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "番組 - チャンネル"
+
+#: dvr.py:202
+msgid "Program end time must be after the start time."
+msgstr "番組の終了時刻は開始時刻より後に設定してください。"
+
+#: client_ui.py:126
+#: client_ui.py:280
+#: dialogs_misc.py:904
+#: personal_tools_ui.py:167
+#: personal_tools_ui.py:184
+#: personal_tools_ui.py:185
+msgid "Programme Guide by Time"
+msgstr "日時を指定して番組表を表示"
 
 #: planning_tools_ui.py:67
 #: planning_ui.py:291
@@ -3102,6 +3151,10 @@ msgstr "録音を更新して繰り返すようになりました。"
 msgid "Recordings"
 msgstr "録画"
 
+#: main.py:9453
+msgid "Recover from Channel Archive..."
+msgstr "チャンネルのアーカイブから取得..."
+
 #: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9279
@@ -3136,6 +3189,10 @@ msgstr "ストリームを更新中..."
 #: dialogs_misc.py:167
 msgid "Release history"
 msgstr "リリース履歴"
+
+#: personal_tools_ui.py:311
+msgid "Relink Missing Channel..."
+msgstr "利用できないチャンネルを関連付け直す..."
 
 #: accessible_tools_ui.py:200
 msgid "Remember Volume for Each Channel"
@@ -3406,6 +3463,10 @@ msgstr "検索結果"
 msgid "Search descriptions too"
 msgstr "説明文も検索"
 
+#: personal_tools_ui.py:392
+msgid "Search for the replacement channel:"
+msgstr "代わりのチャンネルを検索："
+
 #: accessible_tools_ui.py:74
 msgid "Search guide channels:"
 msgstr "番組表のチャンネルを検索："
@@ -3457,6 +3518,10 @@ msgstr "先に録画するチャンネルを選択してください。"
 msgid "Select a live channel first."
 msgstr "最初にライブチャンネルを選択してください。"
 
+#: main.py:9332
+msgid "Select a missed, failed or partial recording."
+msgstr "録画できなかった番組、または一部のみ録画された番組を選んでください。"
+
 #: main.py:9598
 msgid "Select a programme first."
 msgstr "先に番組を選択してください。"
@@ -3488,6 +3553,10 @@ msgstr "待機中または録画中の項目を1つ選んで時刻を編集し�
 #: main.py:9224
 msgid "Select one pending recording that is not a series rule."
 msgstr "シリーズ録画ルールではない待機中の録画を 1 件選択してください。"
+
+#: dvr.py:632
+msgid "Select one pending recurring recording."
+msgstr "開始前の繰り返し録画を選んでください。"
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3594,6 +3663,10 @@ msgstr "プレーヤーを表示"
 msgid "Show Player on Enter"
 msgstr "Enter でプレーヤーを表示"
 
+#: personal_tools_ui.py:181
+msgid "Show Programmes"
+msgstr "番組を表示"
+
 #: client_ui.py:207
 #: client_ui.py:351
 msgid "Show Stream URL"
@@ -3630,6 +3703,19 @@ msgstr "シャットダウンを取り消しました。録画終了後の自動
 #: planning_tools.py:86
 msgid "Size (bytes)"
 msgstr "サイズ（バイト）"
+
+#: main.py:9307
+#: main.py:9450
+msgid "Skip This Occurrence"
+msgstr "今回の録画だけをスキップ"
+
+#: main.py:9306
+msgid "Skip this occurrence of {title}?"
+msgstr "「{title}」の今回の録画をスキップしますか？"
+
+#: main.py:9471
+msgid "Skipped"
+msgstr "スキップ済み"
 
 #: internal_player.py:3290
 #: internal_player.py:3302
@@ -3677,6 +3763,15 @@ msgstr "Stalker Portal"
 #: playlist.py:3460
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
+
+#: client_epg.py:182
+#: client_epg.py:200
+msgid "Stalker portal client is not initialized."
+msgstr "Stalker ポータルのクライアントはまだ初期化されていません。"
+
+#: client_epg.py:179
+msgid "Stalker portal entry missing provider identifier."
+msgstr "Stalker ポータルの登録情報にプロバイダー ID がありません。"
 
 #: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
@@ -3965,6 +4060,11 @@ msgstr "このブックマークは利用できなくなりました。一覧を
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "ブックマーク数が上限に達しました。先に不要なブックマークを削除してください。"
 
+#: personal_tools_ui.py:432
+#: personal_tools_ui.py:441
+msgid "The channel cannot be identified unambiguously."
+msgstr "チャンネルを一意に特定できません。"
+
 #: personal_tools_ui.py:272
 #: personal_tools_ui.py:439
 msgid "The channel list changed. Try again."
@@ -4166,9 +4266,17 @@ msgstr "録画スケジュールを読み込めませんでした。元のファ
 msgid "The recording start time has already passed."
 msgstr "録画の開始時刻は既に過ぎています。"
 
+#: dvr.py:331
+msgid "The recording times are invalid. Check the recording schedule."
+msgstr "録画時刻が正しくありません。録画予約を確認してください。"
+
 #: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "録画用ごみ箱フォルダーを利用できません。"
+
+#: dvr.py:337
+msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
+msgstr "復元した録画予約を保存できませんでした。録画予約とディスクの空き容量を確認してください。"
 
 #: programme_reminders.py:203
 msgid "The reminder cannot be postponed beyond the programme's end."
@@ -4232,6 +4340,10 @@ msgstr "警告のしきい値は停止のしきい値以上にしてください
 msgid "This catch-up programme is already downloading."
 msgstr "この番組はすでにダウンロード中です。"
 
+#: client_epg.py:150
+msgid "This channel does not provide catch-up streaming."
+msgstr "このチャンネルでは見逃し配信を利用できません。"
+
 #: main.py:3942
 msgid "This channel is not currently recording."
 msgstr "このチャンネルは現在録画していません。"
@@ -4244,6 +4356,10 @@ msgstr "このコマンドはオンデマンド再生中に使用できます。
 #: main.py:1794
 msgid "This entry cannot be added to Favorites."
 msgstr "この項目はお気に入りに追加できません。"
+
+#: personal_tools_ui.py:401
+msgid "This favourite is already available."
+msgstr "このお気に入りのチャンネルはすでに利用できます。"
 
 #: main.py:8185
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
@@ -4280,6 +4396,14 @@ msgstr "この番組はすでに録画するようにスケジュールされて
 #: main.py:8421
 msgid "This programme is not available as catch-up content yet."
 msgstr "この番組はまだ見逃し配信で利用できません。"
+
+#: client_epg.py:152
+msgid "This programme is older than the catch-up window allows."
+msgstr "この番組の見逃し配信期間は終了しています。"
+
+#: main.py:9343
+msgid "This programme is unavailable in the channel archive."
+msgstr "この番組はチャンネルのアーカイブにありません。"
 
 #: client_epg.py:194
 msgid "This programme's start and end times are invalid."
@@ -4331,6 +4455,10 @@ msgstr "タイトル"
 msgid "Toggle Full Screen"
 msgstr "全画面表示を切り替え"
 
+#: personal_tools_ui.py:415
+msgid "Too many matches. Enter a more specific channel name."
+msgstr "検索結果が多すぎます。チャンネル名を詳しく入力してください。"
+
 #: main.py:295
 #: main.py:298
 msgid "Topics"
@@ -4363,6 +4491,10 @@ msgstr "種類"
 #: playlist.py:3135
 msgid "URL copied to the clipboard."
 msgstr "URLをクリップボードにコピーしました。"
+
+#: client_epg.py:155
+msgid "Unable to construct catch-up URL for this programme."
+msgstr "この番組の見逃し配信用 URL を生成できませんでした。"
 
 #: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
@@ -4815,9 +4947,9 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} は Linux 用に構成されていません。"
 
-#: planning_ui.py:269
-msgid "{title}\n{channel}\nStarts: {time}"
-msgstr "{title}\n{channel}\n開始: {time}"
+#: main.py:9172
+msgid "{time} (estimated) – {message}"
+msgstr "{time}（推定）– {message}"
 
 #: internal_player.py:822
 msgid "{title} - Built-in Player"
@@ -4830,6 +4962,10 @@ msgstr "{title} - {channel}"
 #: main.py:1865
 msgid "{title}, {start} to {end}"
 msgstr "{title}、{start} ～ {end}"
+
+#: planning_ui.py:269
+msgid "{title}\n{channel}\nStarts: {time}"
+msgstr "{title}\n{channel}\n開始: {time}"
 
 #: internal_player.py:2066
 msgid "{value}s buffer"

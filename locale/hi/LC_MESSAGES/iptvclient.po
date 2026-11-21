@@ -744,6 +744,10 @@ msgstr "खेलने के लिए एक चैनल चुनें:"
 msgid "Choose a command to change:"
 msgstr "बदलने के लिए एक कमांड चुनें:"
 
+#: favorite_collections.py:101
+msgid "Choose a different channel that is not already in this list."
+msgstr "कोई दूसरा चैनल चुनें जो अभी इस सूची में न हो।"
+
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
@@ -753,6 +757,10 @@ msgstr "मीडिया के अंत से पहले का स्थ
 #: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "रिकॉर्डिंग फ़ोल्डर चुनें"
+
+#: personal_tools_ui.py:424
+msgid "Choose a replacement channel:"
+msgstr "इसकी जगह इस्तेमाल करने के लिए चैनल चुनें:"
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1959,6 +1967,10 @@ msgstr "स्थानीय लाइव बफ़र"
 msgid "Local Live Buffer..."
 msgstr "स्थानीय लाइव बफ़र…"
 
+#: personal_tools_ui.py:173
+msgid "Local date and time (YYYY-MM-DD HH:MM)"
+msgstr "स्थानीय तारीख और समय (YYYY-MM-DD HH:MM)"
+
 #: main.py:4279
 msgid "Logs"
 msgstr "लॉग"
@@ -2138,6 +2150,10 @@ msgstr "अगला एपिसोड"
 msgid "Next Subtitle"
 msgstr "अगला उपशीर्षक"
 
+#: main.py:9314
+msgid "Next recording: {time}"
+msgstr "अगली रिकॉर्डिंग: {time}"
+
 #: main.py:1693
 msgid "Next: {programme}"
 msgstr "आगे: {programme}"
@@ -2252,6 +2268,10 @@ msgstr "इसके बाद कोई उपशीर्षक नहीं �
 msgid "No local live history is available."
 msgstr "स्थानीय लाइव इतिहास उपलब्ध नहीं है।"
 
+#: recording_library.py:167
+msgid "No matching recording log is available for this file."
+msgstr "इस फ़ाइल से मेल खाता रिकॉर्डिंग लॉग उपलब्ध नहीं है।"
+
 #: release_notes.py:40
 msgid "No notable changes."
 msgstr "कोई उल्लेखनीय बदलाव नहीं।"
@@ -2271,6 +2291,10 @@ msgstr "अभी कोई कार्यक्रम प्रसारित
 #: main.py:2872
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "अभी कोई प्रोग्राम गाइड आयात नहीं हुई है, इसलिए निर्धारित करने के लिए कुछ भी नहीं है।\n\nपहले एक गाइड आयात करें (फ़ाइल > EPG प्रबंधक, फिर फ़ाइल > EPG को डेटाबेस में आयात करें), फिर दोबारा प्रयास करें।"
+
+#: personal_tools_ui.py:272
+msgid "No programmes were found for this time and channel selection."
+msgstr "चुने गए समय और चैनलों के लिए कोई कार्यक्रम नहीं मिला।"
 
 #: main.py:7044
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2329,6 +2353,10 @@ msgstr "इस फ़ाइल में कोई उपशीर्षक प�
 #: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "पढ़ने के लिए उपशीर्षक का पाठ उपलब्ध नहीं है। समर्थित प्रारूप की उपशीर्षक फ़ाइल लोड करें।"
+
+#: main.py:9181
+msgid "No timed problems were found for this recording."
+msgstr "इस रिकॉर्डिंग के लॉग में समय के साथ दर्ज कोई समस्या नहीं मिली।"
 
 #: main.py:9123
 msgid "No timed problems were found in the newest recording log."
@@ -2606,6 +2634,10 @@ msgstr "अभी चलाएँ"
 msgid "Play from Beginning"
 msgstr "शुरू से चलाएँ"
 
+#: main.py:9201
+msgid "Play from This Time"
+msgstr "इस समय से चलाएँ"
+
 #: internal_player.py:447
 msgid "Play or Pause"
 msgstr "चलाएँ या रोकें"
@@ -2755,6 +2787,10 @@ msgstr "डाउनलोड तैयार हो रहा है..."
 msgid "Preparing to restart..."
 msgstr "पुनः प्रारंभ करने की तैयारी हो रही है..."
 
+#: main.py:9186
+msgid "Press Enter to play the recording from the selected time."
+msgstr "चुने गए समय से रिकॉर्डिंग चलाने के लिए Enter दबाएँ।"
+
 #: main.py:8938
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "इस विंडो को छिपाने के लिए Escape दबाएँ; डाउनलोड जारी रहता है। दृश्य > डाउनलोड दिखाएँ (Ctrl+Shift+D) इसे वापस लाता है।"
@@ -2793,6 +2829,19 @@ msgstr "रिकॉर्डिंग संसाधित की जा र�
 #: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "कार्यक्रम - चैनल"
+
+#: dvr.py:202
+msgid "Program end time must be after the start time."
+msgstr "कार्यक्रम की समाप्ति का समय उसके प्रारंभ समय के बाद होना चाहिए।"
+
+#: client_ui.py:126
+#: client_ui.py:280
+#: dialogs_misc.py:904
+#: personal_tools_ui.py:167
+#: personal_tools_ui.py:184
+#: personal_tools_ui.py:185
+msgid "Programme Guide by Time"
+msgstr "समय के अनुसार कार्यक्रम गाइड"
 
 #: planning_tools_ui.py:67
 #: planning_ui.py:291
@@ -3102,6 +3151,10 @@ msgstr "दोहराने के लिए रिकॉर्डिंग �
 msgid "Recordings"
 msgstr "रिकॉर्डिंग"
 
+#: main.py:9453
+msgid "Recover from Channel Archive..."
+msgstr "चैनल के संग्रह से पुनः प्राप्त करें..."
+
 #: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9279
@@ -3136,6 +3189,10 @@ msgstr "स्ट्रीम ताज़ा हो रही है..."
 #: dialogs_misc.py:167
 msgid "Release history"
 msgstr "रिलीज़ इतिहास"
+
+#: personal_tools_ui.py:311
+msgid "Relink Missing Channel..."
+msgstr "अनुपलब्ध चैनल को फिर से जोड़ें..."
 
 #: accessible_tools_ui.py:200
 msgid "Remember Volume for Each Channel"
@@ -3406,6 +3463,10 @@ msgstr "खोज परिणाम"
 msgid "Search descriptions too"
 msgstr "विवरण में भी खोजें"
 
+#: personal_tools_ui.py:392
+msgid "Search for the replacement channel:"
+msgstr "वैकल्पिक चैनल खोजें:"
+
 #: accessible_tools_ui.py:74
 msgid "Search guide channels:"
 msgstr "गाइड के चैनल खोजें:"
@@ -3457,6 +3518,10 @@ msgstr "पहले रिकॉर्ड करने के लिए एक 
 msgid "Select a live channel first."
 msgstr "पहले कोई लाइव चैनल चुनें।"
 
+#: main.py:9332
+msgid "Select a missed, failed or partial recording."
+msgstr "कोई छूटी हुई, विफल या अधूरी रिकॉर्डिंग चुनें।"
+
 #: main.py:9598
 msgid "Select a programme first."
 msgstr "पहले एक कार्यक्रम चुनें।"
@@ -3488,6 +3553,10 @@ msgstr "समय बदलने के लिए एक लंबित या
 #: main.py:9224
 msgid "Select one pending recording that is not a series rule."
 msgstr "एक लंबित रिकॉर्डिंग चुनें जो श्रृंखला का नियम न हो।"
+
+#: dvr.py:632
+msgid "Select one pending recurring recording."
+msgstr "दोहराई जाने वाली ऐसी रिकॉर्डिंग चुनें जो अभी शुरू न हुई हो।"
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3594,6 +3663,10 @@ msgstr "प्लेयर दिखाएँ"
 msgid "Show Player on Enter"
 msgstr "Enter पर प्लेयर दिखाएँ"
 
+#: personal_tools_ui.py:181
+msgid "Show Programmes"
+msgstr "कार्यक्रम दिखाएँ"
+
 #: client_ui.py:207
 #: client_ui.py:351
 msgid "Show Stream URL"
@@ -3630,6 +3703,19 @@ msgstr "बंद करना रद्द किया गया। रिक�
 #: planning_tools.py:86
 msgid "Size (bytes)"
 msgstr "आकार (बाइट)"
+
+#: main.py:9307
+#: main.py:9450
+msgid "Skip This Occurrence"
+msgstr "केवल इस बार छोड़ें"
+
+#: main.py:9306
+msgid "Skip this occurrence of {title}?"
+msgstr "क्या “{title}” की इस बार की रिकॉर्डिंग छोड़ दें?"
+
+#: main.py:9471
+msgid "Skipped"
+msgstr "छोड़ दी गई"
 
 #: internal_player.py:3290
 #: internal_player.py:3302
@@ -3677,6 +3763,15 @@ msgstr "Stalker Portal"
 #: playlist.py:3460
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
+
+#: client_epg.py:182
+#: client_epg.py:200
+msgid "Stalker portal client is not initialized."
+msgstr "Stalker पोर्टल का क्लाइंट अभी आरंभ नहीं हुआ है।"
+
+#: client_epg.py:179
+msgid "Stalker portal entry missing provider identifier."
+msgstr "Stalker पोर्टल की प्रविष्टि में सेवा प्रदाता का पहचानकर्ता नहीं है।"
 
 #: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
@@ -3965,6 +4060,11 @@ msgstr "यह बुकमार्क अब उपलब्ध नहीं �
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "बुकमार्क की अधिकतम संख्या पूरी हो गई है। पहले कोई अनुपयोगी बुकमार्क हटाएँ।"
 
+#: personal_tools_ui.py:432
+#: personal_tools_ui.py:441
+msgid "The channel cannot be identified unambiguously."
+msgstr "चैनल की स्पष्ट पहचान नहीं हो सकी।"
+
 #: personal_tools_ui.py:272
 #: personal_tools_ui.py:439
 msgid "The channel list changed. Try again."
@@ -4166,9 +4266,17 @@ msgstr "रिकॉर्डिंग का शेड्यूल पढ़ा
 msgid "The recording start time has already passed."
 msgstr "रिकॉर्डिंग का आरंभ समय बीत चुका है।"
 
+#: dvr.py:331
+msgid "The recording times are invalid. Check the recording schedule."
+msgstr "रिकॉर्डिंग का समय अमान्य है। रिकॉर्डिंग की समय-सारणी जाँचें।"
+
 #: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "रिकॉर्डिंग के कूड़ेदान का फ़ोल्डर उपलब्ध नहीं है।"
+
+#: dvr.py:337
+msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
+msgstr "बहाल की गई समय-सारणी सहेजी नहीं जा सकी। रिकॉर्डिंग की समय-सारणी और डिस्क पर उपलब्ध जगह जाँचें।"
 
 #: programme_reminders.py:203
 msgid "The reminder cannot be postponed beyond the programme's end."
@@ -4232,6 +4340,10 @@ msgstr "चेतावनी की सीमा, रिकॉर्डिं�
 msgid "This catch-up programme is already downloading."
 msgstr "यह कैच-अप कार्यक्रम पहले से डाउनलोड हो रहा है।"
 
+#: client_epg.py:150
+msgid "This channel does not provide catch-up streaming."
+msgstr "इस चैनल पर पिछले प्रसारण उपलब्ध नहीं हैं।"
+
 #: main.py:3942
 msgid "This channel is not currently recording."
 msgstr "यह चैनल वर्तमान में रिकॉर्ड नहीं हो रहा है।"
@@ -4244,6 +4356,10 @@ msgstr "यह आदेश ऑन-डिमांड प्लेबैक क�
 #: main.py:1794
 msgid "This entry cannot be added to Favorites."
 msgstr "इस प्रविष्टि को पसंदीदा में नहीं जोड़ा जा सकता।"
+
+#: personal_tools_ui.py:401
+msgid "This favourite is already available."
+msgstr "यह पसंदीदा चैनल पहले से उपलब्ध है।"
 
 #: main.py:8185
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
@@ -4280,6 +4396,14 @@ msgstr "यह कार्यक्रम पहले से ही रिक�
 #: main.py:8421
 msgid "This programme is not available as catch-up content yet."
 msgstr "यह कार्यक्रम अभी कैच-अप सामग्री के रूप में उपलब्ध नहीं है।"
+
+#: client_epg.py:152
+msgid "This programme is older than the catch-up window allows."
+msgstr "यह कार्यक्रम चैनल के संग्रह में उपलब्ध अवधि से पहले प्रसारित हुआ था।"
+
+#: main.py:9343
+msgid "This programme is unavailable in the channel archive."
+msgstr "यह कार्यक्रम चैनल के संग्रह में उपलब्ध नहीं है।"
 
 #: client_epg.py:194
 msgid "This programme's start and end times are invalid."
@@ -4331,6 +4455,10 @@ msgstr "शीर्षक"
 msgid "Toggle Full Screen"
 msgstr "पूर्ण स्क्रीन टॉगल करें"
 
+#: personal_tools_ui.py:415
+msgid "Too many matches. Enter a more specific channel name."
+msgstr "बहुत सारे परिणाम मिले। चैनल का अधिक सटीक नाम दर्ज करें।"
+
 #: main.py:295
 #: main.py:298
 msgid "Topics"
@@ -4363,6 +4491,10 @@ msgstr "प्रकार"
 #: playlist.py:3135
 msgid "URL copied to the clipboard."
 msgstr "URL क्लिपबोर्ड पर कॉपी हो गई।"
+
+#: client_epg.py:155
+msgid "Unable to construct catch-up URL for this programme."
+msgstr "इस कार्यक्रम के संग्रहित प्रसारण का URL नहीं बनाया जा सका।"
 
 #: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
@@ -4815,9 +4947,9 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} Linux के लिए कॉन्फ़िगर नहीं किया गया है।"
 
-#: planning_ui.py:269
-msgid "{title}\n{channel}\nStarts: {time}"
-msgstr "{title}\n{channel}\nशुरुआत: {time}"
+#: main.py:9172
+msgid "{time} (estimated) – {message}"
+msgstr "{time} (अनुमानित) – {message}"
 
 #: internal_player.py:822
 msgid "{title} - Built-in Player"
@@ -4830,6 +4962,10 @@ msgstr "{title} - {channel}"
 #: main.py:1865
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} से {end}"
+
+#: planning_ui.py:269
+msgid "{title}\n{channel}\nStarts: {time}"
+msgstr "{title}\n{channel}\nशुरुआत: {time}"
 
 #: internal_player.py:2066
 msgid "{value}s buffer"

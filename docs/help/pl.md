@@ -71,7 +71,7 @@ Lista kategorii zawiera grupy kanałów z twoich playlist. Jej pierwsze wiersze 
 
 ### Wyszukiwanie {#search}
 
-Wpisz w polu Szukaj, aby filtrować listę kanałów, a potem naciśnij Enter lub Tab, aby zastosować filtr i iść dalej. Szukanie we Wszystkich kanałach zagląda też do przewodnika po programach, więc szukanie tytułu audycji może wypisać kanały, które ją pokazują. Wyczyść pole i naciśnij Enter, aby znowu zobaczyć całą kategorię.
+Wpisz nazwę kanału lub jej fragment i naciśnij Enter albo Tab. Wyczyść pole i naciśnij Enter, aby ponownie wyświetlić całą kategorię. Aby wyszukać nadawaną właśnie audycję według tytułu, naciśnij Ctrl+W i użyj filtra.
 
 ### Lista kanałów {#channel-list}
 
@@ -167,6 +167,8 @@ Przewodnik jest też od czasu do czasu odświeżany automatycznie, po cichu. Kan
 Jeśli zaimportowany przewodnik nie pojawia się dla kanału, sprawdź, czy jedno z twoich źródeł go obejmuje, i zaimportuj ponownie. Importowanie prowadzi szczegółowy dziennik; zobacz Rozwiązywanie problemów.
 
 ### Teraz w programie {#whats-on-now}
+
+W programie według godziny podaj lokalną datę i godzinę. Wybierz wszystkie kanały, ulubione albo nazwaną listę i naciśnij Pokaż audycje. Każdy wiersz zawiera kanał, tytuł oraz godziny rozpoczęcia i zakończenia. Dla zaznaczonej audycji możesz zaplanować nagranie lub ustawić przypomnienie.
 
 Plik > Teraz w programie (Ctrl+W) wypisuje każdą audycję nadawaną teraz na wszystkich kanałach, w formie „audycja - kanał".
 
@@ -290,6 +292,8 @@ Nagrania podążają za tym samym wyborem. Nagranie wyłącznie dźwiękowe trzy
 
 ## Nagrania {#recordings}
 
+W bibliotece nagrań wybierz plik i otwórz listę czasów wystąpienia problemów. Naciśnij Enter na wybranej pozycji, aby uruchomić wbudowany odtwarzacz od tego miejsca. Czasy przybliżone są oznaczone. Potrzebny jest dziennik odpowiadający nagraniu.
+
 Program może nagrywać dowolny kanał do pliku, podczas gdy oglądasz coś innego, albo gdy nic nie gra.
 
 - Nagrania > Rozpocznij nagrywanie (Ctrl+Shift+R) nagrywa podświetlony kanał. Naciśnięte ponownie, się zatrzymuje.
@@ -325,6 +329,8 @@ Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
 - Tylko dźwięk (MP3 V0, FLAC, WAV, AAC M4A albo Opus): tylko dźwięk, przydatne dla radia.
 
 ### Zaplanowane nagrania {#scheduled-recordings}
+
+W menu kontekstowym oczekującego nagrania cyklicznego wybierz Pomiń tylko ten termin. Po zatwierdzeniu usłyszysz, kiedy nastąpi kolejne nagranie. Pominięte, nieudane lub częściowe nagranie możesz pobrać do osobnego pliku, jeśli audycja jest jeszcze w archiwum kanału i dostępne jest połączenie do nagrywania.
 
 Aby nagrać przyszłą audycję, wybierz Zaplanuj nagrywanie na audycji w Pokaż EPG..., Teraz w programie albo w wierszu audycji w wynikach wyszukiwania. Zaplanuj nagrywanie na kanale otwiera jego przewodnik, abyś najpierw wybrał audycję.
 
@@ -487,6 +493,8 @@ Pytania, zgłoszenia błędów i nowości o wydaniach:
 Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszaniu problemu Pomoc > Kopiuj dziennik i informacje diagnostyczne daje szczegóły potrzebne do namierzenia go.
 
 ## Narzędzia osobiste {#personal-tools}
+
+Na nazwanej liście ulubionych zaznacz niedostępny kanał i wybierz Przypisz ponownie niedostępny kanał. Wyszukaj kanał zastępczy i zatwierdź wybór. Pozycja na liście zostanie zachowana.
 
 Pozostaw aplikację otwartą, aby działały zaplanowane nagrania, przypomnienia i powiadomienia zapisanych wyszukiwań. Przypomnienia i powiadomienia wyszukiwań nie wybudzają komputera. Nagrania mogą żądać wybudzenia w Windows po włączeniu opcji opisanej w Zaplanowanych nagraniach.
 

@@ -20,7 +20,10 @@ from __future__ import annotations
 import argparse
 import ast
 import array
+import json
 import os
+from pathlib import Path
+import re
 import struct
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
@@ -416,7 +419,26 @@ def find_po_files(domain=None):
 # --------------------------------------------------------------------------- #
 # update: fold freshly-extracted strings into an existing .po, keeping translations
 # --------------------------------------------------------------------------- #
-def update_po(po_path, messages):
+def prepared_notes(messages, docs=None):
+    """Match reviewed note text, preserving a PR number added by the forge."""
+    prepared = {}
+    for path in sorted(Path(docs or Path(REPO_ROOT) / "docs").glob("release-note-translations-*.json")):
+        table = json.loads(path.read_text(encoding="utf-8-sig"))["translations"]
+        for key, languages in table.items():
+            prepared.setdefault(key, {}).update(languages)
+    result = {}
+    for message in messages:
+        key, suffix = message, ""
+        number = re.search(r" \(#[0-9]+\)$", message)
+        if message not in prepared and number:
+            key, suffix = message[:number.start()], number.group()
+        for lang, value in prepared.get(key, {}).items():
+            if isinstance(value, str) and value.strip():
+                result.setdefault(lang, {})[message] = value.strip() + suffix
+    return result
+
+
+def update_po(po_path, messages, *, reviewed=None):
     entries = parse_po(po_path)
     existing = {e["msgid"]: e for e in entries if e.get("msgid")}
     header = next((e for e in entries if e.get("msgid", "") == ""), None)
@@ -445,7 +467,8 @@ def update_po(po_path, messages):
             chunks.append(f'msgstr[0] "{_escape(plurals.get(0, ""))}"\n')
             chunks.append(f'msgstr[1] "{_escape(plurals.get(1, ""))}"\n')
         else:
-            chunks.append(f'msgstr "{_escape(prev.get("msgstr", ""))}"\n')
+            value = prev.get("msgstr") or (reviewed or {}).get(msgid, "")
+            chunks.append(f'msgstr "{_escape(value)}"\n')
         chunks.append("\n")
     with open(po_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("".join(chunks))
@@ -475,11 +498,13 @@ def cmd_notes(changelog_path=CHANGELOG_PATH):
     messages = extract_release_notes(changelog_path)
     write_pot(messages, NOTES_POT_PATH,
               title="Release-note translation template for Accessible IPTV Client.")
+    reviewed = prepared_notes(messages)
     for main_po in find_po_files(DOMAIN):
         po = os.path.join(os.path.dirname(main_po), NOTES_DOMAIN + ".po")
         if not os.path.exists(po):
             _seed_po(po, main_po)
-        update_po(po, messages)
+        lang = Path(main_po).parents[1].name
+        update_po(po, messages, reviewed=reviewed.get(lang))
     print(f"Extracted {len(messages)} release-note strings -> "
           f"{os.path.relpath(NOTES_POT_PATH, REPO_ROOT)}")
     return messages

@@ -900,6 +900,10 @@ class WhatsOnNowDialog(wx.Dialog):
         close_btn = wx.Button(panel, id=wx.ID_CANCEL, label=_("Close"))
         btn_sizer.Add(play_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(schedule_btn, 0, wx.RIGHT, 5)
+        if callable(getattr(parent, "_show_guide_at", None)):
+            choose_time = wx.Button(panel, label=_("Programme Guide by Time") + "...")
+            choose_time.Bind(wx.EVT_BUTTON, lambda event: parent._show_guide_at(parent=self))
+            btn_sizer.Add(choose_time, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
 
         sizer.Add(self.listbox, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)

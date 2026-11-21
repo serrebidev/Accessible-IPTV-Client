@@ -2271,7 +2271,7 @@ class EPGDatabase:
         # Typed text is literal: "%" and "_" are LIKE wildcards otherwise
         # ("a_c" found "MEGA Cosmos", "100%" every "1005 PM" sports event).
         q = "%" + _like_escape(normalized_query) + "%"
-        title_q = "%" + _like_escape(raw_query.lower()) + "%"
+        title_q = "%" + _like_escape(raw_query.casefold()) + "%"
         c = self.conn.cursor()
         now = self._utcnow().strftime("%Y%m%d%H%M%S")
         rows = []
@@ -2304,6 +2304,7 @@ class EPGDatabase:
             )
 
         if include_title_search and len(rows) < limit:
+            self.conn.create_function("iptv_casefold", 1, lambda title: (title or "").casefold(), deterministic=True)
             try:
                 horizon = (
                     self._utcnow() + datetime.timedelta(hours=max(1, int(title_hours or 48)))
@@ -2316,7 +2317,7 @@ class EPGDatabase:
                     SELECT p.channel_id, p.title, p.start, p.end, c.display_name
                     FROM programmes p
                     JOIN channels c ON c.id = p.channel_id
-                    WHERE LOWER(p.title) LIKE ? ESCAPE '\\'
+                    WHERE iptv_casefold(p.title) LIKE ? ESCAPE '\\'
                       AND p.end >= ?
                       AND p.start <= ?
                     ORDER BY p.start ASC
@@ -2378,20 +2379,59 @@ class EPGDatabase:
             ORDER BY p.title COLLATE NOCASE ASC
         """, (floor_str, now_str, now_str)).fetchall()
         
-        result = []
-        seen = set()  # Avoid duplicates (same title on same channel)
-        for title, start, end, channel_name, channel_id in rows:
-            key = (title.lower(), channel_name.lower() if channel_name else "")
+        return self._programme_rows(rows)
+
+    @staticmethod
+    def _programme_rows(rows):
+        result, seen, names = [], set(), {}
+        for title, start, end, name, cid in rows:
+            key = (cid, start, end, title)
             if key in seen:
                 continue
             seen.add(key)
-            result.append({
-                "title": title,
-                "channel_name": channel_name or "Unknown",
-                "channel_id": channel_id,
-                "start": start,
-                "end": end
-            })
+            names.setdefault((name or "").casefold(), set()).add(cid)
+            result.append(dict(title=title, start=start, end=end, channel_name=name or "", channel_id=cid))
+        for row in result:
+            if len(names[row["channel_name"].casefold()]) > 1:
+                row["channel_label"] = "{} ({})".format(row["channel_name"], row["channel_id"])
+        return result
+
+    def programmes_at(self, when, channels=None):
+        """One airing per EPG channel at the given UTC instant, including long broadcasts."""
+        from channel_identity import guide_indexes, match_guide_channel
+        stamp = when.astimezone(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+        # Include channels with no airing in the match index as well. Otherwise
+        # a favourite with a guide of its own can pick a namesake's programme.
+        rows = self.conn.execute("""
+            SELECT p.title, p.start, p.end, c.display_name, c.id FROM channels c
+            LEFT JOIN programmes p ON p.rowid = (
+              SELECT q.rowid FROM programmes q WHERE q.channel_id=c.id AND q.start<=? AND q.end>?
+              ORDER BY q.start DESC, q.end DESC LIMIT 1)
+            ORDER BY c.display_name COLLATE NOCASE, c.id
+        """, (stamp, stamp))
+        if channels is None:
+            return self._programme_rows(row for row in rows if row[1])
+        guides, airing = {}, []
+        for row in rows:
+            title, start, end, name, cid = row
+            guides[cid] = {"id": cid, "display_name": name}
+            if start:
+                airing.append(row)
+        indexes = guide_indexes(guides)
+        by_id = {row["channel_id"]: row for row in self._programme_rows(airing)}
+        result = []
+        names = {}
+        for channel in channels:
+            match = match_guide_channel(channel, indexes)
+            if match and match["id"] in by_id:
+                row = dict(by_id[match["id"]], playlist_channel=channel)
+                name = channel.get("name") or row["channel_name"]
+                row["channel_label"] = name
+                names[name.casefold()] = names.get(name.casefold(), 0) + 1
+                result.append(row)
+        for row in result:
+            if names[row["channel_label"].casefold()] > 1:
+                row["channel_label"] += " ({})".format(row["channel_id"])
         return result
 
     def get_recent_programmes(self, channel: Dict[str, str], hours: int = 48, limit: int = 60) -> List[Dict[str, str]]:

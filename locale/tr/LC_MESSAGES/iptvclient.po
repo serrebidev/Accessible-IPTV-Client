@@ -744,6 +744,10 @@ msgstr "Oynatılacak kanalı seçin:"
 msgid "Choose a command to change:"
 msgstr "Değiştirilecek komutu seçin:"
 
+#: favorite_collections.py:101
+msgid "Choose a different channel that is not already in this list."
+msgstr "Bu listede henüz bulunmayan başka bir kanal seçin."
+
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
@@ -753,6 +757,10 @@ msgstr "Medyanın bitişinden önce bir konum seçin."
 #: recording_library_ui.py:195
 msgid "Choose a recording folder"
 msgstr "Bir kayıt klasörü seçin"
+
+#: personal_tools_ui.py:424
+msgid "Choose a replacement channel:"
+msgstr "Yerine kullanılacak kanalı seçin:"
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1959,6 +1967,10 @@ msgstr "Yerel Canlı Yayın Arabelleği"
 msgid "Local Live Buffer..."
 msgstr "Yerel Canlı Yayın Arabelleği…"
 
+#: personal_tools_ui.py:173
+msgid "Local date and time (YYYY-MM-DD HH:MM)"
+msgstr "Yerel tarih ve saat (YYYY-AA-GG SS:DD)"
+
 #: main.py:4279
 msgid "Logs"
 msgstr "Günlükler"
@@ -2138,6 +2150,10 @@ msgstr "Sonraki Bölüm"
 msgid "Next Subtitle"
 msgstr "Sonraki altyazı"
 
+#: main.py:9314
+msgid "Next recording: {time}"
+msgstr "Sonraki kayıt: {time}"
+
 #: main.py:1693
 msgid "Next: {programme}"
 msgstr "Sırada: {programme}"
@@ -2252,6 +2268,10 @@ msgstr "Daha sonraki altyazı yok."
 msgid "No local live history is available."
 msgstr "Yerel canlı yayın geçmişi bulunmuyor."
 
+#: recording_library.py:167
+msgid "No matching recording log is available for this file."
+msgstr "Bu dosyaya ait kayıt günlüğü bulunamadı."
+
 #: release_notes.py:40
 msgid "No notable changes."
 msgstr "Kayda değer değişiklik yok."
@@ -2271,6 +2291,10 @@ msgstr "Şu anda yayında program yok."
 #: main.py:2872
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "Henüz hiçbir program rehberi içe aktarılmadı, bu yüzden zamanlanacak bir şey yok.\n\nÖnce bir rehber içe aktarın (Dosya > EPG Yöneticisi, ardından Dosya > EPG'yi Veritabanına İçe Aktar) ve zamanlamayı yeniden deneyin."
+
+#: personal_tools_ui.py:272
+msgid "No programmes were found for this time and channel selection."
+msgstr "Seçilen saat ve kanallar için program bulunamadı."
 
 #: main.py:7044
 msgid "No programs are currently airing, or EPG data has not been imported yet."
@@ -2329,6 +2353,10 @@ msgstr "Bu dosyada altyazı metni bulunamadı."
 #: internal_player.py:2874
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "Okunacak altyazı metni yok. Desteklenen biçimde bir altyazı dosyası yükleyin."
+
+#: main.py:9181
+msgid "No timed problems were found for this recording."
+msgstr "Bu kaydın günlüğünde zaman bilgisi içeren bir sorun bulunamadı."
 
 #: main.py:9123
 msgid "No timed problems were found in the newest recording log."
@@ -2606,6 +2634,10 @@ msgstr "Şimdi Oynat"
 msgid "Play from Beginning"
 msgstr "Baştan Oynat"
 
+#: main.py:9201
+msgid "Play from This Time"
+msgstr "Bu Noktadan Oynat"
+
 #: internal_player.py:447
 msgid "Play or Pause"
 msgstr "Oynat veya duraklat"
@@ -2755,6 +2787,10 @@ msgstr "İndirme hazırlanıyor..."
 msgid "Preparing to restart..."
 msgstr "Yeniden başlatmaya hazırlanıyor..."
 
+#: main.py:9186
+msgid "Press Enter to play the recording from the selected time."
+msgstr "Kaydı seçili noktadan oynatmak için Enter tuşuna basın."
+
 #: main.py:8938
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Bu pencereyi gizlemek için Escape tuşuna basın; indirme devam eder. Görünüm > İndirmeleri göster (Ctrl+Shift+D) pencereyi geri getirir."
@@ -2793,6 +2829,19 @@ msgstr "Kayıtlar işleniyor…"
 #: dialogs_misc.py:893
 msgid "Program - Channel"
 msgstr "Program - Kanal"
+
+#: dvr.py:202
+msgid "Program end time must be after the start time."
+msgstr "Programın bitiş saati başlangıç saatinden sonra olmalıdır."
+
+#: client_ui.py:126
+#: client_ui.py:280
+#: dialogs_misc.py:904
+#: personal_tools_ui.py:167
+#: personal_tools_ui.py:184
+#: personal_tools_ui.py:185
+msgid "Programme Guide by Time"
+msgstr "Saate Göre Yayın Akışı"
 
 #: planning_tools_ui.py:67
 #: planning_ui.py:291
@@ -3102,6 +3151,10 @@ msgstr "Kayıt tekrarlanacak şekilde güncellendi."
 msgid "Recordings"
 msgstr "Kayıtlar"
 
+#: main.py:9453
+msgid "Recover from Channel Archive..."
+msgstr "Kanal Arşivinden Al..."
+
 #: dialogs_misc.py:356
 #: main.py:9195
 #: main.py:9279
@@ -3136,6 +3189,10 @@ msgstr "Yayın yenileniyor..."
 #: dialogs_misc.py:167
 msgid "Release history"
 msgstr "Sürüm geçmişi"
+
+#: personal_tools_ui.py:311
+msgid "Relink Missing Channel..."
+msgstr "Kullanılamayan Kanalı Yeniden Eşleştir..."
 
 #: accessible_tools_ui.py:200
 msgid "Remember Volume for Each Channel"
@@ -3406,6 +3463,10 @@ msgstr "Arama Sonuçları"
 msgid "Search descriptions too"
 msgstr "Açıklamalarda da ara"
 
+#: personal_tools_ui.py:392
+msgid "Search for the replacement channel:"
+msgstr "Yerine kullanılacak kanalı ara:"
+
 #: accessible_tools_ui.py:74
 msgid "Search guide channels:"
 msgstr "Rehber kanallarında ara:"
@@ -3457,6 +3518,10 @@ msgstr "Önce kaydedilecek bir kanal seçin."
 msgid "Select a live channel first."
 msgstr "Önce bir canlı kanal seçin."
 
+#: main.py:9332
+msgid "Select a missed, failed or partial recording."
+msgstr "Kaçırılmış, başarısız veya kısmi bir kayıt seçin."
+
 #: main.py:9598
 msgid "Select a programme first."
 msgstr "Önce bir program seçin."
@@ -3488,6 +3553,10 @@ msgstr "Saatlerini düzenlemek için bekleyen veya devam eden bir kayıt seçin.
 #: main.py:9224
 msgid "Select one pending recording that is not a series rule."
 msgstr "Dizi kuralı olmayan tek bir bekleyen kayıt seçin."
+
+#: dvr.py:632
+msgid "Select one pending recurring recording."
+msgstr "Henüz başlamamış, yinelenen bir kayıt seçin."
 
 #: internal_player.py:132
 msgid "Select the audio output device for the built-in player."
@@ -3594,6 +3663,10 @@ msgstr "Oynatıcıyı göster"
 msgid "Show Player on Enter"
 msgstr "Enter'a basıldığında oynatıcıyı göster"
 
+#: personal_tools_ui.py:181
+msgid "Show Programmes"
+msgstr "Programları Göster"
+
 #: client_ui.py:207
 #: client_ui.py:351
 msgid "Show Stream URL"
@@ -3630,6 +3703,19 @@ msgstr "Kapatma iptal edildi. Kayıtlardan sonra otomatik kapatma artık kapalı
 #: planning_tools.py:86
 msgid "Size (bytes)"
 msgstr "Boyut (bayt)"
+
+#: main.py:9307
+#: main.py:9450
+msgid "Skip This Occurrence"
+msgstr "Yalnızca Bu Kaydı Atla"
+
+#: main.py:9306
+msgid "Skip this occurrence of {title}?"
+msgstr "“{title}” için bu kayıt atlansın mı?"
+
+#: main.py:9471
+msgid "Skipped"
+msgstr "Atlandı"
 
 #: internal_player.py:3290
 #: internal_player.py:3302
@@ -3677,6 +3763,15 @@ msgstr "Stalker Portal"
 #: playlist.py:3460
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
+
+#: client_epg.py:182
+#: client_epg.py:200
+msgid "Stalker portal client is not initialized."
+msgstr "Stalker portalı istemcisi henüz başlatılmadı."
+
+#: client_epg.py:179
+msgid "Stalker portal entry missing provider identifier."
+msgstr "Stalker portalı kaydında sağlayıcı kimliği eksik."
 
 #: personal_tools_ui.py:105
 #: recording_conflicts_ui.py:167
@@ -3965,6 +4060,11 @@ msgstr "Yer işareti artık kullanılamıyor. Listeyi yeniden açın."
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "Yer işareti sınırına ulaşıldı. Önce kullanılmayan bir yer işaretini silin."
 
+#: personal_tools_ui.py:432
+#: personal_tools_ui.py:441
+msgid "The channel cannot be identified unambiguously."
+msgstr "Kanal kesin olarak belirlenemedi."
+
 #: personal_tools_ui.py:272
 #: personal_tools_ui.py:439
 msgid "The channel list changed. Try again."
@@ -4166,9 +4266,17 @@ msgstr "Kayıt zamanlaması okunamadı. Özgün dosya {path} konumunda korundu. 
 msgid "The recording start time has already passed."
 msgstr "Kaydın başlangıç saati geçti."
 
+#: dvr.py:331
+msgid "The recording times are invalid. Check the recording schedule."
+msgstr "Kayıt saatleri geçersiz. Kayıt zamanlamasını kontrol edin."
+
 #: recording_library.py:192
 msgid "The recording trash folder is not available."
 msgstr "Kayıt çöp kutusu klasörüne erişilemiyor."
+
+#: dvr.py:337
+msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
+msgstr "Kurtarılan kayıt zamanlaması kaydedilemedi. Zamanlamayı ve diskteki boş alanı kontrol edin."
 
 #: programme_reminders.py:203
 msgid "The reminder cannot be postponed beyond the programme's end."
@@ -4232,6 +4340,10 @@ msgstr "Uyarı eşiği, durdurma eşiğinden düşük olamaz."
 msgid "This catch-up programme is already downloading."
 msgstr "Bu program zaten indiriliyor."
 
+#: client_epg.py:150
+msgid "This channel does not provide catch-up streaming."
+msgstr "Bu kanal geçmiş yayınları izleme olanağı sunmuyor."
+
 #: main.py:3942
 msgid "This channel is not currently recording."
 msgstr "Bu kanal şu anda kaydedilmiyor."
@@ -4244,6 +4356,10 @@ msgstr "Bu komut isteğe bağlı içerik oynatılırken kullanılabilir."
 #: main.py:1794
 msgid "This entry cannot be added to Favorites."
 msgstr "Bu öğe sık kullanılanlara eklenemez."
+
+#: personal_tools_ui.py:401
+msgid "This favourite is already available."
+msgstr "Bu sık kullanılan kanal zaten kullanılabilir."
 
 #: main.py:8185
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
@@ -4280,6 +4396,14 @@ msgstr "Bu program zaten kayıt için zamanlandı."
 #: main.py:8421
 msgid "This programme is not available as catch-up content yet."
 msgstr "Bu program henüz geri izlemede yok."
+
+#: client_epg.py:152
+msgid "This programme is older than the catch-up window allows."
+msgstr "Bu program kanal arşivinde tutulan dönemden önce yayınlanmış."
+
+#: main.py:9343
+msgid "This programme is unavailable in the channel archive."
+msgstr "Bu program kanal arşivinde bulunmuyor."
 
 #: client_epg.py:194
 msgid "This programme's start and end times are invalid."
@@ -4331,6 +4455,10 @@ msgstr "Başlık"
 msgid "Toggle Full Screen"
 msgstr "Tam ekranı aç/kapat"
 
+#: personal_tools_ui.py:415
+msgid "Too many matches. Enter a more specific channel name."
+msgstr "Çok fazla eşleşme var. Kanal adını daha ayrıntılı girin."
+
 #: main.py:295
 #: main.py:298
 msgid "Topics"
@@ -4363,6 +4491,10 @@ msgstr "Tür"
 #: playlist.py:3135
 msgid "URL copied to the clipboard."
 msgstr "URL panoya kopyalandı."
+
+#: client_epg.py:155
+msgid "Unable to construct catch-up URL for this programme."
+msgstr "Bu program için arşiv bağlantısı oluşturulamadı."
 
 #: updater.py:782
 msgid "Unable to download manifest. Please check your connection."
@@ -4815,9 +4947,9 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} Linux için yapılandırılmamış."
 
-#: planning_ui.py:269
-msgid "{title}\n{channel}\nStarts: {time}"
-msgstr "{title}\n{channel}\nBaşlangıç: {time}"
+#: main.py:9172
+msgid "{time} (estimated) – {message}"
+msgstr "{time} (tahmini) – {message}"
 
 #: internal_player.py:822
 msgid "{title} - Built-in Player"
@@ -4830,6 +4962,10 @@ msgstr "{title} - {channel}"
 #: main.py:1865
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start}'den {end}'ye"
+
+#: planning_ui.py:269
+msgid "{title}\n{channel}\nStarts: {time}"
+msgstr "{title}\n{channel}\nBaşlangıç: {time}"
 
 #: internal_player.py:2066
 msgid "{value}s buffer"

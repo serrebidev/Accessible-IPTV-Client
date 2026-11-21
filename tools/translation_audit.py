@@ -244,6 +244,7 @@ def prepare_notes(messages, languages=AUDITED_LANGUAGES, locale_dir=None):
     translations and retires bullets that fall out of the window.
     """
     locale_dir = locale_dir or i18n_tools.LOCALE_DIR
+    reviewed = i18n_tools.prepared_notes(messages)
     for lang in languages:
         po = os.path.join(locale_dir, lang, "LC_MESSAGES", i18n_tools.NOTES_DOMAIN + ".po")
         current = {e["msgid"]: {"plural": None, "locations": set()}
@@ -251,7 +252,7 @@ def prepare_notes(messages, languages=AUDITED_LANGUAGES, locale_dir=None):
         combined = dict(current)
         for msgid, info in messages.items():
             combined[msgid] = info
-        i18n_tools.update_po(po, combined)
+        i18n_tools.update_po(po, combined, reviewed=reviewed.get(lang))
 
 
 # --------------------------------------------------------------------------- #
