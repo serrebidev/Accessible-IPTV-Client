@@ -12,21 +12,26 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:621
+#: internal_player.py:623
 msgid "&Playback"
 msgstr "&تشغيل"
 
-#: main.py:4338
+#: main.py:4316
 msgid "(No EPG debug log has been written yet.)"
 msgstr "(لم يُكتب أي سجل تصحيح لدليل البرامج بعد.)"
 
+#: favourite_transfer_ui.py:37
+#: favourite_transfer_ui.py:65
+#: personal_tools_ui.py:413
+msgid "(No channel name)"
+msgstr "(اسم القناة غير متاح)"
+
 #: channel_widgets.py:382
 #: dialogs_misc.py:565
-#: personal_tools_ui.py:340
 #: planning_ui.py:107
-#: planning_ui.py:270
-#: recording_conflicts_ui.py:128
-#: recording_conflicts_ui.py:165
+#: planning_ui.py:275
+#: recording_conflicts_ui.py:144
+#: recording_conflicts_ui.py:183
 msgid "(No title)"
 msgstr "(بلا عنوان)"
 
@@ -43,11 +48,11 @@ msgstr "مطلوب كلمة مرور احتياطية."
 msgid "A bookmark with this name already exists for this item."
 msgstr "توجد بالفعل علامة مرجعية بهذا الاسم لهذا المحتوى."
 
-#: main.py:5782
+#: main.py:5760
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "يوجد تنزيل أو تسجيل قيد التقدم الآن.\n\nإذا خرجت الآن سيتوقف، وسيُحتفظ فقط بالجزء الذي تم التقاطه حتى الآن.\n\nهل تريد الخروج على أي حال؟"
 
-#: favorite_collections.py:78
+#: favorite_collections.py:85
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "يمكن أن تحتوي قائمة المفضلة على 2000 قناة كحد أقصى."
 
@@ -55,16 +60,20 @@ msgstr "يمكن أن تحتوي قائمة المفضلة على 2000 قناة 
 msgid "A file with this name already exists in the recording folder."
 msgstr "يوجد بالفعل ملف بهذا الاسم في مجلد التسجيلات."
 
-#: favorite_collections.py:55
-#: favorite_collections.py:70
+#: buffer_clip.py:105
+msgid "A file with this name already exists in the selected folder."
+msgstr "يوجد بالفعل ملف بهذا الاسم في المجلد المحدد."
+
+#: favorite_collections.py:62
+#: favorite_collections.py:77
 msgid "A list with this name already exists."
 msgstr "توجد قائمة بهذا الاسم بالفعل."
 
-#: main.py:5759
+#: main.py:5737
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "تسجيل قيد التقدم و{count} تسجيل لا يزال مجدولًا.\n\n{names}\n\nيجب أن يبقى التطبيق مفتوحًا لبدئه. الخروج على أي حال؟"
 
-#: dvr.py:577
+#: dvr.py:668
 msgid "A running recording's start time cannot be changed."
 msgstr "لا يمكن تغيير وقت بدء تسجيل جارٍ."
 
@@ -85,13 +94,13 @@ msgstr "حول..."
 msgid "Accessibility"
 msgstr "إمكانية الوصول"
 
-#: personal_tools_ui.py:839
-#: personal_tools_ui.py:861
+#: personal_tools_ui.py:912
+#: personal_tools_ui.py:934
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "نسخة احتياطية من Accessible IPTV (*.aiptv)"
 
 #: account_info.py:460
-#: recording_conflicts_ui.py:166
+#: recording_conflicts_ui.py:184
 msgid "Account"
 msgstr "الحساب"
 
@@ -129,17 +138,17 @@ msgstr "الحسابات"
 msgid "Active"
 msgstr "نشط"
 
-#: main.py:4333
+#: main.py:4311
 msgid "Active recordings: {count}"
 msgstr "التسجيلات النشطة: {count}"
 
-#: playlist.py:3583
-#: playlist.py:3702
+#: playlist.py:3588
+#: playlist.py:3707
 msgid "Add"
 msgstr "إضافة"
 
-#: playlist.py:3257
-#: playlist.py:3360
+#: playlist.py:3262
+#: playlist.py:3365
 msgid "Add File"
 msgstr "إضافة ملف"
 
@@ -155,28 +164,28 @@ msgstr "إضافة علامة مرجعية باسم"
 msgid "Add Named Bookmark..."
 msgstr "إضافة علامة مرجعية باسم..."
 
-#: personal_tools_ui.py:310
+#: personal_tools_ui.py:358
 msgid "Add Selected Channel"
 msgstr "إضافة القناة المحددة"
 
-#: playlist.py:3363
+#: playlist.py:3368
 msgid "Add Stalker Portal"
 msgstr "إضافة Stalker Portal"
 
-#: playlist.py:3636
+#: playlist.py:3641
 msgid "Add Stalker Portal Account"
 msgstr "إضافة حساب Stalker Portal"
 
-#: playlist.py:3258
-#: playlist.py:3361
+#: playlist.py:3263
+#: playlist.py:3366
 msgid "Add URL"
 msgstr "إضافة عنوان URL"
 
-#: playlist.py:3362
+#: playlist.py:3367
 msgid "Add Xtream Codes"
 msgstr "إضافة Xtream Codes"
 
-#: playlist.py:3521
+#: playlist.py:3526
 msgid "Add Xtream Codes Account"
 msgstr "إضافة حساب Xtream Codes"
 
@@ -186,13 +195,13 @@ msgstr "إضافة حساب Xtream Codes"
 msgid "Add to Favorites"
 msgstr "إضافة إلى المفضلة"
 
-#: main.py:6305
-#: main.py:6341
-#: main.py:6342
-#: main.py:7152
-#: personal_tools_ui.py:177
-#: personal_tools_ui.py:499
-#: personal_tools_ui.py:501
+#: main.py:6283
+#: main.py:6319
+#: main.py:6320
+#: main.py:7130
+#: personal_tools_ui.py:179
+#: personal_tools_ui.py:572
+#: personal_tools_ui.py:574
 msgid "All Channels"
 msgstr "جميع القنوات"
 
@@ -206,25 +215,25 @@ msgstr "جميع مجلدات التسجيل"
 msgid "All Recordings"
 msgstr "جميع التسجيلات"
 
-#: playlist.py:3296
-#: playlist.py:3396
+#: playlist.py:3301
+#: playlist.py:3401
 msgid "All files"
 msgstr "جميع الملفات"
 
 #: main.py:1469
-#: main.py:6952
+#: main.py:6930
 msgid "All playlists"
 msgstr "كل قوائم التشغيل"
 
-#: main.py:6950
+#: main.py:6928
 msgid "All playlists refreshed."
 msgstr "تم تحديث كل قوائم التشغيل."
 
-#: playlist.py:3419
+#: playlist.py:3424
 msgid "All playlists selected. Press F5 to refresh them all."
 msgstr "تم تحديد كل قوائم التشغيل. اضغط F5 لتحديثها كلها."
 
-#: dialogs_misc.py:824
+#: dialogs_misc.py:830
 msgid "All recordings have finished.\n\nThe computer will shut down by itself. Seconds remaining: {seconds}"
 msgstr "انتهت جميع التسجيلات.\n\nسيتم إيقاف تشغيل الكمبيوتر تلقائيًا. الثواني المتبقية: {seconds}"
 
@@ -236,15 +245,15 @@ msgstr "عند تحديد هذا الحد، احتسب الاتصالات الل
 msgid "Allowed formats"
 msgstr "التنسيقات المسموح بها"
 
-#: playlist.py:3271
+#: playlist.py:3276
 msgid "Also use the guide each playlist links to"
 msgstr "استخدام EPG الذي تشير إليه كل قائمة تشغيل أيضًا"
 
-#: main.py:4814
+#: main.py:4792
 msgid "An update is already in progress."
 msgstr "يوجد تحديث قيد التنفيذ بالفعل."
 
-#: main.py:7888
+#: main.py:7866
 msgid "Application voice output"
 msgstr "مخرج صوت التطبيق"
 
@@ -252,11 +261,11 @@ msgstr "مخرج صوت التطبيق"
 msgid "Application voice output..."
 msgstr "مخرج صوت التطبيق..."
 
-#: main.py:7920
+#: main.py:7898
 msgid "Application voice output: {name}"
 msgstr "مخرج صوت التطبيق: {name}"
 
-#: main.py:7844
+#: main.py:7822
 msgid "Application voice speed"
 msgstr "سرعة صوت التطبيق"
 
@@ -264,13 +273,17 @@ msgstr "سرعة صوت التطبيق"
 msgid "Application voice speed..."
 msgstr "سرعة صوت التطبيق…"
 
-#: main.py:7813
+#: main.py:7791
 msgid "Application voice volume"
 msgstr "مستوى صوت التطبيق"
 
 #: client_ui.py:415
 msgid "Application voice volume..."
 msgstr "مستوى صوت التطبيق..."
+
+#: dialogs_misc.py:743
+msgid "Apply to future occurrences too"
+msgstr "تطبيق على المواعيد اللاحقة أيضًا"
 
 #: accessible_tools_ui.py:66
 msgid "Assign Programme Guide"
@@ -280,27 +293,27 @@ msgstr "تعيين دليل البرامج"
 msgid "Assign Programme Guide..."
 msgstr "تعيين دليل البرامج..."
 
-#: playlist.py:3676
-#: playlist.py:3677
-#: playlist.py:3679
+#: playlist.py:3681
+#: playlist.py:3682
+#: playlist.py:3684
 msgid "Attempt to add provider XMLTV"
 msgstr "محاولة إضافة XMLTV الخاص بالمزوّد"
 
 #: internal_player.py:120
-#: internal_player.py:702
+#: internal_player.py:704
 msgid "Audio Output Device"
 msgstr "جهاز إخراج الصوت"
 
-#: internal_player.py:592
+#: internal_player.py:593
 msgid "Audio Output Device..."
 msgstr "جهاز إخراج الصوت..."
 
-#: internal_player.py:578
+#: internal_player.py:579
 #: shortcuts.py:119
 msgid "Audio Track"
 msgstr "المسار الصوتي"
 
-#: internal_player.py:2571
+#: internal_player.py:2573
 msgid "Audio Track: {name}"
 msgstr "المسار الصوتي: {name}"
 
@@ -329,17 +342,17 @@ msgstr "الصوت فقط (WAV)"
 msgid "Audio output devices"
 msgstr "أجهزة إخراج الصوت"
 
-#: internal_player.py:2607
+#: internal_player.py:2609
 msgid "Audio track unavailable"
 msgstr "المسار الصوتي غير متاح"
 
-#: main.py:3834
+#: main.py:3812
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "تم اكتشاف دفق صوتي فقط. بدأ التسجيل ({fmt}):\n{path}"
 
-#: internal_player.py:2084
-#: internal_player.py:2626
-#: internal_player.py:2635
+#: internal_player.py:2086
+#: internal_player.py:2628
+#: internal_player.py:2637
 msgid "Audio: {name}"
 msgstr "الصوت: {name}"
 
@@ -388,9 +401,9 @@ msgstr "الإعلانات التلقائية"
 msgid "Automatically Play the Next Episode"
 msgstr "تشغيل الحلقة التالية تلقائيًا"
 
-#: playlist.py:3563
-#: playlist.py:3564
-#: playlist.py:3566
+#: playlist.py:3568
+#: playlist.py:3569
+#: playlist.py:3571
 msgid "Automatically add XMLTV URL"
 msgstr "إضافة عنوان URL الخاص بـ XMLTV تلقائيًا"
 
@@ -401,6 +414,10 @@ msgstr "التوفّر"
 #: resume_dialogs.py:161
 msgid "Available"
 msgstr "متاح"
+
+#: client_timeshift.py:292
+msgid "Available history: {seconds} seconds."
+msgstr "المدة المتاحة: {seconds} ثانية."
 
 #: media_navigation_ui.py:11
 #: shortcuts.py:107
@@ -413,7 +430,7 @@ msgid "Back 60 Seconds"
 msgstr "رجوع 60 ثانية"
 
 #: full_backup.py:54
-#: full_backup.py:153
+#: full_backup.py:161
 #: settings_backup.py:47
 msgid "Backup file is too large."
 msgstr "ملف النسخة الاحتياطية كبير جدًا."
@@ -427,11 +444,11 @@ msgstr "إعدادات النسخة الاحتياطية غير صالحة."
 msgid "Banned"
 msgstr "محظور"
 
-#: playlist.py:3689
+#: playlist.py:3694
 msgid "Base URL of the Stalker/Ministra portal"
 msgstr "عنوان URL الأساسي لبوابة Stalker/Ministra"
 
-#: playlist.py:3571
+#: playlist.py:3576
 msgid "Base URL of the Xtream Codes server"
 msgstr "عنوان URL الأساسي لخادم Xtream Codes"
 
@@ -457,11 +474,11 @@ msgstr "تغييرات غير متوافقة"
 msgid "Browse..."
 msgstr "استعراض..."
 
-#: internal_player.py:907
-#: internal_player.py:1947
-#: internal_player.py:1960
-#: internal_player.py:2040
-#: internal_player.py:2276
+#: internal_player.py:909
+#: internal_player.py:1949
+#: internal_player.py:1962
+#: internal_player.py:2042
+#: internal_player.py:2278
 msgid "Buffering..."
 msgstr "جارٍ التخزين المؤقت..."
 
@@ -474,7 +491,7 @@ msgid "Built-in IPTV Player"
 msgstr "مشغّل IPTV المدمج"
 
 #: main.py:913
-#: main.py:7954
+#: main.py:7932
 msgid "Built-in Player"
 msgstr "المشغّل المدمج"
 
@@ -482,7 +499,7 @@ msgstr "المشغّل المدمج"
 msgid "Built-in player is unavailable."
 msgstr "المشغّل المدمج غير متوفر."
 
-#: main.py:8097
+#: main.py:8075
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "المشغّل المدمج غير متوفر:\n{detail}"
 
@@ -496,34 +513,36 @@ msgid "Calendar file (*.ics)"
 msgstr "ملف تقويم (*.ics)"
 
 #: accessible_tools_ui.py:29
+#: client_timeshift.py:319
 #: dialogs_misc.py:240
 #: dialogs_misc.py:681
-#: dialogs_misc.py:742
+#: dialogs_misc.py:748
 #: episode_continuation_ui.py:85
 #: internal_player.py:150
-#: main.py:7825
-#: main.py:7858
-#: main.py:8999
-#: main.py:9442
+#: main.py:7803
+#: main.py:7836
+#: main.py:8977
+#: main.py:9420
 #: options.py:987
-#: personal_tools_ui.py:92
-#: playlist.py:3276
-#: playlist.py:3376
-#: playlist.py:3584
-#: playlist.py:3703
-#: recording_conflicts_ui.py:99
+#: personal_tools_ui.py:94
+#: playlist.py:3281
+#: playlist.py:3381
+#: playlist.py:3589
+#: playlist.py:3708
+#: recording_conflicts_ui.py:103
 msgid "Cancel"
 msgstr "إلغاء"
 
-#: main.py:9096
+#: main.py:9074
 msgid "Cancel Download"
 msgstr "إلغاء التنزيل"
 
-#: dialogs_misc.py:800
+#: dialogs_misc.py:806
 msgid "Cancel Shutdown"
 msgstr "إلغاء إيقاف التشغيل"
 
-#: main.py:9470
+#: buffer_clip.py:22
+#: main.py:9454
 msgid "Canceled"
 msgstr "تم الإلغاء"
 
@@ -551,63 +570,63 @@ msgstr "البث إلى..."
 msgid "Cast to Device"
 msgstr "البث إلى الجهاز"
 
-#: internal_player.py:594
+#: internal_player.py:595
 #: shortcuts.py:116
 msgid "Cast..."
 msgstr "بث..."
 
-#: internal_player.py:2008
-#: internal_player.py:2012
-#: internal_player.py:2031
-#: main.py:8080
-#: main.py:8259
-#: main.py:8288
-#: main.py:8908
+#: internal_player.py:2010
+#: internal_player.py:2014
+#: internal_player.py:2033
+#: main.py:8058
+#: main.py:8237
+#: main.py:8266
+#: main.py:8886
 msgid "Casting"
 msgstr "جارٍ البث"
 
-#: internal_player.py:2031
-#: main.py:8076
-#: main.py:8083
-#: main.py:8271
+#: internal_player.py:2033
+#: main.py:8054
+#: main.py:8061
+#: main.py:8249
 msgid "Casting Error"
 msgstr "خطأ في البث"
 
-#: main.py:8073
+#: main.py:8051
 msgid "Casting failed: {error}"
 msgstr "فشل البث: {error}"
 
-#: internal_player.py:2008
+#: internal_player.py:2010
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "البث غير متوفر لأن وحدة البث لم تتم تهيئتها."
 
-#: main.py:8080
-#: main.py:8288
+#: main.py:8058
+#: main.py:8266
 msgid "Casting to {device}..."
 msgstr "جارٍ البث إلى {device}..."
 
 #: dialogs_misc.py:496
 #: main.py:2822
-#: main.py:8372
-#: main.py:8395
-#: main.py:8419
-#: main.py:8422
+#: main.py:8350
+#: main.py:8373
+#: main.py:8397
+#: main.py:8400
 msgid "Catch-up"
 msgstr "المشاهدة اللاحقة"
 
-#: main.py:8478
-#: main.py:8484
-#: main.py:8496
-#: main.py:8509
-#: main.py:8600
-#: main.py:8608
-#: main.py:8651
+#: main.py:8456
+#: main.py:8462
+#: main.py:8474
+#: main.py:8487
+#: main.py:8578
+#: main.py:8586
+#: main.py:8629
+#: main.py:8693
+#: main.py:8711
 #: main.py:8715
-#: main.py:8733
-#: main.py:8737
-#: main.py:8781
-#: main.py:9356
-#: main.py:9363
+#: main.py:8759
+#: main.py:9334
+#: main.py:9341
 msgid "Catch-up Download"
 msgstr "تنزيل المشاهدة اللاحقة"
 
@@ -630,24 +649,25 @@ msgstr "الفئات"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "التغييرات في كل إصدار من {app}، بدءًا من الأحدث. تظهر ملاحظات أحدث الإصدارات بلغتك بعد ترجمتها؛ وتبقى الإدخالات الأقدم بالإنجليزية."
 
-#: main.py:9269
-#: personal_tools_ui.py:636
-#: planning_tools.py:87
+#: main.py:9247
+#: personal_tools_ui.py:709
+#: planning_tools.py:91
 #: planning_ui.py:47
 #: recording_library_ui.py:81
 msgid "Channel"
 msgstr "قناة"
 
-#: favorite_collections.py:75
+#: favorite_collections.py:82
+#: favourite_transfer_ui.py:42
 #: main.py:3400
-#: main.py:7112
-#: main.py:9336
-#: personal_tools_ui.py:287
-#: personal_tools_ui.py:422
-#: personal_tools_ui.py:479
-#: personal_tools_ui.py:631
-#: planning_ui.py:291
-#: planning_ui.py:336
+#: main.py:7090
+#: main.py:9314
+#: personal_tools_ui.py:291
+#: personal_tools_ui.py:495
+#: personal_tools_ui.py:552
+#: personal_tools_ui.py:704
+#: planning_ui.py:288
+#: planning_ui.py:351
 msgid "Channel Not Found"
 msgstr "لم يتم العثور على القناة"
 
@@ -667,10 +687,11 @@ msgstr "القناة: {name}"
 #: channel_widgets.py:248
 #: channel_widgets.py:250
 #: client_ui.py:71
-#: personal_tools_ui.py:175
-#: personal_tools_ui.py:306
-#: personal_tools_ui.py:497
-#: personal_tools_ui.py:512
+#: favourite_transfer_ui.py:23
+#: personal_tools_ui.py:177
+#: personal_tools_ui.py:354
+#: personal_tools_ui.py:570
+#: personal_tools_ui.py:585
 msgid "Channels"
 msgstr "القنوات"
 
@@ -678,7 +699,7 @@ msgstr "القنوات"
 msgid "Check Availability"
 msgstr "التحقق من التوفّر"
 
-#: main.py:4617
+#: main.py:4595
 msgid "Check Recording Storage..."
 msgstr "فحص مساحة التسجيل…"
 
@@ -694,7 +715,7 @@ msgstr "التحقق من التحديثات"
 msgid "Check for Updates..."
 msgstr "التحقق من التحديثات..."
 
-#: main.py:6916
+#: main.py:6894
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "تأكد من إمكانية الوصول إلى مصادر EPG في ملف > مدير EPG، ثم حاول مرة أخرى."
 
@@ -702,12 +723,12 @@ msgstr "تأكد من إمكانية الوصول إلى مصادر EPG في م�
 msgid "Checking account, please wait..."
 msgstr "يتم التحقق من الحساب، يرجى الانتظار..."
 
-#: main.py:4993
+#: main.py:4971
 msgid "Checking for update details..."
 msgstr "جارٍ التحقق من تفاصيل التحديث..."
 
-#: recording_conflicts_ui.py:88
-#: recording_conflicts_ui.py:124
+#: recording_conflicts_ui.py:89
+#: recording_conflicts_ui.py:140
 msgid "Checking recording conflicts..."
 msgstr "جارٍ التحقق من تعارضات التسجيل…"
 
@@ -715,7 +736,7 @@ msgstr "جارٍ التحقق من تعارضات التسجيل…"
 msgid "Checking saved content…"
 msgstr "جارٍ التحقق من المحتوى المحفوظ…"
 
-#: main.py:4403
+#: main.py:4381
 msgid "Checking stream type…"
 msgstr "جارٍ التحقق من نوع الدفق…"
 
@@ -727,19 +748,24 @@ msgstr "يتم التحقق من {account}..."
 msgid "Choose Audio Track"
 msgstr "اختيار المسار الصوتي"
 
-#: personal_tools_ui.py:636
+#: personal_tools_ui.py:709
 msgid "Choose Channel"
 msgstr "اختيار قناة"
 
-#: playlist.py:3298
+#: favourite_transfer_ui.py:28
+#: favourite_transfer_ui.py:65
+msgid "Choose Channel..."
+msgstr "اختيار قناة…"
+
+#: playlist.py:3303
 msgid "Choose EPG XML file"
 msgstr "اختر ملف XML الخاص بـ EPG"
 
-#: playlist.py:3398
+#: playlist.py:3403
 msgid "Choose M3U file"
 msgstr "اختر ملف M3U"
 
-#: main.py:6940
+#: main.py:6918
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "اختر موافق لحفظ قائمة التشغيل الجديدة، ثم حدّثها."
 
@@ -751,9 +777,15 @@ msgstr "اختر قناة لتشغيلها:"
 msgid "Choose a command to change:"
 msgstr "اختر أمرًا لتغييره:"
 
-#: favorite_collections.py:103
+#: favorite_collections.py:110
+#: favourite_transfer.py:123
+#: favourite_transfer.py:133
 msgid "Choose a different channel that is not already in this list."
 msgstr "اختر قناة أخرى غير مدرجة في هذه القائمة."
+
+#: favourite_transfer.py:34
+msgid "Choose a list name without a web address or login details."
+msgstr "اختر اسمًا للقائمة لا يتضمن عنوان ويب أو بيانات تسجيل الدخول."
 
 #: media_navigation_ui.py:172
 #: session_tools_ui.py:29
@@ -765,7 +797,7 @@ msgstr "اختر موضعًا قبل نهاية الوسائط."
 msgid "Choose a recording folder"
 msgstr "اختر مجلد التسجيلات"
 
-#: personal_tools_ui.py:424
+#: personal_tools_ui.py:497
 msgid "Choose a replacement channel:"
 msgstr "اختر القناة البديلة:"
 
@@ -796,13 +828,13 @@ msgstr "هل تريد مسح سجل إشعارات هذه الجلسة؟"
 #: dialogs_misc.py:107
 #: dialogs_misc.py:175
 #: dialogs_misc.py:358
-#: dialogs_misc.py:900
+#: dialogs_misc.py:906
 #: main.py:316
-#: main.py:9198
-#: personal_tools_ui.py:92
+#: main.py:9176
+#: personal_tools_ui.py:94
 #: planning_tools_ui.py:83
 #: planning_ui.py:60
-#: recording_conflicts_ui.py:99
+#: recording_conflicts_ui.py:103
 #: recording_library_ui.py:97
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
@@ -815,22 +847,22 @@ msgstr "إغلاق"
 msgid "Community and support"
 msgstr "المجتمع والدعم"
 
-#: main.py:9465
-#: planning_tools.py:88
+#: main.py:9449
+#: planning_tools.py:92
 #: recording_library_ui.py:62
 #: recording_library_ui.py:302
 msgid "Completed"
 msgstr "اكتمل"
 
-#: playlist.py:3263
+#: playlist.py:3268
 msgid "Configured EPG sources"
 msgstr "مصادر EPG المُعدّة"
 
-#: playlist.py:3368
+#: playlist.py:3373
 msgid "Configured playlists and providers"
 msgstr "قوائم التشغيل والمزوّدون المُعدّون"
 
-#: main.py:4332
+#: main.py:4310
 msgid "Configured playlists: {count}"
 msgstr "قوائم التشغيل المهيأة: {count}"
 
@@ -842,11 +874,11 @@ msgstr "تأكيد"
 msgid "Connect"
 msgstr "اتصال"
 
-#: main.py:8921
+#: main.py:8899
 msgid "Connected"
 msgstr "متصل"
 
-#: main.py:8921
+#: main.py:8899
 msgid "Connected to {device}"
 msgstr "متصل بـ {device}"
 
@@ -858,10 +890,10 @@ msgstr "الاتصالات المتاحة للتسجيلات (0 = دون حد إ
 msgid "Connections in use"
 msgstr "الاتصالات المستخدمة"
 
-#: internal_player.py:3276
-#: main.py:6453
-#: main.py:6463
-#: main.py:8119
+#: internal_player.py:3278
+#: main.py:6431
+#: main.py:6441
+#: main.py:8097
 #: resume_dialogs.py:30
 #: resume_dialogs.py:242
 msgid "Continue Watching"
@@ -873,7 +905,7 @@ msgid "Continue Watching..."
 msgstr "متابعة المشاهدة…"
 
 #: dialogs_misc.py:357
-#: main.py:9195
+#: main.py:9173
 #: session_tools_ui.py:160
 msgid "Copy Details"
 msgstr "نسخ التفاصيل"
@@ -883,11 +915,11 @@ msgstr "نسخ التفاصيل"
 msgid "Copy Log and Debug Information"
 msgstr "نسخ السجل ومعلومات التصحيح"
 
-#: playlist.py:3206
+#: playlist.py:3211
 msgid "Copy URL"
 msgstr "نسخ عنوان URL"
 
-#: main.py:7869
+#: main.py:7847
 msgid "Could not change the application voice speed."
 msgstr "تعذر تغيير سرعة صوت التطبيق."
 
@@ -899,7 +931,7 @@ msgstr "تعذّر التحقق من التوفّر."
 msgid "Could not check this account.\n\n{error}"
 msgstr "تعذّر التحقق من هذا الحساب.\n\n{error}"
 
-#: main.py:4348
+#: main.py:4326
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "تعذّر نسخ المعلومات التشخيصية:\n{error}"
 
@@ -907,17 +939,17 @@ msgstr "تعذّر نسخ المعلومات التشخيصية:\n{error}"
 msgid "Could not create libVLC media player object."
 msgstr "تعذّر إنشاء كائن مشغّل الوسائط libVLC."
 
-#: main.py:3568
-#: main.py:3704
+#: main.py:3546
+#: main.py:3682
 msgid "Could not find a stream URL for this channel."
 msgstr "تعذّر العثور على عنوان URL لبث هذه القناة."
 
 #: main.py:3398
-#: main.py:7112
+#: main.py:7090
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "تعذّر العثور على القناة '{channel}' في قائمة التشغيل الخاصة بك."
 
-#: main.py:8035
+#: main.py:8013
 msgid "Could not find stream URL for this selection."
 msgstr "تعذّر العثور على عنوان URL للبث لهذا التحديد."
 
@@ -926,21 +958,21 @@ msgid "Could not finish restoring the backup. No background services were starte
 msgstr "تعذر إكمال الاستعادة. لم تبدأ أي خدمات في الخلفية.\n{error}"
 
 #: main.py:3301
-#: main.py:7107
+#: main.py:7085
 msgid "Could not identify the channel."
 msgstr "تعذّر التعرّف على القناة."
 
-#: main.py:6637
+#: main.py:6615
 msgid "Could not load episodes for this series."
 msgstr "تعذّر تحميل حلقات هذا المسلسل."
 
 #: episode_continuation_ui.py:50
 #: episode_continuation_ui.py:138
-#: main.py:6656
+#: main.py:6634
 msgid "Could not load episodes:\n{error}"
 msgstr "تعذّر تحميل الحلقات:\n{error}"
 
-#: internal_player.py:2736
+#: internal_player.py:2738
 msgid "Could not load subtitle file."
 msgstr "تعذر تحميل ملف الترجمة."
 
@@ -953,30 +985,30 @@ msgstr "تعذّر تحديد موقع تطبيق {player}."
 msgid "Could not locate {player} executable."
 msgstr "تعذّر تحديد موقع الملف التنفيذي {player}."
 
-#: main.py:7014
+#: main.py:6992
 msgid "Could not look for provider accounts: {error}"
 msgstr "تعذّر البحث عن حسابات المزوّدين: {error}"
 
-#: main.py:7373
+#: main.py:7351
 msgid "Could not match this programme to a playlist channel."
 msgstr "تعذّر مطابقة هذا البرنامج مع قناة في قائمة التشغيل."
 
-#: main.py:4292
-#: main.py:4305
+#: main.py:4270
+#: main.py:4283
 msgid "Could not open folder:\n{error}"
 msgstr "تعذّر فتح المجلد:\n{error}"
 
-#: main.py:4729
+#: main.py:4707
 msgid "Could not open the EPG window: {error}"
 msgstr "تعذّر فتح نافذة دليل البرامج: {error}"
 
 #: dialogs_misc.py:462
-#: main.py:9231
-#: playlist.py:3178
+#: main.py:9209
+#: playlist.py:3183
 msgid "Could not open the clipboard."
 msgstr "تعذّر فتح الحافظة."
 
-#: main.py:8118
+#: main.py:8096
 msgid "Could not prepare saved playback:\n{error}"
 msgstr "تعذّر تجهيز التشغيل من الموضع المحفوظ:\n{error}"
 
@@ -990,8 +1022,8 @@ msgid "Could not reach the portal: {error}"
 msgstr "تعذر الوصول إلى البوابة: {error}"
 
 #: main.py:2964
-#: main.py:3700
-#: main.py:7390
+#: main.py:3678
+#: main.py:7368
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "تعذّر تحليل عنوان URL للبث:\n{error}"
 
@@ -999,9 +1031,9 @@ msgstr "تعذّر تحليل عنوان URL للبث:\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "تعذر تشغيل التحقق من Authenticode: {detail}"
 
-#: internal_player.py:3214
-#: internal_player.py:3268
-#: main.py:6424
+#: internal_player.py:3216
+#: internal_player.py:3270
+#: main.py:6402
 #: resume_dialogs.py:193
 #: resume_dialogs.py:219
 msgid "Could not save playback history changes."
@@ -1016,24 +1048,24 @@ msgstr "تعذّر حفظ تفضيلات عرض مكتبة التسجيلات."
 msgid "Could not schedule recording:\n{error}"
 msgstr "تعذّر جدولة التسجيل:\n{error}"
 
-#: main.py:7905
+#: main.py:7883
 msgid "Could not select that output device."
 msgstr "تعذر تحديد جهاز الإخراج."
 
-#: main.py:4114
+#: main.py:4092
 msgid "Could not shut down the computer:\n{error}"
 msgstr "تعذر إيقاف تشغيل الكمبيوتر:\n{error}"
 
-#: main.py:8650
+#: main.py:8628
 msgid "Could not start catch-up download:\n{error}"
 msgstr "تعذّر بدء تنزيل المشاهدة اللاحقة:\n{error}"
 
-#: internal_player.py:900
+#: internal_player.py:902
 msgid "Could not start playback: {error}"
 msgstr "تعذر بدء التشغيل: {error}"
 
-#: main.py:3777
-#: main.py:3816
+#: main.py:3755
+#: main.py:3794
 msgid "Could not start recording:\n{error}"
 msgstr "تعذّر بدء التسجيل:\n{error}"
 
@@ -1041,11 +1073,11 @@ msgstr "تعذّر بدء التسجيل:\n{error}"
 msgid "Created"
 msgstr "تاريخ الإنشاء"
 
-#: dialogs_misc.py:892
+#: dialogs_misc.py:898
 msgid "Currently airing programs"
 msgstr "البرامج المعروضة حاليًا"
 
-#: main.py:8906
+#: main.py:8884
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "متصل حاليًا بـ: {device}\n\nهل تريد قطع الاتصال؟"
 
@@ -1054,7 +1086,7 @@ msgstr "متصل حاليًا بـ: {device}\n\nهل تريد قطع الاتص�
 msgid "Custom Player..."
 msgstr "مشغّل مخصص..."
 
-#: planning_tools.py:87
+#: planning_tools.py:91
 #: recording_library_ui.py:66
 #: recording_library_ui.py:81
 msgid "Date"
@@ -1068,19 +1100,19 @@ msgstr "الأيام المتبقية"
 msgid "Days since expiry"
 msgstr "الأيام المنقضية بعد انتهاء الصلاحية"
 
-#: main.py:9444
-#: personal_tools_ui.py:540
+#: main.py:9422
+#: personal_tools_ui.py:613
 #: planning_ui.py:55
-#: playlist.py:3214
+#: playlist.py:3219
 #: session_tools_ui.py:63
 msgid "Delete"
 msgstr "حذف"
 
-#: personal_tools_ui.py:309
+#: personal_tools_ui.py:357
 msgid "Delete List"
 msgstr "حذف القائمة"
 
-#: playlist.py:3485
+#: playlist.py:3490
 msgid "Delete Playlist"
 msgstr "حذف قائمة التشغيل"
 
@@ -1096,15 +1128,15 @@ msgstr "حذف ملف التسجيل..."
 msgid "Delete bookmark '{name}'?"
 msgstr "هل تريد حذف العلامة المرجعية «{name}»؟"
 
-#: personal_tools_ui.py:374
+#: personal_tools_ui.py:447
 msgid "Delete favourite list '{name}'?"
 msgstr "هل تريد حذف قائمة المفضلة «{name}»؟"
 
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:685
 msgid "Delete saved search '{name}'?"
 msgstr "هل تريد حذف البحث المحفوظ «{name}»؟"
 
-#: playlist.py:3482
+#: playlist.py:3487
 msgid "Delete the playlist “{name}”?\n\nThis removes it from the list of playlists. It cannot be undone."
 msgstr "هل تريد حذف قائمة التشغيل «{name}»؟\n\nسيتم إزالتها من قائمة قوائم التشغيل، ولا يمكن التراجع عن ذلك."
 
@@ -1113,8 +1145,8 @@ msgid "Descending"
 msgstr "تنازلي"
 
 #: dialogs_misc.py:516
-#: main.py:9617
-#: personal_tools_ui.py:536
+#: main.py:9601
+#: personal_tools_ui.py:609
 msgid "Description"
 msgstr "الوصف"
 
@@ -1123,7 +1155,8 @@ msgstr "الوصف"
 msgid "Detailed status"
 msgstr "الحالة التفصيلية"
 
-#: recording_conflicts_ui.py:86
+#: personal_tools_ui.py:326
+#: recording_conflicts_ui.py:87
 #: session_tools_ui.py:155
 #: session_tools_ui.py:157
 msgid "Details"
@@ -1133,31 +1166,31 @@ msgstr "التفاصيل"
 msgid "Detected from"
 msgstr "تم كشفه من"
 
-#: main.py:4349
-#: main.py:4352
+#: main.py:4327
+#: main.py:4330
 msgid "Diagnostic Information"
 msgstr "المعلومات التشخيصية"
 
-#: main.py:4351
+#: main.py:4329
 msgid "Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."
 msgstr "تم نسخ المعلومات التشخيصية إلى الحافظة. يمكنك لصقها في رسالة إلى المطوّر."
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:555
+#: personal_tools_ui.py:628
 msgid "Disabled"
 msgstr "معطّل"
 
-#: main.py:8074
+#: main.py:8052
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "تم قطع الاتصال بجهاز البث. افتح قائمة البث لاختيار جهاز آخر."
 
-#: playlist.py:3570
-#: playlist.py:3688
+#: playlist.py:3575
+#: playlist.py:3693
 msgid "Display name"
 msgstr "الاسم المعروض"
 
-#: main.py:9094
+#: main.py:9072
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "هل تريد حقًا إلغاء هذا التنزيل؟ لا يمكن استئنافه لاحقًا."
 
@@ -1169,73 +1202,73 @@ msgstr "التوثيق"
 msgid "Download"
 msgstr "تنزيل"
 
-#: main.py:4906
+#: main.py:4884
 msgid "Download and install now? The app will restart after the update."
 msgstr "هل تريد التنزيل والتثبيت الآن؟ ستتم إعادة تشغيل التطبيق بعد التحديث."
 
-#: main.py:8714
+#: main.py:8692
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "أُلغي التنزيل. تم حذف الملف غير المكتمل."
 
-#: main.py:8736
+#: main.py:8714
 msgid "Download complete:\n{path}"
 msgstr "اكتمل التنزيل:\n{path}"
 
-#: main.py:9007
+#: main.py:8985
 msgid "Download details"
 msgstr "تفاصيل التنزيل"
 
-#: main.py:8726
+#: main.py:8704
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "انتهى التنزيل مبكرًا:\n{path}\n\nوصل فقط {written} من أصل {expected} قبل أن يغلق المزود الاتصال. تم الاحتفاظ بالملف غير المكتمل."
 
-#: main.py:9045
+#: main.py:9023
 msgid "Download failed (code {code})."
 msgstr "فشل التنزيل (الرمز {code})."
 
-#: main.py:8774
+#: main.py:8752
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "فشل التنزيل (رمز {code}):\n{path}\n\n{detail}"
 
-#: main.py:9061
+#: main.py:9039
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "فشل التنزيل - إعادة المحاولة (المحاولة {attempt} من {total}) بعد {seconds} ثانية..."
 
-#: main.py:8771
+#: main.py:8749
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "فشل التنزيل:\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:5785
+#: main.py:5763
 msgid "Download in progress"
 msgstr "تنزيل قيد التقدم"
 
-#: main.py:9006
+#: main.py:8984
 msgid "Download progress"
 msgstr "تقدم التنزيل"
 
-#: main.py:9005
+#: main.py:8983
 msgid "Download status"
 msgstr "حالة التنزيل"
 
-#: main.py:5019
-#: main.py:5060
+#: main.py:4997
+#: main.py:5038
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "فشل التحديث الذي تم تنزيله في التحقق من SHA-256."
 
-#: main.py:9085
+#: main.py:9063
 msgid "Downloaded: {size}"
 msgstr "تم تنزيل: {size}"
 
-#: main.py:5011
-#: main.py:5015
-#: main.py:5052
-#: main.py:5056
+#: main.py:4989
+#: main.py:4993
+#: main.py:5030
+#: main.py:5034
 msgid "Downloading update..."
 msgstr "جارٍ تنزيل التحديث..."
 
-#: main.py:8965
-#: main.py:9074
-#: main.py:9078
+#: main.py:8943
+#: main.py:9052
+#: main.py:9056
 msgid "Downloading {name}"
 msgstr "جارٍ تنزيل {name}"
 
@@ -1244,13 +1277,14 @@ msgstr "جارٍ تنزيل {name}"
 msgid "Duration"
 msgstr "المدة"
 
-#: planning_tools.py:87
+#: client_timeshift.py:293
+#: planning_tools.py:91
 msgid "Duration (seconds)"
 msgstr "المدة (بالثواني)"
 
-#: main.py:4718
-#: main.py:9601
-#: main.py:9603
+#: main.py:4696
+#: main.py:9585
+#: main.py:9587
 msgid "EPG"
 msgstr "EPG"
 
@@ -1260,50 +1294,50 @@ msgstr "مطلوب تحديث قاعدة بيانات دليل البرامج"
 
 #: client_ui.py:124
 #: client_ui.py:277
-#: playlist.py:3244
+#: playlist.py:3249
 #: shortcuts.py:83
 msgid "EPG Manager"
 msgstr "مدير EPG"
 
-#: main.py:7039
-#: main.py:7057
-#: main.py:8372
-#: personal_tools_ui.py:654
+#: main.py:7017
+#: main.py:7035
+#: main.py:8350
+#: personal_tools_ui.py:727
 msgid "EPG Not Available"
 msgstr "EPG غير متوفر"
 
-#: main.py:4335
+#: main.py:4313
 msgid "EPG debug log (latest 128 KiB):"
 msgstr "سجل تصحيح دليل البرامج (آخر 128 كيبيبايت):"
 
-#: main.py:4331
+#: main.py:4309
 msgid "EPG enabled: {enabled}"
 msgstr "دليل البرامج مفعّل: {enabled}"
 
-#: main.py:7031
+#: main.py:7009
 msgid "EPG import is already in progress."
 msgstr "استيراد EPG قيد التقدم بالفعل."
 
-#: main.py:7050
+#: main.py:7028
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "سيبدأ استيراد EPG في الخلفية. يمكنك متابعة استخدام التطبيق؛ ستظهر رسالة عند انتهاء الاستيراد."
 
-#: main.py:7039
-#: main.py:7057
-#: personal_tools_ui.py:654
+#: main.py:7017
+#: main.py:7035
+#: personal_tools_ui.py:727
 msgid "EPG is not enabled."
 msgstr "EPG غير مُمكّن."
 
-#: main.py:9592
+#: main.py:9576
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
-#: main.py:9281
-#: recording_conflicts_ui.py:91
+#: main.py:9259
+#: recording_conflicts_ui.py:92
 msgid "Edit Times..."
 msgstr "تعديل الأوقات..."
 
-#: personal_tools_ui.py:539
+#: personal_tools_ui.py:612
 msgid "Edit..."
 msgstr "تعديل..."
 
@@ -1311,33 +1345,33 @@ msgstr "تعديل..."
 msgid "Elapsed: {elapsed}. Total: {total}. Remaining: {remaining}."
 msgstr "المنقضي: {elapsed}. الإجمالي: {total}. المتبقي: {remaining}."
 
-#: main.py:9083
+#: main.py:9061
 msgid "Elapsed: {time}"
 msgstr "المنقضي: {time}"
 
-#: personal_tools_ui.py:494
+#: personal_tools_ui.py:567
 msgid "Enabled"
 msgstr "مفعّل"
 
-#: personal_tools_ui.py:854
+#: personal_tools_ui.py:927
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "حُفظت نسخة احتياطية مشفرة تشمل جداول التسجيل والتذكيرات وعمليات البحث المحفوظة."
 
-#: personal_tools_ui.py:121
-#: recording_conflicts_ui.py:168
+#: personal_tools_ui.py:123
+#: recording_conflicts_ui.py:186
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "النهاية (التوقيت المحلي، YYYY-MM-DD HH:MM)"
 
-#: internal_player.py:2044
-#: internal_player.py:2271
+#: internal_player.py:2046
+#: internal_player.py:2273
 msgid "Ended"
 msgstr "انتهى"
 
-#: playlist.py:3306
+#: playlist.py:3311
 msgid "Enter EPG XML URL"
 msgstr "أدخل عنوان URL الخاص بـ XML EPG"
 
-#: playlist.py:3406
+#: playlist.py:3411
 msgid "Enter M3U URL"
 msgstr "أدخل عنوان URL الخاص بـ M3U"
 
@@ -1354,7 +1388,7 @@ msgstr "أدخِل رقم القناة:"
 msgid "Enter a local date and time as YYYY-MM-DD HH:MM."
 msgstr "أدخل التاريخ والوقت المحليين بصيغة YYYY-MM-DD HH:MM."
 
-#: favorite_collections.py:16
+#: favorite_collections.py:18
 msgid "Enter a name of 1 to 80 characters."
 msgstr "أدخل اسمًا من 1 إلى 80 حرفًا."
 
@@ -1398,7 +1432,7 @@ msgstr "أدخل كلمة المرور مرة أخرى:"
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9620
+#: main.py:9604
 msgid "Episode description"
 msgstr "وصف الحلقة"
 
@@ -1406,15 +1440,19 @@ msgstr "وصف الحلقة"
 msgid "Episode {num}"
 msgstr "الحلقة {num}"
 
+#: personal_tools_ui.py:321
+msgid "Episode: {episode}"
+msgstr "الحلقة: {episode}"
+
 #: accessible_tools_ui.py:15
-#: internal_player.py:2045
+#: internal_player.py:2047
 #: main.py:2846
 #: main.py:2900
-#: main.py:4730
-#: main.py:7015
+#: main.py:4708
+#: main.py:6993
+#: main.py:7063
 #: main.py:7085
-#: main.py:7107
-#: main.py:8924
+#: main.py:8902
 #: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
@@ -1447,11 +1485,11 @@ msgstr "لم يتم العثور على الملف التنفيذي: {path}"
 msgid "Exit"
 msgstr "خروج"
 
-#: internal_player.py:3153
+#: internal_player.py:3155
 msgid "Exit Full Screen"
 msgstr "الخروج من ملء الشاشة"
 
-#: internal_player.py:599
+#: internal_player.py:600
 #: shortcuts.py:127
 msgid "Exit Player"
 msgstr "الخروج من المشغّل"
@@ -1474,12 +1512,17 @@ msgstr "منتهي الصلاحية"
 msgid "Expires"
 msgstr "ينتهي في"
 
+#: personal_tools_ui.py:360
+#: personal_tools_ui.py:383
+msgid "Export Favourite List..."
+msgstr "تصدير قائمة المفضلة…"
+
 #: recording_library_ui.py:95
 #: recording_library_ui.py:376
 msgid "Export List to CSV..."
 msgstr "تصدير القائمة إلى CSV…"
 
-#: personal_tools_ui.py:839
+#: personal_tools_ui.py:912
 msgid "Export Settings"
 msgstr "تصدير الإعدادات"
 
@@ -1492,8 +1535,8 @@ msgstr "تصدير الإعدادات..."
 msgid "Export saved."
 msgstr "تم حفظ التصدير."
 
-#: dialogs_misc.py:1111
-#: main.py:9700
+#: dialogs_misc.py:1117
+#: main.py:9684
 #: planning_tools_ui.py:58
 #: planning_tools_ui.py:61
 #: planning_ui.py:57
@@ -1501,11 +1544,11 @@ msgstr "تم حفظ التصدير."
 msgid "Export to Calendar..."
 msgstr "تصدير إلى التقويم…"
 
-#: internal_player.py:2714
+#: internal_player.py:2716
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "ملفات الترجمة الخارجية غير متزامنة مع التخزين المؤقت المحلي للبث المباشر. استخدم الترجمة المضمنة في البث."
 
-#: main.py:5062
+#: main.py:5040
 msgid "Extracting update..."
 msgstr "جارٍ استخراج التحديث..."
 
@@ -1513,24 +1556,24 @@ msgstr "جارٍ استخراج التحديث..."
 msgid "F1 is reserved for Help."
 msgstr "المفتاح F1 محجوز للتعليمات."
 
-#: internal_player.py:3324
+#: internal_player.py:3326
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "مدة خفض الصوت تدريجيًا قبل الإيقاف بالثواني؛ 0 لتعطيل الخفض."
 
-#: main.py:3522
-#: main.py:9468
-#: planning_tools.py:89
+#: main.py:3500
+#: main.py:9452
+#: planning_tools.py:93
 #: recording_library_ui.py:62
 #: recording_library_ui.py:303
 msgid "Failed"
 msgstr "فشل"
 
-#: main.py:8083
-#: main.py:8271
+#: main.py:8061
+#: main.py:8249
 msgid "Failed to cast: {error}"
 msgstr "فشل البث: {error}"
 
-#: main.py:8924
+#: main.py:8902
 msgid "Failed to connect: {error}"
 msgstr "فشل الاتصال: {error}"
 
@@ -1542,7 +1585,7 @@ msgstr "فشل تنزيل البيان ({code})."
 msgid "Failed to download update ({code})."
 msgstr "فشل تنزيل التحديث ({code})."
 
-#: main.py:7085
+#: main.py:7063
 msgid "Failed to fetch EPG data: {error}"
 msgstr "فشل جلب بيانات EPG: {error}"
 
@@ -1558,11 +1601,11 @@ msgstr "فشلت تهيئة مثيل libVLC."
 msgid "Failed to initialise media player: {error}"
 msgstr "فشلت تهيئة مشغّل الوسائط: {error}"
 
-#: main.py:8200
+#: main.py:8178
 msgid "Failed to launch {player}:\n{error}"
 msgstr "فشل تشغيل {player}:\n{error}"
 
-#: main.py:8192
+#: main.py:8170
 msgid "Failed to start built-in player:\n{error}"
 msgstr "فشل بدء المشغّل المدمج:\n{error}"
 
@@ -1571,22 +1614,22 @@ msgstr "فشل بدء المشغّل المدمج:\n{error}"
 #: main.py:1802
 #: main.py:1918
 #: main.py:1977
-#: personal_tools_ui.py:177
+#: personal_tools_ui.py:179
 msgid "Favorites"
 msgstr "المفضلة"
 
-#: personal_tools_ui.py:354
-#: personal_tools_ui.py:368
+#: personal_tools_ui.py:427
+#: personal_tools_ui.py:441
 msgid "Favourite List Name"
 msgstr "اسم قائمة المفضلة"
 
-#: personal_tools_ui.py:303
-#: personal_tools_ui.py:305
-#: personal_tools_ui.py:425
+#: personal_tools_ui.py:351
+#: personal_tools_ui.py:353
+#: personal_tools_ui.py:498
 msgid "Favourite Lists"
 msgstr "قوائم المفضلة"
 
-#: personal_tools_ui.py:686
+#: personal_tools_ui.py:759
 msgid "Favourite Lists..."
 msgstr "قوائم المفضلة..."
 
@@ -1603,11 +1646,11 @@ msgstr "ملف"
 msgid "File Size"
 msgstr "حجم الملف"
 
-#: dialogs_misc.py:879
+#: dialogs_misc.py:885
 msgid "Filter (Tab):"
 msgstr "تصفية (Tab):"
 
-#: dialogs_misc.py:881
+#: dialogs_misc.py:887
 msgid "Filter programs"
 msgstr "تصفية البرامج"
 
@@ -1617,11 +1660,18 @@ msgstr "تصفية البرامج"
 msgid "Find"
 msgstr "بحث"
 
+#: main.py:9431
+#: recording_conflicts_ui.py:95
+#: recording_edits_ui.py:105
+#: recording_edits_ui.py:135
+msgid "Find Another Airing..."
+msgstr "البحث عن موعد عرض آخر…"
+
 #: main.py:315
 msgid "Find Next"
 msgstr "البحث عن التالي"
 
-#: personal_tools_ui.py:891
+#: personal_tools_ui.py:964
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "أنهِ التسجيلات والتنزيلات قبل استعادة نسخة احتياطية."
 
@@ -1633,7 +1683,7 @@ msgstr "تابع Serrebi على Forgejo"
 msgid "Forgejo API rate limit exceeded. Please try again later."
 msgstr "تم تجاوز حد طلبات واجهة برمجة تطبيقات Forgejo. يرجى المحاولة مرة أخرى لاحقًا."
 
-#: main.py:9271
+#: main.py:9249
 msgid "Format"
 msgstr "التنسيق"
 
@@ -1664,7 +1714,7 @@ msgid "Friday"
 msgstr "الجمعة"
 
 #: internal_player.py:472
-#: internal_player.py:3153
+#: internal_player.py:3155
 msgid "Full Screen"
 msgstr "ملء الشاشة"
 
@@ -1672,7 +1722,7 @@ msgstr "ملء الشاشة"
 msgid "Full ffmpeg log:\n{path}"
 msgstr "سجل ffmpeg الكامل:\n{path}"
 
-#: playlist.py:3295
+#: playlist.py:3300
 msgid "GZip XML"
 msgstr "GZip XML"
 
@@ -1727,7 +1777,7 @@ msgstr "منفذ HTTPS"
 msgid "Help"
 msgstr "مساعدة"
 
-#: internal_player.py:598
+#: internal_player.py:599
 #: shortcuts.py:126
 msgid "Hide Window"
 msgstr "إخفاء النافذة"
@@ -1737,27 +1787,27 @@ msgid "Hide older releases"
 msgstr "إخفاء الإصدارات السابقة"
 
 #: main.py:2943
-#: main.py:7414
-#: main.py:8059
-#: main.py:8099
+#: main.py:7392
+#: main.py:8037
+#: main.py:8077
 msgid "IPTV Stream"
 msgstr "بث IPTV"
 
 #: internal_player.py:517
 #: internal_player.py:550
-#: internal_player.py:2038
+#: internal_player.py:2040
 msgid "Idle"
 msgstr "خامل"
 
-#: main.py:7940
+#: main.py:7918
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "إذا اختفى جهاز الإخراج، يتوقف نطق الترجمة مؤقتًا حتى عودة الجهاز."
 
-#: main.py:7944
+#: main.py:7922
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "إذا اختفى جهاز الإخراج، يعود صوت التطبيق إلى الجهاز الافتراضي للنظام."
 
-#: main.py:6912
+#: main.py:6890
 msgid "Import Complete"
 msgstr "اكتمل الاستيراد"
 
@@ -1768,12 +1818,18 @@ msgid "Import EPG to DB"
 msgstr "استيراد EPG إلى قاعدة البيانات"
 
 #: main.py:2868
-#: main.py:6919
-#: main.py:7045
+#: main.py:6897
+#: main.py:7023
 msgid "Import Failed"
 msgstr "فشل الاستيراد"
 
-#: personal_tools_ui.py:861
+#: favourite_transfer_ui.py:19
+#: favourite_transfer_ui.py:90
+#: personal_tools_ui.py:360
+msgid "Import Favourite List..."
+msgstr "استيراد قائمة المفضلة…"
+
+#: personal_tools_ui.py:934
 msgid "Import Settings"
 msgstr "استيراد الإعدادات"
 
@@ -1782,7 +1838,7 @@ msgstr "استيراد الإعدادات"
 msgid "Import Settings..."
 msgstr "استيراد الإعدادات..."
 
-#: main.py:7052
+#: main.py:7030
 msgid "Import Started"
 msgstr "بدأ الاستيراد"
 
@@ -1791,20 +1847,20 @@ msgstr "بدأ الاستيراد"
 msgid "Important events"
 msgstr "أحداث مهمة"
 
-#: playlist.py:3040
+#: playlist.py:3045
 msgid "Importing EPG"
 msgstr "جارٍ استيراد EPG"
 
-#: playlist.py:3050
+#: playlist.py:3055
 msgid "Importing EPG data…"
 msgstr "جارٍ استيراد بيانات EPG…"
 
-#: main.py:7031
+#: main.py:7009
 #: planning_ui.py:176
 msgid "In Progress"
 msgstr "قيد التقدم"
 
-#: playlist.py:3567
+#: playlist.py:3572
 msgid "Include the provider's XMLTV guide automatically"
 msgstr "تضمين دليل XMLTV الخاص بالمزوّد تلقائيًا"
 
@@ -1812,7 +1868,7 @@ msgstr "تضمين دليل XMLTV الخاص بالمزوّد تلقائيًا"
 msgid "Installer message: {message}"
 msgstr "رسالة المثبت: {message}"
 
-#: main.py:5245
+#: main.py:5223
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "جارٍ تثبيت التحديث. سيتم إغلاق {app} ثم تشغيله تلقائيًا من جديد — يرجى عدم فتحه بنفسك في هذه الأثناء."
 
@@ -1820,13 +1876,17 @@ msgstr "جارٍ تثبيت التحديث. سيتم إغلاق {app} ثم تش�
 msgid "Invalid backup salt."
 msgstr "قيمة الملح في النسخة الاحتياطية غير صالحة."
 
+#: favourite_transfer.py:49
+msgid "Invalid favourite list file."
+msgstr "ملف قائمة المفضلة غير صالح."
+
 #: shortcuts.py:136
 msgid "Invalid keyboard shortcut."
 msgstr "اختصار لوحة مفاتيح غير صالح."
 
-#: dvr.py:200
-#: main.py:8454
-#: planning_tools.py:119
+#: dvr.py:231
+#: main.py:8432
+#: planning_tools.py:123
 #: planning_tools_ui.py:56
 msgid "Invalid programme times."
 msgstr "أوقات البرنامج غير صالحة."
@@ -1835,15 +1895,15 @@ msgstr "أوقات البرنامج غير صالحة."
 msgid "Invalid recording time."
 msgstr "وقت التسجيل غير صالح."
 
-#: programme_reminders.py:197
+#: programme_reminders.py:212
 msgid "Invalid reminder postponement."
 msgstr "تأجيل التذكير غير صالح."
 
-#: programme_reminders.py:128
+#: programme_reminders.py:143
 msgid "Invalid reminders could not be backed up. Changes are disabled to protect the original file."
 msgstr "تعذّر نسخ التذكيرات غير الصالحة احتياطيًا. تم تعطيل التغييرات لحماية الملف الأصلي."
 
-#: programme_reminders.py:121
+#: programme_reminders.py:136
 msgid "Invalid reminders were skipped. The original file was preserved at {path}."
 msgstr "تم تخطي التذكيرات غير الصالحة. حُفظ الملف الأصلي في {path}."
 
@@ -1865,15 +1925,15 @@ msgstr "تأخير الترجمة غير صالح."
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "انضم إلى مجموعة SerrebiProjects على Telegram"
 
-#: personal_tools_ui.py:499
+#: personal_tools_ui.py:572
 msgid "Keep chosen channels"
 msgstr "الاحتفاظ بالقنوات المختارة"
 
-#: main.py:7913
+#: main.py:7891
 msgid "Keep this output device?\n{name}"
 msgstr "الاحتفاظ بجهاز الإخراج هذا؟\n{name}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:48
+#: client_timeshift.py:49
 msgid "Keep up to this many minutes of live TV (1–30); 0 disables the local buffer."
 msgstr "الاحتفاظ بما بين دقيقة و30 دقيقة من البث المباشر؛ 0 لتعطيل التخزين المؤقت المحلي."
 
@@ -1893,7 +1953,7 @@ msgstr "اختصارات لوحة المفاتيح..."
 
 #: client_ui.py:198
 #: client_ui.py:352
-#: main.py:4792
+#: main.py:4770
 msgid "Language"
 msgstr "اللغة"
 
@@ -1901,22 +1961,22 @@ msgstr "اللغة"
 msgid "Last Watched"
 msgstr "آخر مشاهدة"
 
-#: internal_player.py:1567
+#: internal_player.py:1569
 msgid "Last error: {reason}"
 msgstr "آخر خطأ: {reason}"
 
-#: internal_player.py:2903
+#: internal_player.py:2905
 msgid "Last subtitle: {text}"
 msgstr "آخر ترجمة: {text}"
 
-#: main.py:4844
+#: main.py:4822
 msgid "Latest release tag is missing or invalid."
 msgstr "علامة أحدث إصدار مفقودة أو غير صالحة."
 
-#: main.py:8044
-#: main.py:8097
-#: main.py:8192
-#: main.py:8201
+#: main.py:8022
+#: main.py:8075
+#: main.py:8170
+#: main.py:8179
 msgid "Launch Error"
 msgstr "خطأ في التشغيل"
 
@@ -1924,24 +1984,33 @@ msgstr "خطأ في التشغيل"
 msgid "Lead time (minutes)"
 msgstr "وقت الإشعار المسبق (بالدقائق)"
 
+#: favourite_transfer_ui.py:42
+#: favourite_transfer_ui.py:64
+msgid "Leave unresolved"
+msgstr "تأجيل المطابقة"
+
+#: favourite_transfer_ui.py:22
+msgid "List name:"
+msgstr "اسم القائمة:"
+
 #: client_ui.py:145
 #: client_ui.py:301
 msgid "Live TV && Catch-up"
 msgstr "البث المباشر && المشاهدة اللاحقة"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:325
+#: client_timeshift.py:406
 msgid "Live input ended; retained history is still available."
 msgstr "انتهى البث المباشر؛ لا يزال المحتوى المحفوظ متاحًا."
 
-#: internal_player.py:2717
+#: internal_player.py:2719
 msgid "Load Subtitle File"
 msgstr "تحميل ملف الترجمة"
 
-#: internal_player.py:582
+#: internal_player.py:583
 msgid "Load Subtitle File..."
 msgstr "تحميل ملف الترجمة..."
 
-#: main.py:6515
+#: main.py:6493
 msgid "Loading Video on Demand…"
 msgstr "جارٍ تحميل الفيديو عند الطلب…"
 
@@ -1949,17 +2018,17 @@ msgstr "جارٍ تحميل الفيديو عند الطلب…"
 msgid "Loading accounts..."
 msgstr "جارٍ تحميل الحسابات..."
 
-#: main.py:6645
+#: main.py:6623
 msgid "Loading episodes…"
 msgstr "جارٍ تحميل الحلقات…"
 
 #: accessible_tools_ui.py:79
-#: personal_tools_ui.py:226
+#: personal_tools_ui.py:230
 msgid "Loading guide channels..."
 msgstr "جارٍ تحميل قنوات الدليل..."
 
 #: main.py:1189
-#: main.py:6299
+#: main.py:6277
 msgid "Loading playlists..."
 msgstr "جارٍ تحميل قوائم التشغيل..."
 
@@ -1967,12 +2036,12 @@ msgstr "جارٍ تحميل قوائم التشغيل..."
 msgid "Loading recordings..."
 msgstr "جارٍ تحميل التسجيلات..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:61
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:99
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:232
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: client_timeshift.py:50
+#: client_timeshift.py:62
+#: client_timeshift.py:68
+#: client_timeshift.py:100
+#: client_timeshift.py:233
+#: client_timeshift.py:369
 msgid "Local Live Buffer"
 msgstr "التخزين المؤقت المحلي للبث المباشر"
 
@@ -1980,36 +2049,36 @@ msgstr "التخزين المؤقت المحلي للبث المباشر"
 msgid "Local Live Buffer..."
 msgstr "التخزين المؤقت المحلي للبث المباشر…"
 
-#: personal_tools_ui.py:173
+#: personal_tools_ui.py:175
 msgid "Local date and time (YYYY-MM-DD HH:MM)"
 msgstr "التاريخ والوقت المحليان (YYYY-MM-DD HH:MM)"
 
-#: main.py:4306
+#: main.py:4284
 msgid "Logs"
 msgstr "السجلات"
 
-#: playlist.py:3395
+#: playlist.py:3400
 msgid "M3U files"
 msgstr "ملفات M3U"
 
 #: account_info.py:470
-#: playlist.py:3692
+#: playlist.py:3697
 msgid "MAC address"
 msgstr "عنوان MAC"
 
-#: playlist.py:3741
+#: playlist.py:3746
 msgid "MAC address must contain six octets (e.g., 00:1A:79:12:34:56)."
 msgstr "يجب أن يحتوي عنوان MAC على ستة مقاطع (مثل 00:1A:79:12:34:56)."
 
-#: playlist.py:3692
+#: playlist.py:3697
 msgid "MAC address presented to the portal"
 msgstr "عنوان MAC المقدَّم إلى البوابة"
 
-#: main.py:7979
+#: main.py:7957
 msgid "MPV subtitle speech on."
 msgstr "تم تفعيل قراءة ترجمة MPV."
 
-#: main.py:7982
+#: main.py:7960
 msgid "MPV subtitle speech unavailable."
 msgstr "قراءة ترجمة MPV غير متوفرة."
 
@@ -2021,7 +2090,7 @@ msgstr "اختصارات النافذة الرئيسية تحتاج إلى Ctrl 
 msgid "Maximum connections"
 msgstr "الحد الأقصى للاتصالات"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:66
+#: client_timeshift.py:67
 msgid "Maximum local buffer size per session (MiB). Old data is removed when either limit is reached."
 msgstr "الحد الأقصى لحجم التخزين المؤقت لكل جلسة بالميبيبايت. تُحذف أقدم البيانات عند بلوغ أي من الحدين."
 
@@ -2038,8 +2107,8 @@ msgstr "القائمة"
 msgid "Message from provider"
 msgstr "رسالة من المزوّد"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:67
-#: planning_ui.py:365
+#: client_timeshift.py:68
+#: planning_ui.py:380
 msgid "MiB:"
 msgstr "ميبيبايت:"
 
@@ -2048,16 +2117,16 @@ msgstr "ميبيبايت:"
 msgid "Minimize to System Tray"
 msgstr "تصغير إلى علبة النظام"
 
-#: main.py:4626
+#: main.py:4604
 msgid "Minimum Free Space..."
 msgstr "الحد الأدنى للمساحة الحرة…"
 
-#: planning_ui.py:364
+#: planning_ui.py:379
 msgid "Minimum free space to keep before starting a recording (MiB):"
 msgstr "الحد الأدنى للمساحة الحرة المطلوبة قبل بدء التسجيل (MiB):"
 
-#: dialogs_misc.py:722
-#: recording_conflicts_ui.py:170
+#: dialogs_misc.py:723
+#: recording_conflicts_ui.py:188
 msgid "Minutes after programme:"
 msgstr "دقائق بعد البرنامج:"
 
@@ -2065,19 +2134,19 @@ msgstr "دقائق بعد البرنامج:"
 msgid "Minutes and seconds after a colon must be below 60."
 msgstr "يجب أن تقل الدقائق والثواني بعد النقطتين عن 60."
 
-#: dialogs_misc.py:721
-#: recording_conflicts_ui.py:169
+#: dialogs_misc.py:722
+#: recording_conflicts_ui.py:187
 msgid "Minutes before programme:"
 msgstr "دقائق قبل البرنامج:"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:49
-#: internal_player.py:3313
+#: client_timeshift.py:50
+#: internal_player.py:3315
 #: planning_ui.py:24
 msgid "Minutes:"
 msgstr "الدقائق:"
 
-#: main.py:3522
-#: main.py:9469
+#: main.py:3500
+#: main.py:9453
 msgid "Missed"
 msgstr "فات"
 
@@ -2089,11 +2158,11 @@ msgstr "الاثنين"
 msgid "Monitor free space while recording"
 msgstr "مراقبة المساحة الخالية أثناء التسجيل"
 
-#: personal_tools_ui.py:312
+#: personal_tools_ui.py:361
 msgid "Move Down"
 msgstr "نقل لأسفل"
 
-#: personal_tools_ui.py:312
+#: personal_tools_ui.py:361
 msgid "Move Up"
 msgstr "نقل لأعلى"
 
@@ -2119,12 +2188,12 @@ msgstr "أفلام"
 msgid "Mute / Unmute"
 msgstr "كتم الصوت / إلغاء الكتم"
 
-#: internal_player.py:2076
-#: internal_player.py:2474
+#: internal_player.py:2078
+#: internal_player.py:2476
 msgid "Muted"
 msgstr "الصوت مكتوم"
 
-#: playlist.py:3131
+#: playlist.py:3136
 msgid "Name"
 msgstr "الاسم"
 
@@ -2141,12 +2210,12 @@ msgstr "العلامات المرجعية المسماة..."
 msgid "Never (no expiry date set)"
 msgstr "أبدًا (لم يتم تعيين تاريخ انتهاء)"
 
-#: personal_tools_ui.py:824
+#: personal_tools_ui.py:897
 msgid "New programme matches: {count}."
 msgstr "البرامج المطابقة الجديدة: {count}."
 
-#: personal_tools_ui.py:309
-#: personal_tools_ui.py:539
+#: personal_tools_ui.py:357
+#: personal_tools_ui.py:612
 msgid "New..."
 msgstr "جديد..."
 
@@ -2158,12 +2227,12 @@ msgstr "جديد..."
 msgid "Next Episode"
 msgstr "الحلقة التالية"
 
-#: internal_player.py:591
+#: internal_player.py:592
 #: shortcuts.py:124
 msgid "Next Subtitle"
 msgstr "الترجمة التالية"
 
-#: main.py:9314
+#: main.py:9292
 msgid "Next recording: {time}"
 msgstr "التسجيل التالي: {time}"
 
@@ -2180,33 +2249,33 @@ msgstr "التالي: {title} ({start} – {end})"
 msgid "No"
 msgstr "لا"
 
-#: main.py:7023
+#: main.py:7001
 msgid "No Accounts"
 msgstr "لا توجد حسابات"
 
-#: main.py:7088
+#: main.py:7066
 msgid "No Data"
 msgstr "لا توجد بيانات"
 
-#: main.py:7035
+#: main.py:7013
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "لم تتم تهيئة أي مصادر EPG. يرجى إضافة واحدة في ملف > مدير EPG."
 
-#: main.py:7035
+#: main.py:7013
 msgid "No Sources"
 msgstr "لا توجد مصادر"
 
-#: main.py:6577
-#: main.py:6581
+#: main.py:6555
+#: main.py:6559
 msgid "No Video on Demand content found."
 msgstr "لم يتم العثور على محتوى فيديو عند الطلب."
 
-#: internal_player.py:2012
-#: main.py:8259
+#: internal_player.py:2014
+#: main.py:8237
 msgid "No active stream to cast."
 msgstr "لا يوجد بث نشط للبث."
 
-#: main.py:7678
+#: main.py:7656
 msgid "No active subtitle session."
 msgstr "لا توجد جلسة ترجمة نشطة."
 
@@ -2214,17 +2283,27 @@ msgstr "لا توجد جلسة ترجمة نشطة."
 msgid "No adjacent episode is available."
 msgstr "لا تتوفر حلقة سابقة أو تالية."
 
-#: internal_player.py:701
+#: recording_edits_ui.py:104
+msgid "No alternative airings were found in the next 14 days."
+msgstr "لم يُعثر على موعد عرض آخر خلال الأيام الأربعة عشر القادمة."
+
+#: internal_player.py:703
 msgid "No audio output devices were found."
 msgstr "لم يتم العثور على أجهزة إخراج صوت."
 
-#: internal_player.py:2566
-#: internal_player.py:2632
-#: internal_player.py:2953
+#: internal_player.py:2568
+#: internal_player.py:2634
+#: internal_player.py:2955
 msgid "No audio tracks available"
 msgstr "لا توجد مسارات صوتية متاحة"
 
-#: main.py:8394
+#: buffer_clip.py:15
+#: buffer_clip.py:108
+#: client_timeshift.py:289
+msgid "No buffered audio or video is available."
+msgstr "لا يتوفر صوت أو فيديو في الذاكرة المؤقتة."
+
+#: main.py:8372
 msgid "No catch-up programmes are available for this channel."
 msgstr "لا تتوفر برامج مشاهدة لاحقة لهذه القناة."
 
@@ -2232,18 +2311,19 @@ msgstr "لا تتوفر برامج مشاهدة لاحقة لهذه القناة
 msgid "No channel is selected."
 msgstr "لم يتم تحديد أي قناة."
 
-#: personal_tools_ui.py:344
-#: personal_tools_ui.py:699
+#: personal_tools_ui.py:417
+#: personal_tools_ui.py:772
 msgid "No channel selected."
 msgstr "لم تُحدَّد قناة."
 
-#: main.py:6300
+#: main.py:6278
 msgid "No channels found."
 msgstr "لم يتم العثور على قنوات."
 
 #: dialogs_misc.py:585
 #: main.py:2755
-#: main.py:9746
+#: main.py:9730
+#: personal_tools_ui.py:322
 msgid "No description available for this programme."
 msgstr "لا يوجد وصف لهذا البرنامج."
 
@@ -2251,21 +2331,21 @@ msgstr "لا يوجد وصف لهذا البرنامج."
 msgid "No devices found."
 msgstr "لم يتم العثور على أجهزة."
 
-#: internal_player.py:2907
+#: internal_player.py:2909
 msgid "No earlier subtitle."
 msgstr "لا توجد ترجمة سابقة."
 
-#: personal_tools_ui.py:789
+#: personal_tools_ui.py:862
 msgid "No enabled saved searches."
 msgstr "لا توجد عمليات بحث محفوظة مفعّلة."
 
-#: main.py:6677
+#: main.py:6655
 msgid "No episodes found for this series."
 msgstr "لم يتم العثور على حلقات لهذا المسلسل."
 
 #: external_player.py:297
 #: external_player.py:348
-#: main.py:9054
+#: main.py:9032
 msgid "No error details were reported."
 msgstr "لم يتم الإبلاغ عن أي تفاصيل خطأ."
 
@@ -2273,11 +2353,11 @@ msgstr "لم يتم الإبلاغ عن أي تفاصيل خطأ."
 msgid "No ffmpeg details were reported."
 msgstr "لم يتم الإبلاغ عن أي تفاصيل لـ ffmpeg."
 
-#: internal_player.py:2909
+#: internal_player.py:2911
 msgid "No later subtitle."
 msgstr "لا توجد ترجمة لاحقة."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:288
+#: client_timeshift.py:369
 msgid "No local live history is available."
 msgstr "لا يتوفر محتوى سابق محفوظ محليًا للبث المباشر."
 
@@ -2293,7 +2373,7 @@ msgstr "لا توجد تغييرات ملحوظة."
 msgid "No previous channel is available."
 msgstr "لا توجد قناة سابقة متاحة."
 
-#: main.py:7689
+#: main.py:7667
 msgid "No previous subtitle."
 msgstr "لا يوجد ترجمة سابقة."
 
@@ -2305,11 +2385,11 @@ msgstr "لا يوجد برنامج يُعرض حاليًا."
 msgid "No programme guide has been imported yet, so there is nothing to schedule from.\n\nImport a guide first (File > EPG Manager, then File > Import EPG to DB), then try scheduling again."
 msgstr "لم يتم استيراد أي دليل برامج بعد، لذا لا يوجد ما يمكن جدولته.\n\nاستورد دليلاً أولاً (ملف > مدير EPG، ثم ملف > استيراد EPG إلى قاعدة البيانات)، ثم أعد المحاولة."
 
-#: personal_tools_ui.py:272
+#: personal_tools_ui.py:276
 msgid "No programmes were found for this time and channel selection."
 msgstr "لم يُعثر على برامج في الوقت المحدد على القنوات المختارة."
 
-#: main.py:7088
+#: main.py:7066
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "لا توجد برامج معروضة حاليًا، أو لم يتم استيراد بيانات EPG بعد."
 
@@ -2317,11 +2397,11 @@ msgstr "لا توجد برامج معروضة حاليًا، أو لم يتم ا
 msgid "No provider accounts found."
 msgstr "لم يتم العثور على حسابات لمزوّدي الخدمة."
 
-#: main.py:7019
+#: main.py:6997
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "لم يتم العثور على أي حسابات مزوّدين.\n\nتظهر هنا حسابات Xtream Codes وStalker Portal المضافة في مدير قوائم التشغيل، بالإضافة إلى أي حساب يتم كشفه من عنوان URL لقائمة تشغيل أو لبث."
 
-#: main.py:7700
+#: main.py:7678
 msgid "No recent subtitles."
 msgstr "لا توجد ترجمات حديثة."
 
@@ -2329,8 +2409,8 @@ msgstr "لا توجد ترجمات حديثة."
 msgid "No recently watched channels are available."
 msgstr "لا توجد قنوات تمت مشاهدتها مؤخرًا."
 
-#: main.py:3983
-#: main.py:3994
+#: main.py:3961
+#: main.py:3972
 msgid "No recordings are currently active."
 msgstr "لا توجد تسجيلات نشطة حاليًا."
 
@@ -2347,39 +2427,39 @@ msgstr "لا توجد تذكيرات."
 msgid "No saved playback positions."
 msgstr "لا توجد مواضع تشغيل محفوظة."
 
-#: internal_player.py:748
+#: internal_player.py:750
 msgid "No stream URL provided."
 msgstr "لم يتم توفير عنوان URL للبث."
 
-#: internal_player.py:2897
+#: internal_player.py:2899
 msgid "No subtitle has been shown yet."
 msgstr "لم تُعرض أي ترجمة بعد."
 
-#: main.py:7680
+#: main.py:7658
 msgid "No subtitle text available yet."
 msgstr "لا يوجد نص ترجمة متاح بعد."
 
-#: internal_player.py:2776
+#: internal_player.py:2778
 msgid "No subtitle text found in this file."
 msgstr "لم يُعثر على نص ترجمة في هذا الملف."
 
-#: internal_player.py:2895
+#: internal_player.py:2897
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "لا يوجد نص ترجمة لقراءته. حمّل ملف ترجمة بتنسيق مدعوم."
 
-#: main.py:9181
+#: main.py:9159
 msgid "No timed problems were found for this recording."
 msgstr "لا يتضمن سجل هذا التسجيل مشكلات محددة التوقيت."
 
-#: main.py:9182
+#: main.py:9160
 msgid "No timed problems were found in the newest recording log."
 msgstr "لم يتم العثور على مشكلات محددة الوقت في أحدث سجل تسجيل."
 
-#: main.py:4718
+#: main.py:4696
 msgid "No upcoming schedule found for this channel."
 msgstr "لم يتم العثور على جدول قادم لهذه القناة."
 
-#: planning_tools.py:60
+#: planning_tools.py:64
 msgid "No valid recording window was found for the selected weekdays."
 msgstr "لم تُعثر على فترة تسجيل صالحة للأيام المحددة."
 
@@ -2389,12 +2469,12 @@ msgid "None"
 msgstr "لا يوجد"
 
 #: main.py:2151
-#: main.py:7374
-#: main.py:8035
+#: main.py:7352
+#: main.py:8013
 msgid "Not Found"
 msgstr "غير موجود"
 
-#: full_backup.py:127
+#: full_backup.py:135
 #: settings_backup.py:55
 #: settings_backup.py:57
 msgid "Not an Accessible IPTV settings backup."
@@ -2414,7 +2494,7 @@ msgstr "المساحة الحرة غير كافية لبدء التسجيل: ا�
 msgid "Not reported by the server"
 msgstr "لم يبلّغ الخادم عنه"
 
-#: main.py:8229
+#: main.py:8207
 msgid "Nothing is playing in the built-in player."
 msgstr "لا يوجد شيء قيد التشغيل في المشغّل المدمج."
 
@@ -2452,20 +2532,20 @@ msgstr "الآن: {title} ({start} – {end})"
 #: accessible_tools_ui.py:28
 #: dialogs_misc.py:106
 #: dialogs_misc.py:681
-#: dialogs_misc.py:741
+#: dialogs_misc.py:747
 #: internal_player.py:149
-#: main.py:7824
-#: main.py:7857
+#: main.py:7802
+#: main.py:7835
 #: options.py:987
-#: personal_tools_ui.py:89
-#: playlist.py:3275
-#: playlist.py:3375
+#: personal_tools_ui.py:91
+#: playlist.py:3280
+#: playlist.py:3380
 msgid "OK"
 msgstr "موافق"
 
-#: internal_player.py:2677
-#: internal_player.py:2683
-#: internal_player.py:2700
+#: internal_player.py:2679
+#: internal_player.py:2685
+#: internal_player.py:2702
 msgid "Off"
 msgstr "إيقاف"
 
@@ -2485,11 +2565,15 @@ msgstr "عند فقدان الجهاز: استخدام الجهاز الافتر
 msgid "Only part of the programme was recorded. The available file has been kept:\n{path}"
 msgstr "لم يُسجَّل سوى جزء من البرنامج. تم الاحتفاظ بالملف المتاح:\n{path}"
 
-#: main.py:7957
+#: main.py:7935
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "فقط المشغلات التي لديها واجهة برمجة تطبيقات موثقة للنص الموقوت يمكنها توفير كلمات الترجمة. المشغل المدمج يقرأ ملفات SRT, ASS, SSA وWebVTT؛ ويعمل MPV من خلال جلسة التطبيق الخاصة."
 
-#: personal_tools_ui.py:573
+#: recording_edits_ui.py:141
+msgid "Only the first 100 results are shown."
+msgstr "تُعرض أول 100 نتيجة فقط."
+
+#: personal_tools_ui.py:646
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "تُعرض أول 500 نتيجة فقط. ضيّق نطاق البحث."
 
@@ -2506,7 +2590,7 @@ msgstr "فتح القناة"
 msgid "Open Logs Folder"
 msgstr "فتح مجلد السجلات"
 
-#: main.py:4646
+#: main.py:4624
 msgid "Open Recordings Folder"
 msgstr "فتح مجلد التسجيلات"
 
@@ -2518,27 +2602,27 @@ msgstr "افتح مشروع Accessible IPTV Client على Forgejo"
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "فتح مشروع Accessible IPTV Client على GitHub"
 
-#: main.py:9186
+#: main.py:9164
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "افتح الملف المسجّل في VLC، واضغط Ctrl+T، ثم أدخل أحد الأوقات المدرجة. تستخدم الأوقات توقيت الوسائط في الملف عندما يبلّغ عنه FFmpeg؛ وإلا فهي الوقت المنقضي منذ بدء التسجيل وقد تكون متأخرة قليلًا بعد انقطاع."
 
-#: internal_player.py:2039
+#: internal_player.py:2041
 msgid "Opening"
 msgstr "جارٍ الفتح"
 
-#: playlist.py:3570
+#: playlist.py:3575
 msgid "Optional nickname for this Xtream Codes account"
 msgstr "اسم مستعار اختياري لحساب Xtream Codes هذا"
 
-#: playlist.py:3688
+#: playlist.py:3693
 msgid "Optional nickname for this portal account"
 msgstr "اسم مستعار اختياري لحساب البوابة هذا"
 
-#: playlist.py:3691
+#: playlist.py:3696
 msgid "Optional portal account password"
 msgstr "كلمة مرور حساب البوابة (اختيارية)"
 
-#: playlist.py:3690
+#: playlist.py:3695
 msgid "Optional portal account username"
 msgstr "اسم مستخدم حساب البوابة (اختياري)"
 
@@ -2555,24 +2639,24 @@ msgstr "تغييرات أخرى"
 msgid "Other details reported by the server"
 msgstr "تفاصيل أخرى أبلغ عنها الخادم"
 
-#: main.py:6335
+#: main.py:6313
 msgid "Other playlists"
 msgstr "قوائم تشغيل أخرى"
 
-#: main.py:7887
+#: main.py:7865
 msgid "Output device for the application voice:"
 msgstr "جهاز الإخراج لصوت التطبيق:"
 
-#: recording_conflicts_ui.py:83
+#: recording_conflicts_ui.py:84
 msgid "Overlapping Recordings"
 msgstr "التسجيلات المتداخلة"
 
-#: recording_conflicts_ui.py:79
-#: recording_conflicts_ui.py:141
+#: recording_conflicts_ui.py:80
+#: recording_conflicts_ui.py:157
 msgid "Overlapping recordings, including schedule padding."
 msgstr "التسجيلات المتداخلة، بما في ذلك هوامش وقت الجدولة."
 
-#: recording_conflicts_ui.py:147
+#: recording_conflicts_ui.py:163
 msgid "Overlapping recordings: {count}."
 msgstr "عدد التسجيلات المتداخلة: {count}."
 
@@ -2580,28 +2664,33 @@ msgstr "عدد التسجيلات المتداخلة: {count}."
 msgid "Package"
 msgstr "الحزمة"
 
-#: main.py:9466
-#: planning_tools.py:88
+#: dialogs_misc.py:711
+#: main.py:9429
+msgid "Padding for This Recording..."
+msgstr "ضبط المهلة قبل هذا التسجيل وبعده…"
+
+#: main.py:9450
+#: planning_tools.py:92
 #: recording_library_ui.py:62
 #: recording_library_ui.py:302
 msgid "Partial"
 msgstr "جزئي"
 
-#: playlist.py:3573
+#: playlist.py:3578
 msgid "Password"
 msgstr "كلمة المرور"
 
 #: internal_player.py:446
-#: internal_player.py:904
-#: internal_player.py:1913
-#: internal_player.py:1945
-#: internal_player.py:1957
-#: internal_player.py:1970
+#: internal_player.py:906
+#: internal_player.py:1915
+#: internal_player.py:1947
+#: internal_player.py:1959
+#: internal_player.py:1972
 msgid "Pause"
 msgstr "إيقاف مؤقت"
 
-#: internal_player.py:2042
-#: internal_player.py:2244
+#: internal_player.py:2044
+#: internal_player.py:2246
 msgid "Paused"
 msgstr "متوقف مؤقتًا"
 
@@ -2610,7 +2699,7 @@ msgstr "متوقف مؤقتًا"
 msgid "Pending"
 msgstr "قيد الانتظار"
 
-#: planning_ui.py:302
+#: planning_ui.py:317
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "تذكيرات البرامج المنتظرة: {count}.\n\nيجب أن يبقى التطبيق قيد التشغيل لعرض الإشعارات. هل تريد الخروج رغم ذلك؟"
 
@@ -2622,16 +2711,16 @@ msgstr "هل تريد حذف ملفات التسجيل المحددة وعدده
 msgid "Phone"
 msgstr "الهاتف"
 
-#: main.py:4328
+#: main.py:4306
 msgid "Platform: {platform}"
 msgstr "النظام: {platform}"
 
-#: dialogs_misc.py:898
-#: dialogs_misc.py:1106
-#: internal_player.py:942
-#: internal_player.py:2058
+#: dialogs_misc.py:904
+#: dialogs_misc.py:1112
+#: internal_player.py:944
+#: internal_player.py:2060
 #: main.py:2789
-#: personal_tools_ui.py:313
+#: personal_tools_ui.py:362
 msgid "Play"
 msgstr "تشغيل"
 
@@ -2647,7 +2736,7 @@ msgstr "التشغيل الآن"
 msgid "Play from Beginning"
 msgstr "التشغيل من البداية"
 
-#: main.py:9201
+#: main.py:9179
 msgid "Play from This Time"
 msgstr "تشغيل من هذا الموضع"
 
@@ -2670,8 +2759,8 @@ msgid "Playback"
 msgstr "التشغيل"
 
 #: main.py:2965
-#: main.py:7387
-#: main.py:7390
+#: main.py:7365
+#: main.py:7368
 msgid "Playback Error"
 msgstr "خطأ في التشغيل"
 
@@ -2684,7 +2773,7 @@ msgstr "وقت التشغيل"
 msgid "Playback changed. Reopen the bookmark list."
 msgstr "تغيّر المحتوى الجاري تشغيله. افتح قائمة العلامات المرجعية من جديد."
 
-#: internal_player.py:3367
+#: internal_player.py:3369
 msgid "Playback volume is fading before the sleep timer stops it."
 msgstr "يُخفض صوت التشغيل تدريجيًا قبل إيقافه بمؤقت النوم."
 
@@ -2697,11 +2786,11 @@ msgstr "المشغّل"
 msgid "Player Controls"
 msgstr "عناصر التحكم في المشغّل"
 
-#: internal_player.py:746
+#: internal_player.py:748
 msgid "Player window has been destroyed."
 msgstr "تم إغلاق نافذة المشغّل."
 
-#: internal_player.py:2041
+#: internal_player.py:2043
 msgid "Playing"
 msgstr "قيد التشغيل"
 
@@ -2711,21 +2800,21 @@ msgstr "قائمة التشغيل"
 
 #: client_ui.py:123
 #: client_ui.py:276
-#: playlist.py:3345
+#: playlist.py:3350
 #: shortcuts.py:82
 msgid "Playlist Manager"
 msgstr "مدير قوائم التشغيل"
 
-#: main.py:6951
-#: main.py:6957
+#: main.py:6929
+#: main.py:6935
 msgid "Playlist refresh failed: {name}"
 msgstr "فشل تحديث قائمة التشغيل: {name}"
 
-#: main.py:6956
+#: main.py:6934
 msgid "Playlist refreshed: {name}"
 msgstr "تم تحديث قائمة التشغيل: {name}"
 
-#: playlist.py:3574
+#: playlist.py:3579
 msgid "Playlist type"
 msgstr "نوع قائمة التشغيل"
 
@@ -2735,17 +2824,17 @@ msgstr "نوع قائمة التشغيل"
 msgid "Playlist view"
 msgstr "عرض قائمة التشغيل"
 
-#: internal_player.py:1228
-#: internal_player.py:1574
+#: internal_player.py:1230
+#: internal_player.py:1576
 msgid "Please try another channel or try again later."
 msgstr "يرجى تجربة قناة أخرى أو المحاولة مرة أخرى لاحقًا."
 
-#: playlist.py:3737
+#: playlist.py:3742
 msgid "Portal URL is required."
 msgstr "عنوان URL للبوابة مطلوب."
 
-#: playlist.py:3571
-#: playlist.py:3689
+#: playlist.py:3576
+#: playlist.py:3694
 msgid "Portal base URL"
 msgstr "عنوان URL الأساسي للبوابة"
 
@@ -2769,6 +2858,10 @@ msgstr "فشلت مصافحة البوابة: لم يتم إرجاع أي رمز
 msgid "Position"
 msgstr "الموضع"
 
+#: recording_edits_ui.py:124
+msgid "Possible repeat"
+msgstr "إعادة عرض محتملة"
+
 #: dialogs_misc.py:660
 #: dialogs_misc.py:663
 msgid "Prefer an audio description track when the channel has one"
@@ -2783,7 +2876,7 @@ msgstr "المسار الصوتي المفضل"
 msgid "Preferred Audio Track..."
 msgstr "المسار الصوتي المفضل..."
 
-#: playlist.py:3575
+#: playlist.py:3580
 msgid "Preferred stream container format"
 msgstr "تنسيق حاوية البث المفضّل"
 
@@ -2791,20 +2884,20 @@ msgstr "تنسيق حاوية البث المفضّل"
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "أسماء المسارات أو اللغات المفضلة، الأهم أولاً:"
 
-#: main.py:8976
+#: main.py:8954
 msgid "Preparing download..."
 msgstr "جارٍ تحضير التنزيل..."
 
-#: main.py:5037
-#: main.py:5091
+#: main.py:5015
+#: main.py:5069
 msgid "Preparing to restart..."
 msgstr "جارٍ التحضير لإعادة التشغيل..."
 
-#: main.py:9186
+#: main.py:9164
 msgid "Press Enter to play the recording from the selected time."
 msgstr "اضغط على مفتاح الإدخال لتشغيل التسجيل من الموضع المحدد."
 
-#: main.py:8990
+#: main.py:8968
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "اضغط Escape لإخفاء هذه النافذة؛ يستمر التنزيل. يعيدها الأمر عرض > إظهار التنزيلات (Ctrl+Shift+D)."
 
@@ -2824,7 +2917,7 @@ msgstr "القناة السابقة"
 msgid "Previous Episode"
 msgstr "الحلقة السابقة"
 
-#: internal_player.py:589
+#: internal_player.py:590
 #: shortcuts.py:123
 msgid "Previous Subtitle"
 msgstr "الترجمة السابقة"
@@ -2833,31 +2926,36 @@ msgstr "الترجمة السابقة"
 msgid "Previously saved content (title unavailable)"
 msgstr "محتوى محفوظ سابقًا (العنوان غير متاح)"
 
-#: personal_tools_ui.py:695
-#: personal_tools_ui.py:732
+#: personal_tools_ui.py:768
+#: personal_tools_ui.py:805
 #: recording_library_ui.py:445
 msgid "Processing recordings..."
 msgstr "جارٍ معالجة التسجيلات…"
 
-#: dialogs_misc.py:893
+#: dialogs_misc.py:899
 msgid "Program - Channel"
 msgstr "البرنامج - القناة"
 
-#: dvr.py:202
+#: dvr.py:233
 msgid "Program end time must be after the start time."
 msgstr "يجب أن يكون وقت انتهاء البرنامج بعد وقت بدئه."
 
+#: personal_tools_ui.py:191
+#: personal_tools_ui.py:323
+msgid "Programme Details..."
+msgstr "تفاصيل البرنامج…"
+
 #: client_ui.py:126
 #: client_ui.py:280
-#: dialogs_misc.py:904
-#: personal_tools_ui.py:167
-#: personal_tools_ui.py:184
-#: personal_tools_ui.py:185
+#: dialogs_misc.py:910
+#: personal_tools_ui.py:169
+#: personal_tools_ui.py:186
+#: personal_tools_ui.py:187
 msgid "Programme Guide by Time"
 msgstr "دليل البرامج حسب الوقت"
 
 #: planning_tools_ui.py:67
-#: planning_ui.py:291
+#: planning_ui.py:288
 msgid "Programme Reminder"
 msgstr "تذكير بالبرنامج"
 
@@ -2866,17 +2964,17 @@ msgstr "تذكير بالبرنامج"
 #: planning_ui.py:45
 #: planning_ui.py:142
 #: planning_ui.py:167
-#: planning_ui.py:248
-#: planning_ui.py:260
-#: planning_ui.py:304
-#: planning_ui.py:311
-#: planning_ui.py:328
-#: planning_ui.py:336
-#: planning_ui.py:359
+#: planning_ui.py:253
+#: planning_ui.py:265
+#: planning_ui.py:319
+#: planning_ui.py:326
+#: planning_ui.py:343
+#: planning_ui.py:351
+#: planning_ui.py:374
 msgid "Programme Reminders"
 msgstr "تذكيرات البرامج"
 
-#: main.py:4615
+#: main.py:4593
 msgid "Programme Reminders..."
 msgstr "تذكيرات البرامج…"
 
@@ -2884,13 +2982,17 @@ msgstr "تذكيرات البرامج…"
 msgid "Programme guide channels"
 msgstr "قنوات دليل البرامج"
 
-#: main.py:9082
+#: recording_edits_ui.py:137
+msgid "Programmes"
+msgstr "البرامج"
+
+#: main.py:9060
 msgid "Progress: {percent}%"
 msgstr "التقدم: {percent}%"
 
 #: account_info.py:111
 #: main.py:1452
-#: playlist.py:3496
+#: playlist.py:3501
 msgid "Provider"
 msgstr "المزوّد"
 
@@ -2898,10 +3000,10 @@ msgstr "المزوّد"
 msgid "Provider accounts"
 msgstr "حسابات مزوّدي الخدمة"
 
-#: main.py:3696
-#: main.py:7387
-#: main.py:8419
-#: main.py:8478
+#: main.py:3674
+#: main.py:7365
+#: main.py:8397
+#: main.py:8456
 msgid "Provider error: {error}"
 msgstr "خطأ المزوّد: {error}"
 
@@ -2918,19 +3020,19 @@ msgid "Provider quality (stream copy, MKA)"
 msgstr "جودة المزوّد (نسخ الدفق، MKA)"
 
 #: main.py:1457
-#: playlist.py:3501
+#: playlist.py:3506
 msgid "Provider – {name}"
 msgstr "المزوّد – {name}"
 
-#: main.py:4329
+#: main.py:4307
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
-#: playlist.py:3685
+#: playlist.py:3690
 msgid "Randomise MAC"
 msgstr "توليد MAC عشوائي"
 
-#: internal_player.py:587
+#: internal_player.py:588
 #: shortcuts.py:122
 msgid "Read Current Subtitle"
 msgstr "قراءة الترجمة الحالية"
@@ -2951,7 +3053,7 @@ msgstr "قراءة قائمة الشكر الكاملة"
 msgid "Ready."
 msgstr "جاهز."
 
-#: main.py:7708
+#: main.py:7686
 msgid "Recent Subtitles"
 msgstr "الترجمات الحديثة"
 
@@ -2966,53 +3068,57 @@ msgstr "تمت مشاهدته مؤخرًا"
 msgid "Recently Watched..."
 msgstr "تمت مشاهدته مؤخرًا..."
 
-#: internal_player.py:1591
-#: internal_player.py:2249
-#: internal_player.py:2256
-#: internal_player.py:2264
-#: internal_player.py:2279
+#: internal_player.py:1593
+#: internal_player.py:2251
+#: internal_player.py:2258
+#: internal_player.py:2266
+#: internal_player.py:2281
 msgid "Reconnecting..."
 msgstr "جارٍ إعادة الاتصال..."
 
 #: internal_player.py:460
 #: internal_player.py:461
-#: internal_player.py:572
-#: internal_player.py:1979
-#: internal_player.py:1995
+#: internal_player.py:573
+#: internal_player.py:1981
+#: internal_player.py:1997
 #: main.py:2798
-#: main.py:3671
-#: main.py:8230
-#: main.py:8238
+#: main.py:3649
+#: main.py:8208
+#: main.py:8216
 #: shortcuts.py:115
 msgid "Record"
 msgstr "تسجيل"
 
-#: dialogs_misc.py:1124
-#: main.py:9710
+#: dialogs_misc.py:1130
+#: main.py:9694
 msgid "Record Daily"
 msgstr "سجّل يوميًا"
 
-#: dialogs_misc.py:1126
-#: main.py:9712
+#: dialogs_misc.py:1132
+#: main.py:9696
 msgid "Record Series"
 msgstr "سجّل المسلسل"
 
-#: dialogs_misc.py:1125
-#: main.py:9711
+#: dialogs_misc.py:1131
+#: main.py:9695
 msgid "Record Weekly"
 msgstr "سجّل أسبوعيًا"
 
+#: recording_edits_ui.py:179
+msgid "Record this airing instead?"
+msgstr "هل تريد تسجيل هذا العرض بدلًا من العرض السابق؟"
+
 #: accessible_tools_ui.py:184
-#: main.py:3687
-#: main.py:3778
-#: main.py:3840
-#: main.py:3967
+#: main.py:3665
+#: main.py:3756
+#: main.py:3818
+#: main.py:3945
+#: main.py:3948
+#: main.py:3959
+#: main.py:3962
 #: main.py:3970
-#: main.py:3981
-#: main.py:3984
-#: main.py:3992
-#: main.py:3995
-#: main.py:9463
+#: main.py:3973
+#: main.py:9447
 msgid "Recording"
 msgstr "جارٍ التسجيل"
 
@@ -3020,12 +3126,13 @@ msgstr "جارٍ التسجيل"
 msgid "Recording Complete"
 msgstr "اكتمل التسجيل"
 
-#: main.py:9393
+#: main.py:9371
 #: recording_conflicts_ui.py:71
+#: recording_edits_ui.py:125
 msgid "Recording Conflicts"
 msgstr "تعارضات التسجيل"
 
-#: main.py:9284
+#: main.py:9262
 msgid "Recording Conflicts..."
 msgstr "تعارضات التسجيل…"
 
@@ -3033,37 +3140,37 @@ msgstr "تعارضات التسجيل…"
 msgid "Recording Connection Limits"
 msgstr "حدود اتصالات التسجيل"
 
-#: main.py:4624
+#: main.py:4602
 msgid "Recording Connection Limits..."
 msgstr "حدود اتصالات التسجيل..."
 
 #: client_recording.py:76
-#: main.py:3697
-#: main.py:3701
-#: main.py:3705
-#: main.py:3730
-#: main.py:3817
+#: main.py:3675
+#: main.py:3679
+#: main.py:3683
+#: main.py:3708
+#: main.py:3795
 msgid "Recording Error"
 msgstr "خطأ في التسجيل"
 
-#: main.py:4634
+#: main.py:4612
 msgid "Recording Format"
 msgstr "تنسيق التسجيل"
 
-#: internal_player.py:3276
+#: internal_player.py:3278
 #: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "مكتبة التسجيلات"
 
-#: main.py:4621
+#: main.py:4599
 msgid "Recording Library..."
 msgstr "مكتبة التسجيلات..."
 
-#: main.py:4582
-#: main.py:4644
-#: main.py:9160
-#: main.py:9166
-#: main.py:9232
+#: main.py:4560
+#: main.py:4622
+#: main.py:9138
+#: main.py:9144
+#: main.py:9210
 #: recording_library_ui.py:89
 msgid "Recording Problem Times"
 msgstr "أوقات مشكلات التسجيل"
@@ -3072,13 +3179,13 @@ msgstr "أوقات مشكلات التسجيل"
 msgid "Recording Space Monitor"
 msgstr "مراقبة مساحة التسجيل"
 
-#: main.py:4619
+#: main.py:4597
 msgid "Recording Space Monitor..."
 msgstr "مراقبة مساحة التسجيل..."
 
 #: accessible_tools_ui.py:286
-#: planning_ui.py:365
-#: planning_ui.py:402
+#: planning_ui.py:380
+#: planning_ui.py:417
 msgid "Recording Storage"
 msgstr "مساحة التسجيل"
 
@@ -3097,11 +3204,11 @@ msgstr "تم حفظ حد اتصالات التسجيل."
 msgid "Recording folder:"
 msgstr "مجلد التسجيلات:"
 
-#: planning_ui.py:385
+#: planning_ui.py:400
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "مجلد التسجيلات: {path}\nالمساحة الحرة: {free} MiB\nالمساحة الاحتياطية المطلوبة: {reserve} MiB.\n\nلا يضمن هذا الفحص توفّر مساحة كافية للتسجيل بالكامل."
 
-#: internal_player.py:1978
+#: internal_player.py:1980
 msgid "Recording is not available from this window."
 msgstr "التسجيل غير متاح من هذه النافذة."
 
@@ -3125,7 +3232,7 @@ msgstr "تعذّر تطبيق إدارة الطاقة للتسجيلات:\n{erro
 msgid "Recording saved:\n{path}"
 msgstr "تم حفظ التسجيل:\n{path}"
 
-#: personal_tools_ui.py:737
+#: personal_tools_ui.py:810
 msgid "Recording schedule saved."
 msgstr "حُفظ جدول التسجيل."
 
@@ -3141,7 +3248,7 @@ msgstr "المساحة الخالية منخفضة جدًا ({free} MiB). يجر
 msgid "Recording space is running low: {free} MiB remains.\n{path}"
 msgstr "مساحة التسجيل على وشك النفاد: تبقّى {free} MiB.\n{path}"
 
-#: main.py:3836
+#: main.py:3814
 msgid "Recording started ({fmt}):\n{path}"
 msgstr "بدأ التسجيل ({fmt}):\n{path}"
 
@@ -3159,45 +3266,45 @@ msgstr "تم تحديث التسجيل للتكرار."
 
 #: client_ui.py:187
 #: client_ui.py:452
-#: main.py:4293
-#: main.py:4598
+#: main.py:4271
+#: main.py:4576
 #: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
 msgstr "التسجيلات"
 
-#: main.py:9453
+#: main.py:9437
 msgid "Recover from Channel Archive..."
 msgstr "استعادة من أرشيف القناة..."
 
 #: dialogs_misc.py:356
-#: main.py:9274
-#: main.py:9438
-#: personal_tools_ui.py:540
+#: main.py:9252
+#: main.py:9416
+#: personal_tools_ui.py:613
 #: planning_ui.py:59
-#: playlist.py:3209
+#: playlist.py:3214
 #: recording_library_ui.py:94
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "تحديث"
 
-#: playlist.py:3209
+#: playlist.py:3214
 msgid "Refresh All Playlists"
 msgstr "تحديث كل قوائم التشغيل"
 
-#: main.py:6953
+#: main.py:6931
 msgid "Refreshing all playlists..."
 msgstr "جارٍ تحديث كل قوائم التشغيل..."
 
-#: main.py:6958
+#: main.py:6936
 msgid "Refreshing playlist: {name}"
 msgstr "جارٍ تحديث قائمة التشغيل: {name}"
 
-#: internal_player.py:1240
-#: internal_player.py:2251
-#: internal_player.py:2258
-#: internal_player.py:2261
-#: internal_player.py:2279
+#: internal_player.py:1242
+#: internal_player.py:2253
+#: internal_player.py:2260
+#: internal_player.py:2263
+#: internal_player.py:2281
 msgid "Refreshing stream..."
 msgstr "جارٍ تحديث البث..."
 
@@ -3205,7 +3312,7 @@ msgstr "جارٍ تحديث البث..."
 msgid "Release history"
 msgstr "سجل الإصدارات"
 
-#: personal_tools_ui.py:311
+#: personal_tools_ui.py:359
 msgid "Relink Missing Channel..."
 msgstr "إعادة ربط القناة غير المتاحة..."
 
@@ -3221,15 +3328,15 @@ msgstr "التذكير مجددًا بعد 5 دقائق"
 msgid "Remind at Programme Start"
 msgstr "التذكير عند بدء البرنامج"
 
-#: planning_ui.py:328
+#: planning_ui.py:343
 msgid "Reminder set."
 msgstr "تم ضبط التذكير."
 
-#: personal_tools_ui.py:385
+#: personal_tools_ui.py:458
 msgid "Remove '{name}' from this list?"
 msgstr "هل تريد إزالة «{name}» من هذه القائمة؟"
 
-#: personal_tools_ui.py:310
+#: personal_tools_ui.py:358
 msgid "Remove Channel"
 msgstr "إزالة القناة"
 
@@ -3249,7 +3356,7 @@ msgstr "هل تريد حذف جميع التذكيرات؟"
 msgid "Remove all saved playback positions?"
 msgstr "هل تريد حذف جميع مواضع التشغيل المحفوظة؟"
 
-#: main.py:9559
+#: main.py:9543
 msgid "Remove all scheduled recordings from the list?"
 msgstr "هل تريد إزالة جميع التسجيلات المجدولة من القائمة؟"
 
@@ -3257,11 +3364,11 @@ msgstr "هل تريد إزالة جميع التسجيلات المجدولة م
 msgid "Remove from Favorites"
 msgstr "إزالة من المفضلة"
 
-#: main.py:9564
+#: main.py:9548
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "هل تريد إزالة التسجيل المجدول '{title}' من القائمة؟"
 
-#: main.py:9561
+#: main.py:9545
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "هل تريد إزالة التسجيلات المجدولة المحددة، وعددها {count}، من القائمة؟ ستُحفظ ملفات التسجيل."
 
@@ -3273,8 +3380,8 @@ msgstr "هل تريد حذف هذا التذكير؟"
 msgid "Remove this saved playback position?"
 msgstr "هل تريد حذف موضع التشغيل المحفوظ هذا؟"
 
-#: playlist.py:3132
-#: playlist.py:3213
+#: playlist.py:3137
+#: playlist.py:3218
 msgid "Rename"
 msgstr "إعادة تسمية"
 
@@ -3283,23 +3390,23 @@ msgstr "إعادة تسمية"
 msgid "Rename Title..."
 msgstr "تغيير العنوان..."
 
-#: personal_tools_ui.py:309
+#: personal_tools_ui.py:357
 #: session_tools_ui.py:62
 #: session_tools_ui.py:109
 msgid "Rename..."
 msgstr "إعادة تسمية..."
 
-#: main.py:9287
+#: main.py:9265
 #: planning_tools_ui.py:13
 msgid "Repeat on Weekdays..."
 msgstr "التكرار في أيام محددة…"
 
-#: personal_tools_ui.py:123
 #: personal_tools_ui.py:125
+#: personal_tools_ui.py:127
 msgid "Repeat on selected weekdays (none: once):"
 msgstr "التكرار في الأيام المحددة (دون تحديد: مرة واحدة):"
 
-#: personal_tools_ui.py:876
+#: personal_tools_ui.py:949
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "هل تريد استبدال الإعدادات و{jobs} من إدخالات التسجيل و{reminders} من التذكيرات؟ لن تبدأ التسجيلات التي بدأت سابقًا من جديد."
 
@@ -3319,8 +3426,8 @@ msgstr "استعادة"
 msgid "Restore Recording"
 msgstr "استعادة التسجيل"
 
-#: internal_player.py:1913
-#: internal_player.py:1970
+#: internal_player.py:1915
+#: internal_player.py:1972
 #: resume_dialogs.py:17
 #: resume_dialogs.py:18
 #: resume_dialogs.py:51
@@ -3331,7 +3438,7 @@ msgstr "استئناف"
 msgid "Resume playback from {time}?"
 msgstr "هل تريد متابعة التشغيل من {time}؟"
 
-#: internal_player.py:569
+#: internal_player.py:570
 msgid "Return to Live"
 msgstr "العودة إلى البث المباشر"
 
@@ -3339,13 +3446,17 @@ msgstr "العودة إلى البث المباشر"
 msgid "Review recent subtitles..."
 msgstr "مراجعة الترجمات الحديثة..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:262
+#: client_timeshift.py:263
 msgid "Rewind Live TV"
 msgstr "الرجوع في البث المباشر"
 
 #: internal_player.py:568
 msgid "Rewind Live TV..."
 msgstr "الرجوع في البث المباشر…"
+
+#: recording_edits_ui.py:124
+msgid "Same episode"
+msgstr "الحلقة نفسها"
 
 #: planning_tools_ui.py:23
 msgid "Saturday"
@@ -3355,16 +3466,26 @@ msgstr "السبت"
 msgid "Save"
 msgstr "حفظ"
 
-#: personal_tools_ui.py:488
+#: client_timeshift.py:289
+#: client_timeshift.py:293
+#: client_timeshift.py:303
+#: client_timeshift.py:313
+#: client_timeshift.py:316
+#: client_timeshift.py:348
+#: internal_player.py:569
+msgid "Save Recent Broadcast..."
+msgstr "حفظ الدقائق الأخيرة…"
+
+#: personal_tools_ui.py:561
 msgid "Saved Programme Search"
 msgstr "بحث محفوظ عن البرامج"
 
-#: personal_tools_ui.py:533
-#: personal_tools_ui.py:534
+#: personal_tools_ui.py:606
+#: personal_tools_ui.py:607
 msgid "Saved Programme Searches"
 msgstr "عمليات البحث المحفوظة عن البرامج"
 
-#: personal_tools_ui.py:688
+#: personal_tools_ui.py:761
 msgid "Saved Programme Searches..."
 msgstr "عمليات البحث المحفوظة عن البرامج..."
 
@@ -3372,11 +3493,20 @@ msgstr "عمليات البحث المحفوظة عن البرامج..."
 msgid "Saved playback positions"
 msgstr "مواضع التشغيل المحفوظة"
 
-#: main.py:6461
+#: main.py:6439
 msgid "Saved positions can only be restored in the built-in player. Select it and disconnect casting before continuing."
 msgstr "لا يمكن استعادة مواضع التشغيل المحفوظة إلا في المشغّل المدمج. اختره وافصل الإرسال إلى الجهاز الآخر قبل المتابعة."
 
-#: recording_conflicts_ui.py:96
+#: client_timeshift.py:347
+#: personal_tools_ui.py:394
+msgid "Saved to {path}."
+msgstr "حُفظ الملف في {path}."
+
+#: client_timeshift.py:318
+msgid "Saving the broadcast excerpt..."
+msgstr "جارٍ حفظ المقطع من البث…"
+
+#: recording_conflicts_ui.py:100
 msgid "Schedule Anyway"
 msgstr "الجدولة على أي حال"
 
@@ -3384,12 +3514,12 @@ msgstr "الجدولة على أي حال"
 msgid "Schedule Padding"
 msgstr "هامش الجدولة"
 
-#: main.py:4640
+#: main.py:4618
 msgid "Schedule Padding..."
 msgstr "هامش الجدولة..."
 
-#: dialogs_misc.py:899
-#: dialogs_misc.py:1121
+#: dialogs_misc.py:905
+#: dialogs_misc.py:1127
 #: main.py:2805
 #: main.py:2884
 #: main.py:3301
@@ -3400,59 +3530,59 @@ msgstr "هامش الجدولة..."
 #: main.py:3366
 #: main.py:3385
 #: main.py:3392
-#: main.py:9707
-#: main.py:9755
-#: personal_tools_ui.py:189
+#: main.py:9691
+#: main.py:9739
+#: personal_tools_ui.py:191
 msgid "Schedule Recording"
 msgstr "جدولة التسجيل"
 
 #: main.py:2814
-#: personal_tools_ui.py:542
+#: personal_tools_ui.py:615
 msgid "Schedule Recording..."
 msgstr "جدولة التسجيل..."
 
-#: personal_tools_ui.py:113
+#: personal_tools_ui.py:115
 msgid "Schedule by Time"
 msgstr "جدولة حسب الوقت"
 
-#: main.py:4628
+#: main.py:4606
 msgid "Schedule by Time..."
 msgstr "جدولة حسب الوقت..."
 
-#: main.py:9462
+#: main.py:9446
 #: planning_ui.py:99
 msgid "Scheduled"
 msgstr "مجدول"
 
-#: main.py:3527
-#: main.py:3628
+#: main.py:3505
+#: main.py:3606
 msgid "Scheduled Recording"
 msgstr "تسجيل مجدول"
 
 #: main.py:1249
-#: main.py:9254
-#: main.py:9312
-#: main.py:9315
-#: main.py:9372
-#: main.py:9383
-#: main.py:9403
-#: main.py:9539
-#: main.py:9546
-#: main.py:9552
-#: main.py:9565
-#: main.py:9575
+#: main.py:9232
+#: main.py:9290
+#: main.py:9293
+#: main.py:9350
+#: main.py:9361
+#: main.py:9381
+#: main.py:9523
+#: main.py:9530
+#: main.py:9536
+#: main.py:9549
+#: main.py:9559
 msgid "Scheduled Recordings"
 msgstr "التسجيلات المجدولة"
 
-#: main.py:4630
+#: main.py:4608
 msgid "Scheduled Recordings..."
 msgstr "التسجيلات المجدولة..."
 
-#: main.py:3565
+#: main.py:3543
 msgid "Scheduled recording is missing channel data."
 msgstr "التسجيل المجدول يفتقد بيانات القناة."
 
-#: main.py:3626
+#: main.py:3604
 msgid "Scheduled recording started:\n{title}"
 msgstr "بدأ التسجيل المجدول:\n{title}"
 
@@ -3460,27 +3590,27 @@ msgstr "بدأ التسجيل المجدول:\n{title}"
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "التسجيل المجدول:\n{title}\n{time}"
 
-#: main.py:5772
-#: main.py:9266
+#: main.py:5750
+#: main.py:9244
 msgid "Scheduled recordings"
 msgstr "التسجيلات المجدولة"
 
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:490
+#: personal_tools_ui.py:563
 msgid "Search"
 msgstr "بحث"
 
-#: personal_tools_ui.py:535
+#: personal_tools_ui.py:608
 msgid "Search Results"
 msgstr "نتائج البحث"
 
-#: personal_tools_ui.py:491
+#: personal_tools_ui.py:564
 msgid "Search descriptions too"
 msgstr "البحث في الأوصاف أيضًا"
 
-#: personal_tools_ui.py:392
+#: personal_tools_ui.py:465
 msgid "Search for the replacement channel:"
 msgstr "ابحث عن القناة البديلة:"
 
@@ -3496,16 +3626,16 @@ msgstr "البحث في التسجيلات:"
 msgid "Searching for devices..."
 msgstr "جارٍ البحث عن الأجهزة..."
 
-#: personal_tools_ui.py:796
+#: personal_tools_ui.py:869
 msgid "Searching programmes..."
 msgstr "جارٍ البحث عن البرامج..."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
+#: client_timeshift.py:262
 msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "التأخر بالثواني عن أحدث صورة محفوظة؛ 0 للعودة إلى البث المباشر."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:261
-#: internal_player.py:3325
+#: client_timeshift.py:262
+#: internal_player.py:3327
 msgid "Seconds:"
 msgstr "الثواني:"
 
@@ -3527,7 +3657,7 @@ msgstr "تحديد الملف التنفيذي للمشغّل"
 msgid "Select a channel first."
 msgstr "حدد قناة أولاً."
 
-#: main.py:3671
+#: main.py:3649
 msgid "Select a channel to record first."
 msgstr "حدد قناة للتسجيل أولاً."
 
@@ -3535,11 +3665,11 @@ msgstr "حدد قناة للتسجيل أولاً."
 msgid "Select a live channel first."
 msgstr "اختر قناة مباشرة أولًا."
 
-#: main.py:9332
+#: main.py:9310
 msgid "Select a missed, failed or partial recording."
 msgstr "اختر تسجيلًا فائتًا أو غير مكتمل أو تعذّر إتمامه."
 
-#: main.py:9755
+#: main.py:9739
 msgid "Select a programme first."
 msgstr "حدد برنامجًا أولاً."
 
@@ -3551,9 +3681,9 @@ msgstr "اختر قناة من دليل البرامج أو استخدم الم�
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "اختر برنامجًا، ثم اضغط Enter لفتحه، أو استخدم قائمة السياق لتنزيله. اضغط Escape للإغلاق."
 
-#: main.py:9393
-#: main.py:9539
-#: main.py:9552
+#: main.py:9371
+#: main.py:9523
+#: main.py:9536
 msgid "Select a scheduled recording first."
 msgstr "حدد تسجيلاً مجدولاً أولاً."
 
@@ -3561,17 +3691,17 @@ msgstr "حدد تسجيلاً مجدولاً أولاً."
 msgid "Select an account to check its status:"
 msgstr "اختر حسابًا للتحقق من حالته:"
 
-#: main.py:9402
+#: main.py:9380
 msgid "Select one pending or running recording to edit its times."
 msgstr "اختر تسجيلًا واحدًا معلقًا أو جاريًا لتعديل أوقاته."
 
-#: dvr.py:521
-#: dvr.py:588
-#: main.py:9371
+#: dvr.py:599
+#: dvr.py:679
+#: main.py:9349
 msgid "Select one pending recording that is not a series rule."
 msgstr "حدد تسجيلًا واحدًا معلقًا لا يمثل قاعدة مسلسل."
 
-#: dvr.py:635
+#: dvr.py:726
 msgid "Select one pending recurring recording."
 msgstr "اختر تسجيلًا متكررًا لم يبدأ بعد."
 
@@ -3579,12 +3709,12 @@ msgstr "اختر تسجيلًا متكررًا لم يبدأ بعد."
 msgid "Select the audio output device for the built-in player."
 msgstr "حدد جهاز إخراج الصوت للمشغّل المدمج."
 
-#: playlist.py:3574
+#: playlist.py:3579
 msgid "Select the playlist format to download"
 msgstr "حدد تنسيق قائمة التشغيل للتنزيل"
 
-#: personal_tools_ui.py:343
-#: personal_tools_ui.py:505
+#: personal_tools_ui.py:416
+#: personal_tools_ui.py:578
 msgid "Selected channel: {name}"
 msgstr "القناة المحددة: {name}"
 
@@ -3618,20 +3748,20 @@ msgstr "وقت الخادم"
 msgid "Server time zone"
 msgstr "المنطقة الزمنية للخادم"
 
-#: main.py:4648
+#: main.py:4626
 msgid "Set Download Folder..."
 msgstr "تعيين مجلد التنزيل..."
 
-#: dialogs_misc.py:1109
+#: dialogs_misc.py:1115
 #: main.py:2802
-#: main.py:9697
-#: personal_tools_ui.py:189
-#: personal_tools_ui.py:541
+#: main.py:9681
+#: personal_tools_ui.py:192
+#: personal_tools_ui.py:614
 #: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "ضبط تذكير…"
 
-#: main.py:4356
+#: main.py:4334
 msgid "Set download folder"
 msgstr "تعيين مجلد التنزيل"
 
@@ -3640,11 +3770,11 @@ msgstr "تعيين مجلد التنزيل"
 #: main.py:2101
 #: main.py:2106
 #: main.py:2111
-#: personal_tools_ui.py:855
+#: personal_tools_ui.py:928
 msgid "Settings Backup"
 msgstr "النسخ الاحتياطي للإعدادات"
 
-#: full_backup.py:118
+#: full_backup.py:126
 #: settings_backup.py:27
 msgid "Settings are too large to back up."
 msgstr "الإعدادات أكبر من أن يتم نسخها احتياطيًا."
@@ -3681,7 +3811,7 @@ msgstr "إظهار المشغّل"
 msgid "Show Player on Enter"
 msgstr "إظهار المشغّل عند الضغط على Enter"
 
-#: personal_tools_ui.py:181
+#: personal_tools_ui.py:183
 msgid "Show Programmes"
 msgstr "عرض البرامج"
 
@@ -3699,44 +3829,44 @@ msgstr "عرض الإصدارات السابقة (بالإنجليزية)"
 msgid "Showing {count} of {total} matching channels. Refine the search if needed."
 msgstr "تُعرض {count} قناة من أصل {total} قناة مطابقة. ضيّق نطاق البحث عند الحاجة."
 
-#: dialogs_misc.py:787
-#: main.py:4041
-#: main.py:4105
-#: main.py:4115
+#: dialogs_misc.py:793
+#: main.py:4019
+#: main.py:4083
+#: main.py:4093
 msgid "Shut Down After Recordings"
 msgstr "إيقاف التشغيل بعد التسجيلات"
 
-#: dialogs_misc.py:801
+#: dialogs_misc.py:807
 msgid "Shut Down Now"
 msgstr "إيقاف التشغيل الآن"
 
-#: main.py:4652
+#: main.py:4630
 msgid "Shut Down the Computer When Recordings Finish"
 msgstr "إيقاف تشغيل الكمبيوتر عند انتهاء التسجيلات"
 
-#: main.py:4104
+#: main.py:4082
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "تم إلغاء إيقاف التشغيل. أصبح الإيقاف التلقائي بعد التسجيلات معطلاً."
 
-#: planning_tools.py:87
+#: planning_tools.py:91
 msgid "Size (bytes)"
 msgstr "الحجم (بالبايت)"
 
-#: main.py:9307
-#: main.py:9450
+#: main.py:9285
+#: main.py:9434
 msgid "Skip This Occurrence"
 msgstr "تخطّي هذه المرة فقط"
 
-#: main.py:9306
+#: main.py:9284
 msgid "Skip this occurrence of {title}?"
 msgstr "هل تريد تخطّي تسجيل «{title}» هذه المرة؟"
 
-#: main.py:9471
+#: main.py:9455
 msgid "Skipped"
 msgstr "تم التخطي"
 
-#: internal_player.py:3313
-#: internal_player.py:3325
+#: internal_player.py:3315
+#: internal_player.py:3327
 msgid "Sleep Timer"
 msgstr "مؤقت النوم"
 
@@ -3748,11 +3878,17 @@ msgstr "مؤقت النوم…"
 msgid "Sort by"
 msgstr "الترتيب حسب"
 
-#: internal_player.py:2474
+#: internal_player.py:2476
 msgid "Sound restored"
 msgstr "تمت استعادة الصوت"
 
-#: internal_player.py:584
+#: favourite_transfer_ui.py:56
+#: playlist.py:2442
+#: recording_edits_ui.py:134
+msgid "Source {number}"
+msgstr "المصدر {number}"
+
+#: internal_player.py:585
 #: shortcuts.py:121
 msgid "Speak Subtitles"
 msgstr "قراءة الترجمة بصوت عالٍ"
@@ -3769,7 +3905,7 @@ msgstr "النطق بصوت التطبيق"
 msgid "Speak through screen reader"
 msgstr "النطق بقارئ الشاشة"
 
-#: main.py:7849
+#: main.py:7827
 msgid "Speech speed (-10 to 10; 0 is normal):"
 msgstr "سرعة النطق (من -10 إلى 10؛ السرعة العادية 0):"
 
@@ -3778,7 +3914,7 @@ msgid "Stalker Portal"
 msgstr "Stalker Portal"
 
 #: main.py:1456
-#: playlist.py:3500
+#: playlist.py:3505
 msgid "Stalker Portal – {name}"
 msgstr "Stalker Portal – {name}"
 
@@ -3791,12 +3927,12 @@ msgstr "لم يُهيَّأ عميل بوابة Stalker بعد."
 msgid "Stalker portal entry missing provider identifier."
 msgstr "معرّف مقدّم الخدمة مفقود من بيانات بوابة Stalker."
 
-#: personal_tools_ui.py:120
-#: recording_conflicts_ui.py:167
+#: personal_tools_ui.py:122
+#: recording_conflicts_ui.py:185
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "البداية (التوقيت المحلي، YYYY-MM-DD HH:MM)"
 
-#: main.py:4608
+#: main.py:4586
 #: shortcuts.py:91
 msgid "Start Recording"
 msgstr "بدء التسجيل"
@@ -3805,11 +3941,11 @@ msgstr "بدء التسجيل"
 msgid "Start playback in the built-in player first."
 msgstr "ابدأ التشغيل في المشغّل المدمج أولًا."
 
-#: dialogs_misc.py:714
+#: dialogs_misc.py:715
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "ابدأ التسجيلات المجدولة مبكراً أو استمر في التسجيل بعد انتهاء البرنامج. لا تتأثر التسجيلات اليدوية."
 
-#: main.py:4924
+#: main.py:4902
 msgid "Starting update..."
 msgstr "جارٍ بدء التحديث..."
 
@@ -3821,8 +3957,8 @@ msgstr "يبدأ في {start}: {title}"
 #: account_info.py:552
 #: account_info.py:554
 #: account_info.py:606
-#: main.py:9270
-#: planning_tools.py:87
+#: main.py:9248
+#: planning_tools.py:91
 #: planning_ui.py:47
 #: recording_library_ui.py:61
 #: recording_library_ui.py:82
@@ -3839,7 +3975,7 @@ msgstr "الحالة"
 msgid "Stop"
 msgstr "إيقاف"
 
-#: main.py:4612
+#: main.py:4590
 msgid "Stop All Recordings"
 msgstr "إيقاف جميع التسجيلات"
 
@@ -3847,9 +3983,9 @@ msgstr "إيقاف جميع التسجيلات"
 msgid "Stop Playback"
 msgstr "إيقاف التشغيل"
 
-#: internal_player.py:1995
+#: internal_player.py:1997
 #: main.py:2796
-#: main.py:4610
+#: main.py:4588
 msgid "Stop Recording"
 msgstr "إيقاف التسجيل"
 
@@ -3861,11 +3997,11 @@ msgstr "إيقاف التسجيل/التسجيلات"
 msgid "Stop below (MiB):"
 msgstr "الإيقاف عندما تقل المساحة عن (MiB):"
 
-#: internal_player.py:3312
+#: internal_player.py:3314
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "إيقاف التشغيل المدمج بعد 1–1440 دقيقة؛ أدخل 0 لإلغاء المؤقت."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:98
+#: client_timeshift.py:99
 msgid "Stop local buffered playback before switching to a cast device."
 msgstr "أوقف التشغيل من التخزين المؤقت المحلي قبل الانتقال إلى جهاز البث."
 
@@ -3873,37 +4009,37 @@ msgstr "أوقف التشغيل من التخزين المؤقت المحلي ق
 msgid "Stop recordings safely when space is critically low"
 msgstr "إيقاف التسجيلات بشكل سليم عند انخفاض المساحة إلى مستوى حرج"
 
-#: internal_player.py:943
-#: internal_player.py:2043
+#: internal_player.py:945
+#: internal_player.py:2045
 msgid "Stopped"
 msgstr "متوقف"
 
-#: main.py:9467
-#: planning_tools.py:88
+#: main.py:9451
+#: planning_tools.py:92
 #: recording_library_ui.py:62
 #: recording_library_ui.py:302
 msgid "Stopped by user"
 msgstr "أوقفه المستخدم"
 
-#: main.py:9464
+#: main.py:9448
 msgid "Stopping"
 msgstr "جارٍ الإيقاف"
 
-#: main.py:3685
-#: main.py:3965
+#: main.py:3663
+#: main.py:3943
 msgid "Stopping recording for {name}..."
 msgstr "جارٍ إيقاف تسجيل {name}..."
 
-#: main.py:3981
+#: main.py:3959
 msgid "Stopping recording..."
 msgstr "جارٍ إيقاف التسجيل..."
 
-#: main.py:3991
+#: main.py:3969
 msgid "Stopping {count} recording(s)..."
 msgstr "جارٍ إيقاف {count} تسجيل..."
 
-#: internal_player.py:1229
-#: internal_player.py:1575
+#: internal_player.py:1231
+#: internal_player.py:1577
 msgid "Stream Lost"
 msgstr "فُقد البث"
 
@@ -3912,21 +4048,21 @@ msgstr "فُقد البث"
 msgid "Stream URL"
 msgstr "عنوان البث"
 
-#: internal_player.py:1570
+#: internal_player.py:1572
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "انقطع البث بعد {count} محاولة. قد يكون البث غير متصل أو يواجه مشكلات."
 
-#: internal_player.py:1227
+#: internal_player.py:1229
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "انقطع البث. قد يكون غير متصل أو يواجه مشاكل."
 
-#: internal_player.py:1232
-#: internal_player.py:1578
-#: internal_player.py:2281
+#: internal_player.py:1234
+#: internal_player.py:1580
+#: internal_player.py:2283
 msgid "Stream lost"
 msgstr "فُقد البث"
 
-#: playlist.py:3575
+#: playlist.py:3580
 msgid "Stream output"
 msgstr "خرج البث"
 
@@ -3935,16 +4071,16 @@ msgstr "خرج البث"
 msgid "Subscription"
 msgstr "الاشتراك"
 
-#: main.py:7960
+#: main.py:7938
 msgid "Subtitle Capabilities"
 msgstr "إمكانيات الترجمة"
 
 #: client_ui.py:443
-#: main.py:7799
-#: main.py:7870
-#: main.py:7906
-#: main.py:7910
-#: main.py:7914
+#: main.py:7777
+#: main.py:7848
+#: main.py:7884
+#: main.py:7888
+#: main.py:7892
 msgid "Subtitle Speech"
 msgstr "قراءة الترجمة"
 
@@ -3966,49 +4102,49 @@ msgstr "تأخير الترجمة بالمللي ثانية (من -600000 إلى
 msgid "Subtitle delay: {milliseconds} ms."
 msgstr "تأخير الترجمة: {milliseconds} مللي ثانية."
 
-#: internal_player.py:2740
+#: internal_player.py:2742
 msgid "Subtitle file loaded: {name}"
 msgstr "تم تحميل ملف الترجمة: {name}"
 
-#: internal_player.py:2718
+#: internal_player.py:2720
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "ملفات الترجمة (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:7664
+#: main.py:7642
 msgid "Subtitle speech %s."
 msgstr "نطق الترجمة %s."
 
-#: main.py:7760
-#: main.py:7769
-#: main.py:7909
+#: main.py:7738
+#: main.py:7747
+#: main.py:7887
 msgid "Subtitle speech failed."
 msgstr "فشل نطق الترجمة."
 
-#: internal_player.py:2746
+#: internal_player.py:2748
 msgid "Subtitle speech needs a supported text subtitle file."
 msgstr "تتطلب القراءة ملف ترجمة نصية بتنسيق مدعوم."
 
-#: internal_player.py:2939
+#: internal_player.py:2941
 msgid "Subtitle speech off"
 msgstr "قراءة الترجمة متوقفة"
 
-#: internal_player.py:2941
+#: internal_player.py:2943
 msgid "Subtitle speech on"
 msgstr "قراءة الترجمة مفعّلة"
 
-#: internal_player.py:2943
+#: internal_player.py:2945
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "تم تفعيل قراءة الترجمة. حمّل ملف ترجمة للاستماع إليها."
 
-#: main.py:7763
+#: main.py:7741
 msgid "Subtitle speech paused: the selected audio output is unavailable."
 msgstr "تم إيقاف نطق الترجمة مؤقتًا: مخرج الصوت المحدد غير متاح."
 
-#: main.py:7806
+#: main.py:7784
 msgid "Subtitle speech will use the application voice."
 msgstr "ستستخدم قراءة الترجمة صوت التطبيق."
 
-#: main.py:7808
+#: main.py:7786
 msgid "Subtitle speech will use your screen reader."
 msgstr "ستستخدم قراءة الترجمة قارئ الشاشة الخاص بك."
 
@@ -4016,19 +4152,19 @@ msgstr "ستستخدم قراءة الترجمة قارئ الشاشة الخا�
 msgid "Subtitle timing could not be changed."
 msgstr "تعذر تغيير توقيت الترجمة."
 
-#: internal_player.py:2669
+#: internal_player.py:2671
 msgid "Subtitle track unavailable"
 msgstr "مسار الترجمة غير متاح"
 
 #: client_ui.py:231
 #: client_ui.py:373
-#: internal_player.py:581
-#: internal_player.py:2715
+#: internal_player.py:582
+#: internal_player.py:2717
 #: shortcuts.py:120
 msgid "Subtitles"
 msgstr "الترجمات"
 
-#: internal_player.py:2680
+#: internal_player.py:2682
 msgid "Subtitles: {name}"
 msgstr "الترجمة: {name}"
 
@@ -4037,7 +4173,7 @@ msgid "Sunday"
 msgstr "الأحد"
 
 #: internal_player.py:121
-#: main.py:7880
+#: main.py:7858
 msgid "System default"
 msgstr "الافتراضي للنظام"
 
@@ -4046,23 +4182,23 @@ msgid "The EPG database was created by an older version and is missing newer fie
 msgstr "تم إنشاء قاعدة بيانات دليل البرامج بإصدار أقدم وتنقصها حقول أحدث. هل تريد استيراد الدليل مرة أخرى لتحديثها؟\n\n(بدون ذلك، لا يمكن لعرض دليل البرامج إظهار أوصاف البرامج.)"
 
 #: main.py:2868
-#: main.py:7045
+#: main.py:7023
 msgid "The EPG import could not be started."
 msgstr "تعذر بدء استيراد EPG."
 
-#: main.py:6915
+#: main.py:6893
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "لم يكتمل استيراد EPG. قد يكون دليل البرامج ناقصًا أو دون تغيير."
 
-#: main.py:6911
+#: main.py:6889
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "اكتمل استيراد EPG. دليل البرامج محدَّث الآن."
 
-#: personal_tools_ui.py:879
+#: personal_tools_ui.py:952
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "سيُغلَق التطبيق. افتحه مجددًا لإكمال الاستعادة."
 
-#: main.py:7798
+#: main.py:7776
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "صوت التطبيق متوفر فقط على Windows مع SAPI."
 
@@ -4078,30 +4214,40 @@ msgstr "لم تعد العلامة المرجعية متاحة. افتح الق�
 msgid "The bookmark limit has been reached. Delete an unused bookmark first."
 msgstr "تم بلوغ الحد الأقصى للعلامات المرجعية. احذف أولًا علامة لم تعد تستخدمها."
 
-#: personal_tools_ui.py:432
-#: personal_tools_ui.py:441
+#: buffer_clip.py:164
+msgid "The buffered programme could not be saved."
+msgstr "تعذّر حفظ المقطع من الذاكرة المؤقتة."
+
+#: favourite_transfer_ui.py:40
+#: personal_tools_ui.py:505
+#: personal_tools_ui.py:514
 msgid "The channel cannot be identified unambiguously."
 msgstr "تعذّر تحديد القناة بدقة."
 
-#: favorite_collections.py:100
-#: main.py:9354
-#: personal_tools_ui.py:260
-#: personal_tools_ui.py:282
-#: personal_tools_ui.py:419
-#: personal_tools_ui.py:477
-#: personal_tools_ui.py:644
+#: favorite_collections.py:107
+#: favourite_transfer_ui.py:107
+#: favourite_transfer_ui.py:120
+#: main.py:9332
+#: personal_tools_ui.py:264
+#: personal_tools_ui.py:286
+#: personal_tools_ui.py:312
+#: personal_tools_ui.py:492
+#: personal_tools_ui.py:550
+#: personal_tools_ui.py:717
+#: recording_edits_ui.py:99
+#: recording_edits_ui.py:158
 msgid "The channel list changed. Try again."
 msgstr "تغيرت قائمة القنوات. حاول مجددًا."
 
-#: internal_player.py:2456
+#: internal_player.py:2458
 msgid "The channel volume could not be saved:\n{error}"
 msgstr "تعذّر حفظ مستوى صوت القناة:\n{error}"
 
-#: main.py:4342
+#: main.py:4320
 msgid "The clipboard is unavailable."
 msgstr "الحافظة غير متاحة."
 
-#: main.py:4036
+#: main.py:4014
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
 msgstr "سيتم إيقاف تشغيل الكمبيوتر بعد انتهاء كل تسجيل قيد التشغيل أو مجدول.\n\nستحصل أولاً على عد تنازلي يمكنك إلغاؤه، ويتم تعطيل هذا الإعداد تلقائيًا بمجرد استخدامه.\n\nهل تريد إيقاف تشغيل الكمبيوتر عند انتهاء التسجيلات؟"
 
@@ -4113,7 +4259,7 @@ msgstr "انتهت مهلة الاتصال بالمزوّد."
 msgid "The end must be in the future and after the start, within seven days."
 msgstr "يجب أن تكون النهاية في المستقبل وبعد البداية، خلال سبعة أيام منها."
 
-#: personal_tools_ui.py:154
+#: personal_tools_ui.py:156
 msgid "The first recording must start on a selected weekday."
 msgstr "يجب أن يبدأ التسجيل الأول في أحد الأيام المحددة."
 
@@ -4129,7 +4275,7 @@ msgstr "توقف المثبت برمز الخروج {code}."
 msgid "The installer was still running after 15 minutes."
 msgstr "كان المثبت لا يزال يعمل بعد 15 دقيقة."
 
-#: main.py:4790
+#: main.py:4768
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "تم تغيير اللغة. يرجى إعادة تشغيل Accessible IPTV Client حتى يسري التغيير بالكامل."
 
@@ -4137,23 +4283,23 @@ msgstr "تم تغيير اللغة. يرجى إعادة تشغيل Accessible IP
 msgid "The library can contain up to 20 folders."
 msgstr "يمكن أن تحتوي المكتبة على 20 مجلدًا كحد أقصى."
 
-#: main.py:3572
+#: main.py:3550
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "يجري تغيير مصدر التخزين المؤقت للبث المباشر. تعذر بدء التسجيل المجدول."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:60
+#: client_timeshift.py:61
 msgid "The local buffer is still feeding a recording. Stop the recording before disabling it."
 msgstr "لا يزال التخزين المؤقت المحلي يغذي تسجيلًا. أوقف التسجيل قبل تعطيله."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:312
+#: client_timeshift.py:393
 msgid "The local buffer stopped because its storage or input failed."
 msgstr "توقف التخزين المؤقت المحلي بسبب عطل في التخزين أو المصدر."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:231
+#: client_timeshift.py:232
 msgid "The local live buffer could not start. No extra provider connection was opened. Disable the buffer to retry direct playback."
 msgstr "تعذر بدء التخزين المؤقت المحلي. لم يُفتح اتصال إضافي بمزود الخدمة. عطّل التخزين المؤقت لإعادة محاولة التشغيل المباشر."
 
-#: favorite_collections.py:52
+#: favorite_collections.py:59
 msgid "The maximum number of favourite lists is 50."
 msgstr "الحد الأقصى لقوائم المفضلة هو 50."
 
@@ -4166,22 +4312,22 @@ msgstr "مدة الوسائط غير متاحة بعد."
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "تبدأ الحلقة التالية بعد {seconds} ثانية: {title}"
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:316
+#: client_timeshift.py:397
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "لم يعد الموضع السابق متاحًا؛ انتقل التشغيل إلى النطاق المحفوظ."
 
-#: personal_tools_ui.py:597
+#: personal_tools_ui.py:670
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "تعذر إكمال العملية. حدّث البيانات وحاول مجددًا."
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:3275
-#: main.py:9545
-#: main.py:9574
+#: internal_player.py:3277
+#: main.py:9529
+#: main.py:9558
 #: personal_tools_ui.py:28
-#: personal_tools_ui.py:821
+#: personal_tools_ui.py:894
 #: planning_tools_ui.py:42
-#: recording_conflicts_ui.py:135
+#: recording_conflicts_ui.py:151
 msgid "The operation failed:\n{error}"
 msgstr "فشلت العملية:\n{error}"
 
@@ -4189,7 +4335,7 @@ msgstr "فشلت العملية:\n{error}"
 msgid "The passwords do not match."
 msgstr "كلمات المرور غير متطابقة."
 
-#: D:/a/Accessible-IPTV-Client/Accessible-IPTV-Client/client_timeshift.py:301
+#: client_timeshift.py:382
 msgid "The paused position expired. Playback resumed at the oldest retained picture."
 msgstr "لم يعد موضع الإيقاف المؤقت متاحًا. استؤنف التشغيل من أقدم صورة محفوظة."
 
@@ -4198,18 +4344,18 @@ msgstr "لم يعد موضع الإيقاف المؤقت متاحًا. استؤ�
 msgid "The playback position is not available yet."
 msgstr "موضع التشغيل غير متاح بعد."
 
-#: internal_player.py:2470
+#: internal_player.py:2472
 msgid "The player could not change its mute state."
 msgstr "تعذّر على المشغّل تغيير حالة كتم الصوت."
 
-#: internal_player.py:2167
+#: internal_player.py:2169
 #: media_navigation_ui.py:117
 #: media_navigation_ui.py:153
 msgid "The player could not seek to the requested position."
 msgstr "تعذر على المشغّل الانتقال إلى الموضع المطلوب."
 
-#: internal_player.py:3200
-#: main.py:6451
+#: internal_player.py:3202
+#: main.py:6429
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "تغيّرت قوائم التشغيل أثناء التحقق. أعد فتح نافذة متابعة المشاهدة وحاول مجددًا."
 
@@ -4217,7 +4363,13 @@ msgstr "تغيّرت قوائم التشغيل أثناء التحقق. أعد �
 msgid "The playlists changed. Select the channel again."
 msgstr "تغيّرت قوائم التشغيل. اختر القناة من جديد."
 
-#: planning_ui.py:310
+#: playlist.py:2455
+#: recording_edits.py:76
+#: recording_edits_ui.py:165
+msgid "The programme guide changed. Refresh the list and try again."
+msgstr "تغيّر دليل البرامج. حدّث القائمة وحاول مجددًا."
+
+#: planning_ui.py:325
 msgid "The programme has already started or its times are invalid."
 msgstr "بدأ البرنامج بالفعل أو أن مواعيده غير صالحة."
 
@@ -4249,7 +4401,7 @@ msgstr "حدث خطأ في خادم المزوّد (HTTP 5xx). حاول مرة �
 msgid "The provider's server refused the connection."
 msgstr "رفض خادم المزوّد الاتصال."
 
-#: dvr.py:574
+#: dvr.py:665
 #: main.py:3358
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "تغير التسجيل. أعد فتح نافذة أوقاته."
@@ -4263,7 +4415,7 @@ msgstr "تم بلوغ حد اتصالات التسجيل لهذا الحساب (
 msgid "The recording file changed. Refresh the library."
 msgstr "تغيّر ملف التسجيل. حدّث المكتبة."
 
-#: main.py:8109
+#: main.py:8087
 #: recording_library.py:152
 #: recording_library.py:311
 #: recording_library.py:314
@@ -4278,13 +4430,21 @@ msgstr "مجلد التسجيلات غير متاح أو غير قابل للك�
 msgid "The recording is still in use."
 msgstr "لا يزال التسجيل قيد الاستخدام."
 
-#: dvr.py:293
-#: dvr.py:309
+#: dvr.py:612
+#: recording_edits.py:35
+#: recording_edits.py:41
+#: recording_edits.py:72
+#: recording_edits_ui.py:26
+msgid "The recording schedule changed. Check the times and try again."
+msgstr "تغيّر جدول التسجيل. تحقّق من المواعيد ثم حاول مرة أخرى."
+
+#: dvr.py:339
+#: dvr.py:355
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "تعذّرت قراءة جدول التسجيلات أو إنشاء نسخة احتياطية منه. تم تعطيل التغييرات لحماية الملف الأصلي. تحقّق من أذونات الملف والمساحة المتاحة على القرص، ثم أعد تشغيل التطبيق."
 
-#: dvr.py:290
-#: dvr.py:306
+#: dvr.py:336
+#: dvr.py:352
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "تعذّرت قراءة جدول التسجيلات. تم الاحتفاظ بالملف الأصلي في {path}. راجع التسجيلات المجدولة قبل إضافة تسجيلات جديدة."
 
@@ -4292,7 +4452,8 @@ msgstr "تعذّرت قراءة جدول التسجيلات. تم الاحتفا
 msgid "The recording start time has already passed."
 msgstr "انقضى وقت بدء التسجيل بالفعل."
 
-#: dvr.py:334
+#: dvr.py:380
+#: recording_edits.py:20
 msgid "The recording times are invalid. Check the recording schedule."
 msgstr "أوقات التسجيل غير صالحة. تحقّق من جدول التسجيلات."
 
@@ -4300,17 +4461,17 @@ msgstr "أوقات التسجيل غير صالحة. تحقّق من جدول ا
 msgid "The recording trash folder is not available."
 msgstr "مجلد سلة محذوفات التسجيلات غير متاح."
 
-#: dvr.py:340
+#: dvr.py:386
 msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
 msgstr "تعذّر حفظ جدول التسجيلات المستعاد. تحقّق من الجدول والمساحة المتاحة على القرص."
 
-#: programme_reminders.py:203
+#: programme_reminders.py:218
 msgid "The reminder cannot be postponed beyond the programme's end."
 msgstr "لا يمكن تأجيل التذكير إلا إلى وقت لاحق يسبق نهاية البرنامج."
 
 #: planning_ui.py:166
-#: planning_ui.py:247
-#: planning_ui.py:358
+#: planning_ui.py:252
+#: planning_ui.py:373
 msgid "The reminder operation failed:\n{error}"
 msgstr "فشلت العملية الخاصة بالتذكير:\n{error}"
 
@@ -4318,21 +4479,27 @@ msgstr "فشلت العملية الخاصة بالتذكير:\n{error}"
 msgid "The requested position is too large."
 msgstr "الموضع المطلوب كبير جدًا."
 
-#: internal_player.py:3254
+#: internal_player.py:3256
 msgid "The saved playback position could not be restored."
 msgstr "تعذرت استعادة موضع التشغيل المحفوظ."
 
-#: saved_searches.py:150
-#: saved_searches.py:160
+#: saved_searches.py:162
+#: saved_searches.py:172
 msgid "The saved search history is damaged."
 msgstr "سجل عمليات البحث المحفوظة تالف."
 
-#: main.py:7780
+#: main.py:7758
 msgid "The selected audio output is unavailable. Subtitle speech is paused."
 msgstr "مخرج الصوت المحدد غير متاح. تم إيقاف نطق الترجمة مؤقتًا."
 
-#: favorite_collections.py:64
-#: favorite_collections.py:97
+#: buffer_clip.py:61
+#: buffer_clip.py:72
+#: buffer_clip.py:74
+msgid "The selected buffer segment is no longer available."
+msgstr "لم يعد المقطع المحدد متاحًا في الذاكرة المؤقتة."
+
+#: favorite_collections.py:71
+#: favorite_collections.py:104
 msgid "The selected list no longer exists."
 msgstr "لم تعد القائمة المحددة موجودة."
 
@@ -4342,7 +4509,7 @@ msgstr "لم يبلّغ الخادم عن أي تفاصيل للحساب."
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:674
+#: personal_tools_ui.py:747
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "تعذّر حفظ الإعدادات. تحقّق من المساحة الخالية وأذونات الكتابة، ثم حاول مجددًا."
 
@@ -4350,7 +4517,7 @@ msgstr "تعذّر حفظ الإعدادات. تحقّق من المساحة ا�
 msgid "The stream sent data that could not be read."
 msgstr "أرسل البث بيانات تعذّرت قراءتها."
 
-#: main.py:5325
+#: main.py:5303
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "لم يكتمل التحديث إلى الإصدار v{version}، لذا لا يزال {app} على الإصدار v{current}. يمكنك المحاولة مرة أخرى من قائمة التعليمات > التحقق من وجود تحديثات..."
 
@@ -4362,8 +4529,12 @@ msgstr "تعذر فتح دليل المستخدم: {error}"
 msgid "The warning threshold must be at least as high as the stop threshold."
 msgstr "يجب ألا يقل حد التحذير عن حد الإيقاف."
 
-#: main.py:8495
-#: main.py:8599
+#: buffer_clip.py:117
+msgid "There is not enough free space to save the buffered programme."
+msgstr "لا توجد مساحة خالية كافية لحفظ المقطع من الذاكرة المؤقتة."
+
+#: main.py:8473
+#: main.py:8577
 msgid "This catch-up programme is already downloading."
 msgstr "هذا البرنامج قيد التنزيل بالفعل."
 
@@ -4371,7 +4542,7 @@ msgstr "هذا البرنامج قيد التنزيل بالفعل."
 msgid "This channel does not provide catch-up streaming."
 msgstr "لا تتيح هذه القناة مشاهدة البرامج بعد بثها."
 
-#: main.py:3969
+#: main.py:3947
 msgid "This channel is not currently recording."
 msgstr "هذه القناة لا يتم تسجيلها حاليًا."
 
@@ -4384,15 +4555,15 @@ msgstr "يتاح هذا الأمر أثناء التشغيل حسب الطلب."
 msgid "This entry cannot be added to Favorites."
 msgstr "لا يمكن إضافة هذا العنصر إلى المفضلة."
 
-#: personal_tools_ui.py:401
+#: personal_tools_ui.py:474
 msgid "This favourite is already available."
 msgstr "هذه القناة المفضّلة متاحة بالفعل."
 
-#: main.py:8236
+#: main.py:8214
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "هذا بث لإعادة المشاهدة. استخدم تنزيل في قائمة إعادة المشاهدة لحفظه."
 
-#: main.py:7908
+#: main.py:7886
 msgid "This is the application voice."
 msgstr "هذا هو صوت التطبيق."
 
@@ -4404,7 +4575,7 @@ msgstr "هذا الوقت المحلي غير موجود. تحقق من تاري
 msgid "This local time occurs twice when the clocks change."
 msgstr "يتكرر هذا الوقت المحلي مرتين عند تغيير الساعة."
 
-#: personal_tools_ui.py:877
+#: personal_tools_ui.py:950
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "تستبدل هذه النسخة القديمة الإعدادات فقط. ستُحفَظ جداول التسجيل والتذكيرات الحالية."
 
@@ -4412,8 +4583,9 @@ msgstr "تستبدل هذه النسخة القديمة الإعدادات فق�
 msgid "This overlaps {count} recording(s). Continue?"
 msgstr "يتداخل هذا مع {count} من التسجيلات. هل تريد المتابعة؟"
 
-#: dvr.py:481
+#: dvr.py:527
 #: main.py:3321
+#: recording_edits.py:61
 msgid "This programme has already ended."
 msgstr "لقد انتهى هذا البرنامج بالفعل."
 
@@ -4421,7 +4593,7 @@ msgstr "لقد انتهى هذا البرنامج بالفعل."
 msgid "This programme is already scheduled to record."
 msgstr "هذا البرنامج مجدول بالفعل للتسجيل."
 
-#: main.py:8467
+#: main.py:8445
 msgid "This programme is not available as catch-up content yet."
 msgstr "هذا البرنامج غير متاح للمشاهدة اللاحقة بعد."
 
@@ -4429,7 +4601,7 @@ msgstr "هذا البرنامج غير متاح للمشاهدة اللاحقة 
 msgid "This programme is older than the catch-up window allows."
 msgstr "بُثّ هذا البرنامج قبل الفترة المتاحة في أرشيف القناة."
 
-#: main.py:9343
+#: main.py:9321
 msgid "This programme is unavailable in the channel archive."
 msgstr "هذا البرنامج غير متاح في أرشيف القناة."
 
@@ -4437,9 +4609,10 @@ msgstr "هذا البرنامج غير متاح في أرشيف القناة."
 msgid "This programme's start and end times are invalid."
 msgstr "وقت بداية هذا البرنامج ونهايته غير صالحين."
 
-#: dvr.py:478
-#: dvr.py:486
-#: dvr.py:561
+#: dvr.py:524
+#: dvr.py:532
+#: dvr.py:652
+#: recording_edits.py:84
 msgid "This recording is already scheduled."
 msgstr "هذا التسجيل مجدول بالفعل."
 
@@ -4456,20 +4629,20 @@ msgstr "هذا البث لا يدعم الانتقال إلى موضع زمني.
 msgid "Thursday"
 msgstr "الخميس"
 
-#: main.py:9267
-#: main.py:9604
+#: main.py:9245
+#: main.py:9588
 #: planning_ui.py:46
 msgid "Time"
 msgstr "الوقت"
 
-#: main.py:9084
+#: main.py:9062
 msgid "Time remaining: {time}"
 msgstr "الوقت المتبقي: {time}"
 
-#: main.py:9268
-#: main.py:9605
-#: personal_tools_ui.py:117
-#: planning_tools.py:87
+#: main.py:9246
+#: main.py:9589
+#: personal_tools_ui.py:119
+#: planning_tools.py:91
 #: planning_ui.py:46
 #: recording_conflicts_ui.py:35
 #: recording_library_ui.py:66
@@ -4479,12 +4652,12 @@ msgid "Title"
 msgstr "العنوان"
 
 #: internal_player.py:473
-#: internal_player.py:595
+#: internal_player.py:596
 #: shortcuts.py:125
 msgid "Toggle Full Screen"
 msgstr "تبديل ملء الشاشة"
 
-#: personal_tools_ui.py:415
+#: personal_tools_ui.py:488
 msgid "Too many matches. Enter a more specific channel name."
 msgstr "النتائج كثيرة جدًا. أدخل اسمًا أكثر تحديدًا للقناة."
 
@@ -4493,10 +4666,10 @@ msgstr "النتائج كثيرة جدًا. أدخل اسمًا أكثر تحد�
 msgid "Topics"
 msgstr "الموضوعات"
 
-#: internal_player.py:2522
-#: internal_player.py:2610
-#: internal_player.py:2663
-#: internal_player.py:2679
+#: internal_player.py:2524
+#: internal_player.py:2612
+#: internal_player.py:2665
+#: internal_player.py:2681
 msgid "Track {id}"
 msgstr "المسار {id}"
 
@@ -4504,7 +4677,7 @@ msgstr "المسار {id}"
 msgid "Trial account"
 msgstr "حساب تجريبي"
 
-#: playlist.py:3680
+#: playlist.py:3685
 msgid "Try to add the portal's XMLTV guide automatically"
 msgstr "محاولة إضافة دليل XMLTV الخاص بالبوابة تلقائيًا"
 
@@ -4517,7 +4690,7 @@ msgstr "الثلاثاء"
 msgid "Type"
 msgstr "النوع"
 
-#: playlist.py:3175
+#: playlist.py:3180
 msgid "URL copied to the clipboard."
 msgstr "تم نسخ عنوان URL إلى الحافظة."
 
@@ -4534,11 +4707,11 @@ msgstr "تعذّر تنزيل البيان. يرجى التحقق من اتصا�
 msgid "Unable to download update. Please check your connection."
 msgstr "تعذّر تنزيل التحديث. يرجى التحقق من اتصالك."
 
-#: main.py:8483
+#: main.py:8461
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "تعذّر تجهيز تنزيل المشاهدة اللاحقة:\n{error}"
 
-#: main.py:8422
+#: main.py:8400
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "تعذّر تحضير بث المشاهدة اللاحقة:\n{error}"
 
@@ -4559,9 +4732,9 @@ msgid "Unexpected account response from the Xtream server"
 msgstr "استجابة حساب غير متوقعة من خادم Xtream"
 
 #: channel_widgets.py:383
-#: planning_tools.py:89
 #: planning_tools.py:93
-#: recording_conflicts_ui.py:166
+#: planning_tools.py:97
+#: recording_conflicts_ui.py:184
 #: recording_library_ui.py:62
 #: recording_library_ui.py:303
 #: recording_library_ui.py:310
@@ -4581,26 +4754,26 @@ msgstr "أمر غير معروف."
 msgid "Unknown time"
 msgstr "وقت غير معروف"
 
-#: main.py:4908
+#: main.py:4886
 msgid "Update Available"
 msgstr "يتوفر تحديث"
 
-#: main.py:5340
+#: main.py:5318
 msgid "Update Complete"
 msgstr "تم اكتمال التحديث"
 
-#: main.py:5111
-#: main.py:5127
-#: main.py:5170
-#: main.py:5214
+#: main.py:5089
+#: main.py:5105
+#: main.py:5148
+#: main.py:5192
 msgid "Update Error"
 msgstr "خطأ في التحديث"
 
-#: main.py:5329
+#: main.py:5307
 msgid "Update Not Completed"
 msgstr "لم يكتمل التحديث"
 
-#: main.py:4903
+#: main.py:4881
 msgid "Update available: v{latest} (current v{current})."
 msgstr "يتوفر تحديث: v{latest} (الحالي v{current})."
 
@@ -4608,35 +4781,35 @@ msgstr "يتوفر تحديث: v{latest} (الحالي v{current})."
 msgid "Update cancelled."
 msgstr "تم إلغاء التحديث."
 
-#: main.py:4867
-#: main.py:4879
+#: main.py:4845
+#: main.py:4857
 msgid "Update check failed: {error}"
 msgstr "فشل التحقق من التحديث: {error}"
 
-#: main.py:4819
+#: main.py:4797
 msgid "Update check is already running."
 msgstr "التحقق من التحديث قيد التشغيل بالفعل."
 
-#: main.py:5169
-#: main.py:5213
+#: main.py:5147
+#: main.py:5191
 msgid "Update failed to start: {error}"
 msgstr "فشل بدء التحديث: {error}"
 
-#: main.py:5110
-#: main.py:5126
+#: main.py:5088
+#: main.py:5104
 msgid "Update failed: {error}"
 msgstr "فشل التحديث: {error}"
 
-#: main.py:5030
-#: main.py:5084
+#: main.py:5008
+#: main.py:5062
 msgid "Update helper is missing from this build."
 msgstr "أداة التحديث المساعدة مفقودة من هذا الإصدار."
 
-#: main.py:5050
+#: main.py:5028
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "يحتوي بيان التحديث على اسم ملف أصل غير آمن."
 
-#: main.py:5009
+#: main.py:4987
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "يحتوي بيان التحديث على اسم ملف مثبّت غير آمن."
 
@@ -4644,12 +4817,12 @@ msgstr "يحتوي بيان التحديث على اسم ملف مثبّت غي�
 msgid "Update manifest download URL is missing."
 msgstr "عنوان URL لتنزيل بيان التحديث مفقود."
 
-#: main.py:5005
+#: main.py:4983
 #: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "بيان التحديث يفتقد حقولاً مطلوبة."
 
-#: main.py:5000
+#: main.py:4978
 msgid "Update manifest version is not newer than the current app."
 msgstr "إصدار بيان التحديث ليس أحدث من التطبيق الحالي."
 
@@ -4661,28 +4834,28 @@ msgstr "لم يتم العثور على بيان التحديث في أحدث إ
 msgid "Update package contains an unsafe file path."
 msgstr "حزمة التحديث تحتوي على مسار ملف غير آمن."
 
-#: main.py:5069
+#: main.py:5047
 msgid "Updated executable '{name}' not found in the package."
 msgstr "لم يتم العثور على الملف التنفيذي المحدَّث '{name}' في الحزمة."
 
-#: main.py:4814
-#: main.py:4819
-#: main.py:4853
-#: main.py:4868
-#: main.py:4880
+#: main.py:4792
+#: main.py:4797
+#: main.py:4831
+#: main.py:4846
+#: main.py:4858
 msgid "Updates"
 msgstr "التحديثات"
 
-#: main.py:4829
+#: main.py:4807
 msgid "Updates are only available in the packaged build."
 msgstr "التحديثات متوفرة فقط في الإصدار المُحزَّم."
 
-#: main.py:4827
+#: main.py:4805
 msgid "Updates are only supported on Windows builds."
 msgstr "التحديثات مدعومة فقط في إصدارات Windows."
 
-#: main.py:4923
-#: main.py:5253
+#: main.py:4901
+#: main.py:5231
 msgid "Updating {app}"
 msgstr "جارٍ تحديث {app}"
 
@@ -4699,32 +4872,32 @@ msgid "User Guide"
 msgstr "دليل المستخدم"
 
 #: account_info.py:465
-#: playlist.py:3572
+#: playlist.py:3577
 msgid "Username"
 msgstr "اسم المستخدم"
 
-#: playlist.py:3603
+#: playlist.py:3608
 msgid "Username, password, and URL are required."
 msgstr "اسم المستخدم وكلمة المرور وعنوان URL مطلوبة."
 
-#: playlist.py:3603
-#: playlist.py:3737
-#: playlist.py:3741
+#: playlist.py:3608
+#: playlist.py:3742
+#: playlist.py:3746
 msgid "Validation"
 msgstr "التحقق"
 
-#: main.py:5017
-#: main.py:5058
+#: main.py:4995
+#: main.py:5036
 msgid "Verifying download..."
 msgstr "جارٍ التحقق من التنزيل..."
 
-#: main.py:5021
-#: main.py:5071
+#: main.py:4999
+#: main.py:5049
 msgid "Verifying signature..."
 msgstr "جارٍ التحقق من التوقيع..."
 
-#: main.py:6638
-#: main.py:6657
+#: main.py:6616
+#: main.py:6635
 #: resume_dialogs.py:37
 msgid "Video on Demand"
 msgstr "الفيديو عند الطلب"
@@ -4747,12 +4920,12 @@ msgstr "عرض EPG..."
 msgid "Visit the projects site, projects.serrebiradio.com"
 msgstr "زيارة موقع المشاريع، projects.serrebiradio.com"
 
-#: internal_player.py:2074
+#: internal_player.py:2076
 msgid "Vol {value}%"
 msgstr "الصوت {value}%"
 
 #: internal_player.py:478
-#: internal_player.py:2457
+#: internal_player.py:2459
 msgid "Volume"
 msgstr "مستوى الصوت"
 
@@ -4770,7 +4943,7 @@ msgstr "خفض مستوى الصوت"
 msgid "Volume Up"
 msgstr "رفع مستوى الصوت"
 
-#: main.py:7817
+#: main.py:7795
 msgid "Volume:"
 msgstr "مستوى الصوت:"
 
@@ -4788,7 +4961,7 @@ msgstr "الأربعاء"
 
 #: client_ui.py:128
 #: client_ui.py:282
-#: internal_player.py:596
+#: internal_player.py:597
 #: shortcuts.py:100
 #: shortcuts.py:128
 msgid "What Is Playing"
@@ -4802,7 +4975,7 @@ msgid "What's New"
 msgstr "ما الجديد"
 
 #: client_ui.py:279
-#: dialogs_misc.py:865
+#: dialogs_misc.py:871
 #: shortcuts.py:99
 msgid "What's on Now"
 msgstr "ما يُعرض الآن"
@@ -4819,13 +4992,13 @@ msgstr "تعذّر على Windows تفعيل مؤقّت الإيقاظ للتس�
 msgid "Windows did not get permission to install the update."
 msgstr "لم يحصل Windows على إذن لتثبيت التحديث."
 
-#: full_backup.py:134
+#: full_backup.py:142
 #: settings_backup.py:61
 #: settings_backup.py:68
 msgid "Wrong password or damaged backup."
 msgstr "كلمة المرور خاطئة أو النسخة الاحتياطية تالفة."
 
-#: playlist.py:3294
+#: playlist.py:3299
 msgid "XML files"
 msgstr "ملفات XML"
 
@@ -4833,16 +5006,16 @@ msgstr "ملفات XML"
 msgid "Xtream Codes"
 msgstr "Xtream Codes"
 
-#: playlist.py:3573
+#: playlist.py:3578
 msgid "Xtream Codes password"
 msgstr "كلمة مرور Xtream Codes"
 
-#: playlist.py:3572
+#: playlist.py:3577
 msgid "Xtream Codes username"
 msgstr "اسم مستخدم Xtream Codes"
 
 #: main.py:1454
-#: playlist.py:3498
+#: playlist.py:3503
 msgid "Xtream Codes – {name}"
 msgstr "Xtream Codes – {name}"
 
@@ -4851,7 +5024,7 @@ msgstr "Xtream Codes – {name}"
 msgid "Yes"
 msgstr "نعم"
 
-#: personal_tools_ui.py:595
+#: personal_tools_ui.py:668
 msgid "You can save up to 30 programme searches."
 msgstr "يمكنك حفظ 30 عملية بحث عن البرامج كحد أقصى."
 
@@ -4867,7 +5040,7 @@ msgstr "متوفر"
 msgid "channel stream URL"
 msgstr "عنوان URL لبث القناة"
 
-#: main.py:9046
+#: main.py:9024
 msgid "ffmpeg exit code: {code}"
 msgstr "رمز خروج ffmpeg: {code}"
 
@@ -4879,11 +5052,11 @@ msgstr "غير مدعوم من هذا المشغل"
 msgid "not verified yet"
 msgstr "لم يتم التحقق بعد"
 
-#: main.py:7663
+#: main.py:7641
 msgid "off"
 msgstr "معطّلة"
 
-#: main.py:7663
+#: main.py:7641
 msgid "on"
 msgstr "مفعّلة"
 
@@ -4899,7 +5072,7 @@ msgstr "python-vlc (libVLC) غير متوفر."
 msgid "unknown source"
 msgstr "مصدر غير معروف"
 
-#: main.py:4330
+#: main.py:4308
 msgid "wxPython: {version}"
 msgstr "wxPython: {version}"
 
@@ -4911,15 +5084,15 @@ msgstr "إعادة ترميز x264 (MKV)"
 msgid "x264 re-encode (MP4)"
 msgstr "إعادة ترميز x264 (MP4)"
 
-#: main.py:9812
+#: main.py:9796
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} قيد التشغيل بالفعل، لكنه لم يستجب. انتظر لحظة ثم حاول مرة أخرى، أو أغلقه من منطقة الإعلامات."
 
-#: main.py:4851
+#: main.py:4829
 msgid "{app} is up to date (v{version})."
 msgstr "{app} محدّث (v{version})."
 
-#: main.py:5338
+#: main.py:5316
 msgid "{app} was successfully updated to v{version}."
 msgstr "تم تحديث {app} بنجاح إلى الإصدار v{version}."
 
@@ -4927,13 +5100,13 @@ msgstr "تم تحديث {app} بنجاح إلى الإصدار v{version}."
 msgid "{channel}. Now: {current}. Next: {next}. Recording: {recording}."
 msgstr "{channel}. الآن: {current}. التالي: {next}. التسجيل: {recording}."
 
-#: dialogs_misc.py:887
-#: dialogs_misc.py:1055
-#: personal_tools_ui.py:266
+#: dialogs_misc.py:893
+#: dialogs_misc.py:1061
+#: personal_tools_ui.py:270
 msgid "{count} programs"
 msgstr "{count} برنامج"
 
-#: main.py:5765
+#: main.py:5743
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} تسجيل مجدول لكنه لم يبدأ بعد.\n\n{names}\n\nيجب أن يبقى التطبيق مفتوحًا لبدئه. الخروج على أي حال؟"
 
@@ -4949,15 +5122,15 @@ msgstr "{kind} – {who}"
 msgid "{kind} – {who} (detected)"
 msgstr "{kind} – {who} (تم كشفه)"
 
-#: playlist.py:3540
-#: playlist.py:3655
+#: playlist.py:3545
+#: playlist.py:3660
 msgid "{label} field"
 msgstr "الحقل {label}"
 
-#: playlist.py:3534
-#: playlist.py:3536
-#: playlist.py:3649
-#: playlist.py:3651
+#: playlist.py:3539
+#: playlist.py:3541
+#: playlist.py:3654
+#: playlist.py:3656
 msgid "{label} label"
 msgstr "التسمية {label}"
 
@@ -4977,19 +5150,19 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} غير مُهيّأ لنظام Linux."
 
-#: main.py:9172
+#: main.py:9150
 msgid "{time} (estimated) – {message}"
 msgstr "{time} (تقديري) – {message}"
 
-#: planning_ui.py:269
+#: planning_ui.py:274
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nالبدء: {time}"
 
-#: internal_player.py:827
+#: internal_player.py:829
 msgid "{title} - Built-in Player"
 msgstr "{title} - المشغّل المدمج"
 
-#: main.py:8489
+#: main.py:8467
 msgid "{title} - {channel}"
 msgstr "{title} - {channel}"
 
@@ -4997,7 +5170,7 @@ msgstr "{title} - {channel}"
 msgid "{title}, {start} to {end}"
 msgstr "{title}، {start} إلى {end}"
 
-#: internal_player.py:2071
+#: internal_player.py:2073
 msgid "{value}s buffer"
 msgstr "مخزن مؤقت {value} ثانية"
 
@@ -5005,135 +5178,12 @@ msgstr "مخزن مؤقت {value} ثانية"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "تم تسجيل {warnings} تحذيرات و{errors} أخطاء و{fatals} أخطاء فادحة في المجموع."
 
-#: internal_player.py:2070
+#: internal_player.py:2072
 msgid "~{value} Mbps"
 msgstr "~{value} ميغابت/ث"
 
-#: main.py:6644
-#: main.py:6670
+#: main.py:6622
+#: main.py:6648
 msgid "◄ Back"
 msgstr "◄ رجوع"
 
-#: dialogs_misc.py
-msgid "Apply to future occurrences too"
-msgstr "تطبيق على المواعيد اللاحقة أيضًا"
-
-#: client_timeshift.py
-msgid "Available history: {seconds} seconds."
-msgstr "المدة المتاحة: {seconds} ثانية."
-
-#: favourite_transfer_ui.py, favourite_transfer_ui.py, favourite_transfer_ui.py
-msgid "Choose Channel..."
-msgstr "اختيار قناة…"
-
-#: favourite_transfer.py
-msgid "Choose a list name without a web address or login details."
-msgstr "اختر اسمًا للقائمة لا يتضمن عنوان ويب أو بيانات تسجيل الدخول."
-
-#: personal_tools_ui.py
-msgid "Episode: {episode}"
-msgstr "الحلقة: {episode}"
-
-#: personal_tools_ui.py, personal_tools_ui.py
-msgid "Export Favourite List..."
-msgstr "تصدير قائمة المفضلة…"
-
-#: main.py, recording_conflicts_ui.py, recording_edits_ui.py, recording_edits_ui.py
-msgid "Find Another Airing..."
-msgstr "البحث عن موعد عرض آخر…"
-
-#: favourite_transfer_ui.py, favourite_transfer_ui.py, personal_tools_ui.py
-msgid "Import Favourite List..."
-msgstr "استيراد قائمة المفضلة…"
-
-#: favourite_transfer.py
-msgid "Invalid favourite list file."
-msgstr "ملف قائمة المفضلة غير صالح."
-
-#: favourite_transfer_ui.py
-msgid "Leave unresolved"
-msgstr "تأجيل المطابقة"
-
-#: favourite_transfer_ui.py
-msgid "List name:"
-msgstr "اسم القائمة:"
-
-#: recording_edits_ui.py
-msgid "No alternative airings were found in the next 14 days."
-msgstr "لم يُعثر على موعد عرض آخر خلال الأيام الأربعة عشر القادمة."
-
-#: buffer_clip.py, buffer_clip.py, client_timeshift.py
-msgid "No buffered audio or video is available."
-msgstr "لا يتوفر صوت أو فيديو في الذاكرة المؤقتة."
-
-#: recording_edits_ui.py
-msgid "Only the first 100 results are shown."
-msgstr "تُعرض أول 100 نتيجة فقط."
-
-#: dialogs_misc.py, main.py
-msgid "Padding for This Recording..."
-msgstr "ضبط المهلة قبل هذا التسجيل وبعده…"
-
-#: recording_edits_ui.py
-msgid "Possible repeat"
-msgstr "إعادة عرض محتملة"
-
-#: personal_tools_ui.py, personal_tools_ui.py
-msgid "Programme Details..."
-msgstr "تفاصيل البرنامج…"
-
-#: recording_edits_ui.py
-msgid "Programmes"
-msgstr "البرامج"
-
-#: recording_edits_ui.py
-msgid "Record this airing instead?"
-msgstr "هل تريد تسجيل هذا العرض بدلًا من العرض السابق؟"
-
-#: recording_edits_ui.py
-msgid "Same episode"
-msgstr "الحلقة نفسها"
-
-#: client_timeshift.py, client_timeshift.py, client_timeshift.py, client_timeshift.py, client_timeshift.py, client_timeshift.py, internal_player.py
-msgid "Save Recent Broadcast..."
-msgstr "حفظ الدقائق الأخيرة…"
-
-#: client_timeshift.py, personal_tools_ui.py
-msgid "Saved to {path}."
-msgstr "حُفظ الملف في {path}."
-
-#: favourite_transfer_ui.py, playlist.py, recording_edits_ui.py
-msgid "Source {number}"
-msgstr "المصدر {number}"
-
-#: buffer_clip.py
-msgid "The buffered programme could not be saved."
-msgstr "تعذّر حفظ المقطع من الذاكرة المؤقتة."
-
-#: playlist.py, recording_edits.py, recording_edits_ui.py
-msgid "The programme guide changed. Refresh the list and try again."
-msgstr "تغيّر دليل البرامج. حدّث القائمة وحاول مجددًا."
-
-#: buffer_clip.py, buffer_clip.py, buffer_clip.py
-msgid "The selected buffer segment is no longer available."
-msgstr "لم يعد المقطع المحدد متاحًا في الذاكرة المؤقتة."
-
-#: buffer_clip.py
-msgid "There is not enough free space to save the buffered programme."
-msgstr "لا توجد مساحة خالية كافية لحفظ المقطع من الذاكرة المؤقتة."
-
-#: favourite_transfer_ui.py:37 favourite_transfer_ui.py:65 personal_tools_ui.py:413
-msgid "(No channel name)"
-msgstr "(اسم القناة غير متاح)"
-
-#: buffer_clip.py:105
-msgid "A file with this name already exists in the selected folder."
-msgstr "يوجد بالفعل ملف بهذا الاسم في المجلد المحدد."
-
-#: client_timeshift.py:318
-msgid "Saving the broadcast excerpt..."
-msgstr "جارٍ حفظ المقطع من البث…"
-
-#: dvr.py:612 recording_edits.py:35 recording_edits.py:41 recording_edits.py:72 recording_edits_ui.py:26
-msgid "The recording schedule changed. Check the times and try again."
-msgstr "تغيّر جدول التسجيل. تحقّق من المواعيد ثم حاول مرة أخرى."
