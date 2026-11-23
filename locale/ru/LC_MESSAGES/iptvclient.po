@@ -12,11 +12,11 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 "X-Generator: tools/i18n_tools.py\n"
 
-#: internal_player.py:623
+#: internal_player.py:625
 msgid "&Playback"
 msgstr "&Воспроизведение"
 
-#: main.py:4316
+#: main.py:4318
 msgid "(No EPG debug log has been written yet.)"
 msgstr "(Журнал отладки EPG ещё не записан.)"
 
@@ -48,11 +48,11 @@ msgstr "Требуется резервный пароль."
 msgid "A bookmark with this name already exists for this item."
 msgstr "Для этого материала уже есть закладка с таким именем."
 
-#: main.py:5760
+#: main.py:5762
 msgid "A download is still in progress.\n\nIf you exit now it will stop, and only the part captured so far is kept.\n\nExit anyway?"
 msgstr "Идёт загрузка или запись.\n\nЕсли выйдете сейчас, она остановится и сохранится только уже захваченная часть.\n\nВсё равно выйти?"
 
-#: favorite_collections.py:85
+#: favorite_collections.py:123
 msgid "A favourite list can contain at most 2000 channels."
 msgstr "Список избранного может содержать не более 2000 каналов."
 
@@ -65,15 +65,15 @@ msgid "A file with this name already exists in the selected folder."
 msgstr "В выбранной папке уже есть файл с таким именем."
 
 #: favorite_collections.py:62
-#: favorite_collections.py:77
+#: favorite_collections.py:115
 msgid "A list with this name already exists."
 msgstr "Список с таким именем уже существует."
 
-#: main.py:5737
+#: main.py:5739
 msgid "A recording is in progress and {count} recording is still scheduled.\n\n{names}\n\nThe app must stay open to start them. Exit anyway?"
 msgstr "Идёт запись, и {count} запись ещё запланирована.\n\n{names}\n\nПриложение должно оставаться открытым, чтобы начать её. Всё равно выйти?"
 
-#: dvr.py:668
+#: dvr.py:683
 msgid "A running recording's start time cannot be changed."
 msgstr "Нельзя изменить время начала текущей записи."
 
@@ -94,8 +94,8 @@ msgstr "О программе..."
 msgid "Accessibility"
 msgstr "Специальные возможности"
 
-#: personal_tools_ui.py:912
-#: personal_tools_ui.py:934
+#: personal_tools_ui.py:922
+#: personal_tools_ui.py:944
 msgid "Accessible IPTV backup (*.aiptv)"
 msgstr "Резервная копия Accessible IPTV (*.aiptv)"
 
@@ -138,7 +138,7 @@ msgstr "Учётные записи"
 msgid "Active"
 msgstr "Активна"
 
-#: main.py:4311
+#: main.py:4313
 msgid "Active recordings: {count}"
 msgstr "Активные записи: {count}"
 
@@ -195,19 +195,23 @@ msgstr "Добавить учётную запись Xtream Codes"
 msgid "Add to Favorites"
 msgstr "Добавить в избранное"
 
-#: main.py:6283
-#: main.py:6319
-#: main.py:6320
-#: main.py:7130
+#: recording_library_ui.py:89
+msgid "Add to Playback Queue"
+msgstr "Добавить в очередь воспроизведения"
+
+#: main.py:6285
+#: main.py:6321
+#: main.py:6322
+#: main.py:7139
 #: personal_tools_ui.py:179
-#: personal_tools_ui.py:572
-#: personal_tools_ui.py:574
+#: personal_tools_ui.py:582
+#: personal_tools_ui.py:584
 msgid "All Channels"
 msgstr "Все каналы"
 
 #: recording_library_ui.py:46
-#: recording_library_ui.py:207
-#: recording_library_ui.py:223
+#: recording_library_ui.py:211
+#: recording_library_ui.py:227
 msgid "All Recording Folders"
 msgstr "Все папки записей"
 
@@ -221,11 +225,11 @@ msgid "All files"
 msgstr "Все файлы"
 
 #: main.py:1469
-#: main.py:6930
+#: main.py:6939
 msgid "All playlists"
 msgstr "Все плейлисты"
 
-#: main.py:6928
+#: main.py:6937
 msgid "All playlists refreshed."
 msgstr "Все плейлисты обновлены."
 
@@ -249,11 +253,11 @@ msgstr "Разрешённые форматы"
 msgid "Also use the guide each playlist links to"
 msgstr "Также использовать EPG, указанный в каждом плейлисте"
 
-#: main.py:4792
+#: main.py:4794
 msgid "An update is already in progress."
 msgstr "Обновление уже выполняется."
 
-#: main.py:7866
+#: main.py:7875
 msgid "Application voice output"
 msgstr "Устройство вывода голоса приложения"
 
@@ -261,11 +265,11 @@ msgstr "Устройство вывода голоса приложения"
 msgid "Application voice output..."
 msgstr "Устройство вывода голоса приложения..."
 
-#: main.py:7898
+#: main.py:7907
 msgid "Application voice output: {name}"
 msgstr "Устройство вывода голоса приложения: {name}"
 
-#: main.py:7822
+#: main.py:7831
 msgid "Application voice speed"
 msgstr "Скорость голоса приложения"
 
@@ -273,13 +277,17 @@ msgstr "Скорость голоса приложения"
 msgid "Application voice speed..."
 msgstr "Скорость голоса приложения…"
 
-#: main.py:7791
+#: main.py:7800
 msgid "Application voice volume"
 msgstr "Громкость голоса приложения"
 
 #: client_ui.py:415
 msgid "Application voice volume..."
 msgstr "Громкость голоса приложения..."
+
+#: recording_edits_ui.py:134
+msgid "Apply this time change?"
+msgstr "Применить изменение времени?"
 
 #: dialogs_misc.py:743
 msgid "Apply to future occurrences too"
@@ -300,11 +308,11 @@ msgid "Attempt to add provider XMLTV"
 msgstr "Попытаться добавить XMLTV поставщика"
 
 #: internal_player.py:120
-#: internal_player.py:704
+#: internal_player.py:706
 msgid "Audio Output Device"
 msgstr "Устройство вывода звука"
 
-#: internal_player.py:593
+#: internal_player.py:595
 msgid "Audio Output Device..."
 msgstr "Устройство вывода звука..."
 
@@ -313,27 +321,27 @@ msgstr "Устройство вывода звука..."
 msgid "Audio Track"
 msgstr "Аудиодорожка"
 
-#: internal_player.py:2573
+#: internal_player.py:2597
 msgid "Audio Track: {name}"
 msgstr "Звуковая дорожка: {name}"
 
-#: main.py:3280
+#: main.py:3282
 msgid "Audio only (AAC, M4A)"
 msgstr "Только звук (AAC, M4A)"
 
-#: main.py:3278
+#: main.py:3280
 msgid "Audio only (FLAC)"
 msgstr "Только звук (FLAC)"
 
-#: main.py:3277
+#: main.py:3279
 msgid "Audio only (MP3 V0)"
 msgstr "Только звук (MP3 V0)"
 
-#: main.py:3281
+#: main.py:3283
 msgid "Audio only (Opus)"
 msgstr "Только звук (Opus)"
 
-#: main.py:3279
+#: main.py:3281
 msgid "Audio only (WAV)"
 msgstr "Только звук (WAV)"
 
@@ -342,17 +350,17 @@ msgstr "Только звук (WAV)"
 msgid "Audio output devices"
 msgstr "Устройства вывода звука"
 
-#: internal_player.py:2609
+#: internal_player.py:2633
 msgid "Audio track unavailable"
 msgstr "Аудиодорожка недоступна"
 
-#: main.py:3812
+#: main.py:3814
 msgid "Audio-only stream detected. Recording started ({fmt}):\n{path}"
 msgstr "Обнаружен поток только со звуком. Запись начата ({fmt}):\n{path}"
 
-#: internal_player.py:2086
-#: internal_player.py:2628
-#: internal_player.py:2637
+#: internal_player.py:2091
+#: internal_player.py:2652
+#: internal_player.py:2661
 msgid "Audio: {name}"
 msgstr "Аудио: {name}"
 
@@ -470,15 +478,15 @@ msgstr "Закладки текущего материала:"
 msgid "Breaking changes"
 msgstr "Несовместимые изменения"
 
-#: options.py:984
+#: options.py:985
 msgid "Browse..."
 msgstr "Обзор..."
 
-#: internal_player.py:909
-#: internal_player.py:1949
-#: internal_player.py:1962
-#: internal_player.py:2042
-#: internal_player.py:2278
+#: internal_player.py:911
+#: internal_player.py:1954
+#: internal_player.py:1967
+#: internal_player.py:2047
+#: internal_player.py:2302
 msgid "Buffering..."
 msgstr "Буферизация..."
 
@@ -491,7 +499,7 @@ msgid "Built-in IPTV Player"
 msgstr "Встроенный IPTV-плеер"
 
 #: main.py:913
-#: main.py:7932
+#: main.py:7941
 msgid "Built-in Player"
 msgstr "Встроенный плеер"
 
@@ -499,11 +507,11 @@ msgstr "Встроенный плеер"
 msgid "Built-in player is unavailable."
 msgstr "Встроенный плеер недоступен."
 
-#: main.py:8075
+#: main.py:8091
 msgid "Built-in player unavailable:\n{detail}"
 msgstr "Встроенный плеер недоступен:\n{detail}"
 
-#: recording_library_ui.py:376
+#: recording_library_ui.py:381
 msgid "CSV file (*.csv)"
 msgstr "Файл CSV (*.csv)"
 
@@ -517,13 +525,13 @@ msgstr "Файл календаря (*.ics)"
 #: dialogs_misc.py:240
 #: dialogs_misc.py:681
 #: dialogs_misc.py:748
-#: episode_continuation_ui.py:85
+#: episode_continuation_ui.py:86
 #: internal_player.py:150
-#: main.py:7803
-#: main.py:7836
-#: main.py:8977
-#: main.py:9420
-#: options.py:987
+#: main.py:7812
+#: main.py:7845
+#: main.py:8997
+#: main.py:9456
+#: options.py:988
 #: personal_tools_ui.py:94
 #: playlist.py:3281
 #: playlist.py:3381
@@ -533,7 +541,7 @@ msgstr "Файл календаря (*.ics)"
 msgid "Cancel"
 msgstr "Отмена"
 
-#: main.py:9074
+#: main.py:9094
 msgid "Cancel Download"
 msgstr "Отменить загрузку"
 
@@ -542,7 +550,7 @@ msgid "Cancel Shutdown"
 msgstr "Отменить выключение"
 
 #: buffer_clip.py:22
-#: main.py:9454
+#: main.py:9490
 msgid "Canceled"
 msgstr "Отменено"
 
@@ -570,63 +578,63 @@ msgstr "Транслировать на..."
 msgid "Cast to Device"
 msgstr "Транслировать на устройство"
 
-#: internal_player.py:595
+#: internal_player.py:597
 #: shortcuts.py:116
 msgid "Cast..."
 msgstr "Транслировать..."
 
-#: internal_player.py:2010
-#: internal_player.py:2014
-#: internal_player.py:2033
-#: main.py:8058
-#: main.py:8237
-#: main.py:8266
-#: main.py:8886
+#: internal_player.py:2015
+#: internal_player.py:2019
+#: internal_player.py:2038
+#: main.py:8074
+#: main.py:8257
+#: main.py:8286
+#: main.py:8906
 msgid "Casting"
 msgstr "Трансляция"
 
-#: internal_player.py:2033
-#: main.py:8054
-#: main.py:8061
-#: main.py:8249
+#: internal_player.py:2038
+#: main.py:8070
+#: main.py:8077
+#: main.py:8269
 msgid "Casting Error"
 msgstr "Ошибка трансляции"
 
-#: main.py:8051
+#: main.py:8067
 msgid "Casting failed: {error}"
 msgstr "Не удалось выполнить трансляцию: {error}"
 
-#: internal_player.py:2010
+#: internal_player.py:2015
 msgid "Casting is unavailable because the caster is not initialised."
 msgstr "Трансляция недоступна, так как модуль трансляции не инициализирован."
 
-#: main.py:8058
-#: main.py:8266
+#: main.py:8074
+#: main.py:8286
 msgid "Casting to {device}..."
 msgstr "Трансляция на {device}..."
 
 #: dialogs_misc.py:496
 #: main.py:2822
-#: main.py:8350
-#: main.py:8373
-#: main.py:8397
-#: main.py:8400
+#: main.py:8370
+#: main.py:8393
+#: main.py:8417
+#: main.py:8420
 msgid "Catch-up"
 msgstr "Архив"
 
-#: main.py:8456
-#: main.py:8462
-#: main.py:8474
-#: main.py:8487
-#: main.py:8578
-#: main.py:8586
-#: main.py:8629
-#: main.py:8693
-#: main.py:8711
-#: main.py:8715
-#: main.py:8759
-#: main.py:9334
-#: main.py:9341
+#: main.py:8476
+#: main.py:8482
+#: main.py:8494
+#: main.py:8507
+#: main.py:8598
+#: main.py:8606
+#: main.py:8649
+#: main.py:8713
+#: main.py:8731
+#: main.py:8735
+#: main.py:8779
+#: main.py:9370
+#: main.py:9377
 msgid "Catch-up Download"
 msgstr "Загрузка из архива"
 
@@ -649,23 +657,23 @@ msgstr "Категории"
 msgid "Changes in each version of {app}, newest first. Notes for the latest versions appear in your language once they have been translated; older entries stay in English."
 msgstr "Изменения в каждой версии {app}, начиная с последней. Примечания к последним версиям отображаются на вашем языке после перевода; более ранние записи остаются на английском."
 
-#: main.py:9247
-#: personal_tools_ui.py:709
+#: main.py:9267
+#: personal_tools_ui.py:719
 #: planning_tools.py:91
 #: planning_ui.py:47
 #: recording_library_ui.py:81
 msgid "Channel"
 msgstr "Канал"
 
-#: favorite_collections.py:82
+#: favorite_collections.py:83
 #: favourite_transfer_ui.py:42
-#: main.py:3400
-#: main.py:7090
-#: main.py:9314
+#: main.py:3402
+#: main.py:7099
+#: main.py:9350
 #: personal_tools_ui.py:291
-#: personal_tools_ui.py:495
-#: personal_tools_ui.py:552
-#: personal_tools_ui.py:704
+#: personal_tools_ui.py:508
+#: personal_tools_ui.py:562
+#: personal_tools_ui.py:714
 #: planning_ui.py:288
 #: planning_ui.py:351
 msgid "Channel Not Found"
@@ -676,7 +684,7 @@ msgstr "Канал не найден"
 msgid "Channel missing command reference"
 msgstr "У канала отсутствует ссылка на команду"
 
-#: main.py:3016
+#: main.py:3018
 msgid "Channel number {number} was not found."
 msgstr "Номер канала {number} не найден."
 
@@ -690,16 +698,20 @@ msgstr "Канал: {name}"
 #: favourite_transfer_ui.py:23
 #: personal_tools_ui.py:177
 #: personal_tools_ui.py:354
-#: personal_tools_ui.py:570
-#: personal_tools_ui.py:585
+#: personal_tools_ui.py:580
+#: personal_tools_ui.py:595
 msgid "Channels"
 msgstr "Каналы"
+
+#: media_navigation_ui.py:56
+msgid "Chapter {number}"
+msgstr "Глава {number}"
 
 #: resume_dialogs.py:52
 msgid "Check Availability"
 msgstr "Проверить доступность"
 
-#: main.py:4595
+#: main.py:4597
 msgid "Check Recording Storage..."
 msgstr "Проверить место для записи…"
 
@@ -715,7 +727,7 @@ msgstr "Проверить обновления"
 msgid "Check for Updates..."
 msgstr "Проверить обновления..."
 
-#: main.py:6894
+#: main.py:6903
 msgid "Check that the EPG sources in File > EPG Manager are reachable, then try again."
 msgstr "Проверьте, доступны ли источники EPG в разделе Файл > Менеджер EPG, и повторите попытку."
 
@@ -723,7 +735,7 @@ msgstr "Проверьте, доступны ли источники EPG в ра
 msgid "Checking account, please wait..."
 msgstr "Проверка учётной записи, подождите..."
 
-#: main.py:4971
+#: main.py:4973
 msgid "Checking for update details..."
 msgstr "Проверка сведений об обновлении..."
 
@@ -736,7 +748,7 @@ msgstr "Проверка конфликтов записей…"
 msgid "Checking saved content…"
 msgstr "Проверка сохранённого материала…"
 
-#: main.py:4381
+#: main.py:4383
 msgid "Checking stream type…"
 msgstr "Определение типа потока…"
 
@@ -748,7 +760,7 @@ msgstr "Проверка {account}..."
 msgid "Choose Audio Track"
 msgstr "Выбор звуковой дорожки"
 
-#: personal_tools_ui.py:709
+#: personal_tools_ui.py:719
 msgid "Choose Channel"
 msgstr "Выбрать канал"
 
@@ -765,19 +777,23 @@ msgstr "Выберите XML-файл EPG"
 msgid "Choose M3U file"
 msgstr "Выберите файл M3U"
 
-#: main.py:6918
+#: main.py:6927
 msgid "Choose OK to save the new playlist, then refresh it."
 msgstr "Нажмите OK, чтобы сохранить новый плейлист, затем обновите его."
 
-#: main.py:2985
+#: main.py:2984
 msgid "Choose a channel to play:"
 msgstr "Выберите канал для воспроизведения:"
+
+#: media_navigation_ui.py:58
+msgid "Choose a chapter:"
+msgstr "Выберите главу:"
 
 #: main.py:2155
 msgid "Choose a command to change:"
 msgstr "Выберите команду для изменения:"
 
-#: favorite_collections.py:110
+#: favorite_collections.py:150
 #: favourite_transfer.py:123
 #: favourite_transfer.py:133
 msgid "Choose a different channel that is not already in this list."
@@ -787,19 +803,27 @@ msgstr "Выберите другой канал, которого ещё нет
 msgid "Choose a list name without a web address or login details."
 msgstr "Укажите название списка без веб-адреса и данных для входа."
 
-#: media_navigation_ui.py:172
+#: media_navigation_ui.py:207
 #: session_tools_ui.py:29
 #: session_tools_ui.py:100
 msgid "Choose a position before the end of the media."
 msgstr "Выберите позицию до конца материала."
 
-#: recording_library_ui.py:197
+#: recording_library_ui.py:201
 msgid "Choose a recording folder"
 msgstr "Выберите папку записей"
 
-#: personal_tools_ui.py:497
+#: personal_tools_ui.py:511
 msgid "Choose a replacement channel:"
 msgstr "Выберите канал для замены:"
+
+#: internal_player.py:2771
+msgid "Choose a subtitle track for speech:"
+msgstr "Выберите дорожку субтитров для озвучивания:"
+
+#: recording_edits_ui.py:118
+msgid "Choose a time change to review:"
+msgstr "Выберите изменение времени для проверки:"
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -830,12 +854,12 @@ msgstr "Очистить историю уведомлений за этот с�
 #: dialogs_misc.py:358
 #: dialogs_misc.py:906
 #: main.py:316
-#: main.py:9176
+#: main.py:9196
 #: personal_tools_ui.py:94
 #: planning_tools_ui.py:83
 #: planning_ui.py:60
 #: recording_conflicts_ui.py:103
-#: recording_library_ui.py:97
+#: recording_library_ui.py:101
 #: recording_limits_ui.py:38
 #: resume_dialogs.py:55
 #: session_tools_ui.py:67
@@ -847,10 +871,10 @@ msgstr "Закрыть"
 msgid "Community and support"
 msgstr "Сообщество и поддержка"
 
-#: main.py:9449
+#: main.py:9485
 #: planning_tools.py:92
 #: recording_library_ui.py:62
-#: recording_library_ui.py:302
+#: recording_library_ui.py:306
 msgid "Completed"
 msgstr "Завершено"
 
@@ -862,7 +886,7 @@ msgstr "Настроенные источники EPG"
 msgid "Configured playlists and providers"
 msgstr "Настроенные плейлисты и поставщики"
 
-#: main.py:4310
+#: main.py:4312
 msgid "Configured playlists: {count}"
 msgstr "Настроенные плейлисты: {count}"
 
@@ -874,11 +898,11 @@ msgstr "Подтверждение"
 msgid "Connect"
 msgstr "Подключить"
 
-#: main.py:8899
+#: main.py:8919
 msgid "Connected"
 msgstr "Подключено"
 
-#: main.py:8899
+#: main.py:8919
 msgid "Connected to {device}"
 msgstr "Подключено к {device}"
 
@@ -890,10 +914,14 @@ msgstr "Соединения, доступные для записи (0 — бе
 msgid "Connections in use"
 msgstr "Используемые подключения"
 
-#: internal_player.py:3278
-#: main.py:6431
-#: main.py:6441
-#: main.py:8097
+#: recording_edits_ui.py:169
+msgid "Connections needed: {count}. Account limit: {limit}."
+msgstr "Требуется подключений: {count}. Ограничение учётной записи: {limit}."
+
+#: internal_player.py:3394
+#: main.py:6437
+#: main.py:6447
+#: main.py:8113
 #: resume_dialogs.py:30
 #: resume_dialogs.py:242
 msgid "Continue Watching"
@@ -905,7 +933,7 @@ msgid "Continue Watching..."
 msgstr "Продолжить просмотр…"
 
 #: dialogs_misc.py:357
-#: main.py:9173
+#: main.py:9193
 #: session_tools_ui.py:160
 msgid "Copy Details"
 msgstr "Копировать сведения"
@@ -919,7 +947,7 @@ msgstr "Копировать журнал и отладочные сведени
 msgid "Copy URL"
 msgstr "Копировать URL"
 
-#: main.py:7847
+#: main.py:7856
 msgid "Could not change the application voice speed."
 msgstr "Не удалось изменить скорость голоса приложения."
 
@@ -931,7 +959,7 @@ msgstr "Не удалось проверить доступность."
 msgid "Could not check this account.\n\n{error}"
 msgstr "Не удалось проверить эту учётную запись.\n\n{error}"
 
-#: main.py:4326
+#: main.py:4328
 msgid "Could not copy diagnostic information:\n{error}"
 msgstr "Не удалось скопировать диагностические сведения:\n{error}"
 
@@ -939,17 +967,17 @@ msgstr "Не удалось скопировать диагностически�
 msgid "Could not create libVLC media player object."
 msgstr "Не удалось создать объект медиаплеера libVLC."
 
-#: main.py:3546
-#: main.py:3682
+#: main.py:3548
+#: main.py:3684
 msgid "Could not find a stream URL for this channel."
 msgstr "Не удалось найти URL потока для этого канала."
 
-#: main.py:3398
-#: main.py:7090
+#: main.py:3400
+#: main.py:7099
 msgid "Could not find channel '{channel}' in your playlist."
 msgstr "Не удалось найти канал «{channel}» в вашем плейлисте."
 
-#: main.py:8013
+#: main.py:8029
 msgid "Could not find stream URL for this selection."
 msgstr "Не удалось найти URL потока для этого выбора."
 
@@ -957,22 +985,22 @@ msgstr "Не удалось найти URL потока для этого выб
 msgid "Could not finish restoring the backup. No background services were started.\n{error}"
 msgstr "Не удалось завершить восстановление. Фоновые службы не запущены.\n{error}"
 
-#: main.py:3301
-#: main.py:7085
+#: main.py:3303
+#: main.py:7094
 msgid "Could not identify the channel."
 msgstr "Не удалось определить канал."
 
-#: main.py:6615
+#: main.py:6621
 msgid "Could not load episodes for this series."
 msgstr "Не удалось загрузить серии этого сериала."
 
-#: episode_continuation_ui.py:50
-#: episode_continuation_ui.py:138
-#: main.py:6634
+#: episode_continuation_ui.py:51
+#: episode_continuation_ui.py:139
+#: main.py:6640
 msgid "Could not load episodes:\n{error}"
 msgstr "Не удалось загрузить серии:\n{error}"
 
-#: internal_player.py:2738
+#: internal_player.py:2847
 msgid "Could not load subtitle file."
 msgstr "Не удалось загрузить файл субтитров."
 
@@ -985,30 +1013,30 @@ msgstr "Не удалось найти приложение {player}."
 msgid "Could not locate {player} executable."
 msgstr "Не удалось найти исполняемый файл {player}."
 
-#: main.py:6992
+#: main.py:7001
 msgid "Could not look for provider accounts: {error}"
 msgstr "Не удалось найти учётные записи поставщиков: {error}"
 
-#: main.py:7351
+#: main.py:7360
 msgid "Could not match this programme to a playlist channel."
 msgstr "Не удалось сопоставить эту передачу с каналом плейлиста."
 
-#: main.py:4270
-#: main.py:4283
+#: main.py:4272
+#: main.py:4285
 msgid "Could not open folder:\n{error}"
 msgstr "Не удалось открыть папку:\n{error}"
 
-#: main.py:4707
+#: main.py:4709
 msgid "Could not open the EPG window: {error}"
 msgstr "Не удалось открыть окно телепрограммы: {error}"
 
 #: dialogs_misc.py:462
-#: main.py:9209
+#: main.py:9229
 #: playlist.py:3183
 msgid "Could not open the clipboard."
 msgstr "Не удалось открыть буфер обмена."
 
-#: main.py:8096
+#: main.py:8112
 msgid "Could not prepare saved playback:\n{error}"
 msgstr "Не удалось подготовить воспроизведение с сохранённой позиции:\n{error}"
 
@@ -1021,9 +1049,17 @@ msgstr "Не удалось подключиться к серверу Xtream: {
 msgid "Could not reach the portal: {error}"
 msgstr "Не удалось подключиться к порталу: {error}"
 
-#: main.py:2964
-#: main.py:3678
-#: main.py:7368
+#: recording_media.py:123
+msgid "Could not read the recording's track information."
+msgstr "Не удалось прочитать сведения о дорожках записи."
+
+#: recording_media.py:82
+msgid "Could not read this subtitle track."
+msgstr "Не удалось прочитать эту дорожку субтитров."
+
+#: main.py:2963
+#: main.py:3680
+#: main.py:7377
 msgid "Could not resolve stream URL:\n{error}"
 msgstr "Не удалось разрешить URL потока:\n{error}"
 
@@ -1031,41 +1067,41 @@ msgstr "Не удалось разрешить URL потока:\n{error}"
 msgid "Could not run Authenticode verification: {detail}"
 msgstr "Не удалось выполнить проверку Authenticode: {detail}"
 
-#: internal_player.py:3216
-#: internal_player.py:3270
+#: internal_player.py:3332
+#: internal_player.py:3386
 #: main.py:6402
 #: resume_dialogs.py:193
 #: resume_dialogs.py:219
 msgid "Could not save playback history changes."
 msgstr "Не удалось сохранить изменения истории просмотра."
 
-#: recording_library_ui.py:162
+#: recording_library_ui.py:166
 msgid "Could not save recording library preferences."
 msgstr "Не удалось сохранить настройки вида библиотеки записей."
 
-#: main.py:3316
-#: main.py:3338
+#: main.py:3318
+#: main.py:3340
 msgid "Could not schedule recording:\n{error}"
 msgstr "Не удалось запланировать запись:\n{error}"
 
-#: main.py:7883
+#: main.py:7892
 msgid "Could not select that output device."
 msgstr "Не удалось выбрать это устройство вывода."
 
-#: main.py:4092
+#: main.py:4094
 msgid "Could not shut down the computer:\n{error}"
 msgstr "Не удалось выключить компьютер:\n{error}"
 
-#: main.py:8628
+#: main.py:8648
 msgid "Could not start catch-up download:\n{error}"
 msgstr "Не удалось начать загрузку из архива:\n{error}"
 
-#: internal_player.py:902
+#: internal_player.py:904
 msgid "Could not start playback: {error}"
 msgstr "Не удалось начать воспроизведение: {error}"
 
-#: main.py:3755
-#: main.py:3794
+#: main.py:3757
+#: main.py:3796
 msgid "Could not start recording:\n{error}"
 msgstr "Не удалось начать запись:\n{error}"
 
@@ -1077,7 +1113,7 @@ msgstr "Создана"
 msgid "Currently airing programs"
 msgstr "Программы, идущие в эфире сейчас"
 
-#: main.py:8884
+#: main.py:8904
 msgid "Currently connected to: {device}\n\nDisconnect?"
 msgstr "Сейчас подключено к: {device}\n\nОтключить?"
 
@@ -1100,8 +1136,8 @@ msgstr "Осталось дней"
 msgid "Days since expiry"
 msgstr "Дней после окончания срока"
 
-#: main.py:9422
-#: personal_tools_ui.py:613
+#: main.py:9458
+#: personal_tools_ui.py:623
 #: planning_ui.py:55
 #: playlist.py:3219
 #: session_tools_ui.py:63
@@ -1116,11 +1152,11 @@ msgstr "Удалить список"
 msgid "Delete Playlist"
 msgstr "Удалить плейлист"
 
-#: recording_library_ui.py:422
+#: recording_library_ui.py:446
 msgid "Delete Recording"
 msgstr "Удалить запись"
 
-#: recording_library_ui.py:360
+#: recording_library_ui.py:365
 msgid "Delete Recording File..."
 msgstr "Удалить файл записи..."
 
@@ -1132,7 +1168,7 @@ msgstr "Удалить закладку «{name}»?"
 msgid "Delete favourite list '{name}'?"
 msgstr "Удалить список избранного «{name}»?"
 
-#: personal_tools_ui.py:685
+#: personal_tools_ui.py:695
 msgid "Delete saved search '{name}'?"
 msgstr "Удалить сохранённый поиск «{name}»?"
 
@@ -1145,8 +1181,8 @@ msgid "Descending"
 msgstr "По убыванию"
 
 #: dialogs_misc.py:516
-#: main.py:9601
-#: personal_tools_ui.py:609
+#: main.py:9638
+#: personal_tools_ui.py:619
 msgid "Description"
 msgstr "Описание"
 
@@ -1166,22 +1202,22 @@ msgstr "Подробности"
 msgid "Detected from"
 msgstr "Обнаружена из"
 
-#: main.py:4327
-#: main.py:4330
+#: main.py:4329
+#: main.py:4332
 msgid "Diagnostic Information"
 msgstr "Диагностические сведения"
 
-#: main.py:4329
+#: main.py:4331
 msgid "Diagnostic information was copied to the clipboard. You can paste it into a message to the developer."
 msgstr "Диагностические сведения скопированы в буфер обмена. Вы можете вставить их в сообщение разработчику."
 
 #: account_info.py:375
 #: account_info.py:388
-#: personal_tools_ui.py:628
+#: personal_tools_ui.py:638
 msgid "Disabled"
 msgstr "Отключена"
 
-#: main.py:8052
+#: main.py:8068
 msgid "Disconnected from the cast device. Open the cast menu to pick another device."
 msgstr "Отключено от устройства трансляции. Откройте меню трансляции, чтобы выбрать другое устройство."
 
@@ -1190,7 +1226,7 @@ msgstr "Отключено от устройства трансляции. От�
 msgid "Display name"
 msgstr "Отображаемое имя"
 
-#: main.py:9072
+#: main.py:9092
 msgid "Do you really want to cancel this download? It cannot be resumed afterwards."
 msgstr "Действительно отменить эту загрузку? Продолжить её будет невозможно."
 
@@ -1202,73 +1238,73 @@ msgstr "Документация"
 msgid "Download"
 msgstr "Загрузить"
 
-#: main.py:4884
+#: main.py:4886
 msgid "Download and install now? The app will restart after the update."
 msgstr "Скачать и установить сейчас? Приложение перезапустится после обновления."
 
-#: main.py:8692
+#: main.py:8712
 msgid "Download canceled. The incomplete file was discarded."
 msgstr "Загрузка отменена. Неполный файл удалён."
 
-#: main.py:8714
+#: main.py:8734
 msgid "Download complete:\n{path}"
 msgstr "Загрузка завершена:\n{path}"
 
-#: main.py:8985
+#: main.py:9005
 msgid "Download details"
 msgstr "Сведения о загрузке"
 
-#: main.py:8704
+#: main.py:8724
 msgid "Download ended early:\n{path}\n\nOnly {written} of {expected} arrived before the provider closed the connection. The incomplete file was kept."
 msgstr "Загрузка завершилась раньше времени:\n{path}\n\nПолучено только {written} из {expected}, после чего провайдер закрыл соединение. Неполный файл сохранён."
 
-#: main.py:9023
+#: main.py:9043
 msgid "Download failed (code {code})."
 msgstr "Не удалось загрузить (код {code})."
 
-#: main.py:8752
+#: main.py:8772
 msgid "Download failed (code {code}):\n{path}\n\n{detail}"
 msgstr "Ошибка загрузки (код {code}):\n{path}\n\n{detail}"
 
-#: main.py:9039
+#: main.py:9059
 msgid "Download failed - retrying (attempt {attempt} of {total}) in {seconds} seconds..."
 msgstr "Загрузка не удалась - повторная попытка ({attempt} из {total}) через {seconds} с..."
 
-#: main.py:8749
+#: main.py:8769
 msgid "Download failed:\n{path}\n\n{reason}\n\n{detail}"
 msgstr "Ошибка загрузки:\n{path}\n\n{reason}\n\n{detail}"
 
-#: main.py:5763
+#: main.py:5765
 msgid "Download in progress"
 msgstr "Загрузка в процессе"
 
-#: main.py:8984
+#: main.py:9004
 msgid "Download progress"
 msgstr "Прогресс загрузки"
 
-#: main.py:8983
+#: main.py:9003
 msgid "Download status"
 msgstr "Состояние загрузки"
 
-#: main.py:4997
-#: main.py:5038
+#: main.py:4999
+#: main.py:5040
 msgid "Downloaded update failed SHA-256 verification."
 msgstr "Загруженное обновление не прошло проверку SHA-256."
 
-#: main.py:9063
+#: main.py:9083
 msgid "Downloaded: {size}"
 msgstr "Загружено: {size}"
 
-#: main.py:4989
-#: main.py:4993
-#: main.py:5030
-#: main.py:5034
+#: main.py:4991
+#: main.py:4995
+#: main.py:5032
+#: main.py:5036
 msgid "Downloading update..."
 msgstr "Скачивание обновления..."
 
-#: main.py:8943
-#: main.py:9052
-#: main.py:9056
+#: main.py:8963
+#: main.py:9072
+#: main.py:9076
 msgid "Downloading {name}"
 msgstr "Загрузка: {name}"
 
@@ -1282,9 +1318,9 @@ msgstr "Длительность"
 msgid "Duration (seconds)"
 msgstr "Длительность (секунды)"
 
-#: main.py:4696
-#: main.py:9585
-#: main.py:9587
+#: main.py:4698
+#: main.py:9622
+#: main.py:9624
 msgid "EPG"
 msgstr "EPG"
 
@@ -1299,61 +1335,61 @@ msgstr "Требуется обновление базы данных телеп
 msgid "EPG Manager"
 msgstr "Менеджер EPG"
 
-#: main.py:7017
-#: main.py:7035
-#: main.py:8350
-#: personal_tools_ui.py:727
+#: main.py:7026
+#: main.py:7044
+#: main.py:8370
+#: personal_tools_ui.py:737
 msgid "EPG Not Available"
 msgstr "EPG недоступен"
 
-#: main.py:4313
+#: main.py:4315
 msgid "EPG debug log (latest 128 KiB):"
 msgstr "Журнал отладки EPG (последние 128 КиБ):"
 
-#: main.py:4309
+#: main.py:4311
 msgid "EPG enabled: {enabled}"
 msgstr "EPG включён: {enabled}"
 
-#: main.py:7009
+#: main.py:7018
 msgid "EPG import is already in progress."
 msgstr "Импорт EPG уже выполняется."
 
-#: main.py:7028
+#: main.py:7037
 msgid "EPG import will start in the background. You can keep using the app; a message will tell you when the import has finished."
 msgstr "Импорт EPG начнётся в фоновом режиме. Вы можете продолжать работу с приложением; по завершении импорта появится сообщение."
 
-#: main.py:7017
-#: main.py:7035
-#: personal_tools_ui.py:727
+#: main.py:7026
+#: main.py:7044
+#: personal_tools_ui.py:737
 msgid "EPG is not enabled."
 msgstr "EPG не включён."
 
-#: main.py:9576
+#: main.py:9613
 msgid "EPG: {channel}"
 msgstr "EPG: {channel}"
 
-#: main.py:9259
+#: main.py:9279
 #: recording_conflicts_ui.py:92
 msgid "Edit Times..."
 msgstr "Изменить время..."
 
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:622
 msgid "Edit..."
 msgstr "Изменить..."
 
-#: media_navigation_ui.py:184
+#: media_navigation_ui.py:219
 msgid "Elapsed: {elapsed}. Total: {total}. Remaining: {remaining}."
 msgstr "Прошло: {elapsed}. Всего: {total}. Осталось: {remaining}."
 
-#: main.py:9061
+#: main.py:9081
 msgid "Elapsed: {time}"
 msgstr "Прошло: {time}"
 
-#: personal_tools_ui.py:567
+#: personal_tools_ui.py:577
 msgid "Enabled"
 msgstr "Включено"
 
-#: personal_tools_ui.py:927
+#: personal_tools_ui.py:937
 msgid "Encrypted backup saved, including recording schedules, reminders and saved searches."
 msgstr "Сохранена зашифрованная копия с расписанием записей, напоминаниями и сохранёнными поисками."
 
@@ -1362,8 +1398,9 @@ msgstr "Сохранена зашифрованная копия с распис
 msgid "End (local time, YYYY-MM-DD HH:MM)"
 msgstr "Конец (местное время, ГГГГ-ММ-ДД ЧЧ:ММ)"
 
-#: internal_player.py:2046
-#: internal_player.py:2273
+#: internal_player.py:2051
+#: internal_player.py:2284
+#: internal_player.py:2297
 msgid "Ended"
 msgstr "Завершено"
 
@@ -1380,7 +1417,7 @@ msgstr "Введите URL M3U"
 msgid "Enter a bookmark name of 1 to 120 characters."
 msgstr "Введите имя закладки длиной от 1 до 120 символов."
 
-#: main.py:2998
+#: main.py:2999
 msgid "Enter a channel number:"
 msgstr "Введите номер канала:"
 
@@ -1396,7 +1433,7 @@ msgstr "Введите имя длиной от 1 до 80 символов."
 msgid "Enter a password for the settings backup:"
 msgstr "Введите пароль для резервного копирования настроек:"
 
-#: main.py:3007
+#: main.py:3009
 msgid "Enter a positive channel number."
 msgstr "Введите положительный номер канала."
 
@@ -1416,12 +1453,12 @@ msgstr "Введите ярлык (оставьте пустым, чтобы в�
 msgid "Enter a title of 1 to 240 characters."
 msgstr "Введите название длиной от 1 до 240 символов."
 
-#: options.py:991
+#: options.py:992
 msgid "Enter player executable or path:"
 msgstr "Введите исполняемый файл или путь к плееру:"
 
 #: media_navigation.py:12
-#: media_navigation_ui.py:163
+#: media_navigation_ui.py:198
 msgid "Enter seconds, MM:SS or HH:MM:SS."
 msgstr "Введите секунды, ММ:СС или ЧЧ:ММ:СС."
 
@@ -1432,7 +1469,7 @@ msgstr "Введите пароль еще раз:"
 #: client_ui.py:90
 #: client_ui.py:92
 #: dialogs_misc.py:519
-#: main.py:9604
+#: main.py:9641
 msgid "Episode description"
 msgstr "Описание эпизода"
 
@@ -1445,14 +1482,14 @@ msgid "Episode: {episode}"
 msgstr "Серия: {episode}"
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:2047
+#: internal_player.py:2052
 #: main.py:2846
 #: main.py:2900
-#: main.py:4708
-#: main.py:6993
-#: main.py:7063
-#: main.py:7085
-#: main.py:8902
+#: main.py:4710
+#: main.py:7002
+#: main.py:7072
+#: main.py:7094
+#: main.py:8922
 #: personal_tools_ui.py:28
 #: recording_limits_ui.py:90
 #: session_tools_ui.py:14
@@ -1485,11 +1522,11 @@ msgstr "Исполняемый файл не найден: {path}"
 msgid "Exit"
 msgstr "Выход"
 
-#: internal_player.py:3155
+#: internal_player.py:3271
 msgid "Exit Full Screen"
 msgstr "Выйти из полноэкранного режима"
 
-#: internal_player.py:600
+#: internal_player.py:602
 #: shortcuts.py:127
 msgid "Exit Player"
 msgstr "Закрыть плеер"
@@ -1517,12 +1554,12 @@ msgstr "Срок действия"
 msgid "Export Favourite List..."
 msgstr "Экспортировать список избранного…"
 
-#: recording_library_ui.py:95
-#: recording_library_ui.py:376
+#: recording_library_ui.py:99
+#: recording_library_ui.py:381
 msgid "Export List to CSV..."
 msgstr "Экспортировать список в CSV…"
 
-#: personal_tools_ui.py:912
+#: personal_tools_ui.py:922
 msgid "Export Settings"
 msgstr "Экспорт настроек"
 
@@ -1536,7 +1573,7 @@ msgid "Export saved."
 msgstr "Экспорт сохранён."
 
 #: dialogs_misc.py:1117
-#: main.py:9684
+#: main.py:9721
 #: planning_tools_ui.py:58
 #: planning_tools_ui.py:61
 #: planning_ui.py:57
@@ -1544,11 +1581,11 @@ msgstr "Экспорт сохранён."
 msgid "Export to Calendar..."
 msgstr "Экспортировать в календарь…"
 
-#: internal_player.py:2716
+#: internal_player.py:2825
 msgid "External subtitle files are not synchronized with the local live buffer. Use the stream's embedded subtitles."
 msgstr "Внешние файлы субтитров не синхронизированы с локальным буфером эфира. Используйте встроенные субтитры потока."
 
-#: main.py:5040
+#: main.py:5042
 msgid "Extracting update..."
 msgstr "Извлечение обновления..."
 
@@ -1556,24 +1593,24 @@ msgstr "Извлечение обновления..."
 msgid "F1 is reserved for Help."
 msgstr "F1 зарезервирована для справки."
 
-#: internal_player.py:3326
+#: internal_player.py:3442
 msgid "Fade-out duration before stopping (seconds); 0 disables fading."
 msgstr "Длительность плавного уменьшения громкости перед остановкой (секунды); 0 отключает уменьшение."
 
-#: main.py:3500
-#: main.py:9452
+#: main.py:3502
+#: main.py:9488
 #: planning_tools.py:93
 #: recording_library_ui.py:62
-#: recording_library_ui.py:303
+#: recording_library_ui.py:307
 msgid "Failed"
 msgstr "Не удалось"
 
-#: main.py:8061
-#: main.py:8249
+#: main.py:8077
+#: main.py:8269
 msgid "Failed to cast: {error}"
 msgstr "Не удалось выполнить трансляцию: {error}"
 
-#: main.py:8902
+#: main.py:8922
 msgid "Failed to connect: {error}"
 msgstr "Не удалось подключиться: {error}"
 
@@ -1585,7 +1622,7 @@ msgstr "Не удалось скачать манифест ({code})."
 msgid "Failed to download update ({code})."
 msgstr "Не удалось скачать обновление ({code})."
 
-#: main.py:7063
+#: main.py:7072
 msgid "Failed to fetch EPG data: {error}"
 msgstr "Не удалось получить данные EPG: {error}"
 
@@ -1601,11 +1638,11 @@ msgstr "Не удалось инициализировать экземпляр 
 msgid "Failed to initialise media player: {error}"
 msgstr "Не удалось инициализировать медиаплеер: {error}"
 
-#: main.py:8178
+#: main.py:8198
 msgid "Failed to launch {player}:\n{error}"
 msgstr "Не удалось запустить {player}:\n{error}"
 
-#: main.py:8170
+#: main.py:8190
 msgid "Failed to start built-in player:\n{error}"
 msgstr "Не удалось запустить встроенный плеер:\n{error}"
 
@@ -1625,11 +1662,11 @@ msgstr "Название списка избранного"
 
 #: personal_tools_ui.py:351
 #: personal_tools_ui.py:353
-#: personal_tools_ui.py:498
+#: personal_tools_ui.py:512
 msgid "Favourite Lists"
 msgstr "Списки избранного"
 
-#: personal_tools_ui.py:759
+#: personal_tools_ui.py:769
 msgid "Favourite Lists..."
 msgstr "Списки избранного..."
 
@@ -1660,10 +1697,10 @@ msgstr "Фильтровать программы"
 msgid "Find"
 msgstr "Найти"
 
-#: main.py:9431
+#: main.py:9467
 #: recording_conflicts_ui.py:95
-#: recording_edits_ui.py:105
-#: recording_edits_ui.py:135
+#: recording_edits_ui.py:183
+#: recording_edits_ui.py:217
 msgid "Find Another Airing..."
 msgstr "Найти другой показ…"
 
@@ -1671,7 +1708,7 @@ msgstr "Найти другой показ…"
 msgid "Find Next"
 msgstr "Найти далее"
 
-#: personal_tools_ui.py:964
+#: personal_tools_ui.py:974
 msgid "Finish recordings and downloads before restoring a backup."
 msgstr "Завершите записи и загрузки перед восстановлением копии."
 
@@ -1683,7 +1720,7 @@ msgstr "Подписаться на Serrebi на Forgejo"
 msgid "Forgejo API rate limit exceeded. Please try again later."
 msgstr "Превышен лимит запросов к API Forgejo. Повторите попытку позже."
 
-#: main.py:9249
+#: main.py:9269
 msgid "Format"
 msgstr "Формат"
 
@@ -1714,7 +1751,7 @@ msgid "Friday"
 msgstr "Пятница"
 
 #: internal_player.py:472
-#: internal_player.py:3155
+#: internal_player.py:3271
 msgid "Full Screen"
 msgstr "Полный экран"
 
@@ -1730,9 +1767,9 @@ msgstr "GZip XML"
 msgid "Go to Bookmark"
 msgstr "Перейти к закладке"
 
-#: main.py:2999
-#: main.py:3008
-#: main.py:3017
+#: main.py:3000
+#: main.py:3010
+#: main.py:3019
 msgid "Go to Channel Number"
 msgstr "Перейти к номеру канала"
 
@@ -1748,8 +1785,8 @@ msgid "Go to Favorites"
 msgstr "Перейти к избранному"
 
 #: media_navigation_ui.py:25
-#: media_navigation_ui.py:164
-#: media_navigation_ui.py:174
+#: media_navigation_ui.py:199
+#: media_navigation_ui.py:209
 #: shortcuts.py:111
 msgid "Go to Time..."
 msgstr "Перейти к времени..."
@@ -1777,7 +1814,7 @@ msgstr "Порт HTTPS"
 msgid "Help"
 msgstr "Справка"
 
-#: internal_player.py:599
+#: internal_player.py:601
 #: shortcuts.py:126
 msgid "Hide Window"
 msgstr "Скрыть окно"
@@ -1786,28 +1823,29 @@ msgstr "Скрыть окно"
 msgid "Hide older releases"
 msgstr "Скрыть предыдущие версии"
 
+#: favorites.py:100
 #: main.py:2943
-#: main.py:7392
-#: main.py:8037
-#: main.py:8077
+#: main.py:7401
+#: main.py:8053
+#: main.py:8093
 msgid "IPTV Stream"
 msgstr "IPTV-поток"
 
 #: internal_player.py:517
 #: internal_player.py:550
-#: internal_player.py:2040
+#: internal_player.py:2045
 msgid "Idle"
 msgstr "Ожидание"
 
-#: main.py:7918
+#: main.py:7927
 msgid "If the output device disappears, subtitle speech pauses until it returns."
 msgstr "Если устройство вывода исчезло, озвучивание субтитров приостанавливается до его возвращения."
 
-#: main.py:7922
+#: main.py:7931
 msgid "If the output device disappears, the application voice falls back to the system default."
 msgstr "Если устройство вывода исчезло, голос приложения переключается на системное устройство по умолчанию."
 
-#: main.py:6890
+#: main.py:6899
 msgid "Import Complete"
 msgstr "Импорт завершён"
 
@@ -1818,8 +1856,8 @@ msgid "Import EPG to DB"
 msgstr "Импортировать EPG в базу данных"
 
 #: main.py:2868
-#: main.py:6897
-#: main.py:7023
+#: main.py:6906
+#: main.py:7032
 msgid "Import Failed"
 msgstr "Не удалось выполнить импорт"
 
@@ -1829,7 +1867,7 @@ msgstr "Не удалось выполнить импорт"
 msgid "Import Favourite List..."
 msgstr "Импортировать список избранного…"
 
-#: personal_tools_ui.py:934
+#: personal_tools_ui.py:944
 msgid "Import Settings"
 msgstr "Импортировать настройки"
 
@@ -1838,7 +1876,7 @@ msgstr "Импортировать настройки"
 msgid "Import Settings..."
 msgstr "Импортировать настройки..."
 
-#: main.py:7030
+#: main.py:7039
 msgid "Import Started"
 msgstr "Импорт начат"
 
@@ -1855,7 +1893,7 @@ msgstr "Импорт EPG"
 msgid "Importing EPG data…"
 msgstr "Импорт данных EPG…"
 
-#: main.py:7009
+#: main.py:7018
 #: planning_ui.py:176
 msgid "In Progress"
 msgstr "Выполняется"
@@ -1868,7 +1906,7 @@ msgstr "Автоматически включать XMLTV-гид поставщ�
 msgid "Installer message: {message}"
 msgstr "Сообщение установщика: {message}"
 
-#: main.py:5223
+#: main.py:5225
 msgid "Installing the update. {app} will close and start again by itself - please do not open it yourself in the meantime."
 msgstr "Идёт установка обновления. {app} закроется и запустится снова самостоятельно — пока не открывайте его вручную."
 
@@ -1884,8 +1922,8 @@ msgstr "Недопустимый файл списка избранного."
 msgid "Invalid keyboard shortcut."
 msgstr "Недопустимое сочетание клавиш."
 
-#: dvr.py:231
-#: main.py:8432
+#: dvr.py:246
+#: main.py:8452
 #: planning_tools.py:123
 #: planning_tools_ui.py:56
 msgid "Invalid programme times."
@@ -1917,7 +1955,7 @@ msgstr "Недопустимый ответ от API плеера Xtream"
 msgid "Invalid response from portal"
 msgstr "Недопустимый ответ от портала"
 
-#: media_navigation_ui.py:75
+#: media_navigation_ui.py:110
 msgid "Invalid subtitle delay."
 msgstr "Недопустимая задержка субтитров."
 
@@ -1925,11 +1963,11 @@ msgstr "Недопустимая задержка субтитров."
 msgid "Join the SerrebiProjects Telegram group"
 msgstr "Присоединиться к группе SerrebiProjects в Telegram"
 
-#: personal_tools_ui.py:572
+#: personal_tools_ui.py:582
 msgid "Keep chosen channels"
 msgstr "Сохранить выбранные каналы"
 
-#: main.py:7891
+#: main.py:7900
 msgid "Keep this output device?\n{name}"
 msgstr "Оставить это устройство вывода?\n{name}"
 
@@ -1953,7 +1991,7 @@ msgstr "Сочетания клавиш..."
 
 #: client_ui.py:198
 #: client_ui.py:352
-#: main.py:4770
+#: main.py:4772
 msgid "Language"
 msgstr "Язык"
 
@@ -1961,22 +1999,22 @@ msgstr "Язык"
 msgid "Last Watched"
 msgstr "Последний просмотр"
 
-#: internal_player.py:1569
+#: internal_player.py:1574
 msgid "Last error: {reason}"
 msgstr "Последняя ошибка: {reason}"
 
-#: internal_player.py:2905
+#: internal_player.py:3021
 msgid "Last subtitle: {text}"
 msgstr "Последний субтитр: {text}"
 
-#: main.py:4822
+#: main.py:4824
 msgid "Latest release tag is missing or invalid."
 msgstr "Тег последнего выпуска отсутствует или недопустим."
 
-#: main.py:8022
-#: main.py:8075
-#: main.py:8170
-#: main.py:8179
+#: main.py:8038
+#: main.py:8091
+#: main.py:8190
+#: main.py:8199
 msgid "Launch Error"
 msgstr "Ошибка запуска"
 
@@ -2002,7 +2040,7 @@ msgstr "Прямой эфир && Архив"
 msgid "Live input ended; retained history is still available."
 msgstr "Прямой эфир завершён; сохранённая история остаётся доступной."
 
-#: internal_player.py:2719
+#: internal_player.py:2828
 msgid "Load Subtitle File"
 msgstr "Загрузить файл субтитров"
 
@@ -2010,7 +2048,7 @@ msgstr "Загрузить файл субтитров"
 msgid "Load Subtitle File..."
 msgstr "Загрузить файл субтитров..."
 
-#: main.py:6493
+#: main.py:6499
 msgid "Loading Video on Demand…"
 msgstr "Загрузка видео по запросу…"
 
@@ -2018,7 +2056,7 @@ msgstr "Загрузка видео по запросу…"
 msgid "Loading accounts..."
 msgstr "Загрузка учётных записей..."
 
-#: main.py:6623
+#: main.py:6629
 msgid "Loading episodes…"
 msgstr "Загрузка серий…"
 
@@ -2028,11 +2066,11 @@ msgid "Loading guide channels..."
 msgstr "Загрузка каналов программы передач..."
 
 #: main.py:1189
-#: main.py:6277
+#: main.py:6279
 msgid "Loading playlists..."
 msgstr "Загрузка плейлистов..."
 
-#: recording_library_ui.py:237
+#: recording_library_ui.py:241
 msgid "Loading recordings..."
 msgstr "Загрузка записей..."
 
@@ -2053,7 +2091,7 @@ msgstr "Локальный буфер эфира…"
 msgid "Local date and time (YYYY-MM-DD HH:MM)"
 msgstr "Местная дата и время (ГГГГ-ММ-ДД ЧЧ:ММ)"
 
-#: main.py:4284
+#: main.py:4286
 msgid "Logs"
 msgstr "Журналы"
 
@@ -2074,17 +2112,21 @@ msgstr "MAC-адрес должен содержать шесть октетов
 msgid "MAC address presented to the portal"
 msgstr "MAC-адрес, предъявляемый порталу"
 
-#: main.py:7957
+#: main.py:7966
 msgid "MPV subtitle speech on."
 msgstr "Озвучивание субтитров MPV включено."
 
-#: main.py:7960
+#: main.py:7969
 msgid "MPV subtitle speech unavailable."
 msgstr "Озвучивание субтитров MPV недоступно."
 
 #: shortcuts.py:203
 msgid "Main-window shortcuts need Ctrl or Alt."
 msgstr "Сочетаниям главного окна нужен Ctrl или Alt."
+
+#: recording_edits_ui.py:117
+msgid "Matching programme details."
+msgstr "Сведения о передаче совпадают."
 
 #: account_info.py:570
 msgid "Maximum connections"
@@ -2117,7 +2159,7 @@ msgstr "МиБ:"
 msgid "Minimize to System Tray"
 msgstr "Свернуть в системный трей"
 
-#: main.py:4604
+#: main.py:4606
 msgid "Minimum Free Space..."
 msgstr "Минимум свободного места…"
 
@@ -2140,13 +2182,13 @@ msgid "Minutes before programme:"
 msgstr "Минут до передачи:"
 
 #: client_timeshift.py:50
-#: internal_player.py:3315
+#: internal_player.py:3431
 #: planning_ui.py:24
 msgid "Minutes:"
 msgstr "Минуты:"
 
-#: main.py:3500
-#: main.py:9453
+#: main.py:3502
+#: main.py:9489
 msgid "Missed"
 msgstr "Пропущено"
 
@@ -2159,19 +2201,21 @@ msgid "Monitor free space while recording"
 msgstr "Следить за свободным местом во время записи"
 
 #: personal_tools_ui.py:361
+#: recording_queue.py:195
 msgid "Move Down"
 msgstr "Переместить вниз"
 
 #: personal_tools_ui.py:361
+#: recording_queue.py:194
 msgid "Move Up"
 msgstr "Переместить вверх"
 
-#: recording_library_ui.py:92
-#: recording_library_ui.py:360
+#: recording_library_ui.py:96
+#: recording_library_ui.py:365
 msgid "Move to Recording Trash..."
 msgstr "Переместить в корзину записей..."
 
-#: recording_library_ui.py:421
+#: recording_library_ui.py:445
 msgid "Move {count} selected recordings to the recording trash?"
 msgstr "Переместить выбранные записи ({count}) в корзину записей?"
 
@@ -2188,8 +2232,8 @@ msgstr "Фильмы"
 msgid "Mute / Unmute"
 msgstr "Выключить / Включить звук"
 
-#: internal_player.py:2078
-#: internal_player.py:2476
+#: internal_player.py:2083
+#: internal_player.py:2500
 msgid "Muted"
 msgstr "Звук выключен"
 
@@ -2210,29 +2254,29 @@ msgstr "Именованные закладки..."
 msgid "Never (no expiry date set)"
 msgstr "Никогда (дата окончания не задана)"
 
-#: personal_tools_ui.py:897
+#: personal_tools_ui.py:907
 msgid "New programme matches: {count}."
 msgstr "Новых найденных передач: {count}."
 
 #: personal_tools_ui.py:357
-#: personal_tools_ui.py:612
+#: personal_tools_ui.py:622
 msgid "New..."
 msgstr "Создать..."
 
-#: episode_continuation_ui.py:75
-#: episode_continuation_ui.py:139
-#: episode_continuation_ui.py:146
+#: episode_continuation_ui.py:76
+#: episode_continuation_ui.py:140
+#: episode_continuation_ui.py:147
 #: media_navigation_ui.py:33
 #: shortcuts.py:104
 msgid "Next Episode"
 msgstr "Следующий эпизод"
 
-#: internal_player.py:592
+#: internal_player.py:594
 #: shortcuts.py:124
 msgid "Next Subtitle"
 msgstr "Следующий субтитр"
 
-#: main.py:9292
+#: main.py:9328
 msgid "Next recording: {time}"
 msgstr "Следующая запись: {time}"
 
@@ -2249,51 +2293,51 @@ msgstr "Далее: {title} ({start} – {end})"
 msgid "No"
 msgstr "Нет"
 
-#: main.py:7001
+#: main.py:7010
 msgid "No Accounts"
 msgstr "Нет учётных записей"
 
-#: main.py:7066
+#: main.py:7075
 msgid "No Data"
 msgstr "Нет данных"
 
-#: main.py:7013
+#: main.py:7022
 msgid "No EPG sources configured. Please add one in File > EPG Manager."
 msgstr "Источники EPG не настроены. Добавьте источник в разделе Файл > Менеджер EPG."
 
-#: main.py:7013
+#: main.py:7022
 msgid "No Sources"
 msgstr "Нет источников"
 
-#: main.py:6555
-#: main.py:6559
+#: main.py:6561
+#: main.py:6565
 msgid "No Video on Demand content found."
 msgstr "Контент видео по запросу не найден."
 
-#: internal_player.py:2014
-#: main.py:8237
+#: internal_player.py:2019
+#: main.py:8257
 msgid "No active stream to cast."
 msgstr "Нет активного потока для трансляции."
 
-#: main.py:7656
+#: main.py:7665
 msgid "No active subtitle session."
 msgstr "Нет активного сеанса субтитров."
 
-#: episode_continuation_ui.py:52
+#: episode_continuation_ui.py:53
 msgid "No adjacent episode is available."
 msgstr "Предыдущий или следующий эпизод недоступен."
 
-#: recording_edits_ui.py:104
+#: recording_edits_ui.py:182
 msgid "No alternative airings were found in the next 14 days."
 msgstr "В ближайшие 14 дней других показов не найдено."
 
-#: internal_player.py:703
+#: internal_player.py:705
 msgid "No audio output devices were found."
 msgstr "Устройства вывода звука не найдены."
 
-#: internal_player.py:2568
-#: internal_player.py:2634
-#: internal_player.py:2955
+#: internal_player.py:2592
+#: internal_player.py:2658
+#: internal_player.py:3071
 msgid "No audio tracks available"
 msgstr "Нет доступных аудиодорожек"
 
@@ -2303,26 +2347,30 @@ msgstr "Нет доступных аудиодорожек"
 msgid "No buffered audio or video is available."
 msgstr "В буфере нет аудио или видео для сохранения."
 
-#: main.py:8372
+#: main.py:8392
 msgid "No catch-up programmes are available for this channel."
 msgstr "Для этого канала нет доступных архивных программ."
+
+#: recording_edits_ui.py:106
+msgid "No changes were found to upcoming recording times."
+msgstr "Время предстоящих записей не изменилось."
 
 #: main.py:1843
 msgid "No channel is selected."
 msgstr "Ни один канал не выбран."
 
 #: personal_tools_ui.py:417
-#: personal_tools_ui.py:772
+#: personal_tools_ui.py:782
 msgid "No channel selected."
 msgstr "Канал не выбран."
 
-#: main.py:6278
+#: main.py:6280
 msgid "No channels found."
 msgstr "Каналы не найдены."
 
 #: dialogs_misc.py:585
 #: main.py:2755
-#: main.py:9730
+#: main.py:9767
 #: personal_tools_ui.py:322
 msgid "No description available for this programme."
 msgstr "Для этой программы нет описания."
@@ -2331,21 +2379,25 @@ msgstr "Для этой программы нет описания."
 msgid "No devices found."
 msgstr "Устройства не найдены."
 
-#: internal_player.py:2909
+#: internal_player.py:3025
 msgid "No earlier subtitle."
 msgstr "Более ранних субтитров нет."
 
-#: personal_tools_ui.py:862
+#: internal_player.py:2766
+msgid "No embedded subtitle tracks were found."
+msgstr "Встроенные дорожки субтитров не найдены."
+
+#: personal_tools_ui.py:872
 msgid "No enabled saved searches."
 msgstr "Нет включённых сохранённых поисков."
 
-#: main.py:6655
+#: main.py:6661
 msgid "No episodes found for this series."
 msgstr "Для этого сериала серии не найдены."
 
 #: external_player.py:297
 #: external_player.py:348
-#: main.py:9032
+#: main.py:9052
 msgid "No error details were reported."
 msgstr "Сведения об ошибке не поступили."
 
@@ -2353,7 +2405,7 @@ msgstr "Сведения об ошибке не поступили."
 msgid "No ffmpeg details were reported."
 msgstr "Сведения о ffmpeg не сообщены."
 
-#: internal_player.py:2911
+#: internal_player.py:3027
 msgid "No later subtitle."
 msgstr "Более поздних субтитров нет."
 
@@ -2369,11 +2421,11 @@ msgstr "Для этого файла не найден соответствую�
 msgid "No notable changes."
 msgstr "Заметных изменений нет."
 
-#: main.py:2974
+#: main.py:2973
 msgid "No previous channel is available."
 msgstr "Предыдущий канал недоступен."
 
-#: main.py:7667
+#: main.py:7676
 msgid "No previous subtitle."
 msgstr "Нет предыдущего субтитра."
 
@@ -2389,7 +2441,7 @@ msgstr "Программа передач ещё не импортирована
 msgid "No programmes were found for this time and channel selection."
 msgstr "На выбранных каналах в указанное время передачи не найдены."
 
-#: main.py:7066
+#: main.py:7075
 msgid "No programs are currently airing, or EPG data has not been imported yet."
 msgstr "Сейчас нет программ в эфире, либо данные EPG ещё не импортированы."
 
@@ -2397,20 +2449,20 @@ msgstr "Сейчас нет программ в эфире, либо данны�
 msgid "No provider accounts found."
 msgstr "Учётные записи провайдеров не найдены."
 
-#: main.py:6997
+#: main.py:7006
 msgid "No provider accounts were found.\n\nXtream Codes and Stalker Portal accounts added in the Playlist Manager are listed here, along with any account detected from a playlist or stream URL."
 msgstr "Учётные записи поставщиков не найдены.\n\nЗдесь показаны учётные записи Xtream Codes и Stalker Portal, добавленные в Менеджере плейлистов, а также любые учётные записи, обнаруженные по URL плейлиста или потока."
 
-#: main.py:7678
+#: main.py:7687
 msgid "No recent subtitles."
 msgstr "Нет недавних субтитров."
 
-#: main.py:2982
+#: main.py:2981
 msgid "No recently watched channels are available."
 msgstr "Недавно просмотренных каналов нет."
 
-#: main.py:3961
-#: main.py:3972
+#: main.py:3963
+#: main.py:3974
 msgid "No recordings are currently active."
 msgstr "Сейчас нет активных записей."
 
@@ -2427,35 +2479,36 @@ msgstr "Нет напоминаний."
 msgid "No saved playback positions."
 msgstr "Нет сохранённых позиций воспроизведения."
 
-#: internal_player.py:750
+#: internal_player.py:752
 msgid "No stream URL provided."
 msgstr "URL потока не указан."
 
-#: internal_player.py:2899
+#: internal_player.py:3015
 msgid "No subtitle has been shown yet."
 msgstr "Субтитры ещё не показывались."
 
-#: main.py:7658
+#: main.py:7667
 msgid "No subtitle text available yet."
 msgstr "Текст субтитров пока недоступен."
 
-#: internal_player.py:2778
+#: internal_player.py:2804
+#: internal_player.py:2887
 msgid "No subtitle text found in this file."
 msgstr "В этом файле не найден текст субтитров."
 
-#: internal_player.py:2897
+#: internal_player.py:3013
 msgid "No subtitle text to read. Load a supported subtitle file."
 msgstr "Нет текста субтитров для чтения. Загрузите файл в поддерживаемом формате."
 
-#: main.py:9159
+#: main.py:9179
 msgid "No timed problems were found for this recording."
 msgstr "В журнале этой записи нет неполадок с отметками времени."
 
-#: main.py:9160
+#: main.py:9180
 msgid "No timed problems were found in the newest recording log."
 msgstr "В последнем журнале записи не найдено проблем с указанием времени."
 
-#: main.py:4696
+#: main.py:4698
 msgid "No upcoming schedule found for this channel."
 msgstr "Для этого канала не найдено предстоящее расписание."
 
@@ -2469,8 +2522,8 @@ msgid "None"
 msgstr "Нет"
 
 #: main.py:2151
-#: main.py:7352
-#: main.py:8013
+#: main.py:7361
+#: main.py:8029
 msgid "Not Found"
 msgstr "Не найдено"
 
@@ -2494,7 +2547,7 @@ msgstr "Недостаточно места для начала записи: с
 msgid "Not reported by the server"
 msgstr "Сервер не сообщил"
 
-#: main.py:8207
+#: main.py:8227
 msgid "Nothing is playing in the built-in player."
 msgstr "Во встроенном проигрывателе ничего не воспроизводится."
 
@@ -2525,6 +2578,10 @@ msgstr "Уведомление показано"
 msgid "Notify before the programme starts (minutes):"
 msgstr "Уведомить до начала передачи (минуты):"
 
+#: main.py:9289
+msgid "Notify me of recording time changes after guide updates"
+msgstr "Сообщать об изменении времени записи после обновления телепрограммы"
+
 #: client_epg.py:100
 msgid "Now: {title} ({start} – {end})"
 msgstr "Сейчас: {title} ({start} – {end})"
@@ -2534,18 +2591,18 @@ msgstr "Сейчас: {title} ({start} – {end})"
 #: dialogs_misc.py:681
 #: dialogs_misc.py:747
 #: internal_player.py:149
-#: main.py:7802
-#: main.py:7835
-#: options.py:987
+#: main.py:7811
+#: main.py:7844
+#: options.py:988
 #: personal_tools_ui.py:91
 #: playlist.py:3280
 #: playlist.py:3380
 msgid "OK"
 msgstr "ОК"
 
-#: internal_player.py:2679
-#: internal_player.py:2685
-#: internal_player.py:2702
+#: internal_player.py:2704
+#: internal_player.py:2710
+#: internal_player.py:2727
 msgid "Off"
 msgstr "Выкл."
 
@@ -2565,15 +2622,15 @@ msgstr "При потере устройства: использовать си�
 msgid "Only part of the programme was recorded. The available file has been kept:\n{path}"
 msgstr "Записана только часть передачи. Созданный файл сохранён:\n{path}"
 
-#: main.py:7935
+#: main.py:7944
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
 msgstr "Только проигрыватели с документированным API для текста с временными метками могут предоставлять текст субтитров. Встроенный проигрыватель читает файлы SRT, ASS, SSA и WebVTT; MPV работает через собственный сеанс приложения."
 
-#: recording_edits_ui.py:141
+#: recording_edits_ui.py:223
 msgid "Only the first 100 results are shown."
 msgstr "Показаны только первые 100 результатов."
 
-#: personal_tools_ui.py:646
+#: personal_tools_ui.py:656
 msgid "Only the first 500 matches are shown. Narrow the search."
 msgstr "Показаны только первые 500 результатов. Уточните запрос."
 
@@ -2590,9 +2647,18 @@ msgstr "Открыть канал"
 msgid "Open Logs Folder"
 msgstr "Открыть папку журналов"
 
-#: main.py:4624
+#: main.py:4626
 msgid "Open Recordings Folder"
 msgstr "Открыть папку записей"
+
+#: internal_player.py:2746
+#: recording_media.py:91
+msgid "Open a local Matroska recording to read its embedded subtitles."
+msgstr "Откройте локальную запись в формате Matroska, чтобы прослушать встроенные субтитры."
+
+#: media_navigation_ui.py:47
+msgid "Open a local recording to browse its chapters."
+msgstr "Откройте локальную запись, чтобы просмотреть её главы."
 
 #: dialogs_misc.py:71
 msgid "Open the Accessible IPTV Client project on Forgejo"
@@ -2602,11 +2668,11 @@ msgstr "Открыть проект Accessible IPTV Client на Forgejo"
 msgid "Open the Accessible IPTV Client project on GitHub"
 msgstr "Открыть проект Accessible IPTV Client на GitHub"
 
-#: main.py:9164
+#: main.py:9184
 msgid "Open the recorded file in VLC, press Ctrl+T, and enter a listed time. Times use the file's media clock when FFmpeg reported it; otherwise they are elapsed recording time and may be slightly later after an interruption."
 msgstr "Откройте записанный файл в VLC, нажмите Ctrl+T и введите одно из указанных значений времени. Если FFmpeg сообщил временную позицию файла, используется она; иначе указывается время, прошедшее с начала записи, которое после прерывания может быть немного больше фактической позиции."
 
-#: internal_player.py:2041
+#: internal_player.py:2046
 msgid "Opening"
 msgstr "Открытие"
 
@@ -2639,11 +2705,11 @@ msgstr "Прочие изменения"
 msgid "Other details reported by the server"
 msgstr "Другие сведения, сообщённые сервером"
 
-#: main.py:6313
+#: main.py:6315
 msgid "Other playlists"
 msgstr "Другие плейлисты"
 
-#: main.py:7865
+#: main.py:7874
 msgid "Output device for the application voice:"
 msgstr "Устройство вывода для голоса приложения:"
 
@@ -2665,14 +2731,14 @@ msgid "Package"
 msgstr "Пакет"
 
 #: dialogs_misc.py:711
-#: main.py:9429
+#: main.py:9465
 msgid "Padding for This Recording..."
 msgstr "Запас времени для этой записи…"
 
-#: main.py:9450
+#: main.py:9486
 #: planning_tools.py:92
 #: recording_library_ui.py:62
-#: recording_library_ui.py:302
+#: recording_library_ui.py:306
 msgid "Partial"
 msgstr "Частичная запись"
 
@@ -2681,16 +2747,16 @@ msgid "Password"
 msgstr "Пароль"
 
 #: internal_player.py:446
-#: internal_player.py:906
-#: internal_player.py:1915
-#: internal_player.py:1947
-#: internal_player.py:1959
-#: internal_player.py:1972
+#: internal_player.py:908
+#: internal_player.py:1920
+#: internal_player.py:1952
+#: internal_player.py:1964
+#: internal_player.py:1977
 msgid "Pause"
 msgstr "Пауза"
 
-#: internal_player.py:2044
-#: internal_player.py:2246
+#: internal_player.py:2049
+#: internal_player.py:2251
 msgid "Paused"
 msgstr "Приостановлено"
 
@@ -2703,7 +2769,7 @@ msgstr "Ожидание"
 msgid "Pending programme reminders: {count}.\n\nNotifications require the application to remain running. Exit anyway?"
 msgstr "Ожидающие напоминания о передачах: {count}.\n\nДля показа уведомлений приложение должно работать. Всё равно выйти?"
 
-#: recording_library_ui.py:420
+#: recording_library_ui.py:444
 msgid "Permanently delete {count} selected recording files? This cannot be undone."
 msgstr "Безвозвратно удалить выбранные файлы записей ({count})? Это действие нельзя отменить."
 
@@ -2711,14 +2777,14 @@ msgstr "Безвозвратно удалить выбранные файлы з
 msgid "Phone"
 msgstr "Телефон"
 
-#: main.py:4306
+#: main.py:4308
 msgid "Platform: {platform}"
 msgstr "Платформа: {platform}"
 
 #: dialogs_misc.py:904
 #: dialogs_misc.py:1112
-#: internal_player.py:944
-#: internal_player.py:2060
+#: internal_player.py:949
+#: internal_player.py:2065
 #: main.py:2789
 #: personal_tools_ui.py:362
 msgid "Play"
@@ -2728,15 +2794,19 @@ msgstr "Воспроизвести"
 msgid "Play / Resume"
 msgstr "Воспроизвести / Продолжить"
 
-#: episode_continuation_ui.py:84
+#: episode_continuation_ui.py:85
 msgid "Play Now"
 msgstr "Воспроизвести сейчас"
+
+#: recording_queue.py:197
+msgid "Play Queue"
+msgstr "Воспроизвести очередь"
 
 #: resume_dialogs.py:18
 msgid "Play from Beginning"
 msgstr "Воспроизвести с начала"
 
-#: main.py:9179
+#: main.py:9199
 msgid "Play from This Time"
 msgstr "Воспроизвести с этого момента"
 
@@ -2758,9 +2828,10 @@ msgstr "Воспроизведение/Пауза"
 msgid "Playback"
 msgstr "Воспроизведение"
 
-#: main.py:2965
-#: main.py:7365
-#: main.py:7368
+#: internal_player.py:2261
+#: main.py:2964
+#: main.py:7374
+#: main.py:7377
 msgid "Playback Error"
 msgstr "Ошибка воспроизведения"
 
@@ -2773,7 +2844,12 @@ msgstr "Время воспроизведения"
 msgid "Playback changed. Reopen the bookmark list."
 msgstr "Воспроизводимый материал изменился. Откройте список закладок заново."
 
-#: internal_player.py:3369
+#: internal_player.py:2259
+#: recording_queue.py:113
+msgid "Playback queue stopped at {title}. {reason}"
+msgstr "Воспроизведение очереди остановлено на записи «{title}». {reason}"
+
+#: internal_player.py:3485
 msgid "Playback volume is fading before the sleep timer stops it."
 msgstr "Громкость воспроизведения плавно уменьшается перед остановкой по таймеру сна."
 
@@ -2786,11 +2862,11 @@ msgstr "Плеер"
 msgid "Player Controls"
 msgstr "Управление плеером"
 
-#: internal_player.py:748
+#: internal_player.py:750
 msgid "Player window has been destroyed."
 msgstr "Окно плеера было закрыто."
 
-#: internal_player.py:2043
+#: internal_player.py:2048
 msgid "Playing"
 msgstr "Воспроизведение"
 
@@ -2805,12 +2881,12 @@ msgstr "Плейлист"
 msgid "Playlist Manager"
 msgstr "Менеджер плейлистов"
 
-#: main.py:6929
-#: main.py:6935
+#: main.py:6938
+#: main.py:6944
 msgid "Playlist refresh failed: {name}"
 msgstr "Не удалось обновить плейлист: {name}"
 
-#: main.py:6934
+#: main.py:6943
 msgid "Playlist refreshed: {name}"
 msgstr "Плейлист обновлён: {name}"
 
@@ -2824,8 +2900,8 @@ msgstr "Тип плейлиста"
 msgid "Playlist view"
 msgstr "Просмотр плейлиста"
 
-#: internal_player.py:1230
-#: internal_player.py:1576
+#: internal_player.py:1235
+#: internal_player.py:1581
 msgid "Please try another channel or try again later."
 msgstr "Попробуйте другой канал или повторите попытку позже."
 
@@ -2858,9 +2934,13 @@ msgstr "Не удалось выполнить рукопожатие с пор�
 msgid "Position"
 msgstr "Позиция"
 
-#: recording_edits_ui.py:124
+#: recording_edits_ui.py:205
 msgid "Possible repeat"
 msgstr "Возможный повтор"
+
+#: recording_edits_ui.py:117
+msgid "Possible time change. Check the programme."
+msgstr "Возможно, время изменилось. Проверьте передачу."
 
 #: dialogs_misc.py:660
 #: dialogs_misc.py:663
@@ -2884,20 +2964,20 @@ msgstr "Предпочитаемый формат контейнера пото�
 msgid "Preferred track names or languages, most wanted first:"
 msgstr "Предпочитаемые названия дорожек или языки, самые важные первыми:"
 
-#: main.py:8954
+#: main.py:8974
 msgid "Preparing download..."
 msgstr "Подготовка загрузки..."
 
-#: main.py:5015
-#: main.py:5069
+#: main.py:5017
+#: main.py:5071
 msgid "Preparing to restart..."
 msgstr "Подготовка к перезапуску..."
 
-#: main.py:9164
+#: main.py:9184
 msgid "Press Enter to play the recording from the selected time."
 msgstr "Нажмите Enter, чтобы начать воспроизведение с выбранного момента."
 
-#: main.py:8968
+#: main.py:8988
 msgid "Press Escape to hide this window; the download continues. View > Show Downloads (Ctrl+Shift+D) brings it back."
 msgstr "Нажмите Escape, чтобы скрыть это окно; загрузка продолжится. Вид > Показать загрузки (Ctrl+Shift+D) вернёт его."
 
@@ -2907,7 +2987,7 @@ msgstr "Запретить автоматический переход в спя
 
 #: client_ui.py:156
 #: client_ui.py:312
-#: main.py:2974
+#: main.py:2973
 #: shortcuts.py:96
 msgid "Previous Channel"
 msgstr "Предыдущий канал"
@@ -2917,7 +2997,7 @@ msgstr "Предыдущий канал"
 msgid "Previous Episode"
 msgstr "Предыдущий эпизод"
 
-#: internal_player.py:590
+#: internal_player.py:592
 #: shortcuts.py:123
 msgid "Previous Subtitle"
 msgstr "Предыдущий субтитр"
@@ -2926,9 +3006,9 @@ msgstr "Предыдущий субтитр"
 msgid "Previously saved content (title unavailable)"
 msgstr "Ранее сохранённый материал (название недоступно)"
 
-#: personal_tools_ui.py:768
-#: personal_tools_ui.py:805
-#: recording_library_ui.py:445
+#: personal_tools_ui.py:778
+#: personal_tools_ui.py:815
+#: recording_library_ui.py:469
 msgid "Processing recordings..."
 msgstr "Обработка записей…"
 
@@ -2936,7 +3016,7 @@ msgstr "Обработка записей…"
 msgid "Program - Channel"
 msgstr "Программа - Канал"
 
-#: dvr.py:233
+#: dvr.py:248
 msgid "Program end time must be after the start time."
 msgstr "Время окончания передачи должно быть позже времени её начала."
 
@@ -2974,7 +3054,7 @@ msgstr "Напоминание о передаче"
 msgid "Programme Reminders"
 msgstr "Напоминания о передачах"
 
-#: main.py:4593
+#: main.py:4595
 msgid "Programme Reminders..."
 msgstr "Напоминания о передачах…"
 
@@ -2982,11 +3062,11 @@ msgstr "Напоминания о передачах…"
 msgid "Programme guide channels"
 msgstr "Каналы программы передач"
 
-#: recording_edits_ui.py:137
+#: recording_edits_ui.py:219
 msgid "Programmes"
 msgstr "Передачи"
 
-#: main.py:9060
+#: main.py:9080
 msgid "Progress: {percent}%"
 msgstr "Прогресс: {percent}%"
 
@@ -3000,22 +3080,22 @@ msgstr "Поставщик"
 msgid "Provider accounts"
 msgstr "Учётные записи провайдеров"
 
-#: main.py:3674
-#: main.py:7365
-#: main.py:8397
-#: main.py:8456
+#: main.py:3676
+#: main.py:7374
+#: main.py:8417
+#: main.py:8476
 msgid "Provider error: {error}"
 msgstr "Ошибка поставщика: {error}"
 
-#: main.py:3272
+#: main.py:3274
 msgid "Provider quality (copy, MKV)"
 msgstr "Качество поставщика (копия, MKV)"
 
-#: main.py:3273
+#: main.py:3275
 msgid "Provider quality (copy, MP4)"
 msgstr "Качество поставщика (копия, MP4)"
 
-#: main.py:3276
+#: main.py:3278
 msgid "Provider quality (stream copy, MKA)"
 msgstr "Качество поставщика (копия потока, MKA)"
 
@@ -3024,7 +3104,7 @@ msgstr "Качество поставщика (копия потока, MKA)"
 msgid "Provider – {name}"
 msgstr "Поставщик – {name}"
 
-#: main.py:4307
+#: main.py:4309
 msgid "Python: {version}"
 msgstr "Python: {version}"
 
@@ -3032,10 +3112,15 @@ msgstr "Python: {version}"
 msgid "Randomise MAC"
 msgstr "Случайный MAC"
 
-#: internal_player.py:588
+#: internal_player.py:590
 #: shortcuts.py:122
 msgid "Read Current Subtitle"
 msgstr "Прочитать текущий субтитр"
+
+#: internal_player.py:584
+#: internal_player.py:2771
+msgid "Read Embedded Subtitle Track..."
+msgstr "Озвучить встроенную дорожку субтитров…"
 
 #: client_ui.py:401
 msgid "Read current subtitle"
@@ -3049,16 +3134,20 @@ msgstr "Прочитать предыдущий субтитр"
 msgid "Read the full credits"
 msgstr "Прочитать полный список благодарностей"
 
+#: recording_media.py:69
+msgid "Reading the embedded subtitles timed out."
+msgstr "Истекло время ожидания при чтении встроенных субтитров."
+
 #: dialogs_misc.py:443
 msgid "Ready."
 msgstr "Готово."
 
-#: main.py:7686
+#: main.py:7695
 msgid "Recent Subtitles"
 msgstr "Недавние субтитры"
 
-#: main.py:2983
-#: main.py:2986
+#: main.py:2982
+#: main.py:2985
 msgid "Recently Watched"
 msgstr "Недавно просмотренные"
 
@@ -3068,71 +3157,77 @@ msgstr "Недавно просмотренные"
 msgid "Recently Watched..."
 msgstr "Недавно смотрел..."
 
-#: internal_player.py:1593
-#: internal_player.py:2251
-#: internal_player.py:2258
-#: internal_player.py:2266
-#: internal_player.py:2281
+#: internal_player.py:1598
+#: internal_player.py:2265
+#: internal_player.py:2272
+#: internal_player.py:2290
+#: internal_player.py:2305
 msgid "Reconnecting..."
 msgstr "Повторное подключение..."
 
 #: internal_player.py:460
 #: internal_player.py:461
 #: internal_player.py:573
-#: internal_player.py:1981
-#: internal_player.py:1997
+#: internal_player.py:1986
+#: internal_player.py:2002
 #: main.py:2798
-#: main.py:3649
-#: main.py:8208
-#: main.py:8216
+#: main.py:3651
+#: main.py:8228
+#: main.py:8236
 #: shortcuts.py:115
 msgid "Record"
 msgstr "Запись"
 
 #: dialogs_misc.py:1130
-#: main.py:9694
+#: main.py:9731
 msgid "Record Daily"
 msgstr "Записывать ежедневно"
 
 #: dialogs_misc.py:1132
-#: main.py:9696
+#: main.py:9733
 msgid "Record Series"
 msgstr "Записывать сериал"
 
 #: dialogs_misc.py:1131
-#: main.py:9695
+#: main.py:9732
 msgid "Record Weekly"
 msgstr "Записывать еженедельно"
 
-#: recording_edits_ui.py:179
+#: recording_edits_ui.py:263
 msgid "Record this airing instead?"
 msgstr "Записать этот показ вместо выбранного ранее?"
 
 #: accessible_tools_ui.py:184
-#: main.py:3665
-#: main.py:3756
-#: main.py:3818
-#: main.py:3945
-#: main.py:3948
-#: main.py:3959
-#: main.py:3962
-#: main.py:3970
-#: main.py:3973
-#: main.py:9447
+#: main.py:3667
+#: main.py:3758
+#: main.py:3820
+#: main.py:3947
+#: main.py:3950
+#: main.py:3961
+#: main.py:3964
+#: main.py:3972
+#: main.py:3975
+#: main.py:9483
 msgid "Recording"
 msgstr "Запись"
+
+#: media_navigation_ui.py:40
+#: media_navigation_ui.py:58
+msgid "Recording Chapters..."
+msgstr "Главы записи…"
 
 #: client_recording.py:48
 msgid "Recording Complete"
 msgstr "Запись завершена"
 
-#: main.py:9371
+#: main.py:9407
 #: recording_conflicts_ui.py:71
-#: recording_edits_ui.py:125
+#: recording_edits_ui.py:165
+#: recording_edits_ui.py:171
 msgid "Recording Conflicts"
 msgstr "Конфликты записей"
 
-#: main.py:9262
+#: main.py:9282
 msgid "Recording Conflicts..."
 msgstr "Конфликты записей…"
 
@@ -3140,38 +3235,47 @@ msgstr "Конфликты записей…"
 msgid "Recording Connection Limits"
 msgstr "Лимиты соединений для записи"
 
-#: main.py:4602
+#: main.py:4604
 msgid "Recording Connection Limits..."
 msgstr "Лимиты соединений для записи..."
 
 #: client_recording.py:76
-#: main.py:3675
-#: main.py:3679
-#: main.py:3683
-#: main.py:3708
-#: main.py:3795
+#: main.py:3677
+#: main.py:3681
+#: main.py:3685
+#: main.py:3710
+#: main.py:3797
 msgid "Recording Error"
 msgstr "Ошибка записи"
 
-#: main.py:4612
+#: main.py:4614
 msgid "Recording Format"
 msgstr "Формат записи"
 
-#: internal_player.py:3278
+#: internal_player.py:3394
 #: recording_library_ui.py:34
 msgid "Recording Library"
 msgstr "Библиотека записей"
 
-#: main.py:4599
+#: main.py:4601
 msgid "Recording Library..."
 msgstr "Библиотека записей..."
 
-#: main.py:4560
-#: main.py:4622
-#: main.py:9138
-#: main.py:9144
-#: main.py:9210
-#: recording_library_ui.py:89
+#: recording_queue.py:114
+#: recording_queue.py:156
+msgid "Recording Playback Queue"
+msgstr "Очередь воспроизведения записей"
+
+#: recording_library_ui.py:91
+msgid "Recording Playback Queue..."
+msgstr "Очередь воспроизведения записей…"
+
+#: main.py:4562
+#: main.py:4624
+#: main.py:9158
+#: main.py:9164
+#: main.py:9230
+#: recording_library_ui.py:93
 msgid "Recording Problem Times"
 msgstr "Время проблем в записи"
 
@@ -3179,7 +3283,7 @@ msgstr "Время проблем в записи"
 msgid "Recording Space Monitor"
 msgstr "Контроль места для записи"
 
-#: main.py:4597
+#: main.py:4599
 msgid "Recording Space Monitor..."
 msgstr "Контроль места для записи..."
 
@@ -3208,7 +3312,7 @@ msgstr "Папка записей:"
 msgid "Recording folder: {path}\nFree space: {free} MiB\nRequired reserve: {reserve} MiB.\n\nThis check does not guarantee sufficient space for the entire recording."
 msgstr "Папка записей: {path}\nСвободно: {free} МиБ\nНеобходимый резерв: {reserve} МиБ.\n\nЭта проверка не гарантирует достаточно места для всей записи."
 
-#: internal_player.py:1980
+#: internal_player.py:1985
 msgid "Recording is not available from this window."
 msgstr "Запись недоступна из этого окна."
 
@@ -3232,11 +3336,11 @@ msgstr "Не удалось применить управление питани
 msgid "Recording saved:\n{path}"
 msgstr "Запись сохранена:\n{path}"
 
-#: personal_tools_ui.py:810
+#: personal_tools_ui.py:820
 msgid "Recording schedule saved."
 msgstr "Расписание записи сохранено."
 
-#: main.py:3380
+#: main.py:3382
 msgid "Recording scheduled.\n\nThe programme guide has not been imported yet, so the Scheduled Recordings window may not list anything, and this may be the only episode you can schedule. Import the guide from File > Import EPG to DB to see and schedule upcoming programmes."
 msgstr "Запись запланирована.\n\nПрограмма передач ещё не импортирована, поэтому окно запланированных записей может ничего не показывать, и это может быть единственный эпизод, который вы сможете запланировать. Импортируйте программу через Файл > Импортировать EPG в базу данных, чтобы видеть и планировать предстоящие передачи."
 
@@ -3248,7 +3352,7 @@ msgstr "Критически мало свободного места ({free} Mi
 msgid "Recording space is running low: {free} MiB remains.\n{path}"
 msgstr "Место для записи заканчивается: осталось {free} MiB.\n{path}"
 
-#: main.py:3814
+#: main.py:3816
 msgid "Recording started ({fmt}):\n{path}"
 msgstr "Запись начата ({fmt}):\n{path}"
 
@@ -3256,34 +3360,38 @@ msgstr "Запись начата ({fmt}):\n{path}"
 msgid "Recording stopped, but ffmpeg reported code {code}.\n\n{detail}\n\nFile:\n{path}"
 msgstr "Запись остановлена, но ffmpeg сообщил код {code}.\n\n{detail}\n\nФайл:\n{path}"
 
-#: recording_library_ui.py:478
+#: recording_library_ui.py:502
 msgid "Recording title:"
 msgstr "Название записи:"
 
-#: main.py:3366
+#: main.py:3368
 msgid "Recording updated to repeat."
 msgstr "Запись обновлена для повтора."
 
 #: client_ui.py:187
 #: client_ui.py:452
-#: main.py:4271
-#: main.py:4576
+#: main.py:4273
+#: main.py:4578
 #: recording_library_ui.py:80
 #: resume_dialogs.py:37
 msgid "Recordings"
 msgstr "Записи"
 
-#: main.py:9437
+#: recording_library_ui.py:391
+msgid "Recordings in the playback queue: {count}."
+msgstr "Записей в очереди воспроизведения: {count}."
+
+#: main.py:9473
 msgid "Recover from Channel Archive..."
 msgstr "Восстановить из архива канала..."
 
 #: dialogs_misc.py:356
-#: main.py:9252
-#: main.py:9416
-#: personal_tools_ui.py:613
+#: main.py:9272
+#: main.py:9452
+#: personal_tools_ui.py:623
 #: planning_ui.py:59
 #: playlist.py:3214
-#: recording_library_ui.py:94
+#: recording_library_ui.py:98
 #: session_tools_ui.py:160
 msgid "Refresh"
 msgstr "Обновить"
@@ -3292,19 +3400,19 @@ msgstr "Обновить"
 msgid "Refresh All Playlists"
 msgstr "Обновить все плейлисты"
 
-#: main.py:6931
+#: main.py:6940
 msgid "Refreshing all playlists..."
 msgstr "Обновление всех плейлистов..."
 
-#: main.py:6936
+#: main.py:6945
 msgid "Refreshing playlist: {name}"
 msgstr "Обновление плейлиста: {name}"
 
-#: internal_player.py:1242
-#: internal_player.py:2253
-#: internal_player.py:2260
-#: internal_player.py:2263
-#: internal_player.py:2281
+#: internal_player.py:1247
+#: internal_player.py:2267
+#: internal_player.py:2274
+#: internal_player.py:2287
+#: internal_player.py:2305
 msgid "Refreshing stream..."
 msgstr "Обновление потока..."
 
@@ -3332,7 +3440,7 @@ msgstr "Напомнить в начале программы"
 msgid "Reminder set."
 msgstr "Напоминание настроено."
 
-#: personal_tools_ui.py:458
+#: personal_tools_ui.py:471
 msgid "Remove '{name}' from this list?"
 msgstr "Удалить «{name}» из этого списка?"
 
@@ -3356,7 +3464,7 @@ msgstr "Удалить все напоминания?"
 msgid "Remove all saved playback positions?"
 msgstr "Удалить все сохранённые позиции воспроизведения?"
 
-#: main.py:9543
+#: main.py:9579
 msgid "Remove all scheduled recordings from the list?"
 msgstr "Удалить все запланированные записи из списка?"
 
@@ -3364,11 +3472,15 @@ msgstr "Удалить все запланированные записи из �
 msgid "Remove from Favorites"
 msgstr "Удалить из избранного"
 
-#: main.py:9548
+#: recording_queue.py:196
+msgid "Remove from Queue"
+msgstr "Удалить из очереди"
+
+#: main.py:9584
 msgid "Remove scheduled recording '{title}' from the list?"
 msgstr "Удалить запланированную запись «{title}» из списка?"
 
-#: main.py:9545
+#: main.py:9581
 msgid "Remove the {count} selected scheduled recordings from the list? Recording files will be kept."
 msgstr "Удалить выбранные запланированные записи ({count}) из списка? Файлы записей будут сохранены."
 
@@ -3385,8 +3497,8 @@ msgstr "Удалить эту сохранённую позицию воспро
 msgid "Rename"
 msgstr "Переименовать"
 
-#: recording_library_ui.py:91
-#: recording_library_ui.py:478
+#: recording_library_ui.py:95
+#: recording_library_ui.py:502
 msgid "Rename Title..."
 msgstr "Изменить название..."
 
@@ -3396,7 +3508,7 @@ msgstr "Изменить название..."
 msgid "Rename..."
 msgstr "Переименовать..."
 
-#: main.py:9265
+#: main.py:9301
 #: planning_tools_ui.py:13
 msgid "Repeat on Weekdays..."
 msgstr "Повторять в выбранные дни недели…"
@@ -3406,7 +3518,7 @@ msgstr "Повторять в выбранные дни недели…"
 msgid "Repeat on selected weekdays (none: once):"
 msgstr "Повторять в выбранные дни (нет выбора: однократно):"
 
-#: personal_tools_ui.py:949
+#: personal_tools_ui.py:959
 msgid "Replace settings, {jobs} recording entries and {reminders} reminders? Started recordings will not restart."
 msgstr "Заменить настройки, записи расписания ({jobs}) и напоминания ({reminders})? Начавшиеся записи не будут запущены повторно."
 
@@ -3414,7 +3526,7 @@ msgstr "Заменить настройки, записи расписания (
 msgid "Replace the existing export file?"
 msgstr "Заменить существующий файл экспорта?"
 
-#: media_navigation_ui.py:58
+#: media_navigation_ui.py:93
 msgid "Reset Timing"
 msgstr "Сбросить синхронизацию"
 
@@ -3422,12 +3534,12 @@ msgstr "Сбросить синхронизацию"
 msgid "Restore"
 msgstr "Восстановить"
 
-#: recording_library_ui.py:93
+#: recording_library_ui.py:97
 msgid "Restore Recording"
 msgstr "Восстановить запись"
 
-#: internal_player.py:1915
-#: internal_player.py:1972
+#: internal_player.py:1920
+#: internal_player.py:1977
 #: resume_dialogs.py:17
 #: resume_dialogs.py:18
 #: resume_dialogs.py:51
@@ -3442,6 +3554,12 @@ msgstr "Продолжить воспроизведение с {time}?"
 msgid "Return to Live"
 msgstr "Вернуться к прямому эфиру"
 
+#: main.py:9286
+#: recording_edits_ui.py:106
+#: recording_edits_ui.py:118
+msgid "Review Guide Changes..."
+msgstr "Проверить изменения в телепрограмме…"
+
 #: client_ui.py:409
 msgid "Review recent subtitles..."
 msgstr "Просмотреть недавние субтитры..."
@@ -3454,9 +3572,13 @@ msgstr "Перемотать эфир назад"
 msgid "Rewind Live TV..."
 msgstr "Перемотать эфир назад…"
 
-#: recording_edits_ui.py:124
+#: recording_edits_ui.py:205
 msgid "Same episode"
 msgstr "Та же серия"
+
+#: recording_edits_ui.py:206
+msgid "Same time, different source"
+msgstr "То же время, другой источник"
 
 #: planning_tools_ui.py:23
 msgid "Saturday"
@@ -3476,16 +3598,16 @@ msgstr "Сохранить"
 msgid "Save Recent Broadcast..."
 msgstr "Сохранить последние минуты…"
 
-#: personal_tools_ui.py:561
+#: personal_tools_ui.py:571
 msgid "Saved Programme Search"
 msgstr "Сохранённый поиск передач"
 
-#: personal_tools_ui.py:606
-#: personal_tools_ui.py:607
+#: personal_tools_ui.py:616
+#: personal_tools_ui.py:617
 msgid "Saved Programme Searches"
 msgstr "Сохранённые поиски передач"
 
-#: personal_tools_ui.py:761
+#: personal_tools_ui.py:771
 msgid "Saved Programme Searches..."
 msgstr "Сохранённые поиски передач..."
 
@@ -3493,7 +3615,7 @@ msgstr "Сохранённые поиски передач..."
 msgid "Saved playback positions"
 msgstr "Сохранённые позиции воспроизведения"
 
-#: main.py:6439
+#: main.py:6445
 msgid "Saved positions can only be restored in the built-in player. Select it and disconnect casting before continuing."
 msgstr "Сохранённые позиции можно восстановить только во встроенном проигрывателе. Выберите его и отключите трансляцию на другое устройство."
 
@@ -3514,7 +3636,7 @@ msgstr "Всё равно запланировать"
 msgid "Schedule Padding"
 msgstr "Запас времени записи"
 
-#: main.py:4618
+#: main.py:4620
 msgid "Schedule Padding..."
 msgstr "Запас времени записи..."
 
@@ -3522,22 +3644,22 @@ msgstr "Запас времени записи..."
 #: dialogs_misc.py:1127
 #: main.py:2805
 #: main.py:2884
-#: main.py:3301
-#: main.py:3317
-#: main.py:3321
-#: main.py:3339
-#: main.py:3348
-#: main.py:3366
-#: main.py:3385
-#: main.py:3392
-#: main.py:9691
-#: main.py:9739
+#: main.py:3303
+#: main.py:3319
+#: main.py:3323
+#: main.py:3341
+#: main.py:3350
+#: main.py:3368
+#: main.py:3387
+#: main.py:3394
+#: main.py:9728
+#: main.py:9776
 #: personal_tools_ui.py:191
 msgid "Schedule Recording"
 msgstr "Запланировать запись"
 
 #: main.py:2814
-#: personal_tools_ui.py:615
+#: personal_tools_ui.py:625
 msgid "Schedule Recording..."
 msgstr "Запланировать запись..."
 
@@ -3545,72 +3667,73 @@ msgstr "Запланировать запись..."
 msgid "Schedule by Time"
 msgstr "Запланировать по времени"
 
-#: main.py:4606
+#: main.py:4608
 msgid "Schedule by Time..."
 msgstr "Запланировать по времени..."
 
-#: main.py:9446
+#: main.py:9482
 #: planning_ui.py:99
 msgid "Scheduled"
 msgstr "Запланировано"
 
-#: main.py:3505
-#: main.py:3606
+#: main.py:3507
+#: main.py:3608
 msgid "Scheduled Recording"
 msgstr "Запланированная запись"
 
 #: main.py:1249
-#: main.py:9232
-#: main.py:9290
-#: main.py:9293
-#: main.py:9350
-#: main.py:9361
-#: main.py:9381
-#: main.py:9523
-#: main.py:9530
-#: main.py:9536
-#: main.py:9549
+#: main.py:9252
+#: main.py:9326
+#: main.py:9329
+#: main.py:9386
+#: main.py:9397
+#: main.py:9417
 #: main.py:9559
+#: main.py:9566
+#: main.py:9572
+#: main.py:9585
+#: main.py:9595
+#: recording_edits_ui.py:100
 msgid "Scheduled Recordings"
 msgstr "Запланированные записи"
 
-#: main.py:4608
+#: main.py:4610
 msgid "Scheduled Recordings..."
 msgstr "Запланированные записи..."
 
-#: main.py:3543
+#: main.py:3545
 msgid "Scheduled recording is missing channel data."
 msgstr "В запланированной записи отсутствуют данные канала."
 
-#: main.py:3604
+#: main.py:3606
 msgid "Scheduled recording started:\n{title}"
 msgstr "Запланированная запись начата:\n{title}"
 
-#: main.py:3388
+#: main.py:3390
 msgid "Scheduled recording:\n{title}\n{time}"
 msgstr "Запланированная запись:\n{title}\n{time}"
 
-#: main.py:5750
-#: main.py:9244
+#: main.py:5752
+#: main.py:9264
 msgid "Scheduled recordings"
 msgstr "Запланированные записи"
 
 #: client_ui.py:62
 #: client_ui.py:66
 #: client_ui.py:68
-#: personal_tools_ui.py:563
+#: personal_tools_ui.py:573
 msgid "Search"
 msgstr "Поиск"
 
-#: personal_tools_ui.py:608
+#: personal_tools_ui.py:618
 msgid "Search Results"
 msgstr "Результаты поиска"
 
-#: personal_tools_ui.py:564
+#: personal_tools_ui.py:574
 msgid "Search descriptions too"
 msgstr "Искать также в описаниях"
 
-#: personal_tools_ui.py:465
+#: personal_tools_ui.py:478
 msgid "Search for the replacement channel:"
 msgstr "Поиск канала для замены:"
 
@@ -3626,7 +3749,7 @@ msgstr "Поиск записей:"
 msgid "Searching for devices..."
 msgstr "Поиск устройств..."
 
-#: personal_tools_ui.py:869
+#: personal_tools_ui.py:879
 msgid "Searching programmes..."
 msgstr "Поиск передач..."
 
@@ -3635,11 +3758,11 @@ msgid "Seconds behind the latest buffered picture; 0 returns to live."
 msgstr "Отставание в секундах от последнего сохранённого кадра; 0 возвращает к прямому эфиру."
 
 #: client_timeshift.py:262
-#: internal_player.py:3327
+#: internal_player.py:3443
 msgid "Seconds:"
 msgstr "Секунды:"
 
-#: options.py:979
+#: options.py:980
 msgid "Select Custom Player"
 msgstr "Выбрать пользовательский плеер"
 
@@ -3649,7 +3772,7 @@ msgstr "Выбрать пользовательский плеер"
 msgid "Select Device to Cast"
 msgstr "Выбрать устройство для трансляции"
 
-#: options.py:999
+#: options.py:1000
 msgid "Select Player Executable"
 msgstr "Выбрать исполняемый файл плеера"
 
@@ -3657,7 +3780,7 @@ msgstr "Выбрать исполняемый файл плеера"
 msgid "Select a channel first."
 msgstr "Сначала выберите канал."
 
-#: main.py:3649
+#: main.py:3651
 msgid "Select a channel to record first."
 msgstr "Сначала выберите канал для записи."
 
@@ -3665,11 +3788,11 @@ msgstr "Сначала выберите канал для записи."
 msgid "Select a live channel first."
 msgstr "Сначала выберите канал прямого эфира."
 
-#: main.py:9310
+#: main.py:9346
 msgid "Select a missed, failed or partial recording."
 msgstr "Выберите пропущенную, неудавшуюся или частичную запись."
 
-#: main.py:9739
+#: main.py:9776
 msgid "Select a programme first."
 msgstr "Сначала выберите программу."
 
@@ -3681,9 +3804,9 @@ msgstr "Выберите канал программы передач или а�
 msgid "Select a programme, then press Enter to open it, or use the context menu to download it. Press Escape to close."
 msgstr "Выберите передачу и нажмите Enter, чтобы открыть её, или воспользуйтесь контекстным меню для загрузки. Нажмите Escape, чтобы закрыть."
 
-#: main.py:9371
-#: main.py:9523
-#: main.py:9536
+#: main.py:9407
+#: main.py:9559
+#: main.py:9572
 msgid "Select a scheduled recording first."
 msgstr "Сначала выберите запланированную запись."
 
@@ -3691,17 +3814,17 @@ msgstr "Сначала выберите запланированную запи�
 msgid "Select an account to check its status:"
 msgstr "Выберите учётную запись, чтобы проверить её состояние:"
 
-#: main.py:9380
+#: main.py:9416
 msgid "Select one pending or running recording to edit its times."
 msgstr "Выберите одну ожидающую или текущую запись, чтобы изменить её время."
 
-#: dvr.py:599
-#: dvr.py:679
-#: main.py:9349
+#: dvr.py:614
+#: dvr.py:694
+#: main.py:9385
 msgid "Select one pending recording that is not a series rule."
 msgstr "Выберите одну ожидающую запись, не являющуюся правилом записи сериала."
 
-#: dvr.py:726
+#: dvr.py:741
 msgid "Select one pending recurring recording."
 msgstr "Выберите предстоящую повторяющуюся запись."
 
@@ -3714,11 +3837,11 @@ msgid "Select the playlist format to download"
 msgstr "Выберите формат плейлиста для скачивания"
 
 #: personal_tools_ui.py:416
-#: personal_tools_ui.py:578
+#: personal_tools_ui.py:588
 msgid "Selected channel: {name}"
 msgstr "Выбранный канал: {name}"
 
-#: recording_library_ui.py:366
+#: recording_library_ui.py:371
 msgid "Selected: {count}; total size: {size} MiB."
 msgstr "Выбрано: {count}; общий размер: {size} MiB."
 
@@ -3748,20 +3871,20 @@ msgstr "Время сервера"
 msgid "Server time zone"
 msgstr "Часовой пояс сервера"
 
-#: main.py:4626
+#: main.py:4628
 msgid "Set Download Folder..."
 msgstr "Задать папку загрузки..."
 
 #: dialogs_misc.py:1115
 #: main.py:2802
-#: main.py:9681
+#: main.py:9718
 #: personal_tools_ui.py:192
-#: personal_tools_ui.py:614
+#: personal_tools_ui.py:624
 #: planning_ui.py:54
 msgid "Set Reminder..."
 msgstr "Настроить напоминание…"
 
-#: main.py:4334
+#: main.py:4336
 msgid "Set download folder"
 msgstr "Задать папку загрузки"
 
@@ -3770,7 +3893,7 @@ msgstr "Задать папку загрузки"
 #: main.py:2101
 #: main.py:2106
 #: main.py:2111
-#: personal_tools_ui.py:928
+#: personal_tools_ui.py:938
 msgid "Settings Backup"
 msgstr "Резервное копирование настроек"
 
@@ -3830,9 +3953,9 @@ msgid "Showing {count} of {total} matching channels. Refine the search if needed
 msgstr "Показано {count} из {total} подходящих каналов. При необходимости уточните поиск."
 
 #: dialogs_misc.py:793
-#: main.py:4019
-#: main.py:4083
-#: main.py:4093
+#: main.py:4021
+#: main.py:4085
+#: main.py:4095
 msgid "Shut Down After Recordings"
 msgstr "Выключение после записей"
 
@@ -3840,11 +3963,11 @@ msgstr "Выключение после записей"
 msgid "Shut Down Now"
 msgstr "Выключить сейчас"
 
-#: main.py:4630
+#: main.py:4632
 msgid "Shut Down the Computer When Recordings Finish"
 msgstr "Выключить компьютер после завершения записей"
 
-#: main.py:4082
+#: main.py:4084
 msgid "Shutdown canceled. Automatic shutdown after recordings is now off."
 msgstr "Выключение отменено. Автоматическое выключение после записей теперь отключено."
 
@@ -3852,21 +3975,21 @@ msgstr "Выключение отменено. Автоматическое вы
 msgid "Size (bytes)"
 msgstr "Размер (байты)"
 
-#: main.py:9285
-#: main.py:9434
+#: main.py:9321
+#: main.py:9470
 msgid "Skip This Occurrence"
 msgstr "Пропустить только эту запись"
 
-#: main.py:9284
+#: main.py:9320
 msgid "Skip this occurrence of {title}?"
 msgstr "Пропустить эту запись передачи «{title}»?"
 
-#: main.py:9455
+#: main.py:9491
 msgid "Skipped"
 msgstr "Пропущено"
 
-#: internal_player.py:3315
-#: internal_player.py:3327
+#: internal_player.py:3431
+#: internal_player.py:3443
 msgid "Sleep Timer"
 msgstr "Таймер сна"
 
@@ -3878,17 +4001,20 @@ msgstr "Таймер сна…"
 msgid "Sort by"
 msgstr "Сортировать по"
 
-#: internal_player.py:2476
+#: internal_player.py:2500
 msgid "Sound restored"
 msgstr "Звук включён"
 
+#: favorites.py:107
+#: favorites.py:114
 #: favourite_transfer_ui.py:56
 #: playlist.py:2442
-#: recording_edits_ui.py:134
+#: recording_edits_ui.py:195
+#: recording_edits_ui.py:216
 msgid "Source {number}"
 msgstr "Источник {number}"
 
-#: internal_player.py:585
+#: internal_player.py:587
 #: shortcuts.py:121
 msgid "Speak Subtitles"
 msgstr "Озвучивать субтитры"
@@ -3905,7 +4031,7 @@ msgstr "Озвучивать голосом приложения"
 msgid "Speak through screen reader"
 msgstr "Озвучивать программой экранного доступа"
 
-#: main.py:7827
+#: main.py:7836
 msgid "Speech speed (-10 to 10; 0 is normal):"
 msgstr "Скорость речи (от -10 до 10; 0 — обычная):"
 
@@ -3932,7 +4058,7 @@ msgstr "В записи портала Stalker отсутствует идент
 msgid "Start (local time, YYYY-MM-DD HH:MM)"
 msgstr "Начало (местное время, ГГГГ-ММ-ДД ЧЧ:ММ)"
 
-#: main.py:4586
+#: main.py:4588
 #: shortcuts.py:91
 msgid "Start Recording"
 msgstr "Начать запись"
@@ -3945,7 +4071,7 @@ msgstr "Сначала запустите воспроизведение во в
 msgid "Start scheduled recordings early or keep recording after the programme ends. Manual recordings are not changed."
 msgstr "Начинать запись по расписанию раньше или продолжать её после окончания передачи. Ручные записи не изменяются."
 
-#: main.py:4902
+#: main.py:4904
 msgid "Starting update..."
 msgstr "Запуск обновления..."
 
@@ -3957,7 +4083,7 @@ msgstr "Начинается в {start}: {title}"
 #: account_info.py:552
 #: account_info.py:554
 #: account_info.py:606
-#: main.py:9248
+#: main.py:9268
 #: planning_tools.py:91
 #: planning_ui.py:47
 #: recording_library_ui.py:61
@@ -3975,7 +4101,7 @@ msgstr "Состояние"
 msgid "Stop"
 msgstr "Остановить"
 
-#: main.py:4590
+#: main.py:4592
 msgid "Stop All Recordings"
 msgstr "Остановить все записи"
 
@@ -3983,9 +4109,9 @@ msgstr "Остановить все записи"
 msgid "Stop Playback"
 msgstr "Остановить воспроизведение"
 
-#: internal_player.py:1997
+#: internal_player.py:2002
 #: main.py:2796
-#: main.py:4588
+#: main.py:4590
 msgid "Stop Recording"
 msgstr "Остановить запись"
 
@@ -3993,11 +4119,15 @@ msgstr "Остановить запись"
 msgid "Stop Recording(s)"
 msgstr "Остановить запись(и)"
 
+#: recording_queue.py:198
+msgid "Stop after Current Recording"
+msgstr "Остановить после текущей записи"
+
 #: accessible_tools_ui.py:50
 msgid "Stop below (MiB):"
 msgstr "Останавливать при остатке менее (MiB):"
 
-#: internal_player.py:3314
+#: internal_player.py:3430
 msgid "Stop built-in playback after 1–1440 minutes; enter 0 to cancel the timer."
 msgstr "Остановить встроенный проигрыватель через 1–1440 минут; введите 0 для отмены таймера."
 
@@ -4009,37 +4139,37 @@ msgstr "Остановите воспроизведение из локальн�
 msgid "Stop recordings safely when space is critically low"
 msgstr "Корректно останавливать записи при критической нехватке места"
 
-#: internal_player.py:945
-#: internal_player.py:2045
+#: internal_player.py:950
+#: internal_player.py:2050
 msgid "Stopped"
 msgstr "Остановлено"
 
-#: main.py:9451
+#: main.py:9487
 #: planning_tools.py:92
 #: recording_library_ui.py:62
-#: recording_library_ui.py:302
+#: recording_library_ui.py:306
 msgid "Stopped by user"
 msgstr "Остановлено пользователем"
 
-#: main.py:9448
+#: main.py:9484
 msgid "Stopping"
 msgstr "Остановка"
 
-#: main.py:3663
-#: main.py:3943
+#: main.py:3665
+#: main.py:3945
 msgid "Stopping recording for {name}..."
 msgstr "Остановка записи {name}..."
 
-#: main.py:3959
+#: main.py:3961
 msgid "Stopping recording..."
 msgstr "Остановка записи..."
 
-#: main.py:3969
+#: main.py:3971
 msgid "Stopping {count} recording(s)..."
 msgstr "Остановка записей: {count}..."
 
-#: internal_player.py:1231
-#: internal_player.py:1577
+#: internal_player.py:1236
+#: internal_player.py:1582
 msgid "Stream Lost"
 msgstr "Поток потерян"
 
@@ -4048,17 +4178,17 @@ msgstr "Поток потерян"
 msgid "Stream URL"
 msgstr "URL потока"
 
-#: internal_player.py:1572
+#: internal_player.py:1577
 msgid "Stream disconnected after {count} retries. The stream may be offline or experiencing issues."
 msgstr "Поток отключён после {count} попыток. Возможно, поток недоступен или испытывает проблемы."
 
-#: internal_player.py:1229
+#: internal_player.py:1234
 msgid "Stream disconnected. The stream may be offline or experiencing issues."
 msgstr "Поток отключён. Возможно, он недоступен или испытывает проблемы."
 
-#: internal_player.py:1234
-#: internal_player.py:1580
-#: internal_player.py:2283
+#: internal_player.py:1239
+#: internal_player.py:1585
+#: internal_player.py:2307
 msgid "Stream lost"
 msgstr "Поток потерян"
 
@@ -4071,21 +4201,21 @@ msgstr "Вывод потока"
 msgid "Subscription"
 msgstr "Подписка"
 
-#: main.py:7938
+#: main.py:7947
 msgid "Subtitle Capabilities"
 msgstr "Возможности субтитров"
 
 #: client_ui.py:443
-#: main.py:7777
-#: main.py:7848
-#: main.py:7884
-#: main.py:7888
-#: main.py:7892
+#: main.py:7786
+#: main.py:7857
+#: main.py:7893
+#: main.py:7897
+#: main.py:7901
 msgid "Subtitle Speech"
 msgstr "Озвучивание субтитров"
 
 #: media_navigation_ui.py:34
-#: media_navigation_ui.py:50
+#: media_navigation_ui.py:85
 #: shortcuts.py:105
 msgid "Subtitle Timing..."
 msgstr "Синхронизация субтитров…"
@@ -4094,77 +4224,77 @@ msgstr "Синхронизация субтитров…"
 msgid "Subtitle capabilities..."
 msgstr "Возможности субтитров..."
 
-#: media_navigation_ui.py:52
+#: media_navigation_ui.py:87
 msgid "Subtitle delay in milliseconds (-600000 to 600000). Positive values display and read subtitles later; 0 resets timing."
 msgstr "Задержка субтитров в миллисекундах (от -600000 до 600000). Положительные значения задерживают показ и чтение субтитров; 0 восстанавливает исходную синхронизацию."
 
-#: media_navigation_ui.py:92
+#: media_navigation_ui.py:127
 msgid "Subtitle delay: {milliseconds} ms."
 msgstr "Задержка субтитров: {milliseconds} мс."
 
-#: internal_player.py:2742
+#: internal_player.py:2851
 msgid "Subtitle file loaded: {name}"
 msgstr "Загружен файл субтитров: {name}."
 
-#: internal_player.py:2720
+#: internal_player.py:2829
 msgid "Subtitle files (*.srt;*.ass;*.ssa;*.vtt)"
 msgstr "Файлы субтитров (*.srt;*.ass;*.ssa;*.vtt)"
 
-#: main.py:7642
+#: main.py:7651
 msgid "Subtitle speech %s."
 msgstr "Озвучка субтитров %s."
 
-#: main.py:7738
 #: main.py:7747
-#: main.py:7887
+#: main.py:7756
+#: main.py:7896
 msgid "Subtitle speech failed."
 msgstr "Озвучивание субтитров не удалось."
 
-#: internal_player.py:2748
+#: internal_player.py:2857
 msgid "Subtitle speech needs a supported text subtitle file."
 msgstr "Для чтения требуется файл текстовых субтитров в поддерживаемом формате."
 
-#: internal_player.py:2941
+#: internal_player.py:3057
 msgid "Subtitle speech off"
 msgstr "Озвучивание субтитров выключено"
 
-#: internal_player.py:2943
+#: internal_player.py:3059
 msgid "Subtitle speech on"
 msgstr "Озвучивание субтитров включено"
 
-#: internal_player.py:2945
+#: internal_player.py:3061
 msgid "Subtitle speech on. Load a subtitle file to hear subtitles."
 msgstr "Чтение субтитров включено. Загрузите файл субтитров, чтобы прослушать текст."
 
-#: main.py:7741
+#: main.py:7750
 msgid "Subtitle speech paused: the selected audio output is unavailable."
 msgstr "Озвучка субтитров приостановлена: выбранный аудиовыход недоступен."
 
-#: main.py:7784
+#: main.py:7793
 msgid "Subtitle speech will use the application voice."
 msgstr "Для озвучивания субтитров будет использоваться голос приложения."
 
-#: main.py:7786
+#: main.py:7795
 msgid "Subtitle speech will use your screen reader."
 msgstr "Для озвучивания субтитров будет использоваться ваша программа экранного доступа."
 
-#: media_navigation_ui.py:78
+#: media_navigation_ui.py:113
 msgid "Subtitle timing could not be changed."
 msgstr "Не удалось изменить синхронизацию субтитров."
 
-#: internal_player.py:2671
+#: internal_player.py:2695
 msgid "Subtitle track unavailable"
 msgstr "Трек с субтитрами недоступен."
 
 #: client_ui.py:231
 #: client_ui.py:373
 #: internal_player.py:582
-#: internal_player.py:2717
+#: internal_player.py:2826
 #: shortcuts.py:120
 msgid "Subtitles"
 msgstr "Субтитры"
 
-#: internal_player.py:2682
+#: internal_player.py:2707
 msgid "Subtitles: {name}"
 msgstr "Субтитры: {name}"
 
@@ -4173,7 +4303,7 @@ msgid "Sunday"
 msgstr "Воскресенье"
 
 #: internal_player.py:121
-#: main.py:7858
+#: main.py:7867
 msgid "System default"
 msgstr "Системное устройство по умолчанию"
 
@@ -4182,23 +4312,23 @@ msgid "The EPG database was created by an older version and is missing newer fie
 msgstr "База данных телепрограммы была создана более старой версией, и в ней отсутствуют новые поля. Импортировать программу заново, чтобы обновить её?\n\n(Без этого представления телепрограммы не могут показывать описания передач.)"
 
 #: main.py:2868
-#: main.py:7023
+#: main.py:7032
 msgid "The EPG import could not be started."
 msgstr "Не удалось запустить импорт EPG."
 
-#: main.py:6893
+#: main.py:6902
 msgid "The EPG import did not finish. The programme guide may be incomplete or unchanged."
 msgstr "Импорт EPG не завершён. Телепрограмма может быть неполной или неизменённой."
 
-#: main.py:6889
+#: main.py:6898
 msgid "The EPG import has finished. The programme guide is up to date."
 msgstr "Импорт EPG завершён. Телепрограмма обновлена."
 
-#: personal_tools_ui.py:952
+#: personal_tools_ui.py:962
 msgid "The app will close. Open it again to finish restoring the backup."
 msgstr "Приложение закроется. Откройте его снова, чтобы завершить восстановление."
 
-#: main.py:7776
+#: main.py:7785
 msgid "The application voice is only available on Windows with SAPI."
 msgstr "Голос приложения доступен только в Windows с SAPI."
 
@@ -4219,35 +4349,36 @@ msgid "The buffered programme could not be saved."
 msgstr "Не удалось сохранить фрагмент из буфера."
 
 #: favourite_transfer_ui.py:40
-#: personal_tools_ui.py:505
-#: personal_tools_ui.py:514
+#: personal_tools_ui.py:523
 msgid "The channel cannot be identified unambiguously."
 msgstr "Не удалось однозначно определить канал."
 
-#: favorite_collections.py:107
+#: favorite_collections.py:97
+#: favorite_collections.py:145
 #: favourite_transfer_ui.py:107
 #: favourite_transfer_ui.py:120
-#: main.py:9332
+#: main.py:9368
 #: personal_tools_ui.py:264
 #: personal_tools_ui.py:286
 #: personal_tools_ui.py:312
-#: personal_tools_ui.py:492
-#: personal_tools_ui.py:550
-#: personal_tools_ui.py:717
-#: recording_edits_ui.py:99
-#: recording_edits_ui.py:158
+#: personal_tools_ui.py:456
+#: personal_tools_ui.py:505
+#: personal_tools_ui.py:560
+#: personal_tools_ui.py:727
+#: recording_edits_ui.py:177
+#: recording_edits_ui.py:240
 msgid "The channel list changed. Try again."
 msgstr "Список каналов изменился. Повторите попытку."
 
-#: internal_player.py:2458
+#: internal_player.py:2482
 msgid "The channel volume could not be saved:\n{error}"
 msgstr "Не удалось сохранить громкость канала:\n{error}"
 
-#: main.py:4320
+#: main.py:4322
 msgid "The clipboard is unavailable."
 msgstr "Буфер обмена недоступен."
 
-#: main.py:4014
+#: main.py:4016
 msgid "The computer will shut down once every recording that is running or still scheduled has finished.\n\nYou get a countdown you can cancel first, and this setting turns itself off again as soon as it has been used.\n\nShut down the computer when recordings finish?"
 msgstr "Компьютер выключится, когда завершатся все выполняемые и запланированные записи.\n\nСначала появится обратный отсчёт, который можно отменить, а сама настройка отключится после использования.\n\nВыключить компьютер после завершения записей?"
 
@@ -4263,6 +4394,10 @@ msgstr "Конец должен быть в будущем, после нача�
 msgid "The first recording must start on a selected weekday."
 msgstr "Первая запись должна начинаться в один из выбранных дней недели."
 
+#: recording_edits_ui.py:98
+msgid "The guide times changed for {count} scheduled recording(s). Open Scheduled Recordings and choose Review Guide Changes."
+msgstr "В телепрограмме изменилось время запланированных записей: {count}. Откройте запланированные записи и выберите «Проверить изменения в телепрограмме»."
+
 #: updater.py:156
 msgid "The installer could not be started."
 msgstr "Не удалось запустить установщик."
@@ -4275,15 +4410,15 @@ msgstr "Установщик завершился с кодом выхода {co
 msgid "The installer was still running after 15 minutes."
 msgstr "Установщик всё ещё работал через 15 минут."
 
-#: main.py:4768
+#: main.py:4770
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
 msgstr "Язык изменён. Перезапустите Accessible IPTV Client, чтобы изменение вступило в полную силу."
 
-#: recording_library_ui.py:203
+#: recording_library_ui.py:207
 msgid "The library can contain up to 20 folders."
 msgstr "Библиотека может содержать до 20 папок."
 
-#: main.py:3550
+#: main.py:3552
 msgid "The live buffer is switching sources. The scheduled recording could not start."
 msgstr "Буфер прямого эфира переключает источник. Не удалось начать запланированную запись."
 
@@ -4307,8 +4442,8 @@ msgstr "Максимальное число списков избранного 
 msgid "The media duration is not available yet."
 msgstr "Длительность материала пока недоступна."
 
-#: episode_continuation_ui.py:79
-#: episode_continuation_ui.py:106
+#: episode_continuation_ui.py:80
+#: episode_continuation_ui.py:107
 msgid "The next episode starts in {seconds} seconds: {title}"
 msgstr "Следующий эпизод начнётся через {seconds} с: {title}"
 
@@ -4316,16 +4451,16 @@ msgstr "Следующий эпизод начнётся через {seconds} с
 msgid "The old buffered position expired; playback moved to the retained window."
 msgstr "Прежняя позиция больше недоступна; воспроизведение перенесено в сохранённый диапазон."
 
-#: personal_tools_ui.py:670
+#: personal_tools_ui.py:680
 msgid "The operation could not be completed. Refresh and try again."
 msgstr "Не удалось завершить операцию. Обновите данные и повторите попытку."
 
 #: accessible_tools_ui.py:15
-#: internal_player.py:3277
-#: main.py:9529
-#: main.py:9558
+#: internal_player.py:3393
+#: main.py:9565
+#: main.py:9594
 #: personal_tools_ui.py:28
-#: personal_tools_ui.py:894
+#: personal_tools_ui.py:904
 #: planning_tools_ui.py:42
 #: recording_conflicts_ui.py:151
 msgid "The operation failed:\n{error}"
@@ -4344,18 +4479,18 @@ msgstr "Позиция паузы больше недоступна. Воспр�
 msgid "The playback position is not available yet."
 msgstr "Позиция воспроизведения пока недоступна."
 
-#: internal_player.py:2472
+#: internal_player.py:2496
 msgid "The player could not change its mute state."
 msgstr "Проигрывателю не удалось изменить состояние звука."
 
-#: internal_player.py:2169
-#: media_navigation_ui.py:117
-#: media_navigation_ui.py:153
+#: internal_player.py:2174
+#: media_navigation_ui.py:152
+#: media_navigation_ui.py:188
 msgid "The player could not seek to the requested position."
 msgstr "Проигрыватель не смог перейти к указанной позиции."
 
-#: internal_player.py:3202
-#: main.py:6429
+#: internal_player.py:3318
+#: main.py:6435
 msgid "The playlists changed while checking this content. Reopen Continue Watching and try again."
 msgstr "Списки воспроизведения изменились во время проверки. Откройте окно «Продолжить просмотр» заново и повторите попытку."
 
@@ -4364,8 +4499,10 @@ msgid "The playlists changed. Select the channel again."
 msgstr "Списки воспроизведения изменились. Выберите канал ещё раз."
 
 #: playlist.py:2455
-#: recording_edits.py:76
-#: recording_edits_ui.py:165
+#: recording_edits.py:77
+#: recording_edits.py:181
+#: recording_edits_ui.py:130
+#: recording_edits_ui.py:247
 msgid "The programme guide changed. Refresh the list and try again."
 msgstr "Телепрограмма изменилась. Обновите список и повторите попытку."
 
@@ -4401,8 +4538,8 @@ msgstr "На сервере поставщика произошла ошибка
 msgid "The provider's server refused the connection."
 msgstr "Сервер поставщика отклонил подключение."
 
-#: dvr.py:665
-#: main.py:3358
+#: dvr.py:680
+#: main.py:3360
 msgid "The recording changed. Reopen its timing dialog."
 msgstr "Запись изменилась. Откройте окно её времени заново."
 
@@ -4412,10 +4549,14 @@ msgstr "Достигнут лимит соединений для записи �
 
 #: recording_library.py:155
 #: recording_library.py:317
+#: recording_media.py:116
+#: recording_media.py:121
+#: recording_media.py:150
+#: recording_media.py:168
 msgid "The recording file changed. Refresh the library."
 msgstr "Файл записи изменился. Обновите библиотеку."
 
-#: main.py:8087
+#: main.py:8103
 #: recording_library.py:152
 #: recording_library.py:311
 #: recording_library.py:314
@@ -4430,21 +4571,22 @@ msgstr "Папка записей недоступна или защищена �
 msgid "The recording is still in use."
 msgstr "Запись ещё используется."
 
-#: dvr.py:612
-#: recording_edits.py:35
-#: recording_edits.py:41
-#: recording_edits.py:72
-#: recording_edits_ui.py:26
+#: dvr.py:627
+#: recording_edits.py:36
+#: recording_edits.py:42
+#: recording_edits.py:73
+#: recording_edits.py:176
+#: recording_edits_ui.py:27
 msgid "The recording schedule changed. Check the times and try again."
 msgstr "Расписание записей изменилось. Проверьте время и повторите попытку."
 
-#: dvr.py:339
-#: dvr.py:355
+#: dvr.py:354
+#: dvr.py:370
 msgid "The recording schedule could not be read or backed up. Changes are disabled to protect the original file. Check the file permissions and available disk space, then restart the application."
 msgstr "Не удалось прочитать расписание записей или создать его резервную копию. Изменения отключены для защиты исходного файла. Проверьте права доступа к файлу и свободное место на диске, затем перезапустите приложение."
 
-#: dvr.py:336
-#: dvr.py:352
+#: dvr.py:351
+#: dvr.py:367
 msgid "The recording schedule could not be read. The original file was preserved at {path}. Check your scheduled recordings before adding new ones."
 msgstr "Не удалось прочитать расписание записей. Исходный файл сохранён в {path}. Проверьте запланированные записи перед добавлением новых."
 
@@ -4452,8 +4594,8 @@ msgstr "Не удалось прочитать расписание записе
 msgid "The recording start time has already passed."
 msgstr "Время начала записи уже прошло."
 
-#: dvr.py:380
-#: recording_edits.py:20
+#: dvr.py:395
+#: recording_edits.py:21
 msgid "The recording times are invalid. Check the recording schedule."
 msgstr "Некорректное время записи. Проверьте расписание записей."
 
@@ -4461,7 +4603,7 @@ msgstr "Некорректное время записи. Проверьте р�
 msgid "The recording trash folder is not available."
 msgstr "Папка корзины записей недоступна."
 
-#: dvr.py:386
+#: dvr.py:401
 msgid "The recovered recording schedule could not be saved. Check the recording schedule and available disk space."
 msgstr "Не удалось сохранить восстановленное расписание. Проверьте расписание записей и свободное место на диске."
 
@@ -4479,7 +4621,7 @@ msgstr "Не удалось выполнить действие с напоми�
 msgid "The requested position is too large."
 msgstr "Запрошенная позиция слишком велика."
 
-#: internal_player.py:3256
+#: internal_player.py:3372
 msgid "The saved playback position could not be restored."
 msgstr "Не удалось восстановить сохранённую позицию воспроизведения."
 
@@ -4488,7 +4630,7 @@ msgstr "Не удалось восстановить сохранённую по
 msgid "The saved search history is damaged."
 msgstr "История сохранённых поисков повреждена."
 
-#: main.py:7758
+#: main.py:7767
 msgid "The selected audio output is unavailable. Subtitle speech is paused."
 msgstr "Выбранный аудиовыход недоступен. Озвучка субтитров приостановлена."
 
@@ -4498,10 +4640,14 @@ msgstr "Выбранный аудиовыход недоступен. Озвуч
 msgid "The selected buffer segment is no longer available."
 msgstr "Выбранного фрагмента больше нет в буфере."
 
-#: favorite_collections.py:71
-#: favorite_collections.py:104
+#: favorite_collections.py:109
+#: favorite_collections.py:142
 msgid "The selected list no longer exists."
 msgstr "Выбранный список больше не существует."
+
+#: internal_player.py:2809
+msgid "The selected subtitle track is ready for speech."
+msgstr "Выбранная дорожка субтитров готова к озвучиванию."
 
 #: account_info.py:639
 msgid "The server did not report any account details."
@@ -4509,7 +4655,7 @@ msgstr "Сервер не сообщил никаких сведений об у
 
 #: accessible_tools_ui.py:252
 #: accessible_tools_ui.py:267
-#: personal_tools_ui.py:747
+#: personal_tools_ui.py:757
 msgid "The settings could not be saved. Check the free space and write permissions, then try again."
 msgstr "Не удалось сохранить настройки. Проверьте свободное место и права на запись, затем повторите попытку."
 
@@ -4517,7 +4663,11 @@ msgstr "Не удалось сохранить настройки. Провер�
 msgid "The stream sent data that could not be read."
 msgstr "Поток передал данные, которые не удалось прочитать."
 
-#: main.py:5303
+#: recording_media.py:80
+msgid "The subtitle data is too large to read."
+msgstr "Объём данных субтитров превышает предел для чтения."
+
+#: main.py:5305
 msgid "The update to v{version} did not finish, so {app} is still v{current}. You can try again from Help > Check for Updates..."
 msgstr "Обновление до v{version} не завершилось, поэтому {app} по-прежнему v{current}. Можно повторить попытку через Справка > Проверить обновления..."
 
@@ -4533,8 +4683,8 @@ msgstr "Порог предупреждения не может быть ниж�
 msgid "There is not enough free space to save the buffered programme."
 msgstr "Для сохранения фрагмента из буфера недостаточно свободного места."
 
-#: main.py:8473
-#: main.py:8577
+#: main.py:8493
+#: main.py:8597
 msgid "This catch-up programme is already downloading."
 msgstr "Эта передача уже загружается."
 
@@ -4542,11 +4692,11 @@ msgstr "Эта передача уже загружается."
 msgid "This channel does not provide catch-up streaming."
 msgstr "У этого канала нет архива передач."
 
-#: main.py:3947
+#: main.py:3949
 msgid "This channel is not currently recording."
 msgstr "Этот канал сейчас не записывается."
 
-#: media_navigation_ui.py:97
+#: media_navigation_ui.py:132
 #: named_bookmarks.py:58
 msgid "This command is available during on-demand playback."
 msgstr "Эта команда доступна при воспроизведении по запросу."
@@ -4555,15 +4705,15 @@ msgstr "Эта команда доступна при воспроизведен
 msgid "This entry cannot be added to Favorites."
 msgstr "Эту запись нельзя добавить в избранное."
 
-#: personal_tools_ui.py:474
+#: personal_tools_ui.py:487
 msgid "This favourite is already available."
 msgstr "Этот избранный канал уже доступен."
 
-#: main.py:8214
+#: main.py:8234
 msgid "This is a catch-up stream. Use Download in the catch-up list to save it."
 msgstr "Это поток архива передач. Чтобы сохранить его, воспользуйтесь пунктом «Скачать» в списке архива."
 
-#: main.py:7886
+#: main.py:7895
 msgid "This is the application voice."
 msgstr "Это голос приложения."
 
@@ -4575,7 +4725,7 @@ msgstr "Такого местного времени не существует. 
 msgid "This local time occurs twice when the clocks change."
 msgstr "При переводе часов это местное время наступает дважды."
 
-#: personal_tools_ui.py:950
+#: personal_tools_ui.py:960
 msgid "This older backup replaces settings only. Recording schedules and reminders will be kept."
 msgstr "Эта старая копия заменит только настройки. Расписание записей и напоминания сохранятся."
 
@@ -4583,17 +4733,17 @@ msgstr "Эта старая копия заменит только настро�
 msgid "This overlaps {count} recording(s). Continue?"
 msgstr "Пересечение с записями: {count}. Продолжить?"
 
-#: dvr.py:527
-#: main.py:3321
-#: recording_edits.py:61
+#: dvr.py:542
+#: main.py:3323
+#: recording_edits.py:62
 msgid "This programme has already ended."
 msgstr "Эта передача уже завершилась."
 
-#: main.py:3347
+#: main.py:3349
 msgid "This programme is already scheduled to record."
 msgstr "Эта передача уже запланирована для записи."
 
-#: main.py:8445
+#: main.py:8465
 msgid "This programme is not available as catch-up content yet."
 msgstr "Эта передача ещё недоступна в архиве."
 
@@ -4601,7 +4751,7 @@ msgstr "Эта передача ещё недоступна в архиве."
 msgid "This programme is older than the catch-up window allows."
 msgstr "Передача вышла за пределами периода, доступного в архиве канала."
 
-#: main.py:9321
+#: main.py:9357
 msgid "This programme is unavailable in the channel archive."
 msgstr "В архиве канала нет этой передачи."
 
@@ -4609,10 +4759,15 @@ msgstr "В архиве канала нет этой передачи."
 msgid "This programme's start and end times are invalid."
 msgstr "Время начала и окончания этой программы недействительно."
 
-#: dvr.py:524
-#: dvr.py:532
-#: dvr.py:652
-#: recording_edits.py:84
+#: media_navigation_ui.py:54
+msgid "This recording has no chapters."
+msgstr "В этой записи нет глав."
+
+#: dvr.py:539
+#: dvr.py:547
+#: dvr.py:667
+#: recording_edits.py:85
+#: recording_edits.py:187
 msgid "This recording is already scheduled."
 msgstr "Эта запись уже запланирована."
 
@@ -4620,27 +4775,33 @@ msgstr "Эта запись уже запланирована."
 msgid "This schedule needs {count} simultaneous recording connections for the same account, but its recording limit is {limit}. Schedule it anyway?"
 msgstr "Для этого расписания требуется {count} одновременных соединений для записи с одной учётной записью, но её лимит — {limit}. Всё равно запланировать?"
 
-#: media_navigation_ui.py:110
+#: media_navigation_ui.py:71
+#: media_navigation_ui.py:145
 #: session_tools_ui.py:21
 msgid "This stream does not support seeking."
 msgstr "Этот поток не поддерживает переход по времени."
+
+#: internal_player.py:2782
+#: recording_media.py:148
+msgid "This subtitle track cannot be read aloud."
+msgstr "Эту дорожку субтитров нельзя озвучить."
 
 #: planning_tools_ui.py:23
 msgid "Thursday"
 msgstr "Четверг"
 
-#: main.py:9245
-#: main.py:9588
+#: main.py:9265
+#: main.py:9625
 #: planning_ui.py:46
 msgid "Time"
 msgstr "Время"
 
-#: main.py:9062
+#: main.py:9082
 msgid "Time remaining: {time}"
 msgstr "Осталось: {time}"
 
-#: main.py:9246
-#: main.py:9589
+#: main.py:9266
+#: main.py:9626
 #: personal_tools_ui.py:119
 #: planning_tools.py:91
 #: planning_ui.py:46
@@ -4652,12 +4813,12 @@ msgid "Title"
 msgstr "Название"
 
 #: internal_player.py:473
-#: internal_player.py:596
+#: internal_player.py:598
 #: shortcuts.py:125
 msgid "Toggle Full Screen"
 msgstr "Переключить полноэкранный режим"
 
-#: personal_tools_ui.py:488
+#: personal_tools_ui.py:501
 msgid "Too many matches. Enter a more specific channel name."
 msgstr "Слишком много результатов. Уточните название канала."
 
@@ -4666,10 +4827,11 @@ msgstr "Слишком много результатов. Уточните на�
 msgid "Topics"
 msgstr "Разделы"
 
-#: internal_player.py:2524
-#: internal_player.py:2612
-#: internal_player.py:2665
-#: internal_player.py:2681
+#: internal_player.py:2548
+#: internal_player.py:2636
+#: internal_player.py:2689
+#: internal_player.py:2706
+#: internal_player.py:2769
 msgid "Track {id}"
 msgstr "Дорожка {id}"
 
@@ -4707,17 +4869,21 @@ msgstr "Не удалось скачать манифест. Проверьте 
 msgid "Unable to download update. Please check your connection."
 msgstr "Не удалось скачать обновление. Проверьте подключение."
 
-#: main.py:8461
+#: main.py:8481
 msgid "Unable to prepare catch-up download:\n{error}"
 msgstr "Не удалось подготовить загрузку из архива:\n{error}"
 
-#: main.py:8400
+#: main.py:8420
 msgid "Unable to prepare catch-up stream:\n{error}"
 msgstr "Не удалось подготовить архивный поток:\n{error}"
 
 #: updater.py:709
 msgid "Unable to reach Forgejo. Please check your connection."
 msgstr "Не удалось связаться с Forgejo. Проверьте подключение."
+
+#: internal_player.py:2770
+msgid "Unavailable for speech"
+msgstr "Озвучивание недоступно"
 
 #: resume_dialogs.py:161
 msgid "Unavailable or ambiguous"
@@ -4736,9 +4902,9 @@ msgstr "Неожиданный ответ об учётной записи от 
 #: planning_tools.py:97
 #: recording_conflicts_ui.py:184
 #: recording_library_ui.py:62
-#: recording_library_ui.py:303
-#: recording_library_ui.py:310
-#: recording_library_ui.py:311
+#: recording_library_ui.py:307
+#: recording_library_ui.py:314
+#: recording_library_ui.py:315
 #: updater.py:967
 msgid "Unknown"
 msgstr "Неизвестно"
@@ -4747,33 +4913,37 @@ msgstr "Неизвестно"
 msgid "Unknown command."
 msgstr "Неизвестная команда."
 
-#: main.py:3296
+#: main.py:3298
 #: planning_ui.py:105
 #: recording_conflicts_ui.py:21
 #: resume_dialogs.py:88
 msgid "Unknown time"
 msgstr "Неизвестное время"
 
-#: main.py:4886
+#: recording_queue.py:158
+msgid "Upcoming recordings"
+msgstr "Записи, ожидающие воспроизведения"
+
+#: main.py:4888
 msgid "Update Available"
 msgstr "Доступно обновление"
 
-#: main.py:5318
+#: main.py:5320
 msgid "Update Complete"
 msgstr "Обновление завершено"
 
-#: main.py:5089
-#: main.py:5105
-#: main.py:5148
-#: main.py:5192
+#: main.py:5091
+#: main.py:5107
+#: main.py:5150
+#: main.py:5194
 msgid "Update Error"
 msgstr "Ошибка обновления"
 
-#: main.py:5307
+#: main.py:5309
 msgid "Update Not Completed"
 msgstr "Обновление не завершено"
 
-#: main.py:4881
+#: main.py:4883
 msgid "Update available: v{latest} (current v{current})."
 msgstr "Доступно обновление: v{latest} (текущая v{current})."
 
@@ -4781,35 +4951,35 @@ msgstr "Доступно обновление: v{latest} (текущая v{curre
 msgid "Update cancelled."
 msgstr "Обновление отменено."
 
-#: main.py:4845
-#: main.py:4857
+#: main.py:4847
+#: main.py:4859
 msgid "Update check failed: {error}"
 msgstr "Не удалось проверить обновления: {error}"
 
-#: main.py:4797
+#: main.py:4799
 msgid "Update check is already running."
 msgstr "Проверка обновлений уже выполняется."
 
-#: main.py:5147
-#: main.py:5191
+#: main.py:5149
+#: main.py:5193
 msgid "Update failed to start: {error}"
 msgstr "Не удалось запустить обновление: {error}"
 
-#: main.py:5088
-#: main.py:5104
+#: main.py:5090
+#: main.py:5106
 msgid "Update failed: {error}"
 msgstr "Не удалось выполнить обновление: {error}"
 
-#: main.py:5008
-#: main.py:5062
+#: main.py:5010
+#: main.py:5064
 msgid "Update helper is missing from this build."
 msgstr "В этой сборке отсутствует помощник обновления."
 
-#: main.py:5028
+#: main.py:5030
 msgid "Update manifest contains an unsafe asset filename."
 msgstr "Манифест обновления содержит небезопасное имя файла ресурса."
 
-#: main.py:4987
+#: main.py:4989
 msgid "Update manifest contains an unsafe installer filename."
 msgstr "Манифест обновления содержит небезопасное имя файла установщика."
 
@@ -4817,12 +4987,12 @@ msgstr "Манифест обновления содержит небезопа�
 msgid "Update manifest download URL is missing."
 msgstr "Отсутствует URL для скачивания манифеста обновления."
 
-#: main.py:4983
+#: main.py:4985
 #: updater.py:774
 msgid "Update manifest is missing required fields."
 msgstr "В манифесте обновления отсутствуют обязательные поля."
 
-#: main.py:4978
+#: main.py:4980
 msgid "Update manifest version is not newer than the current app."
 msgstr "Версия манифеста обновления не новее текущего приложения."
 
@@ -4834,28 +5004,28 @@ msgstr "Манифест обновления не найден в послед�
 msgid "Update package contains an unsafe file path."
 msgstr "Пакет обновления содержит небезопасный путь к файлу."
 
-#: main.py:5047
+#: main.py:5049
 msgid "Updated executable '{name}' not found in the package."
 msgstr "Обновлённый исполняемый файл «{name}» не найден в пакете."
 
-#: main.py:4792
-#: main.py:4797
-#: main.py:4831
-#: main.py:4846
-#: main.py:4858
+#: main.py:4794
+#: main.py:4799
+#: main.py:4833
+#: main.py:4848
+#: main.py:4860
 msgid "Updates"
 msgstr "Обновления"
 
-#: main.py:4807
+#: main.py:4809
 msgid "Updates are only available in the packaged build."
 msgstr "Обновления доступны только в упакованной сборке."
 
-#: main.py:4805
+#: main.py:4807
 msgid "Updates are only supported on Windows builds."
 msgstr "Обновления поддерживаются только в сборках для Windows."
 
-#: main.py:4901
-#: main.py:5231
+#: main.py:4903
+#: main.py:5233
 msgid "Updating {app}"
 msgstr "Обновление {app}"
 
@@ -4886,18 +5056,22 @@ msgstr "Требуются имя пользователя, пароль и URL.
 msgid "Validation"
 msgstr "Проверка"
 
-#: main.py:4995
-#: main.py:5036
+#: favorite_collections.py:75
+msgid "Variant {number}"
+msgstr "Вариант {number}"
+
+#: main.py:4997
+#: main.py:5038
 msgid "Verifying download..."
 msgstr "Проверка загрузки..."
 
-#: main.py:4999
-#: main.py:5049
+#: main.py:5001
+#: main.py:5051
 msgid "Verifying signature..."
 msgstr "Проверка подписи..."
 
-#: main.py:6616
-#: main.py:6635
+#: main.py:6622
+#: main.py:6641
 #: resume_dialogs.py:37
 msgid "Video on Demand"
 msgstr "Видео по запросу"
@@ -4920,12 +5094,12 @@ msgstr "Показать EPG..."
 msgid "Visit the projects site, projects.serrebiradio.com"
 msgstr "Открыть сайт проектов, projects.serrebiradio.com"
 
-#: internal_player.py:2076
+#: internal_player.py:2081
 msgid "Vol {value}%"
 msgstr "Громк. {value}%"
 
 #: internal_player.py:478
-#: internal_player.py:2459
+#: internal_player.py:2483
 msgid "Volume"
 msgstr "Громкость"
 
@@ -4943,7 +5117,7 @@ msgstr "Уменьшить громкость"
 msgid "Volume Up"
 msgstr "Увеличение громкости"
 
-#: main.py:7795
+#: main.py:7804
 msgid "Volume:"
 msgstr "Громкость:"
 
@@ -4961,7 +5135,7 @@ msgstr "Среда"
 
 #: client_ui.py:128
 #: client_ui.py:282
-#: internal_player.py:597
+#: internal_player.py:599
 #: shortcuts.py:100
 #: shortcuts.py:128
 msgid "What Is Playing"
@@ -5024,7 +5198,7 @@ msgstr "Xtream Codes – {name}"
 msgid "Yes"
 msgstr "Да"
 
-#: personal_tools_ui.py:668
+#: personal_tools_ui.py:678
 msgid "You can save up to 30 programme searches."
 msgstr "Можно сохранить не более 30 поисков передач."
 
@@ -5040,7 +5214,7 @@ msgstr "доступно"
 msgid "channel stream URL"
 msgstr "URL потока канала"
 
-#: main.py:9024
+#: main.py:9044
 msgid "ffmpeg exit code: {code}"
 msgstr "Код завершения ffmpeg: {code}"
 
@@ -5052,11 +5226,11 @@ msgstr "не поддерживается этим проигрывателем"
 msgid "not verified yet"
 msgstr "пока не проверено"
 
-#: main.py:7641
+#: main.py:7650
 msgid "off"
 msgstr "выключена"
 
-#: main.py:7641
+#: main.py:7650
 msgid "on"
 msgstr "включена"
 
@@ -5072,27 +5246,27 @@ msgstr "python-vlc (libVLC) недоступен."
 msgid "unknown source"
 msgstr "неизвестный источник"
 
-#: main.py:4308
+#: main.py:4310
 msgid "wxPython: {version}"
 msgstr "wxPython: {version}"
 
-#: main.py:3274
+#: main.py:3276
 msgid "x264 re-encode (MKV)"
 msgstr "Перекодирование x264 (MKV)"
 
-#: main.py:3275
+#: main.py:3277
 msgid "x264 re-encode (MP4)"
 msgstr "Перекодирование x264 (MP4)"
 
-#: main.py:9796
+#: main.py:9833
 msgid "{app} is already running, but it did not respond. Wait a moment and try again, or close it from the notification area."
 msgstr "{app} уже запущен, но не отвечает. Подождите немного и повторите попытку или закройте его из области уведомлений."
 
-#: main.py:4829
+#: main.py:4831
 msgid "{app} is up to date (v{version})."
 msgstr "{app} обновлён до последней версии (v{version})."
 
-#: main.py:5316
+#: main.py:5318
 msgid "{app} was successfully updated to v{version}."
 msgstr "{app} успешно обновлён до версии v{version}."
 
@@ -5106,11 +5280,11 @@ msgstr "{channel}. Сейчас: {current}. Далее: {next}. Запись: {r
 msgid "{count} programs"
 msgstr "Программ: {count}"
 
-#: main.py:5743
+#: main.py:5745
 msgid "{count} recording is scheduled but has not started yet.\n\n{names}\n\nThe app must stay open to start it. Exit anyway?"
 msgstr "{count} запись запланирована, но ещё не началась.\n\n{names}\n\nПриложение должно оставаться открытым, чтобы начать её. Всё равно выйти?"
 
-#: recording_library_ui.py:365
+#: recording_library_ui.py:370
 msgid "{count} recording(s). Active recordings are not listed."
 msgstr "Количество записей: {count}. Текущие записи не отображаются."
 
@@ -5150,7 +5324,11 @@ msgstr "{name} {version}"
 msgid "{player} is not configured for Linux."
 msgstr "{player} не настроен для Linux."
 
-#: main.py:9150
+#: recording_queue.py:167
+msgid "{position} of {count}: {title}"
+msgstr "{position} из {count}: {title}"
+
+#: main.py:9170
 msgid "{time} (estimated) – {message}"
 msgstr "{time} (приблизительно) – {message}"
 
@@ -5158,19 +5336,23 @@ msgstr "{time} (приблизительно) – {message}"
 msgid "{title}\n{channel}\nStarts: {time}"
 msgstr "{title}\n{channel}\nНачало: {time}"
 
-#: internal_player.py:829
+#: internal_player.py:831
 msgid "{title} - Built-in Player"
 msgstr "{title} - Встроенный плеер"
 
-#: main.py:8467
+#: main.py:8487
 msgid "{title} - {channel}"
 msgstr "{title} - {channel}"
+
+#: recording_edits_ui.py:115
+msgid "{title} — {channel}. Previous time: {old}. New time: {new}. Padding in minutes: {before} before, {after} after."
+msgstr "{title} — {channel}. Прежнее время: {old}. Новое время: {new}. Запас в минутах: {before} до начала и {after} после окончания."
 
 #: main.py:1873
 msgid "{title}, {start} to {end}"
 msgstr "{title}, {start} — {end}"
 
-#: internal_player.py:2073
+#: internal_player.py:2078
 msgid "{value}s buffer"
 msgstr "буфер {value} с"
 
@@ -5178,163 +5360,12 @@ msgstr "буфер {value} с"
 msgid "{warnings} warnings, {errors} errors and {fatals} fatal errors were logged in total."
 msgstr "Всего в журнал записано: предупреждений — {warnings}, ошибок — {errors}, критических ошибок — {fatals}."
 
-#: internal_player.py:2072
+#: internal_player.py:2077
 msgid "~{value} Mbps"
 msgstr "~{value} Мбит/с"
 
-#: main.py:6622
-#: main.py:6648
+#: main.py:6628
+#: main.py:6654
 msgid "◄ Back"
 msgstr "◄ Назад"
 
-#: recording_library_ui.py:89
-msgid "Add to Playback Queue"
-msgstr "Добавить в очередь воспроизведения"
-
-#: recording_edits_ui.py:134
-msgid "Apply this time change?"
-msgstr "Применить изменение времени?"
-
-#: media_navigation_ui.py:56
-msgid "Chapter {number}"
-msgstr "Глава {number}"
-
-#: media_navigation_ui.py:58
-msgid "Choose a chapter:"
-msgstr "Выберите главу:"
-
-#: internal_player.py:2771
-msgid "Choose a subtitle track for speech:"
-msgstr "Выберите дорожку субтитров для озвучивания:"
-
-#: recording_edits_ui.py:118
-msgid "Choose a time change to review:"
-msgstr "Выберите изменение времени для проверки:"
-
-#: recording_edits_ui.py:169
-msgid "Connections needed: {count}. Account limit: {limit}."
-msgstr "Требуется подключений: {count}. Ограничение учётной записи: {limit}."
-
-#: recording_media.py:123
-msgid "Could not read the recording's track information."
-msgstr "Не удалось прочитать сведения о дорожках записи."
-
-#: recording_media.py:82
-msgid "Could not read this subtitle track."
-msgstr "Не удалось прочитать эту дорожку субтитров."
-
-#: recording_edits_ui.py:117
-msgid "Matching programme details."
-msgstr "Сведения о передаче совпадают."
-
-#: recording_edits_ui.py:106
-msgid "No changes were found to upcoming recording times."
-msgstr "Время предстоящих записей не изменилось."
-
-#: internal_player.py:2766
-msgid "No embedded subtitle tracks were found."
-msgstr "Встроенные дорожки субтитров не найдены."
-
-#: main.py:9289
-msgid "Notify me of recording time changes after guide updates"
-msgstr "Сообщать об изменении времени записи после обновления телепрограммы"
-
-#: internal_player.py:2746 recording_media.py:91
-msgid "Open a local Matroska recording to read its embedded subtitles."
-msgstr "Откройте локальную запись в формате Matroska, чтобы прослушать встроенные субтитры."
-
-#: media_navigation_ui.py:47
-msgid "Open a local recording to browse its chapters."
-msgstr "Откройте локальную запись, чтобы просмотреть её главы."
-
-#: recording_queue.py:197
-msgid "Play Queue"
-msgstr "Воспроизвести очередь"
-
-#: internal_player.py:2259 recording_queue.py:113
-msgid "Playback queue stopped at {title}. {reason}"
-msgstr "Воспроизведение очереди остановлено на записи «{title}». {reason}"
-
-#: recording_edits_ui.py:117
-msgid "Possible time change. Check the programme."
-msgstr "Возможно, время изменилось. Проверьте передачу."
-
-#: internal_player.py:584 internal_player.py:2771
-msgid "Read Embedded Subtitle Track..."
-msgstr "Озвучить встроенную дорожку субтитров…"
-
-#: recording_media.py:69
-msgid "Reading the embedded subtitles timed out."
-msgstr "Истекло время ожидания при чтении встроенных субтитров."
-
-#: media_navigation_ui.py:40 media_navigation_ui.py:58
-msgid "Recording Chapters..."
-msgstr "Главы записи…"
-
-#: recording_queue.py:114 recording_queue.py:156
-msgid "Recording Playback Queue"
-msgstr "Очередь воспроизведения записей"
-
-#: recording_library_ui.py:91
-msgid "Recording Playback Queue..."
-msgstr "Очередь воспроизведения записей…"
-
-#: recording_library_ui.py:391
-msgid "Recordings in the playback queue: {count}."
-msgstr "Записей в очереди воспроизведения: {count}."
-
-#: recording_queue.py:196
-msgid "Remove from Queue"
-msgstr "Удалить из очереди"
-
-#: main.py:9286 recording_edits_ui.py:106 recording_edits_ui.py:118
-msgid "Review Guide Changes..."
-msgstr "Проверить изменения в телепрограмме…"
-
-#: recording_edits_ui.py:206
-msgid "Same time, different source"
-msgstr "То же время, другой источник"
-
-#: recording_queue.py:198
-msgid "Stop after Current Recording"
-msgstr "Остановить после текущей записи"
-
-#: recording_edits_ui.py:98
-msgid "The guide times changed for {count} scheduled recording(s). Open Scheduled Recordings and choose Review Guide Changes."
-msgstr "В телепрограмме изменилось время запланированных записей: {count}. Откройте запланированные записи и выберите «Проверить изменения в телепрограмме»."
-
-#: internal_player.py:2809
-msgid "The selected subtitle track is ready for speech."
-msgstr "Выбранная дорожка субтитров готова к озвучиванию."
-
-#: recording_media.py:80
-msgid "The subtitle data is too large to read."
-msgstr "Объём данных субтитров превышает предел для чтения."
-
-#: media_navigation_ui.py:54
-msgid "This recording has no chapters."
-msgstr "В этой записи нет глав."
-
-#: internal_player.py:2782 recording_media.py:148
-msgid "This subtitle track cannot be read aloud."
-msgstr "Эту дорожку субтитров нельзя озвучить."
-
-#: internal_player.py:2770
-msgid "Unavailable for speech"
-msgstr "Озвучивание недоступно"
-
-#: recording_queue.py:158
-msgid "Upcoming recordings"
-msgstr "Записи, ожидающие воспроизведения"
-
-#: favorite_collections.py:75
-msgid "Variant {number}"
-msgstr "Вариант {number}"
-
-#: recording_queue.py:167
-msgid "{position} of {count}: {title}"
-msgstr "{position} из {count}: {title}"
-
-#: recording_edits_ui.py:115
-msgid "{title} — {channel}. Previous time: {old}. New time: {new}. Padding in minutes: {before} before, {after} after."
-msgstr "{title} — {channel}. Прежнее время: {old}. Новое время: {new}. Запас в минутах: {before} до начала и {after} после окончания."
