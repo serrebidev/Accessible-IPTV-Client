@@ -18,7 +18,7 @@ import wx
 import catchup_direct
 from http_headers import normalize_header_name, split_stream_modifiers
 from i18n import gettext as _
-from modal_guard import message_box
+from modal_guard import message_box, show_modal
 import user_guide
 import shortcuts
 from playback_timer import PlaybackTimer
@@ -245,7 +245,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._subtitle_file_track = None
         self._subtitle_prior_track_ids = set()
         self._subtitle_last_time = None
-        self._subtitle_cues: List[subtitle_cues.Cue] = []
+        self._subtitle_cues: Sequence[subtitle_cues.Cue] = []
         self._cue_index: Optional[int] = None
         # The cue most recently shown, and where Previous/Next Subtitle review stands.
         self._last_cue_index: Optional[int] = None
@@ -581,6 +581,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._subtitle_menu_map: Dict[int, int] = {}
         subtitle_item = playback_menu.AppendSubMenu(self.subtitle_menu, self._shortcut_label(_("Subtitles"), "subtitles"))
         m_load_subtitle = playback_menu.Append(wx.ID_ANY, _("Load Subtitle File..."))
+        embedded = playback_menu.Append(wx.ID_ANY, _("Read Embedded Subtitle Track..."))
+        self.Bind(wx.EVT_MENU, self._read_embedded_track, embedded)
         self.speak_subtitles_item = playback_menu.AppendCheckItem(
             wx.ID_ANY, self._shortcut_label(_("Speak Subtitles"), "speak_subtitles"))
         self.speak_subtitles_item.Check(self._speak_subtitles)
@@ -628,7 +630,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             user_guide.set_menu_help(self, item, topic)
         user_guide.set_menu_help(self, audio_track_item, "audio-tracks")
         user_guide.set_menu_help(self, subtitle_item, "built-in-player")
-        for item in (m_load_subtitle, self.speak_subtitles_item,
+        for item in (m_load_subtitle, embedded, self.speak_subtitles_item,
                      m_read_subtitle, m_previous_subtitle, m_next_subtitle):
             user_guide.set_menu_help(self, item, "subtitle-speech")
         user_guide.set_menu_help(self, m_audio_device, "audio-output-device")
@@ -926,6 +928,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         close_buffer = getattr(self, '_on_buffer_stop', None)
         if manual_stop and callable(close_buffer) and not getattr(self, '_buffer_transition', False):
             close_buffer()
+        queue = getattr(self, "_recording_queue", None)
+        if manual_stop and queue is not None and queue.playing:
+            queue.stop()
         if manual_stop and self._gave_up:
             return None
         if manual_stop:
@@ -2246,6 +2251,15 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         prefix = _("Paused") if self._is_paused else self._localized_state(state_name)
 
         if state_key == "error":
+            queue = getattr(self, "_recording_queue", None)
+            ticket = getattr(self, "_recording_queue_ticket", None)
+            if ticket is not None and queue is not None and queue.ticket is ticket:
+                queue.stop()
+                self.stop(manual=True)
+                self._navigation_message(_("Playback queue stopped at {title}. {reason}").format(
+                    title=(getattr(self, "_episode_channel", {}) or {}).get("name", ""),
+                    reason=_("Playback Error")))
+                return
             if not self._restart_expected_xtream_live():
                 self._schedule_restart("playback error", adjust_buffer=True)
                 prefix = _("Reconnecting...")
@@ -2259,7 +2273,17 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 else:
                     prefix = _("Refreshing stream...")
         elif state_key == "ended":
-            if self._restart_expected_xtream_live():
+            queue = getattr(self, "_recording_queue", None)
+            ticket = getattr(self, "_recording_queue_ticket", None)
+            queued_end = (ticket is not None and queue is not None and queue.ticket is ticket
+                          and not self._manual_stop and self._current_stream_kind == "vod")
+            if queued_end:
+                # Ended is a local file's EOF. libVLC may already have reset
+                # the media clock, which is only a reconnect hint for streams.
+                self.stop(manual=False)
+                prefix = _("Ended")
+                wx.CallAfter(queue.ended, self, self._vlc_generation, ticket)
+            elif self._restart_expected_xtream_live():
                 prefix = _("Refreshing stream...")
             elif self._should_auto_recover_on_end():
                 self._schedule_restart("stream ended unexpectedly")
@@ -2674,7 +2698,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             return
         # Off retains already-shown review text; choosing another track must
         # discard the external file, including a parser result still in flight.
-        if track_id != -1 and track_id != getattr(self, "_subtitle_file_track", None):
+        if getattr(self, '_embedded_speech', False) or getattr(self, '_embedded_worker', None) or (
+                track_id != -1 and track_id != getattr(self, "_subtitle_file_track", None)):
             self._set_subtitle_cues([])
         name = _("Off") if track_id == -1 else next(
             (name for tid, name in self._subtitle_tracks() if tid == track_id),
@@ -2710,6 +2735,90 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             event.Skip()
             return
         self._select_subtitle(track_id)
+
+    def _read_embedded_track(self, _event=None):
+        from background_tasks import LatestTask
+        from recording_media import subtitle_tracks, embedded_cues
+        from subtitle_pipeline import TimedTextSource
+        channel = getattr(self, "_episode_channel", {}) or {}
+        path, recording_id = channel.get("local-recording", ""), channel.get("provider-id", "")
+        if not path or Path(path).suffix.lower() not in (".mkv", ".mka") or self._manual_stop:
+            self._navigation_message(_("Open a local Matroska recording to read its embedded subtitles."))
+            return
+        if getattr(self, "_embedded_worker", None) is not None:
+            self._embedded_worker.close()
+        worker = self._embedded_worker = LatestTask(wx.CallAfter)
+        generation = self._vlc_generation
+
+        def current():
+            return not self._destroyed and self._vlc_generation == generation and self._embedded_worker is worker
+
+        def finish_work():
+            worker.close()
+            if getattr(self, "_embedded_worker", None) is worker:
+                self._embedded_worker = None
+
+        def choose(rows, error):
+            if not current():
+                return
+            if error or not rows:
+                finish_work()
+                self._navigation_message(str(error) if error else _("No embedded subtitle tracks were found."))
+                return
+            labels = [" — ".join(filter(None, (
+                _("Track {id}").format(id=row["index"]), row["language"], row["title"], row["codec"],
+                "" if row["readable"] else _("Unavailable for speech")))) for row in rows]
+            dialog = wx.SingleChoiceDialog(self, _("Choose a subtitle track for speech:"), _("Read Embedded Subtitle Track..."), labels)
+            user_guide.set_help_topic(dialog, "subtitle-speech")
+            try:
+                if show_modal(dialog) != wx.ID_OK or not current() or dialog.GetSelection() < 0:
+                    finish_work()
+                    return
+                track = rows[dialog.GetSelection()]
+            finally:
+                dialog.Destroy()
+            if not track["readable"]:
+                finish_work()
+                self._navigation_message(_("This subtitle track cannot be read aloud."))
+                return
+            # Choosing a track replaces any external file and invalidates a
+            # parser result still in flight. Captions continue playing visually.
+            self._embedded_worker = None
+            self._set_subtitle_cues([])
+            self._embedded_worker = worker
+            version = self._subtitle_generation
+
+            def extract(canceled):
+                cues = embedded_cues(path, track, canceled)
+                if not cues or canceled():
+                    return (), None
+                source = TimedTextSource(cues, version + 1)
+                return source.cues, source
+
+            def loaded(result, failure):
+                if not current() or version != self._subtitle_generation:
+                    finish_work()
+                    return
+                finish_work()
+                if failure or not result[0]:
+                    self._navigation_message(str(failure) if failure else _("No subtitle text found in this file."))
+                    return
+                self._set_subtitle_cues(*result)
+                self._embedded_speech = True
+                self._subtitle_source_id = "embedded:" + str(track["index"])
+                self._navigation_message(_("The selected subtitle track is ready for speech."))
+
+            try:
+                worker.submit(extract, loaded)
+            except RuntimeError as error:
+                finish_work()
+                self._navigation_message(str(error))
+
+        try:
+            worker.submit(lambda canceled: subtitle_tracks(path, canceled, recording_id), choose)
+        except RuntimeError as error:
+            finish_work()
+            self._navigation_message(str(error))
 
     def _load_subtitle_file(self, _event: wx.CommandEvent) -> None:
         if getattr(self, '_live_buffer_active', False):
@@ -2783,13 +2892,19 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                     and track_id in {tid for tid, _name in self._subtitle_tracks()}):
                 self._subtitle_file_track = track_id
 
-    def _set_subtitle_cues(self, cues: List[subtitle_cues.Cue], prepared_source=None) -> None:
+    def _set_subtitle_cues(self, cues: Sequence[subtitle_cues.Cue], prepared_source=None) -> None:
         from subtitle_pipeline import TimedTextSource
+        if not cues:
+            worker = getattr(self, "_embedded_worker", None)
+            if worker is not None:
+                worker.close()
+                self._embedded_worker = None
+            self._embedded_speech = False
         next_generation = self._subtitle_generation + 1
         if prepared_source is not None:
             if (not isinstance(prepared_source, TimedTextSource)
                     or prepared_source.generation != next_generation
-                    or prepared_source.cues != tuple(cues)):
+                    or (prepared_source.cues is not cues and prepared_source.cues != tuple(cues))):
                 raise ValueError("prepared subtitle source does not match this file generation")
         else:
             prepared_source = TimedTextSource(cues, next_generation)
@@ -2828,7 +2943,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             spu = self.player.video_get_spu()
             source_id = getattr(self, "_subtitle_source_id", "")
             file_track = getattr(self, "_subtitle_file_track", None)
-            if source_id and file_track is None and spu >= 0:
+            embedded = getattr(self, "_embedded_speech", False)
+            if not embedded and source_id and file_track is None and spu >= 0:
                 # add_slave selects asynchronously. Bind only a newly added
                 # track, never whichever embedded track was active before it.
                 if spu not in self._subtitle_prior_track_ids:
@@ -2836,7 +2952,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             if source_id and file_track is not None and spu not in (-1, file_track):
                 self._set_subtitle_cues([])
                 return
-            enabled = spu != -1 and not (source_id and file_track is None)
+            enabled = embedded or (spu != -1 and not (source_id and file_track is None))
             position = PlaybackPosition(
                 position_ms=self.player.get_time(), paused=self._is_paused,
                 subtitle_delay_ms=self.player.video_get_spu_delay() // 1000,
@@ -3378,6 +3494,12 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         if getattr(self, "_resume_config", None) is not None:
             self._save_resume_checkpoint(force=True)
         self._destroyed = True
+        queue = getattr(self, "_recording_queue", None)
+        if queue is not None and queue.playing:
+            queue.stop()
+        worker = getattr(self, "_embedded_worker", None)
+        if worker is not None:
+            worker.close()
         countdown = getattr(self, "_sleep_countdown", None)
         if countdown is not None:
             countdown.set_minutes(0)

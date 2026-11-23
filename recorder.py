@@ -18,6 +18,7 @@ import re
 import subprocess
 import threading
 import time
+from recording_outcome import FINALIZE_TIMEOUT_CAP_SECONDS, TERMINATE_GRACE_SECONDS
 import recording_storage
 import storage_monitor
 import recording_library
@@ -73,8 +74,6 @@ FASTSTART_FORMATS = frozenset({"provider_mp4", "x264_mp4"})
 # only once ffmpeg is genuinely wedged.
 FINALIZE_GRACE_SECONDS = 30.0
 FINALIZE_REWRITE_BYTES_PER_SECOND = 8 * 1024 * 1024  # pessimistic: USB 2.0 / SMB share
-FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
-TERMINATE_GRACE_SECONDS = 15.0
 # On shutdown we ask FFmpeg to stop and give it the same clean-finalize window
 # every other stop gets, derived from the size of the capture.  If it is still
 # alive after that, it must be terminated: an orphan can keep a provider's only
@@ -967,6 +966,7 @@ class Recording:
         # Set when ffmpeg had to be killed before it finished writing the container,
         # which is the one case where the output file is expected to be unplayable.
         self.finalize_timed_out = False
+        self.on_finalize_budget: Optional[Callable[[float], None]] = None
         self.detached = False
         # The local relay the built-in player watches this recording through,
         # when it was started with ``share_with_player``.
@@ -1558,6 +1558,12 @@ class RecordingManager:
             # is what produced unplayable MP4s: ffmpeg had rewritten the mdat header but
             # had not yet written the moov atom, so nothing could open the result.
             timeout = finalize_timeout_seconds(rec.fmt, rec.written_path)
+            on_budget = getattr(rec, "on_finalize_budget", None)
+            if on_budget is not None:
+                try:
+                    on_budget(timeout)
+                except Exception:
+                    LOG.exception("Could not report the recording finalization budget")
             try:
                 proc.wait(timeout=timeout)
                 return

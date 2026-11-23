@@ -259,6 +259,8 @@ Una traccia scelta è ricordata per quel canale e torna la volta successiva. Per
 
 ### Lettura dei sottotitoli {#subtitle-speech}
 
+Durante la riproduzione di una registrazione MKV locale, nel menu di riproduzione scegli **Leggi ad alta voce una traccia di sottotitoli incorporata**, poi seleziona la lingua e la traccia. Se la lettura dei sottotitoli è attiva, il testo viene letto in sincronia con la registrazione. Puoi riascoltare il sottotitolo attuale o il precedente. Le tracce basate su immagini sono segnalate. La lettura termina quando cambi sorgente dei sottotitoli o interrompi la riproduzione.
+
 Il testo dei sottotitoli appare nel video quando lo stream lo fornisce. Riproduzione > Carica file sottotitoli accetta un file di sottotitoli esterno. Attiva Riproduzione > Leggi i sottotitoli ad alta voce (Maiusc+S) e la voce selezionata leggerà ogni sottotitolo di un file SRT, ASS, SSA o WebVTT caricato non appena compare, anche con la finestra del lettore nascosta. Il sottotitolo corrente è mostrato anche come testo alla fine dei controlli del lettore. Il lettore integrato non può ancora leggere ad alta voce i sottotitoli inclusi nello stream.
 
 Riproduzione > Leggi il sottotitolo attuale (C) legge il sottotitolo sullo schermo, o l'ultimo mostrato se sullo schermo non ce n'è nessuno. Riproduzione > Sottotitolo precedente (Pag su) e Sottotitolo successivo (Pag giù) scorrono i sottotitoli già mostrati, così puoi riascoltare una riga che ti è sfuggita. Non leggono mai oltre la riproduzione e funzionano sia con Leggi i sottotitoli ad alta voce attivo sia disattivato. In Windows, Opzioni > Lettura dei sottotitoli > Velocità della voce dell’applicazione… consente di scegliere un valore da -10 a 10; 0 è normale. Non modifica la velocità del contenuto né le impostazioni dello screen reader.
@@ -298,6 +300,8 @@ Le registrazioni seguono la stessa scelta. Una registrazione di solo audio tiene
 
 ## Registrazioni {#recordings}
 
+Seleziona una o più registrazioni nella raccolta e aggiungile alla coda di riproduzione. Apri la coda per verificarne l’ordine. Usa Ctrl+Freccia su o giù per spostare una voce e Canc per rimuoverla. Ogni registrazione parte dall’inizio. Arrestando il lettore si interrompe la sequenza. Puoi anche fermarla al termine della registrazione corrente. La coda si arresta se un file manca, è cambiato o è ancora in fase di registrazione. In **Capitoli della registrazione** puoi scegliere un capitolo per titolo e orario di inizio e raggiungerlo con Invio.
+
 Nella raccolta delle registrazioni, selezionare un file e aprire l’elenco degli orari dei problemi. Premere Invio su una voce per avviare il lettore integrato da quel punto. Le posizioni stimate sono segnalate. È necessario il registro corrispondente al file.
 
 Il programma può registrare qualsiasi canale in un file mentre si guarda altro, o senza nulla in riproduzione.
@@ -335,6 +339,8 @@ Registrazioni > Formato di registrazione sceglie come sono salvate le registrazi
 - Solo audio (MP3 V0, FLAC, WAV, AAC M4A o Opus): solo il suono, utile per la radio.
 
 ### Registrazioni programmate {#scheduled-recordings}
+
+Nelle registrazioni programmate, **Verifica le variazioni nella guida** cerca la trasmissione sullo stesso canale fino a sei ore prima e dopo l’inizio originale. Confronta gli orari, i margini e gli eventuali conflitti prima di confermare. Le registrazioni manuali e quelle che si ripetono a un orario fisso mantengono i loro orari. Puoi attivare un avviso dopo l’aggiornamento della guida. La ricerca di un’altra trasmissione propone anche fonti diverse allo stesso orario. Per gli account con un limite mostra le connessioni necessarie e il massimo consentito.
 
 Nel menu contestuale di una registrazione periodica in attesa, scegliere Salta solo questa volta. Dopo la conferma viene indicata la prossima registrazione. Se una registrazione è mancata, non è riuscita o è parziale, è possibile recuperarla in un file separato finché il programma è presente nell’archivio del canale e vi è una connessione di registrazione libera.
 

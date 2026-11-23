@@ -865,6 +865,7 @@ def normalize_channel_and_audio_settings(cfg: Dict) -> None:
     cfg["prevent_sleep_while_recording"] = coerce_bool(cfg.get("prevent_sleep_while_recording"), True)
     cfg["wake_for_recordings"] = coerce_bool(cfg.get("wake_for_recordings"), False)
     cfg["auto_next_episode"] = coerce_bool(cfg.get("auto_next_episode"), False)
+    cfg["notify_recording_guide_changes"] = coerce_bool(cfg.get("notify_recording_guide_changes"), False)
     cfg["favorite_collections"] = favorite_collections.normalize(cfg.get("favorite_collections"))
     cfg["saved_programme_searches"] = saved_searches.normalize(cfg.get("saved_programme_searches"))
     cfg["favorites"] = coerce_string_list(cfg.get("favorites"))

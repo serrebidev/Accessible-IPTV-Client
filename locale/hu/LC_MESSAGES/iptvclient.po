@@ -1665,7 +1665,7 @@ msgstr "Keresés"
 #: recording_edits_ui.py:105
 #: recording_edits_ui.py:135
 msgid "Find Another Airing..."
-msgstr "Másik adásidőpont keresése…"
+msgstr "Másik adásidőpont vagy forrás keresése…"
 
 #: main.py:315
 msgid "Find Next"
@@ -2285,7 +2285,7 @@ msgstr "A kért irányban nem érhető el epizód."
 
 #: recording_edits_ui.py:104
 msgid "No alternative airings were found in the next 14 days."
-msgstr "A következő 14 nap műsorában nem található másik adásidőpont."
+msgstr "Ehhez a műsorhoz a következő 14 napra nem található másik adásidőpont vagy forrás."
 
 #: internal_player.py:703
 msgid "No audio output devices were found."
@@ -2441,7 +2441,7 @@ msgstr "Még nincs elérhető feliratszöveg."
 
 #: internal_player.py:2778
 msgid "No subtitle text found in this file."
-msgstr "Ebben a fájlban nem található feliratszöveg."
+msgstr "A kiválasztott feliratban nincs felolvasható szöveg."
 
 #: internal_player.py:2897
 msgid "No subtitle text to read. Load a supported subtitle file."
@@ -2567,7 +2567,7 @@ msgstr "A program a műsornak csak egy részét rögzítette. Az elkészült fá
 
 #: main.py:7935
 msgid "Only players with a documented timed-text API can provide subtitle words. The built-in player reads SRT, ASS, SSA and WebVTT files; MPV works through the application's own session."
-msgstr "A feliratok szövege csak olyan lejátszóból vehető át, amely dokumentált programozási felületen időzítési adatokat is szolgáltat. A beépített lejátszó az SRT-, ASS-, SSA- és WebVTT-fájlokat olvassa fel; az MPV támogatását az alkalmazás által indított és felügyelt lejátszási munkamenet biztosítja."
+msgstr "Külső lejátszóból akkor vehető át a felirat szövege, ha a program dokumentált felületen az időzítési adatokat is átadja. A beépített lejátszó az SRT-, ASS-, SSA- és WebVTT-fájlok szövegét, valamint a helyi Matroska-felvételek beágyazott szöveges feliratait is fel tudja olvasni. MPV használatakor ehhez az alkalmazásból kell elindítani a lejátszást."
 
 #: recording_edits_ui.py:141
 msgid "Only the first 100 results are shown."
@@ -3106,7 +3106,7 @@ msgstr "Rögzítés hetente"
 
 #: recording_edits_ui.py:179
 msgid "Record this airing instead?"
-msgstr "Az új időpontban készüljön a felvétel?"
+msgstr "Inkább ezt az adást szeretné rögzíteni?"
 
 #: accessible_tools_ui.py:184
 #: main.py:3665
@@ -4623,7 +4623,7 @@ msgstr "Az ütemezéshez egyidejűleg {count} felvételi kapcsolat szükséges u
 #: media_navigation_ui.py:110
 #: session_tools_ui.py:21
 msgid "This stream does not support seeking."
-msgstr "Ez az adatfolyam nem támogatja az időpontra ugrást."
+msgstr "Ennél a műsornál nem lehet másik időpontra ugrani."
 
 #: planning_tools_ui.py:23
 msgid "Thursday"
@@ -5187,3 +5187,154 @@ msgstr "Körülbelül {value} Mbps"
 msgid "◄ Back"
 msgstr "◄ Vissza"
 
+#: recording_library_ui.py:89
+msgid "Add to Playback Queue"
+msgstr "Hozzáadás a lejátszási sorhoz"
+
+#: recording_edits_ui.py:134
+msgid "Apply this time change?"
+msgstr "Átütemezi a felvételt?"
+
+#: media_navigation_ui.py:56
+msgid "Chapter {number}"
+msgstr "{number}. fejezet"
+
+#: media_navigation_ui.py:58
+msgid "Choose a chapter:"
+msgstr "Válasszon fejezetet:"
+
+#: internal_player.py:2771
+msgid "Choose a subtitle track for speech:"
+msgstr "Melyik feliratsávot olvassa fel a program?"
+
+#: recording_edits_ui.py:118
+msgid "Choose a time change to review:"
+msgstr "Melyik időpontváltozást szeretné áttekinteni?"
+
+#: recording_edits_ui.py:169
+msgid "Connections needed: {count}. Account limit: {limit}."
+msgstr "Egyszerre {count} kapcsolatra van szükség. A fiókhoz beállított felső határ {limit} kapcsolat."
+
+#: recording_media.py:123
+msgid "Could not read the recording's track information."
+msgstr "Nem sikerült beolvasni a felvétel sávjainak adatait."
+
+#: recording_media.py:82
+msgid "Could not read this subtitle track."
+msgstr "A feliratsáv szövegét nem sikerült beolvasni."
+
+#: recording_edits_ui.py:117
+msgid "Matching programme details."
+msgstr "A műsor azonosító adatai egyeznek."
+
+#: recording_edits_ui.py:106
+msgid "No changes were found to upcoming recording times."
+msgstr "A program nem talált változást a vizsgált műsorok időpontjában."
+
+#: internal_player.py:2766
+msgid "No embedded subtitle tracks were found."
+msgstr "A fájlban nincs beágyazott feliratsáv."
+
+#: main.py:9289
+msgid "Notify me of recording time changes after guide updates"
+msgstr "Értesítés az időpontváltozásokról a műsorújság frissítése után"
+
+#: internal_player.py:2746 recording_media.py:91
+msgid "Open a local Matroska recording to read its embedded subtitles."
+msgstr "A beágyazott feliratok felolvasásához nyisson meg egy helyi Matroska-felvételt."
+
+#: media_navigation_ui.py:47
+msgid "Open a local recording to browse its chapters."
+msgstr "A fejezetek áttekintéséhez nyisson meg egy helyi felvételt."
+
+#: recording_queue.py:197
+msgid "Play Queue"
+msgstr "A sor lejátszása"
+
+#: internal_player.py:2259 recording_queue.py:113
+msgid "Playback queue stopped at {title}. {reason}"
+msgstr "A sor lejátszása megszakadt.\nFelvétel: {title}\n{reason}"
+
+#: recording_edits_ui.py:117
+msgid "Possible time change. Check the programme."
+msgstr "Lehetséges időpontváltozás. Ellenőrizze, hogy valóban ugyanarról a műsorról van-e szó."
+
+#: internal_player.py:584 internal_player.py:2771
+msgid "Read Embedded Subtitle Track..."
+msgstr "Beágyazott feliratsáv felolvasása…"
+
+#: recording_media.py:69
+msgid "Reading the embedded subtitles timed out."
+msgstr "A program nem tudta időben beolvasni a beágyazott feliratokat."
+
+#: media_navigation_ui.py:40 media_navigation_ui.py:58
+msgid "Recording Chapters..."
+msgstr "A felvétel fejezetei…"
+
+#: recording_queue.py:114 recording_queue.py:156
+msgid "Recording Playback Queue"
+msgstr "Felvételek lejátszási sora"
+
+#: recording_library_ui.py:91
+msgid "Recording Playback Queue..."
+msgstr "Felvételek lejátszási sora…"
+
+#: recording_library_ui.py:391
+msgid "Recordings in the playback queue: {count}."
+msgstr "A lejátszási sorban {count} felvétel van."
+
+#: recording_queue.py:196
+msgid "Remove from Queue"
+msgstr "Eltávolítás a lejátszási sorból"
+
+#: main.py:9286 recording_edits_ui.py:106 recording_edits_ui.py:118
+msgid "Review Guide Changes..."
+msgstr "Időpontváltozások áttekintése…"
+
+#: recording_edits_ui.py:206
+msgid "Same time, different source"
+msgstr "Azonos időpont, másik forrás"
+
+#: recording_queue.py:198
+msgid "Stop after Current Recording"
+msgstr "Leállítás az aktuális felvétel végén"
+
+#: recording_edits_ui.py:98
+msgid "The guide times changed for {count} scheduled recording(s). Open Scheduled Recordings and choose Review Guide Changes."
+msgstr "A frissített műsorújság alapján {count} felvétel időzítését érdemes ellenőrizni. Az Ütemezett felvételek ablakban válassza az „Időpontváltozások áttekintése…” gombot."
+
+#: internal_player.py:2809
+msgid "The selected subtitle track is ready for speech."
+msgstr "A kiválasztott feliratsáv szövege felolvasható."
+
+#: recording_media.py:80
+msgid "The subtitle data is too large to read."
+msgstr "A felirat beolvasása a méretkorlát miatt megszakadt."
+
+#: media_navigation_ui.py:54
+msgid "This recording has no chapters."
+msgstr "A felvétel nem tartalmaz fejezeteket."
+
+#: internal_player.py:2782 recording_media.py:148
+msgid "This subtitle track cannot be read aloud."
+msgstr "Ez a feliratsáv nem olvasható fel."
+
+#: internal_player.py:2770
+msgid "Unavailable for speech"
+msgstr "Nem olvasható fel"
+
+#: recording_queue.py:158
+msgid "Upcoming recordings"
+msgstr "Lejátszásra váró felvételek"
+
+#: favorite_collections.py:75
+msgid "Variant {number}"
+msgstr "{number}. változat"
+
+#: recording_queue.py:167
+msgid "{position} of {count}: {title}"
+msgstr "{position}. hely, összesen {count} felvétel – {title}"
+
+#: recording_edits_ui.py:115
+msgid "{title} — {channel}. Previous time: {old}. New time: {new}. Padding in minutes: {before} before, {after} after."
+msgstr "{title} – {channel}. Eredeti időpont: {old}. Új időpont: {new}. Ráhagyás: kezdés előtt {before} perc, befejezés után {after} perc."

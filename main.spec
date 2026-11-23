@@ -91,6 +91,8 @@ hidden_imports = [
     'planning_tools',
     'planning_tools_ui',
     'recording_library_ui',
+    'recording_queue',
+    'recording_media',
     'recording_conflicts_ui',
 ] + chardet_pipeline_hiddenimports
 

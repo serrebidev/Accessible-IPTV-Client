@@ -268,7 +268,9 @@ A track you choose is remembered for that channel and comes back next time. See 
 
 ### Subtitle speech {#subtitle-speech}
 
-Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and the selected voice reads each subtitle of a loaded SRT, ASS, SSA or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. The built-in player cannot yet read stream-embedded subtitles aloud.
+During playback of a local MKV recording, choose **Playback > Read Embedded Subtitle Track** and select the language and track you want. With **Speak Subtitles** on, the player reads the selected text in time with the recording. You can also review the current or previous cue. Image-based subtitles are identified in the list. Choosing another subtitle source or stopping playback ends reading of this track.
+
+Subtitle text appears in the video when the stream provides it. Playback > Load Subtitle File accepts an external subtitle file. Turn on Playback > Speak Subtitles (Shift+S) and the selected voice reads each subtitle of a loaded SRT, ASS, SSA or WebVTT file as it appears, also while the player window is hidden. The current subtitle is also shown as text at the end of the player controls. The built-in player cannot read subtitles embedded in live streams aloud.
 
 Playback > Read Current Subtitle (C) reads the subtitle on screen, or the last one shown when none is on screen. Playback > Previous Subtitle (Page Up) and Next Subtitle (Page Down) move through the subtitles already shown, so you can hear a line you missed again. They never read ahead of playback, and they work whether Speak Subtitles is on or off. On Windows, Options > Subtitle Speech > Application voice speed adjusts the application voice from -10 to 10 (0 is normal); it does not change playback speed or screen-reader settings.
 
@@ -307,6 +309,8 @@ Recordings follow the same choice. An audio-only recording keeps the one track y
 
 ## Recordings {#recordings}
 
+In the Recording Library, select one or more recordings and choose **Add to Playback Queue**. Open **Recording Playback Queue** to review the order. Use Ctrl+Up or Ctrl+Down to move a recording, or Delete to remove it. **Play Queue** plays each recording from the beginning. Stop in the player cancels automatic advancement. **Stop after Current Recording** lets the current file finish. If a file is missing, changed or still recording, the queue pauses at that item. When a recording contains chapters, **Playback > Recording Chapters** lists their names and start times. Select a chapter and press Enter to jump to it.
+
 In the Recording Library, select a file and open Recording Problem Times. Select a problem and press Enter to start the built-in player at that point. Estimated positions are marked. This action requires a matching recording log.
 
 The program can record any channel to a file while you watch something else, or with nothing playing at all.
@@ -344,6 +348,8 @@ Recordings > Recording Format chooses how recordings are saved:
 - Audio only (MP3 V0, FLAC, WAV, AAC M4A or Opus): the sound only, useful for radio.
 
 ### Scheduled recordings {#scheduled-recordings}
+
+In Scheduled Recordings, **Review Guide Changes** compares upcoming guide bookings with the current guide for the same channel, within six hours of the original start. It shows the old and new times and the padding. Check the programme and any conflicts before confirming. Manual and clock-based recurring recordings keep their own times. For a notice after a successful guide update, enable **Notify me of recording time changes after guide updates**. **Find Another Airing** also offers the same time on another source. When an account has a recording limit, the result shows the number of connections needed and that limit.
 
 In Scheduled Recordings, open a pending recurring recording’s context menu and choose Skip This Occurrence. The confirmation gives the next recording time. For a missed, failed or partial recording, Recover from Channel Archive downloads a separate copy if the programme is still available and the recording connection limit allows it.
 

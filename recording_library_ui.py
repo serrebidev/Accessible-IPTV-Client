@@ -86,6 +86,10 @@ class RecordingLibraryDialog(wx.Dialog):
         layout.Add(self.status, 0, wx.EXPAND | wx.ALL, 8)
         buttons = wx.WrapSizer(wx.HORIZONTAL)
         self.play = wx.Button(self, label=_("Play / Resume"))
+        self.add_queue = wx.Button(self, label=_("Add to Playback Queue"))
+        self.add_queue.Bind(wx.EVT_BUTTON, self.queue_selected)
+        self.queue_editor = wx.Button(self, label=_("Recording Playback Queue..."))
+        self.queue_editor.Bind(wx.EVT_BUTTON, self.open_queue)
         self.problems = wx.Button(self, label=_("Recording Problem Times") + "...")
         self.problems.Bind(wx.EVT_BUTTON, self.show_problems)
         self.rename = wx.Button(self, label=_("Rename Title..."))
@@ -95,7 +99,7 @@ class RecordingLibraryDialog(wx.Dialog):
         self.export = wx.Button(self, label=_("Export List to CSV..."))
         self.export.Bind(wx.EVT_BUTTON, self.export_csv)
         close = wx.Button(self, wx.ID_CLOSE, label=_("Close"))
-        for button in (self.play, self.problems, self.rename, self.remove, self.restore, self.reload, self.export, close):
+        for button in (self.play, self.add_queue, self.queue_editor, self.problems, self.rename, self.remove, self.restore, self.reload, self.export, close):
             buttons.Add(button, 0, wx.ALL, 5)
         layout.Add(buttons, 0, wx.ALIGN_RIGHT)
         self.SetSizer(layout)
@@ -185,7 +189,7 @@ class RecordingLibraryDialog(wx.Dialog):
         return paths
 
     def controls(self):
-        return (self.play, self.problems, self.remove, self.rename, self.restore, self.reload,
+        return (self.play, self.add_queue, self.problems, self.remove, self.rename, self.restore, self.reload,
                 self.folder, self.deleted, self.add_folder, self.forget_folder, self.export)
 
     def change_folder(self, _event):
@@ -351,6 +355,7 @@ class RecordingLibraryDialog(wx.Dialog):
         rows = self.selected_rows()
         ready = not self.busy and not self.filter_busy
         deleted = self.deleted.GetValue()
+        self.add_queue.Enable(ready and bool(rows) and not deleted)
         self.play.Enable(ready and len(rows) == 1 and not deleted)
         self.problems.Enable(ready and len(rows) == 1 and not deleted)
         self.rename.Enable(ready and len(rows) == 1 and not deleted)
@@ -375,6 +380,25 @@ class RecordingLibraryDialog(wx.Dialog):
         rows = tuple(self.rows)
         export_file(self, _("Export List to CSV..."), _("CSV file (*.csv)") + '|*.csv', '.csv',
                     lambda: planning_tools.recording_csv(rows))
+
+    def queue_selected(self, _event):
+        if self.busy or self.filter_busy or self.deleted.GetValue():
+            return
+        from recording_queue import get_queue
+        queue = get_queue(self.owner)
+        rows = [dict(row, directory=row.get("directory", self.directory)) for row in self.selected_rows()]
+        queue.add(rows)
+        text = _("Recordings in the playback queue: {count}.").format(count=len(queue.pending))
+        self.status.SetLabel(text)
+        import live_announce
+        live_announce.speak(text)
+
+    def open_queue(self, _event):
+        from recording_queue import get_queue, show_editor
+        queue = get_queue(self.owner)
+        if show_editor(self, queue):
+            self.close()
+            queue.start()
 
     def play_selected(self, _event):
         row = self.selected()

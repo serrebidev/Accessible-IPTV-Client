@@ -258,6 +258,8 @@ Seçtiğiniz bir parça o kanal için hatırlanır ve gelecek sefer geri gelir. 
 
 ### Altyazı seslendirme {#subtitle-speech}
 
+Yerel bir MKV kaydı oynatılırken oynatma menüsünden **Gömülü altyazı parçasını seslendir** seçeneğini açıp dili ve parçayı seçin. Altyazı seslendirme açıksa metin kayıtla eş zamanlı okunur. Geçerli veya önceki altyazıyı tekrar dinleyebilirsiniz. Görüntü tabanlı parçalar listede belirtilir. Altyazı kaynağını değiştirmek veya oynatmayı durdurmak bu parçanın seslendirilmesini sonlandırır.
+
 Akış sağladığında altyazı metni videoda görünür. Oynatma > Altyazı Dosyasını Yükle harici bir altyazı dosyasını kabul eder. Oynatma > Altyazıları seslendir (Shift+S) seçeneğini açtığınızda seçili ses, yüklenen SRT, ASS, SSA veya WebVTT dosyasındaki her altyazıyı göründüğü anda okur; oynatıcı penceresi gizliyken de. Geçerli altyazı ayrıca oynatıcı denetimlerinin sonunda metin olarak gösterilir. Yerleşik oynatıcı, akışın kendisiyle gelen altyazıları henüz seslendiremez.
 
 Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı yoksa son gösterileni okur. Oynatma > Önceki altyazı (Page Up) ve Sonraki altyazı (Page Down), daha önce gösterilen altyazılar arasında gezinir; böylece kaçırdığınız bir satırı yeniden dinleyebilirsiniz. Hiçbir zaman oynatmanın önüne geçip okumazlar ve Altyazıları seslendir açık da olsa kapalı da olsa çalışırlar. Windows’ta Seçenekler > Altyazı seslendirme > Uygulama sesinin konuşma hızı… ile -10 ile 10 arasında bir değer seçilebilir; 0 normal hızdır. Bu ayar oynatma hızını veya ekran okuyucu ayarlarını değiştirmez.
@@ -297,6 +299,8 @@ Kayıtlar aynı seçimi izler. Yalnızca ses kaydı duyacağınız tek parçayı
 
 ## Kayıtlar {#recordings}
 
+Kayıt kitaplığında bir veya birkaç kayıt seçip oynatma sırasına ekleyin. Sıralamayı gözden geçirmek için kuyruğu açın. Ctrl+Yukarı veya Aşağı Ok seçili kaydı taşır, Delete ise listeden kaldırır. Her kayıt baştan oynatılır. Oynatıcıdaki durdurma komutu sırayı durdurur. Geçerli kayıt bittiğinde durdurmayı da seçebilirsiniz. Dosya bulunamazsa, değişmişse veya kayıt hâlâ sürüyorsa sıra durur. **Kaydın bölümleri** altında başlığına ve başlangıç zamanına göre bir bölüm seçin ve o bölüme gitmek için Enter tuşuna basın.
+
 Kayıt kitaplığında bir dosya seçip kayıt sorunlarının zamanlarını açın. İstediğiniz sorun üzerinde Enter tuşuna basarak yerleşik oynatıcıyı o noktadan başlatın. Tahmini zamanlar ayrıca belirtilir. Bu işlem için dosyayla eşleşen bir kayıt günlüğü gerekir.
 
 Program, siz başka bir şey izlerken ya da hiçbir şey oynamazken herhangi bir kanalı dosyaya kaydedebilir.
@@ -334,6 +338,8 @@ Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
 - Yalnızca ses (MP3 V0, FLAC, WAV, AAC M4A ya da Opus): yalnızca ses; radyo için kullanışlı.
 
 ### Zamanlanmış kayıtlar {#scheduled-recordings}
+
+Planlanmış kayıtlarda **Rehberdeki değişiklikleri incele** seçeneği, programı aynı kanalda ilk başlangıç saatinden altı saat öncesine ve sonrasına kadar arar. Onay vermeden önce saatleri, ek kayıt süresini ve olası çakışmaları kontrol edin. Elle girilmiş ve sabit saatte yinelenen kayıtlar saatlerini korur. Rehber güncellendiğinde bildirim almayı açabilirsiniz. Alternatif yayın araması aynı saatte başka kaynaktaki yayını da gösterir. Hesaba bir sınır atanmışsa gereken bağlantı sayısı ve bu sınır sonuçlarda görünür.
 
 Henüz başlamamış, yinelenen bir kaydın bağlam menüsünden Yalnızca Bu Kaydı Atla seçeneğini kullanın. Onaydan sonra sonraki kaydın saati bildirilir. Kaçırılmış, başarısız veya kısmi bir kaydı, program kanal arşivinde durduğu ve boş bir kayıt bağlantısı bulunduğu sürece ayrı bir dosyaya indirebilirsiniz.
 

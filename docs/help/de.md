@@ -259,6 +259,8 @@ Eine gewählte Spur wird pro Sender gemerkt und kommt beim nächsten Mal wieder.
 
 ### Untertitel vorlesen {#subtitle-speech}
 
+Wählen Sie beim Abspielen einer lokalen MKV-Aufnahme im Menü **Wiedergabe** die Option **Eingebettete Untertitelspur vorlesen** und die gewünschte Sprache. Bei eingeschaltetem Vorlesen erklingt der Text synchron zur Aufnahme. Der aktuelle und der vorherige Untertitel lassen sich auch einzeln vorlesen. Bildbasierte Spuren sind gekennzeichnet. Ein Wechsel der Untertitelquelle oder das Beenden der Wiedergabe beendet das Vorlesen dieser Spur.
+
 Untertiteltext erscheint im Video, wenn der Stream ihn liefert. Wiedergabe > Untertiteldatei laden akzeptiert eine externe Untertiteldatei. Schalten Sie Wiedergabe > Untertitel vorlesen (Umschalt+S) ein, dann liest die ausgewählte Stimme jeden Untertitel einer geladenen SRT, ASS, SSA- oder WebVTT-Datei vor, sobald er erscheint, auch bei ausgeblendetem Player-Fenster. Der aktuelle Untertitel steht außerdem als Text am Ende der Player-Steuerelemente. Im integrierten Player können Untertitel aus dem Stream selbst noch nicht vorgelesen werden.
 
 Wiedergabe > Aktuellen Untertitel vorlesen (C) liest den Untertitel auf dem Bildschirm vor, oder den zuletzt angezeigten, wenn gerade keiner zu sehen ist. Wiedergabe > Vorheriger Untertitel (Bild auf) und Nächster Untertitel (Bild ab) bewegen sich durch die bereits angezeigten Untertitel, sodass Sie eine verpasste Zeile noch einmal hören. Sie lesen nie der Wiedergabe voraus und funktionieren, egal ob Untertitel vorlesen ein- oder ausgeschaltet ist. Unter Windows lässt sich die Anwendungsstimme unter Optionen > Untertitelsprache > Sprechgeschwindigkeit der Anwendungsstimme… von -10 bis 10 einstellen; 0 ist normal. Wiedergabegeschwindigkeit und Screenreader bleiben unverändert.
@@ -298,6 +300,8 @@ Aufnahmen folgen derselben Wahl. Eine reine Audioaufnahme behält die eine Spur,
 
 ## Aufnahmen {#recordings}
 
+Markieren Sie in der Aufnahmebibliothek eine oder mehrere Aufnahmen und fügen Sie sie der Wiedergabewarteschlange hinzu. Öffnen Sie die Warteschlange, um die Reihenfolge zu prüfen. Mit Strg+Pfeil nach oben oder unten verschieben Sie einen Eintrag, mit Entf entfernen Sie ihn. Jede Aufnahme beginnt am Anfang. Stopp im Player hält die Folge sofort an. Sie können auch nach der aktuellen Aufnahme anhalten. Bei einer fehlenden, geänderten oder noch laufenden Aufnahme hält die Warteschlange an. Unter **Wiedergabe > Kapitel der Aufnahme** können Sie ein Kapitel anhand von Titel und Startzeit auswählen und mit Eingabe anspringen.
+
 Wählen Sie in der Aufnahmebibliothek eine Datei und öffnen Sie die Zeitpunkte der Aufnahmeprobleme. Drücken Sie auf einer Meldung die Eingabetaste, um den internen Player an dieser Stelle zu starten. Geschätzte Zeitpunkte sind gekennzeichnet. Ein zugehöriges Aufnahmeprotokoll ist erforderlich.
 
 Das Programm kann jeden Sender in eine Datei aufnehmen, während Sie etwas anderes ansehen oder gar nichts läuft.
@@ -335,6 +339,8 @@ Aufnahmen > Aufnahmeformat wählt, wie Aufnahmen gespeichert werden:
 - Nur Audio (MP3 V0, FLAC, WAV, AAC M4A oder Opus): nur der Ton, nützlich für Radio.
 
 ### Geplante Aufnahmen {#scheduled-recordings}
+
+In den geplanten Aufnahmen prüft **Programmänderungen prüfen** die Sendungen auf demselben Kanal bis zu sechs Stunden vor und nach der ursprünglichen Startzeit. Vergleichen Sie die Zeiten, den Vor- und Nachlauf sowie mögliche Konflikte, bevor Sie eine Änderung bestätigen. Manuelle und nach Uhrzeit wiederkehrende Aufnahmen behalten ihre Zeiten. Benachrichtigungen nach einer Aktualisierung des Programmführers lassen sich hier einschalten. Die Suche nach einer anderen Ausstrahlung bietet auch denselben Termin aus einer anderen Quelle an und zeigt bei einem festgelegten Kontolimit den Bedarf und die erlaubte Zahl der Verbindungen.
 
 Bei einer anstehenden wiederkehrenden Aufnahme wählen Sie im Kontextmenü „Diesen Termin überspringen“. Nach der Bestätigung erscheint der nächste Termin. Eine verpasste, fehlgeschlagene oder unvollständige Aufnahme können Sie aus dem Senderarchiv als separate Datei nachholen, sofern die Sendung noch verfügbar und eine Aufnahmeverbindung frei ist.
 

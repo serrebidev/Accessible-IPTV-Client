@@ -306,7 +306,9 @@ A program megjegyzi az adott csatornához kézzel kiválasztott hangsávot, és 
 
 ### Feliratfelolvasás {#subtitle-speech}
 
-Ha az adás tartalmaz feliratot, annak szövege a képen jelenik meg. Külső állomány megnyitására a Lejátszás > Feliratfájl betöltése parancs szolgál. A Lejátszás > Feliratok felolvasása (Shift+S) bekapcsolásával a betöltött SRT-, ASS-, SSA- vagy WebVTT-fájl bejegyzései a megjelenésük időpontjában hallhatók, a lejátszóablak elrejtése után is. Az aktuális szöveg a kezelőelemek után külön mezőben szintén megjelenik. A beépített lejátszó az adásba ágyazott feliratokat jelenleg nem olvassa fel. Az ASS/SSA-fájlok feldolgozásakor a párbeszédek szövege hangzik el; a formázási utasítások és a vektoros rajzelemek nem kerülnek felolvasásra.
+Helyi MKV- vagy MKA-felvétel lejátszásakor a **Lejátszás** menüben válassza a **Beágyazott feliratsáv felolvasása…** parancsot. A sáv kiválasztásában a nyelvkód és a cím is segíthet, ha a fájl tartalmazza ezeket az adatokat. A képként tárolt feliratok mellett a **Nem olvasható fel** jelzés áll. Ha a **Feliratok felolvasása** be van kapcsolva, a szöveg a felvétellel szinkronban hangzik el. Az aktuális és az előző felirat külön is meghallgatható. Másik feliratforrás kiválasztásakor vagy a lejátszás leállításakor véget ér az addig használt sáv felolvasása.
+
+Külső SRT-, ASS-, SSA- vagy WebVTT-fájlt a **Lejátszás** menü **Feliratfájl betöltése…** parancsával nyithat meg. A Shift+S billentyűparancs be- vagy kikapcsolja az automatikus felolvasást. Bekapcsolt állapotban a szöveg a lejátszóablak elrejtése után is a megadott időzítéssel hangzik el. Az aktuális felirat a kezelőelemek után külön szövegmezőben is elérhető. ASS- és SSA-fájloknál a program a párbeszédeket olvassa fel. A formázási utasításokat és a vektoros rajzokat kihagyja. Az élő adások beágyazott feliratait a beépített lejátszó csak a képernyőn tudja megjeleníteni.
 
 A Beállítások > Feliratfelolvasás almenüben kiválaszthatja, hogy a képernyőolvasó vagy az alkalmazás saját beszédhangja szólaltassa meg a szöveget. Utóbbi kizárólag Windows rendszeren, SAPI-támogatással használható. A felolvasási sebességet a Beállítások > Feliratfelolvasás > Az alkalmazás felolvasási sebessége… paranccsal módosíthatja. A -10 és +10 közötti skálán a 0 az alapérték. A választás a műsor ütemét és a képernyőolvasó beszédét nem befolyásolja.
 
@@ -357,6 +359,12 @@ A felvételek ugyanezeket a szabályokat követik. Hangfelvételnél csak az a s
 
 ## Felvételek {#recordings}
 
+A **Felvételtárban** jelöljön ki egy vagy több felvételt, majd nyomja meg a **Hozzáadás a lejátszási sorhoz** gombot. A **Felvételek lejátszási sora…** gombbal megnyithatja a listát. Minden címnél megtudhatja, hányadik helyen áll, és összesen hány felvétel vár lejátszásra. A Ctrl nyomva tartása mellett a felfelé mutató nyíllal előrébb, a lefelé mutatóval hátrébb helyezheti a kijelölt elemet. A Delete billentyűvel kiveheti a sorból.
+
+**A sor lejátszása** gombbal indíthatja el az első felvételt. A program minden felvételt az elejétől játszik le. Amikor az egyik véget ér, a következő automatikusan elindul. A lejátszó **Leállítás** parancsával azonnal megállíthatja az egész sort. Ha a megkezdett műsort még szeretné végighallgatni vagy végignézni, a sor ablakában válassza a **Leállítás az aktuális felvétel végén** gombot. Ha a következő fájl hiányzik, megváltozott vagy még készül, a lejátszás ennél az elemnél megáll.
+
+**A felvétel fejezetei…** parancs a beépített lejátszó **Lejátszás** menüjében található. Ha a fájl tartalmaz fejezeteket, a lista a címüket és a kezdési idejüket is megadja. Cím nélküli fejezetnél a sorszám jelenik meg. Jelölje ki a kívánt részt, majd az Enter billentyűvel ugorjon az elejére.
+
 A program bármely csatorna adását képes fájlba rögzíteni akkor is, ha közben másik csatornát néz, vagy éppen semmilyen lejátszás nincs folyamatban.
 
 - A Felvételek > Rögzítés indítása (Ctrl+Shift+R) a főablakban kijelölt csatorna rögzítését kezdi meg. A parancs ismételt használata leállítja a folyamatot.
@@ -405,6 +413,10 @@ Kizárólag hangot tartalmazó adás felismerésekor a program hangrögzítési 
 
 ### Ütemezett felvételek {#scheduled-recordings}
 
+Az **Ütemezett felvételek** ablakban az **Időpontváltozások áttekintése…** gombbal ellenőrizheti, változott-e valamelyik felvételre kijelölt műsor adásideje. A program az eredeti csatornán, a korábban meghirdetett kezdés előtti és utáni hat órában keresi az adást. A listában a régi és az új időpont mellett a ráhagyás is szerepel. Bizonytalan egyezésnél ellenőrizze, hogy valóban a keresett műsorról van-e szó. Kiválasztás után az esetleges ütközéseket is áttekintheti. A felvétel időzítése csak akkor módosul, ha elfogadja a változtatást. A kézzel időzített vagy rögzített időpontban ismétlődő felvételek az eredeti ütemezést követik.
+
+Ha automatikus jelzést is szeretne, kapcsolja be az **Értesítés az időpontváltozásokról a műsorújság frissítése után** beállítást. A program a műsoradatok sikeres betöltését követően ellenőrzi az érintett foglalásokat.
+
 Egy későbbi műsor rögzítéséhez válassza a Felvétel ütemezése parancsot a Műsorújság megtekintése vagy a Most adásban ablakban, illetve a megfelelő keresési találat helyi menüjében. Ha ugyanezt közvetlenül egy csatorna helyi menüjéből választja, először annak műsorújsága nyílik meg, hogy kijelölhesse a kívánt műsort. Műsorújság nélkül a Felvételek > Felvétel ütemezése időpont alapján… paranccsal adhatja meg a kezdést és a befejezést.
 
 A Felvételek > Ütemezett felvételek… ablak valamennyi ütemezett, folyamatban lévő és befejezett felvételt felsorolja az időponttal, a címmel, a csatornával, az állapottal és a formátummal együtt. Az Időpontok módosítása… gombbal egy kijelölt, még el nem indult felvétel kezdését és befejezését, illetve egy folyamatban lévő felvétel befejezési időpontját módosíthatja.
@@ -437,7 +449,7 @@ Az Ütemezett felvételek ablak Felvételi ütközések… gombja a kijelölt be
 
 A Felvétel ütemezése időpont alapján ablakban kijelölheti az ismétlés napjait. Meglévő bejegyzésnél az Ütemezett felvételek > Ismétlés a hét kijelölt napjain… paranccsal válassza ki ezeket; ehhez egyetlen várakozó felvételt jelöljön ki, amely nem sorozatfelvételi szabály. Ha egyik nap sincs kijelölve, a rögzítés egyszeri. Új felvételnél az első kezdési időpontnak is a kijelölt napok egyikére kell esnie. A további alkalmak a helyi műsoridőpontokat követik, az éjszakába átnyúló időszakot és a ráhagyást is megőrizve. A tavaszi óraátállítás miatt nem létező időszakot a program kihagyja. Az alkalmazást nyitva kell tartani; a meglévő felvételi kapcsolati korlátok továbbra is érvényesek.
 
-A „Másik adásidőpont keresése…” parancs a még el nem indult felvétel helyi menüjéből és a „Felvételi ütközések” ablakból is elérhető. A program a következő 14 nap műsorában keres. Az „Ugyanaz az epizód” jelölés egyező epizódszámot jelent. A „Lehetséges ismétlés” felirat azonos című adást jelöl, amelynek a tartalma eltérhet az eredetiétől. Jóváhagyás előtt ellenőrizheti a csatornát, az időpontot és az esetleges ütközéseket. Ismétlődő felvételnél csak a kijelölt alkalom időpontja változik.
+A **Másik adásidőpont vagy forrás keresése…** parancs a még el nem indult felvétel helyi menüjéből és a **Felvételi ütközések** ablakból is elérhető. A program a következő 14 nap műsorában keres. A találatok között az eredetivel azonos időben kezdődő adás is szerepelhet, ha más forrásból elérhető. Az **Ugyanaz az epizód** jelzés egyező azonosítókra utal. A program a részek sorszámát is figyelembe veszi, ha az szerepel a műsorújságban. A **Lehetséges ismétlés** felirat azonos című adást jelöl, amelynek a tartalma eltérhet az eredetiétől. Ha a fiókhoz felvételi korlátot állított be, a találat mellett a szükséges egyidejű kapcsolatok száma és a megadott felső határ is szerepel. Jóváhagyás előtt ellenőrizheti a forrást, a csatornát, az időpontot és az esetleges ütközéseket. Ismétlődő felvételnél a módosítás csak a kijelölt alkalomra vonatkozik.
 
 ### Ütemezési ráhagyás {#schedule-padding}
 

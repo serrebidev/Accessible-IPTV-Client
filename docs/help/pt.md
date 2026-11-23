@@ -259,6 +259,8 @@ Uma faixa que você escolhe é lembrada para aquele canal e volta na próxima ve
 
 ### Leitura de legendas {#subtitle-speech}
 
+Ao reproduzir uma gravação MKV local, escolha **Ler faixa de legendas incorporada em voz alta** no menu de reprodução e selecione o idioma e a faixa. Com a leitura de legendas ativada, o texto é lido em sincronia com a gravação. Também é possível ouvir novamente a legenda atual ou a anterior. As faixas baseadas em imagens são identificadas na lista. Trocar a origem das legendas ou parar a reprodução encerra a leitura da faixa.
+
 O texto da legenda aparece no vídeo quando o stream o fornece. Reprodução > Carregar arquivo de legenda aceita um arquivo de legenda externo. Ative Reprodução > Ler legendas em voz alta (Shift+S) e a voz selecionada lerá cada legenda de um arquivo SRT, ASS, SSA ou WebVTT carregado assim que ela aparecer, também com a janela do player oculta. A legenda atual também é mostrada como texto no final dos controles do player. O player integrado ainda não pode ler em voz alta as legendas incluídas no próprio stream.
 
 Reprodução > Ler a legenda atual (C) lê a legenda que está na tela, ou a última mostrada quando não há nenhuma na tela. Reprodução > Legenda anterior (Page Up) e Próxima legenda (Page Down) percorrem as legendas já mostradas, para você ouvir de novo uma linha que perdeu. Elas nunca leem à frente da reprodução e funcionam com Ler legendas em voz alta ativado ou desativado. No Windows, Opções > Leitura de legendas > Velocidade da voz da aplicação… permite escolher um valor de -10 a 10; 0 é normal. Isso não altera a velocidade de reprodução nem as configurações do leitor de tela.
@@ -298,6 +300,8 @@ As gravações seguem a mesma escolha. Uma gravação de só áudio mantém a ú
 
 ## Gravações {#recordings}
 
+Na biblioteca, selecione uma ou mais gravações e adicione-as à fila de reprodução. Abra a fila para conferir a ordem. Use Ctrl+Seta para cima ou para baixo para mover um item e Delete para removê-lo. Cada gravação começa do início. Parar o reprodutor interrompe a sequência. Também é possível parar ao terminar a gravação atual. A fila para se o arquivo estiver ausente, tiver sido alterado ou ainda estiver sendo gravado. Em **Capítulos da gravação**, escolha um capítulo pelo título e pela hora de início e pressione Enter para acessá-lo.
+
 Na biblioteca de gravações, selecione um arquivo e abra os horários dos problemas de gravação. Pressione Enter em uma ocorrência para iniciar o reprodutor integrado a partir desse ponto. As posições estimadas são identificadas. É necessário o registro correspondente ao arquivo.
 
 O programa pode gravar qualquer canal para um arquivo enquanto você assiste outra coisa, ou sem nada reproduzindo.
@@ -335,6 +339,8 @@ Gravações > Formato de gravação escolhe como as gravações são salvas:
 - Somente áudio (MP3 V0, FLAC, WAV, AAC M4A ou Opus): só o som, útil para rádio.
 
 ### Gravações agendadas {#scheduled-recordings}
+
+Nas gravações agendadas, **Revisar alterações no guia** procura o programa no mesmo canal até seis horas antes e depois do início original. Confira os horários, as margens e os possíveis conflitos antes de confirmar. As gravações manuais e as que se repetem em horário fixo mantêm seus horários. Você pode ativar um aviso após a atualização do guia. A busca por outra exibição também oferece fontes diferentes no mesmo horário. Se a conta tiver um limite, o resultado mostra as conexões necessárias e o máximo permitido.
 
 No menu de contexto de uma gravação recorrente pendente, escolha Pular apenas esta ocorrência. Após a confirmação, o programa informa a próxima gravação. É possível recuperar uma gravação perdida, incompleta ou com falha em um arquivo separado se o programa ainda estiver no arquivo do canal e houver uma conexão de gravação disponível.
 

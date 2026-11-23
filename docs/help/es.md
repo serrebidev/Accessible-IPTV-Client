@@ -259,6 +259,8 @@ Una pista que elija se recuerda para ese canal y vuelve la próxima vez. Para el
 
 ### Lectura de subtítulos {#subtitle-speech}
 
+Al reproducir una grabación MKV local, elija **Leer una pista de subtítulos integrada** en el menú de reproducción y seleccione el idioma y la pista. Con la lectura de subtítulos activada, el texto se escucha sincronizado con la grabación. También puede volver a escuchar el subtítulo actual o el anterior. Las pistas basadas en imágenes se indican en la lista. La lectura de esta pista termina al cambiar la fuente de subtítulos o detener la reproducción.
+
 El texto de los subtítulos aparece en el vídeo cuando la transmisión lo proporciona. Reproducción > Cargar archivo de subtítulos acepta un archivo de subtítulos externo. Active Reproducción > Leer subtítulos en voz alta (Mayús+S) y la voz seleccionada leerá cada subtítulo de un archivo SRT, ASS, SSA o WebVTT cargado cuando aparezca, también con la ventana del reproductor oculta. El subtítulo actual se muestra además como texto al final de los controles del reproductor. El reproductor integrado todavía no puede leer en voz alta los subtítulos incluidos en la transmisión.
 
 Reproducción > Leer el subtítulo actual (C) lee el subtítulo que está en pantalla, o el último que se mostró si no hay ninguno en pantalla. Reproducción > Subtítulo anterior (Re Pág) y Subtítulo siguiente (Av Pág) recorren los subtítulos ya mostrados, para que pueda volver a oír una línea que se le escapó. Nunca leen por delante de la reproducción y funcionan tanto si Leer subtítulos en voz alta está activado como si no. En Windows, Opciones > Lectura de subtítulos > Velocidad de la voz de la aplicación… permite ajustar la velocidad de -10 a 10; 0 es normal. No modifica la velocidad de reproducción ni los ajustes del lector de pantalla.
@@ -298,6 +300,8 @@ Las grabaciones siguen la misma elección. Una grabación de solo audio conserva
 
 ## Grabaciones {#recordings}
 
+Seleccione una o varias grabaciones en la biblioteca y añádalas a la cola de reproducción. Abra la cola para comprobar el orden. Use Ctrl+Flecha arriba o abajo para mover la selección y Supr para quitarla. Cada grabación se reproduce desde el principio. Detener la reproducción interrumpe la secuencia. También puede dejar que termine la grabación actual. La cola se detiene si un archivo falta, ha cambiado o aún se está grabando. En **Capítulos de la grabación**, elija un capítulo por su nombre y hora de inicio y pulse Intro para ir a él.
+
 En la biblioteca de grabaciones, seleccione un archivo y abra las horas de las incidencias de grabación. Pulse Intro sobre una incidencia para iniciar el reproductor integrado desde ese punto. Las posiciones aproximadas se indican como tales. Se necesita el registro correspondiente al archivo.
 
 El programa puede grabar cualquier canal a un archivo mientras ve otra cosa, o sin reproducir nada.
@@ -335,6 +339,8 @@ Grabaciones > Formato de grabación elige cómo se guardan las grabaciones:
 - Solo audio (MP3 V0, FLAC, WAV, AAC M4A u Opus): solo el sonido, útil para radio.
 
 ### Grabaciones programadas {#scheduled-recordings}
+
+En las grabaciones programadas, **Revisar los cambios de la guía** busca en el mismo canal hasta seis horas antes y después del inicio original. Compare los horarios, los márgenes y los posibles conflictos antes de confirmar. Las grabaciones manuales y las que se repiten a una hora fija conservan su horario. Puede activar un aviso tras actualizar la guía. Al buscar otra emisión, también se ofrecen fuentes que emiten a la misma hora. Si la cuenta tiene un límite, se muestran las conexiones necesarias y el máximo permitido.
 
 En el menú contextual de una grabación periódica pendiente, elija Omitir solo esta vez. Tras confirmar, se indica la próxima grabación. Si una grabación se perdió, falló o quedó incompleta, puede recuperarla en un archivo aparte mientras el programa siga disponible en el archivo del canal y haya una conexión de grabación libre.
 

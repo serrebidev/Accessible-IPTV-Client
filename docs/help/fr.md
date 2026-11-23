@@ -259,6 +259,8 @@ Une piste choisie est mémorisée pour cette chaîne et revient la prochaine foi
 
 ### Lecture des sous-titres {#subtitle-speech}
 
+Pendant la lecture d’un enregistrement MKV local, choisissez **Lire une piste de sous-titres intégrée à voix haute** dans le menu de lecture, puis sélectionnez la langue et la piste. Activez la lecture à voix haute des sous-titres pour entendre le texte en synchronisation avec l’enregistrement. Vous pouvez aussi réécouter le sous-titre actuel ou précédent. Les pistes constituées d’images sont signalées. Changer de source de sous-titres ou arrêter la lecture met fin à la lecture de cette piste.
+
 Le texte des sous-titres apparaît dans la vidéo lorsque le flux le fournit. Lecture > Charger le fichier de sous-titres accepte un fichier de sous-titres externe. Activez Lecture > Lire les sous-titres à voix haute (Maj+S) et la voix sélectionnée lit chaque sous-titre d'un fichier SRT, ASS, SSA ou WebVTT chargé au moment où il apparaît, même lorsque la fenêtre du lecteur est masquée. Le sous-titre en cours s'affiche aussi sous forme de texte à la fin des commandes du lecteur. Le lecteur intégré ne peut pas encore lire à voix haute les sous-titres inclus dans le flux.
 
 Lecture > Lire le sous-titre actuel (C) lit le sous-titre à l'écran, ou le dernier affiché s'il n'y en a aucun à l'écran. Lecture > Sous-titre précédent (Page précédente) et Sous-titre suivant (Page suivante) parcourent les sous-titres déjà affichés, pour réentendre une ligne manquée. Ils ne lisent jamais en avance sur la lecture et fonctionnent que Lire les sous-titres à voix haute soit activé ou non. Sous Windows, Options > Lecture des sous-titres > Débit de la voix de l’application… règle le débit de -10 à 10 ; 0 correspond au débit normal. La vitesse de lecture du média et les réglages du lecteur d’écran restent inchangés.
@@ -298,6 +300,8 @@ Les enregistrements suivent le même choix. Un enregistrement audio seul garde l
 
 ## Enregistrements {#recordings}
 
+Sélectionnez un ou plusieurs enregistrements dans la bibliothèque et ajoutez-les à la file de lecture. Ouvrez la file pour en vérifier l’ordre. Déplacez la sélection avec Ctrl+Flèche haut ou bas et retirez-la avec Suppr. Chaque enregistrement démarre au début. L’arrêt du lecteur interrompt la séquence. Vous pouvez aussi demander l’arrêt à la fin de l’enregistrement en cours. La file s’arrête si un fichier manque, a changé ou est encore en cours d’enregistrement. Dans **Chapitres de l’enregistrement**, sélectionnez un chapitre d’après son nom et son heure de début, puis appuyez sur Entrée.
+
 Dans la bibliothèque d’enregistrements, sélectionnez un fichier et ouvrez la liste des incidents horodatés. Appuyez sur Entrée sur un incident pour lancer le lecteur intégré à cet endroit. Les positions estimées sont signalées. Le journal correspondant au fichier est nécessaire.
 
 Le programme peut enregistrer n'importe quelle chaîne dans un fichier pendant que vous regardez autre chose, ou sans rien lire du tout.
@@ -335,6 +339,8 @@ Enregistrements > Format d'enregistrement choisit comment les enregistrements so
 - Audio seulement (MP3 V0, FLAC, WAV, AAC M4A ou Opus) : le son seul, utile pour la radio.
 
 ### Enregistrements programmés {#scheduled-recordings}
+
+Dans les enregistrements programmés, **Vérifier les changements du guide** recherche l’émission sur la même chaîne jusqu’à six heures avant ou après l’heure initiale. Comparez les horaires, les marges et les éventuels conflits avant de confirmer. Les enregistrements manuels et ceux qui se répètent à heure fixe conservent leurs horaires. Vous pouvez activer les notifications après une mise à jour du guide. La recherche d’une autre diffusion inclut celles proposées à la même heure par une autre source. Si le compte a une limite, le nombre de connexions nécessaires et le maximum autorisé sont indiqués.
 
 Dans le menu contextuel d’un enregistrement récurrent en attente, choisissez Ignorer uniquement cette occurrence. Après confirmation, l’application indique le prochain horaire. Vous pouvez récupérer un enregistrement manqué, en échec ou partiel dans un fichier distinct si l’émission figure encore dans les archives et qu’une connexion d’enregistrement est disponible.
 

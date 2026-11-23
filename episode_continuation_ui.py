@@ -17,7 +17,8 @@ def prepare(owner, frame, channel):
     frame._episode_navigation_token = object()
     frame._episode_navigation_busy = False
     frame._episode_channel = copy.deepcopy(channel or {})
-    frame._episode_queue = copy.deepcopy(getattr(owner, "_vod_episode_queue", ()))
+    frame._episode_queue = () if frame._episode_channel.get("local-recording") else copy.deepcopy(
+        getattr(owner, "_vod_episode_queue", ()))
 
 
 def navigate(player, direction):

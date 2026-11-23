@@ -135,7 +135,7 @@ from client_recording import RecordingReportsMixin, _recording_produced_media  #
 from client_ui import (  # noqa: F401 - re-exported: tests read main.*
     _MAIN_ACCEL_SHOW_PLAYER_ID, UiMixin, _main_window_accelerator_entries,
 )
-from playlist_index import PlaylistIndex
+from playlist_index import PlaylistIndex, channel_number
 from dialogs_misc import (
     AccessibleAboutDialog, AccountInfoDialog, AudioTrackPreferenceDialog,
     CastDiscoveryDialog, CatchupDialog, ChangelogDialog,
@@ -2943,19 +2943,18 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 or _("IPTV Stream"))
 
     def _remember_played_channel(self, channel: Optional[Dict[str, str]]) -> None:
-        key = favorites.channel_key(channel)
+        key = favorites.history_key(channel)
         if not key:
             return
         recent = favorites.normalize(getattr(self, "recent_channel_keys", []))
         if recent and recent[0] == key:
             return
-        self.recent_channel_keys = ([key] + [item for item in recent if item != key])[:20]
+        self.recent_channel_keys = ([key] + [item for item in recent if item not in (key, favorites.channel_key(channel))])[:20]
         self.config["recent_channels"] = self.recent_channel_keys
         save_config(self.config)
 
     def _recent_channels(self) -> List[Dict[str, str]]:
-        by_key = {favorites.channel_key(ch): ch for ch in self.all_channels}
-        return [by_key[key] for key in self.recent_channel_keys if key in by_key]
+        return favorites.history_channels(self.recent_channel_keys, self.all_channels)
 
     def _play_live_channel(self, channel: Dict[str, str]) -> None:
         try:
@@ -2969,12 +2968,12 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                             channel=channel)
 
     def _play_previous_channel(self, _event=None) -> None:
-        recent = self._recent_channels()
-        if len(recent) < 2:
+        recent = favorites.history_channels(self.recent_channel_keys[1:], self.all_channels)
+        if not recent:
             message_box(_("No previous channel is available."), _("Previous Channel"),
                         wx.OK | wx.ICON_INFORMATION)
             return
-        self._play_live_channel(recent[1])
+        self._play_live_channel(recent[0])
 
     def _show_recent_channels(self, _event=None) -> None:
         recent = self._recent_channels()
@@ -2984,7 +2983,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             return
         dlg = wx.SingleChoiceDialog(self, _("Choose a channel to play:"),
                                     _("Recently Watched"),
-                                    [self._channel_display_name(ch) for ch in recent])
+                                    favorites.history_labels(recent, {
+                                        _source_scope_id(src): self._scope_choice_label(src)
+                                        for src in self._scoped_sources()}))
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 self._play_live_channel(recent[dlg.GetSelection()])
@@ -3003,17 +3004,18 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             value = dlg.GetValue().strip()
         finally:
             dlg.Destroy()
-        if not value.isdecimal() or int(value) < 1:
+        digits = channel_number(value)
+        if not digits:
             message_box(_("Enter a positive channel number."),
                         _("Go to Channel Number"), wx.OK | wx.ICON_WARNING)
             return
-        number = int(value)
-        channel = next((ch for ch in channels
-                        if str(ch.get("number") or ch.get("tvg-chno") or "") == value), None)
-        if channel is None and number <= len(channels):
-            channel = channels[number - 1]
+        channel = next((ch for ch in channels if channel_number(ch.get("number") or ch.get("tvg-chno")) == digits), None)
+        if channel is None and len(digits) <= len(str(len(channels))) and int(digits) <= len(channels):
+            at_position = channels[int(digits) - 1]
+            if not channel_number(at_position.get("number") or at_position.get("tvg-chno")):
+                channel = at_position
         if channel is None:
-            message_box(_("Channel number {number} was not found.").format(number=number),
+            message_box(_("Channel number {number} was not found.").format(number=digits),
                         _("Go to Channel Number"), wx.OK | wx.ICON_INFORMATION)
             return
         self._play_live_channel(channel)
@@ -6368,18 +6370,16 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             frame._save_resume_checkpoint(force=True)
         # All configured sources, independent of the current playlist filter.
         source_generation = self._playlist_load_token
-        channels = [dict(ch) for ch in self.all_channels]
-        channels.extend(dict(ch) for ch in playback_resume.playable_items(self.vod_groups))
-        for row in getattr(self, "displayed", []):
-            if isinstance(row, dict) and isinstance(row.get("data"), dict):
-                channels.append(dict(row["data"]))
+        # Playlist reloads replace these catalogues. Traverse them only when
+        # the dialog's worker needs to resolve an entry without a provider locator.
+        live, groups, displayed = self.all_channels, self.vod_groups, getattr(self, "displayed", ())
         clients = {pid: client for pid, client in self.provider_clients.items()
                    if isinstance(client, XtreamCodesClient)}
 
         import recording_library
-        directories = recording_library.folders(self.config)
+        folder_config = dict(self.config)
         local_keys = set(playback_resume.normalize(self.config.get('recording_playback_bookmarks')))
-        active = [rec.written_path for rec in self.recorder.list_active()] if hasattr(self, 'recorder') else []
+        recorder = getattr(self, 'recorder', None)
 
         def apply_entries(entries, store_key="playback_bookmarks"):
             previous = self.config.get(store_key, {})
@@ -6415,8 +6415,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
         def resolve(key, entries):
             if key in local_keys:
-                return recording_library.resolve_resume(key, entries, directories, active)
-            return playback_resume.resolve_current(key, entries, channels, clients)
+                active = [rec.written_path for rec in recorder.list_active()] if recorder else []
+                return recording_library.resolve_resume(key, entries, recording_library.folders(folder_config), active)
+            def catalogues():
+                from itertools import chain
+                return chain(live, playback_resume.playable_items(groups),
+                             (row["data"] for row in displayed if isinstance(row, dict)
+                              and isinstance(row.get("data"), dict)))
+            return playback_resume.resolve_current(key, entries, catalogues, clients)
 
         dialog = ContinueWatchingDialog(self, self.config, save_entries, resolve)
         try:
@@ -6856,6 +6862,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 self.config["epg_last_sources_hash"] = self._hash_epg_sources(imported)
                 save_config(self.config)
                 self._ensure_dvr_scheduler(start=True).request_series_scan()
+                if self.config.get("notify_recording_guide_changes") is True:
+                    from recording_edits_ui import review_guide_changes
+                    wx.CallAfter(review_guide_changes, self, self, lambda: None, notify_only=True)
                 scan_searches = getattr(self, '_scan_saved_searches', None)
                 if callable(scan_searches):
                     self._invalidate_saved_searches()
@@ -8005,7 +8014,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         _buffer_bypass: bool = False,
         force_internal: bool = False,
         initial_position_ms: Optional[int] = None,
+        _queue_ticket=None,
     ):
+        queue = getattr(self, "_recording_queue", None)
+        if _queue_ticket is not None:
+            if queue is None or queue.ticket is not _queue_ticket:
+                return
+        elif queue is not None and queue.playing:
+            queue.stop()
         self._continuation_request = getattr(self, "_continuation_request", 0) + 1
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
@@ -8141,6 +8157,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 frame._buffer_owned_url = url if buffered and buffered['url'] == url else None
                 import episode_continuation_ui
                 episode_continuation_ui.prepare(self, frame, channel)
+                frame._recording_queue = queue
+                frame._recording_queue_ticket = _queue_ticket
                 frame.play(
                     url,
                     display_title,
@@ -8162,8 +8180,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 if stream_kind == "live":
                     self._remember_played_channel(channel)
                 self._sync_internal_player_record_state()
-                if not show_internal_player:
+                if not show_internal_player and (focus_player or _queue_ticket is None):
                     wx.CallAfter(self._restore_main_focus)
+                if _queue_ticket is not None:
+                    return True
             except Exception as err:
                 frame._resume_prepared = None
                 self._subtitle_session.cancel_session()
@@ -9262,6 +9282,22 @@ class ScheduledRecordingsDialog(wx.Dialog):
         conflicts_btn = wx.Button(panel, label=_("Recording Conflicts..."))
         btn_sizer.Insert(1, conflicts_btn, 0, wx.RIGHT, 5)
         conflicts_btn.Bind(wx.EVT_BUTTON, self._show_conflicts)
+        from recording_edits_ui import review_guide_changes
+        review = wx.Button(panel, label=_("Review Guide Changes..."))
+        review.Bind(wx.EVT_BUTTON, lambda evt: review_guide_changes(self, parent, self.refresh))
+        btn_sizer.Add(review, 0, wx.RIGHT, 5)
+        notify = wx.CheckBox(panel, label=_("Notify me of recording time changes after guide updates"))
+        notify.SetValue(getattr(parent, "config", {}).get("notify_recording_guide_changes") is True)
+        def toggle_notice(event):
+            value = notify.GetValue()
+            try:
+                parent._save_tool_setting("notify_recording_guide_changes", lambda old: value)
+            except OSError as error:
+                notify.SetValue(not value)
+                from personal_tools_ui import error_box
+                error_box(self, error)
+        notify.Bind(wx.EVT_CHECKBOX, toggle_notice)
+        sizer.Insert(1, notify, 0, wx.LEFT | wx.BOTTOM, 10)
         repeat_btn = wx.Button(panel, label=_("Repeat on Weekdays..."))
         btn_sizer.Insert(2, repeat_btn, 0, wx.RIGHT, 5)
         repeat_btn.Bind(wx.EVT_BUTTON, self._edit_weekdays)
@@ -9562,6 +9598,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
 
     def _on_close(self, event):
         try:
+            self.closed = True
             self.parent_frame._dvr_dialog = None
         except Exception:
             LOG.debug("ScheduledRecordingsDialog._on_close: ignored exception", exc_info=True)
