@@ -37,6 +37,41 @@ class MediaNavigationMixin:
             user_guide.set_menu_help(self, item, 'subtitle-speech' if action == 'subtitle_timing' else 'video-on-demand')
             self._navigation_help_items.append((item, 'subtitle-speech' if action == 'subtitle_timing' else 'video-on-demand'))
 
+        chapters = menu.Append(wx.ID_ANY, _("Recording Chapters..."))
+        self.Bind(wx.EVT_MENU, self._recording_chapters, chapters)
+        self._navigation_help_items.append((chapters, "recordings"))
+
+    def _recording_chapters(self, _event=None):
+        import recording_media
+        if not (getattr(self, "_episode_channel", {}) or {}).get("local-recording") or getattr(self, "_manual_stop", False):
+            self._navigation_message(_("Open a local recording to browse its chapters."))
+            return
+        try:
+            generation = self._vlc_generation
+            title = self.player.get_title()
+            rows = recording_media.chapters(self.player)
+            if not rows:
+                self._navigation_message(_("This recording has no chapters."))
+                return
+            labels = [(name or _("Chapter {number}").format(number=index + 1)) + " — " + clock_text(start)
+                      for index, start, name in rows]
+            dialog = wx.SingleChoiceDialog(self, _("Choose a chapter:"), _("Recording Chapters..."), labels)
+            dialog.SetSelection(next((i for i, row in enumerate(rows) if row[0] == self.player.get_chapter()), 0))
+            user_guide.set_help_topic(dialog, "recordings")
+            try:
+                if show_modal(dialog) != wx.ID_OK or generation != self._vlc_generation or self.player.get_title() != title:
+                    return
+                selection = dialog.GetSelection()
+            finally:
+                dialog.Destroy()
+            if selection >= 0 and self.player.is_seekable():
+                self.player.set_chapter(rows[selection][0])
+                self._navigation_message(labels[selection])
+            elif selection >= 0:
+                self._navigation_message(_("This stream does not support seeking."))
+        except Exception as error:
+            self._navigation_message(str(error))
+
     def _navigate_episode(self, direction):
         import episode_continuation_ui
         episode_continuation_ui.navigate(self, direction)

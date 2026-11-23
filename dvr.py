@@ -20,6 +20,7 @@ import threading
 import time
 import uuid
 from i18n import gettext as _
+from recording_outcome import FINALIZE_TIMEOUT_CAP_SECONDS, TERMINATE_GRACE_SECONDS
 from typing import Callable, Dict, List, Optional
 
 LOG = logging.getLogger(__name__)
@@ -46,7 +47,10 @@ DEFAULT_POST_PADDING_MINUTES = 2
 # means rewriting the whole file to move the moov atom to the front: minutes on the
 # external and network drives recordings usually live on. Two minutes declared a
 # recording failed while ffmpeg was still successfully finishing it.
-STOP_TIMEOUT_SECONDS = 1800.0
+# Use the cap until the recorder publishes its actual size-dependent budget.
+# The extra time covers process termination and delivery of the outcome.
+STOP_GRACE_SECONDS = TERMINATE_GRACE_SECONDS + 30.0
+STOP_TIMEOUT_SECONDS = FINALIZE_TIMEOUT_CAP_SECONDS + STOP_GRACE_SECONDS
 
 
 def utc_now_ts() -> float:
@@ -138,6 +142,12 @@ def program_title(program: Dict[str, str]) -> str:
     )
 
 
+# Each zero-based XMLTV component can be absent or followed by a total.
+# Totals describe the series and do not identify a particular broadcast.
+_XMLTV_FIELD = r"(\d{1,9})?(?:\s*/\s*\d+)?"
+_XMLTV_EPISODE = re.compile(r"\s*\.\s*".join([_XMLTV_FIELD] * 3))
+
+
 def program_episode_key(program: Dict[str, str]) -> Optional[str]:
     """Stable identity of one episode of a series, or None when unknown.
 
@@ -152,15 +162,20 @@ def program_episode_key(program: Dict[str, str]) -> Optional[str]:
     shows and news bulletins demonstrate.
     """
     episode = str(program.get("episode") or "").strip()
+    part = ""
     if episode:
         # xmltv_ns is zero-based and written with a trailing dot
         # ("0.4." = season 1, episode 5); the S01E05 and 1x5 spellings
         # are already one-based. All three land on the same key.
-        m = re.fullmatch(r"(\d+)\.(\d+)\.(?:\d+(?:/\d+)?)?", episode)
-        if m:
-            return "ep:{0}x{1}".format(int(m.group(1)) + 1, int(m.group(2)) + 1)
-        m = re.fullmatch(r"s(\d+)\s*e(\d+)", episode, re.IGNORECASE) or \
-            re.fullmatch(r"(\d+)x(\d+)", episode, re.IGNORECASE)
+        xmltv = _XMLTV_EPISODE.fullmatch(episode)
+        if xmltv:
+            part = f":part{int(xmltv[3]) + 1}" if xmltv[3] else ""
+            if xmltv[2]:
+                season = int(xmltv[1]) + 1 if xmltv[1] else "?"
+                return f"ep:{season}x{int(xmltv[2]) + 1}{part}"
+            episode = ""  # Season, part count or total alone cannot establish identity.
+        m = re.fullmatch(r"s(\d{1,9})\s*e(\d{1,9})", episode, re.IGNORECASE) or \
+            re.fullmatch(r"(\d{1,9})x(\d{1,9})", episode, re.IGNORECASE)
         if m:
             return "ep:{0}x{1}".format(int(m.group(1)), int(m.group(2)))
         compact = "".join(ch for ch in episode.casefold() if ch.isalnum())
@@ -168,10 +183,10 @@ def program_episode_key(program: Dict[str, str]) -> Optional[str]:
             return "ep:" + compact
     subtitle = " ".join(str(program.get("subtitle") or "").split()).casefold()
     if subtitle:
-        return "sub:" + subtitle
+        return "sub:" + subtitle + part
     description = " ".join(str(program.get("description") or "").split()).casefold()
     if description:
-        return "desc:" + hashlib.sha1(description.encode("utf-8")).hexdigest()[:16]
+        return "desc:" + hashlib.sha1(description.encode("utf-8")).hexdigest()[:16] + part
     return None
 
 
@@ -310,7 +325,7 @@ class DVRScheduler:
         self._jobs: Dict[str, Dict[str, object]] = {}
         self._stop_event = threading.Event()
         self._wake_event = threading.Event()
-        self._stopping_since: Dict[str, float] = {}
+        self._stopping_deadlines: Dict[str, float] = {}
         self._thread: Optional[threading.Thread] = None
         self._last_series_scan = 0.0
         self._series_scan_thread: Optional[threading.Thread] = None
@@ -740,9 +755,12 @@ class DVRScheduler:
         output_path: str = "",
         message: str = "",
         outcome: Optional[str] = None,
+        _timeout_at: Optional[float] = None,
     ) -> None:
         with self._lock:
-            self._stopping_since.pop(str(job_id), None)
+            if _timeout_at is not None and _timeout_at <= self._stopping_deadlines.get(str(job_id), math.inf):
+                return  # The finalizer announced its actual deadline after tick took the snapshot.
+            self._stopping_deadlines.pop(str(job_id), None)
             job = self._writable_job(job_id)
             if not job:
                 return
@@ -777,9 +795,8 @@ class DVRScheduler:
             elif status == STATUS_RECORDING and stop_ts and now >= stop_ts:
                 self._stop_job(job_id, due=True)
             elif status == STATUS_STOPPING:
-                since = self._stopping_since.get(job_id)
-                if since and now - since > STOP_TIMEOUT_SECONDS:
-                    self.mark_finished(job_id, success=False, message="Stop timed out.")
+                if now > self._stopping_deadlines.get(job_id, math.inf):
+                    self.mark_finished(job_id, success=False, message="Stop timed out.", _timeout_at=now)
 
     def _run_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -838,6 +855,8 @@ class DVRScheduler:
     def _start_job_worker(self, job_id: str, job: Dict[str, object]) -> None:
         try:
             recording = self.on_start(job)
+            if hasattr(recording, "on_finalize_budget"):
+                recording.on_finalize_budget = lambda seconds: self._set_stop_budget(job_id, seconds)
             rec_id = getattr(recording, "id", recording)
             out_path = getattr(recording, "out_path", "")
             with self._lock:
@@ -879,6 +898,11 @@ class DVRScheduler:
         self._save_schedule()
         self._notify_update()
 
+    def _set_stop_budget(self, job_id: str, seconds: float) -> None:
+        with self._lock:
+            if job_id in self._stopping_deadlines:
+                self._stopping_deadlines[job_id] = float(self.clock()) + seconds + STOP_GRACE_SECONDS
+
     def _stop_job(self, job_id: str, *, due=False) -> None:
         with self._lock:
             job = self._writable_job(job_id)
@@ -888,7 +912,7 @@ class DVRScheduler:
                 return  # the user extended it after tick took its snapshot
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
-            self._stopping_since[job_id] = float(self.clock())
+            self._stopping_deadlines[job_id] = float(self.clock()) + STOP_TIMEOUT_SECONDS
         self._request_save()
         self._notify_update()
         try:

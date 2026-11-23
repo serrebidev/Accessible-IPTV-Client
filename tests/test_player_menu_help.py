@@ -56,6 +56,8 @@ def test_player_menu_registers_specific_help_topics(monkeypatch):
         _on_audio_device_menu=lambda *args: None,
         _on_subtitle_menu_select=lambda *args: None,
         _load_subtitle_file=lambda *args: None,
+        _read_embedded_track=lambda *args: None,
+        _recording_chapters=lambda *args: None,
         _seek_media=lambda **kwargs: None,
         _go_to_media_time=lambda *args: None,
         _announce_media_time=lambda *args: None,
@@ -66,5 +68,6 @@ def test_player_menu_registers_specific_help_topics(monkeypatch):
     assert frame.help_menu_topics[frame.record_menu_item.GetId()] == "recordings"
     assert "casting" in frame.help_menu_topics.values()
     assert frame.help_menu_topics[frame.speak_subtitles_item.GetId()] == "subtitle-speech"
-    assert list(frame.help_menu_topics.values()).count("subtitle-speech") == 6
+    assert list(frame.help_menu_topics.values()).count("subtitle-speech") == 7
+    assert list(frame.help_menu_topics.values()).count("recordings") >= 2
     assert list(frame.help_menu_topics.values()).count("video-on-demand") >= 2

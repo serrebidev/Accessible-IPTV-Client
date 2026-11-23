@@ -6,6 +6,17 @@ from array import array
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence
 
 
+def channel_number(value):
+    """Canonical positive decimal digits; even malformed very long input never needs int()."""
+    value = str(value or "").strip()
+    if not value.isdecimal():
+        return ""
+    if not value.isascii():
+        import unicodedata
+        value = "".join(str(unicodedata.decimal(ch)) for ch in value)
+    return value.lstrip("0")
+
+
 class PlaylistIndex:
     """Reuse playlist order, normalized names, and scope/group membership.
 
@@ -50,7 +61,8 @@ class PlaylistIndex:
 
     def normalized_name(self, channel: Dict[str, str]) -> str:
         """Return the cached search name, tolerating an uncached row."""
-        return self._normalized_names.get(id(channel), (channel.get("name") or "").lower())
+        name = self._normalized_names.get(id(channel))
+        return name if name is not None else (channel.get("name") or "").lower()
 
     def all_for_scope(self, scope: str) -> List[Dict[str, str]]:
         if not scope:

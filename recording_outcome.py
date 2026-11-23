@@ -2,6 +2,10 @@
 import math
 import os
 
+# Shared with the DVR watchdog, including when the stored format is remapped.
+FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
+TERMINATE_GRACE_SECONDS = 15.0
+
 
 def classify(rec, returncode, *, exiting=False, planned_seconds=None):
     try:

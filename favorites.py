@@ -20,6 +20,7 @@ and junk has to come back as "no key" instead of an exception.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Iterable, List, Optional, Sequence, Set, Tuple, TypeVar
 
 # Sentinel category key, handled like the existing "All Channels" one: stored and
@@ -53,6 +54,66 @@ def channel_key(channel: object) -> str:
     ]
     cleaned = [str(part).strip() for part in parts if part is not None and str(part).strip()]
     return "|".join(_escape_key_part(part) for part in cleaned)
+
+
+def history_key(channel):
+    """Qualify ordinary M3U entries without changing default favourite keys."""
+    key = channel_key(channel)
+    if not key or channel.get("provider-id") or not channel.get("playlist-id"):
+        return key
+    return "m3u-history:" + _history_source(str(channel['playlist-id'])) + ":" + key
+
+
+@lru_cache(maxsize=128)
+def _history_source(source):
+    import hashlib
+    return hashlib.sha256(source.encode()).hexdigest()
+
+
+def history_channels(keys, channels):
+    wanted = set(keys)
+    if not wanted:
+        return []
+    legacy_names = {key.split(':', 2)[-1] if key.startswith('m3u-history:') else key for key in keys}
+    matches = {}
+    for ch in channels:
+        old = channel_key(ch)
+        if old not in legacy_names:
+            continue
+        current = history_key(ch)
+        for key in {old, current} & wanted:
+            previous = matches.setdefault(key, ch)
+            if previous is not None and (history_key(previous) != current or previous.get("url") != ch.get("url")):
+                matches[key] = None
+    result, seen = [], set()
+    for key in keys:
+        ch = matches.get(key)
+        if ch is not None and id(ch) not in seen:
+            result.append(ch)
+            seen.add(id(ch))
+    return result
+
+
+def history_labels(channels, aliases):
+    from collections import Counter
+    from i18n import gettext as _
+    names = [display_name(ch) or _("IPTV Stream") for ch in channels]
+    counts = Counter(n.casefold() for n in names)
+    sources = {}
+    for i, (name, ch) in enumerate(zip(names, channels)):
+        if counts[name.casefold()] > 1:
+            source = ch.get("provider-id") or ch.get("playlist-id")
+            number = sources.setdefault(source, len(sources) + 1)
+            label = aliases.get(source) or _("Source {number}").format(number=number)
+            names[i] = f"{name} — {label}"
+    repeated_labels = Counter(label.casefold() for label in names)
+    for i, (label, ch) in enumerate(zip(names, channels)):
+        if repeated_labels[label.casefold()] > 1:
+            source = ch.get("provider-id") or ch.get("playlist-id")
+            number = sources.setdefault(source, len(sources) + 1)
+            number_label = _("Source {number}").format(number=number)
+            names[i] = f"{label} ({number_label})"
+    return names
 
 
 def _escape_key_part(part: str) -> str:

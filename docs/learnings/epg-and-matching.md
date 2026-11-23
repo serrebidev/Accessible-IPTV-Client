@@ -82,3 +82,4 @@ An all-channel airing is identified by the EPG channel ID and programme window. 
 
 - A rolling one-day start range misses longer live events. Pair it with an indexed cross-date lookup. Apply a saved search's resolved guide scope before its Unicode text comparison.
 - Multiple playable sources can share a name and guide ID. Keep the selected local channel with its guide row, and distinguish the alternatives with a safe source label.
+- An XMLTV episode number can include a separate zero-based part and optional totals. Keep the part in the rerun key. A guide time change is only a proposal: recheck it on the original guide channel after confirmation, and preserve the recording ID, padding and rule relationships.

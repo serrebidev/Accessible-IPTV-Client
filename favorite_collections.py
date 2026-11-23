@@ -64,7 +64,45 @@ def create(collections, name):
     return rows + [row], row["id"]
 
 
-def edit(collections, identity, *, name=None, add=None, remove=None, move=None, delete=False):
+def variant_labels(labels):
+    from collections import Counter
+    counts = Counter(labels)
+    seen = Counter()
+    result = []
+    for label in labels:
+        seen[label] += 1
+        if counts[label] > 1:
+            label += " — " + _("Variant {number}").format(number=seen[label])
+        result.append(label)
+    return result
+
+
+def selected_entry(channel, channels=None):
+    key = programme_reminders.channel_key(channel)
+    if not key or not channel.get("url"):
+        raise ValueError(_("Channel Not Found"))
+    entry = {"key": key, "name": programme_reminders.safe_title(channel.get("name"))}
+    if channels is not None:
+        chosen = programme_reminders.media_identity(channel)
+        found = ambiguous = False
+        for other in channels:
+            if other.get("url") and programme_reminders.channel_key(other) == key:
+                if programme_reminders.media_identity(other) == chosen:
+                    found = True
+                else:
+                    ambiguous = True
+                if found and ambiguous:
+                    break
+        if not found:
+            raise ValueError(_("The channel list changed. Try again."))
+        if ambiguous:
+            variant = variant_key(channel)
+            entry.update(match_key=key, variant=variant,
+                         key=hashlib.sha256((key + variant).encode("ascii")).hexdigest())
+    return entry
+
+
+def edit(collections, identity, *, name=None, add=None, selection=None, remove=None, move=None, delete=False):
     rows = normalize(collections)
     row = next((r for r in rows if r["id"] == identity), None)
     if row is None:
@@ -76,14 +114,14 @@ def edit(collections, identity, *, name=None, add=None, remove=None, move=None, 
         if any(r["id"] != identity and r["name"].casefold() == name.casefold() for r in rows):
             raise ValueError(_("A list with this name already exists."))
         row["name"] = name
-    if add is not None:
-        key = programme_reminders.channel_key(add)
-        if not key:
-            raise ValueError(_("Channel Not Found"))
-        if not any(entry["key"] == key for entry in row["entries"]):
+    if selection is not None or add is not None:
+        entry = selection if selection is not None else selected_entry(add)
+        if not any(e["key"] == entry["key"] or (entry.get("variant") and
+                   (e.get("match_key"), e.get("variant")) == (entry["match_key"], entry["variant"]))
+                   for e in row["entries"]):
             if len(row["entries"]) >= MAX_CHANNELS:
                 raise ValueError(_("A favourite list can contain at most 2000 channels."))
-            row["entries"].append({"key": key, "name": programme_reminders.safe_title(add.get("name"))})
+            row["entries"].append(dict(entry))
     if remove is not None:
         row["entries"] = [e for e in row["entries"] if e["key"] != remove]
     if move is not None:
@@ -96,7 +134,7 @@ def edit(collections, identity, *, name=None, add=None, remove=None, move=None, 
     return copy.deepcopy(rows)
 
 
-def relink(collections, identity, old_key, channel):
+def relink(collections, identity, old_key, channel, *, selection=None):
     """Replace one stale entry in place, preserving the order of the list."""
     rows = normalize(collections)
     row = next((item for item in rows if item["id"] == identity), None)
@@ -105,13 +143,13 @@ def relink(collections, identity, old_key, channel):
     entry = next((e for e in row["entries"] if e["key"] == old_key), None)
     if entry is None:
         raise ValueError(_("The channel list changed. Try again."))
-    key = programme_reminders.channel_key(channel)
-    if not key or any(e["key"] == key for e in row["entries"]):
+    replacement = selection if selection is not None else selected_entry(channel)
+    if any(e is not entry and (e["key"] == replacement["key"] or (replacement.get("variant") and
+           (e.get("match_key"), e.get("variant")) == (replacement["match_key"], replacement["variant"])))
+           for e in row["entries"]):
         raise ValueError(_("Choose a different channel that is not already in this list."))
-    entry.update(key=key, name=programme_reminders.safe_title(channel.get("name")))
-    entry.pop('guide', None)
-    entry.pop('match_key', None)
-    entry.pop('variant', None)
+    entry.clear()
+    entry.update(replacement)
     return rows
 
 

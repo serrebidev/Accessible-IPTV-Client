@@ -203,9 +203,12 @@ def resolve_current(key, entries, channels, clients):
             # check is different from a provider-confirmed missing movie.
             items = vod.xtream_movie_items(client, pid)
         return find_current(key, records, items)
-    _, groups = vod.categorize_m3u_vod(channels)
+    # The GUI supplies a reusable iterator factory. Provider lookups above
+    # never need the potentially large local catalogue.
+    items = channels if callable(channels) else lambda: iter(channels)
+    _, groups = vod.categorize_m3u_vod(items())
     local = list(playable_items(groups))
-    local.extend(item for item in channels if item.get("kind") == "movie")
+    local.extend(item for item in items() if item.get("kind") == "movie")
     known = find_current(key, records, local)
     if known is not None:
         return known

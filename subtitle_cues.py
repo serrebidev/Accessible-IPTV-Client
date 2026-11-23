@@ -20,7 +20,10 @@ SPEAKABLE_SUFFIXES = (".srt", ".vtt", ".ass", ".ssa")
 _TIME = re.compile(
     r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})[ \t]*-->[ \t]*"
     r"(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})(?:[ \t]+[^\r\n]*)?")
-_MARKUP_START = re.compile(r"<|\{\\")
+_MARKUP_START = re.compile(
+    r"</?(?:b|i|u|s|font|span|br|ruby|rt|c|v|lang)(?=[\s./>])[^<>]*>"
+    r"|<(?:(?:\d{2,}):)?\d{2}:\d{2}\.\d{3}>|\{\\", re.IGNORECASE)
+
 _ASS_TIME = re.compile(r"(\d+):(\d{2}):(\d{2})\.(\d{1,3})\Z")
 _DRAWING_MODE = re.compile(r"\\p(\d+)(?=\\|\s|$)")
 
@@ -52,7 +55,11 @@ def _strip_markup(text: str) -> str:
     exhausted = set()
     while match := _MARKUP_START.search(text, scan):
         scan = match.end()
-        closer = ">" if match[0] == "<" else "}"
+        if match[0].startswith("<"):
+            parts.append(text[offset:match.start()])
+            offset = scan
+            continue
+        closer = "}"
         if closer in exhausted:
             continue
         end = text.find(closer, scan)

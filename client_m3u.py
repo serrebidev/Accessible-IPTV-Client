@@ -24,7 +24,7 @@ LOG = logging.getLogger("EPG.ui")
 # from the same playlist text; it salts the parsed-playlist cache key.
 # 5: a playlist that starts with a byte order mark is read without it, so
 #    the same text produces different channel dicts than before.
-_PARSED_PLAYLIST_CACHE_VERSION = "5"
+_PARSED_PLAYLIST_CACHE_VERSION = "6"
 # One writer at a time for the parsed playlist cache: two loads can write the
 # same cache, and one truncating the other's file would publish a broken one.
 _PLAYLIST_CACHE_WRITE_LOCK = threading.Lock()
@@ -49,6 +49,7 @@ class M3uCacheMixin:
         group = ""
         tvg_id = ""
         tvg_name = ""
+        tvg_chno = ""
         tvg_rec = ""
         media_hint = ""
         timeshift = ""
@@ -88,6 +89,7 @@ class M3uCacheMixin:
                     group = ""
                     tvg_id = ""
                     tvg_name = ""
+                    tvg_chno = ""
                     tvg_rec = ""
                     media_hint = ""
                     timeshift = ""
@@ -122,6 +124,7 @@ class M3uCacheMixin:
                             group = attrs.get("group-title", "")
                             tvg_id = attrs.get("tvg-id", "")
                             tvg_name = attrs.get("tvg-name", "")
+                            tvg_chno = attrs.get("tvg-chno", "")
                             tvg_rec = attrs.get("tvg-rec", "")
                             # Authoritative media-type metadata (issue #33):
                             # radio="true" and recognized equivalents. Parsed
@@ -217,6 +220,8 @@ class M3uCacheMixin:
                 channel["provider-id"] = provider_id
             if provider_type:
                 channel["provider-type"] = provider_type
+            if tvg_chno:
+                channel['tvg-chno'] = tvg_chno
             if tvg_rec:
                 channel["tvg-rec"] = tvg_rec
             if media_hint:
@@ -278,6 +283,7 @@ class M3uCacheMixin:
             group = ""
             tvg_id = ""
             tvg_name = ""
+            tvg_chno = ""
             tvg_rec = ""
             media_hint = ""
             timeshift = ""

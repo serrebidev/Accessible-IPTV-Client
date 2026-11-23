@@ -259,6 +259,8 @@ Wybrana ścieżka jest zapamiętywana dla tego kanału i wraca następnym razem.
 
 ### Odczytywanie napisów {#subtitle-speech}
 
+Podczas odtwarzania lokalnego nagrania MKV wybierz w menu odtwarzania **Odczytaj osadzoną ścieżkę napisów**, a następnie język i ścieżkę. Gdy odczytywanie napisów jest włączone, tekst jest wypowiadany w odpowiednich momentach nagrania. Można też ponownie odsłuchać bieżący lub poprzedni napis. Ścieżki graficzne są oznaczone na liście. Zmiana źródła napisów lub zatrzymanie odtwarzania kończy odczyt tej ścieżki.
+
 Tekst napisów pojawia się w filmie, jeśli dostarcza go strumień. Odtwarzanie > Załaduj plik z napisami przyjmuje zewnętrzny plik napisów. Włącz Odtwarzanie > Odczytuj napisy (Shift+S), a wybrany głos odczyta każdy napis z wczytanego pliku SRT, ASS, SSA lub WebVTT w chwili jego pojawienia się, także przy ukrytym oknie odtwarzacza. Bieżący napis jest też wyświetlany jako tekst na końcu elementów sterujących odtwarzacza. Wbudowany odtwarzacz nie może jeszcze odczytywać napisów zawartych w samym strumieniu.
 
 Odtwarzanie > Odczytaj bieżący napis (C) odczytuje napis widoczny na ekranie albo ostatni wyświetlony, gdy żaden nie jest widoczny. Odtwarzanie > Poprzedni napis (Page Up) i Następny napis (Page Down) przechodzą po już wyświetlonych napisach, więc możesz ponownie usłyszeć przegapioną linię. Nigdy nie wyprzedzają odtwarzania i działają niezależnie od tego, czy Odczytuj napisy jest włączone. W systemie Windows pozycja Opcje > Czytanie napisów > Tempo głosu aplikacji… pozwala wybrać wartość od -10 do 10; 0 oznacza zwykłe tempo. Nie zmienia to prędkości odtwarzania ani ustawień czytnika ekranu.
@@ -298,6 +300,8 @@ Nagrania podążają za tym samym wyborem. Nagranie wyłącznie dźwiękowe trzy
 
 ## Nagrania {#recordings}
 
+W bibliotece zaznacz jedno lub kilka nagrań i dodaj je do kolejki odtwarzania. Otwórz kolejkę, aby sprawdzić kolejność. Ctrl+Strzałka w górę lub w dół przesuwa pozycję, a Delete ją usuwa. Każde nagranie jest odtwarzane od początku. Zatrzymanie odtwarzacza przerywa odtwarzanie kolejki. Można też zatrzymać ją po zakończeniu bieżącego nagrania. Brakujący, zmieniony lub wciąż nagrywany plik zatrzymuje kolejkę. W oknie **Rozdziały nagrania** wybierz rozdział według nazwy i czasu rozpoczęcia, a następnie naciśnij Enter.
+
 W bibliotece nagrań wybierz plik i otwórz listę czasów wystąpienia problemów. Naciśnij Enter na wybranej pozycji, aby uruchomić wbudowany odtwarzacz od tego miejsca. Czasy przybliżone są oznaczone. Potrzebny jest dziennik odpowiadający nagraniu.
 
 Program może nagrywać dowolny kanał do pliku, podczas gdy oglądasz coś innego, albo gdy nic nie gra.
@@ -335,6 +339,8 @@ Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
 - Tylko dźwięk (MP3 V0, FLAC, WAV, AAC M4A albo Opus): tylko dźwięk, przydatne dla radia.
 
 ### Zaplanowane nagrania {#scheduled-recordings}
+
+W zaplanowanych nagraniach polecenie **Sprawdź zmiany w przewodniku** szuka audycji na tym samym kanale w przedziale sześciu godzin przed pierwotnym początkiem i po nim. Przed zatwierdzeniem porównaj godziny, marginesy i ewentualne konflikty. Nagrania ręczne i powtarzane o stałej porze zachowują swoje godziny. Możesz włączyć powiadomienia po aktualizacji przewodnika. Wyszukiwanie innej emisji uwzględnia również tę samą godzinę w innym źródle. Jeśli ustawiono limit konta, zobaczysz wymaganą liczbę połączeń i dopuszczalne maksimum.
 
 W menu kontekstowym oczekującego nagrania cyklicznego wybierz Pomiń tylko ten termin. Po zatwierdzeniu usłyszysz, kiedy nastąpi kolejne nagranie. Pominięte, nieudane lub częściowe nagranie możesz pobrać do osobnego pliku, jeśli audycja jest jeszcze w archiwum kanału i dostępne jest połączenie do nagrywania.
 

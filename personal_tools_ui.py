@@ -410,7 +410,7 @@ class FavouriteListsDialog(ToolDialog):
     def _entries(self, selected=None):
         row = self.selected()
         entries = row["entries"] if row else []
-        self.entries.Set([e["name"] or _("(No channel name)") for e in entries])
+        self.entries.Set(collections.variant_labels([e["name"] or _("(No channel name)") for e in entries]))
         if entries:
             self.entries.SetSelection(next((i for i, e in enumerate(entries) if e["key"] == selected), 0))
         self.status.SetLabel(_("Selected channel: {name}").format(name=dvr.channel_name(self.channel))
@@ -450,8 +450,21 @@ class FavouriteListsDialog(ToolDialog):
     def _add(self, event):
         row = self.selected()
         if row and self.channel:
-            self._change(lambda value: collections.edit(value, row["id"], add=self.channel),
-                         selected=reminders.channel_key(self.channel))
+            channels, candidate = self.owner.all_channels, self.channel
+            def ready(entry, error):
+                if error or self.owner.all_channels is not channels:
+                    error_box(self, error or _("The channel list changed. Try again."))
+                    return
+                self._change(lambda value: collections.edit(value, row["id"], selection=entry),
+                             selected=entry["key"])
+            if len(channels) == 1:
+                try:
+                    ready(collections.selected_entry(candidate, channels), None)
+                except ValueError as error:
+                    error_box(self, error)
+            else:
+                start_operation(self, "add-favourite", lambda: collections.selected_entry(candidate, channels),
+                                ready, wx.CallAfter)
 
     def _remove(self, event):
         row, entry = self.selected(), self.entry()
@@ -494,26 +507,23 @@ class FavouriteListsDialog(ToolDialog):
             if not found:
                 error_box(self, _("Channel Not Found"))
                 return
+            labels = collections.variant_labels([label for label, ch in found])
             choose = wx.SingleChoiceDialog(self, _("Choose a replacement channel:"),
-                                           _("Favourite Lists"), [label for label, ch in found])
+                                           _("Favourite Lists"), labels)
             try:
                 if show_modal(choose) != wx.ID_OK:
                     return
-                label, candidate = found[choose.GetSelection()]
-                if any(other_label == label and reminders.channel_key(other) != reminders.channel_key(candidate)
-                       for other_label, other in found):
-                    error_box(self, _("The channel cannot be identified unambiguously."))
-                    return
+                _label, candidate = found[choose.GetSelection()]
             finally:
                 choose.Destroy()
-            key = reminders.channel_key(candidate)
             def verify():
-                return reminders.resolve_channel({"channel_key": key}, channels)
-            def save(channel, error):
-                if error or not channel or self.owner.all_channels is not channels:
+                return collections.selected_entry(candidate, channels)
+            def save(replacement, error):
+                if error or self.owner.all_channels is not channels:
                     error_box(self, error or _("The channel cannot be identified unambiguously."))
                     return
-                self._change(lambda value: collections.relink(value, row["id"], entry["key"], channel), selected=key)
+                self._change(lambda value: collections.relink(value, row["id"], entry["key"], candidate,
+                                                             selection=replacement), selected=replacement["key"])
                 self.entries.SetFocus()
             start_operation(self, "verify-replacement", verify, save, wx.CallAfter)
         start_operation(self, "find-replacement", find, ready, wx.CallAfter)
