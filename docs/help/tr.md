@@ -505,7 +505,7 @@ Sorular, hata raporları ve sürüm haberleri:
 - SerrebiProjects Telegram grubu: https://t.me/SerrebiProjects
 - GitHub'da hata raporları ve öneriler: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağlantı verir. Sorun bildirirken Yardım > Günlüğü ve hata ayıklama bilgilerini kopyala, izlenmesi için gereken ayrıntıları verir.
+Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağlantı verir. Sorun bildirirken Yardım > Günlüğü ve hata ayıklama bilgilerini kopyala, izlenmesi için gereken ayrıntıları verir. Yardım > GitHub'da sorun bildir bir başlık ve açıklama ister, ardından GitHub'ın yeni sorun sayfasını ikisi ve sürümünüz doldurulmuş olarak açar; oturum açın ve “Create” düğmesine basın.
 
 ## Kişisel araçlar {#personal-tools}
 

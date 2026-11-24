@@ -506,7 +506,7 @@ Pytania, zgłoszenia błędów i nowości o wydaniach:
 - Grupa Telegram SerrebiProjects: https://t.me/SerrebiProjects
 - Zgłoszenia błędów i sugestie na GitHubie: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszaniu problemu Pomoc > Kopiuj dziennik i informacje diagnostyczne daje szczegóły potrzebne do namierzenia go.
+Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszaniu problemu Pomoc > Kopiuj dziennik i informacje diagnostyczne daje szczegóły potrzebne do namierzenia go. Pomoc > Zgłoś problem na GitHubie pyta o tytuł i opis, a potem otwiera stronę nowego zgłoszenia na GitHubie z oboma polami i wersją programu; zaloguj się i naciśnij „Create”.
 
 ## Narzędzia osobiste {#personal-tools}
 

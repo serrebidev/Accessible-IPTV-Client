@@ -506,7 +506,7 @@ Questions, rapports de bogues et nouvelles des versions :
 - Le groupe Telegram SerrebiProjects : https://t.me/SerrebiProjects
 - Rapports de bogues et suggestions sur GitHub : https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-Aide > À propos… montre la version en cours d'exécution et lie les deux. Quand vous signalez un problème, Aide > Copier le journal et les informations de débogage donne les détails nécessaires pour le retrouver.
+Aide > À propos… montre la version en cours d'exécution et lie les deux. Quand vous signalez un problème, Aide > Copier le journal et les informations de débogage donne les détails nécessaires pour le retrouver. Aide > Signaler un problème sur GitHub demande un titre et une description, puis ouvre la page de nouveau ticket GitHub avec les deux remplis et votre version ajoutée ; connectez-vous et appuyez sur « Create ».
 
 ## Outils personnels {#personal-tools}
 

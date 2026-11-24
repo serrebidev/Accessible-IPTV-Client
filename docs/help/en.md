@@ -515,7 +515,7 @@ Questions, bug reports and release news:
 - The SerrebiProjects Telegram group: https://t.me/SerrebiProjects
 - Bug reports and suggestions on GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-Help > About shows the version you are running and links to both. When you report a problem, Help > Copy Log and Debug Information gives the details needed to track it down.
+Help > About shows the version you are running and links to both. When you report a problem, Help > Copy Log and Debug Information gives the details needed to track it down. Help > Report an issue on GitHub asks for a title and a description, then opens the GitHub new issue page with both filled in and your version added; sign in and press Create.
 
 ## Personal tools {#personal-tools}
 

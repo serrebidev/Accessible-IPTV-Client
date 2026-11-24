@@ -506,7 +506,7 @@ Perguntas, relatórios de erro e notícias de versões:
 - O grupo do Telegram SerrebiProjects: https://t.me/SerrebiProjects
 - Relatórios de erro e sugestões no GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-Ajuda > Sobre… mostra a versão em uso e linka ambos. Ao relatar um problema, Ajuda > Copiar registo e informações de depuração dá os detalhes necessários para rastreá-lo.
+Ajuda > Sobre… mostra a versão em uso e linka ambos. Ao relatar um problema, Ajuda > Copiar registo e informações de depuração dá os detalhes necessários para rastreá-lo. Ajuda > Relatar um problema no GitHub pede um título e uma descrição e abre a página de nova issue do GitHub com ambos preenchidos e a sua versão adicionada; entre na conta e pressione “Create”.
 
 ## Ferramentas pessoais {#personal-tools}
 

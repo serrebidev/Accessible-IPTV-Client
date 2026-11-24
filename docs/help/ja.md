@@ -505,7 +505,7 @@ Linux では、代わりに新しいパッケージを古いものの上にイ�
 - SerrebiProjects の Telegram グループ：https://t.me/SerrebiProjects
 - GitHub でのバグ報告と提案：https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
-ヘルプ > バージョン情報...は、使っているバージョンを示し、両方にリンクします。問題を報告するときは、ヘルプ > ログとデバッグ情報をコピーが追跡に必要な詳細をくれます。
+ヘルプ > バージョン情報...は、使っているバージョンを示し、両方にリンクします。問題を報告するときは、ヘルプ > ログとデバッグ情報をコピーが追跡に必要な詳細をくれます。ヘルプ > GitHub で問題を報告は、タイトルと説明を尋ね、両方とバージョンが入力された GitHub の新しい Issue ページを開きます。サインインして「Create」を押してください。
 
 ## 個人用ツール {#personal-tools}
 

@@ -139,7 +139,7 @@ from playlist_index import PlaylistIndex, channel_number
 from dialogs_misc import (
     AccessibleAboutDialog, AccountInfoDialog, AudioTrackPreferenceDialog,
     CastDiscoveryDialog, CatchupDialog, ChangelogDialog,
-    RecordingPaddingDialog, ShutdownCountdownDialog, WhatsOnNowDialog,
+    RecordingPaddingDialog, ShutdownCountdownDialog, WhatsOnNowDialog, report_issue,
 )
 
 _INTERNAL_PLAYER_FRAME_CLASS = None
@@ -4684,6 +4684,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             dlg.ShowModal()
         finally:
             dlg.Destroy()
+
+    def _report_issue(self, _event=None):
+        """Help > Report an issue on GitHub."""
+        report_issue(self)
 
     def _show_changelog_dialog(self, _event=None):
         """Help > What's New: browse the release history bundled with the app."""

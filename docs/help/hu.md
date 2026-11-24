@@ -587,7 +587,7 @@ Kérdésekhez, hibajelentésekhez és a kiadásokkal kapcsolatos hírekhez az al
 - SerrebiProjects Telegram-csoport: https://t.me/SerrebiProjects
 - Hibajelentések és javaslatok a Forgejo felületén: https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client/issues
 
-A Súgó > Névjegy… megjeleníti az éppen használt verziót, és hivatkozásokat tartalmaz mind a Telegram-csoporthoz, mind a projekt Forgejo-oldalához. Hibajelentés készítésekor a Súgó > Napló- és hibakeresési adatok másolása paranccsal a kivizsgáláshoz szükséges technikai adatokat is a vágólapra helyezheti.
+A Súgó > Névjegy… megjeleníti az éppen használt verziót, és hivatkozásokat tartalmaz mind a Telegram-csoporthoz, mind a projekt Forgejo-oldalához. Hibajelentés készítésekor a Súgó > Napló- és hibakeresési adatok másolása paranccsal a kivizsgáláshoz szükséges technikai adatokat is a vágólapra helyezheti. A Súgó > Probléma bejelentése a GitHubon címet és leírást kér, majd megnyitja a GitHub új hibajegy oldalát mindkettővel és a verziójával kitöltve; jelentkezzen be, és nyomja meg a „Create” gombot.
 
 ## Lejátszás, ütemezés és biztonsági mentés {#personal-tools}
 

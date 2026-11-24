@@ -6,8 +6,10 @@ name there. These are self-contained wx.Dialog subclasses.
 import datetime
 import logging
 import os
+import platform
 import sys
 import threading
+import urllib.parse
 from typing import Dict, List, Optional, Tuple
 
 import wx
@@ -24,6 +26,43 @@ from i18n import gettext as _
 from options import utc_to_local
 
 LOG = logging.getLogger("EPG.ui")
+
+
+def issue_url(title, details):
+    """GitHub's new-issue page with the title and body filled in, version line added."""
+    body = "{details}\n\n---\n{name} {version} on {system} {machine}".format(
+        details=details, name=app_meta.APP_DISPLAY_NAME, version=app_meta.APP_VERSION,
+        system=platform.platform(), machine=platform.machine())
+    query = urllib.parse.urlencode({"title": title, "body": body}, quote_via=urllib.parse.quote)
+    return PROJECT_GITHUB_URL + "/issues/new?" + query
+
+
+def report_issue(parent):
+    """Help > Report an issue: ask the title and description here, where the
+    screen reader knows the boxes, then open GitHub prefilled. GitHub needs the
+    user's own account, so the last step, Create, is theirs in the browser."""
+    caption = _("Report an issue")
+    summary = _ask_text(parent, _("Issue title: one line saying what went wrong or what you would like"),
+                        caption, 0)
+    if not summary:
+        return
+    details = _ask_text(parent, _("Describe what you did, what happened, and what you expected.\n"
+                                  "Your browser then opens GitHub with this filled in. Sign in and press Create."),
+                        caption, wx.TE_MULTILINE)
+    if details is None:
+        return
+    wx.LaunchDefaultBrowser(issue_url(summary, details))
+
+
+def _ask_text(parent, message, caption, style):
+    """Text from a dialog, or None on Cancel. Multiline: Enter is a new line, Tab reaches OK."""
+    dlg = wx.TextEntryDialog(parent, message, caption, style=wx.OK | wx.CANCEL | style)
+    try:
+        if dlg.ShowModal() != wx.ID_OK:
+            return None
+        return dlg.GetValue().strip()
+    finally:
+        dlg.Destroy()
 
 
 class AccessibleAboutDialog(wx.Dialog):
