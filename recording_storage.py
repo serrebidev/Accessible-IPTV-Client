@@ -3,6 +3,7 @@
 This is not a duration/bitrate prediction or a filesystem quota reservation.
 Other processes, live buffers and active recordings may consume space afterwards.
 """
+import errno
 import os
 import shutil
 import tempfile
@@ -49,3 +50,22 @@ def check_destination(directory, reserve_mib=DEFAULT_RESERVE_MIB):
         raise StorageError(_("Not enough free space to start recording: {free} MiB available; "
                             "at least {reserve} MiB required.").format(free=free // MIB, reserve=reserve))
     return {'path': target, 'free': free, 'reserve_mib': reserve}
+
+
+def publish_new_file(temporary, destination):
+    if os.name == "nt":
+        os.rename(temporary, destination)  # Windows refuses to replace an existing target.
+        return
+    try:
+        os.link(temporary, destination)
+    except OSError as error:
+        if error.errno not in {errno.EPERM, errno.EOPNOTSUPP, errno.ENOSYS}:
+            raise
+        # Filesystems without links still need exclusive creation at publication.
+        fd = os.open(destination, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(fd)
+        try:
+            os.replace(temporary, destination)
+        except BaseException:
+            os.unlink(destination)
+            raise

@@ -190,6 +190,31 @@ def _calendar(events, now):
     return ('\r\n'.join(map(fold_ical, lines)) + '\r\n').encode('utf-8')
 
 
+def filter_recording_schedule(jobs, query, view, now):
+    from dvr import STATUS_CANCELED, STATUS_FAILED, STATUS_MISSED, STATUS_PARTIAL, STATUS_SCHEDULED, paused_occurrence
+    words = query.casefold().split()
+    local_now = dt.datetime.fromtimestamp(now)
+    week_end = (local_now + dt.timedelta(days=7)).timestamp()
+    today = local_now.date().isoformat()
+    rows = []
+    for job in jobs:
+        paused = job["status"] == STATUS_SCHEDULED and paused_occurrence(job)
+        if view == "week" and (
+                job["status"] != STATUS_SCHEDULED or paused or not now <= job["start_ts"] < week_end):
+            continue
+        if view == "problems" and job["status"] not in {STATUS_FAILED, STATUS_MISSED, STATUS_PARTIAL}:
+            continue
+        dates = job.get("pause_dates")
+        if view == "paused":
+            is_rule = job.get("repeat") == "series" and job["status"] != STATUS_CANCELED
+            if not (dates and dates[1] >= today and (job["status"] == STATUS_SCHEDULED or is_rule)):
+                continue
+        text = " ".join(str(job.get(key) or "") for key in ("title", "display_title", "channel_name")).casefold()
+        if all(word in text for word in words):
+            rows.append(job)
+    return rows
+
+
 def library_view(value, directories):
     value = value if isinstance(value, dict) else {}
     folder = value.get('folder')

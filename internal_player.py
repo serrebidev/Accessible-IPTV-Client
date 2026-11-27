@@ -902,8 +902,14 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 if reset_recording_rate:
                     self._reset_recording_speed()
                 self._apply_audio_output_device()
-                player.play()
+                result = player.play()
+                if result == -1:
+                    raise RuntimeError(_("Playback Error"))
             except Exception as err:
+                queue = getattr(self, "_recording_queue", None)
+                ticket = getattr(self, "_recording_queue_ticket", None)
+                if ticket is not None and queue is not None:
+                    wx.CallAfter(InternalPlayerFrame._fail_queued_recording, self, queue, generation, ticket, str(err))
                 LOG.error("Could not start playback: %s", err)
                 wx.CallAfter(self._update_status_label,
                              _("Could not start playback: {error}").format(error=err), priority=1)
@@ -2181,6 +2187,14 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             self._recording_seek_when_ready = None
             self._navigation_message(_("The player could not seek to the requested position."))
 
+    def _fail_queued_recording(self, queue, generation, ticket, reason):
+        if generation != self._vlc_generation or queue.ticket is not ticket or self._destroyed:
+            return
+        queue.stop()
+        self.stop(manual=True)
+        self._navigation_message(_("Playback queue stopped at {title}. {reason}").format(
+            title=(getattr(self, "_episode_channel", {}) or {}).get("name", ""), reason=reason))
+
     def _on_timer(self, _event: wx.TimerEvent) -> None:
         opening_seek = getattr(self, "_recording_seek_when_ready", None)
         if opening_seek:
@@ -2216,6 +2230,12 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 self._stall_ticks = 0
 
         if state_key == "playing":
+            queue = getattr(self, "_recording_queue", None)
+            ticket = getattr(self, "_recording_queue_ticket", None)
+            if ticket is not None and queue is not None and queue.ticket is ticket:
+                started = getattr(queue, "started", None)
+                if callable(started):
+                    started(self, self._vlc_generation, ticket)
             if getattr(self, '_subtitle_timing_pending', False):
                 self._subtitle_timing_pending = False
                 delay = getattr(self, '_subtitle_timing_ms', 0)
@@ -2262,11 +2282,7 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
             queue = getattr(self, "_recording_queue", None)
             ticket = getattr(self, "_recording_queue_ticket", None)
             if ticket is not None and queue is not None and queue.ticket is ticket:
-                queue.stop()
-                self.stop(manual=True)
-                self._navigation_message(_("Playback queue stopped at {title}. {reason}").format(
-                    title=(getattr(self, "_episode_channel", {}) or {}).get("name", ""),
-                    reason=_("Playback Error")))
+                InternalPlayerFrame._fail_queued_recording(self, queue, self._vlc_generation, ticket, _("Playback Error"))
                 return
             if not self._restart_expected_xtream_live():
                 self._schedule_restart("playback error", adjust_buffer=True)

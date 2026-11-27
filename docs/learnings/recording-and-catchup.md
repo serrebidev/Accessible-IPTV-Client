@@ -75,3 +75,6 @@ DVR state transitions can overtake a durable edit. Keep jobs in an in-flight JSO
 - The scheduler's stopping watchdog must outlast the recorder's maximum finalization and termination windows. The finalizer publishes the budget it calculated for the actual output once, so shorter orphaned jobs can expire on time. The shared upper bound covers recorders that have not reported a budget. The scheduler never queries a recording drive from its periodic tick.
 
 - Capture completion includes the watcher's scheduler callback and library write. The active list can already be empty while those writes are pending. Join tracked watchers off the UI thread during exit. Apply a recurring pause to the local programme date before padding and keep paused series airings eligible for a later repeat.
+
+- A series guide rescan requested during an active scan must survive until the scan exits. Recording admission reserves provider capacity before releasing the live-buffer gate, and disk probes run outside shared locks. The free-space monitor limits in-flight probes and handles results independently so an offline share cannot delay checks for healthy destinations.
+- Scheduled completion checks both the planned start and the expected length. A successful FFmpeg exit can still leave a partial programme if opening the source consumed part of the scheduled window.

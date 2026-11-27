@@ -261,15 +261,20 @@ def test_queue_opens_only_the_next_file_honours_order_manual_stop_and_stale_ends
     queue.start()
     deliver()
     assert [s for s, thread in checked] == ["2"] and checked[0][1] != threading.get_ident()
-    assert [r["title"] for r in queue.pending] == ["1", "3"]
+    assert [r["title"] for r in queue.pending] == ["2", "1", "3"]
     frame = SimpleNamespace(_vlc_generation=4, _manual_stop=False, _destroyed=False)
     first = queue.ticket
+    queue.started(frame, 3, first)
+    assert queue.pending[0]["title"] == "2"
+    queue.started(frame, 4, first)
+    assert [r["title"] for r in queue.pending] == ["1", "3"]
     queue.ended(frame, 3, first)
     assert owner._launch_stream.call_count == 1
     queue.ended(frame, 4, first)
     deliver()
     assert [s for s, thread in checked] == ["2", "1"]
     assert not owner._launch_stream.call_args.kwargs["focus_player"]
+    queue.started(frame, 4, first)
     queue.stop()
     queue.ended(frame, 4, first)
     assert owner._launch_stream.call_count == 2 and len(queue.pending) == 1
@@ -298,6 +303,9 @@ def test_edit_during_handoff_validates_only_the_new_first_item_and_keeps_focus(t
     owner._launch_stream.assert_called_once()
     call = owner._launch_stream.call_args
     assert call.args[1] == "1" and not call.kwargs["focus_player"]
+    assert [row["title"] for row in queue.pending] == ["1", "3", "2"]
+    frame = SimpleNamespace(_vlc_generation=4)
+    queue.started(frame, 4, queue.ticket)
     assert [row["title"] for row in queue.pending] == ["3", "2"]
     queue.stop()
 

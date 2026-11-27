@@ -5,9 +5,7 @@ Readable release history for Accessible IPTV Client. New entries are prepended a
 
 ### Other changes
 
-- Polish Hungarian localization: docs/release-note-translations-20261127.json
-- Polish Hungarian localization: docs/help/hu.md
-- Polish Hungarian localization: locale/hu/LC_MESSAGES/iptvclient.po
+- Refine Hungarian menus, help and release notes (#45)
 
 ## v1.152.2 - 2026-11-27
 

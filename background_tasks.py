@@ -1,4 +1,4 @@
-"""One daemon worker with a single replaceable pending task, no growing queue."""
+"""Background work with bounded concurrency and a single latest pending task."""
 import threading
 
 
@@ -34,13 +34,15 @@ def start_operation(owner, name, work, completed, dispatch):
 
 
 class LatestTask:
-    def __init__(self, dispatch):
+    def __init__(self, dispatch, *, parallelism=1):
         self.dispatch = dispatch
+        self.parallelism = parallelism
+        self.workers = []
+        self.running = 0
         self.condition = threading.Condition()
         self.version = 0
         self.pending = None
         self.closed = False
-        self.thread = None
 
     def submit(self, work, completed):
         with self.condition:
@@ -48,14 +50,16 @@ class LatestTask:
                 return
             self.version += 1
             self.pending = (self.version, work, completed)
-            if self.thread is None:
-                self.thread = threading.Thread(target=self._run, daemon=True, name='LibraryWorker')
+            if len(self.workers) == self.running and len(self.workers) < self.parallelism:
+                worker = threading.Thread(target=self._run, daemon=True, name='IPTV background task')
                 try:
-                    self.thread.start()
+                    worker.start()
                 except RuntimeError:
-                    self.thread = None
-                    self.pending = None
-                    raise
+                    if not self.workers:
+                        self.pending = None
+                        raise
+                else:
+                    self.workers.append(worker)
             self.condition.notify()
 
     def cancel(self):
@@ -78,6 +82,7 @@ class LatestTask:
                     return
                 version, work, completed = self.pending
                 self.pending = None
+                self.running += 1
             def canceled():
                 return self.closed or version != self.version
             result, error = None, None
@@ -85,6 +90,9 @@ class LatestTask:
                 result = work(canceled)
             except Exception as exc:
                 error = exc
+            finally:
+                with self.condition:
+                    self.running -= 1
             if not canceled():
                 def deliver(result=result, error=error, completed=completed, version=version):
                     if not self.closed and version == self.version:

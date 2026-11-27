@@ -271,6 +271,8 @@ Reproducción > Sincronización de subtítulos (Ctrl+Mayús+T) ajusta hasta diez
 
 Durante la reproducción de una grabación local, el menú de reproducción permite buscar palabras en un archivo de subtítulos cargado o en una pista de texto integrada. Seleccione un resultado y pulse Intro para ir a ese punto. Puede elegir velocidades entre 0,75× y 2×. Seleccione «Velocidad normal» para volver a 1×.
 
+En Reproducción, **Guardar transcripción de subtítulos** exporta la pista de texto con marcas de tiempo. En los resultados de búsqueda, seleccione filas y elija **Guardar subtítulos seleccionados**. Para saltar al momento de un subtítulo, seleccione una sola fila y pulse Intro.
+
 ### Dispositivo de salida de audio {#audio-output-device}
 
 Reproducción > Dispositivo de salida de audio… (D) elige los altavoces o auriculares que usa el reproductor, por ejemplo para alejar el sonido del TV de su lector de pantalla. Predeterminado del sistema sigue al dispositivo predeterminado de Windows. La elección se recuerda.
@@ -319,7 +321,7 @@ El programa puede grabar cualquier canal a un archivo mientras ve otra cosa, o s
 
 Grabar lo que ve en el reproductor integrado usa la misma conexión al proveedor, así que funciona incluso con cuentas que permiten un solo flujo a la vez.
 
-Detener una grabación puede tardar un momento mientras se finaliza su archivo. Al salir de la aplicación también se detienen las grabaciones que sigan en curso; antes, el programa les concede un breve margen para finalizar sus archivos.
+Al detener una grabación o salir, el programa da tiempo para terminar de escribir el archivo. El plazo depende del archivo y del formato.
 
 Grabaciones > Supervisión del espacio de grabación comprueba el espacio libre cada cinco segundos mientras se graba. El aviso está activado por defecto por debajo de 1024 MiB. La detención automática está desactivada inicialmente; actívela y elija un umbral, inicialmente de 256 MiB, para solicitar el cierre correcto de los archivos antes de llenar la unidad. El umbral de aviso no puede ser inferior al de detención. Las grabaciones de una misma unidad comparten un aviso y, si se activa la detención, se detienen todas las afectadas. La comprobación no reserva espacio ni garantiza el cierre de archivos en una unidad llena o desconectada.
 
@@ -332,6 +334,8 @@ Mover a la papelera de grabaciones traslada el archivo a la papelera de la aplic
 Todas las carpetas de grabaciones reúne las carpetas configuradas. Filtre por estado y ordene por fecha, título, duración o tamaño; Descendente invierte el orden. Ctrl+A selecciona todas las filas visibles; se muestran la cantidad y el tamaño total. La papelera, la eliminación permanente y la restauración admiten selección múltiple; reproducir y cambiar el título requieren una grabación. La búsqueda se ejecuta en segundo plano; cerrar no cancela acciones confirmadas.
 
 Biblioteca de grabaciones > Exportar lista a CSV guarda la lista filtrada y ordenada con título, canal, fecha, duración, estado y tamaño. No incluye rutas ni URL de transmisión; protege los prefijos de fórmulas en los textos. Al cerrar, la biblioteca recuerda la carpeta, búsqueda, filtro y ordenación. Al abrirla de nuevo, las grabaciones eliminadas siempre están ocultas. La exportación solo se ejecuta al solicitarla y no vuelve a examinar los archivos multimedia.
+
+En el editor de la cola, **Guardar cola** guarda en orden las grabaciones pendientes con un nombre. Desde la misma ventana puede cargar o eliminar una cola guardada. Los archivos se comprueban por turno. En **Notificaciones de grabación**, puede elegir un cuadro de diálogo, un aviso de voz o solo el historial para los inicios y finales correctos. Para guardar un fragmento, añada un marcador con nombre a una grabación local y elija **Guardar fragmento de grabación** en Reproducción. Elija los límites. El vídeo y el audio se guardan en segundo plano en un MKV nuevo.
 
 ### Formato de grabación {#recording-formats}
 
@@ -379,6 +383,8 @@ Seleccione los días de repetición en Programar por hora, o en Grabaciones prog
 Elija Buscar otra emisión en el menú contextual de una grabación pendiente o en el diálogo de conflictos. Se buscan emisiones en los próximos 14 días. Un número de episodio coincidente identifica el mismo episodio. Si solo coincide el título, se indica una posible repetición. Revise la hora y los conflictos antes de confirmar. Los demás horarios se conservan.
 
 En el menú contextual de las grabaciones programadas puede pausar una regla de grabación periódica o de serie entre dos fechas, ambas incluidas. La grabación se reanuda con la siguiente emisión prevista. Puede quitar la pausa antes. Seleccione varias grabaciones futuras para exportarlas a un único archivo .ics con sus márgenes de grabación. Al salir, la aplicación pide confirmación antes de detener una grabación en curso y termina de escribir los archivos. Antes de confirmar, se muestran la primera grabación que se omitirá y la primera posterior a la pausa, si se conocen sus horarios.
+
+En Grabaciones programadas, pulse Ctrl+F para filtrar por título o canal. Puede ver los próximos siete días, las grabaciones fallidas y parciales o las reglas en pausa. Borre la búsqueda y elija Todo para volver a la lista completa.
 
 ### Margen de programación {#schedule-padding}
 

@@ -332,6 +332,8 @@ A Lejátszás > Felirat időzítése… (Ctrl+Shift+T) ablakban a felirat időz�
 
 Ha a megnyitott helyi felvételben előre és hátra is ugorhat, a betöltött felirat teljes szövegében kereshet. A **Lejátszás** menü **Feliratfájl betöltése…** parancsával nyisson meg egy külső fájlt. Ha a felvétel tartalmaz szöveges feliratsávot, azt a **Beágyazott feliratsáv felolvasása…** paranccsal választhatja ki. Ugyanebben a menüben válassza a **Keresés a felvétel feliratában…** parancsot, és írja be a keresett szót vagy kifejezést. A találati listában az eredeti időpont és a hozzá tartozó szöveg szerepel. Az Enter megnyomásával a kijelölt feliratrész elejére ugorhat. Ha módosította a felirat időzítését, a lejátszó az ugrásnál ezt is figyelembe veszi.
 
+Helyi felvétel lejátszásakor a **Lejátszás** menü **Feliratátirat mentése…** parancsával szövegfájlba mentheti a betöltött feliratot. Az átiratban minden részlet mellett a feliratsávban szereplő kezdő- és végidőpont olvasható. Ha csak a keresés egyes találataira van szüksége, jelölje ki őket, majd válassza a **Kijelölt találatok mentése…** gombot. Ha a felvétel egy adott pontjára szeretne ugrani, jelöljön ki egyetlen találatot, és nyomja meg az Entert.
+
 ### Hangkimeneti eszköz {#audio-output-device}
 
 A Lejátszás > Hangkimeneti eszköz (D) paranccsal kiválaszthatja, melyik hangszórón vagy fejhallgatón szóljon a beépített lejátszó hangja. Így például a műsor és a képernyőolvasó hangját eltérő kimenetre irányíthatja. Az „A rendszer alapértelmezett eszköze” beállítás a Windowsban kijelölt kimenetet követi. A program megjegyzi a választását.
@@ -410,6 +412,12 @@ A Felvételtár ablak Lista exportálása CSV-fájlba… gombja az éppen látha
 
 Ha rögzítés közben kezdeményezi a kilépést, a program felsorolja a folyamatban lévő felvételeket, és megerősítést kér. Az alapértelmezett válasz a **Nem**. Ezt választva a rögzítés folytatódik. Ha jóváhagyja a kilépést, az alkalmazás leállítja a rögzítéseket, és megvárja a fájlok lezárására indított műveletek befejezését.
 
+A **Lejátszási sor mentése…** gombbal névvel együtt elmentheti a sorban várakozó felvételeket, a beállított sorrendben. Menteni, betölteni és törölni akkor lehet, amikor a program nem játssza le a sort. Korábbi összeállítás megnyitásához válassza a **Mentett sor betöltése…** gombot. A program minden fájlt akkor ellenőriz, amikor az sorra kerül. A **Mentett sor törlése…** gombbal a mentett összeállítást törölheti.
+
+A **Felvételek > Felvételi értesítések…** ablakban háromféle jelzés közül választhat a felvétel sikeres indításához és befejezéséhez. A **Párbeszédablak megjelenítése** beállítással a jelzést külön ablakban olvashatja el. A **Bemondás és előzménybejegyzés** beállítással a program röviden bejelenti az eseményt, és elmenti az előzményekbe. A **Csak előzménybejegyzés** lehetőség csendben rögzíti az eseményt. A bejegyzéseket a **Nézet > Értesítési előzmények…** ablakban találja.
+
+Ha egy helyi felvételből szeretne külön fájlba menteni egy részletet, előbb jelöljön meg benne legalább egy pontot a **Könyvjelző hozzáadása…** paranccsal. Ezután válassza a **Lejátszás > Felvételrészlet mentése…** parancsot, és adja meg a kezdő- és a végpontot. A két határpont kijelöléséhez a könyvjelzőket, valamint a felvétel elejét és végét használhatja. A program a háttérben új MKV-fájlba menti a hangsávokat, valamint a képet, ha a forrás videót is tartalmaz. Ha a mentés közben leállítja a lejátszást, másik felvételre vált vagy bezárja a lejátszót, a művelet megszakad.
+
 ### Rögzítési formátumok {#recording-formats}
 
 A Felvételek > Rögzítési formátum menüponttal választhatja ki, milyen formátumban mentse a program a felvételeket:
@@ -464,6 +472,8 @@ A **Másik adásidőpont vagy forrás keresése…** parancs a még el nem indul
 Az **Ütemezett felvételek** ablakban jelöljön ki egy ismétlődő felvételt vagy egy sorozatfelvételt. A Shift+F10 billentyűkombinációval nyissa meg a helyi menüt, majd válassza a **Felvételi szabály szüneteltetése…** parancsot. Adja meg a szünet első és utolsó napját. Az időszak mindkét megadott napot magában foglalja. A program a műsor kezdetének helyi dátumát veszi alapul akkor is, ha a ráhagyás miatt a rögzítés már az előző este elkezdődne. Jóváhagyás előtt ellenőrizheti az első kimaradó felvétel és a szünetet követő első alkalom időpontját, ha ezek az adatok már rendelkezésre állnak. A szünet lejártával a program ismét a szabály szerint rögzít. Ha a megadott időszak vége előtt szeretné visszaállítani az eredeti ütemezést, nyissa meg újra ezt a párbeszédablakot, és jelölje be a **Szüneteltetés megszüntetése** lehetőséget.
 
 A **Kijelölt felvételek időpontjainak exportálása naptárba…** paranccsal több, még el nem kezdődött ütemezett felvétel adatait egyetlen .ics-formátumú naptárfájlba mentheti. A kijelölt tételek között nem lehet szüneteltetés miatt kimaradó alkalom. Minden bejegyzés a rögzítés kezdetét és végét tartalmazza, a beállított ráhagyással együtt.
+
+Az **Ütemezett felvételek** ablakban a Ctrl+F billentyűparanccsal léphet a cím vagy csatorna szerinti szűrőmezőre. A **Következő 7 nap** nézet a ténylegesen esedékes felvételeket sorolja fel. A **Sikertelen, kimaradt és részleges** nézetben a problémás tételek jelennek meg. A **Felvételek szüneteltetési időszakkal** nézetben azokat a sorozatfelvételi szabályokat és ütemezett felvételeket látja, amelyek szünete tart vagy később kezdődik. A teljes listához törölje a keresőkifejezést, és válassza az **Összes** nézetet.
 
 ### Ütemezési ráhagyás {#schedule-padding}
 
