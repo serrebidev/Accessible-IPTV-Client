@@ -1,6 +1,14 @@
 # Changelog
 
 Readable release history for Accessible IPTV Client. New entries are prepended automatically by `build.bat release`. Older entries were reconstructed from the [Forgejo mirror](https://git.serrebiradio.com/serrebi/Accessible-IPTV-Client).
+## v1.152.3 - 2026-11-27
+
+### Other changes
+
+- Polish Hungarian localization: docs/release-note-translations-20261127.json
+- Polish Hungarian localization: docs/help/hu.md
+- Polish Hungarian localization: locale/hu/LC_MESSAGES/iptvclient.po
+
 ## v1.152.2 - 2026-11-27
 
 ### Other changes
