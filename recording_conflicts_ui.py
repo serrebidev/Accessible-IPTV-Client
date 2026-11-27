@@ -23,7 +23,7 @@ def local_time(value):
 
 def snapshot_job(job):
     value = {key: job.get(key) for key in ('id', 'title', 'status', 'start_ts', 'stop_ts',
-                                          'pre_padding_minutes', 'post_padding_minutes')}
+                                          'pre_padding_minutes', 'post_padding_minutes', 'pause_dates')}
     value['channel'] = dict(job.get('channel') or {})
     return value
 
@@ -47,6 +47,8 @@ def conflict_rows(config, channel, start, end, jobs, *, exclude=None, canceled=l
         if canceled():
             return []
         if job.get('id') == exclude or job.get('status') not in {'scheduled', 'recording', 'stopping'}:
+            continue
+        if job.get('status') == 'scheduled' and dvr.paused_occurrence(job):
             continue
         a, b = job.get('start_ts'), job.get('stop_ts')
         if not all(type(v) in (int, float) and math.isfinite(v) for v in (a, b)) or not a < end or not b > start:

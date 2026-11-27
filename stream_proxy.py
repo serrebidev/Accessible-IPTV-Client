@@ -1,4 +1,5 @@
 
+import errno
 import http.server
 import socketserver
 import threading
@@ -18,6 +19,7 @@ import time
 import hashlib
 import secrets
 import collections
+from i18n import gettext as _
 
 import sys
 
@@ -1309,6 +1311,7 @@ class StreamProxyHandler(http.server.BaseHTTPRequestHandler):
 
 class StreamProxy:
     def __init__(self):
+        self._lifecycle = threading.RLock()
         self.server = None
         self.thread = None
         self.port = 0
@@ -1331,39 +1334,63 @@ class StreamProxy:
         self._stop_event = threading.Event()
         self._firewall_rule_name = None
 
-    def _get_local_ip(self):
-        """Robust primary IP detection for Chromecast compatibility."""
+    @staticmethod
+    def _address_available(address):
+        if not address:
+            return False
         try:
-            # Method 1: Connected socket (fastest, most accurate for primary route)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('8.8.8.8', 80))
-            ip = s.getsockname()[0]
-            s.close()
-            if ip and not ip.startswith('127.'): return ip
-        except:
-            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+                probe.bind((address, 0))
+            return True
+        except OSError:
+            return False
+
+    def _get_local_ip(self, exclude=None):
+        """Choose an assigned IPv4 address. A hostname may still list an old adapter."""
+        def usable(ip):
+            return ip and ip != exclude and not ip.startswith('127.') and self._address_available(ip)
 
         try:
-            # Method 2: Hostname lookup
-            ip = socket.gethostbyname(socket.gethostname())
-            if ip and not ip.startswith('127.'): return ip
-        except:
-            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
-
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as route:
+                route.connect(('8.8.8.8', 80))
+                address = route.getsockname()[0]
+            if usable(address):
+                return address
+        except OSError:
+            LOG.debug("No routed address available for casting", exc_info=True)
         try:
-            # Method 3: Interface scan (last resort)
-            # We don't assume netifaces is installed here, use standard socket
-            for addr in socket.getaddrinfo(socket.gethostname(), None):
-                ip = addr[4][0]
-                if '.' in ip and not ip.startswith('127.'): return ip
-        except:
-            LOG.debug("StreamProxy._get_local_ip: ignored exception", exc_info=True)
-
+            for entry in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+                address = entry[4][0]
+                if usable(address):
+                    return address
+        except OSError:
+            LOG.debug("Could not resolve a local adapter address for casting", exc_info=True)
         return '127.0.0.1'
 
     def start(self):
-        if self.server: return
-        self.server = socketserver.ThreadingTCPServer((self.host, 0), StreamProxyHandler)
+        with self._lifecycle:
+            self._start_server()
+
+    def _start_server(self):
+        if self.server:
+            if self._address_available(self.host):
+                return
+            self.stop()
+        try:
+            self.server = socketserver.ThreadingTCPServer((self.host, 0), StreamProxyHandler)
+        except OSError as error:
+            if error.errno != errno.EADDRNOTAVAIL and getattr(error, "winerror", None) != 10049:
+                raise
+            replacement = self._get_local_ip(exclude=self.host)
+            if replacement.startswith("127.") and not self.host.startswith("127."):
+                raise OSError(_("No local network address is available for casting. Reconnect and try again.")) from error
+            try:
+                self.server = socketserver.ThreadingTCPServer((replacement, 0), StreamProxyHandler)
+            except OSError as retry:
+                if retry.errno != errno.EADDRNOTAVAIL and getattr(retry, 'winerror', None) != 10049:
+                    raise
+                raise OSError(_("No local network address is available for casting. Reconnect and try again.")) from retry
+            self.host = replacement
         # The handler threads stream for as long as the receiver listens. As
         # ordinary threads they would be joined when the server closes and
         # when the interpreter exits, so the app would not go away while a
@@ -1381,6 +1408,10 @@ class StreamProxy:
         LOG.info(f"Proxy started at http://{self.host}:{self.port}")
 
     def stop(self):
+        with self._lifecycle:
+            self._stop_server()
+
+    def _stop_server(self):
         self._running = False
         self._stop_event.set()
         server = self.server

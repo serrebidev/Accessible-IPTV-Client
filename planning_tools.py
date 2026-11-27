@@ -18,7 +18,7 @@ def checked_weekdays(value):
     return sorted(set(value))
 
 
-def next_weekday_job(job, now, *, weekdays=None, future_only=False):
+def next_weekday_job(job, now, *, weekdays=None, future_only=False, earliest_date=None):
     """Keep programme wall times. Skip nonexistent DST windows, never guess gaps."""
     import dvr
     from manual_schedule import local_candidates
@@ -35,6 +35,8 @@ def next_weekday_job(job, now, *, weekdays=None, future_only=False):
     offset = (end.date() - original.date()).days
     first = max(original.date() + dt.timedelta(days=1),
                 dt.datetime.fromtimestamp(now).date() - dt.timedelta(days=max(1, offset)))
+    if earliest_date is not None:
+        first = max(first, earliest_date)
     for step in range(370):
         date = first + dt.timedelta(days=step)
         if date.weekday() not in days:
@@ -118,18 +120,73 @@ def fold_ical(line):
 
 
 def programme_calendar(title, channel, start, end, *, identity='', now=None):
-    import math
-    if any(type(x) not in (int, float) or not math.isfinite(x) for x in (start, end)) or end <= start:
-        raise ValueError(_("Invalid programme times."))
-    stamp = lambda value: dt.datetime.fromtimestamp(value, dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    # Identity is hashed; no provider locator or secret enters the export.
     key = hashlib.sha256(f'{identity}\0{title}\0{channel}\0{start}'.encode()).hexdigest()
+    return _calendar([(key, title, channel, start, end)], now)
+
+
+def pause_preview(rule, period, bookings=(), *, now=None):
+    """Return the first suppressed and first eligible programme start in local time."""
+    import dvr
+    now = time.time() if now is None else now
+    first, last = map(dt.date.fromisoformat, period)
+
+    def programme_start(job):
+        return dt.datetime.fromtimestamp(job['start_ts'] + dvr._number(job.get('pre_padding_minutes')) * 60)
+
+    if rule.get('repeat') == 'series':
+        starts = [programme_start(job) for job in bookings
+                  if (job.get('id') == rule['id'] or job.get('series_source') == rule['id'])
+                  and job.get('status') == dvr.STATUS_SCHEDULED and job['start_ts'] > now]
+        return (min((t for t in starts if first <= t.date() <= last), default=None),
+                min((t for t in starts if t.date() > last), default=None))
+
+    def occurrence(day):
+        if rule['status'] == dvr.STATUS_SCHEDULED and rule['start_ts'] > now and programme_start(rule).date() >= day:
+            return programme_start(rule)
+        try:
+            return programme_start(dvr.next_time_occurrence(rule, now, earliest_date=day, future_only=True))
+        except (OverflowError, OSError, ValueError):
+            return None
+
+    skipped = occurrence(first)
+    resume = occurrence(last + dt.timedelta(days=1)) if last < dt.date.max else None
+    return skipped if skipped and skipped.date() <= last else None, resume
+
+
+def recording_calendar(jobs, *, now=None):
+    import dvr
+    import programme_reminders
+    now = time.time() if now is None else now
+    events = {}
+    for job in jobs:
+        if (job.get("status") != dvr.STATUS_SCHEDULED or dvr.paused_occurrence(job)
+                or not job.get("id") or job["start_ts"] <= now):
+            raise ValueError(_("Select upcoming recordings outside the pause period."))
+        key = hashlib.sha256(("booking:" + str(job["id"])).encode()).hexdigest()
+        title = programme_reminders.safe_title(job.get("title")) or _("Scheduled Recording")
+        channel = programme_reminders.safe_title(job.get("channel_name"))
+        events[key] = (key, title, channel, job["start_ts"], job["stop_ts"])
+    if not events:
+        raise ValueError(_("Select upcoming recordings outside the pause period."))
+    return _calendar(sorted(events.values(), key=lambda event: (event[3], event[0])), now)
+
+
+def _calendar(events, now):
+    import math
+
+    def stamp(value):
+        return dt.datetime.fromtimestamp(value, dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+
+    generated = stamp(time.time() if now is None else now)
     lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Accessible IPTV Client//Programme//EN',
-             'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', 'UID:' + key + '@accessible-iptv-client',
-             'DTSTAMP:' + stamp(time.time() if now is None else now),
-             'DTSTART:' + stamp(start), 'DTEND:' + stamp(end),
-             'SUMMARY:' + ical_text(title), 'DESCRIPTION:' + ical_text(channel),
-             'END:VEVENT', 'END:VCALENDAR']
+             'CALSCALE:GREGORIAN']
+    for key, title, channel, start, end in events:
+        if any(type(x) not in (int, float) or not math.isfinite(x) for x in (start, end)) or end <= start:
+            raise ValueError(_("Invalid programme times."))
+        lines.extend(['BEGIN:VEVENT', 'UID:' + key + '@accessible-iptv-client', 'DTSTAMP:' + generated,
+                      'DTSTART:' + stamp(start), 'DTEND:' + stamp(end), 'SUMMARY:' + ical_text(title),
+                      'DESCRIPTION:' + ical_text(channel), 'END:VEVENT'])
+    lines.append('END:VCALENDAR')
     return ('\r\n'.join(map(fold_ical, lines)) + '\r\n').encode('utf-8')
 
 

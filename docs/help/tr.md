@@ -193,6 +193,8 @@ Hatırlatmada 5 Dakika Sonra Yeniden Hatırlat ve başlangıçtan önce Program 
 
 Programın bağlam menüsündeki veya seçili hatırlatmadaki Takvime Dışa Aktar komutu bir .ics dosyası kaydeder. Başlığı, kanalı, başlangıç ve bitişi UTC olarak içerir; takvim bunları kendi saat diliminde gösterebilir. Kayıt veya bilgisayar uyandırma planlamaz ve oynatmayı başlatmaz.
 
+Program hatırlatmalarında rehber değişikliklerini inceleyerek eski ve yeni yayın saatlerini karşılaştırın ve istediğiniz değişikliği onaylayın. Ertelenmiş bir uyarının yeni başlangıç saatine göre erteleme süresini koruyabilir veya alışılmış ön bildirim süresine dönebilirsiniz. Rehber güncellemelerinden sonra haberdar olmak için bildirim kutusunu işaretleyin.
+
 ## Geri izleme {#catch-up}
 
 Arşiv tutan kanallar, çoktan yayınlanmış programları izlemenizi sağlar. Bu kanalların kanal listesindeki menüsünde Geri izleme bulunur. Kanalın geri izleme penceresini açar; geçmiş programlarını tarih ve saatleriyle listeler.
@@ -266,6 +268,8 @@ Oynatma > Geçerli altyazıyı oku (C), ekrandaki altyazıyı, ekranda altyazı 
 
 Oynatma > Altyazı Zamanlaması (Ctrl+Shift+T), her iki yönde en çok on dakikalık kaydırmayı 500 ms adımlarla milisaniye cinsinden ayarlar. Pozitif değerler altyazı dosyalarının gösterimini ve okunmasını geciktirir. Sıfırla sıfır değerini ayarlar; İptal önceki değeri korur. Yeni medya ayarı sıfırlar. Medya ve ekran okuyucu hızı değişmez.
 
+Yerel kayıt oynatılırken oynatma menüsünden yüklenmiş altyazı dosyasında veya gömülü metin izinde sözcük arayabilirsiniz. Bir sonucu seçip Enter tuşuna basarak o konuma gidin. Kayıt oynatma hızını 0,75× ile 2× arasında ayarlayabilirsiniz. 1× hızına dönmek için normal hızı seçin.
+
 ### Ses çıkış cihazı {#audio-output-device}
 
 Oynatma > Ses çıkış cihazı... (D), oynatıcının hangi hoparlörleri ya da kulaklıkları kullanacağını seçer; örneğin TV sesini ekran okuyucunuzdan uzak tutmak için. Sistem varsayılanı, Windows'un varsayılan cihazını izler. Seçim hatırlanır.
@@ -333,7 +337,7 @@ Kayıt Kitaplığı > Listeyi CSV Olarak Dışa Aktar komutu süzülmüş ve sı
 Kayıtlar > Kayıt biçimi, kayıtların nasıl saklanacağını seçer:
 
 - Sağlayıcı kalitesi (kopya, MKV): akış, yayımlandığı gibi, tüm ses ve altyazı parçalarıyla. Sağlayıcının gönderdiği her şeyi tutar.
-- Sağlayıcı kalitesi (kopya, MP4): aynı görüntü ve ses, daha çok cihazın oynattığı bir MP4 dosyasında; altyazı ve teletext olmadan.
+- MP4 özgün videoyu kopyalar ve her ses izini 192 kbit/sn hedef bit hızıyla AAC olarak kodlar. Altyazılar ve teletekst eklenmez. MKA tüm ses izlerini özgün kodlamalarıyla kopyalar.
 - x264 yeniden kodlama (MKV ya da MP4): daha küçük, yeniden kodlanmış dosya. Çok daha fazla işlemci zamanı kullanır.
 - Yalnızca ses (MP3 V0, FLAC, WAV, AAC M4A ya da Opus): yalnızca ses; radyo için kullanışlı.
 
@@ -372,6 +376,8 @@ Zamanlanmış Kayıtlar içindeki Kayıt Çakışmaları, seçilen kaydın zaman
 Zamana Göre Planla penceresinde tekrar günlerini seçin veya dizi kuralı olmayan tek bir bekleyen kayıt için Planlanmış Kayıtlar > Seçilen Günlerde Tekrarla komutunu kullanın. Gün seçilmezse kayıt bir kez yapılır. Yeni kaydın ilk başlangıcı seçilen bir güne denk gelmelidir. Sonraki kayıtlar gece yarısını aşan aralıklar ve paylar dahil yerel program saatlerini korur; saat değişiminde var olmayan aralıklar atlanır. Uygulama açık kalmalıdır. Bağlantı sınırları geçerliliğini korur.
 
 Planlanmış kaydın bağlam menüsünden veya çakışma penceresinden Başka bir yayın saati bul komutunu seçin. Arama önümüzdeki 14 günü kapsar. Bölüm numarası eşleşirse aynı bölüm, yalnızca başlık eşleşirse olası tekrar olarak gösterilir. Onaylamadan önce saati ve çakışmaları kontrol edin. Diğer kayıtların saatleri korunur.
+
+Zamanlanmış kayıtların bağlam menüsünde yinelenen bir kayıt veya dizi kuralını belirli tarihler arasında duraklatabilirsiniz. İlk ve son gün araya dahildir. Kayıt sonraki uygun yayında sürer. Arayı daha erken de kaldırabilirsiniz. Birden fazla yaklaşan kaydı seçerek baştaki ve sondaki ek sürelerle birlikte tek bir .ics dosyasına aktarabilirsiniz. Normal çıkışta uygulama süren kaydı durdurmadan önce onay ister ve dosyaları yazmayı tamamlar. Onaylamadan önce, saatleri biliniyorsa atlanacak ilk kaydı ve aradan sonraki ilk kaydı görebilirsiniz.
 
 ### Zamanlama payı {#schedule-padding}
 
@@ -506,6 +512,8 @@ Sorular, hata raporları ve sürüm haberleri:
 - GitHub'da hata raporları ve öneriler: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Yardım > Hakkında..., kullandığınız sürümü gösterir ve ikisine de bağlantı verir. Sorun bildirirken Yardım > Günlüğü ve hata ayıklama bilgilerini kopyala, izlenmesi için gereken ayrıntıları verir. Yardım > GitHub'da sorun bildir bir başlık ve açıklama ister, ardından GitHub'ın yeni sorun sayfasını ikisi ve sürümünüz doldurulmuş olarak açar; oturum açın ve “Create” düğmesine basın.
+
+Tarayıcı bildirimi açamazsa yeniden deneyebilir veya bildirimi kopyalayarak başlığı ve açıklamayı saklayabilirsiniz.
 
 ## Kişisel araçlar {#personal-tools}
 

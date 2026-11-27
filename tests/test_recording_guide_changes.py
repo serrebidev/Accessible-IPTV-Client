@@ -1,6 +1,7 @@
 """Guide import, durable recording edits and deadline comparisons without a real provider."""
 
 import datetime as dt
+import threading
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -119,8 +120,14 @@ def test_large_mp4_completion_outlasts_size_budget_and_orphan_still_expires(tmp_
             str(tmp_path / str(elapsed)), on_start=Mock(return_value=1), on_stop=Mock(), clock=lambda: now[0]
         )
         job = s.add_job(dvr.build_job(station("a", "one"), programme(NOW + 600), "provider_mp4"))
+        started = threading.Event()
+        def update():
+            if s.get_job(job["id"]).get("recording_id") == 1:
+                started.set()
+        s.on_update = update
         now[0] = job["start_ts"]
         s.tick()
+        assert started.wait(3)
         now[0] = job["stop_ts"]
         s.tick()
         now[0] += elapsed

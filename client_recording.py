@@ -77,23 +77,23 @@ class RecordingReportsMixin:
 
     def _on_recording_finished(self, rec, rc):
         suppressed = getattr(self, "_suppress_recording_notifications", False)
-        outcome = recording_outcome.classify(rec, rc, exiting=suppressed)
+        outcome = recording_outcome.classify(rec, rc)
         job_id = None
         try:
             job_id = rec.metadata.get("dvr_job_id")
         except Exception:
             job_id = None
         if job_id:
-            scheduler = self._ensure_dvr_scheduler(start=True)
+            scheduler = self._ensure_dvr_scheduler(start=not suppressed)
             current = scheduler.get_job(str(job_id)) or {}
             expected = None
             if current.get("stop_ts") and getattr(rec, "started_at", None):
                 expected = max(0, float(current["stop_ts"]) - rec.started_at)
-            outcome = recording_outcome.classify(rec, rc, exiting=suppressed, planned_seconds=expected)
+            outcome = recording_outcome.classify(rec, rc, planned_seconds=expected)
             detail = "\n".join(rec.stderr_tail[-6:])
             produced = _recording_produced_media(rec)
-            if suppressed:
-                message = "Stopped because the app exited."
+            if suppressed and getattr(rec, "stop_reason", "") == "exit":
+                message = _("Stopped because the app exited.")
             elif rc:
                 message = detail
             else:

@@ -371,9 +371,10 @@ def delete_trashed(directory, row):
         _cleanup_trash_folder(folder)
 
 
-def folders(config):
+def folders(config, *, display_only=False):
     import options
-    values = [options.get_recordings_dir(config)]
+    default = options.recordings_directory_path(config) if display_only else options.get_recordings_dir(config)
+    values = [default]
     additional = config.get("recording_library_folders")
     if isinstance(additional, list):
         values.extend(path for path in additional if isinstance(path, str) and "\x00" not in path)
@@ -383,7 +384,7 @@ def folders(config):
         if not path.strip():
             continue
         absolute = os.path.abspath(path)
-        key = os.path.normcase(os.path.realpath(absolute))
+        key = os.path.normcase(absolute if display_only else os.path.realpath(absolute))
         if key not in seen:
             result.append(absolute)
             seen.add(key)

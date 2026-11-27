@@ -28,6 +28,53 @@ def ask_minutes(parent, value):
         dialog.Destroy()
 
 
+def review_reminder_times(owner, dialog=None):
+    """Compare after an import or on demand; present changes only on the GUI thread."""
+    import options
+    from playlist import EPGDatabase
+    from planning_tools_ui import reminder_choice
+    target = dialog if dialog is not None else owner
+    channels = getattr(owner, "all_channels", ())
+    def find(rows):
+        if not any(row['status'] == 'scheduled' and row['start'] > time.time() for row in rows):
+            return []
+        db = EPGDatabase(options.get_db_path(), readonly=True)
+        try:
+            db.conn.execute("BEGIN")
+            return reminders.guide_changes(db, rows, channels,
+                canceled=lambda: getattr(target, "closed", False) or getattr(owner, "_closing_application", False))
+        finally:
+            db.close()
+
+    def search():
+        return find(owner._ensure_reminders().list())
+
+    def ready(rows, error):
+        if getattr(owner, "_closing_application", False):
+            return
+        if dialog is None:
+            if rows:
+                owner._show_or_queue_message_box(
+                    _("Reminder times have changed. Open Programme Reminders and choose Review Guide Changes."),
+                    _("Programme Reminders"), wx.OK | wx.ICON_INFORMATION)
+            return
+        if error or not rows:
+            message_box(str(error) if error else _("No changes were found to upcoming reminder times."),
+                        _("Programme Reminders"), wx.OK, parent=dialog)
+            return
+        choice = reminder_choice(dialog, rows)
+        if choice is None:
+            return
+        row, programme, exact, keep = choice
+        def commit():
+            if (row, programme, exact) not in find([row]):
+                raise ValueError(_("The programme guide changed. Refresh the list and try again."))
+            return dialog.store.retime(row, programme, keep_snooze=keep)
+        dialog._change(commit, rearm=row['id'])
+
+    start_operation(target, "reminder-guide-review", search, ready, wx.CallAfter)
+
+
 class RemindersDialog(wx.Dialog):
     help_topic = 'channel-epg'
 
@@ -56,6 +103,20 @@ class RemindersDialog(wx.Dialog):
         self.clear = wx.Button(panel, label=_("Clear All Reminders"))
         self.calendar = wx.Button(panel, label=_("Export to Calendar..."))
         self.calendar.Bind(wx.EVT_BUTTON, self._export_calendar)
+        review = wx.Button(panel, label=_("Review Guide Changes..."))
+        review.Bind(wx.EVT_BUTTON, lambda event: review_reminder_times(parent, self))
+        notify = wx.CheckBox(panel, label=_("Notify me of reminder time changes after guide updates"))
+        notify.SetValue(getattr(parent, "config", {}).get("notify_reminder_guide_changes") is True)
+        def toggle_notice(event):
+            value = notify.GetValue()
+            try:
+                parent._save_tool_setting("notify_reminder_guide_changes", lambda old: value)
+            except OSError as error:
+                notify.SetValue(not value)
+                message_box(str(error), _("Programme Reminders"), wx.OK | wx.ICON_ERROR, parent=self)
+        notify.Bind(wx.EVT_CHECKBOX, toggle_notice)
+        layout.Add(notify, 0, wx.ALL, 8)
+        buttons.Add(review, 0, wx.RIGHT, 5)
         refresh = wx.Button(panel, label=_("Refresh"))
         close = wx.Button(panel, wx.ID_CANCEL, _("Close"))
         for button in (self.edit, self.remove, self.clear, self.calendar, refresh, close):

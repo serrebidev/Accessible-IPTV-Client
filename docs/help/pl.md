@@ -194,6 +194,8 @@ Przypomnienie oferuje Przypomnij ponownie za 5 minut oraz, przed rozpoczęciem, 
 
 Eksportuj do kalendarza w menu kontekstowym programu lub dla wybranego przypomnienia zapisuje plik .ics. Zawiera tytuł, kanał oraz początek i koniec w UTC, które kalendarz może wyświetlić w swojej strefie. Nie planuje nagrywania ani wybudzenia i nie uruchamia odtwarzania.
 
+W przypomnieniach o audycjach otwórz przegląd zmian w programie telewizyjnym. Porównaj wcześniejszą i nową godzinę i potwierdź zmianę. Jeśli powiadomienie zostało odroczone, możesz zachować odstęp względem nowej godziny rozpoczęcia lub przywrócić zwykłe wyprzedzenie. Zaznacz pole powiadomień, aby otrzymywać takie informacje po aktualizacji programu.
+
 ## Powtórki {#catch-up}
 
 Kanały, które trzymają archiwum, pozwalają oglądać audycje już nadane. Takie kanały mają Powtórki w swoim menu na liście kanałów. Otwiera okno powtórek kanału, wypisujące jego dawne audycje z datą i godziną.
@@ -267,6 +269,8 @@ Odtwarzanie > Odczytaj bieżący napis (C) odczytuje napis widoczny na ekranie a
 
 Odtwarzanie > Synchronizacja napisów (Ctrl+Shift+T) ustawia przesunięcie do dziesięciu minut w każdą stronę, w milisekundach z krokiem 500 ms. Wartości dodatnie opóźniają wyświetlanie i odczyt napisów z pliku. Reset ustawia zero; Anuluj zachowuje poprzednią wartość. Nowy materiał resetuje ustawienie. Prędkość materiału i czytnika ekranu pozostaje bez zmian.
 
+Podczas odtwarzania lokalnego nagrania menu odtwarzania umożliwia wyszukanie tekstu we wczytanym pliku napisów lub na osadzonej ścieżce tekstowej. Wybierz wynik i naciśnij Enter, aby przejść do tego miejsca. Możesz zmieniać prędkość od 0,75× do 2×. Wybierz normalną prędkość, aby wrócić do 1×.
+
 ### Urządzenie wyjścia audio {#audio-output-device}
 
 Odtwarzanie > Urządzenie wyjścia audio... (D) wybiera głośniki albo słuchawki, których używa odtwarzacz, na przykład aby odsunąć dźwięk telewizji od czytnika ekranu. Domyślne systemu podąża za domyślnym urządzeniem Windows. Wybór jest zapamiętywany.
@@ -334,7 +338,7 @@ Biblioteka nagrań > Eksportuj listę do CSV zapisuje przefiltrowaną i posortow
 Nagrania > Format nagrywania wybiera, jak nagrania są zapisywane:
 
 - Jakość dostawcy (kopia, MKV): strumień dokładnie taki, jak nadany, ze wszystkimi ścieżkami audio i napisów. Zachowuje wszystko, co dostawca wysyła.
-- Jakość dostawcy (kopia, MP4): ten sam obraz i dźwięk w pliku MP4, który odtwarza więcej urządzeń, bez napisów i teletekstu.
+- MP4 kopiuje oryginalny obraz i koduje wszystkie ścieżki audio do AAC z docelową przepływnością 192 kbit/s na ścieżkę. Pomija napisy i teletekst. MKA zachowuje wszystkie ścieżki audio w oryginalnym kodowaniu.
 - Ponowne kodowanie x264 (MKV albo MP4): mniejszy, ponownie zakodowany plik. Zużywa znacznie więcej czasu procesora.
 - Tylko dźwięk (MP3 V0, FLAC, WAV, AAC M4A albo Opus): tylko dźwięk, przydatne dla radia.
 
@@ -373,6 +377,8 @@ Konflikty nagrań w Zaplanowanych nagraniach pokazują nakładanie się wybraneg
 Wybierz dni powtarzania w Planowaniu według czasu albo użyj Zaplanowane nagrania > Powtarzaj w wybrane dni tygodnia dla jednego oczekującego nagrania, które nie jest regułą serialu. Brak wyboru oznacza nagranie jednorazowe. Przy tworzeniu pierwszy początek musi przypadać w wybranym dniu. Kolejne terminy zachowują lokalne godziny programu, przejście przez północ i zapas czasu; nieistniejące przedziały przy zmianie czasu są pomijane. Aplikacja musi działać. Nadal obowiązują limity połączeń.
 
 Z menu kontekstowego zaplanowanego nagrania lub okna konfliktów wybierz Znajdź inną emisję. Wyszukiwanie obejmuje najbliższe 14 dni. Zgodny numer oznacza ten sam odcinek. Sama zgodność tytułu oznacza możliwą powtórkę. Przed zatwierdzeniem sprawdź czas emisji i konflikty. Pozostałe nagrania zachowują swoje terminy.
+
+W menu kontekstowym zaplanowanych nagrań możesz wstrzymać regułę cykliczną lub nagrywanie serialu na okres obejmujący obie wskazane daty. Nagrywanie zostanie wznowione od następnej pasującej emisji. Przerwę można zakończyć wcześniej. Zaznacz kilka nadchodzących nagrań, aby wyeksportować je do jednego pliku .ics z uwzględnieniem dodatkowego czasu przed audycją i po niej. Przy zamykaniu aplikacja pyta o potwierdzenie zatrzymania trwającego nagrania i kończy zapis plików. Przed zatwierdzeniem można sprawdzić termin pierwszego pominiętego nagrania i pierwszego nagrania po przerwie, o ile są już znane.
 
 ### Margines nagrywania {#schedule-padding}
 
@@ -507,6 +513,8 @@ Pytania, zgłoszenia błędów i nowości o wydaniach:
 - Zgłoszenia błędów i sugestie na GitHubie: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Pomoc > O programie... pokazuje używaną wersję i linkuje obie. Przy zgłaszaniu problemu Pomoc > Kopiuj dziennik i informacje diagnostyczne daje szczegóły potrzebne do namierzenia go. Pomoc > Zgłoś problem na GitHubie pyta o tytuł i opis, a potem otwiera stronę nowego zgłoszenia na GitHubie z oboma polami i wersją programu; zaloguj się i naciśnij „Create”.
+
+Jeśli przeglądarka nie otworzy zgłoszenia, spróbuj ponownie lub skopiuj tytuł i opis przyciskiem „Kopiuj zgłoszenie”.
 
 ## Narzędzia osobiste {#personal-tools}
 

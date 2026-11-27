@@ -63,6 +63,10 @@ def peak_demand(config, channel, start, end, jobs, *, exclude=None):
                    for source in config.get('playlists', [])
                    for account in account_info.discover_accounts([source]) if account.provider_id}
     for job in jobs:
+        if job.get("status") == "scheduled" and job.get("pause_dates"):
+            import dvr
+            if dvr.paused_occurrence(job):
+                continue
         if job.get("id") == exclude or job.get("status") not in {"scheduled", "recording", "stopping"}:
             continue
         a, b = job.get("start_ts"), job.get("stop_ts")
@@ -86,7 +90,9 @@ def peak_demand(config, channel, start, end, jobs, *, exclude=None):
 def warning(config, channel, start, end, jobs, *, exclude=None):
     demand = peak_demand(config, channel, start, end, jobs, exclude=exclude)
     if demand is None:
+        import dvr
         overlaps = [job for job in jobs if job.get("id") != exclude
+                    and not (job.get("status") == "scheduled" and dvr.paused_occurrence(job))
                     and job.get("start_ts", 0) < end and job.get("stop_ts", 0) > start]
         return _("This overlaps {count} recording(s). Continue?").format(count=len(overlaps)) if overlaps else ""
     peak, limit = demand

@@ -48,6 +48,7 @@ SOURCE_FILES = [
     "client_ui.py",
     "client_epg.py",
     "client_recording.py",
+    "recorder.py",
     "accessible_tools_ui.py",
     "recording_library.py",
     "recording_library_ui.py",

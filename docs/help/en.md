@@ -203,6 +203,8 @@ A programme reminder offers Remind Again in 5 Minutes and, before the start, Rem
 
 Export to Calendar on a programme’s context menu, or a selected reminder, saves an .ics file for import into a calendar. It includes title, channel and UTC start/end times, so the calendar can display its own local time. It does not create a recording, start playback or schedule a computer wake.
 
+In Programme Reminders, choose **Review Guide Changes** to compare the original and revised times on the same channel. Select a change and confirm it to keep your usual lead time. For a postponed alert you can keep its offset from the new start or return to the usual lead time. Enable the notification checkbox to hear about changes after guide updates.
+
 ## Catch-up {#catch-up}
 
 Channels that keep an archive let you watch programmes that have already been broadcast. Such channels have Catch-up on their menu in the channel list. It opens the catch-up window for the channel, listing its past programmes with their dates and times.
@@ -276,6 +278,8 @@ Playback > Read Current Subtitle (C) reads the subtitle on screen, or the last o
 
 Playback > Subtitle Timing (Ctrl+Shift+T) adjusts subtitle delay by up to ten minutes in either direction, in milliseconds. The control steps by 500 ms; a positive value delays both display and built-in file-subtitle speech. Reset Timing sets zero; Cancel preserves the previous value. New media resets the adjustment; this does not change media or screen-reader speed.
 
+During local recording playback, choose **Find Text in Recording Subtitles** in the Playback menu. Load a text subtitle file or select an embedded text track, enter a word or phrase, choose a result and press Enter to jump there. **Recording Playback Speed** changes the recording’s speed from 0.75× to 2×. Choose **Normal speed** to return to 1×.
+
 ### Audio output device {#audio-output-device}
 
 Playback > Audio Output Device (D) chooses the speakers or headphones the player uses, for example to keep TV sound away from your screen reader. System default follows the Windows default device. The choice is remembered.
@@ -343,7 +347,7 @@ Recording Library > Export List to CSV exports the currently filtered and sorted
 Recordings > Recording Format chooses how recordings are saved:
 
 - Provider quality (copy, MKV): the stream exactly as broadcast, with every audio and subtitle track. Keeps everything the provider sends.
-- Provider quality (copy, MP4): the same picture and sound in an MP4 file, which more devices play, without subtitles and teletext.
+- MP4 (original video, AAC audio) copies the video and encodes all audio tracks as AAC at a target of 192 kbit/s. Subtitles and teletext are omitted. MKA copies all audio tracks in their original encoding.
 - x264 re-encode (MKV or MP4): a smaller re-encoded file. Uses much more processor time.
 - Audio only (MP3 V0, FLAC, WAV, AAC M4A or Opus): the sound only, useful for radio.
 
@@ -382,6 +386,8 @@ Recording Conflicts in Scheduled Recordings lists overlaps for one selected entr
 Choose repeat weekdays in Schedule by Time, or use Scheduled Recordings > Repeat on Weekdays on one pending recording that is not a series rule. Clear every day for a single recording. In Schedule by Time, the first start must fall on a selected day. Later occurrences keep local programme times, including overnight windows and padding; nonexistent clock-change windows are skipped. Keep the application open. Existing recording connection limits still apply.
 
 Choose Find Another Airing from a pending recording’s context menu or from Recording Conflicts. The app searches the next 14 days. A matching episode number identifies the same episode. A title match alone is shown as a possible repeat. Review the time and any conflicts before confirming. Moving one occurrence preserves the rest of the schedule.
+
+In Scheduled Recordings, open an item’s context menu and choose **Pause Recording Rule**. The first and last dates are both included. Recording resumes with the next eligible broadcast. Reopen the rule to remove the pause. To export several upcoming bookings, select them and choose **Export Selected Recordings to Calendar**. The single .ics file includes the recording margins. On normal exit, the app asks before stopping an active recording and finishes writing the files before closing. Before confirming, you can review the first skipped recording and the first one after the pause, when their times are known.
 
 ### Schedule padding {#schedule-padding}
 
@@ -516,6 +522,8 @@ Questions, bug reports and release news:
 - Bug reports and suggestions on GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Help > About shows the version you are running and links to both. When you report a problem, Help > Copy Log and Debug Information gives the details needed to track it down. Help > Report an issue on GitHub asks for a title and a description, then opens the GitHub new issue page with both filled in and your version added; sign in and press Create.
+
+If the browser cannot open an issue report, choose **Try Again** or **Copy Report** to keep the title and description.
 
 ## Personal tools {#personal-tools}
 

@@ -3103,14 +3103,6 @@ msgstr "Szolgáltatói hiba: {error}"
 msgid "Provider quality (copy, MKV)"
 msgstr "Eredeti minőség (újrakódolás nélkül, MKV)"
 
-#: main.py:3275
-msgid "Provider quality (copy, MP4)"
-msgstr "Eredeti minőség (újrakódolás nélkül, MP4)"
-
-#: main.py:3278
-msgid "Provider quality (stream copy, MKA)"
-msgstr "Eredeti minőség (újrakódolás nélkül, MKA)"
-
 #: main.py:1457
 #: playlist.py:3506
 msgid "Provider – {name}"
@@ -5390,3 +5382,184 @@ msgstr "Körülbelül {value} Mbps"
 msgid "◄ Back"
 msgstr "◄ Vissza"
 
+#: planning_tools_ui.py:101
+msgid "Choose a valid pause ending today or later."
+msgstr "Ellenőrizze a szünet dátumait. A zárónap nem előzheti meg sem a kezdőnapot, sem a mai napot."
+
+#: media_navigation_ui.py:82
+msgid "Choose the playback speed:"
+msgstr "Válasszon lejátszási sebességet:"
+
+#: main.py:2988
+msgid "Connecting to {channel}…"
+msgstr "Kapcsolódás a csatornához: {channel}…"
+
+#: dialogs_misc.py:63
+msgid "Copy Report"
+msgstr "Bejelentés másolása"
+
+#: dialogs_misc.py:76
+msgid "Could not copy the text. Your report is still available."
+msgstr "A vágólapra másolás nem sikerült. A bejelentés szövege megmaradt."
+
+#: dvr.py:774
+msgid "Enter a valid start date and an end date on or after it."
+msgstr "Adjon meg érvényes dátumokat. A zárónap nem előzheti meg a kezdőnapot."
+
+#: main.py:5761
+msgid "Exiting will stop these recordings:\n{titles}\n\nExit anyway?"
+msgstr "Kilépéskor a következő felvételek leállnak:\n{titles}\n\nBiztosan kilép?"
+
+#: main.py:9508
+#: planning_tools_ui.py:53
+msgid "Export Selected Recordings to Calendar..."
+msgstr "Kijelölt felvételek időpontjainak exportálása naptárba…"
+
+#: media_navigation_ui.py:59
+#: media_navigation_ui.py:120
+msgid "Find Text in Recording Subtitles..."
+msgstr "Keresés a felvétel feliratában…"
+
+#: main.py:4156
+msgid "Finishing recordings before exit…"
+msgstr "Kilépés előtt a program lezárja a felvételeket…"
+
+#: planning_tools_ui.py:70
+msgid "First day of the pause"
+msgstr "A szünet első napja"
+
+#: planning_tools_ui.py:115
+msgid "First skipped recording: {time}"
+msgstr "Az első kimaradó felvétel időpontja: {time}"
+
+#: planning_tools_ui.py:149
+msgid "Keep the postponement relative to the new start time? Choose No to use the usual lead time."
+msgstr "Az elhalasztott értesítés időpontja is ugyanannyival változzon, mint a műsor kezdete? Ha a Nem gombot választja, ismét az eredeti értesítési beállítás lesz érvényben."
+
+#: planning_tools_ui.py:70
+msgid "Last day of the pause"
+msgstr "A szünet utolsó napja"
+
+#: media_navigation_ui.py:117
+msgid "Load a text subtitle file or select an embedded text track first."
+msgstr "A kereséshez szöveges felirat szükséges. Töltsön be egy külső fájlt, vagy válasszon sávot a „Beágyazott feliratsáv felolvasása…” paranccsal."
+
+#: main.py:3315
+msgid "MKA (all audio tracks, original encoding)"
+msgstr "MKA – minden hangsáv eredeti kódolással"
+
+#: main.py:3312
+msgid "MP4 (original video, AAC audio)"
+msgstr "MP4 – eredeti videó, AAC-hang"
+
+#: planning_tools_ui.py:117
+msgid "Next recording after the pause: {time}"
+msgstr "A szünet utáni első felvétel: {time}"
+
+#: planning_ui.py:62
+msgid "No changes were found to upcoming reminder times."
+msgstr "A program nem talált időpontváltozást az értesítésre kijelölt műsoroknál."
+
+#: stream_proxy.py:1386
+#: stream_proxy.py:1392
+msgid "No local network address is available for casting. Reconnect and try again."
+msgstr "A közvetítéshez nincs elérhető helyi hálózati cím. Csatlakozzon újra a hálózathoz, majd próbálkozzon ismét."
+
+#: media_navigation_ui.py:140
+msgid "No matching subtitles."
+msgstr "A feliratban nincs találat."
+
+#: media_navigation_ui.py:61
+#: media_navigation_ui.py:81
+#: media_navigation_ui.py:103
+msgid "Normal speed"
+msgstr "Normál sebesség"
+
+#: planning_ui.py:108
+msgid "Notify me of reminder time changes after guide updates"
+msgstr "Jelzés a műsorújság frissítése után, ha megváltozott egy értesítésre kijelölt műsor adásideje"
+
+#: media_navigation_ui.py:76
+#: media_navigation_ui.py:105
+#: media_navigation_ui.py:113
+msgid "Open a seekable local recording first."
+msgstr "Nyisson meg olyan helyi felvételt, amelyben előre és hátra is ugorhat."
+
+#: main.py:9523
+#: planning_tools_ui.py:63
+msgid "Pause Recording Rule..."
+msgstr "Felvételi szabály szüneteltetése…"
+
+#: planning_tools_ui.py:112
+msgid "Pause from {first} through {last}, inclusive?"
+msgstr "Szünetelteti a kijelölt felvételi szabályt {first} és {last} között, a két határnapot is beleértve?"
+
+#: media_navigation_ui.py:60
+#: media_navigation_ui.py:82
+msgid "Recording Playback Speed..."
+msgstr "Felvétel lejátszási sebessége…"
+
+#: main.py:5762
+msgid "Recordings in progress"
+msgstr "Folyamatban lévő felvételek"
+
+#: planning_ui.py:58
+msgid "Reminder times have changed. Open Programme Reminders and choose Review Guide Changes."
+msgstr "Változhatott az értesítésre kijelölt műsorok adásideje. Az „Értesítések műsorkezdés előtt” ablakban válassza az „Időpontváltozások áttekintése…” gombot."
+
+#: planning_tools_ui.py:77
+msgid "Remove the pause"
+msgstr "Szüneteltetés megszüntetése"
+
+#: planning_tools.py:164
+#: planning_tools.py:170
+msgid "Select upcoming recordings outside the pause period."
+msgstr "Olyan közelgő felvételeket jelöljön ki, amelyek nem esnek a szünet idejére."
+
+#: client_recording.py:96
+msgid "Stopped because the app exited."
+msgstr "A rögzítés az alkalmazás bezárása miatt állt le."
+
+#: media_navigation_ui.py:22
+msgid "Subtitle matches"
+msgstr "Találatok a feliratban"
+
+#: media_navigation_ui.py:121
+msgid "Text to find:"
+msgstr "Keresett szöveg:"
+
+#: recorder.py:1121
+msgid "The application is closing."
+msgstr "Az alkalmazás bezárul."
+
+#: dialogs_misc.py:61
+msgid "The browser could not open the report. You can try again or copy your text."
+msgstr "Nem sikerült megnyitni a hibabejelentő űrlapot a böngészőben. Megpróbálhatja újra, vagy a vágólapra másolhatja a beírt szöveget."
+
+#: media_navigation_ui.py:99
+msgid "The playback speed could not be changed."
+msgstr "Nem sikerült módosítani a lejátszási sebességet."
+
+#: programme_reminders.py:267
+msgid "The postponed alert falls outside the new time window."
+msgstr "Az elhalasztott értesítés csak akkor tartható meg, ha még ezután, de a műsor vége előtt esedékes."
+
+#: programme_reminders.py:259
+msgid "The reminder changed or the programme has started. Review the times again."
+msgstr "Az értesítés időközben megváltozott, vagy a műsor már elkezdődött. Ellenőrizze ismét az időpontokat."
+
+#: programme_reminders.py:262
+msgid "There is already a reminder for the new time."
+msgstr "Az új időponthoz már tartozik értesítés."
+
+#: dialogs_misc.py:63
+msgid "Try Again"
+msgstr "Újrapróbálkozás"
+
+#: planning_tools_ui.py:143
+msgid "Use the new time for this reminder?"
+msgstr "Az új adásidőhöz igazítja az értesítést?"
+
+#: planning_tools_ui.py:132
+msgid "{title}, {channel}. Previous: {old}. New: {new}."
+msgstr "{title} ({channel}). Korábbi adásidő: {old}. Új adásidő: {new}."

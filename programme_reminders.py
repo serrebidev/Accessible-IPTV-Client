@@ -31,6 +31,10 @@ def channel_key(channel):
     return hashlib.sha256(json.dumps([source, identity]).encode()).hexdigest()
 
 
+def identity_digest(value):
+    return hashlib.sha256(str(value).encode()).hexdigest() if value else ''
+
+
 def safe_title(value):
     text = str(value or '').strip()
     if re.search(r'://|www\.|[\x00-\x1f]', text, re.I):
@@ -74,6 +78,10 @@ def normalize(rows):
         result[key] = {'id': key, 'channel_key': source, 'start': start, 'end': end, 'lead': lead,
                        'title': safe_title(row.get('title')), 'channel': safe_title(row.get('channel')),
                        'status': row['status']}
+        for field in ('guide_fingerprint', 'episode_fingerprint'):
+            value = row.get(field)
+            if isinstance(value, str) and re.fullmatch('[a-f0-9]{64}', value):
+                result[key][field] = value
         snooze = row.get('notify_at')
         if valid_time(snooze) and start - lead * 60 <= snooze < end:
             result[key]['notify_at'] = snooze
@@ -89,23 +97,88 @@ def build(channel, program, lead=5, *, now=None):
         raise ValueError('Invalid programme')
     start = dvr.parse_epg_utc(program.get('start', '')).timestamp()
     end = dvr.parse_epg_utc(program.get('end', '')).timestamp()
-    source = channel_key(channel)
+    source = station_key(channel)
     if not source or start <= now or end <= start or type(lead) is not int or not 0 <= lead <= 120:
         raise ValueError('Invalid or already-started programme')
     key = hashlib.sha256(json.dumps([source, start]).encode()).hexdigest()
-    return {'id': key, 'channel_key': source, 'title': safe_title(dvr.program_title(program)),
+    row = {'id': key, 'channel_key': source, 'title': safe_title(dvr.program_title(program)),
             'channel': safe_title(dvr.channel_name(channel)), 'start': start, 'end': end,
             'lead': lead, 'status': 'scheduled'}
+    for field, value in [('guide_fingerprint', program.get('channel_id')),
+                         ('episode_fingerprint', dvr.program_episode_key(program))]:
+        if value:
+            row[field] = identity_digest(value)
+    return row
+
+
+def portal_identity(channel):
+    if channel.get('provider-type') != 'stalker' or not channel.get('provider-id'):
+        return None
+    data = channel.get('provider-data') or {}
+    if not isinstance(data, dict) or not data.get('cmd'):
+        return None
+    identifier = data.get('id')
+    return ('stalker', str(channel['provider-id']), 'id', str(identifier)) if identifier not in (None, '') else (
+        'stalker', str(channel['provider-id']), 'cmd', str(data['cmd']))
+
+
+def station_key(channel):
+    portal = portal_identity(channel)
+    return hashlib.sha256(json.dumps(portal).encode()).hexdigest() if portal else channel_key(channel)
+
+
+def playable(channel):
+    return bool(channel.get('url') or portal_identity(channel))
 
 
 def media_identity(channel):
+    portal = portal_identity(channel)
+    if portal:
+        return portal
     return str(channel['url']), json.dumps(channel_http_headers(channel), sort_keys=True, default=str)
 
 
 def resolve_channel(row, channels):
-    matches = {media_identity(ch): ch
-               for ch in channels if ch.get('url') and channel_key(ch) == row['channel_key']}
-    return next(iter(matches.values())) if len(matches) == 1 else None
+    key = row['channel_key']
+    matches = {}
+    for channel in channels:
+        if not playable(channel):
+            continue
+        if channel_key(channel) == key or (channel.get('provider-type') == 'stalker' and station_key(channel) == key):
+            matches[media_identity(channel)] = channel
+            if len(matches) > 1:
+                return None
+    return next(iter(matches.values()), None)
+
+
+def guide_changes(db, rows, channels, *, now=None, canceled=lambda: False):
+    import datetime as dt
+    from recording_edits import changed_guide_times
+    now = time.time() if now is None else now
+    pending = [r for r in rows if r['status'] == 'scheduled' and r['start'] > now]
+    wanted = {r['channel_key'] for r in pending}
+    if not wanted:
+        return []
+    stations = {}
+    for channel in channels:
+        if canceled():
+            return []
+        key = channel_key(channel)
+        keys = (key, station_key(channel)) if channel.get("provider-type") == "stalker" else (key,)
+        for key in wanted.intersection(keys):
+            stations.setdefault(key, []).append(channel)
+    lookup = {r['id']: r for r in pending}
+    jobs = []
+    for row in pending:
+        ch = resolve_channel(row, stations.get(row['channel_key'], ()))
+        if not ch:
+            continue
+        programme = {'title': row['title']}
+        for field in ('start', 'end'):
+            programme[field] = dt.datetime.fromtimestamp(row[field], dt.timezone.utc).strftime('%Y%m%d%H%M%S')
+        jobs.append(dict(row, channel=ch, start_ts=row['start'], program=programme))
+    return [(lookup[job['id']], candidate, exact) for job, candidate, exact in
+            changed_guide_times(db, jobs, now=now, canceled=canceled)]
 
 
 class ReminderStore:
@@ -175,6 +248,31 @@ class ReminderStore:
             if len(active) >= MAX_REMINDERS:
                 raise ValueError('Too many active reminders (500)')
             self._commit([checked[0], *rows])
+
+    def retime(self, expected, programme, *, keep_snooze=False, now=None):
+        now = time.time() if now is None else now
+        start, end = (dvr.parse_epg_utc(programme[k]).timestamp() for k in ('start', 'end'))
+        with self._write_lock:
+            rows = self.list()
+            row = next((item for item in rows if item['id'] == expected['id']), None)
+            if row != expected or row['status'] != 'scheduled' or min(start, row['start']) <= now or end <= start:
+                raise ValueError(_("The reminder changed or the programme has started. Review the times again."))
+            key = hashlib.sha256(json.dumps([row['channel_key'], start]).encode()).hexdigest()
+            if any(other is not row and other['id'] == key for other in rows):
+                raise ValueError(_("There is already a reminder for the new time."))
+            postponed = row.pop('notify_at', None)
+            if keep_snooze and postponed is not None:
+                target = postponed + start - row['start']
+                if not now < target < end:
+                    raise ValueError(_("The postponed alert falls outside the new time window."))
+                row['notify_at'] = target
+            row.update(id=key, start=start, end=end)
+            for field, value in [('guide_fingerprint', programme.get('channel_id')),
+                                 ('episode_fingerprint', dvr.program_episode_key(programme))]:
+                if value:
+                    row[field] = identity_digest(value)
+            self._commit(rows)
+            return key
 
     def remove(self, key=None):
         with self._write_lock:

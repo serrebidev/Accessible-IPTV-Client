@@ -194,6 +194,8 @@ Il promemoria offre Ricorda di nuovo tra 5 minuti e, prima dell’inizio, Ricord
 
 Esporta nel calendario, nel menu contestuale di un programma o per un promemoria selezionato, salva un file .ics. Include titolo, canale e orari di inizio e fine in UTC, visualizzabili nel fuso del calendario. Non pianifica registrazioni o riattivazioni del computer e non avvia la riproduzione.
 
+Nei promemoria dei programmi, consultare le modifiche alla guida per confrontare l’orario precedente con quello nuovo e confermare il cambiamento. Per un avviso rinviato è possibile mantenere il rinvio rispetto al nuovo inizio o ripristinare il consueto anticipo. Selezionare la casella di notifica per ricevere avvisi dopo gli aggiornamenti della guida.
+
 ## Replay {#catch-up}
 
 I canali che tengono un archivio permettono di guardare trasmissioni già andate in onda. Questi canali hanno Replay nel loro menu nell'elenco dei canali. Apre la finestra di replay del canale, che elenca le trasmissioni passate con data e ora.
@@ -267,6 +269,8 @@ Riproduzione > Leggi il sottotitolo attuale (C) legge il sottotitolo sullo scher
 
 Riproduzione > Sincronizzazione sottotitoli (Ctrl+Maiusc+T) regola fino a dieci minuti in entrambe le direzioni, in millisecondi con incrementi di 500 ms. I valori positivi ritardano visualizzazione e lettura dei file di sottotitoli. Ripristina imposta zero; Annulla conserva il valore precedente. Un nuovo contenuto ripristina il valore iniziale. La velocità del contenuto e del lettore di schermo resta invariata.
 
+Durante la riproduzione di una registrazione locale, il menu di riproduzione permette di cercare parole nel file di sottotitoli caricato o nella traccia di testo incorporata. Selezionare un risultato e premere Invio per raggiungerlo. La velocità può variare da 0,75× a 2×. Selezionare la velocità normale per tornare a 1×.
+
 ### Dispositivo di uscita audio {#audio-output-device}
 
 Riproduzione > Dispositivo di uscita audio… (D) sceglie gli altoparlanti o le cuffie che il lettore usa, per esempio per tenere lontano il suono della TV dal proprio lettore di schermo. Predefinito di sistema segue il dispositivo predefinito di Windows. La scelta è ricordata.
@@ -334,7 +338,7 @@ Raccolta registrazioni > Esporta elenco in CSV salva l’elenco filtrato e ordin
 Registrazioni > Formato di registrazione sceglie come sono salvate le registrazioni:
 
 - Qualità del provider (copia, MKV): il flusso esattamente come trasmesso, con tutte le tracce audio e dei sottotitoli. Tutto ciò che il provider manda viene mantenuto.
-- Qualità del provider (copia, MP4): la stessa immagine e suono in un file MP4, che più dispositivi riproducono, senza sottotitoli e teletext.
+- Il formato MP4 copia il video originale e codifica tutte le tracce audio in AAC con un bitrate obiettivo di 192 kbit/s per traccia. I sottotitoli e il televideo sono esclusi. Il formato MKA conserva tutte le tracce audio nella codifica originale.
 - Ricodifica x264 (MKV o MP4): un file ricodificato più piccolo. Usa molto più tempo di processore.
 - Solo audio (MP3 V0, FLAC, WAV, AAC M4A o Opus): solo il suono, utile per la radio.
 
@@ -373,6 +377,8 @@ Conflitti di registrazione, in Registrazioni programmate, elenca le sovrapposizi
 Scegliere i giorni di ripetizione in Pianifica per orario, oppure in Registrazioni pianificate > Ripeti nei giorni selezionati per una registrazione in attesa che non sia una regola di serie. Senza giorni selezionati, la registrazione è singola. Alla creazione, il primo avvio deve cadere in un giorno scelto. Le ripetizioni conservano gli orari locali, i periodi notturni e i margini; gli intervalli inesistenti al cambio dell’ora vengono saltati. Tenere aperta l’applicazione. Restano validi i limiti di connessione.
 
 Scegli Cerca un’altra messa in onda nel menu contestuale di una registrazione pianificata o nella finestra dei conflitti. La ricerca copre i prossimi 14 giorni. Un numero di episodio uguale identifica lo stesso episodio. Se coincide solo il titolo, la trasmissione è indicata come possibile replica. Verifica l’orario e i conflitti prima di confermare. Le altre occorrenze mantengono i propri orari.
+
+Nel menu contestuale delle registrazioni programmate è possibile sospendere una regola ricorrente o una serie tra due date, entrambe incluse. La registrazione riprende dalla trasmissione successiva prevista. La sospensione si può rimuovere in anticipo. Selezionare più registrazioni future per esportarle in un unico file .ics con i rispettivi margini. All’uscita l’applicazione chiede conferma prima di interrompere una registrazione in corso e completa la scrittura dei file. Prima della conferma vengono mostrati, se disponibili, gli orari della prima registrazione che verrà saltata e della prima dopo la pausa.
 
 ### Margine di programmazione {#schedule-padding}
 
@@ -507,6 +513,8 @@ Domande, segnalazioni di errori e notizie delle versioni:
 - Segnalazioni di errori e suggerimenti su GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Aiuto > Informazioni… mostra la versione in uso e collega entrambi. Quando si segnala un problema, Aiuto > Copia registro e informazioni di debug dà i dettagli necessari per trovarlo. Aiuto > Segnala un problema su GitHub chiede un titolo e una descrizione, poi apre la pagina di nuova segnalazione di GitHub con entrambi e la versione già inseriti; accedi e premi «Create».
+
+Se il browser non apre la segnalazione, riprovare o scegliere «Copia segnalazione» per copiare il titolo e la descrizione.
 
 ## Strumenti personali {#personal-tools}
 

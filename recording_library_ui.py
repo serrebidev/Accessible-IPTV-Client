@@ -34,14 +34,17 @@ class RecordingLibraryDialog(wx.Dialog):
         super().__init__(parent, title=_("Recording Library"), size=(960, 620),
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.owner = parent
-        self.directory = options.get_recordings_dir(parent.config)
+        self.directories = library.folders(parent.config, display_only=True)
+        self.directory = self.directories[0]
         self.closed = self.busy = self.filter_busy = False
         self.all_rows, self.rows = [], []
         self.warnings = []
         self.worker = LatestTask(wx.CallAfter)
+        self._scan_workers = {}
+        self._scan_version = 0
+        self._scanning = False
         layout = wx.BoxSizer(wx.VERTICAL)
         self.search = labeled(self, layout, _("Search recordings:"), wx.TextCtrl(self))
-        self.directories = library.folders(parent.config)
         self.folder = labeled(self, layout, _("Recording folder:"), wx.Choice(
             self, choices=self.directories + [_("All Recording Folders")]))
         self.folder.SetSelection(0)
@@ -126,6 +129,8 @@ class RecordingLibraryDialog(wx.Dialog):
         if event.GetEventObject() is self:
             self.closed = True
             self.worker.close()
+            for worker in self._scan_workers.values():
+                worker.close()
         event.Skip()
 
     def key(self, event):
@@ -178,6 +183,8 @@ class RecordingLibraryDialog(wx.Dialog):
             saved(None, error)
         self.closed = True
         self.worker.close()
+        for worker in self._scan_workers.values():
+            worker.close()
         self.owner._recording_library_dialog = None
         self.Destroy()
 
@@ -193,7 +200,7 @@ class RecordingLibraryDialog(wx.Dialog):
                 self.folder, self.deleted, self.add_folder, self.forget_folder, self.export)
 
     def change_folder(self, _event):
-        if not self.busy and 0 <= self.folder.GetSelection() < len(self.directories):
+        if (not self.busy or self._scanning) and 0 <= self.folder.GetSelection() < len(self.directories):
             self.directory = self.directories[self.folder.GetSelection()]
         self.refresh()
 
@@ -207,7 +214,7 @@ class RecordingLibraryDialog(wx.Dialog):
                     raise ValueError(_("The library can contain up to 20 folders."))
                 self.owner._save_tool_setting('recording_library_folders', lambda old:
                     list(dict.fromkeys(self.directories[1:] + [path])))
-                self.directories = library.folders(self.owner.config)
+                self.directories = library.folders(self.owner.config, display_only=True)
                 self.folder.Set(self.directories + [_("All Recording Folders")])
                 self.folder.SetSelection(self.directories.index(path) if path in self.directories else 0)
                 self.change_folder(None)
@@ -223,7 +230,7 @@ class RecordingLibraryDialog(wx.Dialog):
         try:
             self.owner._save_tool_setting('recording_library_folders', lambda old:
                 [path for path in self.directories[1:] if path != self.directory])
-            self.directories = library.folders(self.owner.config)
+            self.directories = library.folders(self.owner.config, display_only=True)
             self.folder.Set(self.directories + [_("All Recording Folders")])
             self.folder.SetSelection(0)
             self.change_folder(None)
@@ -231,21 +238,44 @@ class RecordingLibraryDialog(wx.Dialog):
             error_box(self, error)
 
     def refresh(self, _event=None):
-        if self.busy:
+        if self.busy and not self._scanning:
             return
         self.busy = True
         for button in self.controls():
             button.Disable()
+        self.folder.Enable()
+        self._scanning = True
+        self._scan_version += 1
+        version = self._scan_version
+        self.worker.cancel()
+        for worker in self._scan_workers.values():
+            worker.cancel()
         active, deleted = self.active_paths(), self.deleted.GetValue()
-        directories = list(self.directories) if self.folder.GetSelection() == len(self.directories) else [self.directory]
+        all_folders = self.folder.GetSelection() == len(self.directories)
+        directories = list(self.directories) if all_folders else [self.directory]
+        key = None if all_folders else self.directory
+        for removed in set(self._scan_workers).difference(self.directories, {None}):
+            self._scan_workers.pop(removed).close()
+        # An offline share can block an OS call. Independent selections must still open.
+        if key not in self._scan_workers:
+            self._scan_workers[key] = LatestTask(wx.CallAfter)
         self.status.SetLabel(_("Loading recordings..."))
+        config = {"recordings_dir": self.owner.config.get("recordings_dir", "")}
+        default = self.directories[0]
         def work(canceled):
             rows, warnings = [], []
+            visited = set()
             seen = set()
             for directory in directories:
                 if canceled():
                     break
                 try:
+                    if directory == default:
+                        directory = options.get_recordings_dir(config)
+                    location = os.path.normcase(os.path.realpath(directory))
+                    if location in visited:
+                        continue
+                    visited.add(location)
                     items = library.scan_trash(directory, canceled=canceled, warnings=warnings) if deleted else library.scan(
                         directory, active, canceled=canceled, warnings=warnings)
                     for row in items:
@@ -257,15 +287,18 @@ class RecordingLibraryDialog(wx.Dialog):
                     warnings.append(str(error))
             return rows, warnings
         def done(value, error):
+            if self.closed or version != self._scan_version:
+                return
+            self._scanning = False
             if error:
                 self.loaded([], str(error))
             else:
                 self.warnings = value[1]
                 self.loaded(value[0], '')
         try:
-            self.worker.submit(work, done)
+            self._scan_workers[key].submit(work, done)
         except RuntimeError as error:
-            self.loaded([], str(error))
+            done(None, error)
 
     def loaded(self, rows, error):
         if self.closed:

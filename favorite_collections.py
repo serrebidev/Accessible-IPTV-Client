@@ -78,15 +78,15 @@ def variant_labels(labels):
 
 
 def selected_entry(channel, channels=None):
-    key = programme_reminders.channel_key(channel)
-    if not key or not channel.get("url"):
+    key = programme_reminders.station_key(channel)
+    if not key or not programme_reminders.playable(channel):
         raise ValueError(_("Channel Not Found"))
     entry = {"key": key, "name": programme_reminders.safe_title(channel.get("name"))}
     if channels is not None:
         chosen = programme_reminders.media_identity(channel)
         found = ambiguous = False
         for other in channels:
-            if other.get("url") and programme_reminders.channel_key(other) == key:
+            if programme_reminders.playable(other) and programme_reminders.station_key(other) == key:
                 if programme_reminders.media_identity(other) == chosen:
                     found = True
                 else:
@@ -164,13 +164,14 @@ def resolve(entries, channels):
     wanted = {e.get("match_key", e["key"]) for e in entries}
     for channel in channels:
         key = programme_reminders.channel_key(channel)
-        if key in wanted:
+        keys = (key, programme_reminders.station_key(channel)) if channel.get("provider-type") == "stalker" else (key,)
+        for key in wanted.intersection(keys):
             index.setdefault(key, []).append(channel)
     result = []
     for entry in entries:
         key = entry.get('match_key', entry['key'])
         matches = index.get(key, ())
         if 'variant' in entry:
-            matches = [ch for ch in matches if ch.get('url') and variant_key(ch) == entry['variant']]
+            matches = [ch for ch in matches if programme_reminders.playable(ch) and variant_key(ch) == entry['variant']]
         result.append((entry, programme_reminders.resolve_channel({'channel_key': key}, matches)))
     return result

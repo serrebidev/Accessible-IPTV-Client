@@ -18,7 +18,21 @@ def supported():
 
 def desired_state(config, active, jobs, now):
     wake = config.get("wake_for_recordings") is True
-    starts = [job.get("start_ts") for job in jobs if job.get("status") == "scheduled"]
+    import dvr
+    starts = []
+    for job in jobs if wake else ():
+        if job.get("status") != "scheduled":
+            continue
+        if dvr.paused_occurrence(job):
+            if job.get("repeat") not in dvr.TIME_REPEATS:
+                continue
+            import datetime
+            last = datetime.date.fromisoformat(job["pause_dates"][1])
+            # The wake timer only schedules the coming year.
+            if last > datetime.datetime.fromtimestamp(now + 366 * 86400).date():
+                continue
+            job = dvr.next_time_occurrence(job, now, earliest_date=last + datetime.timedelta(days=1))
+        starts.append(job.get("start_ts"))
     starts = [float(value) for value in starts if type(value) in (int, float) and math.isfinite(value)
               and now - 15 <= value <= now + 366 * 86400]
     next_start = min(starts) if starts and wake else None

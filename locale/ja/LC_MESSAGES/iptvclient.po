@@ -3103,14 +3103,6 @@ msgstr "プロバイダーエラー：{error}"
 msgid "Provider quality (copy, MKV)"
 msgstr "プロバイダー品質（コピー、MKV）"
 
-#: main.py:3275
-msgid "Provider quality (copy, MP4)"
-msgstr "プロバイダー品質（コピー、MP4）"
-
-#: main.py:3278
-msgid "Provider quality (stream copy, MKA)"
-msgstr "プロバイダー品質（ストリームコピー、MKA）"
-
 #: main.py:1457
 #: playlist.py:3506
 msgid "Provider – {name}"
@@ -5390,3 +5382,184 @@ msgstr "~{value} Mbps"
 msgid "◄ Back"
 msgstr "◄ 戻る"
 
+#: planning_tools_ui.py:101
+msgid "Choose a valid pause ending today or later."
+msgstr "今日以降に終了する有効な休止期間を選択してください。"
+
+#: media_navigation_ui.py:82
+msgid "Choose the playback speed:"
+msgstr "再生速度を選択してください："
+
+#: main.py:2988
+msgid "Connecting to {channel}…"
+msgstr "{channel} に接続しています…"
+
+#: dialogs_misc.py:63
+msgid "Copy Report"
+msgstr "報告内容をコピー"
+
+#: dialogs_misc.py:76
+msgid "Could not copy the text. Your report is still available."
+msgstr "テキストをコピーできませんでした。報告内容は保持されています。"
+
+#: dvr.py:774
+msgid "Enter a valid start date and an end date on or after it."
+msgstr "有効な開始日を入力してください。終了日には開始日以降の日付を指定してください。"
+
+#: main.py:5761
+msgid "Exiting will stop these recordings:\n{titles}\n\nExit anyway?"
+msgstr "終了すると、次の録画が停止します：\n{titles}\n\n終了しますか？"
+
+#: main.py:9508
+#: planning_tools_ui.py:53
+msgid "Export Selected Recordings to Calendar..."
+msgstr "選択した録画予定をカレンダーにエクスポート…"
+
+#: media_navigation_ui.py:59
+#: media_navigation_ui.py:120
+msgid "Find Text in Recording Subtitles..."
+msgstr "録画の字幕内を検索…"
+
+#: main.py:4156
+msgid "Finishing recordings before exit…"
+msgstr "終了する前に録画ファイルを保存しています…"
+
+#: planning_tools_ui.py:70
+msgid "First day of the pause"
+msgstr "休止開始日"
+
+#: planning_tools_ui.py:115
+msgid "First skipped recording: {time}"
+msgstr "休止期間中の最初の録画予定：{time}"
+
+#: planning_tools_ui.py:149
+msgid "Keep the postponement relative to the new start time? Choose No to use the usual lead time."
+msgstr "新しい開始時刻に合わせて通知の延期幅を維持しますか？ 通常の事前通知に戻すには「いいえ」を選んでください。"
+
+#: planning_tools_ui.py:70
+msgid "Last day of the pause"
+msgstr "休止終了日"
+
+#: media_navigation_ui.py:117
+msgid "Load a text subtitle file or select an embedded text track first."
+msgstr "先にテキスト字幕ファイルを読み込むか、埋め込みのテキスト字幕トラックを選択してください。"
+
+#: main.py:3315
+msgid "MKA (all audio tracks, original encoding)"
+msgstr "MKA（すべての音声トラックを元の符号化方式で保存）"
+
+#: main.py:3312
+msgid "MP4 (original video, AAC audio)"
+msgstr "MP4（映像はそのまま、音声は AAC）"
+
+#: planning_tools_ui.py:117
+msgid "Next recording after the pause: {time}"
+msgstr "休止後の最初の録画：{time}"
+
+#: planning_ui.py:62
+msgid "No changes were found to upcoming reminder times."
+msgstr "今後のリマインダーの時刻に変更はありません。"
+
+#: stream_proxy.py:1386
+#: stream_proxy.py:1392
+msgid "No local network address is available for casting. Reconnect and try again."
+msgstr "キャストに使用できるローカルネットワークアドレスがありません。ネットワークに接続し直して再試行してください。"
+
+#: media_navigation_ui.py:140
+msgid "No matching subtitles."
+msgstr "字幕内に一致する箇所はありません。"
+
+#: media_navigation_ui.py:61
+#: media_navigation_ui.py:81
+#: media_navigation_ui.py:103
+msgid "Normal speed"
+msgstr "標準速度"
+
+#: planning_ui.py:108
+msgid "Notify me of reminder time changes after guide updates"
+msgstr "番組表の更新でリマインダーの時刻が変わったら通知する"
+
+#: media_navigation_ui.py:76
+#: media_navigation_ui.py:105
+#: media_navigation_ui.py:113
+msgid "Open a seekable local recording first."
+msgstr "先に再生位置を変更できるローカル録画を開いてください。"
+
+#: main.py:9523
+#: planning_tools_ui.py:63
+msgid "Pause Recording Rule..."
+msgstr "録画ルールを一時休止…"
+
+#: planning_tools_ui.py:112
+msgid "Pause from {first} through {last}, inclusive?"
+msgstr "{first} から {last} まで、両日を含めて休止しますか？"
+
+#: media_navigation_ui.py:60
+#: media_navigation_ui.py:82
+msgid "Recording Playback Speed..."
+msgstr "録画の再生速度…"
+
+#: main.py:5762
+msgid "Recordings in progress"
+msgstr "実行中の録画"
+
+#: planning_ui.py:58
+msgid "Reminder times have changed. Open Programme Reminders and choose Review Guide Changes."
+msgstr "リマインダーの時刻が変わりました。番組リマインダーを開き、番組表の変更を確認してください。"
+
+#: planning_tools_ui.py:77
+msgid "Remove the pause"
+msgstr "休止を解除"
+
+#: planning_tools.py:164
+#: planning_tools.py:170
+msgid "Select upcoming recordings outside the pause period."
+msgstr "休止期間外の今後の録画予定を選択してください。"
+
+#: client_recording.py:96
+msgid "Stopped because the app exited."
+msgstr "アプリの終了に伴い録画を停止しました。"
+
+#: media_navigation_ui.py:22
+msgid "Subtitle matches"
+msgstr "字幕の検索結果"
+
+#: media_navigation_ui.py:121
+msgid "Text to find:"
+msgstr "検索するテキスト："
+
+#: recorder.py:1121
+msgid "The application is closing."
+msgstr "アプリを終了しています。"
+
+#: dialogs_misc.py:61
+msgid "The browser could not open the report. You can try again or copy your text."
+msgstr "ブラウザーで報告を開けませんでした。再試行するか、テキストをコピーしてください。"
+
+#: media_navigation_ui.py:99
+msgid "The playback speed could not be changed."
+msgstr "再生速度を変更できませんでした。"
+
+#: programme_reminders.py:267
+msgid "The postponed alert falls outside the new time window."
+msgstr "延期した通知の時刻は新しい時間枠の範囲外です。"
+
+#: programme_reminders.py:259
+msgid "The reminder changed or the programme has started. Review the times again."
+msgstr "リマインダーが変更されたか、番組がすでに始まっています。時刻を再度確認してください。"
+
+#: programme_reminders.py:262
+msgid "There is already a reminder for the new time."
+msgstr "新しい時刻にはすでにリマインダーがあります。"
+
+#: dialogs_misc.py:63
+msgid "Try Again"
+msgstr "再試行"
+
+#: planning_tools_ui.py:143
+msgid "Use the new time for this reminder?"
+msgstr "このリマインダーに新しい時刻を適用しますか？"
+
+#: planning_tools_ui.py:132
+msgid "{title}, {channel}. Previous: {old}. New: {new}."
+msgstr "{title}、{channel}。変更前：{old}。変更後：{new}。"

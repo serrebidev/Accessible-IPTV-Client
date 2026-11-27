@@ -132,14 +132,15 @@ def changed_guide_times(db, jobs, *, now=None, canceled=lambda: False):
         if key not in channels:
             channels[key] = db.resolve_best_channel_id(channel)
         cid = channels[key]
-        if not cid or (old.get("channel_id") and old["channel_id"] != cid):
+        if (not cid or (old.get("channel_id") and old["channel_id"] != cid)
+                or (job.get("guide_fingerprint") and programme_reminders.identity_digest(cid) != job["guide_fingerprint"])):
             continue
         declared = str(channel.get("tvg-id") or channel.get("tvg_id") or "").strip()
         if (declared and not key[1] and not old.get("channel_id")
                 and channel_identity.xmltv_id(cid).casefold() != channel_identity.xmltv_id(declared).casefold()):
             continue  # A similarly named replacement station is not the booked source.
         title = dvr.program_title(old).strip().casefold()
-        identity = dvr.program_episode_key(old)
+        identity = job.get("episode_fingerprint") or programme_reminders.identity_digest(dvr.program_episode_key(old))
         near = dt.timedelta(hours=6)
         times = [(start - near).strftime("%Y%m%d%H%M%S"), (start + near).strftime("%Y%m%d%H%M%S")]
         rows = db.conn.execute(
@@ -151,7 +152,7 @@ def changed_guide_times(db, jobs, *, now=None, canceled=lambda: False):
                 continue
             candidate = dict(channel_id=cid, title=name, start=a, end=b, subtitle=sub or "",
                              episode=ep or "", description=desc or "")
-            match = dvr.program_episode_key(candidate)
+            match = programme_reminders.identity_digest(dvr.program_episode_key(candidate))
             if identity and match and identity != match:
                 continue
             if (a, b) == (old["start"], old["end"]):
@@ -229,7 +230,7 @@ def other_airings(db, job, channels, *, canceled=lambda: False, now=None, maximu
     for ch in channels:
         if canceled():
             return [], False
-        if not ch.get("url") or ch.get("kind") in {"series", "movie"}:
+        if not programme_reminders.playable(ch) or ch.get("kind") in {"series", "movie"}:
             continue
         match = guide_for(ch)
         if match:
@@ -265,7 +266,7 @@ def other_airings(db, job, channels, *, canceled=lambda: False, now=None, maximu
                 other_source = ch.get('provider-id') or ch.get('playlist-id')
                 if not original_source or not other_source or original_source == other_source:
                     continue
-                if original_channel.get('url') and programme_reminders.media_identity(ch) == programme_reminders.media_identity(original_channel):
+                if programme_reminders.playable(original_channel) and programme_reminders.media_identity(ch) == programme_reminders.media_identity(original_channel):
                     continue
             total += 1
             if len(group) < maximum:

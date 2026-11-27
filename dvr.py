@@ -91,6 +91,9 @@ def _valid_stored_job(job):
         return False
     if 'series_padding_changes' in job and not valid_series_padding(job['series_padding_changes']):
         return False
+    if 'pause_dates' in job and (not valid_pause_period(job['pause_dates'])
+                                 or not 0 <= _number(job.get('start_ts'), -1) <= 253402300799):
+        return False
     repeat = job.get('repeat')
     if repeat is not None and (not isinstance(repeat, str) or repeat not in ('', 'daily', 'weekly', 'series', 'weekdays')):
         return False
@@ -105,6 +108,26 @@ def _valid_stored_job(job):
     if repeat in TIME_REPEATS:
         return 0 <= _number(job.get('start_ts'), -1) < _number(job.get('stop_ts')) <= 253402300799
     return True
+
+
+def valid_pause_period(period):
+    if not isinstance(period, (list, tuple)) or len(period) != 2:
+        return False
+    try:
+        dates = [datetime.date.fromisoformat(value) for value in period]
+        return dates[0] <= dates[1] and all(day.isoformat() == value for day, value in zip(dates, period))
+    except (TypeError, ValueError):
+        return False
+
+
+def paused_occurrence(job, period=None):
+    period = job.get("pause_dates") if period is None else period
+    if not period:
+        return False
+    # Use the programme's local date, even if pre-padding starts on the previous evening.
+    start = float(job["start_ts"]) + _number(job.get("pre_padding_minutes")) * 60
+    date = datetime.datetime.fromtimestamp(start).date().isoformat()
+    return period[0] <= date <= period[1]
 
 
 def valid_padding_pair(value):
@@ -203,6 +226,8 @@ def taken_episode_keys(jobs: List[Dict[str, object]], rule_id: str) -> set:
             continue
         if job.get("id") != rule_id and job.get("series_source") != rule_id:
             continue
+        if job.get("status") == STATUS_SCHEDULED and paused_occurrence(job):
+            continue
         key = program_episode_key(job.get("program") or {})
         if key:
             taken.add(key)
@@ -278,7 +303,7 @@ def build_job(
     }
 
 
-def next_time_occurrence(job, now, *, future_only=False):
+def next_time_occurrence(job, now, *, future_only=False, earliest_date=None):
     from planning_tools import next_weekday_job
     repeat = job["repeat"]
     if repeat == "daily":
@@ -288,7 +313,7 @@ def next_time_occurrence(job, now, *, future_only=False):
         days = [datetime.datetime.fromtimestamp(start).weekday()]
     else:
         days = job["weekdays"]
-    successor = next_weekday_job(job, now, weekdays=days, future_only=future_only)
+    successor = next_weekday_job(job, now, weekdays=days, future_only=future_only, earliest_date=earliest_date)
     successor["id"] = uuid.uuid5(uuid.NAMESPACE_URL, "iptv-dvr:" + str(job["id"])).hex
     return successor
 
@@ -329,6 +354,7 @@ class DVRScheduler:
         self._thread: Optional[threading.Thread] = None
         self._last_series_scan = 0.0
         self._series_scan_thread: Optional[threading.Thread] = None
+        self._start_workers = {}
         self.load_warning = ""
         self._load_error = None
         self.load()
@@ -500,16 +526,25 @@ class DVRScheduler:
         self._thread = threading.Thread(target=self._run_loop, name="DVRScheduler", daemon=True)
         self._thread.start()
 
-    def stop(self, *, wait: bool = False) -> None:
+    def stop(self, *, wait: bool = False, timeout=5) -> None:
         self._stop_event.set()
         self._wake_event.set()
         if wait and self._thread and self._thread.is_alive():
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=timeout)
         if wait:
+            if timeout is None:
+                # The poller has stopped launching work. Finish writes by starts or a guide scan.
+                with self._lock:
+                    workers = tuple(self._start_workers.values())
+                for worker in workers:
+                    worker.join()
+                scan = self._series_scan_thread
+                if scan is not None:
+                    scan.join()
             with self._lock:
                 writer = self._save_worker
             if writer is not None:
-                writer.join(timeout=5)
+                writer.join(timeout=timeout)
 
     def wake(self) -> None:
         self._wake_event.set()
@@ -592,6 +627,8 @@ class DVRScheduler:
             added = False
             now = self.clock()
             for job in candidates:
+                if parent.get("pause_dates") and paused_occurrence(job, parent["pause_dates"]):
+                    continue
                 episode = program_episode_key(job['program'])
                 if job['start_at'] in slots or job['stop_ts'] <= now or (episode and episode in episodes):
                     continue
@@ -732,6 +769,32 @@ class DVRScheduler:
             self.wake()
         return existed
 
+    def set_pause_period(self, snapshot, period):
+        if period is not None and not valid_pause_period(period):
+            raise ValueError(_("Enter a valid start date and an end date on or after it."))
+
+        def change(proposal):
+            rule_id = str(snapshot["id"])
+            rule = proposal.get(rule_id)
+            if (not rule or rule != snapshot or rule.get("status") == STATUS_CANCELED
+                    or not (rule.get("repeat") == "series" or
+                            (rule.get("repeat") in TIME_REPEATS and rule.get("status") in ACTIVE_STATUSES))):
+                raise ValueError(_("The recording schedule changed. Check the times and try again."))
+            for key, row in list(proposal.items()):
+                if key != rule_id and (row.get("series_source") != rule_id or row["status"] != STATUS_SCHEDULED):
+                    continue
+                updated = dict(row)
+                if period is None:
+                    updated.pop("pause_dates", None)
+                else:
+                    updated["pause_dates"] = list(period)
+                proposal[key] = updated
+
+        self._transaction(change)
+        self.request_series_scan()
+        self._notify_update()
+        self.wake()
+
     def skip_occurrence(self, job_id, *, expected_start):
         """Skip exactly one pending time-based occurrence in one durable edit."""
         def skip(proposal):
@@ -840,17 +903,36 @@ class DVRScheduler:
                 return
             if due and not _number(job.get("start_ts")) <= self.clock() < _number(job.get("stop_ts")):
                 return
-            job["status"] = STATUS_RECORDING
+            skipped = paused_occurrence(job)
+            job["status"] = STATUS_SKIPPED if skipped else STATUS_RECORDING
             job["message"] = ""
+            if skipped:
+                self._schedule_next_occurrence(job)
         self._request_save()
         self._notify_update()
+        if skipped:
+            return
         # Starting a recording resolves the stream URL, classifies the media
         # and probes its audio tracks, which takes seconds. On the scheduler
         # thread that stopped the tick: a job that came due started late, and
         # one whose whole window passed was marked missed and never recorded.
         # The job is claimed above, so the next tick cannot start it twice.
-        threading.Thread(target=self._start_job_worker, args=(job_id, dict(job)),
-                         name="dvr-start", daemon=True).start()
+        snapshot = dict(job)
+        def start():
+            try:
+                self._start_job_worker(job_id, snapshot)
+            finally:
+                with self._lock:
+                    self._start_workers.pop(job_id, None)
+        worker = threading.Thread(target=start, name="dvr-start", daemon=True)
+        try:
+            with self._lock:
+                self._start_workers[job_id] = worker
+            worker.start()
+        except RuntimeError as error:
+            with self._lock:
+                self._start_workers.pop(job_id, None)
+            self.mark_finished(job_id, success=False, message=str(error))
 
     def _start_job_worker(self, job_id: str, job: Dict[str, object]) -> None:
         try:
@@ -861,7 +943,7 @@ class DVRScheduler:
             out_path = getattr(recording, "out_path", "")
             with self._lock:
                 current = self._writable_job(job_id)
-                if current:
+                if current and current.get('status') in ACTIVE_STATUSES:
                     current["recording_id"] = rec_id
                     if out_path:
                         current["output_path"] = out_path
@@ -869,8 +951,8 @@ class DVRScheduler:
                 # tracks first). A cancel or delete in that window found no
                 # recording to stop, so this one must be stopped now or it
                 # runs forever: the scheduler never stops a canceled job.
-                abandoned = not current or current.get("status") != STATUS_RECORDING
-                snapshot = dict(current) if current else dict(job, recording_id=rec_id)
+                abandoned = not current or current.get("status") in {STATUS_CANCELED, STATUS_STOPPING, STATUS_FAILED}
+                snapshot = dict(current or job, recording_id=rec_id)
         except Exception as err:
             LOG.exception("Scheduled recording failed to start")
             with self._lock:
@@ -913,8 +995,12 @@ class DVRScheduler:
             job["status"] = STATUS_STOPPING
             job["message"] = "Stopping at scheduled end time."
             self._stopping_deadlines[job_id] = float(self.clock()) + STOP_TIMEOUT_SECONDS
+            # If startup has not supplied an ID yet, its worker stops the capture once it can.
+            starting = job.get('recording_id') is None and job_id in self._start_workers
         self._request_save()
         self._notify_update()
+        if starting:
+            return
         try:
             self.on_stop(dict(job))
         except Exception as err:
@@ -929,9 +1015,11 @@ class DVRScheduler:
             if expected_window is not None and tuple(job.get(k) for k in
                     ("start_ts", "stop_ts", "status")) != expected_window:
                 return
+            if status == STATUS_MISSED and paused_occurrence(job):
+                status, message = STATUS_SKIPPED, ""
             job["status"] = status
             job["message"] = message
-            if status in {STATUS_MISSED, STATUS_FAILED}:
+            if status in {STATUS_MISSED, STATUS_FAILED, STATUS_SKIPPED}:
                 self._schedule_next_occurrence(job)
         self._request_save()
         self._notify_update()

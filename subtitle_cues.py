@@ -57,6 +57,8 @@ def _strip_markup(text: str) -> str:
         scan = match.end()
         if match[0].startswith("<"):
             parts.append(text[offset:match.start()])
+            if re.fullmatch(r"<br\s*/?\s*>", match[0], re.IGNORECASE):
+                parts.append(" ")
             offset = scan
             continue
         closer = "}"

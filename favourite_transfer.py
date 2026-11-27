@@ -90,9 +90,9 @@ def match(entries, channels):
     guides = {e["guide"] for e in entries} - {""}
     names = {e["name"].casefold() for e in entries} - {""}
     for ch in channels:
-        if not ch.get("url") or ch.get("kind") in {"movie", "series"}:
+        if not reminders.playable(ch) or ch.get("kind") in {"movie", "series"}:
             continue
-        key = reminders.channel_key(ch)
+        key = reminders.station_key(ch)
         guide = guide_key(ch)
         name = public_name(ch.get("name")).casefold()
         if key and (key in wanted or guide in guides or name in names):

@@ -3103,14 +3103,6 @@ msgstr "Ошибка поставщика: {error}"
 msgid "Provider quality (copy, MKV)"
 msgstr "Качество поставщика (копия, MKV)"
 
-#: main.py:3275
-msgid "Provider quality (copy, MP4)"
-msgstr "Качество поставщика (копия, MP4)"
-
-#: main.py:3278
-msgid "Provider quality (stream copy, MKA)"
-msgstr "Качество поставщика (копия потока, MKA)"
-
 #: main.py:1457
 #: playlist.py:3506
 msgid "Provider – {name}"
@@ -5390,3 +5382,184 @@ msgstr "~{value} Мбит/с"
 msgid "◄ Back"
 msgstr "◄ Назад"
 
+#: planning_tools_ui.py:101
+msgid "Choose a valid pause ending today or later."
+msgstr "Выберите допустимый период, который заканчивается сегодня или позже."
+
+#: media_navigation_ui.py:82
+msgid "Choose the playback speed:"
+msgstr "Выберите скорость воспроизведения:"
+
+#: main.py:2988
+msgid "Connecting to {channel}…"
+msgstr "Подключение к каналу {channel}…"
+
+#: dialogs_misc.py:63
+msgid "Copy Report"
+msgstr "Скопировать обращение"
+
+#: dialogs_misc.py:76
+msgid "Could not copy the text. Your report is still available."
+msgstr "Не удалось скопировать текст. Обращение по-прежнему доступно."
+
+#: dvr.py:774
+msgid "Enter a valid start date and an end date on or after it."
+msgstr "Введите допустимую дату начала. Дата окончания должна быть не раньше даты начала."
+
+#: main.py:5761
+msgid "Exiting will stop these recordings:\n{titles}\n\nExit anyway?"
+msgstr "При выходе будут остановлены следующие записи:\n{titles}\n\nВсё равно выйти?"
+
+#: main.py:9508
+#: planning_tools_ui.py:53
+msgid "Export Selected Recordings to Calendar..."
+msgstr "Экспортировать выбранные записи в календарь…"
+
+#: media_navigation_ui.py:59
+#: media_navigation_ui.py:120
+msgid "Find Text in Recording Subtitles..."
+msgstr "Найти текст в субтитрах записи…"
+
+#: main.py:4156
+msgid "Finishing recordings before exit…"
+msgstr "Завершение записи файлов перед выходом…"
+
+#: planning_tools_ui.py:70
+msgid "First day of the pause"
+msgstr "Первый день приостановки"
+
+#: planning_tools_ui.py:115
+msgid "First skipped recording: {time}"
+msgstr "Первая пропущенная запись: {time}"
+
+#: planning_tools_ui.py:149
+msgid "Keep the postponement relative to the new start time? Choose No to use the usual lead time."
+msgstr "Сохранить отсрочку относительно нового времени начала? Выберите «Нет», чтобы вернуться к обычному времени оповещения."
+
+#: planning_tools_ui.py:70
+msgid "Last day of the pause"
+msgstr "Последний день приостановки"
+
+#: media_navigation_ui.py:117
+msgid "Load a text subtitle file or select an embedded text track first."
+msgstr "Сначала загрузите файл текстовых субтитров или выберите встроенную текстовую дорожку."
+
+#: main.py:3315
+msgid "MKA (all audio tracks, original encoding)"
+msgstr "MKA (все звуковые дорожки в исходной кодировке)"
+
+#: main.py:3312
+msgid "MP4 (original video, AAC audio)"
+msgstr "MP4 (исходное видео, звук AAC)"
+
+#: planning_tools_ui.py:117
+msgid "Next recording after the pause: {time}"
+msgstr "Первая запись после перерыва: {time}"
+
+#: planning_ui.py:62
+msgid "No changes were found to upcoming reminder times."
+msgstr "Время предстоящих напоминаний не изменилось."
+
+#: stream_proxy.py:1386
+#: stream_proxy.py:1392
+msgid "No local network address is available for casting. Reconnect and try again."
+msgstr "Локальный сетевой адрес для трансляции недоступен. Подключитесь к сети и повторите попытку."
+
+#: media_navigation_ui.py:140
+msgid "No matching subtitles."
+msgstr "В субтитрах совпадений нет."
+
+#: media_navigation_ui.py:61
+#: media_navigation_ui.py:81
+#: media_navigation_ui.py:103
+msgid "Normal speed"
+msgstr "Обычная скорость"
+
+#: planning_ui.py:108
+msgid "Notify me of reminder time changes after guide updates"
+msgstr "Сообщать об изменении времени напоминаний после обновления телепрограммы"
+
+#: media_navigation_ui.py:76
+#: media_navigation_ui.py:105
+#: media_navigation_ui.py:113
+msgid "Open a seekable local recording first."
+msgstr "Сначала откройте локальную запись, в которой доступна перемотка."
+
+#: main.py:9523
+#: planning_tools_ui.py:63
+msgid "Pause Recording Rule..."
+msgstr "Приостановить правило записи…"
+
+#: planning_tools_ui.py:112
+msgid "Pause from {first} through {last}, inclusive?"
+msgstr "Приостановить с {first} по {last} включительно?"
+
+#: media_navigation_ui.py:60
+#: media_navigation_ui.py:82
+msgid "Recording Playback Speed..."
+msgstr "Скорость воспроизведения записи…"
+
+#: main.py:5762
+msgid "Recordings in progress"
+msgstr "Текущие записи"
+
+#: planning_ui.py:58
+msgid "Reminder times have changed. Open Programme Reminders and choose Review Guide Changes."
+msgstr "Время напоминаний изменилось. Откройте напоминания о передачах и просмотрите изменения телепрограммы."
+
+#: planning_tools_ui.py:77
+msgid "Remove the pause"
+msgstr "Отменить приостановку"
+
+#: planning_tools.py:164
+#: planning_tools.py:170
+msgid "Select upcoming recordings outside the pause period."
+msgstr "Выберите предстоящие записи за пределами периода приостановки."
+
+#: client_recording.py:96
+msgid "Stopped because the app exited."
+msgstr "Запись остановлена при выходе из приложения."
+
+#: media_navigation_ui.py:22
+msgid "Subtitle matches"
+msgstr "Совпадения в субтитрах"
+
+#: media_navigation_ui.py:121
+msgid "Text to find:"
+msgstr "Текст для поиска:"
+
+#: recorder.py:1121
+msgid "The application is closing."
+msgstr "Приложение закрывается."
+
+#: dialogs_misc.py:61
+msgid "The browser could not open the report. You can try again or copy your text."
+msgstr "Не удалось открыть обращение в браузере. Можно повторить попытку или скопировать текст."
+
+#: media_navigation_ui.py:99
+msgid "The playback speed could not be changed."
+msgstr "Не удалось изменить скорость воспроизведения."
+
+#: programme_reminders.py:267
+msgid "The postponed alert falls outside the new time window."
+msgstr "Время отложенного оповещения выходит за пределы нового интервала."
+
+#: programme_reminders.py:259
+msgid "The reminder changed or the programme has started. Review the times again."
+msgstr "Напоминание изменилось или передача уже началась. Проверьте время ещё раз."
+
+#: programme_reminders.py:262
+msgid "There is already a reminder for the new time."
+msgstr "На новое время уже есть напоминание."
+
+#: dialogs_misc.py:63
+msgid "Try Again"
+msgstr "Повторить попытку"
+
+#: planning_tools_ui.py:143
+msgid "Use the new time for this reminder?"
+msgstr "Установить для этого напоминания новое время?"
+
+#: planning_tools_ui.py:132
+msgid "{title}, {channel}. Previous: {old}. New: {new}."
+msgstr "{title}, {channel}. Раньше: {old}. Теперь: {new}."

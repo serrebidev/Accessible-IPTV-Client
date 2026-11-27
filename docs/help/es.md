@@ -194,6 +194,8 @@ El recordatorio ofrece Recordar de nuevo en 5 minutos y, antes del inicio, Recor
 
 Exportar al calendario, en el menú contextual de un programa o desde un recordatorio seleccionado, guarda un archivo .ics. Incluye título, canal e inicio y fin en UTC, para que el calendario use su zona horaria. No programa grabaciones ni despertares del equipo y no inicia la reproducción.
 
+En los recordatorios de programas, revise los cambios de la guía para comparar el horario anterior con el nuevo. Confirme el cambio deseado. Si aplazó el aviso, puede mantener el aplazamiento respecto a la nueva hora de inicio o volver a la antelación habitual. Active la casilla para recibir avisos después de actualizar la guía.
+
 ## Repetición {#catch-up}
 
 Los canales que guardan un archivo permiten ver programas ya emitidos. Estos canales tienen Repetición en su menú en la lista de canales. Abre la ventana de repetición del canal, que lista sus programas pasados con fecha y hora.
@@ -267,6 +269,8 @@ Reproducción > Leer el subtítulo actual (C) lee el subtítulo que está en pan
 
 Reproducción > Sincronización de subtítulos (Ctrl+Mayús+T) ajusta hasta diez minutos en ambas direcciones, en milisegundos y pasos de 500 ms. Los valores positivos retrasan tanto la visualización como la lectura de archivos de subtítulos. Restablecer pone cero; Cancelar conserva el valor anterior. Un contenido nuevo restablece el ajuste. No cambia la velocidad del contenido ni del lector de pantalla.
 
+Durante la reproducción de una grabación local, el menú de reproducción permite buscar palabras en un archivo de subtítulos cargado o en una pista de texto integrada. Seleccione un resultado y pulse Intro para ir a ese punto. Puede elegir velocidades entre 0,75× y 2×. Seleccione «Velocidad normal» para volver a 1×.
+
 ### Dispositivo de salida de audio {#audio-output-device}
 
 Reproducción > Dispositivo de salida de audio… (D) elige los altavoces o auriculares que usa el reproductor, por ejemplo para alejar el sonido del TV de su lector de pantalla. Predeterminado del sistema sigue al dispositivo predeterminado de Windows. La elección se recuerda.
@@ -334,7 +338,7 @@ Biblioteca de grabaciones > Exportar lista a CSV guarda la lista filtrada y orde
 Grabaciones > Formato de grabación elige cómo se guardan las grabaciones:
 
 - Calidad del proveedor (copia, MKV): el flujo exactamente como se emite, con todas las pistas de audio y subtítulos. Conserva todo lo que el proveedor envía.
-- Calidad del proveedor (copia, MP4): la misma imagen y sonido en un archivo MP4, que reproducen más dispositivos, sin subtítulos ni teletexto.
+- MP4 copia el vídeo original y codifica todas las pistas de audio en AAC con un objetivo de 192 kbit/s por pista. Se omiten los subtítulos y el teletexto. MKA conserva todas las pistas de audio con su codificación original.
 - Recodificación x264 (MKV o MP4): un archivo recodificado más pequeño. Usa mucho más tiempo de procesador.
 - Solo audio (MP3 V0, FLAC, WAV, AAC M4A u Opus): solo el sonido, útil para radio.
 
@@ -373,6 +377,8 @@ Conflictos de grabación, en Grabaciones programadas, muestra las superposicione
 Seleccione los días de repetición en Programar por hora, o en Grabaciones programadas > Repetir los días seleccionados para una grabación pendiente que no sea una regla de serie. Sin días seleccionados, se graba una sola vez. Al crear una grabación, el primer inicio debe caer en un día elegido. Las repeticiones conservan los horarios locales, los intervalos nocturnos y los márgenes; se omiten los intervalos inexistentes por el cambio de hora. Mantenga la aplicación abierta. Se siguen aplicando los límites de conexiones.
 
 Elija Buscar otra emisión en el menú contextual de una grabación pendiente o en el diálogo de conflictos. Se buscan emisiones en los próximos 14 días. Un número de episodio coincidente identifica el mismo episodio. Si solo coincide el título, se indica una posible repetición. Revise la hora y los conflictos antes de confirmar. Los demás horarios se conservan.
+
+En el menú contextual de las grabaciones programadas puede pausar una regla de grabación periódica o de serie entre dos fechas, ambas incluidas. La grabación se reanuda con la siguiente emisión prevista. Puede quitar la pausa antes. Seleccione varias grabaciones futuras para exportarlas a un único archivo .ics con sus márgenes de grabación. Al salir, la aplicación pide confirmación antes de detener una grabación en curso y termina de escribir los archivos. Antes de confirmar, se muestran la primera grabación que se omitirá y la primera posterior a la pausa, si se conocen sus horarios.
 
 ### Margen de programación {#schedule-padding}
 
@@ -507,6 +513,8 @@ Preguntas, informes de errores y noticias de versiones:
 - Informes de errores y sugerencias en GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Ayuda > Acerca de… muestra la versión en uso y enlaza ambos. Al reportar un problema, Ayuda > Copiar registro e información de depuración da los detalles necesarios para rastrearlo. Ayuda > Informar de un problema en GitHub pide un título y una descripción y abre la página de nueva incidencia de GitHub con ambos rellenados y tu versión añadida; inicia sesión y pulsa «Create».
+
+Si el navegador no abre el informe, vuelva a intentarlo o copie el título y la descripción con «Copiar informe».
 
 ## Herramientas personales {#personal-tools}
 

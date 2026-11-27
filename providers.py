@@ -366,6 +366,7 @@ class StalkerPortalClient:
                 "name": name,
                 "group": group,
                 "url": "",  # resolved on demand
+                "number": row.get("number"),
                 "tvg-id": row.get("epg_id", ""),
                 "tvg-name": row.get("display_name", name),
                 "provider-type": "stalker",

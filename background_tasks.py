@@ -58,6 +58,11 @@ class LatestTask:
                     raise
             self.condition.notify()
 
+    def cancel(self):
+        with self.condition:
+            self.version += 1
+            self.pending = None
+
     def close(self):
         with self.condition:
             self.closed = True

@@ -102,6 +102,7 @@ from recorder import audio_stream_label, probe_audio_streams
 import catchup_direct
 import dvr
 import favorites
+import programme_reminders
 import settings_backup  # noqa: F401
 import shortcuts
 from client_timeshift import LiveBufferMixin
@@ -2957,15 +2958,52 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         return favorites.history_channels(self.recent_channel_keys, self.all_channels)
 
     def _play_live_channel(self, channel: Dict[str, str]) -> None:
-        try:
-            url = self._resolve_live_url(channel)
-        except Exception as err:
-            message_box(_("Could not resolve stream URL:\n{error}").format(error=err),
-                        _("Playback Error"), wx.OK | wx.ICON_ERROR)
-            return
-        self._terminate_media_probe(channel)
-        self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
-                            channel=channel)
+        def ready(url, _catchup):
+            self._terminate_media_probe(channel)
+            self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
+                                channel=channel)
+        IPTVClient._resolve_for_playback(self, channel, None, ready)
+
+    def _cancel_pending_portal_playback(self):
+        worker = getattr(self, '_portal_playback_worker', None)
+        if worker is not None:
+            worker.cancel()
+
+    def _resolve_for_playback(self, channel, show, ready):
+        """Only portal resolution needs network I/O. Snapshot the selected programme."""
+        def resolve():
+            if show and self._channel_has_catchup(channel):
+                return self._resolve_show_url(channel, show)
+            return self._resolve_live_url(channel), False
+
+        def deliver(result, error):
+            if getattr(self, "_closing_application", False):
+                return
+            if error is not None:
+                message_box(_("Could not resolve stream URL:\n{error}").format(error=error),
+                            _("Playback Error"), wx.OK | wx.ICON_ERROR)
+                return
+            ready(*result)
+
+        worker = getattr(self, "_portal_playback_worker", None)
+        if channel.get("provider-type") == "stalker":
+            from background_tasks import LatestTask
+            if worker is None:
+                worker = self._portal_playback_worker = LatestTask(wx.CallAfter)
+            self._show_playing_info(_("Connecting to {channel}…").format(channel=self._channel_display_name(channel)))
+            try:
+                worker.submit(lambda canceled: resolve(), deliver)
+            except RuntimeError as error:
+                deliver(None, error)
+        else:
+            if worker is not None:
+                worker.cancel()
+            try:
+                result = resolve()
+            except Exception as error:
+                deliver(None, error)
+            else:
+                deliver(result, None)
 
     def _play_previous_channel(self, _event=None) -> None:
         recent = favorites.history_channels(self.recent_channel_keys[1:], self.all_channels)
@@ -3009,10 +3047,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             message_box(_("Enter a positive channel number."),
                         _("Go to Channel Number"), wx.OK | wx.ICON_WARNING)
             return
-        channel = next((ch for ch in channels if channel_number(ch.get("number") or ch.get("tvg-chno")) == digits), None)
+        def number(ch):
+            data = ch.get("provider-data") or {}
+            portal_number = data.get("number") if isinstance(data, dict) and ch.get("provider-type") == "stalker" else ""
+            return channel_number(ch.get("number") or ch.get("tvg-chno") or portal_number)
+        channel = next((ch for ch in channels if number(ch) == digits), None)
         if channel is None and len(digits) <= len(str(len(channels))) and int(digits) <= len(channels):
             at_position = channels[int(digits) - 1]
-            if not channel_number(at_position.get("number") or at_position.get("tvg-chno")):
+            if not number(at_position):
                 channel = at_position
         if channel is None:
             message_box(_("Channel number {number} was not found.").format(number=digits),
@@ -3272,10 +3314,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
     def _recording_format_label(self, key: str) -> str:
         labels = {
             "provider_mkv": _("Provider quality (copy, MKV)"),
-            "provider_mp4": _("Provider quality (copy, MP4)"),
+            "provider_mp4": _("MP4 (original video, AAC audio)"),
             "x264_mkv": _("x264 re-encode (MKV)"),
             "x264_mp4": _("x264 re-encode (MP4)"),
-            "provider_mka": _("Provider quality (stream copy, MKA)"),
+            "provider_mka": _("MKA (all audio tracks, original encoding)"),
             "audio_mp3_v0": _("Audio only (MP3 V0)"),
             "audio_flac": _("Audio only (FLAC)"),
             "audio_wav": _("Audio only (WAV)"),
@@ -3460,10 +3502,14 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         self._dvr_dialog.Show()
 
     def _on_dvr_schedule_updated(self):
+        if getattr(self, "_closing_application", False):
+            return
         manager = getattr(self, "_recording_power", None)
         if manager:
             manager.refresh()
         def refresh():
+            if getattr(self, "_closing_application", False):
+                return
             dlg = getattr(self, "_dvr_dialog", None)
             if dlg:
                 try:
@@ -4100,44 +4146,27 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         wx.CallAfter(self.Close, True)
 
     def _release_recordings_on_exit(self):
-        """Stop every recording before shutdown, including its FFmpeg process.
-
-        A process left behind can keep a provider's only stream slot occupied.  On
-        the next launch the durable DVR job is then re-armed and collides with that
-        orphan, producing a misleading second failed recording.  Give FFmpeg a
-        short chance to finalize cleanly, then terminate it so closing the app never
-        requires Task Manager intervention.
-        """
+        """Let the recorder finish its callbacks before destroying wx objects."""
         self._suppress_recording_notifications = True
-        active = self.recorder.list_active()
-        # Waiting for FFmpeg to finalize takes 5 s + 15 s + 15 s per recording.
-        # It used to happen on the GUI thread, so the still-visible window froze
-        # for up to half a minute ("Not Responding") with no way to tell what
-        # was happening. The wait now pumps the event loop: the recordings are
-        # finalized the same way, and the window stays alive and readable.
-        self.recorder.stop_all(wait=False, detach=True)
-        deadline = time.time() + 90
-        while self.recorder.list_active() and time.time() < deadline:
-            wx.Yield()
-            time.sleep(0.05)
-        scheduler = getattr(self, "dvr_scheduler", None)
-        if scheduler is None:
-            return
-        for rec in active:
+        scheduler = getattr(self, 'dvr_scheduler', None)
+        if scheduler is not None:
+            scheduler.stop()
+
+        def finish():
+            if scheduler is not None:
+                scheduler.stop(wait=True, timeout=None)
+            wx.CallAfter(self._finish_application_exit)
+
+        if self.recorder.begin_shutdown(finish):
             try:
-                job_id = rec.metadata.get("dvr_job_id")
-            except Exception:
-                job_id = None
-            if not job_id:
-                continue
-            note = ("Stopped because the app exited; ffmpeg had to be terminated."
-                    if rec.detached else "Stopped because the app exited.")
-            try:
-                scheduler.mark_finished(str(job_id), success=False,
-                                        output_path=rec.out_path, message=note)
-            except Exception:
-                LOG.debug("IPTVClient._release_recordings_on_exit: ignored exception",
-                          exc_info=True)
+                self._show_playing_info(_("Finishing recordings before exit…"))
+            except RuntimeError:
+                LOG.debug("The shutdown status window is no longer available", exc_info=True)
+            return True
+        if scheduler is not None:
+            threading.Thread(target=finish, daemon=True, name='DVR shutdown').start()
+            return True
+        return False
 
     # -------------------------------------------------------------- #
     # Modal-box-safe notifications                                    #
@@ -5519,6 +5548,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             wx.CallAfter(frame._on_toggle_pause)
 
     def _tray_stop_player(self):
+        IPTVClient._cancel_pending_portal_playback(self)
         close_buffer = getattr(self, '_close_live_buffer_player', None)
         if callable(close_buffer):
             close_buffer()
@@ -5661,6 +5691,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         self.play_selected()
 
     def _menu_stop_player(self, _=None):
+        IPTVClient._cancel_pending_portal_playback(self)
         close_buffer = getattr(self, '_close_live_buffer_player', None)
         if callable(close_buffer):
             close_buffer()
@@ -5710,6 +5741,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             event.Skip()
 
     def on_close(self, event):
+        if getattr(self, "_closing_application", False):
+            if event.CanVeto():
+                event.Veto()
+            return
         if (self.minimize_to_tray and not self._update_install_pending
                 and not self._exit_forced
                 and not self._exit_requested):
@@ -5728,6 +5763,16 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                     event.Veto()
                     return
                 pending_jobs = self._upcoming_dvr_jobs()
+                if self.recorder.has_active():
+                    active = self.recorder.list_active()
+                    titles = "\n".join(str(rec.title) for rec in active
+                                       if rec.id not in self._catchup_downloads)
+                    if titles and message_box(
+                            _("Exiting will stop these recordings:\n{titles}\n\nExit anyway?").format(titles=titles),
+                            _("Recordings in progress"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING) != wx.YES:
+                        self._exit_requested = False
+                        event.Veto()
+                        return
                 if pending_jobs:
                     # Include the local recording window with every title.  A title
                     # alone does not tell a screen-reader user which scheduled item
@@ -5771,6 +5816,11 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                         self._exit_requested = False
                         event.Veto()
                         return
+            self._closing_application = True
+            self._suppress_recording_notifications = True
+            worker = getattr(self, "_portal_playback_worker", None)
+            if worker is not None:
+                worker.close()
             _gate = getattr(self, "_work_gate", None)
             if _gate is None:
                 _gate = self._work_gate = responsiveness.WorkGate()
@@ -5799,54 +5849,54 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             if callable(stop_reminders):
                 stop_reminders()
             try:
-                self._stop_dvr_scheduler(wait=True)
+                if self._release_recordings_on_exit():
+                    return
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            IPTVClient._finish_application_exit(self)
+
+    def _finish_application_exit(self):
+        recording_power = getattr(self, "_recording_power", None)
+        if recording_power is not None:
+            recording_power.close()
+        shutdown_buffers = getattr(self, '_shutdown_live_buffers', None)
+        if callable(shutdown_buffers):
+            shutdown_buffers()
+        try:
+            self._subtitle_output_timer.Stop()
+            self._subtitle_session.cancel_session(stop_playback=True)
+        except Exception:
+            LOG.debug("IPTVClient.on_close: subtitle adapter close failed", exc_info=True)
+        try:
+            self._app_tts.close()
+        except Exception:
+            LOG.debug("IPTVClient.on_close: app TTS close failed", exc_info=True)
+        if self.caster:
+            self.caster.stop()
+        try:
+            # The proxy's FFmpeg converters are child processes: nothing
+            # else stopped them, so they outlived the app, kept the
+            # provider's stream slot and kept writing segments into their
+            # temp folder. The firewall rule the proxy added goes with them.
+            from stream_proxy import stop_proxy
+            stop_proxy()
+        except Exception:
+            LOG.debug("IPTVClient.on_close: proxy stop failed", exc_info=True)
+        if self.tray_icon:
             try:
-                self._release_recordings_on_exit()
+                self.tray_icon.RemoveIcon()
             except Exception:
                 LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
-            recording_power = getattr(self, "_recording_power", None)
-            if recording_power is not None:
-                recording_power.close()
-            shutdown_buffers = getattr(self, '_shutdown_live_buffers', None)
-            if callable(shutdown_buffers):
-                shutdown_buffers()
+            self.tray_icon.Destroy()
+            self.tray_icon = None
+        frame = getattr(self, "_internal_player_frame", None)
+        if frame is not None:
             try:
-                self._subtitle_output_timer.Stop()
-                self._subtitle_session.cancel_session(stop_playback=True)
+                frame.Destroy()
             except Exception:
-                LOG.debug("IPTVClient.on_close: subtitle adapter close failed", exc_info=True)
-            try:
-                self._app_tts.close()
-            except Exception:
-                LOG.debug("IPTVClient.on_close: app TTS close failed", exc_info=True)
-            if self.caster:
-                self.caster.stop()
-            try:
-                # The proxy's FFmpeg converters are child processes: nothing
-                # else stopped them, so they outlived the app, kept the
-                # provider's stream slot and kept writing segments into their
-                # temp folder. The firewall rule the proxy added goes with them.
-                from stream_proxy import stop_proxy
-                stop_proxy()
-            except Exception:
-                LOG.debug("IPTVClient.on_close: proxy stop failed", exc_info=True)
-            if self.tray_icon:
-                try:
-                    self.tray_icon.RemoveIcon()
-                except Exception:
-                    LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
-                self.tray_icon.Destroy()
-                self.tray_icon = None
-            frame = getattr(self, "_internal_player_frame", None)
-            if frame is not None:
-                try:
-                    frame.Destroy()
-                except Exception:
-                    LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
-                self._internal_player_frame = None
-            self.Destroy()
+                LOG.debug("IPTVClient.on_close: ignored exception", exc_info=True)
+            self._internal_player_frame = None
+        self.Destroy()
 
     def _select_player(self, player):
         self.default_player = player
@@ -6869,6 +6919,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 if self.config.get("notify_recording_guide_changes") is True:
                     from recording_edits_ui import review_guide_changes
                     wx.CallAfter(review_guide_changes, self, self, lambda: None, notify_only=True)
+                if self.config.get("notify_reminder_guide_changes") is True:
+                    from planning_ui import review_reminder_times
+                    wx.CallAfter(review_reminder_times, self)
                 scan_searches = getattr(self, '_scan_saved_searches', None)
                 if callable(scan_searches):
                     self._invalidate_saved_searches()
@@ -7107,7 +7160,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         for idx, item in enumerate(self.displayed):
             if item.get("type") == "channel":
                 ch = item.get("data", {})
-                if ch.get("url") == matching_channel.get("url"):
+                if ch is matching_channel or (programme_reminders.playable(ch) and programme_reminders.playable(matching_channel)
+                        and programme_reminders.media_identity(ch) == programme_reminders.media_identity(matching_channel)):
                     self.channel_list.SetSelection(idx)
                     # Use CallAfter to ensure UI updates before play
                     wx.CallAfter(self.play_selected)
@@ -7123,7 +7177,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         for idx, item in enumerate(self.displayed):
             if item.get("type") == "channel":
                 ch = item.get("data", {})
-                if ch.get("url") == channel.get("url"):
+                if ch is channel or (programme_reminders.playable(ch) and programme_reminders.playable(channel)
+                        and programme_reminders.media_identity(ch) == programme_reminders.media_identity(channel)):
                     self.channel_list.SetSelection(idx)
                     wx.CallAfter(self.play_selected)
                     return
@@ -7367,19 +7422,12 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         else:
             return
 
-        try:
-            if show and self._channel_has_catchup(channel):
-                url, is_catchup = self._resolve_show_url(channel, show)
-            else:
-                url, is_catchup = self._resolve_live_url(channel), False
-            if not is_catchup:
-                show = None
-        except ProviderError as err:
-            message_box(_("Provider error: {error}").format(error=err), _("Playback Error"), wx.OK | wx.ICON_ERROR)
-            return
-        except Exception as err:
-            message_box(_("Could not resolve stream URL:\n{error}").format(error=err), _("Playback Error"), wx.OK | wx.ICON_ERROR)
-            return
+        def ready(url, is_catchup):
+            IPTVClient._play_resolved_selection(self, channel, show if is_catchup else None,
+                                                url, show_internal_player)
+        IPTVClient._resolve_for_playback(self, channel, show, ready)
+
+    def _play_resolved_selection(self, channel, show, url, show_internal_player):
         # Issue #33: playback preempts any advisory classification probe for
         # this channel, so the probe's connection cannot refuse playback on a
         # one-stream provider.
@@ -7502,6 +7550,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             on_cue=self._on_player_subtitle_cue,
         )
         self._internal_player_frame = frame
+        frame._cancel_requested_stream = lambda: IPTVClient._cancel_pending_portal_playback(self)
         configure_resume = getattr(frame, "configure_vod_resume", None)
         if callable(configure_resume):
             configure_resume(self.config, self._save_player_preferences)
@@ -8020,6 +8069,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         initial_position_ms: Optional[int] = None,
         _queue_ticket=None,
     ):
+        worker = getattr(self, '_portal_playback_worker', None)
+        if worker is not None:
+            worker.cancel()
         queue = getattr(self, "_recording_queue", None)
         if _queue_ticket is not None:
             if queue is None or queue.ticket is not _queue_ticket:
@@ -9462,6 +9514,11 @@ class ScheduledRecordingsDialog(wx.Dialog):
             delete_item = menu.Append(wx.ID_ANY, _("Delete") + "\tDel")
             menu.Bind(wx.EVT_MENU, self._on_delete_selected, delete_item)
             jobs = self._selected_jobs()
+            if jobs and all(job.get("status") == dvr.STATUS_SCHEDULED and not dvr.paused_occurrence(job)
+                            and job.get("start_ts", 0) > time.time() for job in jobs):
+                item = menu.Append(wx.ID_ANY, _("Export Selected Recordings to Calendar..."))
+                from planning_tools_ui import export_recordings
+                menu.Bind(wx.EVT_MENU, lambda event: export_recordings(self, jobs), item)
             if len(jobs) == 1:
                 job = jobs[0]
                 if job.get("status") == dvr.STATUS_SCHEDULED:
@@ -9470,6 +9527,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
                     menu.Bind(wx.EVT_MENU, lambda e: padding_dialog(self, self.parent_frame, job, self.refresh), item)
                     item = menu.Append(wx.ID_ANY, _("Find Another Airing..."))
                     menu.Bind(wx.EVT_MENU, lambda e: find_airing(self, self.parent_frame, job, self.refresh), item)
+                if ((job.get("repeat") in dvr.TIME_REPEATS and job.get("status") in dvr.ACTIVE_STATUSES)
+                        or (job.get("status") != dvr.STATUS_CANCELED and job.get("repeat") == "series")
+                        or job.get("series_source")):
+                    from planning_tools_ui import pause_rule
+                    item = menu.Append(wx.ID_ANY, _("Pause Recording Rule..."))
+                    menu.Bind(wx.EVT_MENU, lambda event: pause_rule(self, job), item)
                 if job.get("status") == dvr.STATUS_SCHEDULED and job.get("repeat") in dvr.TIME_REPEATS:
                     item = menu.Append(wx.ID_ANY, _("Skip This Occurrence"))
                     menu.Bind(wx.EVT_MENU, self._skip_occurrence, item)
@@ -9511,7 +9574,10 @@ class ScheduledRecordingsDialog(wx.Dialog):
             idx = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), self.parent_frame._schedule_window_label(job))
             self.list_ctrl.SetItem(idx, 1, str(job.get("title") or ""))
             self.list_ctrl.SetItem(idx, 2, str(job.get("channel_name") or ""))
-            self.list_ctrl.SetItem(idx, 3, self._status_label(str(job.get("status") or "")))
+            status = self._status_label(str(job.get("status") or ""))
+            if job.get("status") == dvr.STATUS_SCHEDULED and dvr.paused_occurrence(job):
+                status = _("Paused")
+            self.list_ctrl.SetItem(idx, 3, status)
             self.list_ctrl.SetItem(idx, 4, self.parent_frame._recording_format_label(str(job.get("format") or "")))
             if job.get("status") in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}:
                 font = self.list_ctrl.GetItemFont(idx)

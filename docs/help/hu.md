@@ -222,11 +222,15 @@ Amikor elérkezik az értesítés időpontja, egy párbeszédablak közli a műs
 
 A beállított értesítések a program újraindítása után is megmaradnak, megjelenítésükhöz azonban az alkalmazásnak futnia kell. A rendszertálcán működő példány is értesít; a bezárt program nem indul el önállóan, és a funkció nem ébreszti fel az alvó számítógépet. Visszatéréskor a már elkezdődött, de még folyamatban lévő műsorról megjelenhet a figyelmeztetés; a befejeződött adásokhoz tartozó bejegyzések lejárnak. Az alkalmazás a teljes kilépés előtt figyelmeztet, ha még vannak értesítésre váró műsorok. A frissítés vagy a rendszer által kikényszerített bezárás esetén ez a kérdés elmaradhat.
 
-Az értesítés a kiválasztott műsorújság-bejegyzés időpontjára vonatkozik; az adásrend későbbi változását nem követi automatikusan. Ilyenkor törölje a korábbi beállítást, majd adja meg ismét a friss műsorújság alapján. Ez a funkció nem ütemez felvételt, ezért rögzítéshez továbbra is a Felvétel ütemezése parancs szükséges. Az alkalmazás az értesítési adatokat külön fájlban őrzi, műsor-URL-címek és jelszavak nélkül. Ezek az adatok a Beállítások exportálása paranccsal készített teljes, titkosított biztonsági mentésbe is bekerülnek. Ha a program megjeleníti a figyelmeztetést, de még az értesítés állapotának mentése előtt leáll, az újraindításkor ismét megjelenhet az üzenet.
+A műsor rögzítéséhez válassza a helyi menüben a **Felvétel ütemezése** parancsot. A program az értesítéseket külön fájlba menti, a lejátszási címek és a jelszavak nélkül. A **Beállítások exportálása…** paranccsal készített teljes, titkosított biztonsági mentés az értesítéseket is tartalmazza. Ha a program a jelzés megjelenítése és az állapot mentése között leáll, újraindításkor ugyanarról a műsorról ismét értesítheti.
 
 A műsorkezdési értesítés ablakában az Újabb értesítés 5 perc múlva gombbal elhalaszthatja a jelzést. A műsor kezdete előtt az Értesítés a műsor kezdetekor lehetőség is elérhető. A program menti a választást, amely újraindítás után is érvényben marad; az új értesítési időpontnak a műsor befejezése elé kell esnie. A Bezárás az aktuális jelzést nyugtázza. Az értesítéshez a programnak futnia kell; a funkció nem ébreszti fel a számítógépet.
 
 A műsor helyi menüjében, illetve egy kijelölt műsorkezdési értesítésnél az Exportálás naptárba… paranccsal .ics-fájlt készíthet. Ezt egy naptáralkalmazásba importálhatja. A fájl a címet, a csatornát, valamint a kezdési és befejezési időpontot tartalmazza. Az időpontok UTC szerint szerepelnek benne; a naptár a saját időzónájának megfelelően jelenítheti meg őket. Az exportálás nem ütemez felvételt vagy számítógép-ébresztést, és nem indít lejátszást.
+
+Az **Értesítések műsorkezdés előtt** ablakban az **Időpontváltozások áttekintése…** gombbal összehasonlíthatja a korábbi adásidőt a friss műsorújságban szereplővel. A listában a műsor címe és a csatorna mellett a régi és az új kezdési, illetve befejezési időpont is szerepel. Bizonytalan egyezésre a program külön figyelmeztet. Ilyenkor ellenőrizze, hogy ugyanarról az adásról van-e szó. Jelölje ki a műsort, majd hagyja jóvá a módosítást.
+
+Az előzetes jelzéshez megadott percek száma megmarad. Ha korábban elhalasztotta az értesítést, választhat, hogy a jelzés is ugyanannyival kerüljön előbbre vagy későbbre, mint a műsor kezdete, vagy ismét az eredeti beállítás legyen érvényben. A **Jelzés a műsorújság frissítése után, ha megváltozott egy értesítésre kijelölt műsor adásideje** jelölőnégyzettel külön figyelmeztetést is kérhet. Az értesítés időpontja ekkor is csak jóváhagyás után módosul.
 
 ## Műsorarchívum {#catch-up}
 
@@ -326,6 +330,8 @@ Az egyes programok támogatottságát a Beállítások > Feliratfelolvasás > A 
 
 A Lejátszás > Felirat időzítése… (Ctrl+Shift+T) ablakban a felirat időzítését ezredmásodpercben, legfeljebb tíz perccel módosíthatja mindkét irányban. A léptetőmező 500 ezredmásodperces lépésekben változtatja az értéket; pozitív értéknél a felirat később jelenik meg, és a beépített lejátszó a fájlból betöltött feliratot is később olvassa fel. Az Időzítés alaphelyzetbe állítása gomb nullát állít be; a Mégse megőrzi a korábbi értéket. Új tartalom indításakor az igazítás alaphelyzetbe kerül. Az időzítés módosítása nem érinti a műsor lejátszási sebességét vagy a képernyőolvasó beszédét.
 
+Ha a megnyitott helyi felvételben előre és hátra is ugorhat, a teljes szöveges feliratban kereshet. A **Lejátszás** menü **Feliratfájl betöltése…** parancsával nyisson meg egy külső fájlt. Ha a felvétel tartalmaz szöveges feliratsávot, azt a **Beágyazott feliratsáv felolvasása…** paranccsal választhatja ki. Ugyanebben a menüben válassza a **Keresés a felvétel feliratában…** parancsot, és írja be a keresett szót vagy kifejezést. A találati listában az eredeti időpont és a hozzá tartozó szöveg szerepel. Az Enter megnyomásával a kijelölt feliratrész elejére ugorhat. Ha módosította a felirat időzítését, a lejátszó az ugrásnál ezt is figyelembe veszi.
+
 ### Hangkimeneti eszköz {#audio-output-device}
 
 A Lejátszás > Hangkimeneti eszköz (D) paranccsal kiválaszthatja, melyik hangszórón vagy fejhallgatón szóljon a beépített lejátszó hangja. Így például a műsor és a képernyőolvasó hangját eltérő kimenetre irányíthatja. Az „A rendszer alapértelmezett eszköze” beállítás a Windowsban kijelölt kimenetet követi. A program megjegyzi a választását.
@@ -358,6 +364,8 @@ Ha a lejátszóban kézzel választ hangsávot, a program ezt megjegyzi az adott
 A felvételek ugyanezeket a szabályokat követik. Hangfelvételnél csak az a sáv kerül a fájlba, amelyet lejátszáskor is hallana; videofelvételnél valamennyi hangsáv megmarad, a kiválasztott pedig alapértelmezettként lesz megjelölve.
 
 ## Felvételek {#recordings}
+
+Ha a helyi felvételben előre és hátra is ugorhat, a beépített lejátszó **Lejátszás** menüjében a **Felvétel lejátszási sebessége…** paranccsal a tempót is módosíthatja. A normál sebesség mellett lassított (0,75×) és gyorsított (1,25×, 1,5× vagy 2×) lejátszás is választható. A **Normál sebesség** paranccsal egy lépésben visszatérhet az eredeti tempóhoz.
 
 A **Felvételtárban** jelöljön ki egy vagy több felvételt, majd nyomja meg a **Hozzáadás a lejátszási sorhoz** gombot. A **Felvételek lejátszási sora…** gombbal megnyithatja a listát. Minden címnél megtudhatja, hányadik helyen áll, és összesen hány felvétel vár lejátszásra. A Ctrl nyomva tartása mellett a felfelé mutató nyíllal előrébb, a lefelé mutatóval hátrébb helyezheti a kijelölt elemet. A Delete billentyűvel kiveheti a sorból.
 
@@ -400,16 +408,18 @@ Az Összes felvételi mappa lehetőség a beállított mappák közös nézetét
 
 A Felvételtár ablak Lista exportálása CSV-fájlba… gombja az éppen látható, szűrt és rendezett listát menti. Az oszlopok a címet, a csatornát, a dátumot, az időtartamot, az állapotot és a fájlméretet tartalmazzák; elérési út és adatfolyamcím nem kerül a fájlba. A képletként értelmezhető előtaggal kezdődő szöveges mezőket a program szövegként jelöli meg. Bezáráskor a felvételtár megjegyzi a mappát, a keresőkifejezést, az állapotszűrőt, a rendezés alapját és irányát. Újbóli megnyitáskor a törölt felvételek megjelenítése mindig ki van kapcsolva. Az exportálás csak kérésre fut, és nem olvassa be újra a médiafájlokat.
 
+Ha rögzítés közben kezdeményezi a kilépést, a program felsorolja a folyamatban lévő felvételeket, és megerősítést kér. Az alapértelmezett válasz a **Nem**. Ezt választva a rögzítés folytatódik. Ha jóváhagyja a kilépést, a program megvárja a fájlok lezárását.
+
 ### Rögzítési formátumok {#recording-formats}
 
 A Felvételek > Rögzítési formátum menüponttal választhatja ki, milyen formátumban mentse a program a felvételeket:
 
 - Eredeti minőség (újrakódolás nélkül, MKV): a szolgáltató által küldött kép- és hangadatokat érintetlenül menti, valamennyi hangsávval és feliratsávval együtt.
-- Eredeti minőség (újrakódolás nélkül, MP4): ugyanazt a kép- és hangtartalmat MP4-fájlba menti, amelyet több eszköz képes lejátszani; a feliratok és a teletext nem kerülnek bele.
+- **MP4 – eredeti videó, AAC-hang**. A videó megőrzi eredeti kódolását. A program a hangsávokat AAC-formátumba kódolja, sávonként 192 kbit/s célbitsebességgel. A feliratok és a teletext kimaradnak.
 - Újrakódolás x264 használatával (MKV vagy MP4): kisebb méretű, újrakódolt fájlt készít, de a művelet lényegesen nagyobb processzorterheléssel jár.
 - Csak hang (MP3 V0, FLAC, WAV, AAC M4A vagy Opus): kizárólag a hangot menti; különösen rádióadások rögzítésére alkalmas.
 
-Kizárólag hangot tartalmazó adás felismerésekor a program hangrögzítési formátumot alkalmaz. Az Eredeti minőség (újrakódolás nélkül, MKA) lehetőséggel a kiválasztott hangsáv eredeti kódolását őrizheti meg Matroska-hangfájlban. Ez nem javítja a forrás minőségét, de elkerüli az újrakódolásból eredő veszteséget. Ha a sáv nem másolható MKA-konténerbe, a program nem végez automatikus átkódolást, hanem másik hangformátum kiválasztását kéri.
+Ha az adás csak hangot tartalmaz, a program hangrögzítési formátumot használ. Az **MKA – minden hangsáv eredeti kódolással** beállítással az összes hangsáv egyetlen Matroska-hangfájlba kerül, újrakódolás nélkül. Ha valamelyik sáv így nem menthető, válasszon másik hangformátumot.
 
 ### Ütemezett felvételek {#scheduled-recordings}
 
@@ -450,6 +460,10 @@ Az Ütemezett felvételek ablak Felvételi ütközések… gombja a kijelölt be
 A Felvétel ütemezése időpont alapján ablakban kijelölheti az ismétlés napjait. Meglévő bejegyzésnél az Ütemezett felvételek > Ismétlés a hét kijelölt napjain… paranccsal válassza ki ezeket; ehhez jelöljön ki egyetlen, indításra váró felvételt; sorozatfelvételi szabály nem választható. Ha egyik nap sincs kijelölve, a rögzítés egyszeri. Új felvételnél az első kezdési időpontnak is a kijelölt napok egyikére kell esnie. A további alkalmak a helyi műsoridőpontokat követik, az éjszakába átnyúló időszakot és a ráhagyást is megőrizve. A tavaszi óraátállítás miatt nem létező időszakot a program kihagyja. Az alkalmazást nyitva kell tartani; a meglévő felvételi kapcsolati korlátok továbbra is érvényesek.
 
 A **Másik adásidőpont vagy forrás keresése…** parancs a még el nem indult felvétel helyi menüjéből és a **Felvételi ütközések** ablakból is elérhető. A program a következő 14 nap műsorában keres. A találatok között az eredetivel azonos időben kezdődő adás is szerepelhet, ha más forrásból elérhető. Az **Ugyanaz az epizód** jelzés egyező azonosítókra utal. A program a részek sorszámát is figyelembe veszi, ha az szerepel a műsorújságban. A **Lehetséges ismétlés** felirat azonos című adást jelöl, amelynek a tartalma eltérhet az eredetiétől. Ha a fiókhoz felvételi korlátot állított be, a találat mellett a szükséges egyidejű kapcsolatok száma és a megadott felső határ is szerepel. Jóváhagyás előtt ellenőrizheti a forrást, a csatornát, az időpontot és az esetleges ütközéseket. Ismétlődő felvételnél a módosítás csak a kijelölt alkalomra vonatkozik.
+
+Az **Ütemezett felvételek** ablakban jelöljön ki egy ismétlődő felvételt vagy egy sorozatfelvételt. A Shift+F10 billentyűkombinációval nyissa meg a helyi menüt, majd válassza a **Felvételi szabály szüneteltetése…** parancsot. Adja meg a szünet első és utolsó napját. A megadott időszakba mindkét határnap beletartozik. A program a műsor kezdetének helyi dátumát veszi alapul akkor is, ha a ráhagyás miatt a rögzítés már az előző este elkezdődne. Jóváhagyás előtt ellenőrizheti az első kimaradó felvétel és a szünetet követő első alkalom időpontját, ha ezek az adatok már rendelkezésre állnak. A szünet lejártával a program ismét a szabály szerint rögzít. Ha korábban szeretné folytatni a felvételt, nyissa meg újra ezt a párbeszédablakot, és jelölje be a **Szüneteltetés megszüntetése** lehetőséget.
+
+A **Kijelölt felvételek időpontjainak exportálása naptárba…** paranccsal több közelgő felvétel időpontját is egyetlen naptárfájlba (.ics) mentheti. A kijelölt felvételek egyike sem eshet a rá vonatkozó szünet idejére. Minden bejegyzés a rögzítés kezdetét és végét tartalmazza, a beállított ráhagyással együtt.
 
 ### Ütemezési ráhagyás {#schedule-padding}
 
@@ -593,6 +607,8 @@ Kérdésekhez, hibajelentésekhez és a kiadásokkal kapcsolatos hírekhez az al
 - Hibajelentések és javaslatok a GitHubon: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 A Súgó > Névjegy… megjeleníti az éppen használt verziót, és hivatkozásokat tartalmaz a Telegram-csoporthoz, valamint a projekt Forgejo- és GitHub-oldalához. Hibajelentés készítésekor a Súgó > Napló- és hibakeresési adatok másolása paranccsal a kivizsgáláshoz szükséges technikai adatokat is a vágólapra helyezheti. A Súgó > Probléma bejelentése a GitHubon… parancs címet és leírást kér, majd a böngészőben megnyitja az új hibajegy űrlapját a megadott adatokkal. A program feltünteti az alkalmazás verzióját és a rendszer adatait is. A beküldéshez jelentkezzen be a GitHubra, majd nyomja meg a „Create” gombot.
+
+Ha a hibabejelentő űrlap nem nyílik meg a böngészőben, válassza az **Újrapróbálkozás** gombot. A **Bejelentés másolása** gomb a beírt címet és leírást egyaránt a vágólapra helyezi.
 
 ## Lejátszás, ütemezés és biztonsági mentés {#personal-tools}
 

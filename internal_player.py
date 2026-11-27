@@ -850,6 +850,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         self._last_bitrate_mbps = bitrate
 
         media = self.instance.media_new(playback_url)
+        reset_recording_rate = (not _retry or stream_kind == 'live') and getattr(self, '_local_playback_rate', 1.0) != 1.0
+        if reset_recording_rate:
+            media.add_option(':rate=1.0')
         resume_ms = getattr(self, "_resume_start_ms", 0)
         if resume_ms and self._current_stream_kind == "vod":
             media.add_option(":start-time={:.3f}".format(resume_ms / 1000))
@@ -896,6 +899,8 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
                 time.sleep(0.1)
             try:
                 player.set_media(media)
+                if reset_recording_rate:
+                    self._reset_recording_speed()
                 self._apply_audio_output_device()
                 player.play()
             except Exception as err:
@@ -922,6 +927,9 @@ class InternalPlayerFrame(MediaNavigationMixin, wx.Frame):
         if getattr(self, "_resume_config", None) is not None:
             self._save_resume_checkpoint(force=True)
         manual_stop = manual or (_evt is not None)
+        cancel_request = getattr(self, '_cancel_requested_stream', None)
+        if manual_stop and cancel_request is not None:
+            cancel_request()
         cancel = getattr(self, '_cancel_sleep_timer', None)
         if manual_stop and callable(cancel) and not getattr(self, '_buffer_transition', False):
             cancel()

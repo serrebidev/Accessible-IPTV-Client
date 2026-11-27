@@ -865,6 +865,7 @@ def normalize_channel_and_audio_settings(cfg: Dict) -> None:
     cfg["prevent_sleep_while_recording"] = coerce_bool(cfg.get("prevent_sleep_while_recording"), True)
     cfg["wake_for_recordings"] = coerce_bool(cfg.get("wake_for_recordings"), False)
     cfg["auto_next_episode"] = coerce_bool(cfg.get("auto_next_episode"), False)
+    cfg["notify_reminder_guide_changes"] = coerce_bool(cfg.get("notify_reminder_guide_changes"), False)
     cfg["notify_recording_guide_changes"] = coerce_bool(cfg.get("notify_recording_guide_changes"), False)
     cfg["favorite_collections"] = favorite_collections.normalize(cfg.get("favorite_collections"))
     cfg["saved_programme_searches"] = saved_searches.normalize(cfg.get("saved_programme_searches"))
@@ -888,7 +889,7 @@ def _windows_videos_dir():
                         (ctypes.c_byte * 8)(0x84, 0x1C, 0xAB, 0x7C, 0x74, 0xE4, 0xDD, 0xFC))
         path_ptr = ctypes.c_void_p()
         res = ctypes.windll.shell32.SHGetKnownFolderPath(
-            ctypes.byref(folderid), 0, None, ctypes.byref(path_ptr))
+            ctypes.byref(folderid), 0x4000, None, ctypes.byref(path_ptr))
         if res == 0 and path_ptr.value:
             value = ctypes.wstring_at(path_ptr.value)
             ctypes.windll.ole32.CoTaskMemFree(path_ptr)
@@ -897,26 +898,30 @@ def _windows_videos_dir():
         LOG.debug("_windows_videos_dir: ignored exception", exc_info=True)
     return os.path.join(os.path.expanduser("~"), "Videos")
 
-def get_recordings_dir(cfg: Dict) -> str:
-    """Resolve the directory recordings are written to (creating it)."""
+def recordings_directory_path(cfg: Dict) -> str:
+    """Return the configured or default path without opening or creating it."""
     configured = (cfg or {}).get("recordings_dir") or ""
-    fallback = ""
     if configured.strip():
         # A stored path can carry %VARIABLES% or be relative; used literally, a
         # relative path lands in the install directory.
         target = os.path.abspath(os.path.expandvars(os.path.expanduser(configured.strip())))
-        fallback = target
     else:
         if _IS_WINDOWS:
             videos = _windows_videos_dir()
         else:
             videos = os.path.join(os.path.expanduser("~"), "Videos")
         target = os.path.join(videos, "Accessible IPTV Recordings")
+    return target
+
+
+def get_recordings_dir(cfg: Dict) -> str:
+    """Resolve the directory recordings are written to (creating it)."""
+    target = recordings_directory_path(cfg)
     try:
         os.makedirs(target, exist_ok=True)
     except Exception:
         LOG.debug("get_recordings_dir: ignored exception", exc_info=True)
-        if fallback:
+        if (cfg or {}).get("recordings_dir", "").strip():
             # The configured folder cannot be created: record somewhere that
             # works rather than let ffmpeg fail with an opaque error.
             return get_recordings_dir({"recordings_dir": ""})

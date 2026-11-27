@@ -488,7 +488,7 @@ class FavouriteListsDialog(ToolDialog):
             needle = query.strip().casefold()
             found = []
             for ch in channels:
-                if not ch.get("url") or ch.get("kind") in {"movie", "series"}:
+                if not reminders.playable(ch) or ch.get("kind") in {"movie", "series"}:
                     continue
                 fields = [reminders.safe_title(dvr.channel_name(ch))]
                 fields.extend(reminders.safe_title(value) for value in

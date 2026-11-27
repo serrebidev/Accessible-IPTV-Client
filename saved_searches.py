@@ -90,8 +90,9 @@ def scan(path, rules, channels, *, canceled=lambda: False, now=None, budget=20):
                 continue
             entry = channel_identity.match_guide_channel(channel, indexes)
             if entry:
-                key = programme_reminders.channel_key(channel)
-                if key:
+                stable = programme_reminders.station_key(channel)
+                legacy = programme_reminders.channel_key(channel) if channel.get("provider-type") == "stalker" else stable
+                for key in ({stable, legacy} if legacy in requested else {stable}) - {""}:
                     mapped.setdefault(entry["id"], {})[key] = programme_reminders.safe_title(channel.get("name"))
                     if key in requested:
                         by_source.setdefault(key, set()).add(entry["id"])

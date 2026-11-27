@@ -51,7 +51,31 @@ def report_issue(parent):
                         caption, wx.TE_MULTILINE)
     if details is None:
         return
-    wx.LaunchDefaultBrowser(issue_url(summary, details))
+    url = issue_url(summary, details)
+    while True:
+        try:
+            if wx.LaunchDefaultBrowser(url) is not False:
+                return
+        except (OSError, RuntimeError):
+            LOG.info("Could not open the issue in the default browser", exc_info=True)
+        dialog = wx.MessageDialog(parent, _("The browser could not open the report. You can try again or copy your text."),
+                                  caption, wx.YES_NO | wx.CANCEL | wx.ICON_WARNING)
+        dialog.SetYesNoLabels(_("Try Again"), _("Copy Report"))
+        try:
+            choice = dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        if choice == wx.ID_NO:
+            if wx.TheClipboard.Open():
+                try:
+                    if wx.TheClipboard.SetData(wx.TextDataObject(summary + "\n\n" + details)):
+                        wx.TheClipboard.Flush()
+                        return
+                finally:
+                    wx.TheClipboard.Close()
+            wx.MessageBox(_("Could not copy the text. Your report is still available."), caption, wx.OK, parent)
+        elif choice != wx.ID_YES:
+            return
 
 
 def _ask_text(parent, message, caption, style):

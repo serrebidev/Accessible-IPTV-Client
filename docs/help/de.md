@@ -194,6 +194,8 @@ Eine Programmerinnerung bietet In 5 Minuten erneut erinnern sowie vor Sendungsbe
 
 In Kalender exportieren im Kontextmenü einer Sendung oder bei einer ausgewählten Erinnerung speichert eine .ics-Datei. Sie enthält Titel, Sender sowie Beginn und Ende in UTC, damit der Kalender seine eigene Ortszeit anzeigen kann. Der Export plant weder eine Aufnahme noch ein Aufwecken und startet keine Wiedergabe.
 
+Unter Programmerinnerungen lassen sich mit „Programmänderungen prüfen“ alte und neue Sendezeiten vergleichen. Bestätigen Sie die gewünschte Änderung. Bei einer verschobenen Erinnerung können Sie deren Abstand zum neuen Beginn beibehalten oder die übliche Vorlaufzeit verwenden. Das Kontrollkästchen aktiviert Hinweise nach Programmaktualisierungen.
+
 ## Nachholen {#catch-up}
 
 Sender, die ein Archiv führen, lassen Sie Sendungen ansehen, die schon gelaufen sind. Solche Sender haben Nachholen in ihrem Menü in der Senderliste. Es öffnet das Nachholen-Fenster des Senders, das seine vergangenen Sendungen mit Datum und Uhrzeit auflistet.
@@ -267,6 +269,8 @@ Wiedergabe > Aktuellen Untertitel vorlesen (C) liest den Untertitel auf dem Bild
 
 Wiedergabe > Untertitelzeitversatz (Strg+Umschalt+T) verschiebt Untertitel um höchstens zehn Minuten in beide Richtungen. Die Eingabe erfolgt in Millisekunden mit 500-ms-Schritten; positive Werte verzögern Anzeige und Vorlesen von Untertiteldateien. Zurücksetzen stellt null ein, Abbrechen behält den bisherigen Wert. Neue Medien setzen die Anpassung zurück. Wiedergabe- und Screenreader-Geschwindigkeit bleiben unverändert.
 
+Bei einer lokalen Aufnahme können Sie im Wiedergabemenü den gesamten Text einer geladenen Untertiteldatei oder eingebetteten Textspur durchsuchen. Geben Sie den Suchtext ein und springen Sie mit Eingabe zum ausgewählten Treffer. Die Wiedergabegeschwindigkeit lässt sich zwischen 0,75× und 2× einstellen. Mit „Normale Geschwindigkeit“ kehren Sie zu 1× zurück.
+
 ### Audioausgabegerät {#audio-output-device}
 
 Wiedergabe > Audioausgabegerät… (D) wählt die Lautsprecher oder Kopfhörer, die der Player benutzt, etwa um TV-Ton von Ihrem Screenreader fernzuhalten. Systemstandard folgt dem Windows-Standardgerät. Die Wahl wird gemerkt.
@@ -334,7 +338,7 @@ Aufnahmebibliothek > Liste als CSV exportieren speichert die aktuell gefilterte 
 Aufnahmen > Aufnahmeformat wählt, wie Aufnahmen gespeichert werden:
 
 - Anbieterqualität (Kopie, MKV): der Stream genau wie ausgestrahlt, mit allen Audio- und Untertitel-Spuren. Behält alles, was der Anbieter sendet.
-- Anbieterqualität (Kopie, MP4): dasselbe Bild und derselbe Ton in einer MP4-Datei, die mehr Geräte abspielen, ohne Untertitel und Videotext.
+- MP4 kopiert das Originalvideo und kodiert alle Tonspuren mit einer Zielbitrate von je 192 kbit/s als AAC. Untertitel und Teletext entfallen. MKA übernimmt alle Tonspuren in ihrer Originalkodierung.
 - x264-Neucodierung (MKV oder MP4): eine kleinere, neu kodierte Datei. Braucht viel mehr Prozessorzeit.
 - Nur Audio (MP3 V0, FLAC, WAV, AAC M4A oder Opus): nur der Ton, nützlich für Radio.
 
@@ -373,6 +377,8 @@ Aufnahmekonflikte in Geplante Aufnahmen zeigt Überschneidungen des ausgewählte
 Wählen Sie die Wiederholungstage unter Nach Zeit planen oder für eine einzelne ausstehende Aufnahme unter Geplante Aufnahmen > An ausgewählten Wochentagen wiederholen. Serienregeln sind ausgeschlossen. Ohne Auswahl erfolgt eine einmalige Aufnahme; bei einer neuen Aufnahme muss der erste Start auf einen gewählten Tag fallen. Weitere Termine behalten die lokalen Sendezeiten einschließlich Mitternachtswechsel und Vor-/Nachlauf. Bei der Zeitumstellung nicht existierende Zeitfenster werden übersprungen. Die Anwendung muss geöffnet bleiben; Verbindungslimits gelten weiterhin.
 
 Wählen Sie im Kontextmenü einer geplanten Aufnahme oder im Konfliktdialog Weitere Ausstrahlung suchen. Die Suche umfasst 14 Tage. Eine übereinstimmende Folgennummer kennzeichnet dieselbe Folge, ein übereinstimmender Titel eine mögliche Wiederholung. Prüfen Sie Termin und Konflikte und bestätigen Sie die Änderung. Weitere Termine bleiben erhalten.
+
+Im Kontextmenü der geplanten Aufnahmen können Sie eine Aufnahme- oder Serienregel für einen Zeitraum pausieren. Beide angegebenen Tage zählen mit. Danach wird bei der nächsten passenden Sendung wieder aufgenommen. Die Pause lässt sich vorzeitig aufheben. Mehrere ausgewählte künftige Aufnahmen können mit Vor- und Nachlauf in eine einzige .ics-Datei exportiert werden. Beim regulären Beenden fragt die Anwendung vor dem Stoppen einer Aufnahme nach und schließt die Dateien ab. Vor der Bestätigung werden der erste ausgesetzte und der nächste Aufnahmetermin nach der Pause angezeigt, sofern sie bekannt sind.
 
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 
@@ -507,6 +513,8 @@ Fragen, Fehlerberichte und Release-Neuigkeiten:
 - Fehlerberichte und Vorschläge auf GitHub: https://github.com/serrebidev/Accessible-IPTV-Client/issues
 
 Hilfe > Über… zeigt die laufende Version und verlinkt beides. Bei einem Problem liefert Hilfe > Protokoll und Debug-Informationen kopieren die nötigen Einzelheiten. Hilfe > Problem auf GitHub melden fragt nach Titel und Beschreibung und öffnet dann die GitHub-Seite für ein neues Issue mit beidem und Ihrer Version; melden Sie sich an und drücken Sie „Create“.
+
+Kann der Browser den Bericht nicht öffnen, wählen Sie „Erneut versuchen“ oder kopieren Sie Titel und Beschreibung mit „Bericht kopieren“.
 
 ## Persönliche Werkzeuge {#personal-tools}
 

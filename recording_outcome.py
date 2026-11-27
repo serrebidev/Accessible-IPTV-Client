@@ -14,9 +14,13 @@ def classify(rec, returncode, *, exiting=False, planned_seconds=None):
         produced = False
     if not produced:
         return "failed"
-    if exiting or getattr(rec, "finalize_timed_out", False) or getattr(rec, "detached", False):
+    if getattr(rec, "finalize_timed_out", False) or getattr(rec, "detached", False):
         return "partial"
     reason = getattr(rec, "stop_reason", "")
+    if reason == "exit":
+        return "stopped" if returncode == 0 else "partial"
+    if exiting:
+        return "partial"
     if reason == "storage":
         return "partial"
     if getattr(rec, "stopped_by_user", False) and reason != "scheduled":

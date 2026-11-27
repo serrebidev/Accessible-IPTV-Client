@@ -3,7 +3,7 @@
 GUI-free. Drives ffmpeg subprocesses that capture a resolved stream URL to disk.
 Three families of output are supported (see ``RECORDING_FORMATS``):
 
-* provider quality (stream copy) in MKV, MP4 or MKA (MKA is audio-only),
+* original streams in MKV or MKA, or copied video with AAC audio in MP4,
 * x264 re-encode (H.264 + AAC) in MKV or MP4,
 * audio only (WAV / FLAC / MP3 V0 / AAC / Opus).
 
@@ -22,6 +22,7 @@ from recording_outcome import FINALIZE_TIMEOUT_CAP_SECONDS, TERMINATE_GRACE_SECO
 import recording_storage
 import storage_monitor
 import recording_library
+from i18n import gettext as _
 from typing import Any, Callable, Dict, List, Optional
 
 LOG = logging.getLogger(__name__)
@@ -30,10 +31,10 @@ LOG = logging.getLogger(__name__)
 # ``kind`` is "video" or "audio" (audio presets drop the video stream).
 RECORDING_FORMATS: "Dict[str, tuple]" = {
     "provider_mkv": ("Provider quality (copy, MKV)", "mkv", "video"),
-    "provider_mp4": ("Provider quality (copy, MP4)", "mp4", "video"),
+    "provider_mp4": ("MP4 (original video, AAC audio)", "mp4", "video"),
     "x264_mkv": ("x264 re-encode (MKV)", "mkv", "video"),
     "x264_mp4": ("x264 re-encode (MP4)", "mp4", "video"),
-    "provider_mka": ("Provider quality (stream copy, MKA)", "mka", "audio"),
+    "provider_mka": ("MKA (all audio tracks, original encoding)", "mka", "audio"),
     "audio_mp3_v0": ("Audio only (MP3 V0)", "mp3", "audio"),
     "audio_flac": ("Audio only (FLAC)", "flac", "audio"),
     "audio_wav": ("Audio only (WAV)", "wav", "audio"),
@@ -1012,6 +1013,8 @@ class RecordingManager:
         self._lock = threading.Lock()
         self._recordings: "Dict[int, Recording]" = {}
         self._reserved_connection_keys = set()
+        self._watchers = set()
+        self._closing = False
         # Output paths chosen for recordings that are still starting.
         self._reserved_paths = set()
         self._next_id = 1
@@ -1114,6 +1117,8 @@ class RecordingManager:
 
         os.makedirs(out_dir, exist_ok=True)
         with self._lock:
+            if self._closing:
+                raise RuntimeError(_("The application is closing."))
             out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt),
                                                 when=file_time)
             # Held until the recording is registered: ffmpeg only creates its
@@ -1214,7 +1219,22 @@ class RecordingManager:
 
         if not log_path:
             threading.Thread(target=self._drain_stderr, args=(rec,), daemon=True).start()
-        threading.Thread(target=self._watch, args=(rec, on_finish), daemon=True).start()
+        def watch():
+            try:
+                self._watch(rec, on_finish)
+            finally:
+                with self._lock:
+                    self._watchers.discard(threading.current_thread())
+        watcher = threading.Thread(target=watch, daemon=True, name="Recording completion")
+        with self._lock:
+            self._watchers.add(watcher)
+        try:
+            watcher.start()
+        except RuntimeError:
+            with self._lock:
+                self._watchers.discard(watcher)
+            self._abandon_start(rec)
+            raise
         self._ensure_space_monitor()
         return rec
 
@@ -1275,6 +1295,27 @@ class RecordingManager:
                 self._graceful_stop(rec, wait=wait, detach=detach)
                 stopped += 1
         return stopped
+
+    def begin_shutdown(self, completed):
+        """Stop captures in parallel and wait off the UI thread for their durable outcomes."""
+        with self._lock:
+            self._closing = True
+            if not (self._watchers or self._recordings or self._reserved_paths):
+                return False
+
+        def finish():
+            # Registration and its watcher are installed together under the start gate.
+            with self._storage_gate:
+                for rec in self.list_active():
+                    self._graceful_stop(rec, detach=True)
+                with self._lock:
+                    watchers = tuple(self._watchers)
+            for watcher in watchers:
+                watcher.join()
+            completed()
+
+        threading.Thread(target=finish, name="Recording shutdown", daemon=True).start()
+        return True
 
     def stop_all(self, *, wait: bool = False, detach: bool = False) -> int:
         """Stop every active recording.
@@ -1518,6 +1559,8 @@ class RecordingManager:
             # the user stopped it would make a finished download look
             # discarded, and the finished file was deleted for that reason.
             return
+        if detach and not rec.stopping and not getattr(rec, 'stop_reason', ''):
+            rec.stop_reason = "exit"
         rec.stopped_by_user = True
         if rec.stopping:
             if detach:
