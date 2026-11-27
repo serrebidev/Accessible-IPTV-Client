@@ -11,6 +11,7 @@ The active format is a persistent setting chosen elsewhere; this module just tur
 format key + URL + per-channel HTTP headers into a running ffmpeg process and tracks it.
 """
 
+from contextlib import contextmanager, nullcontext
 import datetime
 import logging
 import os
@@ -18,6 +19,7 @@ import re
 import subprocess
 import threading
 import time
+from types import SimpleNamespace
 from recording_outcome import FINALIZE_TIMEOUT_CAP_SECONDS, TERMINATE_GRACE_SECONDS
 import recording_storage
 import storage_monitor
@@ -1018,7 +1020,10 @@ class RecordingManager:
         # Output paths chosen for recordings that are still starting.
         self._reserved_paths = set()
         self._next_id = 1
-        self._storage_gate = threading.RLock()
+        self._start_condition = threading.Condition(self._lock)
+        self._starting = set()
+        self._destination_gates = {}
+        self._starting_accounts = {}
         self.storage_min_mib = recording_storage.DEFAULT_RESERVE_MIB
         self.storage_preferences = storage_monitor.settings({})
         self.on_storage_warning = None
@@ -1041,8 +1046,12 @@ class RecordingManager:
 
     def has_active_connection(self, connection_key: str) -> bool:
         """Whether a provider-scoped exclusive recording is already running."""
-        return bool(connection_key and any(
-            r.connection_key == connection_key for r in self.list_active()))
+        if not connection_key:
+            return False
+        with self._lock:
+            return connection_key in self._reserved_connection_keys or any(
+                rec.connection_key == connection_key and rec.process and rec.process.poll() is None
+                for rec in self._recordings.values())
 
     # -- lifecycle ---------------------------------------------------------
     def start(
@@ -1074,71 +1083,105 @@ class RecordingManager:
             fmt = DEFAULT_RECORDING_FORMAT
 
         if not _storage_checked:
-            # Serialize concurrent starts through validation and registration.
-            # A floor is not a reservation of the recording's unknown full size.
-            with self._storage_gate:
+            # Serialize the checks for one destination. A different directory
+            # can enter admission even if this directory is on an offline share.
+            with self._destination_admission(out_dir):
                 enabled, _warning, critical, auto_stop = self.storage_preferences
                 reserve = max(self.storage_min_mib, critical) if enabled and auto_stop else self.storage_min_mib
                 checked = recording_storage.check_destination(out_dir, reserve)
-                out_dir = checked['path']
-                return self.start(url, display_name, fmt, headers, out_dir,
+                return self.start(url, display_name, fmt, headers, checked["path"],
                     key=key, metadata=metadata, on_finish=on_finish, duration=duration,
                     show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
                     audio_track=audio_track, audio_track_count=audio_track_count,
                     share_with_player=share_with_player, connection_key=connection_key,
                     _buffer_lease=_buffer_lease, _buffer_checked=_buffer_checked, _storage_checked=True)
 
-        registry = getattr(self, 'live_buffer_registry', None)
-        if registry is not None and not _buffer_checked:
-            with registry.ingest_gate:
-                local, local_headers, lease = registry.recording_input(url, headers)
-                try:
-                    return self.start(local, display_name, fmt, local_headers, out_dir,
-                        key=key or url, metadata=metadata, on_finish=on_finish, duration=duration,
-                        show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
-                        audio_track=audio_track, audio_track_count=audio_track_count,
-                        share_with_player=share_with_player, connection_key=connection_key,
-                        _buffer_lease=lease, _buffer_checked=True, _storage_checked=True)
-                except Exception:
-                    if lease is not None:
-                        lease.release()
-                    raise
-
-        # Check before creating files or opening ffmpeg.  A scheduled and a
-        # manual recording use different recording keys, so ``is_recording``
-        # alone cannot prevent two connections to a one-stream provider.
-        if _buffer_lease is None and callable(self.connection_policy):
-            metadata = dict(metadata or {})
-            account = self.connection_policy(url, metadata, self.list_active())
-            if account:
-                metadata["recording_account"] = account
-        if self.has_active_connection(connection_key):
-            raise RuntimeError("A recording is already using this provider's only stream.")
-
-        os.makedirs(out_dir, exist_ok=True)
-        with self._lock:
-            if self._closing:
-                raise RuntimeError(_("The application is closing."))
-            out_path = self._unique_output_path(out_dir, display_name, format_extension(fmt),
-                                                when=file_time)
-            # Held until the recording is registered: ffmpeg only creates its
-            # file once the input opens, which can be seconds away.
-            self._reserved_paths.add(out_path)
+        registry = getattr(self, "live_buffer_registry", None)
+        buffer_gate = registry.ingest_gate if registry is not None and not _buffer_checked else nullcontext()
+        owned_lease = None
+        admission = object()
+        out_path = None
+        metadata = dict(metadata or {})
         try:
+            with buffer_gate:
+                if registry is not None and not _buffer_checked:
+                    key = key or url
+                    url, headers, owned_lease = registry.recording_input(url, headers)
+                    _buffer_lease = owned_lease
+                self._reserve_start(admission, connection_key, url, metadata, _buffer_lease)
+            # A second start can reserve the same name between the filesystem
+            # check and lock acquisition. Recheck the in-memory reservations.
+            while out_path is None:
+                candidate = self._unique_output_path(out_dir, display_name, format_extension(fmt), when=file_time)
+                with self._lock:
+                    if self._closing:
+                        raise RuntimeError(_("The application is closing."))
+                    key_path = os.path.normcase(candidate)
+                    if (any(os.path.normcase(path) == key_path for path in self._reserved_paths)
+                            or any(os.path.normcase(rec.out_path) == key_path for rec in self._recordings.values()
+                                   if getattr(rec, "out_path", None))):
+                        continue
+                    self._reserved_paths.add(candidate)
+                    out_path = candidate
             return self._start_reserved(
                 url, display_name, fmt, headers, out_dir, out_path,
                 key=key, metadata=metadata, on_finish=on_finish, duration=duration,
                 show_stats=show_stats, keep_partial=keep_partial, audio_track=audio_track,
                 audio_track_count=audio_track_count, share_with_player=share_with_player,
-                connection_key=connection_key, buffer_lease=_buffer_lease)
+                connection_key=connection_key, buffer_lease=_buffer_lease, admission=admission)
+        except BaseException:
+            if owned_lease is not None:
+                owned_lease.release()
+            raise
+        finally:
+            with self._start_condition:
+                if admission in self._starting:
+                    self._starting.remove(admission)
+                    self._starting_accounts.pop(admission, None)
+                    self._reserved_connection_keys.discard(connection_key)
+                    if out_path is not None:
+                        self._reserved_paths.discard(out_path)
+                    self._start_condition.notify_all()
+
+    @contextmanager
+    def _destination_admission(self, directory):
+        key = os.path.normcase(os.path.abspath(directory))
+        with self._lock:
+            # The reference count includes waiters for this destination.
+            entry = self._destination_gates.get(key)
+            if entry is None:
+                entry = self._destination_gates[key] = [threading.Lock(), 0]
+            entry[1] += 1
+        try:
+            with entry[0]:
+                yield
         finally:
             with self._lock:
-                self._reserved_paths.discard(out_path)
+                entry[1] -= 1
+                if entry[1] == 0:
+                    del self._destination_gates[key]
+
+    def _reserve_start(self, admission, connection_key, url, metadata, buffer_lease):
+        with self._start_condition:
+            if self._closing:
+                raise RuntimeError(_("The application is closing."))
+            active = [r for r in self._recordings.values() if r.process and r.process.poll() is None]
+            if connection_key and (connection_key in self._reserved_connection_keys
+                    or any(r.connection_key == connection_key for r in active)):
+                raise RuntimeError("A recording is already using this provider's only stream.")
+            if buffer_lease is None and callable(self.connection_policy):
+                account = self.connection_policy(url, metadata, active + list(self._starting_accounts.values()))
+                if account:
+                    metadata["recording_account"] = account
+                self._starting_accounts[admission] = SimpleNamespace(url=url, metadata=metadata, buffer_lease=None)
+            if connection_key:
+                self._reserved_connection_keys.add(connection_key)
+            self._starting.add(admission)
 
     def _start_reserved(self, url, display_name, fmt, headers, out_dir, out_path, *, key,
                         metadata, on_finish, duration, show_stats, keep_partial,
                         audio_track, audio_track_count, share_with_player,
-                        connection_key, buffer_lease=None) -> Recording:
+                        connection_key, buffer_lease=None, admission=None) -> Recording:
         # ffmpeg cannot resume a partial file, so for download-style captures the
         # output goes to a ``.part`` sibling and is renamed into place only when
         # the download completes; a canceled or failed run leaves nothing behind.
@@ -1167,15 +1210,6 @@ class RecordingManager:
         log_path = recording_log_path(out_dir, out_path)
         log_handle = self._open_log(log_path, cmd, url)
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
-        with self._lock:
-            if connection_key and (connection_key in self._reserved_connection_keys or any(
-                    r.connection_key == connection_key and r.process and r.process.poll() is None
-                    for r in self._recordings.values())):
-                if log_handle:
-                    log_handle.close()
-                raise RuntimeError("A recording is already using this provider's only stream.")
-            if connection_key:
-                self._reserved_connection_keys.add(connection_key)
         try:
             process = subprocess.Popen(
                 cmd,
@@ -1187,8 +1221,6 @@ class RecordingManager:
         except Exception:
             if log_handle:
                 log_handle.close()
-            with self._lock:
-                self._reserved_connection_keys.discard(connection_key)
             raise
         if log_handle:
             # The child owns the descriptor now; ours would only pin the file open.
@@ -1205,7 +1237,7 @@ class RecordingManager:
             rec.planned_seconds = _planned_seconds(duration, rec.metadata, rec.started_at)
             rec.buffer_lease = buffer_lease
             self._recordings[rec_id] = rec
-            self._reserved_connection_keys.discard(connection_key)
+            self._starting_accounts.pop(admission, None)
         if share_with_player:
             from recording_relay import RecordingRelay
             try:
@@ -1259,10 +1291,11 @@ class RecordingManager:
                     return
             try:
                 self._space_monitor.check(rows, self.storage_preferences,
-                                          self._notify_storage, lambda rec_id: self.stop(rec_id, reason="storage"))
+                                          self._notify_storage, lambda rec_id: self.stop(rec_id, reason="storage"),
+                                          background=True)
             except Exception:
                 LOG.exception("Recording-space monitor failed")
-            threading.Event().wait(5)
+            self._space_monitor.ready.wait(storage_monitor.POLL_SECONDS)
 
     def _notify_storage(self, state, directory, free, count):
         LOG.warning("Recording space %s: %s (%s MiB)", state, directory, free)
@@ -1300,16 +1333,19 @@ class RecordingManager:
         """Stop captures in parallel and wait off the UI thread for their durable outcomes."""
         with self._lock:
             self._closing = True
-            if not (self._watchers or self._recordings or self._reserved_paths):
+            if not (self._watchers or self._recordings or self._starting):
                 return False
 
         def finish():
-            # Registration and its watcher are installed together under the start gate.
-            with self._storage_gate:
-                for rec in self.list_active():
-                    self._graceful_stop(rec, detach=True)
-                with self._lock:
-                    watchers = tuple(self._watchers)
+            # Stop active captures immediately, then pick up admissions that
+            # were already committed before the shutdown flag was set.
+            for rec in self.list_active():
+                self._graceful_stop(rec, detach=True)
+            with self._start_condition:
+                self._start_condition.wait_for(lambda: not self._starting)
+                watchers = tuple(self._watchers)
+            for rec in self.list_active():
+                self._graceful_stop(rec, detach=True)
             for watcher in watchers:
                 watcher.join()
             completed()
@@ -1336,12 +1372,10 @@ class RecordingManager:
         # aired, to the minute as the EPG lists it; a live capture for the
         # moment it started.
         stamp = when.strftime("%Y-%m-%d %H-%M") if when else time.strftime("%Y-%m-%d %H-%M-%S")
-        # Callers hold ``self._lock``. A download writes to ``<name>.part`` and
-        # ffmpeg creates nothing until its input opens, so the finished name
-        # alone does not show that a path is in use.
-        in_use = set(self._reserved_paths)
-        for rec in self._recordings.values():
-            in_use.add(os.path.normcase(rec.out_path))
+        # Snapshot reservations under the lock and check the filesystem outside it.
+        with self._lock:
+            in_use = set(self._reserved_paths)
+            in_use.update(rec.out_path for rec in self._recordings.values() if getattr(rec, "out_path", None))
         in_use = {os.path.normcase(path) for path in in_use}
 
         used_logs = {os.path.normcase(recording_log_path(out_dir, path)) for path in in_use}

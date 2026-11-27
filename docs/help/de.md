@@ -271,6 +271,8 @@ Wiedergabe > Untertitelzeitversatz (Strg+Umschalt+T) verschiebt Untertitel um h�
 
 Bei einer lokalen Aufnahme können Sie im Wiedergabemenü den gesamten Text einer geladenen Untertiteldatei oder eingebetteten Textspur durchsuchen. Geben Sie den Suchtext ein und springen Sie mit Eingabe zum ausgewählten Treffer. Die Wiedergabegeschwindigkeit lässt sich zwischen 0,75× und 2× einstellen. Mit „Normale Geschwindigkeit“ kehren Sie zu 1× zurück.
 
+Im Menü Wiedergabe exportiert **Untertiteltranskript speichern** die geladene Textspur mit Zeitmarken. Markieren Sie in den Suchergebnissen einzelne Zeilen und wählen Sie **Ausgewählte Untertitel speichern**. Wählen Sie zum Springen eine einzige Zeile und drücken Sie die Eingabetaste.
+
 ### Audioausgabegerät {#audio-output-device}
 
 Wiedergabe > Audioausgabegerät… (D) wählt die Lautsprecher oder Kopfhörer, die der Player benutzt, etwa um TV-Ton von Ihrem Screenreader fernzuhalten. Systemstandard folgt dem Windows-Standardgerät. Die Wahl wird gemerkt.
@@ -319,7 +321,7 @@ Das Programm kann jeden Sender in eine Datei aufnehmen, während Sie etwas ander
 
 Das Aufnehmen des laufenden Programms im integrierten Player benutzt dieselbe Verbindung zum Anbieter und funktioniert daher auch bei Konten, die nur einen Stream zurzeit erlauben.
 
-Das Stoppen einer Aufnahme kann einen Moment dauern, bis ihre Datei fertiggestellt ist. Beim Beenden des Programms werden noch laufende Aufnahmen ebenfalls gestoppt; das Programm gibt ihnen vorher eine kurze Frist, um ihre Dateien fertigzustellen.
+Beim Stoppen einer Aufnahme oder beim Beenden erhält die Aufnahme Zeit, um die Datei fertig zu schreiben. Die Frist hängt von der Datei und dem Aufnahmeformat ab.
 
 Aufnahmen > Speicherplatzüberwachung für Aufnahmen prüft den freien Speicherplatz während der Aufnahme alle fünf Sekunden. Die Warnung ist standardmäßig unter 1024 MiB aktiviert. Das automatische Beenden ist zunächst ausgeschaltet. Aktivieren Sie es und legen Sie einen Schwellenwert fest, zunächst 256 MiB, damit Dateien vor dem vollständigen Füllen des Laufwerks kontrolliert abgeschlossen werden. Der Warnschwellenwert darf nicht niedriger liegen. Aufnahmen auf demselben Laufwerk erhalten eine gemeinsame Warnung; bei aktiviertem Beenden werden alle betroffenen Aufnahmen gestoppt. Die Prüfung reserviert keinen Speicherplatz und garantiert keinen erfolgreichen Dateiabschluss auf einem vollen oder getrennten Laufwerk.
 
@@ -332,6 +334,8 @@ In den Aufnahme-Papierkorb verschieben verschiebt die Datei in den Papierkorb de
 Alle Aufnahmeordner zeigt die eingerichteten Ordner gemeinsam. Filtern Sie nach Status und sortieren Sie nach Datum, Titel, Dauer oder Dateigröße; Absteigend kehrt die Reihenfolge um. Strg+A markiert alle sichtbaren Zeilen; Anzahl und Gesamtgröße erscheinen. Papierkorb, endgültiges Löschen und Wiederherstellen unterstützen Mehrfachauswahl. Wiedergabe und Umbenennen benötigen eine Aufnahme. Scannen und Filtern laufen im Hintergrund; bestätigte Dateiaktionen werden beim Schließen fortgesetzt.
 
 Aufnahmebibliothek > Liste als CSV exportieren speichert die aktuell gefilterte und sortierte Liste mit Titel, Sender, Datum, Dauer, Status und Größe. Dateipfade und Stream-URLs sind ausgeschlossen; Formelpräfixe in Text werden geschützt. Beim Schließen merkt sich die Bibliothek Ordner, Suche, Statusfilter und Sortierung. Gelöschte Aufnahmen ist beim erneuten Öffnen immer ausgeschaltet. Exporte erfolgen nur auf Anforderung, ohne Medien erneut einzulesen.
+
+Im Warteschlangeneditor speichert **Warteschlange speichern** die verbleibenden Aufnahmen in ihrer Reihenfolge. Laden oder löschen Sie eine gespeicherte Warteschlange im selben Fenster. Beim Abspielen werden die Dateien einzeln geprüft. Unter **Aufnahmebenachrichtigungen** können Sie erfolgreiche Starts und Abschlüsse als Dialog, Ansage oder nur im Verlauf erhalten. Für einen Ausschnitt setzen Sie in einer lokalen Aufnahme ein benanntes Lesezeichen. Wählen Sie **Aufnahmeausschnitt speichern** im Menü Wiedergabe und die beiden Grenzen. Bild und Ton werden im Hintergrund in einer neuen MKV-Datei gespeichert.
 
 ### Aufnahmeformat {#recording-formats}
 
@@ -379,6 +383,8 @@ Wählen Sie die Wiederholungstage unter Nach Zeit planen oder für eine einzelne
 Wählen Sie im Kontextmenü einer geplanten Aufnahme oder im Konfliktdialog Weitere Ausstrahlung suchen. Die Suche umfasst 14 Tage. Eine übereinstimmende Folgennummer kennzeichnet dieselbe Folge, ein übereinstimmender Titel eine mögliche Wiederholung. Prüfen Sie Termin und Konflikte und bestätigen Sie die Änderung. Weitere Termine bleiben erhalten.
 
 Im Kontextmenü der geplanten Aufnahmen können Sie eine Aufnahme- oder Serienregel für einen Zeitraum pausieren. Beide angegebenen Tage zählen mit. Danach wird bei der nächsten passenden Sendung wieder aufgenommen. Die Pause lässt sich vorzeitig aufheben. Mehrere ausgewählte künftige Aufnahmen können mit Vor- und Nachlauf in eine einzige .ics-Datei exportiert werden. Beim regulären Beenden fragt die Anwendung vor dem Stoppen einer Aufnahme nach und schließt die Dateien ab. Vor der Bestätigung werden der erste ausgesetzte und der nächste Aufnahmetermin nach der Pause angezeigt, sofern sie bekannt sind.
+
+Drücken Sie in Geplante Aufnahmen Strg+F, um nach Titel oder Sender zu filtern. Wählen Sie in der Ansicht entweder die nächsten sieben Tage, fehlgeschlagene und unvollständige Aufnahmen oder pausierte Regeln. Löschen Sie den Suchtext und wählen Sie Alle, um alles anzuzeigen.
 
 ### Zeitpuffer für Aufnahmen {#schedule-padding}
 

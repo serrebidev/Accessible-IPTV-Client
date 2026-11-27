@@ -189,6 +189,11 @@ def build_release_notes(commits):
     translate it through the same catalogues.
     """
     sections = summarize_commits(commits)
+    localization = re.compile(
+        r"^Polish Hungarian localization: (?:docs/help/hu\.md|docs/release-note-translations-[0-9]+\.json"
+        r"|locale/hu/LC_MESSAGES/(?:iptvclient|release_notes)\.po)(?: \(#[0-9]+\))?$", re.IGNORECASE)
+    polish = "Refine Hungarian menus, help and release notes"
+    sections["Other"] = [polish if localization.match(subject) else subject for subject in sections["Other"]]
     output = []
     seen = set()
     for key, label in notes_format.SECTIONS:

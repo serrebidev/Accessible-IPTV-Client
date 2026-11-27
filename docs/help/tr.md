@@ -270,6 +270,8 @@ Oynatma > Altyazı Zamanlaması (Ctrl+Shift+T), her iki yönde en çok on dakika
 
 Yerel kayıt oynatılırken oynatma menüsünden yüklenmiş altyazı dosyasında veya gömülü metin izinde sözcük arayabilirsiniz. Bir sonucu seçip Enter tuşuna basarak o konuma gidin. Kayıt oynatma hızını 0,75× ile 2× arasında ayarlayabilirsiniz. 1× hızına dönmek için normal hızı seçin.
 
+Oynatma menüsünde **Altyazı dökümünü kaydet**, yüklenen metin parçasını zaman damgalarıyla dışa aktarır. Arama sonuçlarında satırları seçip **Seçili altyazıları kaydet** komutunu kullanın. Bir konuma gitmek için tek bir satır seçip Enter tuşuna basın.
+
 ### Ses çıkış cihazı {#audio-output-device}
 
 Oynatma > Ses çıkış cihazı... (D), oynatıcının hangi hoparlörleri ya da kulaklıkları kullanacağını seçer; örneğin TV sesini ekran okuyucunuzdan uzak tutmak için. Sistem varsayılanı, Windows'un varsayılan cihazını izler. Seçim hatırlanır.
@@ -318,7 +320,7 @@ Program, siz başka bir şey izlerken ya da hiçbir şey oynamazken herhangi bir
 
 Yerleşik oynatıcıda izlediğinizi kaydetmek sağlayıcıyla aynı bağlantıyı kullanır; bir kerede yalnızca bir akışa izin veren hesaplarda bile çalışır.
 
-Bir kaydı durdurmak, dosyası tamamlanırken biraz sürebilir. Uygulamadan çıkıldığında hâlâ süren kayıtlar da durdurulur; program önce dosyalarını tamamlamaları için onlara kısa bir süre tanır.
+Kaydı durdurduğunuzda veya uygulamadan çıktığınızda dosyanın yazımını tamamlaması için süre tanınır. Bu süre dosyaya ve kayıt biçimine bağlıdır.
 
 Kayıtlar > Kayıt alanı izleme, kayıt sırasında boş alanı beş saniyede bir denetler. Uyarı varsayılan olarak 1024 MiB altında etkindir. Otomatik durdurma başlangıçta kapalıdır; açıp başlangıçta 256 MiB olan eşiği seçerek sürücü dolmadan dosyaların düzgün kapatılmasını isteyebilirsiniz. Uyarı eşiği durdurma eşiğinden düşük olamaz. Aynı sürücüye yapılan kayıtlar için ortak bir uyarı verilir; durdurma etkinse etkilenen tüm kayıtlar durdurulur. Denetim alan ayırmaz ve dolu veya bağlantısı kesilmiş bir sürücüde dosyaların kapanacağını garanti etmez.
 
@@ -331,6 +333,8 @@ Kayıt Çöp Kutusuna Taşı dosyayı kendi kayıt klasöründeki uygulama çöp
 Tüm Kayıt Klasörleri yapılandırılan klasörleri birleştirir. Duruma göre filtreleyin; tarih, başlık, süre veya boyuta göre sıralayın. Azalan sıralamayı tersine çevirir. Ctrl+A görünen tüm satırları seçer; sayı ve toplam boyut gösterilir. Çöp kutusu, kalıcı silme ve geri yükleme çoklu seçimi destekler; oynatma ve yeniden adlandırma tek kayıt gerektirir. Tarama ve filtreleme arka plandadır; kapatma onaylanmış işlemleri iptal etmez.
 
 Kayıt Kitaplığı > Listeyi CSV Olarak Dışa Aktar komutu süzülmüş ve sıralanmış listeyi başlık, kanal, tarih, süre, durum ve boyutla kaydeder. Dosya yolları ve akış adresleri dahil edilmez; metindeki formül önekleri korunur. Kitaplık kapanırken klasörü, aramayı, durum süzgecini ve sıralamayı hatırlar. Silinmiş kayıtlar yeniden açılışta daima gizlidir. Dışa aktarma yalnızca istendiğinde yapılır ve medyayı yeniden taramaz.
+
+Düzenleyicide **Sırayı kaydet**, kalan kayıtları sırasıyla saklar. Aynı pencereden kayıtlı sıra yüklenebilir veya silinebilir. Her dosya sırası geldiğinde denetlenir. Başarılı başlangıç ve bitişler için **Kayıt bildirimleri** bölümünde iletişim kutusu, sesli bildirim veya yalnızca geçmiş seçilebilir. Yerel bir kayıttan kesit almak için adlandırılmış bir yer imi ekleyin, Oynatma menüsünde **Kayıt kesitini kaydet** komutunu seçip sınırları belirtin. Görüntü ve ses arka planda yeni bir MKV dosyasına kaydedilir.
 
 ### Kayıt biçimi {#recording-formats}
 
@@ -378,6 +382,8 @@ Zamana Göre Planla penceresinde tekrar günlerini seçin veya dizi kuralı olma
 Planlanmış kaydın bağlam menüsünden veya çakışma penceresinden Başka bir yayın saati bul komutunu seçin. Arama önümüzdeki 14 günü kapsar. Bölüm numarası eşleşirse aynı bölüm, yalnızca başlık eşleşirse olası tekrar olarak gösterilir. Onaylamadan önce saati ve çakışmaları kontrol edin. Diğer kayıtların saatleri korunur.
 
 Zamanlanmış kayıtların bağlam menüsünde yinelenen bir kayıt veya dizi kuralını belirli tarihler arasında duraklatabilirsiniz. İlk ve son gün araya dahildir. Kayıt sonraki uygun yayında sürer. Arayı daha erken de kaldırabilirsiniz. Birden fazla yaklaşan kaydı seçerek baştaki ve sondaki ek sürelerle birlikte tek bir .ics dosyasına aktarabilirsiniz. Normal çıkışta uygulama süren kaydı durdurmadan önce onay ister ve dosyaları yazmayı tamamlar. Onaylamadan önce, saatleri biliniyorsa atlanacak ilk kaydı ve aradan sonraki ilk kaydı görebilirsiniz.
+
+Zamanlanmış Kayıtlar’da başlığa veya kanala göre filtrelemek için Ctrl+F tuşlarına basın. Gelecek yedi günü, başarısız ve kısmi kayıtları veya duraklatılan kuralları seçin. Tam liste için aramayı temizleyip Tümü’nü seçin.
 
 ### Zamanlama payı {#schedule-padding}
 

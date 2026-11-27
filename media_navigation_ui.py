@@ -1,5 +1,6 @@
 """Keyboard-accessible media navigation and local recording playback controls."""
 import time
+from pathlib import Path
 
 import wx
 import user_guide
@@ -17,7 +18,7 @@ SEEK_ACTIONS = {
 
 class SubtitleMatches(wx.ListCtrl):
     def __init__(self, parent, rows):
-        super().__init__(parent, style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_VIRTUAL)
+        super().__init__(parent, style=wx.LC_REPORT | wx.LC_VIRTUAL)
         self.rows = rows
         self.SetName(_("Subtitle matches"))
         self.InsertColumn(0, _("Time"), width=100)
@@ -61,6 +62,13 @@ class MediaNavigationMixin:
                 (_("Normal speed"), lambda e: self._restore_normal_speed(), "recordings")):
             item = menu.Append(wx.ID_ANY, label)
             self.Bind(wx.EVT_MENU, action, item)
+            self._navigation_help_items.append((item, topic))
+
+        for label, handler, topic in (
+                (_("Save Subtitle Transcript..."), lambda e: self._save_subtitle_transcript(e), "subtitle-speech"),
+                (_("Save Recording Excerpt..."), lambda e: self._save_recording_excerpt(e), "recordings")):
+            item = menu.Append(wx.ID_ANY, label)
+            self.Bind(wx.EVT_MENU, handler, item)
             self._navigation_help_items.append((item, topic))
 
         chapters = menu.Append(wx.ID_ANY, _("Recording Chapters..."))
@@ -142,9 +150,30 @@ class MediaNavigationMixin:
             results = wx.Dialog(self, title=title, size=(640, 420), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
             layout = wx.BoxSizer(wx.VERTICAL)
             listing = SubtitleMatches(results, rows)
-            listing.Bind(wx.EVT_LIST_ITEM_ACTIVATED, lambda event: results.EndModal(wx.ID_OK))
+            def jump(event):
+                if listing.GetSelectedItemCount() == 1:
+                    results.EndModal(wx.ID_OK)
+                else:
+                    self._navigation_message(_("Select one subtitle to jump to its position."))
+
+            def export(event):
+                selected = []
+                index = listing.GetFirstSelected()
+                while index != -1:
+                    selected.append(rows[index])
+                    index = listing.GetNextSelected(index)
+                if selected:
+                    self._export_subtitle_rows(results, selected)
+
+            listing.Bind(wx.EVT_LIST_ITEM_ACTIVATED, jump)
             layout.Add(listing, 1, wx.EXPAND | wx.ALL, 8)
-            layout.Add(results.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.ALL | wx.EXPAND, 8)
+            controls = wx.BoxSizer(wx.HORIZONTAL)
+            for label, handler in ((_("Go to Time..."), jump), (_("Save Selected Subtitles..."), export)):
+                button = wx.Button(results, label=label)
+                button.Bind(wx.EVT_BUTTON, handler)
+                controls.Add(button, 0, wx.RIGHT, 8)
+            layout.Add(controls, 0, wx.ALL, 8)
+            layout.Add(results.CreateButtonSizer(wx.CANCEL), 0, wx.ALL | wx.EXPAND, 8)
             results.SetSizer(layout)
             user_guide.set_help_topic(results, "subtitle-speech")
             listing.SetFocus()
@@ -159,6 +188,83 @@ class MediaNavigationMixin:
         from background_tasks import start_operation
         start_operation(self, "subtitle-search", lambda: [cue for cue in source.cues if query in cue.text.casefold()],
                         found, wx.CallAfter)
+
+    def _export_subtitle_rows(self, parent, rows):
+        from planning_tools_ui import export_file
+        from recording_media import transcript
+
+        export_file(parent, _("Save Subtitle Transcript..."), _("Text file (*.txt)") + "|*.txt",
+                    ".txt", lambda: transcript(rows))
+
+    def _save_subtitle_transcript(self, _event=None):
+        source = getattr(self, "_subtitle_file_source", None)
+        if not self._is_local_playback() or source is None or not source.cues:
+            self._navigation_message(_("Open a local recording with text subtitles first."))
+            return
+        self._export_subtitle_rows(self, source.cues)
+
+    def _save_recording_excerpt(self, _event=None):
+        import named_bookmarks
+        import recording_media
+        from background_tasks import start_operation
+        from modal_guard import message_box
+
+        if not self._is_local_playback() or not self.player.is_seekable():
+            self._navigation_message(_("Open a seekable local recording first."))
+            return
+        title = _("Save Recording Excerpt...")
+        owner = self.GetParent()
+        if "recording-excerpt" in getattr(owner, "_background_operations", ()):
+            self._navigation_message(_("In Progress"))
+            return
+        generation = self._vlc_generation
+        channel = self._episode_channel
+        def canceled():
+            return (self._destroyed or self._manual_stop or generation != self._vlc_generation
+                    or getattr(owner, "_closing_application", False))
+        try:
+            _position, length = self._media_clock()
+            key = getattr(self, "_resume_key", "")
+            config = getattr(owner, "config", {})
+            rows = named_bookmarks.normalize(config.get("named_playback_bookmarks")).get(key, ())
+            points = [(0, _("Start of recording"))]
+            points.extend((row["position_ms"], row["name"]) for row in rows if 0 < row["position_ms"] < length)
+            points.append((length, _("End of recording")))
+            if len(points) < 3:
+                raise ValueError(_("Add a named bookmark to mark a point inside the recording first."))
+
+            def choose(prompt, choices, selection=0):
+                labels = [f"{clock_text(position)} – {name}" for position, name in choices]
+                with wx.SingleChoiceDialog(self, prompt, title, labels) as dialog:
+                    user_guide.set_help_topic(dialog, "recordings")
+                    dialog.SetSelection(selection)
+                    if show_modal(dialog) == wx.ID_OK and not canceled() and dialog.GetSelection() >= 0:
+                        return choices[dialog.GetSelection()][0]
+                return None
+
+            first = choose(_("Choose the start of the excerpt:"), points[:-1])
+            if first is None:
+                return
+            last = choose(_("Choose the end of the excerpt:"), [point for point in points if point[0] > first])
+            if last is None:
+                return
+            with wx.FileDialog(self, title, wildcard="Matroska (*.mkv)|*.mkv", style=wx.FD_SAVE) as dialog:
+                if show_modal(dialog) != wx.ID_OK or canceled() or not dialog.GetPath():
+                    return
+                path = Path(dialog.GetPath())
+                if path.suffix.casefold() != ".mkv":
+                    path = path.with_name(path.name + ".mkv")
+            def work():
+                recording_media.save_excerpt(channel["local-recording"], channel["provider-id"],
+                                             path, first, last, canceled)
+            def done(_value, error):
+                if not canceled():
+                    message_box(str(error) if error else _("Export saved."), title,
+                                wx.OK | (wx.ICON_ERROR if error else wx.ICON_INFORMATION), parent=self)
+            if start_operation(owner, "recording-excerpt", work, done, wx.CallAfter):
+                self._navigation_message(_("Saving recording excerpt..."))
+        except (OSError, ValueError, KeyError) as error:
+            message_box(str(error), title, wx.OK | wx.ICON_ERROR, parent=self)
 
     def _recording_chapters(self, _event=None):
         import recording_media

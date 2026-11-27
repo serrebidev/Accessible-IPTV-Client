@@ -1,10 +1,67 @@
-"""Session-only playback queue. File validation is deferred until each hand-off."""
+"""Playback queues for local recordings. File validation is deferred until each hand-off."""
 
 import os
+from pathlib import Path
 
 from background_tasks import LatestTask
 from i18n import gettext as _
 import recording_library
+
+
+MAX_SAVED_QUEUES = 30
+MAX_QUEUE_ENTRIES = 500
+
+
+def saved_queues(value):
+    result = {}
+    if not isinstance(value, dict):
+        return result
+    used_names = set()
+    for name, entries in value.items():
+        if (not isinstance(name, str) or not 1 <= len(name.strip()) <= 80
+                or not name.isprintable() or not isinstance(entries, list)):
+            continue
+        name = name.strip()
+        if name.casefold() in used_names:
+            continue
+        rows = []
+        for entry in entries[:MAX_QUEUE_ENTRIES]:
+            if not isinstance(entry, dict):
+                continue
+            path, directory, title = (entry.get(k) for k in ("path", "directory", "title"))
+            size, modified = (entry.get(k) for k in ("size", "modified_ns"))
+            if (not all(isinstance(v, str) and v and "\0" not in v for v in (path, directory, title))
+                    or not Path(path).is_absolute() or not Path(directory).is_absolute()
+                    or Path(path).parent != Path(directory) or type(size) is not int or size < 0
+                    or type(modified) is not int):
+                continue
+            rows.append(dict(path=path, directory=directory, title=title, size=size, modified_ns=modified))
+        if rows:
+            result[name] = rows
+            used_names.add(name.casefold())
+        if len(result) >= MAX_SAVED_QUEUES:
+            break
+    return result
+
+
+def save_named(value, name, rows, *, replace=False):
+    entries = saved_queues({name: rows})
+    if not entries:
+        raise ValueError(_("Enter a queue name of 1 to 80 characters and include a recording."))
+    count = len(rows)
+    name, rows = next(iter(entries.items()))
+    queues = saved_queues(value)
+    existing = next((key for key in queues if key.casefold() == name.casefold()), None)
+    if existing is not None:
+        if not replace:
+            raise ValueError(_("A saved queue with this name already exists."))
+        del queues[existing]
+    elif len(queues) >= MAX_SAVED_QUEUES:
+        raise ValueError(_("The saved queue limit has been reached."))
+    if len(rows) != count:
+        raise ValueError(_("The queue could not be saved."))
+    queues[name] = rows
+    return queues
 
 
 class RecordingQueue:
@@ -15,6 +72,7 @@ class RecordingQueue:
         self.playing = False
         self.loading = False
         self.worker = None
+        self.opening = None
         self.ticket = None
         self.changed = None
 
@@ -42,7 +100,7 @@ class RecordingQueue:
             index += delta
         else:
             return index
-        if self.loading and (not self.pending or self.pending[0] is not first):
+        if (self.loading or self.opening is not None) and (not self.pending or self.pending[0] is not first):
             self.start(focus=False)  # discard validation of the replaced item, keeping focus in the editor
         self.notify()
         return min(index, len(self.pending) - 1)
@@ -50,6 +108,7 @@ class RecordingQueue:
     def stop(self):
         self.ticket = None
         self.playing = self.loading = False
+        self.opening = None
         if self.worker is not None:
             self.worker.close()
             self.worker = None
@@ -116,7 +175,7 @@ class RecordingQueue:
                 )
                 return
             if self.ticket is ticket:
-                self.pending.pop(0)
+                self.opening = row
                 self.notify()
 
         try:
@@ -124,6 +183,14 @@ class RecordingQueue:
         except RuntimeError as error:
             ready(None, error)
         self.notify()
+
+    def started(self, frame, generation, ticket):
+        row = self.opening
+        if (row is not None and self.ticket is ticket and frame._vlc_generation == generation
+                and self.pending and self.pending[0] is row):
+            self.pending.pop(0)
+            self.opening = None
+            self.notify()
 
     def ended(self, frame, generation, ticket):
         if (
@@ -135,6 +202,7 @@ class RecordingQueue:
             and not frame._destroyed
             and not frame._manual_stop
         ):
+            self.started(frame, generation, ticket)
             self.next()
 
 
@@ -149,7 +217,7 @@ def get_queue(owner):
 
 def show_editor(parent, queue):
     import wx
-    from modal_guard import show_modal
+    from modal_guard import message_box, show_modal
     from personal_tools_ui import ToolDialog
     import user_guide
 
@@ -176,6 +244,49 @@ def show_editor(parent, queue):
         remove.Enable(index >= 0)
         play.Enable(bool(count) and not queue.playing)
         halt.Enable(queue.playing)
+        saved = saved_queues(getattr(queue.owner, "config", {}).get("saved_recording_queues"))
+        save.Enable(bool(count) and not queue.playing and hasattr(queue.owner, "_save_tool_setting"))
+        load.Enable(bool(saved) and not queue.playing)
+        delete.Enable(bool(saved) and not queue.playing)
+
+    def manage(mode):
+        key = "saved_recording_queues"
+        queues = saved_queues(getattr(queue.owner, "config", {}).get(key))
+        title = _("Saved Playback Queues")
+        try:
+            if mode == "save":
+                with wx.TextEntryDialog(dialog, _("Name for this queue:"), title) as choice:
+                    if show_modal(choice) != wx.ID_OK:
+                        return
+                    name = choice.GetValue().strip()
+                replace = any(n.casefold() == name.casefold() for n in queues)
+                if replace and message_box(_("Replace the saved queue with this name?"), title,
+                        wx.YES_NO | wx.NO_DEFAULT, parent=dialog) != wx.YES:
+                    return
+                queue.owner._save_tool_setting(key, lambda old: save_named(old, name, queue.pending, replace=replace))
+            else:
+                names = sorted(queues, key=str.casefold)
+                if not names:
+                    return
+                with wx.SingleChoiceDialog(dialog, _("Choose a saved queue:"), title, names) as choice:
+                    if show_modal(choice) != wx.ID_OK or choice.GetSelection() < 0:
+                        return
+                    name = names[choice.GetSelection()]
+                if mode == "delete":
+                    if message_box(_("Delete this saved queue?"), title, wx.YES_NO | wx.NO_DEFAULT,
+                                   parent=dialog) != wx.YES:
+                        return
+                    queue.owner._save_tool_setting(key, lambda old: {
+                        n: rows for n, rows in saved_queues(old).items() if n != name})
+                else:
+                    if queue.pending and message_box(_("Replace the current playback queue?"), title,
+                            wx.YES_NO | wx.NO_DEFAULT, parent=dialog) != wx.YES:
+                        return
+                    queue.pending[:] = queues[name]
+        except (OSError, ValueError) as error:
+            message_box(str(error), title, wx.OK | wx.ICON_ERROR, parent=dialog)
+        finally:
+            refresh()
 
     def edit(delta):
         index = queue.edit(listing.GetSelection(), delta)
@@ -196,6 +307,9 @@ def show_editor(parent, queue):
     remove = button(_("Remove from Queue"), lambda evt: edit(None))
     play = button(_("Play Queue"), start)
     halt = button(_("Stop after Current Recording"), lambda evt: queue.stop())
+    save = button(_("Save Queue..."), lambda evt: manage("save"))
+    load = button(_("Load Saved Queue..."), lambda evt: manage("load"))
+    delete = button(_("Delete Saved Queue..."), lambda evt: manage("delete"))
     dialog.buttons([])
     listing.Bind(wx.EVT_LISTBOX, lambda evt: refresh(listing.GetSelection()))
 

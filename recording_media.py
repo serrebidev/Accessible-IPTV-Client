@@ -1,9 +1,11 @@
 """On-demand chapter descriptions and timed text from local Matroska recordings."""
 
 import ctypes
+import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import threading
 import time
 
@@ -167,3 +169,75 @@ def embedded_cues(path, track, canceled):
     if _signature(path) != track["signature"]:
         raise ValueError(_("The recording file changed. Refresh the library."))
     return subtitle_cues.parse(data.decode("utf-8-sig", errors="replace"), fmt)
+
+
+def transcript(cues):
+    from media_navigation import clock_text
+
+    def timestamp(milliseconds):
+        return f"{clock_text(milliseconds)}.{milliseconds % 1000:03}"
+
+    return "".join(f"{timestamp(cue.start)} – {timestamp(cue.end)}\n{cue.text}\n\n"
+                   for cue in cues).encode("utf-8-sig")
+
+
+def save_excerpt(path, identity, destination, first, last, canceled):
+    """Encode an exact local range to a temporary MKV and publish it on success."""
+    from recorder import get_ffmpeg_path
+    from recording_storage import publish_new_file
+
+    if canceled():
+        return
+    source = Path(path)
+    target = Path(destination)
+    if target.suffix.casefold() != ".mkv" or not 0 <= first < last <= 7 * 24 * 3600 * 1000:
+        raise ValueError(_("Choose a valid recording range and an MKV filename."))
+    if not source.is_file():
+        raise ValueError(_("The recording file is no longer available."))
+    signature = _signature(source)
+    if identity != "local-recording:{}:{}".format(*signature[2:]):
+        raise ValueError(_("The recording file changed. Refresh the library."))
+    if target.exists() or target.is_symlink():
+        raise ValueError(_("Choose a new filename for the excerpt."))
+
+    with tempfile.TemporaryDirectory(prefix=".iptv-excerpt-", dir=target.parent) as staging:
+        temporary = Path(staging) / "excerpt.mkv"
+        # Low-priority, bounded encoder threads leave room for existing recordings.
+        args = [get_ffmpeg_path(), "-hide_banner", "-nostdin", "-loglevel", "error",
+                "-protocol_whitelist", "file", "-threads", "1", "-ss", f"{first / 1000:.3f}",
+                "-i", str(source.absolute()), "-t", f"{(last - first) / 1000:.3f}",
+                "-map", "0:V:0?", "-map", "0:a?", "-map_chapters", "-1", "-map_metadata", "-1",
+                "-c:v", "libx264", "-preset", "veryfast", "-threads:v", "1", "-c:a", "aac",
+                "-filter_threads", "1", str(temporary.absolute())]
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+        if os.name == "posix":
+            import shutil
+            if nice := shutil.which("nice"):
+                args = [nice, "-n", "10", *args]
+        with subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, creationflags=flags) as proc:
+            deadline = time.monotonic() + 7200
+            try:
+                while proc.poll() is None:
+                    if canceled():
+                        return
+                    if time.monotonic() >= deadline:
+                        raise ValueError(_("Saving the recording excerpt timed out."))
+                    try:
+                        proc.wait(timeout=0.25)
+                    except subprocess.TimeoutExpired:
+                        continue
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                proc.wait()
+            if proc.returncode or not temporary.is_file() or not temporary.stat().st_size:
+                raise ValueError(_("Could not save the recording excerpt."))
+        if canceled():
+            return
+        if _signature(source) != signature:
+            raise ValueError(_("The recording file changed. Refresh the library."))
+        with temporary.open("rb+") as output:
+            os.fsync(output.fileno())
+        if not canceled():
+            publish_new_file(temporary, target)

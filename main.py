@@ -2989,10 +2989,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         if channel.get("provider-type") == "stalker":
             from background_tasks import LatestTask
             if worker is None:
-                worker = self._portal_playback_worker = LatestTask(wx.CallAfter)
+                worker = self._portal_playback_worker = LatestTask(wx.CallAfter, parallelism=2)
             self._show_playing_info(_("Connecting to {channel}…").format(channel=self._channel_display_name(channel)))
             try:
-                worker.submit(lambda canceled: resolve(), deliver)
+                worker.submit(lambda canceled: None if canceled() else resolve(), deliver)
             except RuntimeError as error:
                 deliver(None, error)
         else:
@@ -3647,13 +3647,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         # user is still reading the confirmation that created the job, so it
         # must use the notification gate rather than nesting a second modal
         # message box in wxMSW's first message loop.
-        wx.CallAfter(
-            self._show_or_queue_message_box,
-            _("Scheduled recording started:\n{title}").format(
-                title=job.get("display_title") or job.get("title") or ""),
-            _("Scheduled Recording"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
+        message = _("Scheduled recording started:\n{title}").format(
+            title=job.get("display_title") or job.get("title") or "")
+        wx.CallAfter(RecordingReportsMixin._report_recording_success, self,
+                     message, _("Scheduled Recording"), message)
         return rec
 
     def _stop_scheduled_recording(self, job: Dict[str, object]):
@@ -3678,7 +3675,23 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         except Exception:
             LOG.debug("IPTVClient._upcoming_dvr_jobs: ignored exception", exc_info=True)
             return []
-        return [job for job in jobs if job.get("status") == dvr.STATUS_SCHEDULED]
+        upcoming = {}
+        for job in jobs:
+            if job.get("status") != dvr.STATUS_SCHEDULED:
+                continue
+            if dvr.paused_occurrence(job):
+                if job.get("repeat") not in dvr.TIME_REPEATS:
+                    continue
+                last = datetime.date.fromisoformat(job["pause_dates"][1])
+                if last > datetime.date.max - datetime.timedelta(days=8):
+                    continue
+                job = dvr.next_time_occurrence(
+                    job, time.time(), future_only=True, earliest_date=last + datetime.timedelta(days=1))
+                if dvr.paused_occurrence(job):
+                    continue
+            upcoming[job["id"]] = job
+        return sorted(upcoming.values(), key=lambda job: job["start_ts"])
+
     def _cancel_scheduled_recording(self, job_id: str) -> bool:
         job = self._ensure_dvr_scheduler().get_job(job_id)
         if not job:
@@ -3860,10 +3873,12 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             started_text = _("Audio-only stream detected. Recording started ({fmt}):\n{path}")
         else:
             started_text = _("Recording started ({fmt}):\n{path}")
-        message_box(
-            started_text.format(
-                fmt=self._recording_format_label(fmt), path=rec.out_path),
-            _("Recording"), wx.OK | wx.ICON_INFORMATION)
+        message = started_text.format(fmt=self._recording_format_label(fmt), path=rec.out_path)
+        if getattr(self, "config", {}).get("recording_success_notification") in ("speech", "history"):
+            RecordingReportsMixin._report_recording_success(self, message, _("Recording"),
+                                                           _("Recording") + ": " + name)
+        else:
+            message_box(message, _("Recording"), wx.OK | wx.ICON_INFORMATION)
 
     def _player_is_showing(self, channel: Dict[str, str]) -> bool:
         """True while the built-in player is playing this live channel."""
@@ -4627,6 +4642,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         menu.Bind(wx.EVT_MENU, self._show_recording_storage, storage_item)
         monitor_item = menu.Append(wx.ID_ANY, _("Recording Space Monitor..."))
         menu.Bind(wx.EVT_MENU, self._configure_space_monitor, monitor_item)
+        notice = menu.Append(wx.ID_ANY, _("Recording Notifications..."))
+        menu.Bind(wx.EVT_MENU, self._configure_recording_notices, notice)
         library_item = menu.Append(wx.ID_ANY, _("Recording Library..."))
         menu.Bind(wx.EVT_MENU, self._show_recording_library, library_item)
         import recording_limits_ui
@@ -9328,6 +9345,20 @@ class ScheduledRecordingsDialog(wx.Dialog):
         refresh_btn = wx.Button(panel, label=_("Refresh"))
         btn_sizer.Add(refresh_btn, 0, wx.RIGHT, 5)
 
+        filters = wx.BoxSizer(wx.HORIZONTAL)
+        name = _("Filter by title or channel")
+        filters.Add(wx.StaticText(panel, label=name), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self.schedule_filter = wx.SearchCtrl(panel)
+        self.schedule_filter.SetName(name)
+        filters.Add(self.schedule_filter, 1, wx.RIGHT, 8)
+        self.schedule_view = wx.Choice(panel, choices=[_("All"), _("Next 7 Days"),
+            _("Failed and Partial"), _("Paused Recording Rules")])
+        self.schedule_view.SetName(_("Schedule view"))
+        self.schedule_view.SetSelection(0)
+        filters.Add(self.schedule_view, 0)
+        self.schedule_filter.Bind(wx.EVT_TEXT, self._queue_schedule_search)
+        self.schedule_view.Bind(wx.EVT_CHOICE, lambda event: self.refresh())
+        sizer.Add(filters, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
         sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         panel.SetSizer(sizer)
@@ -9366,6 +9397,7 @@ class ScheduledRecordingsDialog(wx.Dialog):
         # but an empty window on a dialog that was never populated reads like
         # "you have no recordings scheduled" even when you do.
         self.refresh()
+        self.list_ctrl.SetFocus()
 
     def _skip_occurrence(self, _event):
         from background_tasks import start_operation
@@ -9474,8 +9506,15 @@ class ScheduledRecordingsDialog(wx.Dialog):
 
     def _on_char_hook(self, event):
         key = event.GetKeyCode()
+        search = getattr(self, "schedule_filter", None)
+        focus = wx.Window.FindFocus() if search is not None else None
         if key == wx.WXK_ESCAPE:
             self.Close()
+        elif search is not None and key in (ord("F"), ord("f")) and event.ControlDown():
+            search.SetFocus()
+            search.SelectAll()
+        elif search is not None and focus is not None and (focus is search or search.IsDescendant(focus)):
+            event.Skip()  # Keep text editing keys inside the search box.
         elif key in (ord("A"), ord("a")) and event.ControlDown():
             self._select_all()
         elif key in (wx.WXK_DELETE, wx.WXK_NUMPAD_DELETE):
@@ -9559,6 +9598,12 @@ class ScheduledRecordingsDialog(wx.Dialog):
         }
         return labels.get(status, status or "")
 
+    def _queue_schedule_search(self, _event):
+        pending = getattr(self, "_schedule_search_timer", None)
+        if pending is not None:
+            pending.Stop()
+        self._schedule_search_timer = wx.CallLater(130, lambda: self and not self.IsBeingDeleted() and self.refresh())
+
     def refresh(self):
         # Keep the row the user was on, and never take the focus: the dialog is
         # refreshed on every scheduler change, and jumping back to the first
@@ -9569,6 +9614,11 @@ class ScheduledRecordingsDialog(wx.Dialog):
         top = self.list_ctrl.GetTopItem()
         top_id = str(self.jobs[top].get("id") or "") if 0 <= top < len(self.jobs) else ""
         self.jobs = self.scheduler.list_jobs(include_done=True)
+        if hasattr(self, "schedule_filter"):
+            from planning_tools import filter_recording_schedule
+            index = self.schedule_view.GetSelection()
+            view = ("all", "week", "problems", "paused")[max(0, index)]
+            self.jobs = filter_recording_schedule(self.jobs, self.schedule_filter.GetValue(), view, time.time())
         self.list_ctrl.DeleteAllItems()
         for job in self.jobs:
             idx = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), self.parent_frame._schedule_window_label(job))

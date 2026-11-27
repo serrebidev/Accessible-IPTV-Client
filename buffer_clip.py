@@ -1,6 +1,5 @@
 """Save a finite selection of completed local HLS segments without touching the ingest cursor."""
 
-import errno
 import os
 from pathlib import Path
 import shutil
@@ -8,6 +7,7 @@ import subprocess
 import tempfile
 
 from i18n import gettext as _
+from recording_storage import publish_new_file
 
 
 def select_segments(rows, seconds):
@@ -80,25 +80,6 @@ def _stage(window, rows, directory, canceled):
     return path
 
 
-def _publish(temporary, destination):
-    if os.name == "nt":
-        os.rename(temporary, destination)  # Windows refuses to replace an existing target.
-        return
-    try:
-        os.link(temporary, destination)
-    except OSError as error:
-        if error.errno not in {errno.EPERM, errno.EOPNOTSUPP, errno.ENOSYS}:
-            raise
-        # Filesystems without links still need exclusive creation at publication.
-        fd = os.open(destination, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        os.close(fd)
-        try:
-            os.replace(temporary, destination)
-        except BaseException:
-            os.unlink(destination)
-            raise
-
-
 def save(window, rows, destination, ffmpeg, reserve_mib, canceled=lambda: False, on_staged=None):
     destination = Path(destination)
     if destination.exists() or destination.is_symlink():
@@ -165,6 +146,6 @@ def save(window, rows, destination, ffmpeg, reserve_mib, canceled=lambda: False,
             with open(path, "rb+") as handle:
                 os.fsync(handle.fileno())
             _check(canceled)
-            _publish(path, destination)
+            publish_new_file(path, destination)
         finally:
             Path(path).unlink(missing_ok=True)

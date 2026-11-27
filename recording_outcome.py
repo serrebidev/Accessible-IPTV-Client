@@ -7,7 +7,7 @@ FINALIZE_TIMEOUT_CAP_SECONDS = 3600.0
 TERMINATE_GRACE_SECONDS = 15.0
 
 
-def classify(rec, returncode, *, exiting=False, planned_seconds=None):
+def classify(rec, returncode, *, exiting=False, planned_seconds=None, scheduled_start=None):
     try:
         produced = os.path.getsize(rec.out_path) > 0
     except OSError:
@@ -28,9 +28,13 @@ def classify(rec, returncode, *, exiting=False, planned_seconds=None):
     if returncode != 0:
         return "partial"
     expected = planned_seconds if planned_seconds is not None else getattr(rec, "planned_seconds", None)
+    started = getattr(rec, "started_at", None)
+    if (type(scheduled_start) in (int, float) and type(started) in (int, float)
+            and started - scheduled_start > 5):
+        return "partial"
     written = getattr(rec, "media_written_seconds", None)
     if written is None:
-        started, ended = getattr(rec, "started_at", None), getattr(rec, "ended_at", None)
+        ended = getattr(rec, "ended_at", None)
         if type(started) in (int, float) and type(ended) in (int, float):
             written = max(0, ended - started)
     if (isinstance(expected, (int, float)) and isinstance(written, (int, float))

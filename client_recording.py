@@ -41,11 +41,43 @@ class RecordingReportsMixin:
                 # One bad entry must not swallow the rest of the queue.
                 LOG.exception("Deferred notification %r could not be shown", caption)
 
+    def _configure_recording_notices(self, _event=None):
+        from modal_guard import message_box, show_modal
+        import user_guide
+
+        title = _("Recording Notifications...")
+        keys = ("dialog", "speech", "history")
+        labels = [_("Show a dialog"), _("Announce and save in history"), _("Save in history only")]
+        current = self.config.get("recording_success_notification", "dialog")
+        with wx.SingleChoiceDialog(self, _("When a recording starts or finishes successfully:"),
+                                    title, labels) as dialog:
+            user_guide.set_help_topic(dialog, "recordings")
+            dialog.SetSelection(keys.index(current) if current in keys else 0)
+            if show_modal(dialog) == wx.ID_OK and dialog.GetSelection() >= 0:
+                try:
+                    choice = keys[dialog.GetSelection()]
+                    self._save_tool_setting("recording_success_notification", lambda old: choice)
+                except OSError as error:
+                    message_box(str(error), title, wx.OK | wx.ICON_ERROR, parent=self)
+
+    def _report_recording_success(self, message, caption, spoken):
+        mode = getattr(self, "config", {}).get("recording_success_notification")
+        if mode not in ("speech", "history"):
+            self._show_or_queue_message_box(message, caption, wx.OK | wx.ICON_INFORMATION)
+            return
+        import named_bookmarks
+
+        self._notification_history = named_bookmarks.notification(
+            getattr(self, "_notification_history", []), caption, message)
+        if mode == "speech":
+            from live_announce import speak
+            speak(spoken)
+
     def _report_recording_saved(self, rec) -> None:
         """Recording finished cleanly: notify, or queue the box if one is up."""
-        self._show_or_queue_message_box(
-            _("Recording saved:\n{path}").format(path=rec.out_path),
-            _("Recording Complete"), wx.OK | wx.ICON_INFORMATION)
+        message = _("Recording saved:\n{path}").format(path=rec.out_path)
+        RecordingReportsMixin._report_recording_success(self, message, _("Recording Complete"),
+                                                       _("Recording saved: {title}").format(title=getattr(rec, "title", "") or rec.out_path))
 
     def _report_nothing_recorded(self, rec) -> None:
         """ffmpeg exited 0 having written nothing: say so, do not say "saved"."""
@@ -87,15 +119,18 @@ class RecordingReportsMixin:
             scheduler = self._ensure_dvr_scheduler(start=not suppressed)
             current = scheduler.get_job(str(job_id)) or {}
             expected = None
-            if current.get("stop_ts") and getattr(rec, "started_at", None):
-                expected = max(0, float(current["stop_ts"]) - rec.started_at)
-            outcome = recording_outcome.classify(rec, rc, planned_seconds=expected)
+            if current.get("stop_ts") and type(current.get("start_ts")) in (int, float):
+                expected = max(0, float(current["stop_ts"]) - current["start_ts"])
+            outcome = recording_outcome.classify(
+                rec, rc, planned_seconds=expected, scheduled_start=current.get("start_ts"))
             detail = "\n".join(rec.stderr_tail[-6:])
             produced = _recording_produced_media(rec)
             if suppressed and getattr(rec, "stop_reason", "") == "exit":
                 message = _("Stopped because the app exited.")
             elif rc:
                 message = detail
+            elif outcome == "partial":
+                message = _("The recording did not cover the full scheduled time.")
             else:
                 message = "" if produced else _("Nothing was recorded: the stream ended before it wrote anything.")
             scheduler.mark_finished(
