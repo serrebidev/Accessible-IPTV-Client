@@ -829,7 +829,7 @@ msgstr "Melyik időpontváltozást szeretné áttekinteni?"
 
 #: planning_tools_ui.py:103
 msgid "Choose a valid pause ending today or later."
-msgstr "Ellenőrizze a szünet dátumait. A zárónap nem előzheti meg sem a kezdőnapot, sem a mai napot."
+msgstr "A szünet utolsó napja nem előzheti meg sem az elsőt, sem a mai napot."
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1484,7 +1484,7 @@ msgstr "Adjon meg egy 1–240 karakter hosszúságú címet."
 
 #: dvr.py:774
 msgid "Enter a valid start date and an end date on or after it."
-msgstr "Adjon meg érvényes dátumokat. A zárónap nem előzheti meg a kezdőnapot."
+msgstr "Adjon meg érvényes dátumokat. A szünet utolsó napja nem előzheti meg az elsőt."
 
 #: options.py:997
 msgid "Enter player executable or path:"
@@ -1761,7 +1761,7 @@ msgstr "A biztonsági mentés visszaállítása előtt fejezze be a felvételeke
 
 #: main.py:4162
 msgid "Finishing recordings before exit…"
-msgstr "Kilépés előtt a program lezárja a felvételeket…"
+msgstr "Felvételfájlok lezárása kilépés előtt…"
 
 #: planning_tools_ui.py:72
 msgid "First day of the pause"
@@ -2032,7 +2032,7 @@ msgstr "Kiválasztott csatornák megtartása"
 
 #: planning_tools_ui.py:151
 msgid "Keep the postponement relative to the new start time? Choose No to use the usual lead time."
-msgstr "Az elhalasztott értesítés időpontja is ugyanannyival változzon, mint a műsor kezdete? Ha a Nem gombot választja, ismét az eredeti értesítési beállítás lesz érvényben."
+msgstr "Az elhalasztott értesítés időpontja is annyival tolódjon el, amennyivel a műsor kezdete? Ha a Nem gombot választja, a műsor kezdete előtt az eredetileg megadott számú perccel kap értesítést."
 
 #: main.py:7953
 msgid "Keep this output device?\n{name}"
@@ -2121,7 +2121,7 @@ msgstr "Feliratfájl betöltése…"
 
 #: media_navigation_ui.py:117
 msgid "Load a text subtitle file or select an embedded text track first."
-msgstr "A kereséshez szöveges felirat szükséges. Töltsön be egy külső fájlt, vagy válasszon sávot a „Beágyazott feliratsáv felolvasása…” paranccsal."
+msgstr "A kereséshez töltsön be szöveges feliratfájlt, vagy válasszon beágyazott szöveges feliratsávot. Az utóbbihoz használja a „Beágyazott feliratsáv felolvasása…” parancsot."
 
 #: main.py:6553
 msgid "Loading Video on Demand…"
@@ -2362,7 +2362,7 @@ msgstr "Következő felirat"
 
 #: planning_tools_ui.py:119
 msgid "Next recording after the pause: {time}"
-msgstr "A szünet utáni első felvétel: {time}"
+msgstr "A szünet utáni első felvétel időpontja: {time}"
 
 #: main.py:9384
 msgid "Next recording: {time}"
@@ -2445,7 +2445,7 @@ msgstr "A program nem talált változást a vizsgált műsorok időpontjában."
 
 #: planning_ui.py:62
 msgid "No changes were found to upcoming reminder times."
-msgstr "A program nem talált időpontváltozást az értesítésre kijelölt műsoroknál."
+msgstr "A program nem talált változást az értesítésre kijelölt műsorok adásidejében."
 
 #: main.py:1844
 msgid "No channel is selected."
@@ -2508,7 +2508,7 @@ msgstr "Nincs elérhető, helyben tárolt adásrészlet."
 #: stream_proxy.py:1386
 #: stream_proxy.py:1392
 msgid "No local network address is available for casting. Reconnect and try again."
-msgstr "A közvetítéshez nincs elérhető helyi hálózati cím. Csatlakozzon újra a hálózathoz, majd próbálkozzon ismét."
+msgstr "Az átküldéshez nincs elérhető helyi hálózati cím. Csatlakozzon újra a hálózathoz, majd próbálkozzon ismét."
 
 #: recording_library.py:167
 msgid "No matching recording log is available for this file."
@@ -2879,7 +2879,7 @@ msgstr "Felvételi szabály szüneteltetése…"
 
 #: planning_tools_ui.py:114
 msgid "Pause from {first} through {last}, inclusive?"
-msgstr "Szünetelteti a kijelölt felvételi szabályt {first} és {last} között, a két határnapot is beleértve?"
+msgstr "Szünetelteti a kijelölt felvételi szabályt {first} és {last} között, mindkét napot beleértve?"
 
 #: internal_player.py:2057
 #: internal_player.py:2259
@@ -3988,7 +3988,7 @@ msgstr "Válassza ki a letöltendő lejátszási lista formátumát"
 #: planning_tools.py:164
 #: planning_tools.py:170
 msgid "Select upcoming recordings outside the pause period."
-msgstr "Olyan közelgő felvételeket jelöljön ki, amelyek nem esnek a szünet idejére."
+msgstr "Olyan ütemezett felvételeket jelöljön ki, amelyek még nem kezdődtek el, és nem esnek a szüneteltetés időszakára."
 
 #: personal_tools_ui.py:416
 #: personal_tools_ui.py:588
@@ -4361,7 +4361,7 @@ msgstr "Előfizetés"
 
 #: main.py:8000
 msgid "Subtitle Capabilities"
-msgstr "A feliratkezelés támogatottsága"
+msgstr "Feliratfelolvasás támogatása"
 
 #: client_ui.py:445
 #: main.py:7839
@@ -4380,7 +4380,7 @@ msgstr "Felirat időzítése…"
 
 #: client_ui.py:443
 msgid "Subtitle capabilities..."
-msgstr "A feliratkezelés támogatottsága…"
+msgstr "Feliratfelolvasás támogatása…"
 
 #: media_navigation_ui.py:206
 msgid "Subtitle delay in milliseconds (-600000 to 600000). Positive values display and read subtitles later; 0 resets timing."
@@ -4497,7 +4497,7 @@ msgstr "Az alkalmazás bezárul. A visszaállítás befejezéséhez indítsa el 
 
 #: recorder.py:1121
 msgid "The application is closing."
-msgstr "Az alkalmazás bezárul."
+msgstr "Az alkalmazás bezárása folyamatban van."
 
 #: main.py:7838
 msgid "The application voice is only available on Windows with SAPI."
@@ -4505,7 +4505,7 @@ msgstr "Az alkalmazás beszédhangja kizárólag Windows rendszeren, SAPI-támog
 
 #: client_recording.py:69
 msgid "The audio could not be copied into an MKA container, so nothing was recorded and nothing was transcoded. Choose another audio format from Recordings > Recording Format and try again.\n\n{detail}"
-msgstr "A hangsáv MKA-konténerbe másolása sikertelen volt, ezért a program nem készített felvételt, és átkódolást sem végzett. Válasszon másik hangformátumot a Felvételek > Rögzítési formátum menüben, majd próbálja meg újra.\n\n{detail}"
+msgstr "A hangadatokat nem sikerült MKA-konténerbe másolni, ezért nem készült felvétel, és újrakódolás sem történt. Válasszon másik hangformátumot a Felvételek > Rögzítési formátum menüben, majd próbálja meg újra.\n\n{detail}"
 
 #: named_bookmarks.py:64
 msgid "The bookmark is no longer available. Reopen the list."
@@ -4563,7 +4563,7 @@ msgstr "Időtúllépés történt a szolgáltatóhoz való kapcsolódás közben
 
 #: manual_schedule.py:49
 msgid "The end must be in the future and after the start, within seven days."
-msgstr "A befejezésnek a kezdésnél és a jelenlegi időpontnál is későbbinek kell lennie. A felvétel időtartama legfeljebb hét nap lehet."
+msgstr "A felvétel befejezéséhez olyan jövőbeli időpontot adjon meg, amely a kezdést követi. A rögzítés időtartama legfeljebb hét nap lehet."
 
 #: personal_tools_ui.py:156
 msgid "The first recording must start on a selected weekday."
@@ -4587,7 +4587,7 @@ msgstr "A telepítő 15 perc elteltével még mindig futott."
 
 #: main.py:4803
 msgid "The language has been changed. Please restart Accessible IPTV Client for the change to take full effect."
-msgstr "A program nyelve megváltozott. Az új nyelv teljes körű alkalmazásához indítsa újra az Accessible IPTV Client alkalmazást."
+msgstr "A program nyelve megváltozott. Ahhoz, hogy minden felületi elem az új nyelven jelenjen meg, indítsa újra az Accessible IPTV Client alkalmazást."
 
 #: recording_library_ui.py:214
 msgid "The library can contain up to 20 folders."
@@ -4679,7 +4679,7 @@ msgstr "A lejátszási listák megváltoztak. Jelölje ki ismét a csatornát."
 
 #: programme_reminders.py:267
 msgid "The postponed alert falls outside the new time window."
-msgstr "Az elhalasztott értesítés csak akkor tartható meg, ha még ezután, de a műsor vége előtt esedékes."
+msgstr "A halasztás csak akkor tartható meg, ha az értesítés új időpontja még nem érkezett el, és megelőzi a műsor befejezését."
 
 #: planning_ui.py:71
 #: playlist.py:2455
