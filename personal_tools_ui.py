@@ -963,7 +963,9 @@ class PersonalToolsMixin:
         if not confirm(self, text):
             return
         scheduler = self._ensure_dvr_scheduler()
-        downloads = bool(getattr(self, '_catchup_downloads', None) or getattr(self, '_pending_recording_starts', None))
+        downloads = (any(getattr(self, name, None) for name in (
+            '_catchup_downloads', '_pending_recording_starts', '_pending_catchup_probes', '_pending_catchup_starts'))
+            or any(name.startswith('catchup-address:') for name in getattr(self, '_background_operations', ())))
         self._stop_reminders()
         self._stop_saved_searches()
         self.Enable(False)

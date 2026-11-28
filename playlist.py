@@ -2625,8 +2625,8 @@ class EPGDatabase:
         """Import every guide and return how many of them came in.
 
         A source that cannot be reached is logged and skipped, so the import
-        itself never fails: the count is what tells the caller whether the
-        guide is up to date or nothing could be loaded at all.
+        continues with the rest. The count distinguishes complete, partial
+        and failed runs without posting one modal warning per bad source.
         """
         trace_mem = DEBUG or os.getenv("EPG_TRACE_MEM", "0").strip().lower() in {"1", "true", "yes"}
         if trace_mem and tracemalloc.is_tracing():
@@ -2958,7 +2958,6 @@ class EPGDatabase:
                         continue
                     # Non-transient or out of retries: log and move on
                     _logger.exception("EPG ERROR src=%s : %s", src, e)
-                    _log_wx_error(f"Failed to import EPG source {src}: {e}")
                     break
                 finally:
                     # Ensure no lingering transaction if an error occurred before commit

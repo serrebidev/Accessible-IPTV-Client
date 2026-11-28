@@ -264,3 +264,61 @@ def test_playlist_reload_target_does_not_shrink_and_large_gop_change_fails_visib
     segment(window, 2)
     window.publish(manifest(2, 2, 10))
     assert window.error and window.target_duration == 3
+
+
+@pytest.mark.parametrize("operation", ["retired cache", "recording cursor"])
+def test_live_buffer_ownership_checks_remain_available_during_slow_disk_work(operation):
+    from threading import Event, Thread
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    entered, release, lookup_complete = Event(), Event(), Event()
+    registry = LiveBufferRegistry()
+    source = "http://example.invalid/station"
+    errors = []
+    def blocked(*_args, **_kwargs):
+        entered.set()
+        if not release.wait(5):
+            raise TimeoutError("test did not release the blocked disk operation")
+        return "http://localhost/view/ticket/index.m3u8", None
+
+    old = SimpleNamespace(cleanup_failed=False, _shutdown_finished=Event(), _closed=Event(),
+                          _temp=SimpleNamespace(cleanup=blocked), close=Mock(),
+                          window=SimpleNamespace(error=None), acquire=Mock(), cursor=blocked)
+    replacement = SimpleNamespace(cleanup_failed=False, _shutdown_finished=Event(), _closed=Event(),
+                                  close=Mock())
+    registry.put(source, {}, old)
+    if operation == "retired cache":
+        old.cleanup_failed = True
+        old._closed.set()
+        old._shutdown_finished.set()
+
+    def background():
+        try:
+            if operation == "retired cache":
+                registry.put(source, {}, replacement)
+            else:
+                assert registry.recording_input(source)[0] == "http://localhost/view/ticket/index.m3u8"
+        except Exception as error:
+            errors.append(error)
+    reader_results = []
+    def read():
+        reader_results.append(registry.find(source))
+        lookup_complete.set()
+    worker = Thread(target=background, daemon=True)
+    reader = Thread(target=read, daemon=True)
+    worker.start()
+    try:
+        assert entered.wait(2)
+        reader.start()
+        assert lookup_complete.wait(2), "ownership lookup waited for disk work under the registry lock"
+        assert reader_results == [None if operation == "retired cache" else old]
+    finally:
+        release.set()
+        worker.join(timeout=5)
+        if reader.ident is not None:
+            reader.join(timeout=5)
+        registry.close()
+    assert not errors
+    if operation == "retired cache":
+        assert registry.find(source) is replacement

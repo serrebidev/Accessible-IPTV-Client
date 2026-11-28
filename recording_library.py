@@ -406,7 +406,11 @@ def resolve_resume(key, entries, directories, active_paths=()):
     if key not in playback_resume.normalize(entries):
         return None
     for directory in directories:
-        for row in scan(directory, active_paths):
+        try:
+            rows = scan(directory, active_paths)
+        except OSError:
+            continue  # an unavailable folder does not invalidate the others
+        for row in rows:
             try:
                 channel = playback_channel(directory, row, active_paths)
             except (OSError, ValueError):

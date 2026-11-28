@@ -285,3 +285,53 @@ def test_pause_preview_uses_padding_and_only_bookings_from_this_rule(repeat):
     unrelated = dict(booking(following - dt.timedelta(hours=3)), series_source="other")
     period = [when.date().isoformat(), (when.date() + dt.timedelta(days=1)).isoformat()]
     assert planning_tools.pause_preview(rule, period, [rule, unrelated, child], now=now) == (when, following)
+
+
+@pytest.mark.parametrize("switch_away", [False, True])
+def test_all_folders_publish_healthy_results_while_share_is_still_scanning(
+        frame, monkeypatch, tmp_path, switch_away):
+    offline, healthy = tmp_path / "offline", tmp_path / "healthy"
+    offline.mkdir()
+    healthy.mkdir()
+    (offline / "stale.mkv").write_bytes(b"fixture")
+    (healthy / "available.mkv").write_bytes(b"fixture")
+    entered, release, finished = threading.Event(), threading.Event(), threading.Event()
+    frame.config = {"recordings_dir": str(offline), "recording_library_folders": [str(healthy)]}
+    frame.recorder = Mock()
+    frame.recorder.list_active.return_value = []
+    scan = recording_library.scan
+    def folder_scan(path, *args, **kwargs):
+        if path != str(offline):
+            return scan(path, *args, **kwargs)
+        entered.set()
+        assert release.wait(8)
+        try:
+            return scan(path, *args, **kwargs)
+        finally:
+            finished.set()
+    monkeypatch.setattr(recording_library, "scan", folder_scan)
+    dialog = recording_library_ui.RecordingLibraryDialog(frame)
+    try:
+        pump(entered.is_set)
+        dialog.folder.SetSelection(len(dialog.directories))
+        dialog.change_folder(None)
+        pump(lambda: len(dialog.rows) == 1 and not dialog.filter_busy)
+        assert dialog.rows[0]["path"] == str(healthy / "available.mkv")
+        assert dialog.play.IsEnabled() and dialog._scanning
+        if switch_away:
+            dialog.folder.SetSelection(1)
+            dialog.change_folder(None)
+            pump(lambda: not dialog.busy and not dialog.filter_busy)
+        release.set()
+        pump(finished.is_set)
+        pump(lambda: not dialog._scanning and not dialog.filter_busy)
+        assert len(dialog.rows) == (1 if switch_away else 2)
+        assert dialog.selected()["path"] == str(healthy / "available.mkv")
+    finally:
+        release.set()
+        dialog.closed = True
+        dialog.worker.close()
+        for worker in dialog._scan_workers.values():
+            worker.close()
+        dialog.Destroy()
+        wx.GetApp().Yield()
