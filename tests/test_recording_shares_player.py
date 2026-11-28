@@ -86,9 +86,12 @@ def _client(monkeypatch, *, showing, frame=None):
         _recording_audio_intent=lambda _channel, **_k: None,
         _recording_audio_choice=lambda url, headers, intent: None,
         _recording_format_for_channel=lambda _channel: ("provider_mkv", "video", "saved"),
+        _take_media_probes=lambda: (),
+        _stop_media_probes=lambda *_args: None,
         _terminate_media_probe=lambda _channel: None,
         _note_recording_started=lambda: None,
         _recording_format_label=lambda fmt: fmt,
+        _show_or_queue_message_box=lambda *args: main.message_box(*args),
         _on_recording_finished=lambda *a: None,
         _sync_internal_player_record_state=lambda: None,
         _remember_played_channel=lambda _channel: None,
@@ -96,8 +99,8 @@ def _client(monkeypatch, *, showing, frame=None):
     )
     client._launch_stream = lambda url, title, **kwargs: (
         events.append("play " + url), client.launched.append((url, kwargs)))
-    return _bind(client, "_record_channel", "_start_live_recording",
-                 "_end_shared_playback", "_resume_direct_playback")
+    return _bind(client, "_record_channel", "_announce_live_recording", "_stop_recording_for_channel",
+                 "_end_shared_playback")
 
 
 def test_recording_the_playing_channel_opens_one_connection(monkeypatch):

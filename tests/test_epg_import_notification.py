@@ -274,3 +274,37 @@ class TestSourcesChangedDuringImport:
         client.finish_import_background(True)
 
         assert later == []
+
+
+def test_a_real_partial_import_keeps_last_full_refresh_and_reports_the_count(tmp_path, monkeypatch):
+    from unittest.mock import Mock
+
+    first, second = tmp_path / "first.xml", tmp_path / "offline.xml"
+    first.write_text('<tv><channel id="a"><display-name>Alpha</display-name></channel></tv>')
+    client = _client(monkeypatch, (str(first), str(second)))
+    monkeypatch.setattr(main, "get_db_path", lambda: str(tmp_path / "guide.db"))
+    monkeypatch.setattr(main.wx, "CallAfter", lambda fn, *args: fn(*args))
+    dvr = Mock()
+    client._ensure_dvr_scheduler = lambda **_: dvr
+    client.config["epg_last_import_epoch"] = 100
+    client.config["epg_last_sources_hash"] = client._hash_epg_sources(client.epg_sources)
+
+    assert client.start_epg_import_background(force=True, notify=True)
+    client.threads.pop(0)()
+    assert not client.epg_importing
+    assert client.config["epg_last_import_epoch"] == 100
+    assert client._should_auto_import_epg(client.epg_sources) is False  # avoid immediate re-fetch
+    message, caption, style = client.queued[-1]
+    assert "1 of 2 sources" in message and "up to date" not in message
+    assert caption == "Partial EPG Import" and style & main.wx.ICON_WARNING
+    dvr.request_series_scan.assert_called_once()
+    assert client._epg_incomplete_attempt
+    client._epg_incomplete_attempt = (client._hash_epg_sources(client.epg_sources), 0)
+    assert client._should_auto_import_epg(client.epg_sources) is True
+
+    second.write_text('<tv><channel id="b"><display-name>Beta</display-name></channel></tv>')
+    assert client.start_epg_import_background(notify=True)
+    client.threads.pop()()
+    assert client.config["epg_last_import_epoch"] > 100
+    assert client._epg_incomplete_attempt is None
+    assert client.queued[-1][1] == "Import Complete"

@@ -44,3 +44,5 @@ grep it for the module, symbol or error you are about to touch.
 
 - Read the selected guide description on demand into a named, read-only multiline control. Returning from the details dialog restores the same list position.
 - A reminder retry preserves the chosen absolute snooze time. Portable favourite-list previews retain an explicit unresolved choice even if a local identity already matches.
+
+- Exact numeric channel matches can span playlists. When more than one channel matches, give the user a keyboard-accessible choice and retain positional fallback for unnumbered channels.

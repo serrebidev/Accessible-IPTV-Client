@@ -141,6 +141,8 @@ def test_catchup_download_uses_the_programme_window(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
+    monkeypatch.setattr(main.threading, "Thread", lambda target, **_kwargs: types.SimpleNamespace(start=target))
+    monkeypatch.setattr(main.wx, "CallAfter", lambda callback, *args: callback(*args))
     monkeypatch.setattr(main.wx, "MessageBox", lambda *_args, **_kwargs: None)
 
     main.IPTVClient._start_catchup_recording(
@@ -202,6 +204,8 @@ def test_catchup_download_is_named_for_the_programme_start(monkeypatch, tmp_path
     )
     monkeypatch.setattr(main, "CatchupDownloadDialog", Dialog)
     monkeypatch.setattr(main, "get_recordings_dir", lambda _config: str(tmp_path))
+    monkeypatch.setattr(main.threading, "Thread", lambda target, **_kwargs: types.SimpleNamespace(start=target))
+    monkeypatch.setattr(main.wx, "CallAfter", lambda callback, *args: callback(*args))
 
     main.IPTVClient._start_catchup_recording(
         frame, "https://catchup.example/p", "Ojciec Mateusz 35 - TVP 1", "catchup:x",
@@ -261,9 +265,13 @@ def test_catchup_download_prefers_the_fast_direct_url(monkeypatch, tmp_path):
     )
 
     # The probe handed the fast direct file to the UI-thread starter.
-    assert len(callafter) == 1
+    assert len(callafter) == 2
     callback, cb_args = callafter[0]
     assert callback == frame._start_catchup_recording
+    assert cb_args[2] in frame._pending_catchup_probes
+    finish, args = callafter[1]
+    finish(*args)
+    assert not frame._pending_catchup_probes
     assert cb_args[0] == "https://catchup.example/index-123-1800.mp4?tok=1"
     assert cb_args[2].startswith("catchup:")
 

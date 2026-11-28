@@ -82,7 +82,7 @@ def _number(value, default: float = 0.0) -> float:
         return default
 
 
-def _valid_stored_job(job):
+def valid_stored_job(job):
     if (not isinstance(job, dict) or not isinstance(job.get('status'), str)
             or job['status'] not in ACTIVE_STATUSES | DONE_STATUSES
             or type(job.get('id')) not in (str, int) or not job['id']):
@@ -329,6 +329,7 @@ class DVRScheduler:
         on_stop: Callable[[Dict[str, object]], None],
         on_update: Optional[Callable[[], None]] = None,
         on_series: Optional[Callable[[], None]] = None,
+        on_save_error: Optional[Callable[[], None]] = None,
         clock: Callable[[], float] = utc_now_ts,
         poll_seconds: float = 15.0,
     ):
@@ -337,6 +338,7 @@ class DVRScheduler:
         self.on_stop = on_stop
         self.on_update = on_update
         self.on_series = on_series
+        self.on_save_error = on_save_error
         self.clock = clock
         self.poll_seconds = max(0.2, float(poll_seconds))
         self._lock = threading.RLock()
@@ -347,6 +349,8 @@ class DVRScheduler:
         self._revision = 0
         self._save_worker = None
         self._save_requested = False
+        self._save_error_reported = False
+        self._save_retry_at = None
         self._jobs: Dict[str, Dict[str, object]] = {}
         self._stop_event = threading.Event()
         self._wake_event = threading.Event()
@@ -382,7 +386,7 @@ class DVRScheduler:
                 return
             seen, valid_jobs, invalid = set(), [], False
             for job in jobs:
-                if not _valid_stored_job(job) or str(job['id']) in seen:
+                if not valid_stored_job(job) or str(job['id']) in seen:
                     invalid = True
                 else:
                     seen.add(str(job['id']))
@@ -486,14 +490,24 @@ class DVRScheduler:
                     if temporary:
                         os.unlink(temporary)
 
+    _SAVE_RETRY_DELAYS = (0.1, 0.3, 0.8)
+    _SAVE_RECOVERY_SECONDS = 60
+
     def _request_save(self):
-        """Coalesce clock-triggered writes, leaving the scheduler free to tick."""
+        """Coalesce automatic writes without blocking the scheduler."""
         with self._lock:
             self._save_requested = True
             if self._save_worker is not None:
                 return
-            self._save_worker = threading.Thread(target=self._drain_saves, name="dvr-save", daemon=True)
-            self._save_worker.start()
+            worker = threading.Thread(target=self._drain_saves, name="dvr-save", daemon=True)
+            try:
+                worker.start()
+            except RuntimeError:
+                LOG.exception("Could not start the DVR schedule writer")
+            else:
+                self._save_worker = worker
+                return
+        self._report_save_error()
 
     def _drain_saves(self):
         while True:
@@ -502,21 +516,41 @@ class DVRScheduler:
                     self._save_worker = None
                     return
                 self._save_requested = False
-            self._save_schedule()
+            delays = iter(self._SAVE_RETRY_DELAYS)
+            while not self._try_save():
+                delay = next(delays, None)
+                if delay is None:
+                    self._report_save_error()
+                    break
+                time.sleep(delay)
 
-    def _save_schedule(self) -> None:
-        """Write the schedule, reporting a failure instead of raising it.
+    def _report_save_error(self):
+        with self._lock:
+            self._save_retry_at = time.monotonic() + self._SAVE_RECOVERY_SECONDS
+            if self._save_error_reported:
+                return
+            self._save_error_reported = True
+        if self.on_save_error:
+            try:
+                self.on_save_error()
+            except Exception:
+                LOG.exception("Could not report the DVR schedule write failure")
 
-        The schedule file is a convenience: the jobs live in memory and the
-        app keeps working without it. A write that fails (a full disk, a
-        locked file) must never change a job's state - a recording marked
-        "failed" because the file could not be written is never stopped by the
-        scheduler, and it holds the provider's one stream slot for good.
-        """
+    def _try_save(self):
         try:
             self.save()
         except Exception:
             LOG.exception("Could not save the DVR schedule: %s", self.path)
+            return False
+        with self._lock:
+            self._save_error_reported = False
+            self._save_retry_at = None
+        return True
+
+    def _save_schedule(self):
+        # Failure to write must never change the state of an active recording.
+        if not self._try_save():
+            self._request_save()
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -840,10 +874,19 @@ class DVRScheduler:
                                  else STATUS_COMPLETED if success else STATUS_FAILED)
                 job["message"] = message
                 self._schedule_next_occurrence(job)
-        self._save_schedule()
+        if _timeout_at is None:
+            self._save_schedule()
+        else:
+            # This completion came from the poller. A slow disk must not
+            # hold up the other recordings due on this same tick.
+            self._request_save()
         self._notify_update()
 
     def tick(self) -> None:
+        with self._lock:
+            retry_at = self._save_retry_at
+        if retry_at is not None and time.monotonic() >= retry_at:
+            self._request_save()
         now = float(self.clock())
         for job in self.list_jobs(include_done=False):
             status = job.get("status")

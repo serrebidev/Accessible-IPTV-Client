@@ -85,3 +85,5 @@ An all-channel airing is identified by the EPG channel ID and programme window. 
 - An XMLTV episode number can include a separate zero-based part and optional totals. Keep the part in the rerun key. A guide time change is only a proposal: recheck it on the original guide channel after confirmation, and preserve the recording ID, padding and rule relationships.
 
 - A portal station can be selected before it has a playable URL. Scope its identity to the configured provider and the stable station ID, retain compatibility with existing reminder keys, and confirm a guide change before moving a reminder.
+
+- The XMLTV importer reports the count of sources it actually imported. Only a complete run updates the freshness timestamp and source hash. Partial results still feed the guide and its dependent scans. Report partial completion through the app's existing notification path and keep unattended imports quiet.

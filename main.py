@@ -229,6 +229,16 @@ def _scope_for_combo_selection(sources, sel: int) -> str:
     return ALL_PLAYLISTS_SCOPE
 
 
+class _RecordingPlayerHandoff(NamedTuple):
+    frame: object
+    generation: int
+    shown: bool
+    stopped: object
+    url: str
+    portal_version: Optional[int]
+    launch_generation: int
+
+
 _MODAL_BOX_DEPTH = 0
 _MODAL_BOX_CLOSED_HOOK = None
 
@@ -1242,6 +1252,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 on_stop=self._stop_scheduled_recording,
                 on_update=self._on_dvr_schedule_updated,
                 on_series=self._refresh_series_recordings,
+                on_save_error=lambda: wx.CallAfter(
+                    self._show_or_queue_message_box,
+                    _("The recording schedule could not be saved. Check available disk space and write permissions."),
+                    _("Scheduled Recordings"), wx.OK | wx.ICON_WARNING),
                 poll_seconds=10,
             )
             self.dvr_scheduler = scheduler
@@ -2959,31 +2973,60 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _play_live_channel(self, channel: Dict[str, str]) -> None:
         def ready(url, _catchup):
-            self._terminate_media_probe(channel)
             self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
                                 channel=channel)
         IPTVClient._resolve_for_playback(self, channel, None, ready)
 
     def _cancel_pending_portal_playback(self):
+        self._playback_request = None
         worker = getattr(self, '_portal_playback_worker', None)
         if worker is not None:
             worker.cancel()
 
-    def _resolve_for_playback(self, channel, show, ready):
-        """Only portal resolution needs network I/O. Snapshot the selected programme."""
+    def _resolve_for_playback(self, channel, show, ready, *, archive=False, on_error=None):
+        """Resolve the selection and release advisory probes before opening media."""
+        request = self._playback_request = object()
+
+        def current():
+            return self._playback_request is request and not getattr(self, "_closing_application", False)
+
         def resolve():
-            if show and self._channel_has_catchup(channel):
+            if show and (archive or self._channel_has_catchup(channel)):
                 return self._resolve_show_url(channel, show)
             return self._resolve_live_url(channel), False
 
         def deliver(result, error):
-            if getattr(self, "_closing_application", False):
+            if not current():
                 return
             if error is not None:
-                message_box(_("Could not resolve stream URL:\n{error}").format(error=error),
-                            _("Playback Error"), wx.OK | wx.ICON_ERROR)
+                self._playback_request = None
+                if on_error is not None:
+                    on_error(error)
+                else:
+                    message_box(_("Could not resolve stream URL:\n{error}").format(error=error),
+                                _("Playback Error"), wx.OK | wx.ICON_ERROR)
                 return
-            ready(*result)
+
+            def play():
+                if current():
+                    self._playback_request = None
+                    ready(*result)
+
+            try:
+                retiring = IPTVClient._retire_media_probes(self, channel)
+            except RuntimeError as err:
+                deliver(None, err)
+                return
+            if retiring is None:
+                play()
+            else:
+                def released(result):
+                    error = result.exception()
+                    if error is None:
+                        wx.CallAfter(play)
+                    else:
+                        wx.CallAfter(deliver, None, error)
+                retiring.add_done_callback(released)
 
         worker = getattr(self, "_portal_playback_worker", None)
         if channel.get("provider-type") == "stalker":
@@ -3051,7 +3094,23 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             data = ch.get("provider-data") or {}
             portal_number = data.get("number") if isinstance(data, dict) and ch.get("provider-type") == "stalker" else ""
             return channel_number(ch.get("number") or ch.get("tvg-chno") or portal_number)
-        channel = next((ch for ch in channels if number(ch) == digits), None)
+        matches = [ch for ch in channels if number(ch) == digits]
+        if len(matches) > 1:
+            aliases = {_source_scope_id(src): self._scope_choice_label(src)
+                       for src in self._scoped_sources()}
+            labels = favorites.history_labels(matches, aliases)
+            if len({label.casefold() for label in labels}) != len(labels):
+                labels = [f"{index}. {label}" for index, label in enumerate(labels, 1)]
+            choice = wx.SingleChoiceDialog(self, _("Choose a channel to play:"),
+                                           _("Go to Channel Number"), labels)
+            try:
+                index = choice.GetSelection() if choice.ShowModal() == wx.ID_OK else -1
+            finally:
+                choice.Destroy()
+            if 0 <= index < len(matches):
+                self._play_live_channel(matches[index])
+            return
+        channel = matches[0] if matches else None
         if channel is None and len(digits) <= len(str(len(channels))) and int(digits) <= len(channels):
             at_position = channels[int(digits) - 1]
             if not number(at_position):
@@ -3716,155 +3775,235 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         key = self._channel_record_key(channel)
         pending = getattr(self, "_pending_recording_starts", None)
         if pending is None:
-            pending = self._pending_recording_starts = set()
+            pending = self._pending_recording_starts = {}
+            self._recording_start_lanes = {}
+            self._recording_player_handoffs = {}
         if key in pending:
-            # Pressed again while the stream is still being asked for its
-            # audio tracks: the toggle's "stop", just before it started.
-            pending.discard(key)
-            message_box(_("Stopping recording for {name}...").format(
-                name=self._channel_display_name(channel)),
-                _("Recording"), wx.OK | wx.ICON_INFORMATION)
-            return
-        # Toggle: if this channel is already recording, stop it instead.
-        if self.recorder.is_recording(key):
             self._stop_recording_for_channel(channel)
             return
-        try:
-            url = self._resolve_live_url(channel)
-        except ProviderError as err:
-            message_box(_("Provider error: {error}").format(error=err),
-                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
-            return
-        except Exception as err:
-            message_box(_("Could not resolve stream URL:\n{error}").format(error=err),
-                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
-            return
-        if not url:
-            message_box(_("Could not find a stream URL for this channel."),
-                          _("Recording Error"), wx.OK | wx.ICON_WARNING)
+
+        lanes = self._recording_start_lanes
+        handoffs = self._recording_player_handoffs
+        prior = lanes.get(key)
+        if prior is None and self.recorder.is_recording(key):
+            self._stop_recording_for_channel(channel)
             return
 
-        headers = channel_http_headers(channel)
+        request = threading.Event()
+        pending[key] = request
+        channel = dict(channel)
         name = self._channel_display_name(channel)
-        # Issue #33: the format follows the stream's media type, using the
-        # separate audio/video preferences. Unknown streams keep today's
-        # behaviour (the video preference).
+        headers = channel_http_headers(channel)
         fmt, media, _source = self._recording_format_for_channel(channel)
-        out_dir = get_recordings_dir(self.config)
         intent = self._recording_audio_intent(channel)
-        # Recording the channel the built-in player is showing takes one
-        # provider connection, not two (issue #13): the player lets go of the
-        # stream, the recording opens it, and the player then watches the
-        # recording's own copy of it through a local relay.
-        share = self._player_is_showing(channel)
-        lookup = getattr(self, '_buffer_source', None)
-        if callable(lookup) and lookup(url, headers) is not None:
-            share = False
-        # Issue #33: a background classification probe is advisory; the real
-        # recording preempts it so its open connection cannot refuse this one
-        # on a one-stream provider.
-        self._terminate_media_probe(channel)
-        if IPTVClient._single_stream_provider_busy(self, url, include_player=not share):
-            message_box(IPTVClient._single_stream_provider_refusal(self),
-                        _("Recording Error"), wx.OK | wx.ICON_WARNING)
-            return
-        player_shown = False
-        player_stopped = None
-        if share:
-            frame = self._internal_player_frame
-            try:
-                player_shown = bool(frame.IsShown())
-            except Exception:
-                player_shown = False
-            player_stopped = frame.stop(manual=True)
-        if intent is None and not share:
-            self._start_live_recording(key, url, name, fmt, headers, out_dir, None,
-                                       media=media, channel=channel)
-            return
-        # Waiting for the provider, and keeping the right audio track (asking
-        # the stream which tracks it carries), are network work: off the UI
-        # thread, then back here.
-        pending.add(key)
+        config = {"recordings_dir": self.config.get("recordings_dir", "")}
+        self._sync_internal_player_record_state()
 
-        def probe():
+        def canceled():
+            return request.is_set() or getattr(self, "_closing_application", False)
+
+        def current():
+            return pending.get(key) is request and not canceled()
+
+        def handoff():
+            state = handoffs.get(key)
+            if state and IPTVClient._recording_handoff_is_current(self, state):
+                return state
+            handoffs.pop(key, None)
+            return None
+
+        early_completion = None
+        accepted = False
+
+        def completed(rec, code):
+            nonlocal early_completion
+            if canceled():
+                return
+            if accepted:
+                # A very short stream can finish before the start is delivered.
+                # Keep its file/outcome checks off wx in that case as well.
+                threading.Thread(target=self._on_recording_finished, args=(rec, code),
+                                 name="Recording completion report", daemon=True).start()
+            else:
+                early_completion = rec, code
+
+        def finish(rec=None, error=None, settled=None):
+            nonlocal accepted
+            if not current() and rec is not None:
+                # Cancellation may arrive after FFmpeg starts but before the
+                # GUI accepts it. Release the slot before a replacement tries.
+                def discard():
+                    try:
+                        self.recorder.stop(rec.id, wait=True)
+                    finally:
+                        wx.CallAfter(finish, settled=settled)
+                threading.Thread(target=discard, name="Canceled recording cleanup", daemon=True).start()
+                return
+
+            if settled is not None:
+                if lanes.get(key) is settled:
+                    lanes.pop(key)
+                settled.set_result(None)
+            latest = current()
+            if latest:
+                pending.pop(key)
+            if key not in pending and key not in lanes:
+                IPTVClient._complete_recording_handoff(self, key, channel, name,
+                                                       None if early_completion else rec)
+            if not latest:
+                if settled is not None and not getattr(self, "_closing_application", False):
+                    self._sync_internal_player_record_state()
+                return
+            accepted = rec is not None
+            self._sync_internal_player_record_state()
+            if error is not None:
+                self._show_or_queue_message_box(error, _("Recording Error"), wx.OK | wx.ICON_ERROR)
+            elif early_completion:
+                completed(*early_completion)
+            elif rec is not None:
+                self._announce_live_recording(rec, name, fmt, media)
+
+        def prepare():
+            if canceled():
+                return
             try:
-                if share:
-                    # libVLC closes the player's connection on its own thread, and
-                    # the provider still counts it for a moment after that.
-                    _wait_for_player_stop(player_stopped)
-                    catchup_direct.settle_media_session()
-                local = getattr(self, '_buffer_probe_input', None)
-                probe_url, probe_headers = local(url, headers) if callable(local) else (url, headers)
-                choice = self._recording_audio_choice(probe_url, probe_headers, intent) if intent else None
-                if share and intent:
-                    catchup_direct.settle_media_session()  # ...and the track probe's
+                url = self._resolve_live_url(channel)
+            except ProviderError as err:
+                error = _("Provider error: {error}").format(error=err)
             except Exception as err:
-                # Without this the key stayed in `pending` for the rest of the
-                # session: every later press said it was stopping and nothing
-                # recorded, and the shared player was never resumed.
-                LOG.exception("Recording track probe failed")
-                wx.CallAfter(abandon, err)
+                error = _("Could not resolve stream URL:\n{error}").format(error=err)
+            else:
+                error = None if url else _("Could not find a stream URL for this channel.")
+            if not canceled() and not error:
+                try:
+                    directory = get_recordings_dir(config)
+                except Exception as err:
+                    error = _("Could not start recording:\n{error}").format(error=err)
+            if canceled():
                 return
-            wx.CallAfter(finish, choice)
+            if error:
+                wx.CallAfter(finish, error=error)
+            elif prior is None:
+                wx.CallAfter(start, url, directory)
+            else:
+                def resume_preparation(_previous):
+                    if not canceled():
+                        wx.CallAfter(start, url, directory)
+                prior.add_done_callback(resume_preparation)
 
-        def abandon(err):
-            if key not in pending:
+        def start(url, directory):
+            if not current():
                 return
-            pending.discard(key)
-            if share:
-                self._resume_direct_playback(channel, player_shown)
-            message_box(_("Could not start recording:\n{error}").format(error=err),
-                        _("Recording"), wx.OK | wx.ICON_ERROR)
-            self._sync_internal_player_record_state()
-
-        def finish(choice):
-            if key not in pending:
-                # Record was pressed again: canceled before it began.
-                if share:
-                    self._resume_direct_playback(channel, player_shown)
+            try:
+                state = handoff()
+                share = state is not None or self._player_is_showing(channel)
+                lookup = getattr(self, "_buffer_source", None)
+                if callable(lookup) and lookup(url, headers) is not None:
+                    share = False
+                if IPTVClient._single_stream_provider_busy(self, url, include_player=not share):
+                    finish(error=IPTVClient._single_stream_provider_refusal(self))
+                    return
+                if share and state is None:
+                    frame = self._internal_player_frame
+                    shown = bool(frame.IsShown())
+                    stopped = frame.stop(manual=True)
+                    portal = getattr(self, "_portal_playback_worker", None)
+                    portal_version = portal.version if portal is not None else None
+                    state = handoffs[key] = _RecordingPlayerHandoff(
+                        frame, getattr(frame, "_vlc_generation", 0), shown, stopped, url,
+                        portal_version, getattr(self, "_continuation_request", 0))
+                probes = self._take_media_probes()
+                retiring = getattr(self, "_retiring_media_probes", None)
+                if retiring is not None and retiring.done():
+                    retiring = None
+            except Exception as err:
+                finish(error=_("Could not start recording:\n{error}").format(error=err))
                 return
-            pending.discard(key)
-            self._start_live_recording(key, url, name, fmt, headers, out_dir, choice,
-                                       share_with=channel if share else None,
-                                       player_shown=player_shown, media=media, channel=channel)
-            self._sync_internal_player_record_state()
+            settled = lanes[key] = concurrent.futures.Future()
 
-        threading.Thread(target=probe, daemon=True).start()
+            def capture():
+                rec = None
+                error = None
+                try:
+                    if retiring is not None:
+                        retiring.result()
+                    self._stop_media_probes(channel, probes)
+                    if state is not None:
+                        _wait_for_player_stop(state.stopped)
+                        catchup_direct.settle_media_session()
+                    if not canceled():
+                        choice = None
+                        if intent:
+                            local = getattr(self, "_buffer_probe_input", None)
+                            probe_url, probe_headers = local(url, headers) if callable(local) else (url, headers)
+                            choice = self._recording_audio_choice(probe_url, probe_headers, intent)
+                            if share:
+                                catchup_direct.settle_media_session()
+                        if not canceled():
+                            track, count = choice or (None, 0)
+                            rec = self.recorder.start(
+                                url, name, fmt, headers, directory, key=key, on_finish=on_finish,
+                                metadata={"channel_name": name, "channel": channel},
+                                audio_track=track, audio_track_count=count, share_with_player=share,
+                                connection_key=single_stream_provider_key(url), canceled=canceled,
+                            )
+                except Exception as err:
+                    if not canceled():
+                        LOG.exception("Could not start manual recording")
+                        error = _("Could not start recording:\n{error}").format(error=err)
+                if canceled() and rec is not None:
+                    try:
+                        self.recorder.stop(rec.id, wait=True)
+                    finally:
+                        rec = None
+                        wx.CallAfter(finish, rec, error, settled)
+                    return
+                wx.CallAfter(finish, rec, error, settled)
 
-    def _start_live_recording(self, key, url, name, fmt, headers, out_dir, audio_choice,
-                              share_with=None, player_shown=False,
-                              media=media_type.MEDIA_UNKNOWN, channel=None):
-        """UI thread: start one live recording and say where it is going.
+            def on_finish(rec, code):
+                if not canceled():
+                    if accepted:
+                        self._on_recording_finished(rec, code)
+                    else:
+                        wx.CallAfter(completed, rec, code)
 
-        ``share_with`` is the channel the built-in player was showing: the
-        player then watches this recording's copy of the stream instead of
-        keeping a second connection to the provider open. ``media`` is the
-        detected stream type, announced when it is audio-only.
-        """
-        audio_track, audio_count = audio_choice if audio_choice else (None, 0)
+            try:
+                threading.Thread(target=capture, name="Manual recording start", daemon=True).start()
+            except RuntimeError as err:
+                finish(error=_("Could not start recording:\n{error}").format(error=err), settled=settled)
+
         try:
-            rec = self.recorder.start(
-                url, name, fmt, headers, out_dir,
-                key=key, on_finish=self._on_recording_finished,
-                metadata={"channel_name": name, "channel": dict(channel or {})},
-                audio_track=audio_track, audio_track_count=audio_count,
-                share_with_player=share_with is not None,
-                connection_key=single_stream_provider_key(url),
-            )
-        except Exception as err:
-            message_box(_("Could not start recording:\n{error}").format(error=err),
-                          _("Recording Error"), wx.OK | wx.ICON_ERROR)
-            if share_with is not None:
-                self._resume_direct_playback(share_with, player_shown)
+            threading.Thread(target=prepare, name="Manual recording preparation", daemon=True).start()
+        except RuntimeError as err:
+            finish(error=_("Could not start recording:\n{error}").format(error=err))
+
+    def _recording_handoff_is_current(self, state):
+        frame = state.frame
+        portal = getattr(self, "_portal_playback_worker", None)
+        return (not getattr(self, "_closing_application", False)
+                and frame is getattr(self, "_internal_player_frame", None)
+                and not getattr(frame, "_destroyed", False)
+                and state.generation == getattr(frame, "_vlc_generation", 0)
+                and getattr(self, "_playback_request", None) is None
+                and state.launch_generation == getattr(self, "_continuation_request", 0)
+                and state.portal_version == (portal.version if portal is not None else None))
+
+    def _complete_recording_handoff(self, key, channel, name, rec=None):
+        state = self._recording_player_handoffs.pop(key, None)
+        if not state or not IPTVClient._recording_handoff_is_current(self, state):
             return
+        shown, url = state.shown, state.url
         relay = getattr(rec, "relay", None)
-        if share_with is not None and relay is not None:
+        if relay is not None:
             shared = getattr(self, "_shared_recordings", None)
             if shared is None:
                 shared = self._shared_recordings = {}
-            shared[rec.id] = {"channel": share_with, "url": relay.url, "shown": player_shown}
-            self._launch_stream(relay.url, name, stream_kind="live", channel=share_with,
-                                show_internal_player=player_shown, focus_player=False)
+            shared[rec.id] = {"channel": channel, "url": relay.url, "shown": shown}
+            url = relay.url
+        self._launch_stream(url, name, stream_kind="live", channel=channel,
+                            show_internal_player=shown, focus_player=False)
+
+    def _announce_live_recording(self, rec, name, fmt, media):
         self._note_recording_started()
         if media == media_type.MEDIA_AUDIO:
             # The format was resolved from the audio preference: say what the
@@ -3878,7 +4017,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             RecordingReportsMixin._report_recording_success(self, message, _("Recording"),
                                                            _("Recording") + ": " + name)
         else:
-            message_box(message, _("Recording"), wx.OK | wx.ICON_INFORMATION)
+            self._show_or_queue_message_box(message, _("Recording"), wx.OK | wx.ICON_INFORMATION)
 
     def _player_is_showing(self, channel: Dict[str, str]) -> bool:
         """True while the built-in player is playing this live channel."""
@@ -3905,33 +4044,30 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 or getattr(frame, "_manual_stop", False)):
             return
         player_stopped = frame.stop(manual=True)
+        generation = getattr(frame, "_vlc_generation", 0)
+        portal = getattr(self, "_portal_playback_worker", None)
+        state = _RecordingPlayerHandoff(
+            frame, generation, shared["shown"], player_stopped, shared["url"],
+            portal.version if portal is not None else None, getattr(self, "_continuation_request", 0))
+        channel = shared["channel"]
+
+        def ready(url):
+            if url and IPTVClient._recording_handoff_is_current(self, state):
+                self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
+                                    channel=channel, show_internal_player=shared["shown"],
+                                    focus_player=False)
 
         def resume():
             _wait_for_player_stop(player_stopped)
             catchup_direct.settle_media_session()
-            wx.CallAfter(self._resume_direct_playback, shared["channel"],
-                         shared["shown"], shared["url"])
+            try:
+                url = self._resolve_live_url(channel)
+            except Exception:
+                LOG.debug("Could not resolve live stream after recording", exc_info=True)
+            else:
+                wx.CallAfter(ready, url)
 
         threading.Thread(target=resume, daemon=True).start()
-
-    def _resume_direct_playback(self, channel: Dict[str, str], shown: bool,
-                                expected_url: Optional[str] = None) -> None:
-        """UI thread: play ``channel`` straight from the provider again."""
-        frame = getattr(self, "_internal_player_frame", None)
-        if (frame is None or getattr(frame, "_destroyed", False)
-                or getattr(self, "_suppress_recording_notifications", False)):
-            return
-        if expected_url is not None and getattr(frame, "_current_url", None) != expected_url:
-            return  # something else was started meanwhile
-        try:
-            url = self._resolve_live_url(channel)
-        except Exception:
-            LOG.debug("IPTVClient._resume_direct_playback: could not resolve", exc_info=True)
-            return
-        if url:
-            self._launch_stream(url, self._channel_display_name(channel), stream_kind="live",
-                                channel=channel, show_internal_player=shown,
-                                focus_player=False)
 
     def _recording_audio_intent(self, channel: Dict[str, str], *, from_player: bool = True):
         """How a recording of ``channel`` picks its audio track, or None.
@@ -4002,7 +4138,13 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _stop_recording_for_channel(self, channel: Dict[str, str]):
         key = self._channel_record_key(channel)
-        if self.recorder.stop_key(key):
+        request = getattr(self, "_pending_recording_starts", {}).pop(key, None)
+        if request is not None:
+            request.set()
+            if key not in self._recording_start_lanes:
+                IPTVClient._complete_recording_handoff(self, key, channel, self._channel_display_name(channel))
+            self._sync_internal_player_record_state()
+        if request is not None or self.recorder.stop_key(key):
             message_box(_("Stopping recording for {name}...").format(
                 name=self._channel_display_name(channel)),
                 _("Recording"), wx.OK | wx.ICON_INFORMATION)
@@ -4012,9 +4154,11 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _stop_selected_recording(self, *_args):
         channel = self._selected_channel()
-        if channel and self.recorder.is_recording(self._channel_record_key(channel)):
-            self._stop_recording_for_channel(channel)
-            return
+        if channel:
+            key = self._channel_record_key(channel)
+            if key in getattr(self, "_pending_recording_starts", {}) or self.recorder.is_recording(key):
+                self._stop_recording_for_channel(channel)
+                return
         # Fall back: if exactly one recording is active, stop it.
         active = self.recorder.list_active()
         if len(active) == 1:
@@ -4027,7 +4171,16 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             self._stop_all_recordings()
 
     def _stop_all_recordings(self, *_args):
-        count = self.recorder.stop_all()
+        pending = getattr(self, "_pending_recording_starts", {})
+        count = len(pending)
+        channel = getattr(self, "_internal_player_channel", None)
+        for key, request in pending.items():
+            request.set()
+            if channel and key not in self._recording_start_lanes and key == self._channel_record_key(channel):
+                IPTVClient._complete_recording_handoff(self, key, channel, self._channel_display_name(channel))
+        pending.clear()
+        self._sync_internal_player_record_state()
+        count += self.recorder.stop_all()
         if count:
             message_box(_("Stopping {count} recording(s)...").format(count=count),
                           _("Recording"), wx.OK | wx.ICON_INFORMATION)
@@ -4454,7 +4607,11 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _probe_channel_media_now(self, channel) -> None:
         """Start a worker-thread probe unless the type is known or in flight."""
-        if not channel:
+        if (not channel or getattr(self, "_pending_recording_starts", None)
+                or getattr(self, "_playback_request", None) is not None):
+            return
+        retiring = getattr(self, "_retiring_media_probes", None)
+        if retiring is not None and not retiring.done():
             return
         buffers = getattr(self, '_live_buffers', None)
         if getattr(self, '_live_buffer_pending', False) or (buffers is not None and buffers.owns_url(channel.get('url', ''))):
@@ -4550,9 +4707,46 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         """
         # Every probe goes, not only this channel's: another channel's probe
         # may hold a connection on the same provider the session needs.
-        self._media_probe_inflight.clear()
-        procs, self._media_probe_procs = self._media_probe_procs, {}
-        for proc in procs.values():
+        IPTVClient._stop_media_probes(self, channel, IPTVClient._take_media_probes(self))
+
+    def _take_media_probes(self):
+        inflight = getattr(self, "_media_probe_inflight", None)
+        if inflight is not None:
+            inflight.clear()
+        procs, self._media_probe_procs = getattr(self, "_media_probe_procs", {}), {}
+        return tuple(procs.values())
+
+    def _retire_media_probes(self, channel):
+        """Retain one release barrier for successive playback requests."""
+        probes = IPTVClient._take_media_probes(self)
+        previous = getattr(self, "_retiring_media_probes", None)
+        if previous is not None and previous.done():
+            previous = None
+        if not probes:
+            return previous
+        retiring = self._retiring_media_probes = concurrent.futures.Future()
+
+        def release():
+            try:
+                if previous is not None:
+                    previous.result()
+                IPTVClient._stop_media_probes(self, channel, probes)
+            except Exception as error:
+                retiring.set_exception(error)
+            else:
+                retiring.set_result(None)
+
+        try:
+            threading.Thread(target=release, name="Media probe release", daemon=True).start()
+        except RuntimeError:
+            # Keep track of the probes for the next attempt.
+            self._retiring_media_probes = previous
+            self._media_probe_procs.update(enumerate(probes))
+            raise
+        return retiring
+
+    def _stop_media_probes(self, channel, procs):
+        for proc in procs:
             if proc is None or proc.poll() is not None:
                 continue
             LOG.info("Preempting media-type probe for %s",
@@ -5834,6 +6028,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                         event.Veto()
                         return
             self._closing_application = True
+            for request in getattr(self, "_pending_recording_starts", {}).values():
+                request.set()
+            getattr(self, "_pending_recording_starts", {}).clear()
             self._suppress_recording_notifications = True
             worker = getattr(self, "_portal_playback_worker", None)
             if worker is not None:
@@ -6824,6 +7021,10 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         return usable
 
     def _should_auto_import_epg(self, sources: List[str]) -> bool:
+        current_hash = self._hash_epg_sources(sources)
+        incomplete = getattr(self, "_epg_incomplete_attempt", None)
+        if incomplete and incomplete[0] == current_hash:
+            return time.monotonic() >= incomplete[1]
         interval = self._get_epg_auto_interval_seconds()
         if interval <= 0:
             return True
@@ -6831,7 +7032,6 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             last_hash = self.config.get("epg_last_sources_hash", "")
         except Exception:
             last_hash = ""
-        current_hash = self._hash_epg_sources(sources)
         if current_hash and current_hash != last_hash:
             return True
         if not self._epg_guide_is_usable():
@@ -6877,6 +7077,8 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         message box when it finishes - only the hand-started import from the
         File menu sets it, so the periodic automatic refresh stays quiet.
         """
+        if getattr(self, "_closing_application", False):
+            return False
         sources = list(self.epg_sources)
         if not sources or not self.config.get("epg_enabled", True):
             return False
@@ -6892,32 +7094,28 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
         def do_import():
             _lower_current_thread_priority()
-            success = False
+            loaded = 0
             try:
                 db = EPGDatabase(get_db_path(), for_threading=True)
-                # Pass a coarse progress callback (per-source). The DB importer writes as it streams,
-                # so readers can pick up newly inserted rows during import.
-                imported = db.import_epg_xml(sources)
-                # Every source can fail on its own and the importer logs it and
-                # moves on, so the import itself never fails. A guide that
-                # loaded nothing is not an up-to-date guide.
-                success = bool(imported)
                 try:
-                    if hasattr(db, "close"):
-                        db.close()
-                    elif hasattr(db, "conn"):
-                        db.conn.close()
-                except Exception:
-                    LOG.debug("IPTVClient.start_epg_import_background.do_import: ignored exception", exc_info=True)
+                    loaded = db.import_epg_xml(sources)
+                finally:
+                    db.close()
             except Exception:
                 LOG.debug("IPTVClient.start_epg_import_background.do_import: ignored exception", exc_info=True)
             finally:
-                wx.CallAfter(self.finish_import_background, success)
-        threading.Thread(target=do_import, daemon=True).start()
+                wx.CallAfter(self.finish_import_background, loaded >= len(sources), loaded)
+        try:
+            threading.Thread(target=do_import, daemon=True).start()
+        except RuntimeError:
+            LOG.exception("Could not start the EPG import worker")
+            self.finish_import_background(False)
         return True
 
-    def finish_import_background(self, success: bool = False):
+    def finish_import_background(self, success: bool = False, loaded: int = 0):
         self.epg_importing = False
+        if getattr(self, "_closing_application", False):
+            return
         notify = self._epg_import_notify
         self._epg_import_notify = False
         # Clear match cache as IDs/channels may have changed in the DB
@@ -6925,13 +7123,15 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             self._epg_match_cache.clear()
         imported = list(getattr(self, "_epg_import_sources", None) or self.epg_sources)
         self._epg_import_sources = None
-        if success:
+        imported_hash = self._hash_epg_sources(imported)
+        # A partial import updates usable data but cannot extend guide freshness.
+        self._epg_incomplete_attempt = None if success else (imported_hash, time.monotonic() + 300)
+        if success or loaded:
             try:
-                self.config["epg_last_import_epoch"] = int(time.time())
-                # Record what was imported, not the live list: a guide added
-                # while this import ran was not part of it.
-                self.config["epg_last_sources_hash"] = self._hash_epg_sources(imported)
-                save_config(self.config)
+                if success:
+                    self.config["epg_last_import_epoch"] = int(time.time())
+                    self.config["epg_last_sources_hash"] = imported_hash
+                    save_config(self.config)
                 self._ensure_dvr_scheduler(start=True).request_series_scan()
                 if self.config.get("notify_recording_guide_changes") is True:
                     from recording_edits_ui import review_guide_changes
@@ -6945,7 +7145,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                     wx.CallAfter(scan_searches)
             except Exception:
                 LOG.debug("IPTVClient.finish_import_background: ignored exception", exc_info=True)
-        if self._hash_epg_sources(self.epg_sources) != self._hash_epg_sources(imported):
+        if self._hash_epg_sources(self.epg_sources) != imported_hash:
             # Sources changed mid-import, and the import requested for them was
             # refused because this one was running. Run it now; it reads the
             # current list, so this cannot repeat unless the list changes again.
@@ -6958,9 +7158,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         self.on_highlight()
         if notify:
             # Reported last, so the guide is already reloaded behind the box.
-            self._report_epg_import_finished(success)
+            self._report_epg_import_finished(success, loaded, len(imported))
 
-    def _report_epg_import_finished(self, success: bool) -> None:
+    def _report_epg_import_finished(self, success: bool, loaded: int = 0, total: int = 0) -> None:
         """Tell the user how the import they started by hand turned out.
 
         An import runs for anything from seconds to the better part of an hour
@@ -6972,12 +7172,16 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 _("The EPG import has finished. The programme guide is up to date."),
                 _("Import Complete"), wx.OK | wx.ICON_INFORMATION)
             return
-        self._show_or_queue_message_box(
-            _("The EPG import did not finish. The programme guide may be "
-              "incomplete or unchanged.") + chr(10) + chr(10) + _(
-                "Check that the EPG sources in File > EPG Manager are reachable, "
-                "then try again."),
-            _("Import Failed"), wx.OK | wx.ICON_WARNING)
+        if loaded:
+            caption = _("Partial EPG Import")
+            message = _("The EPG import loaded {loaded} of {total} sources. The programme guide may be incomplete.")
+            message = message.format(loaded=loaded, total=total)
+        else:
+            caption = _("Import Failed")
+            message = _("The EPG import did not finish. The programme guide may be incomplete or unchanged.")
+        retry = _("Check that the EPG sources in File > EPG Manager are reachable, then try again.")
+        self._show_or_queue_message_box(f"{message}\n\n{retry}", caption, wx.OK | wx.ICON_WARNING)
+
 
     def show_manager(self, _):
         dlg = PlaylistManagerDialog(self, self.playlist_sources, self.config.get("playlist_names"),
@@ -7445,12 +7649,6 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         IPTVClient._resolve_for_playback(self, channel, show, ready)
 
     def _play_resolved_selection(self, channel, show, url, show_internal_player):
-        # Issue #33: playback preempts any advisory classification probe for
-        # this channel, so the probe's connection cannot refuse playback on a
-        # one-stream provider.
-        if channel:
-            self._terminate_media_probe(channel)
-
         display_name = None
         if channel:
             display_name = (channel.get("name")
@@ -8086,15 +8284,16 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         initial_position_ms: Optional[int] = None,
         _queue_ticket=None,
     ):
-        worker = getattr(self, '_portal_playback_worker', None)
-        if worker is not None:
-            worker.cancel()
         queue = getattr(self, "_recording_queue", None)
         if _queue_ticket is not None:
             if queue is None or queue.ticket is not _queue_ticket:
                 return
         elif queue is not None and queue.playing:
             queue.stop()
+        self._playback_request = None
+        worker = getattr(self, "_portal_playback_worker", None)
+        if worker is not None:
+            worker.cancel()
         self._continuation_request = getattr(self, "_continuation_request", 0) + 1
         LOG.info("_launch_stream called: url=%s, title=%s, player=%s", url, title, self.default_player)
         if not url:
@@ -8318,8 +8517,9 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
             return
         channel = getattr(self, "_internal_player_channel", None)
         try:
-            active = bool(channel and self.recorder.is_recording(
-                self._channel_record_key(channel)))
+            key = self._channel_record_key(channel) if channel else None
+            active = bool(key and (key in getattr(self, "_pending_recording_starts", {})
+                                   or self.recorder.is_recording(key)))
             frame.set_recording_state(active)
         except Exception:
             LOG.debug("IPTVClient._sync_internal_player_record_state: ignored exception",
@@ -8484,19 +8684,18 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                 if action == wx.ID_SAVE:
                     self._download_catchup_programme(channel, show)
                     return
-                try:
-                    url, _unused = self._resolve_show_url(channel, show)
-                except ProviderError as err:
-                    message_box(_("Provider error: {error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                    return
-                except Exception as err:
-                    message_box(_("Unable to prepare catch-up stream:\n{error}").format(error=err), _("Catch-up"), wx.OK | wx.ICON_ERROR)
-                    return
-                display = (selected.get("title") or channel.get("name", "IPTV Stream"))
-                self._launch_stream(url, display, stream_kind="catchup", channel=channel)
-                # Read back by _on_internal_player_closed, and only for a catch-up
-                # stream, so a live channel played later never reopens this list.
-                self._catchup_return = {"channel": channel, "start": selected.get("start", "")}
+                display = selected.get("title") or self._channel_display_name(channel)
+
+                def ready(url, _is_catchup):
+                    self._launch_stream(url, display, stream_kind="catchup", channel=channel)
+                    self._catchup_return = {"channel": channel, "start": show["start"]}
+
+                def failed(error):
+                    template = (_("Provider error: {error}") if isinstance(error, ProviderError)
+                                else _("Unable to prepare catch-up stream:\n{error}"))
+                    message_box(template.format(error=error), _("Catch-up"), wx.OK | wx.ICON_ERROR)
+
+                IPTVClient._resolve_for_playback(self, channel, show, ready, archive=True, on_error=failed)
             finally:
                 dlg.Destroy()
         finally:
@@ -8543,17 +8742,31 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
 
     def _download_catchup_programme(self, channel: Dict[str, str], show: Dict[str, str], *, prepared=None):
         """Save a completed catch-up programme using its finite EPG time window."""
+        if getattr(self, "_closing_application", False):
+            return
+        if prepared is None and channel.get("provider-type") == "stalker":
+            from background_tasks import start_operation
+            programme = dict(show)
+            channel = dict(channel)
+            identity = self._channel_record_key(channel), programme.get("start"), programme.get("end")
+            operation = "catchup-address:" + hashlib.sha256(repr(identity).encode("utf-8", "replace")).hexdigest()
+
+            def resolved(result, error):
+                if getattr(self, "_closing_application", False):
+                    return
+                if error is not None:
+                    IPTVClient._report_catchup_preparation_error(self, channel, programme, error)
+                    return
+                self._download_catchup_programme(channel, programme, prepared=result)
+
+            start_operation(self, operation,
+                            lambda: IPTVClient._prepare_archive_download(self, channel, programme),
+                            resolved, wx.CallAfter)
+            return
         try:
             url, duration = prepared or IPTVClient._prepare_archive_download(self, channel, show)
-        except ProviderError as err:
-            message_box(_("Provider error: {error}").format(error=err), _("Catch-up Download"),
-                          wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
-            return
-        except (TypeError, ValueError) as err:
-            message_box(_("Unable to prepare catch-up download:\n{error}").format(error=err),
-                          _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
+        except (ProviderError, TypeError, ValueError) as err:
+            IPTVClient._report_catchup_preparation_error(self, channel, show, err)
             return
 
         title = show.get("show_title") or show.get("title") or self._channel_display_name(channel)
@@ -8574,19 +8787,48 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         # media requests too, and would otherwise consume Teleelevidenie's
         # sole connection before ffmpeg gets a chance to start. A background
         # classification probe is preempted for the same reason.
-        self._terminate_media_probe(channel)
         if IPTVClient._single_stream_provider_busy(self, url):
             message_box(IPTVClient._single_stream_provider_refusal(self),
                         _("Catch-up Download"), wx.OK | wx.ICON_WARNING)
             return
+        probes = getattr(self, "_pending_catchup_probes", None)
+        if probes is None:
+            probes = self._pending_catchup_probes = set()
+        if key in probes or key in getattr(self, "_pending_catchup_starts", ()):
+            return
         audio_intent = self._recording_audio_intent(channel)
-        # The fast direct-URL probe does network work; keep it off the GUI
-        # thread. If no direct file exists we fall back to the HLS URL.
-        threading.Thread(
-            target=self._begin_catchup_download,
-            args=(channel, url, display_name, key, show, duration, fmt, None, audio_intent),
-            daemon=True,
-        ).start()
+        probes.add(key)
+
+        def begin():
+            try:
+                if retiring is not None:
+                    retiring.result()
+                if not getattr(self, "_closing_application", False):
+                    self._begin_catchup_download(channel, url, display_name, key, show,
+                                                 duration, fmt, None, audio_intent)
+            except Exception as error:
+                wx.CallAfter(IPTVClient._report_catchup_preparation_error, self, channel, show, error)
+            finally:
+                # The starter was posted first. Keep one pending operation
+                # visible until wx has handed it over to recording admission.
+                wx.CallAfter(probes.discard, key)
+
+        try:
+            retiring = IPTVClient._retire_media_probes(self, channel)
+            threading.Thread(target=begin, daemon=True).start()
+        except RuntimeError as error:
+            probes.discard(key)
+            IPTVClient._report_catchup_preparation_error(self, channel, show, error)
+
+    def _report_catchup_preparation_error(self, channel, show, error):
+        if getattr(self, "_closing_application", False):
+            return
+        if isinstance(error, ProviderError):
+            message = _("Provider error: {error}").format(error=error)
+        else:
+            message = _("Unable to prepare catch-up download:\n{error}").format(error=error)
+        message_box(message, _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+        self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
 
     def _begin_catchup_download(self, channel, hls_url, display_name, key, show,
                                 duration, fmt, retry_of: Optional[int] = None,
@@ -8652,21 +8894,22 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
                                  fmt, headers, channel=None, hls_url=None,
                                  retry_of: Optional[int] = None,
                                  audio_intent=None, audio_choice=None):
-        """UI thread: start the recorder and open the progress window."""
+        """Admit one download and open its progress window when it starts."""
+        if getattr(self, "_closing_application", False):
+            return
         if retry_of is not None and retry_of not in getattr(self, "_catchup_retry_state", {}):
-            # Cancel was pressed while this retry was being prepared - the
-            # "really cancel?" question easily outlasts the retry delay, and
-            # the probe takes seconds. The user said stop: start nothing.
-            LOG.info("Catch-up download retry for %s was cancelled", display_name)
+            # Cancel can arrive while the retry delay or media probe is pending.
             self._close_catchup_dialog(retry_of)
             return
-        if retry_of is not None:
-            # A retry replaces the previous attempt: close its progress window
-            # (it is showing the error and countdown) and carry the budget over.
-            self._close_catchup_dialog(retry_of)
+        pending = getattr(self, "_pending_catchup_starts", None)
+        if pending is None:
+            pending = self._pending_catchup_starts = set()
+        if key in pending:
+            return
         if self.recorder.is_recording(key):  # re-checked: the probe ran async
             if retry_of is not None:
                 self._catchup_retry_state.pop(retry_of, None)
+                self._close_catchup_dialog(retry_of)
             message_box(_("This catch-up programme is already downloading."),
                           _("Catch-up Download"), wx.OK | wx.ICON_INFORMATION)
             self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
@@ -8675,6 +8918,7 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         if IPTVClient._single_stream_provider_busy(self, provider_url):
             if retry_of is not None:
                 self._catchup_retry_state.pop(retry_of, None)
+                self._close_catchup_dialog(retry_of)
             message_box(IPTVClient._single_stream_provider_refusal(self),
                         _("Catch-up Download"), wx.OK | wx.ICON_WARNING)
             self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
@@ -8691,54 +8935,103 @@ class IPTVClient(AccessibleToolsMixin, PersonalToolsMixin, PlanningMixin, LiveBu
         config = getattr(self, "config", None) or {}
         pad_seconds = 60.0 * sum(_archive_padding(config, show))
         expected_media = max(1.0, float(duration or 0.0) - pad_seconds)
-        try:
-            rec = self.recorder.start(
-                url, display_name, fmt, headers, get_recordings_dir(self.config),
-                key=key,
-                metadata={"catchup": True, "from_schedule": bool(show.get("from_schedule")),
-                          "schedule_padding": show.get("schedule_padding"), "programme_start": show.get("start", ""),
-                          "programme_end": show.get("end", ""),
-                          "channel": dict(channel) if channel else {},
-                          "hls_url": hls_url or url,
-                          "duration": duration,
-                          "expected_media_seconds": expected_media,
-                          "audio_intent": audio_intent},
-                on_finish=self._catchup_download_finished,
-                duration=duration,
-                show_stats=True,
-                keep_partial=False,
-                file_time=aired,
-                audio_track=audio_choice[0] if audio_choice else None,
-                audio_track_count=audio_choice[1] if audio_choice else 0,
-                connection_key=single_stream_provider_key(provider_url),
-            )
-        except Exception as err:
-            # Stream URLs go to the debug log verbatim (credentials included):
-            # the log exists for troubleshooting, and the URL is the diagnosis.
+        pending.add(key)
+        completion_lock = threading.Lock()
+        registered = False
+        early_completion = None
+
+        def canceled():
+            return (getattr(self, "_closing_application", False)
+                    or retry_of is not None and retry_of not in self._catchup_retry_state)
+
+        def on_finish(rec, code):
+            nonlocal early_completion
+            with completion_lock:
+                if not registered:
+                    early_completion = rec, code
+                    return
+            self._catchup_download_finished(rec, code)
+
+        def registered_start(rec, error):
+            nonlocal registered
+            pending.discard(key)
+            if canceled():
+                if rec is not None:
+                    self.recorder.stop(rec.id, wait=False)
+                return
+            if error is not None:
+                if retry_of is not None:
+                    self._catchup_retry_state.pop(retry_of, None)
+                    self._close_catchup_dialog(retry_of)
+                LOG.error("Catch-up download failed to start for %s: %s", url, error)
+                message_box(_("Could not start catch-up download:\n{error}").format(error=error),
+                            _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
+                self._return_to_catchup_after_download(
+                    None if show.get("from_schedule") else channel, show.get("start", ""))
+                return
             if retry_of is not None:
-                self._catchup_retry_state.pop(retry_of, None)
-            LOG.error("Catch-up download failed to start for %s: %s", url, err)
-            message_box(_("Could not start catch-up download:\n{error}").format(error=err),
-                          _("Catch-up Download"), wx.OK | wx.ICON_ERROR)
-            self._return_to_catchup_after_download(None if show.get("from_schedule") else channel, show.get("start", ""))
-            return
-        if retry_of is not None:
-            # The budget belongs to the programme, not the recorder id: pass it
-            # on so the next failure still counts against the original budget.
-            attempts = self._catchup_retry_state.pop(retry_of, None)
-            if attempts is not None:
-                self._catchup_retry_state[rec.id] = attempts
-        LOG.info(
-            "Catch-up download started for %s -> %s",
-            url, rec.out_path)
-        self._note_recording_started()
-        # A modeless progress window replaces the old "download started" box:
-        # progress, elapsed, ETA, size and Cancel live there from now on.
-        dlg = CatchupDownloadDialog(self, rec, duration=duration,
-                                    on_cancel=lambda: self._cancel_catchup_download(rec.id))
-        self._catchup_downloads[rec.id] = dlg
-        dlg.Show()
-        dlg.Raise()
+                self._close_catchup_dialog(retry_of)
+                # The budget belongs to the programme, not the recorder id: pass it
+                # on so the next failure still counts against the original budget.
+                attempts = self._catchup_retry_state.pop(retry_of, None)
+                if attempts is not None:
+                    self._catchup_retry_state[rec.id] = attempts
+            LOG.info(
+                "Catch-up download started for %s -> %s",
+                url, rec.out_path)
+            self._note_recording_started()
+            # A modeless progress window replaces the old "download started" box:
+            # progress, elapsed, ETA, size and Cancel live there from now on.
+            dlg = CatchupDownloadDialog(self, rec, duration=duration,
+                                        on_cancel=lambda: self._cancel_catchup_download(rec.id))
+            self._catchup_downloads[rec.id] = dlg
+            dlg.Show()
+            dlg.Raise()
+
+            with completion_lock:
+                registered = True
+                completed = early_completion
+            if completed is not None:
+                self._catchup_download_finished(*completed)
+
+        def start():
+            rec = None
+            error = None
+            try:
+                if canceled():
+                    return
+                directory = get_recordings_dir(config)
+                if not canceled():
+                    rec = self.recorder.start(
+                        url, display_name, fmt, headers, directory,
+                        key=key,
+                        metadata={"catchup": True, "from_schedule": bool(show.get("from_schedule")),
+                                  "schedule_padding": show.get("schedule_padding"), "programme_start": show.get("start", ""),
+                                  "programme_end": show.get("end", ""),
+                                  "channel": dict(channel) if channel else {},
+                                  "hls_url": hls_url or url,
+                                  "duration": duration,
+                                  "expected_media_seconds": expected_media,
+                                  "audio_intent": audio_intent},
+                        on_finish=on_finish,
+                        canceled=canceled,
+                        duration=duration,
+                        show_stats=True,
+                        keep_partial=False,
+                        file_time=aired,
+                        audio_track=audio_choice[0] if audio_choice else None,
+                        audio_track_count=audio_choice[1] if audio_choice else 0,
+                        connection_key=single_stream_provider_key(provider_url),
+                    )
+            except Exception as exc:
+                error = exc
+            finally:
+                wx.CallAfter(registered_start, rec, error)
+
+        try:
+            threading.Thread(target=start, name="Catch-up download start", daemon=True).start()
+        except RuntimeError as error:
+            registered_start(None, error)
 
     def _cancel_catchup_download(self, rec_id: int):
         """Stop one catch-up download; ffmpeg finalizes the file cleanly."""

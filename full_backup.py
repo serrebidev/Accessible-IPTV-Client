@@ -88,14 +88,8 @@ def validate(bundle, *, now=None):
                 or (job.get("repeat") is not None and not isinstance(job["repeat"], str))
                 or not isinstance(job.get("format"), str)):
             raise ValueError(bad)
-        if 'future_padding' in job and not dvr.valid_padding_pair(job['future_padding']):
+        if not dvr.valid_stored_job(job):
             raise ValueError(bad)
-        if 'series_padding_changes' in job and not dvr.valid_series_padding(job['series_padding_changes']):
-            raise ValueError(bad)
-        if job.get('repeat') == 'weekdays':
-            from planning_tools import checked_weekdays
-            if not checked_weekdays(job.get('weekdays')):
-                raise ValueError(bad)
         ids.add(job["id"])
         if (job["status"] in {dvr.STATUS_RECORDING, dvr.STATUS_STOPPING}
                 or job["status"] == dvr.STATUS_SCHEDULED and job["start_ts"] <= now):

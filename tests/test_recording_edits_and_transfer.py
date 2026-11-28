@@ -135,7 +135,7 @@ def test_edit_from_a_series_child_keeps_earlier_airings_and_default_for_backfill
     assert tuple(dvr.series_padding_at(stored, episodes[0]["program"]["start"])) == edits.padding(first)
     assert tuple(dvr.series_padding_at(stored, episodes[2]["program"]["start"])) == (4, 21)
     assert [edits.padding(scheduler.get_job(ep["id"])) for ep in episodes] == [edits.padding(first), (4, 21), (4, 21)]
-    assert dvr._valid_stored_job(stored)
+    assert dvr.valid_stored_job(stored)
 
 
 def test_portable_list_preserves_order_missing_and_ambiguous_channels(tmp_path):

@@ -658,8 +658,12 @@ class LiveBufferRegistry:
         atexit.register(self.close)
 
     def put(self, url, headers, session):
-        with self._lock:
-            for value in self._sessions.values():
+        # Keep exclusive ingest admission, without making GUI ownership
+        # checks wait for the filesystem to remove an old cache.
+        with self.ingest_gate:
+            with self._lock:
+                sessions = tuple(self._sessions.values())
+            for value in sessions:
                 if value.cleanup_failed:
                     if not value._shutdown_finished.is_set():
                         raise BufferError('previous source is still active')
@@ -668,13 +672,15 @@ class LiveBufferRegistry:
                         value.cleanup_failed = False
                     except OSError as err:
                         raise BufferError('old cache remains locked') from err
-            for key in [k for k, v in self._sessions.items() if v._shutdown_finished.is_set()]:
-                self._sessions.pop(key)
-                self._sources.pop(key)
-            key = source_key(url, headers)
-            if key in self._sessions and self._sessions[key] is not session:
-                raise BufferError('source already owned')
-            self._sessions[key], self._sources[key] = session, url
+            with self._lock:
+                for key in [k for k, v in self._sessions.items() if v._shutdown_finished.is_set()
+                            and not v.cleanup_failed]:
+                    self._sessions.pop(key)
+                    self._sources.pop(key)
+                key = source_key(url, headers)
+                if key in self._sessions and self._sessions[key] is not session:
+                    raise BufferError('source already owned')
+                self._sessions[key], self._sources[key] = session, url
 
     def find(self, url, headers=None):
         with self._lock:
@@ -700,13 +706,15 @@ class LiveBufferRegistry:
             if session.window.error:
                 raise BufferError('unhealthy buffered input')
             lease = session.acquire()
-            try:
-                local, _ = session.cursor(protected=True)
-                lease.cursor_name = urlsplit(local).path.split('/')[2]
-                return local, {}, lease
-            except Exception:
-                lease.release()
-                raise
+        # The lease keeps the source alive while its disk window is read.
+        # The registry lock protects only lookup and admission state.
+        try:
+            local, _ = session.cursor(protected=True)
+            lease.cursor_name = urlsplit(local).path.split('/')[2]
+            return local, {}, lease
+        except Exception:
+            lease.release()
+            raise
 
     def has_provider(self, provider):
         from catchup_urls import single_stream_provider_key

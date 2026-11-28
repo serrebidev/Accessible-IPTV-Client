@@ -134,3 +134,34 @@ def test_large_cached_search_counts_no_repeated_conversions():
     assert built == 25000 and Name.calls == built
     assert idx.normalized_name({"name": Name("Új")}) == "új"
     assert Name.calls == built + 1
+
+
+@pytest.mark.parametrize("accept", [True, False])
+def test_duplicate_channel_number_asks_which_playlist_match_to_play(monkeypatch, accept):
+    matches = [
+        {"name": "Station", "number": "7", "playlist-id": "first"},
+        {"name": "Station", "provider-type": "stalker", "provider-data": {"number": "007"},
+         "provider-id": "second"},
+    ]
+    owner = SimpleNamespace(
+        scoped_all_channels=lambda: [{"name": "Unnumbered"}] + matches,
+        _scoped_sources=lambda: [],
+        _scope_choice_label=Mock(),
+        _play_live_channel=Mock(),
+    )
+    prompt, chooser = Mock(), Mock()
+    prompt.GetValue.return_value = " 7 "
+    prompt.ShowModal.return_value = main.wx.ID_OK
+    chooser.ShowModal.return_value = main.wx.ID_OK if accept else main.wx.ID_CANCEL
+    chooser.GetSelection.return_value = 1
+    options = Mock(return_value=chooser)
+    monkeypatch.setattr(main.wx, "TextEntryDialog", Mock(return_value=prompt))
+    monkeypatch.setattr(main.wx, "SingleChoiceDialog", options)
+    main.IPTVClient._go_to_channel_number(owner)
+    labels = options.call_args.args[-1]
+    assert len(set(labels)) == 2
+    if accept:
+        owner._play_live_channel.assert_called_once_with(matches[1])
+    else:
+        owner._play_live_channel.assert_not_called()
+    chooser.Destroy.assert_called_once()

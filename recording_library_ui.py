@@ -253,52 +253,59 @@ class RecordingLibraryDialog(wx.Dialog):
         active, deleted = self.active_paths(), self.deleted.GetValue()
         all_folders = self.folder.GetSelection() == len(self.directories)
         directories = list(self.directories) if all_folders else [self.directory]
-        key = None if all_folders else self.directory
-        for removed in set(self._scan_workers).difference(self.directories, {None}):
+        for removed in set(self._scan_workers).difference(self.directories):
             self._scan_workers.pop(removed).close()
-        # An offline share can block an OS call. Independent selections must still open.
-        if key not in self._scan_workers:
-            self._scan_workers[key] = LatestTask(wx.CallAfter)
         self.status.SetLabel(_("Loading recordings..."))
         config = {"recordings_dir": self.owner.config.get("recordings_dir", "")}
         default = self.directories[0]
-        def work(canceled):
-            rows, warnings = [], []
-            visited = set()
-            seen = set()
-            for directory in directories:
-                if canceled():
-                    break
-                try:
-                    if directory == default:
-                        directory = options.get_recordings_dir(config)
-                    location = os.path.normcase(os.path.realpath(directory))
-                    if location in visited:
-                        continue
-                    visited.add(location)
-                    items = library.scan_trash(directory, canceled=canceled, warnings=warnings) if deleted else library.scan(
-                        directory, active, canceled=canceled, warnings=warnings)
-                    for row in items:
-                        identity = os.path.normcase(os.path.realpath(row['path']))
-                        if identity not in seen:
-                            seen.add(identity)
-                            rows.append(row)
-                except OSError as error:
-                    warnings.append(str(error))
-            return rows, warnings
-        def done(value, error):
+        outstanding = set(directories)
+        rows_by_path, warnings = {}, []
+        published = False
+        publish_queued = False
+
+        def scan_folder(directory, canceled):
+            problems = []
+            if directory == default:
+                directory = options.get_recordings_dir(config)
+            items = (library.scan_trash(directory, canceled=canceled, warnings=problems) if deleted
+                     else library.scan(directory, active, canceled=canceled, warnings=problems))
+            return [(os.path.normcase(os.path.realpath(row['path'])), row) for row in items], problems
+
+        def publish():
+            nonlocal published, publish_queued
+            publish_queued = False
+            if self.closed or version != self._scan_version or (published and self.busy):
+                return
+            self._scanning = bool(outstanding)
+            self.warnings = warnings.copy()
+            published = True
+            self.loaded(list(rows_by_path.values()), '')
+
+        def done(directory, value, error):
+            nonlocal publish_queued
             if self.closed or version != self._scan_version:
                 return
-            self._scanning = False
+            outstanding.discard(directory)
             if error:
-                self.loaded([], str(error))
+                warnings.append(str(error))
             else:
-                self.warnings = value[1]
-                self.loaded(value[0], '')
-        try:
-            self._scan_workers[key].submit(work, done)
-        except RuntimeError as error:
-            done(None, error)
+                rows_by_path.update(value[0])
+                warnings.extend(value[1])
+            # Give available folders to the user while a slow share still scans.
+            # Batch callbacks already waiting in the UI queue into one update.
+            if (rows_by_path or not outstanding) and not publish_queued:
+                publish_queued = True
+                wx.CallAfter(publish)
+
+        for directory in directories:
+            if directory not in self._scan_workers:
+                self._scan_workers[directory] = LatestTask(wx.CallAfter)
+            try:
+                self._scan_workers[directory].submit(
+                    lambda canceled, folder=directory: scan_folder(folder, canceled),
+                    lambda value, error, folder=directory: done(folder, value, error))
+            except RuntimeError as error:
+                done(directory, None, error)
 
     def loaded(self, rows, error):
         if self.closed:
@@ -326,7 +333,6 @@ class RecordingLibraryDialog(wx.Dialog):
     def filter(self, _event=None):
         if self.closed or self.busy:
             return
-        selected = {row['path'] for row in self.selected_rows()}
         query = self.search.GetValue()
         state = self.status_values[max(0, self.state.GetSelection())]
         order = self.sort_values[max(0, self.sort.GetSelection())]
@@ -354,6 +360,9 @@ class RecordingLibraryDialog(wx.Dialog):
                 error_box(self, error)
                 self.selection_changed()
                 return
+            selected = {row['path'] for row in self.selected_rows()}
+            focused_index = self.list.GetFocusedItem()
+            focused = self.rows[focused_index]['path'] if 0 <= focused_index < len(self.rows) else None
             self.list.Freeze()
             try:
                 self.list.SetItemCount(0)
@@ -362,6 +371,8 @@ class RecordingLibraryDialog(wx.Dialog):
                 for index, row in enumerate(self.rows):
                     if row['path'] in selected:
                         self.list.Select(index)
+                    if row['path'] == focused:
+                        self.list.Focus(index)
                 if self.rows and self.list.GetFirstSelected() == -1:
                     self.list.Select(0)
                     self.list.Focus(0)
@@ -402,6 +413,8 @@ class RecordingLibraryDialog(wx.Dialog):
         size = sum(row.get('size', 0) for row in rows)
         text = _("{count} recording(s). Active recordings are not listed.").format(count=len(self.rows))
         text += ' ' + _("Selected: {count}; total size: {size} MiB.").format(count=len(rows), size=f'{size / 1048576:.2f}')
+        if self._scanning:
+            text += ' ' + _("Loading recordings...")
         if self.warnings:
             text += '\n' + '\n'.join(dict.fromkeys(self.warnings))
         self.status.SetLabel(text)
@@ -499,6 +512,10 @@ class RecordingLibraryDialog(wx.Dialog):
         if self.busy or self.filter_busy:
             return
         self.busy = True
+        self._scanning = False
+        self._scan_version += 1
+        for worker in self._scan_workers.values():
+            worker.cancel()
         self.status.SetLabel(_("Processing recordings..."))
         for control in self.controls():
             control.Disable()

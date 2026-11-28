@@ -11,6 +11,7 @@ The active format is a persistent setting chosen elsewhere; this module just tur
 format key + URL + per-channel HTTP headers into a running ffmpeg process and tracks it.
 """
 
+from concurrent.futures import CancelledError
 from contextlib import contextmanager, nullcontext
 import datetime
 import logging
@@ -1073,10 +1074,13 @@ class RecordingManager:
         audio_track_count: int = 0,
         share_with_player: bool = False,
         connection_key: str = "",
+        canceled: Optional[Callable[[], bool]] = None,
         _buffer_lease=None,
         _buffer_checked=False,
         _storage_checked=False,
     ) -> Recording:
+        if canceled is not None and canceled():
+            raise CancelledError
         if not url:
             raise ValueError("No stream URL to record.")
         if fmt not in RECORDING_FORMATS:
@@ -1086,6 +1090,8 @@ class RecordingManager:
             # Serialize the checks for one destination. A different directory
             # can enter admission even if this directory is on an offline share.
             with self._destination_admission(out_dir):
+                if canceled is not None and canceled():
+                    raise CancelledError
                 enabled, _warning, critical, auto_stop = self.storage_preferences
                 reserve = max(self.storage_min_mib, critical) if enabled and auto_stop else self.storage_min_mib
                 checked = recording_storage.check_destination(out_dir, reserve)
@@ -1093,7 +1099,7 @@ class RecordingManager:
                     key=key, metadata=metadata, on_finish=on_finish, duration=duration,
                     show_stats=show_stats, keep_partial=keep_partial, file_time=file_time,
                     audio_track=audio_track, audio_track_count=audio_track_count,
-                    share_with_player=share_with_player, connection_key=connection_key,
+                    share_with_player=share_with_player, connection_key=connection_key, canceled=canceled,
                     _buffer_lease=_buffer_lease, _buffer_checked=_buffer_checked, _storage_checked=True)
 
         registry = getattr(self, "live_buffer_registry", None)
@@ -1104,6 +1110,8 @@ class RecordingManager:
         metadata = dict(metadata or {})
         try:
             with buffer_gate:
+                if canceled is not None and canceled():
+                    raise CancelledError
                 if registry is not None and not _buffer_checked:
                     key = key or url
                     url, headers, owned_lease = registry.recording_input(url, headers)
@@ -1128,7 +1136,8 @@ class RecordingManager:
                 key=key, metadata=metadata, on_finish=on_finish, duration=duration,
                 show_stats=show_stats, keep_partial=keep_partial, audio_track=audio_track,
                 audio_track_count=audio_track_count, share_with_player=share_with_player,
-                connection_key=connection_key, buffer_lease=_buffer_lease, admission=admission)
+                connection_key=connection_key, buffer_lease=_buffer_lease, admission=admission,
+                canceled=canceled)
         except BaseException:
             if owned_lease is not None:
                 owned_lease.release()
@@ -1181,7 +1190,7 @@ class RecordingManager:
     def _start_reserved(self, url, display_name, fmt, headers, out_dir, out_path, *, key,
                         metadata, on_finish, duration, show_stats, keep_partial,
                         audio_track, audio_track_count, share_with_player,
-                        connection_key, buffer_lease=None, admission=None) -> Recording:
+                        connection_key, buffer_lease=None, admission=None, canceled=None) -> Recording:
         # ffmpeg cannot resume a partial file, so for download-style captures the
         # output goes to a ``.part`` sibling and is renamed into place only when
         # the download completes; a canceled or failed run leaves nothing behind.
@@ -1207,10 +1216,14 @@ class RecordingManager:
         # ffmpeg writes its diagnostics straight into the log file rather than into a
         # pipe we drain. That keeps the complete stderr for every recording, and it
         # means the log survives even when ffmpeg has to be terminated on exit.
+        if canceled is not None and canceled():
+            raise CancelledError
         log_path = recording_log_path(out_dir, out_path)
         log_handle = self._open_log(log_path, cmd, url)
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
         try:
+            if canceled is not None and canceled():
+                raise CancelledError
             process = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,

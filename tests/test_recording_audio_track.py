@@ -347,14 +347,17 @@ def _live_client(monkeypatch, choice, deferred):
         _recording_audio_intent=lambda _channel, **_k: {"keywords": ["x"]},
         _recording_audio_choice=lambda url, headers, intent: choice,
         _recording_format_for_channel=lambda _channel: ("audio_mp3_v0", "audio", "saved"),
+        _take_media_probes=lambda: (),
+        _stop_media_probes=lambda *_args: None,
         _terminate_media_probe=lambda _channel: None,
         _note_recording_started=lambda: None,
         _recording_format_label=lambda fmt: fmt,
+        _show_or_queue_message_box=lambda *args: main.message_box(*args),
         _on_recording_finished=lambda *a: None,
         _sync_internal_player_record_state=lambda: None,
         _player_is_showing=lambda _channel: False,
     )
-    return _bind(client, "_record_channel", "_start_live_recording")
+    return _bind(client, "_record_channel", "_announce_live_recording", "_stop_recording_for_channel")
 
 
 def test_live_recording_keeps_the_chosen_track(monkeypatch):
@@ -362,7 +365,8 @@ def test_live_recording_keeps_the_chosen_track(monkeypatch):
     client = _live_client(monkeypatch, (1, 3), deferred)
     client._record_channel(TVP)
     assert client.recorder.started == []  # the stream is still being asked
-    deferred.pop()()
+    deferred.pop(0)()  # resolve URL and destination
+    deferred.pop(0)()  # inspect tracks and start recording
     (_args, kwargs), = client.recorder.started
     assert (kwargs["audio_track"], kwargs["audio_track_count"]) == (1, 3)
 
@@ -371,6 +375,7 @@ def test_pressing_record_again_during_the_probe_cancels_it(monkeypatch):
     deferred = []
     client = _live_client(monkeypatch, (1, 3), deferred)
     client._record_channel(TVP)
+    deferred.pop(0)()
     client._record_channel(TVP)
     assert any("Stopping recording" in box for box in client.boxes)
     deferred.pop()()
