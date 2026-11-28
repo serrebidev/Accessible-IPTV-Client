@@ -195,7 +195,7 @@ msgstr "Xtream Codes-fiók hozzáadása"
 
 #: media_navigation_ui.py:234
 msgid "Add a named bookmark to mark a point inside the recording first."
-msgstr "Először jelöljön meg egy pontot a felvételben a „Könyvjelző hozzáadása…” paranccsal."
+msgstr "Először jelöljön meg egy pontot a felvétel eleje és vége között a „Könyvjelző hozzáadása…” paranccsal."
 
 #: client_ui.py:312
 #: main.py:1968
@@ -271,7 +271,7 @@ msgstr "Már folyamatban van egy frissítés."
 
 #: client_recording.py:50
 msgid "Announce and save in history"
-msgstr "Bemondás és előzménybejegyzés"
+msgstr "Bemondás és mentés az értesítési előzményekbe"
 
 #: main.py:7945
 msgid "Application voice output"
@@ -822,7 +822,7 @@ msgstr "Olyan listanevet adjon meg, amely nem tartalmaz webcímet vagy bejelentk
 
 #: recording_media.py:201
 msgid "Choose a new filename for the excerpt."
-msgstr "A megadott néven már létezik fájl. Adjon másik nevet a részletnek."
+msgstr "A megadott fájlnév már foglalt. Adjon meg másik nevet."
 
 #: media_navigation_ui.py:432
 #: session_tools_ui.py:29
@@ -857,7 +857,7 @@ msgstr "A szünet utolsó napja nem előzheti meg sem az elsőt, sem a mai napot
 
 #: recording_media.py:194
 msgid "Choose a valid recording range and an MKV filename."
-msgstr "Adja meg a részlet érvényes kezdő- és végpontját, valamint egy .mkv kiterjesztésű fájlnevet."
+msgstr "Adjon meg érvényes kezdő- és végpontot a részlethez, valamint .mkv kiterjesztésű fájlnevet."
 
 #: planning_tools_ui.py:12
 msgid "Choose repeat days. Clear all days to record only once."
@@ -1223,7 +1223,7 @@ msgstr "Felvételfájl törlése…"
 
 #: recording_queue.py:312
 msgid "Delete Saved Queue..."
-msgstr "Mentett sor törlése…"
+msgstr "Mentett lejátszási sor törlése…"
 
 #: session_tools_ui.py:122
 msgid "Delete bookmark '{name}'?"
@@ -1243,7 +1243,7 @@ msgstr "Biztosan törli a következő lejátszási listát: „{name}”?\n\nEzz
 
 #: recording_queue.py:276
 msgid "Delete this saved queue?"
-msgstr "Törli ezt a mentett sort?"
+msgstr "Törli ezt a mentett lejátszási sort?"
 
 #: recording_library_ui.py:71
 msgid "Descending"
@@ -1706,7 +1706,7 @@ msgstr "Sikertelen"
 
 #: main.py:9355
 msgid "Failed and Partial"
-msgstr "Sikertelen, kimaradt és részleges"
+msgstr "Sikertelen, elmaradt és részleges"
 
 #: main.py:8150
 #: main.py:8342
@@ -2180,7 +2180,7 @@ msgstr "Az élő adatfolyam véget ért; a megőrzött adásrészletek továbbra
 
 #: recording_queue.py:311
 msgid "Load Saved Queue..."
-msgstr "Mentett sor betöltése…"
+msgstr "Mentett lejátszási sor betöltése…"
 
 #: internal_player.py:2852
 msgid "Load Subtitle File"
@@ -2852,7 +2852,7 @@ msgstr "A fejezetek áttekintéséhez nyisson meg egy helyi felvételt."
 
 #: media_navigation_ui.py:202
 msgid "Open a local recording with text subtitles first."
-msgstr "Nyisson meg egy helyi felvételt, majd töltsön be szöveges feliratot."
+msgstr "Nyisson meg egy helyi felvételt, majd töltsön be szöveges feliratfájlt, vagy válasszon beágyazott szöveges feliratsávot."
 
 #: media_navigation_ui.py:84
 #: media_navigation_ui.py:113
@@ -2973,7 +2973,7 @@ msgstr "Szüneteltetve"
 
 #: main.py:9355
 msgid "Paused Recording Rules"
-msgstr "Felvételek szüneteltetési időszakkal"
+msgstr "Szüneteltetésre beállított felvételi szabályok"
 
 #: account_info.py:376
 #: planning_ui.py:160
@@ -3870,11 +3870,11 @@ msgstr "Kijelölt találatok mentése…"
 #: media_navigation_ui.py:68
 #: media_navigation_ui.py:196
 msgid "Save Subtitle Transcript..."
-msgstr "Feliratátirat mentése…"
+msgstr "Felirat mentése szövegfájlba…"
 
 #: client_recording.py:50
 msgid "Save in history only"
-msgstr "Csak előzménybejegyzés"
+msgstr "Csak mentés az értesítési előzményekbe"
 
 #: recording_queue.py:255
 msgid "Saved Playback Queues"
@@ -3908,7 +3908,7 @@ msgstr "A mentett fájl helye: {path}"
 
 #: media_navigation_ui.py:265
 msgid "Saving recording excerpt..."
-msgstr "Felvételrészlet mentése…"
+msgstr "Felvételrészlet mentése folyamatban…"
 
 #: client_timeshift.py:318
 msgid "Saving the broadcast excerpt..."
@@ -3916,7 +3916,7 @@ msgstr "Az adásrészlet mentése…"
 
 #: recording_media.py:225
 msgid "Saving the recording excerpt timed out."
-msgstr "Lejárt a felvételrészlet mentésére rendelkezésre álló idő."
+msgstr "A felvételrészlet mentése időtúllépés miatt megszakadt."
 
 #: recording_conflicts_ui.py:102
 msgid "Schedule Anyway"
@@ -3963,7 +3963,7 @@ msgstr "Felvétel ütemezése időpont alapján…"
 
 #: main.py:9356
 msgid "Schedule view"
-msgstr "Az ütemezés nézete"
+msgstr "Ütemezett felvételek nézete"
 
 #: main.py:9588
 #: planning_ui.py:160
@@ -4900,7 +4900,7 @@ msgstr "Elérte az ehhez a fiókhoz beállított felvételi kapcsolatok felső h
 
 #: client_recording.py:133
 msgid "The recording did not cover the full scheduled time."
-msgstr "A felvétel az ütemezett időszaknak csak egy részét tartalmazza."
+msgstr "A felvétel nem terjed ki a teljes ütemezett időszakra."
 
 #: recording_library.py:155
 #: recording_library.py:317
@@ -4991,7 +4991,7 @@ msgstr "A lejátszást nem sikerült a mentett időponttól folytatni."
 
 #: recording_queue.py:60
 msgid "The saved queue limit has been reached."
-msgstr "Elérte a mentett lejátszási sorok megengedett számát."
+msgstr "Elérte a menthető lejátszási sorok maximális számát."
 
 #: saved_searches.py:163
 #: saved_searches.py:173
@@ -5541,7 +5541,7 @@ msgstr "Ha egy csatorna több hangsávot kínál, a beépített lejátszó autom
 
 #: client_recording.py:52
 msgid "When a recording starts or finishes successfully:"
-msgstr "Értesítés a felvétel sikeres indításáról és befejezéséről:"
+msgstr "Értesítés a felvétel sikeres megkezdésekor és befejezésekor:"
 
 #: recording_power.py:89
 msgid "Windows could not enable the recording wake timer."
